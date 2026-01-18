@@ -205,9 +205,88 @@
             background: #7a73ff;
         }
 
-        .link svg {
-            width: 20px;
-            height: 20px;
+        /* CTA Section */
+        .cta-section {
+            margin: 2rem 0 3rem 0;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1.5rem;
+            background: #635bff;
+            color: #fff;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .cta-button:hover {
+            background: #7a73ff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(99, 91, 255, 0.3);
+        }
+
+        .cta-button i {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Articles Header with Icon */
+        .articles-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            color: #00d1b2;
+            margin-bottom: 1.5rem;
+        }
+
+        .articles-header i {
+            font-size: 1.75rem;
+        }
+
+        /* Footer Links with Icons */
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 2.5rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #635bff;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .footer-link:hover {
+            background: rgba(99, 91, 255, 0.15);
+            border-color: rgba(99, 91, 255, 0.3);
+            color: #8d80ff;
+        }
+
+        .footer-link i {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* Articles Section */

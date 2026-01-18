@@ -17,7 +17,7 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #0a2540;
+            background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 50%, #0d1b2a 100%);
             color: #fafafa;
             min-height: 100vh;
             padding: 2rem;
@@ -26,28 +26,42 @@
             overflow-x: hidden;
         }
 
-        /* Stripe-style gradient background */
+        /* Stripe-inspired animated gradient background */
         body::before {
             content: '';
             position: fixed;
-            top: -50%;
-            right: -50%;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(99, 91, 255, 0.3) 0%, transparent 50%);
+            top: -40%;
+            right: -20%;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(99, 91, 255, 0.25) 0%, transparent 70%);
             pointer-events: none;
             z-index: -1;
+            animation: float 20s ease-in-out infinite;
         }
 
         body::after {
             content: '';
             position: fixed;
             bottom: -30%;
-            left: -30%;
-            width: 80%;
-            height: 80%;
-            background: radial-gradient(circle, rgba(0, 209, 178, 0.15) 0%, transparent 50%);
+            left: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 209, 178, 0.2) 0%, transparent 70%);
             pointer-events: none;
+            z-index: -1;
+            animation: float-reverse 25s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, -30px); }
+        }
+
+        @keyframes float-reverse {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-20px, 20px); }
+        }
             z-index: -1;
         }
 
@@ -291,13 +305,13 @@
 
         /* Brand-specific footer link colors */
         .footer-link[href*="substack"] {
-            color: #635bff;
+            color: #FF6B35;
         }
 
         .footer-link[href*="substack"]:hover {
-            background: rgba(99, 91, 255, 0.15);
-            border-color: rgba(99, 91, 255, 0.3);
-            color: #8d80ff;
+            background: rgba(255, 107, 53, 0.15);
+            border-color: rgba(255, 107, 53, 0.3);
+            color: #FF8555;
         }
 
         .footer-link[href*="github"] {
@@ -332,10 +346,22 @@
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 0.75rem;
-            padding: 1.5rem;
+            padding: 0;
             margin-bottom: 1rem;
             transition: all 0.2s;
             backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .article-card-image {
+            width: 100%;
+            height: 240px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .article-card-content {
+            padding: 1.5rem;
         }
 
         .article-card:hover {

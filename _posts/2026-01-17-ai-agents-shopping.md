@@ -5,7 +5,7 @@ author: "Nik Jain"
 date: 2026-01-17
 series: "Agentic Commerce"
 stage: 1
-image: "/assets/images/hero_20260118_164336.png"
+image: "/assets/images/hero_20260118_165008.png"
 tags:
   - agentic-commerce
   - ai-agents

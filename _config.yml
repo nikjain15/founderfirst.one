@@ -1,0 +1,26 @@
+title: FounderFirst
+description: Making sense of AI, commerce, and payments for builders and businesses.
+url: https://founderfirst.one
+author: Nik Jain
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+
+# Permalinks
+permalink: /blog/:title/
+
+# Collections
+collections:
+  posts:
+    output: true
+    permalink: /blog/:title/
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: post
+      author: Nik Jain

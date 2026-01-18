@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if page.title %}{{ page.title }} | {% endif %}FounderFirst</title>
+    <meta name="description" content="{{ page.description | default: site.description }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            color: #fafafa;
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: #fff;
+        }
+
+        .logo a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: #3b82f6;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem;
+            color: #fff;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.75rem;
+            color: #fff;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: #d4d4d8;
+        }
+
+        a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        strong {
+            color: #fff;
+        }
+
+        .tagline {
+            font-size: 1.25rem;
+            color: #a1a1aa;
+            margin-bottom: 2rem;
+        }
+
+        .bio {
+            color: #d4d4d8;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+        }
+
+        .credentials {
+            color: #71717a;
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #71717a;
+            margin-bottom: 1rem;
+        }
+
+        .topics {
+            margin-bottom: 2.5rem;
+        }
+
+        .topic-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .topic {
+            background: #18181b;
+            border: 1px solid #27272a;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            color: #d4d4d8;
+        }
+
+        .links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+
+        .link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #18181b;
+            border: 1px solid #27272a;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            color: #fafafa;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .link:hover {
+            background: #27272a;
+            border-color: #3b82f6;
+            text-decoration: none;
+        }
+
+        .link.primary {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .link.primary:hover {
+            background: #2563eb;
+        }
+
+        .link svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Articles Section */
+        .articles {
+            margin: 3rem 0;
+            padding-top: 2rem;
+            border-top: 1px solid #27272a;
+        }
+
+        .article-card {
+            background: #18181b;
+            border: 1px solid #27272a;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+
+        .article-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        .article-card a {
+            text-decoration: none;
+        }
+
+        .article-card h3 {
+            margin: 0 0 0.5rem;
+            font-size: 1.25rem;
+            color: #fff;
+        }
+
+        .article-card h3:hover {
+            color: #3b82f6;
+        }
+
+        .article-meta {
+            font-size: 0.85rem;
+            color: #71717a;
+            margin-bottom: 0.75rem;
+        }
+
+        .article-excerpt {
+            color: #a1a1aa;
+            font-size: 0.95rem;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .article-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .article-tag {
+            background: #27272a;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            color: #a1a1aa;
+        }
+
+        .footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #27272a;
+            color: #71717a;
+            font-size: 0.875rem;
+        }
+
+        /* Post Content Styles */
+        .post-content {
+            margin-top: 2rem;
+        }
+
+        .post-content p {
+            margin-bottom: 1.25rem;
+            font-size: 1.05rem;
+            line-height: 1.75;
+        }
+
+        .post-content ul, .post-content ol {
+            margin: 1rem 0 1.5rem 1.5rem;
+            color: #d4d4d8;
+        }
+
+        .post-content li {
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+        }
+
+        .post-content hr {
+            border: none;
+            border-top: 1px solid #27272a;
+            margin: 2rem 0;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid #3b82f6;
+            padding-left: 1rem;
+            margin: 1.5rem 0;
+            color: #a1a1aa;
+            font-style: italic;
+        }
+
+        .post-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #27272a;
+        }
+
+        .post-title {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .post-meta {
+            color: #71717a;
+            font-size: 0.9rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #71717a;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        .back-link:hover {
+            color: #3b82f6;
+        }
+
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 1.75rem;
+            }
+            .tagline {
+                font-size: 1rem;
+            }
+            .links {
+                flex-direction: column;
+            }
+            .link {
+                justify-content: center;
+            }
+            .post-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo"><a href="/">Founder<span>First</span></a></div>
+        {{ content }}
+        <div class="footer">
+            <p>3x founder | Forbes 30U30 Asia | Building AI at Fidelity</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,47 @@
+---
+layout: default
+---
+
+<a href="/" class="back-link">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+    </svg>
+    Back to home
+</a>
+
+<article>
+    <header class="post-header">
+        <h1 class="post-title">{{ page.title }}</h1>
+        <div class="post-meta">
+            <span>{{ page.date | date: "%B %d, %Y" }}</span>
+            {% if page.series %} · <span>{{ page.series }}</span>{% endif %}
+            {% if page.author %} · <span>{{ page.author }}</span>{% endif %}
+        </div>
+        {% if page.tags %}
+        <div class="article-tags">
+            {% for tag in page.tags %}
+            <span class="article-tag">{{ tag }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </header>
+
+    <div class="post-content">
+        {{ content }}
+    </div>
+</article>
+
+<div class="articles" style="margin-top: 4rem;">
+    <h2 class="section-header">More Articles</h2>
+    {% for post in site.posts limit:3 %}
+    {% unless post.url == page.url %}
+    <div class="article-card">
+        <a href="{{ post.url }}">
+            <h3>{{ post.title }}</h3>
+        </a>
+        <div class="article-meta">{{ post.date | date: "%B %d, %Y" }}{% if post.series %} · {{ post.series }}{% endif %}</div>
+        <p class="article-excerpt">{{ post.description | truncate: 150 }}</p>
+    </div>
+    {% endunless %}
+    {% endfor %}
+</div>

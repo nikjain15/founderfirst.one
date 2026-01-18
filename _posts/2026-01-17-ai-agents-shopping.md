@@ -12,7 +12,7 @@ tags:
   - ACP
   - UCP
   - merchants
-image: "https://images.unsplash.com/photo-1556656793-08538906a9f8?w=1200&h=640&fit=crop"
+image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&h=640&fit=crop"
 canonical_url: https://founderfirst.one/blog/ai-agents-shopping
 ---
 

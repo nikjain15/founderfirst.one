@@ -61,7 +61,7 @@
             font-size: 1.5rem;
             font-weight: 700;
             margin-bottom: 2rem;
-            color: #fff;
+            color: rgba(255, 255, 255, 0.9);
         }
 
         .logo a {
@@ -70,7 +70,7 @@
         }
 
         .logo span {
-            color: #635bff;
+            color: rgba(255, 255, 255, 0.6);
         }
 
         h1 {
@@ -359,7 +359,7 @@
         <div class="logo"><a href="/">Founder<span>First</span></a></div>
         {{ content }}
         <div class="footer">
-            <p>3x founder | Forbes 30U30 Asia | Building AI at Fidelity</p>
+            <p>&copy; {{ site.time | date: '%Y' }} FounderFirst. All rights reserved.</p>
         </div>
     </div>
 </body>

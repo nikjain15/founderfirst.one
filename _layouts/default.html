@@ -257,26 +257,32 @@
         .footer-links {
             display: flex;
             justify-content: center;
-            gap: 2rem;
-            margin-top: 2.5rem;
+            gap: 2.5rem;
+            margin-top: 3rem;
             padding-top: 2rem;
             border-top: 1px solid #dde3ed;
+            flex-wrap: wrap;
         }
 
         .footer-link {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.65rem;
             color: #635bff;
-            font-size: 0.9rem;
-            font-weight: 500;
+            font-size: 0.95rem;
+            font-weight: 600;
             text-decoration: none;
-            transition: color 0.2s;
+            transition: all 0.2s;
             box-shadow: none !important;
         }
 
         .footer-link:hover {
             color: #4c47cc;
+            transform: translateY(-1px);
+        }
+
+        .footer-link i {
+            font-size: 1rem;
         }
 
         .articles-header {

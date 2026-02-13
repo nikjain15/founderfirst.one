@@ -6,6 +6,9 @@ author: Nik Jain
 # Build settings
 markdown: kramdown
 highlighter: rouge
+include:
+  - assets
+  - DESIGN_SYSTEM.md
 
 # Permalinks
 permalink: /blog/:title/

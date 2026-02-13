@@ -36,36 +36,64 @@ The numbers tell the story:
 
 This growth isn't limited to big players. Early adopters of all sizes are seeing real wins. The protocols—ACP for secure payments, UCP for discovery—level the playing field.
 
-## The Agent-Ready Merchant: 5 Essential Blocks
+## The Agent-Ready Merchant Journey
 
----
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2rem; margin: 3rem 0; text-align: center;">
+  
+  <div style="display: flex; align-items: center; justify-content: center; width: 80px; height: 80px; border-radius: 50%; background: #635bff; color: white; font-weight: bold; font-size: 24px;">
+    🔍
+  </div>
+  
+  <div style="font-size: 18px; font-weight: 700; color: #1f2937;">
+    <strong>① Be Discoverable</strong><br>
+    <span style="font-size: 14px; color: #6b7280; font-weight: 400;">Structured data · Real-time inventory · Clear categories</span>
+  </div>
 
-**① Be Discoverable**
-- Structured product data
-- Real-time inventory
-- Clear categories
+  <div style="width: 2px; height: 40px; background: #e5e7eb;"></div>
 
-**② Win the Comparison**
-- Competitive pricing
-- Reviews & ratings
-- Transparent specs
+  <div style="display: flex; align-items: center; justify-content: center; width: 80px; height: 80px; border-radius: 50%; background: #00d1b2; color: white; font-weight: bold; font-size: 24px;">
+    ⚖️
+  </div>
+  
+  <div style="font-size: 18px; font-weight: 700; color: #1f2937;">
+    <strong>② Win the Comparison</strong><br>
+    <span style="font-size: 14px; color: #6b7280; font-weight: 400;">Competitive pricing · Reviews · Transparent specs</span>
+  </div>
 
-**③ Frictionless Checkout**
-- Simple payments
-- Clear errors
-- Multiple options
+  <div style="width: 2px; height: 40px; background: #e5e7eb;"></div>
 
-**④ Reliable Fulfillment**
-- Ship on time
-- Perfect packaging
-- Fast support
+  <div style="display: flex; align-items: center; justify-content: center; width: 80px; height: 80px; border-radius: 50%; background: #f59e0b; color: white; font-weight: bold; font-size: 24px;">
+    💳
+  </div>
+  
+  <div style="font-size: 18px; font-weight: 700; color: #1f2937;">
+    <strong>③ Frictionless Checkout</strong><br>
+    <span style="font-size: 14px; color: #6b7280; font-weight: 400;">Simple payments · Clear errors · Multiple options</span>
+  </div>
 
-**⑤ Build Trust**
-- Consistent quality
-- Honest pricing
-- Repeat business
+  <div style="width: 2px; height: 40px; background: #e5e7eb;"></div>
 
----
+  <div style="display: flex; align-items: center; justify-content: center; width: 80px; height: 80px; border-radius: 50%; background: #10b981; color: white; font-weight: bold; font-size: 24px;">
+    ✓
+  </div>
+  
+  <div style="font-size: 18px; font-weight: 700; color: #1f2937;">
+    <strong>④ Reliable Fulfillment</strong><br>
+    <span style="font-size: 14px; color: #6b7280; font-weight: 400;">Ship on time · Perfect packaging · Fast support</span>
+  </div>
+
+  <div style="width: 2px; height: 40px; background: #e5e7eb;"></div>
+
+  <div style="display: flex; align-items: center; justify-content: center; width: 80px; height: 80px; border-radius: 50%; background: #ef4444; color: white; font-weight: bold; font-size: 24px;">
+    ♥️
+  </div>
+  
+  <div style="font-size: 18px; font-weight: 700; color: #1f2937;">
+    <strong>⑤ Build Trust</strong><br>
+    <span style="font-size: 14px; color: #6b7280; font-weight: 400;">Consistent quality · Honest pricing · Repeat business</span>
+  </div>
+
+</div>
 
 **Start with your weakest block.** Fix one, then move to the next. The merchants who strengthen all five will dominate agent-driven traffic.
 

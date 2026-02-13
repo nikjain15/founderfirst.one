@@ -36,16 +36,40 @@ The numbers tell the story:
 
 This growth isn't limited to big players. Early adopters of all sizes are seeing real wins. The protocols—ACP for secure payments, UCP for discovery—level the playing field.
 
-## What You Should Do Now
-
-1. **Optimize product data** – Clear descriptions, accurate pricing, good reviews
-2. **Get agent-ready** – Integrate ACP or UCP into your store
-3. **Test early** – Experiment with the protocols to see what works
-
-The merchants who move first will capture the lion's share of agent-driven traffic.
-
+## The Agent-Ready Merchant: 5 Essential Blocks
 
 ---
+
+**① Be Discoverable**
+- Structured product data
+- Real-time inventory
+- Clear categories
+
+**② Win the Comparison**
+- Competitive pricing
+- Reviews & ratings
+- Transparent specs
+
+**③ Frictionless Checkout**
+- Simple payments
+- Clear errors
+- Multiple options
+
+**④ Reliable Fulfillment**
+- Ship on time
+- Perfect packaging
+- Fast support
+
+**⑤ Build Trust**
+- Consistent quality
+- Honest pricing
+- Repeat business
+
+---
+
+**Start with your weakest block.** Fix one, then move to the next. The merchants who strengthen all five will dominate agent-driven traffic.
+
+**Next:** We'll show you how to check if agents are already searching your category.
 
 **Ready to level up?** Explore the protocols at [agenticcommerce.dev](https://agenticcommerce.dev) or [ucp.dev](https://ucp.dev).
 

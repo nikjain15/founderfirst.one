@@ -36,55 +36,44 @@ The numbers tell the story:
 
 This growth isn't limited to big players. Early adopters of all sizes are seeing real wins. The protocols—ACP for secure payments, UCP for discovery—level the playing field.
 
-## The Agent-Ready Merchant Journey
+## The Agent-Ready Merchant Checklist
 
-<div class="journey-container">
-  <div class="journey-step">
-    <div class="journey-icon icon-1">🔍</div>
-    <div class="journey-content">
-      <h3>① Be Discoverable</h3>
-      <p>Structured data • Real-time inventory • Clear categories</p>
-    </div>
-    <div class="journey-divider"></div>
-  </div>
+1️⃣ **Be Discoverable**
+- Product data is accessible & structured
+- Real-time inventory updates
+- Clear categories & descriptions
 
-  <div class="journey-step">
-    <div class="journey-icon icon-2">⚖️</div>
-    <div class="journey-content">
-      <h3>② Win the Comparison</h3>
-      <p>Competitive pricing • Reviews • Transparent specs</p>
-    </div>
-    <div class="journey-divider"></div>
-  </div>
+→ Without this, agents can't find you.
 
-  <div class="journey-step">
-    <div class="journey-icon icon-3">💳</div>
-    <div class="journey-content">
-      <h3>③ Frictionless Checkout</h3>
-      <p>Simple payments • Clear errors • Multiple options</p>
-    </div>
-    <div class="journey-divider"></div>
-  </div>
+2️⃣ **Win the Comparison**
+- Competitive pricing
+- Real reviews & ratings
+- Clear specs & shipping info
 
-  <div class="journey-step">
-    <div class="journey-icon icon-4">✓</div>
-    <div class="journey-content">
-      <h3>④ Reliable Fulfillment</h3>
-      <p>Ship on time • Perfect packaging • Fast support</p>
-    </div>
-    <div class="journey-divider"></div>
-  </div>
+→ Without this, agents choose competitors.
 
-  <div class="journey-step">
-    <div class="journey-icon icon-5">♥️</div>
-    <div class="journey-content">
-      <h3>⑤ Build Trust</h3>
-      <p>Consistent quality • Honest pricing • Repeat business</p>
-    </div>
-  </div>
-</div>
+3️⃣ **Make Checkout Frictionless**
+- Simple, fast payment
+- Clear error messages
+- Multiple payment options
 
-**Start with your weakest block.** Fix one, then move to the next. The merchants who strengthen all five will dominate agent-driven traffic.
+→ Without this, orders get abandoned.
+
+4️⃣ **Deliver Reliably**
+- Ship on time
+- Perfect packaging
+- Fast returns/support
+
+→ Without this, agents stop recommending you.
+
+5️⃣ **Stay Trustworthy**
+- Consistent quality
+- Honest pricing
+- Build reputation
+
+→ With this, agents keep coming back.
+
+**Start where you're weakest.** Fix that one thing first, then move to the next.
 
 **Next:** We'll show you how to check if agents are already searching your category.
 

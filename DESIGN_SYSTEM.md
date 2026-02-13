@@ -47,8 +47,8 @@ This document ensures all blog posts maintain **consistent, professional styling
 ## Spacing & Layout
 
 ### Container
-- Max width: 760px
-- Padding: 2.5rem on sides
+- Max width: 1100px
+- Padding: 3rem on sides
 - Border radius: 16px
 - Shadow: 0 20px 50px rgba(26, 31, 54, 0.08)
 - Top margin: 3rem

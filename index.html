@@ -835,57 +835,100 @@ button:focus-visible {
 .toast.show { opacity: 1; pointer-events: auto; }
 
 /* ══════════════════════════════════════════
-   RESPONSIVE
+   RESPONSIVE — Mobile-first
 ══════════════════════════════════════════ */
-@media (max-width: 860px) {
-  .meet-penny-inner { grid-template-columns: 1fr; }
-  .promise-grid { grid-template-columns: 1fr; }
-  .snap-rail { grid-template-columns: 1fr; }
-  .snap-rail::before { display: none; }
-  .steps-grid { grid-template-columns: 1fr; }
-  .ref-share { grid-template-columns: 1fr; }
-  .waitlist-top { grid-template-columns: 1fr; }
-  .diagram-grid { display: none; }
-  .diagram { display: none; }
-  .diagram-mobile { display: block; }
+
+/* Base: Mobile styles (< 480px) - smallest phones */
+.waitlist-form {
+  flex-direction: column;
+  align-items: stretch;
+  border-radius: 18px;
+  padding: 5px;
+  max-width: 100%;
+  overflow: visible;
 }
-/* Intermediate tablet / landscape-phone range — 2-col rather than stacking */
-@media (min-width: 561px) and (max-width: 860px) {
+.waitlist-form input[type="email"] {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  text-align: left;
+}
+.waitlist-form button[type="submit"] {
+  width: 100%;
+  margin: 6px 0 0;
+  padding: 14px 18px;
+  font-size: 14px;
+  border-radius: 14px;
+  white-space: normal;
+}
+
+.phone-mock { max-width: 280px; margin-inline: auto; }
+.snap-step { align-items: center; text-align: center; }
+.snap-caption { text-align: center; }
+.scatter-cards { grid-template-columns: 1fr; }
+.nav-links { gap: 18px; font-size: 13px; }
+.hero-penny { flex-direction: column; align-items: flex-start; }
+
+.meet-penny-inner { grid-template-columns: 1fr; }
+.promise-grid { grid-template-columns: 1fr; }
+.snap-rail { grid-template-columns: 1fr; }
+.snap-rail::before { display: none; }
+.steps-grid { grid-template-columns: 1fr; }
+.ref-share { grid-template-columns: 1fr; }
+.waitlist-top { grid-template-columns: 1fr; }
+.diagram-grid { display: none; }
+.diagram { display: none; }
+.diagram-mobile { display: block; }
+
+/* 481px+: Restore form to horizontal layout */
+@media (min-width: 481px) {
+  .waitlist-form {
+    flex-direction: row;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0;
+    overflow: hidden;
+  }
+  .waitlist-form input[type="email"] {
+    padding: 13px 18px;
+    border-radius: 0;
+    text-align: inherit;
+  }
+  .waitlist-form button[type="submit"] {
+    width: auto;
+    margin: 4px;
+    padding: 10px 18px;
+    font-size: 13px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+}
+
+/* 561px+: Tablet layout - some 2-col grids, normal phone mock */
+@media (min-width: 561px) {
+  .phone-mock { max-width: 230px; margin-inline: 0; }
+  .snap-step { align-items: flex-start; text-align: left; }
+  .snap-caption { text-align: left; }
+  .scatter-cards { grid-template-columns: 1fr 1fr; }
+  .nav-links { gap: 32px; font-size: 14px; }
+  .hero-penny { flex-direction: row; align-items: flex-start; }
+  
   .promise-grid { grid-template-columns: 1fr 1fr; gap: 16px; }
   .steps-grid { grid-template-columns: 1fr 1fr; }
 }
-@media (max-width: 560px) {
-  .phone-mock { max-width: 280px; margin-inline: auto; }
-  .snap-step { align-items: center; text-align: center; }
-  .snap-caption { text-align: center; }
-  .scatter-cards { grid-template-columns: 1fr; }
-  .nav-links { gap: 18px; font-size: 13px; }
-  .hero-penny { flex-direction: column; align-items: flex-start; }
-}
-/* Form stacks vertically on narrow phones — guarantees the CTA text is fully visible */
-@media (max-width: 480px) {
-  .waitlist-form {
-    flex-direction: column;
-    align-items: stretch;
-    border-radius: 18px;
-    padding: 5px;
-    max-width: 100%;
-    overflow: visible;
-  }
-  .waitlist-form input[type="email"] {
-    width: 100%;
-    padding: 14px 16px;
-    border-radius: 14px;
-    text-align: left;
-  }
-  .waitlist-form button[type="submit"] {
-    width: 100%;
-    margin: 6px 0 0;
-    padding: 14px 18px;
-    font-size: 14px;
-    border-radius: 14px;
-    white-space: normal; /* allow wrap if user zooms text */
-  }
+
+/* 861px+: Desktop layout - 3-col grids, show diagram */
+@media (min-width: 861px) {
+  .meet-penny-inner { grid-template-columns: auto 1fr; }
+  .promise-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .snap-rail { grid-template-columns: repeat(3, 1fr); }
+  .snap-rail::before { display: block; }
+  .steps-grid { grid-template-columns: repeat(3, 1fr); }
+  .ref-share { grid-template-columns: 1fr 1fr; }
+  .waitlist-top { grid-template-columns: auto 1fr; }
+  .diagram-grid { display: grid; }
+  .diagram { display: block; }
+  .diagram-mobile { display: none; }
 }
 </style>
 </head>

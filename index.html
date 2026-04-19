@@ -680,73 +680,144 @@ button:focus-visible {
 .footer-links a:hover { color: var(--ink); }
 .footer-copy { font-size: 12px; color: var(--ink-4); }
 
+.site-footer-dark {
+  background: var(--dark);
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.site-footer-dark .footer-logo { color: rgba(255,255,255,0.85); }
+.site-footer-dark .footer-links { color: rgba(255,255,255,0.65); }
+.site-footer-dark .footer-links a { color: rgba(255,255,255,0.65); }
+.site-footer-dark .footer-links a:hover { color: var(--white); }
+.site-footer-dark .footer-copy { color: rgba(255,255,255,0.55); }
+
 /* ══════════════════════════════════════════
    CONFIRMATION PAGE
 ══════════════════════════════════════════ */
 #confirmation-page { display: none; min-height: 100vh; }
 #confirmation-page.active { display: block; }
 
-/* Conf hero — bg-paper */
+/* Conf hero — bg-paper, centered */
 .conf-hero {
   background: var(--paper);
   padding-block: clamp(56px, 8vw, 88px);
 }
+.conf-hero .wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
 .conf-badge {
-  position: relative; width: 88px; height: 88px;
+  position: relative; width: 104px; height: 104px;
 }
 .conf-badge-circle {
   position: absolute; inset: 0; border-radius: 50%; background: var(--ink);
   display: flex; align-items: center; justify-content: center;
-  font-size: 40px; color: var(--white); line-height: 1;
+  font-size: 46px; color: var(--white); line-height: 1;
 }
 .conf-dot { position: absolute; border-radius: 50%; background: var(--ink); }
-.conf-hero h1 { margin-top: 24px; }
-.conf-hero .conf-sub { margin-top: 10px; font-size: clamp(15px, 1.8vw, 19px); color: var(--ink-2); }
+.conf-hero h1 {
+  margin-top: 28px;
+  font-size: clamp(38px, 5.2vw, 60px);
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+}
+.conf-hero .conf-sub {
+  margin-top: 14px;
+  font-size: clamp(17px, 1.8vw, 21px);
+  color: var(--ink-2);
+  max-width: 560px;
+  line-height: 1.55;
+}
 
 .timeline-card {
-  margin-top: 32px;
-  max-width: 480px;
+  margin-top: 36px;
+  max-width: 520px;
+  width: 100%;
   border: 1.5px solid var(--ink); border-radius: 16px;
-  padding: clamp(18px, 2.5vw, 24px); background: var(--white);
+  padding: clamp(20px, 2.8vw, 28px); background: var(--white);
+  text-align: left;
 }
 .tl-eyebrow { margin-bottom: 18px; }
 .tl-steps { display: flex; flex-direction: column; gap: 16px; }
 .tl-step { display: flex; gap: 14px; align-items: flex-start; }
 .tl-num {
-  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 700;
 }
 .tl-num.done { background: var(--ink); color: var(--white); }
 .tl-num.next { background: var(--white); border: 1.5px solid var(--ink); color: var(--ink); }
-.tl-step h4 { font-size: 15px; font-weight: 600; }
-.tl-step p  { font-size: 13px; color: var(--ink-4); margin-top: 2px; line-height: 1.4; }
+.tl-step h4 { font-size: 16px; font-weight: 600; }
+.tl-step p  { font-size: 14px; color: var(--ink-4); margin-top: 2px; line-height: 1.45; }
 
-.conf-hint { display: flex; align-items: center; gap: 10px; margin-top: 22px; font-size: 13px; color: var(--ink-3); }
+.conf-hint {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; margin-top: 28px;
+  font-size: 14px; color: var(--ink-3);
+}
 
-/* Referral — bg-dark */
+/* Referral — bg-dark, centered */
 .referral-section { background: var(--dark); }
-.ref-inner { max-width: 660px; }
-.ref-top { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: flex-start; margin-bottom: 32px; }
-.ref-top h2 { color: var(--white); margin-top: 6px; font-size: clamp(22px, 3.5vw, 38px); }
-.ref-top p  { color: #ccc; margin-top: 8px; font-size: clamp(14px, 1.5vw, 16px); line-height: 1.6; }
+.ref-inner {
+  max-width: 620px;
+  margin: 0 auto;
+  text-align: center;
+}
+.ref-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 36px;
+}
+.ref-top .eyebrow { color: rgba(255,255,255,0.7); margin-top: 4px; }
+.ref-top h2 {
+  color: var(--white);
+  font-size: clamp(24px, 3.8vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.ref-top p  {
+  color: rgba(255,255,255,0.72);
+  margin-top: 6px;
+  font-size: clamp(15px, 1.6vw, 17px);
+  line-height: 1.6;
+  max-width: 560px;
+}
 
-.ref-link-box { background: #111; border: 1px solid #333; border-radius: 12px; padding: 18px 20px; }
-.ref-link-label { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 0.1em; }
+.ref-link-box {
+  background: #111;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 14px;
+  padding: 20px 22px;
+  text-align: left;
+}
+.ref-link-label {
+  font-size: 11px; color: rgba(255,255,255,0.65);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
 .ref-link-row { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
-.ref-url { flex: 1; font-size: 14px; color: var(--white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ref-url { flex: 1; font-size: 15px; color: var(--white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.ref-share { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+.ref-share { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
 
-.ref-progress { background: #111; border: 1px solid #333; border-radius: 12px; padding: 20px; margin-top: 20px; }
+.ref-progress {
+  background: #111;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 14px;
+  padding: 22px;
+  margin-top: 22px;
+  text-align: left;
+}
 .ref-prog-top { display: flex; justify-content: space-between; align-items: baseline; }
-.ref-big { font-size: 40px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
-.ref-of  { color: #888; font-size: 22px; font-weight: 500; }
-.ref-to-go-lbl { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px; }
+.ref-big { font-size: 44px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; color: var(--white); }
+.ref-of  { color: rgba(255,255,255,0.5); font-size: 24px; font-weight: 500; }
+.ref-to-go-lbl { font-size: 11px; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px; }
 .ref-to-go { font-size: 22px; font-weight: 600; color: var(--white); }
-.progress-bar { height: 7px; background: #333; border-radius: 4px; overflow: hidden; margin-top: 16px; }
+.progress-bar { height: 7px; background: rgba(255,255,255,0.12); border-radius: 4px; overflow: hidden; margin-top: 16px; }
 .progress-fill { width: 0%; height: 100%; background: var(--white); transition: width 0.35s ease; }
-.ref-fine { display: block; color: #aaa; font-size: 11px; text-align: center; margin-top: 14px; }
+.ref-fine { display: block; color: rgba(255,255,255,0.6); font-size: 12px; text-align: center; margin-top: 14px; }
 
 /* ══════════════════════════════════════════
    STATUS / TOAST
@@ -775,7 +846,6 @@ button:focus-visible {
   .diagram-grid { display: none; }
   .diagram { display: none; }
   .diagram-mobile { display: block; }
-  .ref-top { grid-template-columns: 1fr; }
 }
 /* Intermediate tablet / landscape-phone range — 2-col rather than stacking */
 @media (min-width: 561px) and (max-width: 860px) {
@@ -1222,11 +1292,9 @@ button:focus-visible {
       <div class="nav-links"><a href="#" onclick="showLanding(event)" style="font-size:13px;">← Back to site</a></div>
     </div>
   </nav>
-
-  <!-- Conf hero — paper -->
-  <section class="conf-hero">
-    <div class="wrap">
-      <div class="conf-badge">
+══════════════════════════════════════════ */
+const SUPABASE_URL  = 'https://ejqsfzggyfsjzrcevlnq.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_tJjN92VVKt-PweUpN2urrw_CGjOeHWT
         <div class="conf-badge-circle">✓</div>
         <span class="conf-dot" style="width:9px;height:9px;top:-6px;left:10px;"></span>
         <span class="conf-dot" style="width:6px;height:6px;top:8px;right:-10px;opacity:.6;"></span>
@@ -1246,7 +1314,7 @@ button:focus-visible {
       </div>
 
       <div class="conf-hint">
-        <span class="p-mark p-mark-sm" style="width:22px;height:22px;font-size:9px;">P</span>
+        <span class="p-mark p-mark-sm" style="width:26px;height:26px;font-size:11px;">P</span>
         <span>Penny is warming up her calculator…</span>
       </div>
     </div>
@@ -1257,12 +1325,10 @@ button:focus-visible {
     <div class="wrap">
       <div class="ref-inner">
         <div class="ref-top">
-          <span class="p-mark p-mark-sm p-mark-inv" style="margin-top:6px;">P</span>
-          <div>
-            <div class="eyebrow" style="color:#555;">Penny</div>
-            <h2>Know another solopreneur drowning in receipts?</h2>
-            <p>Share your invite link. Every founder who joins through you gets their 3 months free — and adds another month to yours.</p>
-          </div>
+          <span class="p-mark p-mark-lg p-mark-inv">P</span>
+          <div class="eyebrow">Penny</div>
+          <h2>Know another solopreneur drowning in receipts?</h2>
+          <p>Share your invite link. Every founder who joins through you gets their 3 months free — and adds another month to yours.</p>
         </div>
 
         <div class="ref-link-box">
@@ -1292,13 +1358,15 @@ button:focus-visible {
           </div>
           <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="12" aria-valuenow="0"><div class="progress-fill" id="ref-progress-fill"></div></div>
           <small class="ref-fine">Up to 12 months free — stack as many as you can invite.</small>
-══════════════════════════════════════════ */
-const SUPABASE_URL  = 'https://ejqsfzggyfsjzrcevlnq.supabase.co';
-const SUPABASE_KEY  = 'sb_publishable_tJjN92VVKt-PweUpN2urrw_CGjOeHWT
-  <footer class="site-footer" style="background:var(--dark);border-top:1px solid #1a1a1a;">
-    <div class="wrap footer-inner" style="color:#555;">
-      <div class="footer-logo" style="color:#888;"><span class="ff-mark ff-mark-sm">FF</span> FounderFirst</div>
-      <nav class="footer-links" style="color:#555;"><a href="#" onclick="showLanding(event)">Home</a><a href="#">About</a><a href="#">Early Access</a></nav>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer site-footer-dark">
+    <div class="wrap footer-inner">
+      <div class="footer-logo"><span class="ff-mark ff-mark-sm">FF</span> FounderFirst</div>
+      <nav class="footer-links"><a href="#" onclick="showLanding(event)">Home</a><a href="#">About</a><a href="#">Early Access</a></nav>
       <span class="footer-copy">© 2026 FounderFirst. All rights reserved.</span>
     </div>
   </footer>
@@ -1474,6 +1542,11 @@ document.addEventListener('DOMContentLoaded', () => {
       el.setAttribute('focusable', 'false');
     }
   });
+
+  /* Preview-mode: open index.html#confirmation to view the confirmation page directly */
+  if (location.hash === '#confirmation') {
+    showConfirmation();
+  }
 });
 </script>
 </body>

@@ -701,7 +701,9 @@ button:focus-visible {
   background: var(--paper);
   padding-block: clamp(56px, 8vw, 88px);
 }
-.conf-hero .wrap {
+.conf-hero-inner {
+  max-width: 680px;
+  margin-inline: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -800,7 +802,7 @@ button:focus-visible {
 .ref-link-row { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
 .ref-url { flex: 1; font-size: 15px; color: var(--white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.ref-share { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+.ref-share { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
 
 .ref-progress {
   background: #111;
@@ -851,7 +853,6 @@ button:focus-visible {
 @media (min-width: 561px) and (max-width: 860px) {
   .promise-grid { grid-template-columns: 1fr 1fr; gap: 16px; }
   .steps-grid { grid-template-columns: 1fr 1fr; }
-  .ref-share { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 560px) {
   .phone-mock { max-width: 280px; margin-inline: auto; }
@@ -1291,31 +1292,33 @@ button:focus-visible {
       </a>
       <div class="nav-links"><a href="#" onclick="showLanding(event)" style="font-size:13px;">← Back to site</a></div>
     </div>
-  </nav>
 ══════════════════════════════════════════ */
 const SUPABASE_URL  = 'https://ejqsfzggyfsjzrcevlnq.supabase.co';
 const SUPABASE_KEY  = 'sb_publishable_tJjN92VVKt-PweUpN2urrw_CGjOeHWT
-        <div class="conf-badge-circle">✓</div>
-        <span class="conf-dot" style="width:9px;height:9px;top:-6px;left:10px;"></span>
-        <span class="conf-dot" style="width:6px;height:6px;top:8px;right:-10px;opacity:.6;"></span>
-        <span class="conf-dot" style="width:7px;height:7px;bottom:-4px;left:-6px;opacity:.7;"></span>
-        <span class="conf-dot" style="width:5px;height:5px;bottom:8px;right:4px;opacity:.5;"></span>
-      </div>
-      <h1>You're in. 🎉</h1>
-      <p class="conf-sub">Your first <strong>3 months</strong> of Penny are on us.</p>
-
-      <div class="timeline-card">
-        <div class="eyebrow tl-eyebrow">What happens next</div>
-        <div class="tl-steps">
-          <div class="tl-step"><div class="tl-num done">✓</div><div><h4>You joined the list</h4><p>Just now</p></div></div>
-          <div class="tl-step"><div class="tl-num next">2</div><div><h4>Penny reaches out</h4><p>We'll email you when early access opens</p></div></div>
-          <div class="tl-step"><div class="tl-num next">3</div><div><h4>Connect &amp; relax</h4><p>Hook up Stripe + bank in 60 sec. Penny takes over.</p></div></div>
+      <div class="conf-hero-inner">
+        <div class="conf-badge">
+          <div class="conf-badge-circle">✓</div>
+          <span class="conf-dot" style="width:9px;height:9px;top:-6px;left:10px;"></span>
+          <span class="conf-dot" style="width:6px;height:6px;top:8px;right:-10px;opacity:.6;"></span>
+          <span class="conf-dot" style="width:7px;height:7px;bottom:-4px;left:-6px;opacity:.7;"></span>
+          <span class="conf-dot" style="width:5px;height:5px;bottom:8px;right:4px;opacity:.5;"></span>
         </div>
-      </div>
+        <h1>You're in. 🎉</h1>
+        <p class="conf-sub">Your first <strong>3 months</strong> of Penny are on us.</p>
 
-      <div class="conf-hint">
-        <span class="p-mark p-mark-sm" style="width:26px;height:26px;font-size:11px;">P</span>
-        <span>Penny is warming up her calculator…</span>
+        <div class="timeline-card">
+          <div class="eyebrow tl-eyebrow">What happens next</div>
+          <div class="tl-steps">
+            <div class="tl-step"><div class="tl-num done">✓</div><div><h4>You joined the list</h4><p>Just now</p></div></div>
+            <div class="tl-step"><div class="tl-num next">2</div><div><h4>Penny reaches out</h4><p>We'll email you when early access opens</p></div></div>
+            <div class="tl-step"><div class="tl-num next">3</div><div><h4>Connect &amp; relax</h4><p>Hook up Stripe + bank in 60 sec. Penny takes over.</p></div></div>
+          </div>
+        </div>
+
+        <div class="conf-hint">
+          <span class="p-mark p-mark-sm" style="width:26px;height:26px;font-size:11px;">P</span>
+          <span>Penny is warming up her calculator…</span>
+        </div>
       </div>
     </div>
   </section>
@@ -1327,22 +1330,21 @@ const SUPABASE_KEY  = 'sb_publishable_tJjN92VVKt-PweUpN2urrw_CGjOeHWT
         <div class="ref-top">
           <span class="p-mark p-mark-lg p-mark-inv">P</span>
           <div class="eyebrow">Penny</div>
-          <h2>Know another solopreneur drowning in receipts?</h2>
-          <p>Share your invite link. Every founder who joins through you gets their 3 months free — and adds another month to yours.</p>
+          <h2>Know another business owner drowning in receipts?</h2>
+          <p>Share your invite link. Every business owner who joins through you gets their 3 months free — and adds another month to yours.</p>
         </div>
 
         <div class="ref-link-box">
           <div class="ref-link-label">Your link</div>
           <div class="ref-link-row">
-            <span class="ref-url" id="ref-link-url">founderfirst.com/p/you-4f2a</span>
+            <span class="ref-url" id="ref-link-url">founderfirst.com/?ref=you-4f2a</span>
             <button class="btn btn-white btn-sm" onclick="copyRefLink(event)" aria-label="Copy your referral link">Copy link</button>
           </div>
         </div>
 
         <div class="ref-share">
-          <button class="btn btn-ghost-white">✉ Share by email</button>
-          <button class="btn btn-ghost-white">𝕏 Share on X</button>
-          <button class="btn btn-ghost-white">↗ More options</button>
+          <button class="btn btn-ghost-white" onclick="shareByEmail()" aria-label="Share by email">✉ Share by email</button>
+          <button class="btn btn-ghost-white" onclick="shareByMessage()" aria-label="Share by message">💬 Share by message</button>
         </div>
 
         <div class="ref-progress" aria-label="Referral progress">
@@ -1397,6 +1399,32 @@ try {
 ══════════════════════════════════════════ */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+/* ══════════════════════════════════════════
+   REFERRAL — capture inbound ?ref= / /p/:slug
+══════════════════════════════════════════ */
+const REF_LOCAL_KEY   = 'ff_referred_by';
+const SLUG_LOCAL_KEY  = 'ff_my_slug';
+
+(function captureInboundRef(){
+  try {
+    const params = new URLSearchParams(location.search);
+    const refQ = params.get('ref');
+    if (refQ) localStorage.setItem(REF_LOCAL_KEY, refQ.slice(0, 40));
+    const pathMatch = location.pathname.match(/\/p\/([A-Za-z0-9_-]+)/);
+    if (pathMatch) localStorage.setItem(REF_LOCAL_KEY, pathMatch[1].slice(0, 40));
+  } catch (_) { /* private mode */ }
+})();
+
+function makeSlug(email) {
+  const prefix = (email.split('@')[0] || 'founder')
+    .replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,8) || 'founder';
+  const suffix = Math.random().toString(36).slice(2,6);
+  return prefix + '-' + suffix;
+}
+
+/* ══════════════════════════════════════════
+   SIGNUP
+══════════════════════════════════════════ */
 async function handleSignup(e, source) {
   e.preventDefault();
   const form  = e.target;
@@ -1411,77 +1439,212 @@ async function handleSignup(e, source) {
     return;
   }
 
-  // Disable synchronously to prevent double-fire
   const originalLabel = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Saving…';
 
   let alreadyOnList = false;
+  let finalSlug = null;
+  let referredBy = null;
+  try { referredBy = localStorage.getItem(REF_LOCAL_KEY) || null; } catch(_) {}
 
   if (db && SUPABASE_URL !== 'YOUR_SUPABASE_PROJECT_URL') {
-    try {
-      const { error } = await db.from('waitlist').insert({ email, source });
-      if (error) {
-        if (error.code === '23505') {
-          alreadyOnList = true;
+    // Try up to 3 times to avoid slug collisions
+    let inserted = false;
+    for (let attempt = 0; attempt < 3 && !inserted; attempt++) {
+      const candidateSlug = makeSlug(email);
+      const payload = { email, source, slug: candidateSlug };
+      if (referredBy) payload.referred_by = referredBy;
+
+      try {
+        const { data, error } = await db.from('waitlist')
+          .insert(payload)
+          .select('slug')
+          .single();
+
+        if (error) {
+          // 23505 on email = already on list. 23505 on slug = collision, retry.
+          if (error.code === '23505') {
+            const msg = (error.message || '').toLowerCase();
+            if (msg.includes('email')) {
+              // Fetch existing slug for this email so they still get their link
+              alreadyOnList = true;
+              const { data: existing } = await db.from('waitlist')
+                .select('slug').eq('email', email).single();
+              finalSlug = existing ? existing.slug : null;
+              inserted = true;
+            } else {
+              // Slug collision — loop and retry
+              continue;
+            }
+          } else {
+            console.error('Supabase error:', error.message);
+            showToast('Something went wrong — try again.');
+            btn.textContent = originalLabel;
+            btn.disabled = false;
+            return;
+          }
         } else {
-          console.error('Supabase error:', error.message);
-          showToast('Something went wrong — try again.');
-          btn.textContent = originalLabel;
-          btn.disabled = false;
-          return;
+          finalSlug = data && data.slug ? data.slug : candidateSlug;
+          inserted = true;
         }
+      } catch(err) {
+        console.error(err);
+        showToast('Network issue — try again in a moment.');
+        btn.textContent = originalLabel;
+        btn.disabled = false;
+        return;
       }
-    } catch(err) {
-      console.error(err);
-      showToast('Network issue — try again in a moment.');
+    }
+    if (!inserted) {
+      showToast('Could not generate a unique link — try again.');
       btn.textContent = originalLabel;
       btn.disabled = false;
       return;
     }
   } else {
-    console.log('Email captured (Supabase URL not set):', email);
+    // Offline / preview mode
+    finalSlug = makeSlug(email);
+    console.log('Email captured (Supabase URL not set):', email, 'slug:', finalSlug);
   }
 
-  // Persist email so the confirmation page and referral slug are stable across refresh
+  // Persist identity for the confirmation page
   try {
     localStorage.setItem('ff_email', email);
-  } catch (_) { /* private mode */ }
+    if (finalSlug) localStorage.setItem(SLUG_LOCAL_KEY, finalSlug);
+  } catch (_) {}
   sessionStorage.setItem('ff_email', email);
+  if (finalSlug) sessionStorage.setItem(SLUG_LOCAL_KEY, finalSlug);
 
   if (alreadyOnList) showToast("You're already on the list — welcome back!");
   showConfirmation();
 }
 
 /* ══════════════════════════════════════════
-   PAGE TRANSITIONS
+   PAGE TRANSITIONS — URL-driven
 ══════════════════════════════════════════ */
-function showConfirmation() {
+function showConfirmation(skipHistory) {
   document.getElementById('landing-page').style.display = 'none';
   document.getElementById('confirmation-page').classList.add('active');
   window.scrollTo({ top: 0 });
 
-  // Stable referral slug — persist per-email so refresh/return keeps the same link
-  let email = '';
-  try { email = localStorage.getItem('ff_email') || sessionStorage.getItem('ff_email') || ''; }
-  catch (_) { email = sessionStorage.getItem('ff_email') || ''; }
-
-  const slugKey = 'ff_slug::' + email;
-  let slug;
-  try { slug = localStorage.getItem(slugKey); } catch (_) { slug = null; }
-  if (!slug) {
-    slug = (email.split('@')[0].replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,8) || 'you')
-         + '-' + Math.random().toString(36).slice(2,6);
-    try { localStorage.setItem(slugKey, slug); } catch (_) { /* ignore */ }
+  if (!skipHistory) {
+    try {
+      history.pushState({ page: 'confirmation' }, 'You\u2019re in — FounderFirst', location.pathname + '?confirmed=1');
+      document.title = 'You\u2019re in — FounderFirst';
+    } catch(_) {}
   }
-  document.getElementById('ref-link-url').textContent = 'founderfirst.com/p/' + slug;
+
+  // Pull slug (set by handleSignup) or fallback for preview mode
+  let slug = null;
+  try { slug = localStorage.getItem(SLUG_LOCAL_KEY) || sessionStorage.getItem(SLUG_LOCAL_KEY); } catch(_) {}
+  if (!slug) slug = 'preview-' + Math.random().toString(36).slice(2,6);
+
+  const host = (location.hostname && location.hostname !== 'localhost' && !location.hostname.startsWith('127.'))
+    ? location.hostname : 'founderfirst.com';
+  const displayLink = host + '/?ref=' + slug;
+  document.getElementById('ref-link-url').textContent = displayLink;
+
+  loadReferralCount(slug);
 }
 
-function showLanding(e) {
+function showLanding(e, skipHistory) {
   if (e) e.preventDefault();
   document.getElementById('landing-page').style.display = '';
   document.getElementById('confirmation-page').classList.remove('active');
   window.scrollTo({ top: 0 });
+
+  if (!skipHistory) {
+    try {
+      history.pushState({ page: 'landing' }, 'FounderFirst — Penny, your AI bookkeeper', location.pathname);
+      document.title = 'FounderFirst — Penny, your AI bookkeeper';
+    } catch(_) {}
+  }
+}
+
+// Browser back/forward support
+window.addEventListener('popstate', (ev) => {
+  const state = ev.state;
+  if (state && state.page === 'confirmation') {
+    showConfirmation(true);
+  } else {
+    showLanding(null, true);
+  }
+});
+
+/* ══════════════════════════════════════════
+   LIVE REFERRAL COUNT
+══════════════════════════════════════════ */
+async function loadReferralCount(slug) {
+  if (!slug || !db || SUPABASE_URL === 'YOUR_SUPABASE_PROJECT_URL') return;
+  try {
+    const { data, error } = await db.rpc('referral_count', { p_slug: slug });
+    if (error) return;
+    const n = Math.min(Number(data) || 0, 12);
+    const earnedEl = document.getElementById('ref-earned-num');
+    const toGoEl   = document.getElementById('ref-to-go-num');
+    const fillEl   = document.getElementById('ref-progress-fill');
+    if (earnedEl) earnedEl.innerHTML = n + ' <span class="ref-of">/ 12</span>';
+    if (toGoEl)   toGoEl.textContent = (12 - n) + ' to go';
+    if (fillEl)   fillEl.style.width = (n / 12 * 100) + '%';
+    const bar = fillEl ? fillEl.parentElement : null;
+    if (bar && bar.setAttribute) bar.setAttribute('aria-valuenow', String(n));
+  } catch (_) { /* swallow — confirmation page still renders */ }
+}
+
+/* ══════════════════════════════════════════
+   SHARE — email + message (SMS / Web Share)
+══════════════════════════════════════════ */
+function getRefUrl() {
+  const shown = document.getElementById('ref-link-url').textContent.trim();
+  return shown.startsWith('http') ? shown : 'https://' + shown;
+}
+
+function shareByEmail() {
+  const link = getRefUrl();
+  const subject = 'Try Penny — she does your books for you';
+  const body =
+    "I just joined the waitlist for Penny — an AI bookkeeper that hooks into Stripe + bank and handles the books so you don't have to.\n\n" +
+    "Join through my link and your first 3 months are free:\n" + link + "\n\n" +
+    "— sent from FounderFirst";
+  window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+}
+
+async function shareByMessage() {
+  const link = getRefUrl();
+  const text =
+    "Try Penny — AI bookkeeper that handles your books for you. " +
+    "Join through my link for 3 months free: " + link;
+
+  // Web Share API (mobile + modern desktop) is the best path
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Penny — AI bookkeeper', text, url: link });
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return; // user cancelled, no fallback needed
+    }
+  }
+
+  // Mobile fallback: open SMS composer
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) {
+    // iOS uses &, Android uses ?
+    const sep = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? '&' : '?';
+    window.location.href = 'sms:' + sep + 'body=' + encodeURIComponent(text);
+    return;
+  }
+
+  // Desktop fallback: copy to clipboard + toast
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Message copied — paste it into your favourite chat app.');
+    }).catch(() => {
+      showToast('Copy failed — long-press the link to copy manually.');
+    });
+  } else {
+    showToast('Long-press the link above to copy and share manually.');
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -1543,10 +1706,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /* Preview-mode: open index.html#confirmation to view the confirmation page directly */
-  if (location.hash === '#confirmation') {
-    showConfirmation();
-  }
+  /* Deep-link / refresh: if URL says we're on confirmation, render it */
+  try {
+    const params = new URLSearchParams(location.search);
+    if (params.get('confirmed') === '1' || location.hash === '#confirmation') {
+      // Seed history so back works even on direct load
+      history.replaceState({ page: 'confirmation' }, '', location.pathname + '?confirmed=1');
+      showConfirmation(true);
+    } else {
+      history.replaceState({ page: 'landing' }, '', location.pathname + location.search);
+    }
+  } catch(_) {}
 });
 </script>
 </body>

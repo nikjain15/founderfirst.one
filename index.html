@@ -1522,7 +1522,11 @@ async function handleSignup(e, source) {
 function showConfirmation(skipHistory) {
   document.getElementById('landing-page').style.display = 'none';
   document.getElementById('confirmation-page').classList.add('active');
-  window.scrollTo({ top: 0 });
+  
+  // Ensure scroll to top works reliably across browsers
+  window.scrollTo(0, 0);
+  document.body.scrollTop = 0;
+  document.documentElement.scrollTop = 0;
 
   if (!skipHistory) {
     try {
@@ -1548,7 +1552,11 @@ function showLanding(e, skipHistory) {
   if (e) e.preventDefault();
   document.getElementById('landing-page').style.display = '';
   document.getElementById('confirmation-page').classList.remove('active');
-  window.scrollTo({ top: 0 });
+  
+  // Ensure scroll to top works reliably across browsers
+  window.scrollTo(0, 0);
+  document.body.scrollTop = 0;
+  document.documentElement.scrollTop = 0;
 
   if (!skipHistory) {
     try {

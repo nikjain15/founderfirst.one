@@ -262,9 +262,12 @@ button:focus-visible {
   white-space: nowrap;
   font-family: var(--sans);
 }
-.waitlist-form.on-dark { border-color: rgba(255,255,255,0.3); }
+.waitlist-form.on-dark {
+  border-color: rgba(255,255,255,0.55);
+  background: transparent; /* let the dark section show through so input text is visible */
+}
 .waitlist-form.on-dark input[type="email"] { color: var(--white); background: transparent; }
-.waitlist-form.on-dark input::placeholder { color: rgba(255,255,255,0.4); }
+.waitlist-form.on-dark input::placeholder { color: rgba(255,255,255,0.55); }
 .waitlist-form.on-dark button[type="submit"] { background: var(--white); color: var(--ink); }
 
 .form-note {
@@ -319,31 +322,47 @@ button:focus-visible {
   width: 100%;
 }
 .hero-stack h1 {
-  font-size: clamp(32px, 4.8vw, 68px);
+  /* Sized to fit "Operating software for business owners." on ONE line at desktop widths */
+  font-size: clamp(32px, 4.2vw, 52px);
   line-height: 1.04;
   letter-spacing: -0.03em;
-  /* No nowrap — allow long phrases to wrap on narrow viewports */
+}
+@media (min-width: 900px) {
+  .hero-stack h1 { white-space: nowrap; } /* one line on desktop */
 }
 .hero-stack .hero-sub {
-  margin-top: 14px;
-  font-size: 17px;
+  margin-top: 16px;
+  font-size: clamp(17px, 1.8vw, 21px);
   color: var(--ink-2);
-  line-height: 1.6;
+  line-height: 1.55;
+  /* Max-width just wide enough to keep "behind it." on the same line at desktop */
+  max-width: 680px;
 }
 .hero-penny {
-  margin-top: 24px;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  max-width: 480px; /* aligns visually with the form pill below */
-}
-.hero-form-wrap {
   margin-top: 28px;
   display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  max-width: 620px;
+}
+/* ~20% scale-up on Penny in the hero */
+.hero-penny .p-mark-lg { width: 68px; height: 68px; font-size: 28px; }
+.hero-penny .penny-bubble { padding: 20px 24px; border-radius: 20px 20px 20px 4px; }
+.hero-penny .penny-bubble .bubble-label { font-size: 11px; margin-bottom: 8px; }
+.hero-penny .penny-bubble .bubble-msg { font-size: 17px; line-height: 1.55; }
+.hero-penny .check-item { font-size: 15px; gap: 12px; }
+.hero-penny .check-icon { width: 20px; height: 20px; font-size: 10px; }
+
+.hero-form-wrap {
+  margin-top: 36px;
+  display: flex;
   flex-direction: column;
-  align-items: flex-start; /* align with H1, sub, and Penny bubble above */
+  align-items: center; /* center the CTA pill (and its note) in the hero */
   width: 100%;
 }
+/* Hero CTA — capped to match the Penny bubble width */
+.hero-form-wrap .waitlist-form { max-width: 620px; width: 100%; }
+.hero-form-wrap .form-note { text-align: center; width: 100%; max-width: 620px; }
 
 /* ══════════════════════════════════════════
    02 · REASONING — bg-paper
@@ -636,8 +655,10 @@ button:focus-visible {
   margin-top: 44px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center; /* center the CTA pill and its note within the dark section */
 }
+.wl-form-wrap .waitlist-form { max-width: 620px; width: 100%; }
+.wl-form-wrap .form-note { text-align: center; width: 100%; max-width: 620px; }
 
 /* ══════════════════════════════════════════
    FOOTER
@@ -823,7 +844,7 @@ button:focus-visible {
     <div class="wrap">
       <div class="hero-stack">
 
-        <h1>Operating software<br>for business owners.</h1>
+        <h1>Operating software for business owners.</h1>
         <p class="hero-sub">You focus on your business. We handle what runs behind it.</p>
 
         <!-- Penny bubble -->
@@ -1271,11 +1292,9 @@ button:focus-visible {
           </div>
           <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="12" aria-valuenow="0"><div class="progress-fill" id="ref-progress-fill"></div></div>
           <small class="ref-fine">Up to 12 months free — stack as many as you can invite.</small>
-        </div>
-      </div>
-    </div>
-  </section>
-
+══════════════════════════════════════════ */
+const SUPABASE_URL  = 'https://ejqsfzggyfsjzrcevlnq.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_tJjN92VVKt-PweUpN2urrw_CGjOeHWT
   <footer class="site-footer" style="background:var(--dark);border-top:1px solid #1a1a1a;">
     <div class="wrap footer-inner" style="color:#555;">
       <div class="footer-logo" style="color:#888;"><span class="ff-mark ff-mark-sm">FF</span> FounderFirst</div>
@@ -1292,9 +1311,11 @@ button:focus-visible {
 <script>
 /* ══════════════════════════════════════════
    SUPABASE CONFIG
+   Replace SUPABASE_URL with your project URL
+   e.g. https://xxxxxxxxxxxx.supabase.co
 ══════════════════════════════════════════ */
-const SUPABASE_URL  = 'https://ejqsfzggyfsjzrcevlnq.supabase.co';
-const SUPABASE_KEY  = 'sb_publishable_tJjN92VVKt-PweUpN2urrw_CGjOeHWT';
+const SUPABASE_URL  = 'https://qaubhkrgcdllnqvtrccr.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_UzY-F9E1NcXNABRWdF0c_g_TAJXaYoW';
 
 let db;
 try {

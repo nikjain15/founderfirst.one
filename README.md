@@ -1,6 +1,6 @@
 # FounderFirst
 
-**The operating software for solopreneurs and business owners.**
+**The operating software for business owners.**
 
 You focus on your business. We handle what runs behind it.
 

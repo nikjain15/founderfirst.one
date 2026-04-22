@@ -335,11 +335,6 @@ button:focus-visible {
 .nav-dropdown-toggle svg {
   transition: transform 0.2s;
 }
-/* Only activate hover on devices that support it (real mouse/trackpad) */
-@media (hover: hover) and (pointer: fine) {
-  .nav-dropdown:hover .nav-dropdown-toggle svg { transform: rotate(180deg); }
-  .nav-dropdown:hover .nav-dropdown-menu { display: block; }
-}
 .nav-dropdown.open .nav-dropdown-toggle svg { transform: rotate(180deg); }
 .nav-dropdown-menu {
   display: none;
@@ -1084,27 +1079,24 @@ button:focus-visible {
     var menu = document.querySelector('.nav-dropdown-menu');
     if (!toggle || !dropdown || !menu) return;
 
-    var isTouch = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+    // Click/tap to open — works on all devices
+    toggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var isOpen = dropdown.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
 
-    if (isTouch) {
-      // Touch devices: click to toggle open/close
-      toggle.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var isOpen = dropdown.classList.toggle('open');
-        toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-      });
-      // Close on outside tap
-      document.addEventListener('click', function(e) {
-        if (!dropdown.contains(e.target)) {
-          dropdown.classList.remove('open');
-          toggle.setAttribute('aria-expanded', 'false');
-        }
-      });
-    }
-    // Desktop: CSS :hover handles open/close — no JS needed
-    // Keyboard support for both
+    // Close on any outside click/tap
+    document.addEventListener('click', function(e) {
+      if (!dropdown.contains(e.target)) {
+        dropdown.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    // Close on Escape
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape' && dropdown.classList.contains('open')) {
+      if (e.key === 'Escape') {
         dropdown.classList.remove('open');
         toggle.setAttribute('aria-expanded', 'false');
         toggle.focus();

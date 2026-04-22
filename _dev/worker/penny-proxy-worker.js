@@ -43,9 +43,9 @@ export default {
       return jsonError('Method not allowed', 405, corsHeaders);
     }
 
-    // Token check — only allow requests carrying the demo token
+    // Token check — only enforce when DEMO_TOKEN env var is configured
     const token = request.headers.get('X-Demo-Token');
-    if (!env.DEMO_TOKEN || token !== env.DEMO_TOKEN) {
+    if (env.DEMO_TOKEN && token !== env.DEMO_TOKEN) {
       return jsonError('Unauthorized', 401, corsHeaders);
     }
 

@@ -2,3 +2,12 @@
 *.swp
 *~
 .env
+
+# Cloudflare CLI cache
+.wrangler/
+
+# Stress test output logs
+test-results/
+
+# Claude Code settings
+.claude/

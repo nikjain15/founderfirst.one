@@ -339,7 +339,7 @@ button:focus-visible {
 .nav-dropdown-menu {
   display: none;
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 4px);
   right: 0;
   background: var(--white);
   border: 1px solid var(--line);
@@ -352,8 +352,8 @@ button:focus-visible {
 .nav-dropdown.open .nav-dropdown-menu { display: block; }
 .nav-dropdown-menu a {
   display: block;
-  padding: 14px 18px;
-  font-size: 13.5px;
+  padding: clamp(10px, 2vw, 14px) 18px;
+  font-size: clamp(12px, 1.5vw, 13.5px);
   color: var(--ink-2);
   font-weight: 500;
   text-decoration: none;
@@ -1080,14 +1080,6 @@ button:focus-visible {
       e.stopPropagation();
       var isOpen = dropdown.classList.toggle('open');
       toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-    });
-
-    // On desktop: close when mouse leaves the dropdown area
-    dropdown.addEventListener('mouseleave', function() {
-      if (!('ontouchstart' in window)) {
-        dropdown.classList.remove('open');
-        toggle.setAttribute('aria-expanded', 'false');
-      }
     });
 
     // Close on any outside click/tap

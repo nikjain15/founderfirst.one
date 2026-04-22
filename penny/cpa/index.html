@@ -97,12 +97,18 @@ document.addEventListener('DOMContentLoaded', async function() {
   var __bundlerErrorActive = true;
   function __bundlerErrHandler(e) {
     if (!__bundlerErrorActive) return;
+    // Filter known-harmless browser noise that fires on mobile during React boot
+    var msg = e.message || e.type || '';
+    if (!msg) return;
+    if (msg === 'Script error.') return; // cross-origin script noise
+    if (msg.indexOf('ResizeObserver') === 0) return; // layout loop — harmless
+    if (msg.indexOf('Non-Error promise rejection') === 0) return; // Babel/polyfill noise
     var p = document.body || document.documentElement;
     var d = document.getElementById('__bundler_err') || p.appendChild(document.createElement('div'));
     d.id = '__bundler_err';
     d.style.cssText = 'position:fixed;bottom:max(12px,env(safe-area-inset-bottom,12px));left:12px;right:12px;font:12px/1.4 ui-monospace,monospace;background:#2a1215;color:#ff8a80;padding:10px 14px;border-radius:8px;border:1px solid #5c2b2e;z-index:99999;white-space:pre-wrap;max-height:40vh;overflow:auto';
     d.textContent = (d.textContent ? d.textContent + String.fromCharCode(10) : '') +
-      '[bundle] ' + (e.message || e.type) +
+      '[bundle] ' + msg +
       (e.filename ? ' (' + e.filename.slice(0, 80) + ':' + e.lineno + ')' : '');
   }
   window.addEventListener('error', __bundlerErrHandler, true);
@@ -221,7 +227,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     // App booted — stop treating global errors as bundle errors.
     setTimeout(function() {
-      __bundlerErrorActive = false;
+      __bundlerErrorActive = false; // 6s covers slow mobile Babel compilation
       // Hide any transient error that appeared during the 2s boot window —
       // these are almost always harmless Babel/SRI noise, not real runtime errors.
       var errEl = document.getElementById('__bundler_err');

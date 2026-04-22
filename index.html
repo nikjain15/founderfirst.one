@@ -352,7 +352,7 @@ button:focus-visible {
 .nav-dropdown.open .nav-dropdown-menu { display: block; }
 .nav-dropdown-menu a {
   display: block;
-  padding: 12px 18px;
+  padding: 11px 18px;
   font-size: 13.5px;
   color: var(--ink-2);
   font-weight: 500;
@@ -360,8 +360,10 @@ button:focus-visible {
   transition: background 0.15s;
 }
 .nav-dropdown-menu a + a {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid #d8d8d5;
 }
+.nav-dropdown-menu a:first-child { border-radius: 10px 10px 0 0; }
+.nav-dropdown-menu a:last-child  { border-radius: 0 0 10px 10px; }
 .nav-dropdown-menu a:hover {
   background: var(--paper);
   color: var(--ink);

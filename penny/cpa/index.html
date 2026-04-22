@@ -201,6 +201,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // createElement so they execute, awaiting onload for src scripts to
     // preserve ordering (React before ReactDOM before Babel before text/babel).
     const doc = new DOMParser().parseFromString(template, 'text/html');
+    // Bundle is decoded and ready — disable the error sink BEFORE the DOM swap.
+    // Any errors after this point come from Babel/React execution and are app-
+    // territory; they must NOT surface as [bundle] errors.
+    __bundlerErrorActive = false;
+    window.removeEventListener('error', __bundlerErrHandler, true);
     document.documentElement.replaceWith(doc.documentElement);
     const dead = Array.from(document.scripts);
     for (const old of dead) {
@@ -225,14 +230,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (window.Babel && typeof window.Babel.transformScriptTags === 'function') {
       window.Babel.transformScriptTags();
     }
-    // App booted — stop treating global errors as bundle errors.
-    setTimeout(function() {
-      __bundlerErrorActive = false; // 6s covers slow mobile Babel compilation
-      // Hide any transient error that appeared during the 2s boot window —
-      // these are almost always harmless Babel/SRI noise, not real runtime errors.
-      var errEl = document.getElementById('__bundler_err');
-      if (errEl) errEl.remove();
-    }, 2000);
   } catch (err) {
     setStatus('Error unpacking: ' + err.message);
     console.error('Bundle unpack error:', err);

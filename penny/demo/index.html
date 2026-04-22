@@ -2,6 +2,9 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' blob: data:; connect-src penny-api.nikjain1588.workers.dev; img-src 'self' blob: data:; base-uri 'self'; form-action 'self'" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
   <title>Penny v4</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -41,12 +44,13 @@
   <script>
   (function(){
     var PROXY = "https://penny-api.nikjain1588.workers.dev";
+    var TOKEN = "ff-demo-2026";
     window.claude = {
       complete: function(opts) {
         var msgs = (opts && Array.isArray(opts.messages)) ? opts.messages : [];
         return fetch(PROXY, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "X-Demo-Token": TOKEN },
           body: JSON.stringify({ messages: msgs })
         })
         .then(function(r) { return r.json(); })

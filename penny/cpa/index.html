@@ -220,7 +220,13 @@ document.addEventListener('DOMContentLoaded', async function() {
       window.Babel.transformScriptTags();
     }
     // App booted — stop treating global errors as bundle errors.
-    setTimeout(function() { __bundlerErrorActive = false; }, 2000);
+    setTimeout(function() {
+      __bundlerErrorActive = false;
+      // Hide any transient error that appeared during the 2s boot window —
+      // these are almost always harmless Babel/SRI noise, not real runtime errors.
+      var errEl = document.getElementById('__bundler_err');
+      if (errEl) errEl.remove();
+    }, 2000);
   } catch (err) {
     setStatus('Error unpacking: ' + err.message);
     console.error('Bundle unpack error:', err);

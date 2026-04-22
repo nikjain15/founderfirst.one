@@ -5,7 +5,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' blob: data:; connect-src penny-api.nikjain1588.workers.dev; img-src 'self' blob: data:; base-uri 'self'; form-action 'self'" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
-  <title>Penny CPA View v4</title>
+  <title>Penny — CPA View</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #f7f7f4; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
@@ -34,7 +34,7 @@
   }
   </style>
   <div id="penny-demo-banner">
-    <span>🔒 For demonstration purposes only &mdash; not for commercial use. All data shown is fictional.</span>
+    <span>For demonstration purposes only &mdash; not for commercial use. All data shown is fictional.</span>
     <button onclick="document.getElementById('penny-demo-banner').remove()" title="Dismiss">&times;</button>
   </div>
   <script>
@@ -84,7 +84,7 @@
   <rect x="136" y="124" width="200" height="6" rx="3" fill="#f0f0eb"></rect>
 </svg>
 </div>
-  <div id="__bundler_loading">Unpacking...</div>
+  <div id="__bundler_loading">Loading...</div>
 
   <script>
     
@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     let template = JSON.parse(templateEl.textContent);
 
     const uuids = Object.keys(manifest);
-    setStatus('Unpacking ' + uuids.length + ' assets...');
+    setStatus('Loading...');
 
     const blobUrls = {};
     await Promise.all(uuids.map(async (uuid) => {
@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (blobUrls[entry.uuid]) resourceMap[entry.id] = blobUrls[entry.uuid];
     }
 
-    setStatus('Rendering...');
+    setStatus('Loading...');
     for (const uuid of uuids) template = template.split(uuid).join(blobUrls[uuid]);
 
     // Strip integrity + crossorigin — blob URLs from a file:// document inherit

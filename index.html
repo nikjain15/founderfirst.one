@@ -357,15 +357,18 @@ button:focus-visible {
 .nav-dropdown.open .nav-dropdown-menu { display: block; }
 .nav-dropdown-menu a {
   display: block;
-  padding: 11px 16px;
+  padding: 12px 18px;
   font-size: 13.5px;
   color: var(--ink-2);
   font-weight: 500;
   text-decoration: none;
   transition: background 0.15s;
 }
+.nav-dropdown-menu a + a {
+  border-top: 1px solid var(--line);
+}
 .nav-dropdown-menu a:hover {
-  background: var(--surface);
+  background: var(--paper);
   color: var(--ink);
 }
 

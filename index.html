@@ -335,6 +335,7 @@ button:focus-visible {
   transition: transform 0.2s;
 }
 .nav-dropdown:hover .nav-dropdown-toggle svg { transform: rotate(180deg); }
+.nav-dropdown.open .nav-dropdown-toggle svg { transform: rotate(180deg); }
 .nav-dropdown-menu {
   display: none;
   position: absolute;
@@ -349,6 +350,7 @@ button:focus-visible {
   z-index: 200;
 }
 .nav-dropdown:hover .nav-dropdown-menu { display: block; }
+.nav-dropdown.open .nav-dropdown-menu { display: block; }
 .nav-dropdown-menu a {
   display: block;
   padding: 11px 16px;
@@ -1014,6 +1016,20 @@ button:focus-visible {
       </div>
     </div>
   </nav>
+  <script>
+  (function(){
+    var toggle = document.querySelector('.nav-dropdown-toggle');
+    var dropdown = document.querySelector('.nav-dropdown');
+    if (!toggle || !dropdown) return;
+    toggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dropdown.classList.toggle('open');
+    });
+    document.addEventListener('click', function() {
+      dropdown.classList.remove('open');
+    });
+  })();
+  </script>
 
   <!-- 01 · HERO — white, stacked -->
   <section id="hero">

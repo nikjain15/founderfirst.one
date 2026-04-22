@@ -1460,7 +1460,7 @@ button:focus-visible {
         <div class="ref-link-box">
           <div class="ref-link-label">Your link</div>
           <div class="ref-link-row">
-            <span class="ref-url" id="ref-link-url">founderfirst.com/?ref=you-4f2a</span>
+            <span class="ref-url" id="ref-link-url">founderfirst.one/?ref=you-4f2a</span>
             <button class="btn btn-white btn-sm" onclick="copyRefLink(event)" aria-label="Copy your referral link">Copy link</button>
           </div>
         </div>
@@ -1666,7 +1666,7 @@ function showConfirmation(skipHistory) {
   if (!slug) slug = 'preview-' + Math.random().toString(36).slice(2,6);
 
   const host = (location.hostname && location.hostname !== 'localhost' && !location.hostname.startsWith('127.'))
-    ? location.hostname : 'founderfirst.com';
+    ? location.hostname : 'founderfirst.one';
   const displayLink = host + '/?ref=' + slug;
   document.getElementById('ref-link-url').textContent = displayLink;
 

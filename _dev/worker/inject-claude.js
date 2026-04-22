@@ -104,5 +104,5 @@ function injectFile(relPath) {
   }
 }
 
-injectFile('penny/demo/index.html');
-injectFile('penny/cpademo/index.html');
+injectFile('penny/businessowner/index.html');
+injectFile('penny/cpa/index.html');

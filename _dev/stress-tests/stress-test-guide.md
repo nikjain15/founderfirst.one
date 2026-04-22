@@ -4,8 +4,8 @@
 
 | What | URL |
 |---|---|
-| Business Owner demo | `https://founderfirst.one/penny/demo/` |
-| CPA demo | `https://founderfirst.one/penny/cpademo/` |
+| Business Owner demo | `https://founderfirst.one/penny/businessowner/` |
+| CPA demo | `https://founderfirst.one/penny/cpa/` |
 | Worker API (direct) | `https://penny-api.nikjain1588.workers.dev` |
 
 **API format:**
@@ -88,7 +88,7 @@ Write a Node.js script that sends 50 sequential POST requests to https://penny-a
 
 ```
 Write a Playwright (Node.js) script that:
-1. Opens https://founderfirst.one/penny/demo/ at 390x844 viewport (iPhone 14)
+1. Opens https://founderfirst.one/penny/businessowner/ at 390x844 viewport (iPhone 14)
 2. Waits until the element #__bundler_loading is gone (app fully loaded), timeout 20s
 3. Finds the chat input field and types: "What did I spend last month?"
 4. Submits the message (press Enter or click the send button)
@@ -103,7 +103,7 @@ Write a Playwright (Node.js) script that:
 
 ```
 Write a Playwright (Node.js) script that:
-1. Opens https://founderfirst.one/penny/cpademo/ at 1280x800 viewport (desktop)
+1. Opens https://founderfirst.one/penny/cpa/ at 1280x800 viewport (desktop)
 2. Waits for the app to fully load (no loading indicator), timeout 20s
 3. Sends these 3 questions in sequence, waiting for each response before sending the next:
    - "Is Lindsay audit-ready?"

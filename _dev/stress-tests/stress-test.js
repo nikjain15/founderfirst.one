@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-['penny-demo/index.html', 'penny-demo/cpa/index.html'].forEach(filePath => {
+['penny/businessowner/index.html', 'penny/cpa/index.html'].forEach(filePath => {
   console.log('\n===', filePath, '===');
   const html = fs.readFileSync(filePath, 'utf8');
 

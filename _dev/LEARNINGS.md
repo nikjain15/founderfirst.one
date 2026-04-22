@@ -9,6 +9,7 @@
 1. [Content Security Policy (CSP)](#1-content-security-policy-csp)
 2. [Git Workflow](#2-git-workflow)
 3. [GitHub Pages Gotchas](#3-github-pages-gotchas)
+4. [Mobile-Specific Display Bugs](#4-mobile-specific-display-bugs)
 
 ---
 
@@ -79,6 +80,43 @@ connect-src https://my-api.workers.dev
    `Refused to connect to 'https://...' because it violates the Content Security Policy directive: "connect-src ..."`
 2. Copy the blocked URL, identify which directive it belongs to (table above), add it.
 3. If the page is totally blank with no console errors, check the Network tab — blocked requests show as `(blocked:csp)`.
+
+---
+
+## 4. Mobile-Specific Display Bugs
+
+### `[bundle] error` on mobile — no message, no filename
+
+**Symptom:** A dark red `[bundle] error` toast appears at the bottom of the screen on iOS. No filename or line number is shown. The app otherwise works (the business type selector is visible, UI is functional). On desktop nothing is visible.
+
+**Root cause (two issues combined):**
+
+1. **Error handler never deregistered.** The bundler registers a `window.addEventListener('error', ..., true)` to catch load-time failures during bundle unpacking. It was never removed after the app booted. Any runtime error thrown by React or Babel-compiled app code (e.g. an unhandled promise rejection turned into a global error) was caught and labelled `[bundle] error` — even though the bundle itself was fine.
+
+2. **Safe-area-inset not respected.** The error banner used `bottom: 12px`. On iPhone, the iOS browser chrome (home indicator / Dynamic Island) overlaps the bottom ~34px of the viewport. The banner was partially hidden, and any filename/line info was cut off — making the error look like a blank `[bundle] error` with no context.
+
+**Fix:**
+```js
+// 1. Named handler with an active flag
+var __bundlerErrorActive = true;
+function __bundlerErrHandler(e) {
+  if (!__bundlerErrorActive) return;
+  // ... show banner ...
+}
+window.addEventListener('error', __bundlerErrHandler, true);
+
+// 2. Inside the try block, after app boots successfully:
+setTimeout(function() { __bundlerErrorActive = false; }, 2000);
+// Note: setTimeout is only reached if bundle unpacking SUCCEEDED.
+// If it fails, the catch block runs instead and the flag stays true.
+
+// 3. Safe area in CSS:
+// bottom:max(12px, env(safe-area-inset-bottom, 12px))
+// On desktop: env() = 0px, max(12px, 0px) = 12px — identical to before.
+// On iOS: env() = 34px+, banner clears the home indicator.
+```
+
+**Golden rule:** Any fixed-position element near the bottom edge must use `env(safe-area-inset-bottom)` to avoid being obscured by iOS chrome. Also, debug overlays registered during page load should be deregistered (or gated with a flag) once the app successfully boots, so app-level errors don't masquerade as infrastructure errors.
 
 ---
 

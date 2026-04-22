@@ -18,6 +18,27 @@
     </div>
   </noscript>
   <script>
+  /* Clear chat history on every load so no user sees another's messages */
+  try { localStorage.clear(); } catch(e) {}
+  </script>
+  <style>
+  #penny-demo-banner {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 99999;
+    background: rgba(30,30,30,0.92); backdrop-filter: blur(8px);
+    color: rgba(255,255,255,0.75); font: 11px/1.5 -apple-system, BlinkMacSystemFont, sans-serif;
+    text-align: center; padding: 7px 16px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  #penny-demo-banner button {
+    background: none; border: none; color: rgba(255,255,255,0.4);
+    font-size: 14px; cursor: pointer; line-height: 1; padding: 0 2px;
+  }
+  </style>
+  <div id="penny-demo-banner">
+    <span>🔒 For demonstration purposes only &mdash; not for commercial use. All data shown is fictional.</span>
+    <button onclick="document.getElementById('penny-demo-banner').remove()" title="Dismiss">&times;</button>
+  </div>
+  <script>
   (function(){
     var PROXY = "https://penny-api.nikjain1588.workers.dev";
     window.claude = {

@@ -43,8 +43,12 @@ const CLAUDE_SCRIPT = [
   '    }',
   '  };',
   '})();',
-  '<\\/script>',
+  '</script>',
 ].join('\n');
+// NOTE: CLAUDE_SCRIPT ends with a plain </script>.
+// The split/join below will turn it into <\/script> (one backslash) inside the JSON,
+// which the HTML parser won't see as a closing tag, but JSON.parse will unescape to </script>
+// so DOMParser closes the injected script correctly. DO NOT use <\\/script> here.
 
 function injectFile(relPath) {
   var filePath = path.join(__dirname, relPath);
@@ -100,5 +104,5 @@ function injectFile(relPath) {
   }
 }
 
-injectFile('penny-demo/index.html');
-injectFile('penny-demo/cpa/index.html');
+injectFile('penny/demo/index.html');
+injectFile('penny/cpademo/index.html');

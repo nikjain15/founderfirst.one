@@ -17,8 +17,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <script type="module" crossorigin src="/penny/demo/assets/index-yxa4hHZL.js"></script>
-  <link rel="stylesheet" crossorigin href="/penny/demo/assets/index-BgCzFDio.css">
+  <script type="module" crossorigin src="/penny/demo/assets/index-Clf4gHRv.js"></script>
+  <link rel="stylesheet" crossorigin href="/penny/demo/assets/index-BxuRJ0bJ.css">
 </head>
 <body>
   <div id="root"></div>
@@ -33,11 +33,15 @@
     // Vite proxies /v1/messages to the deployed Worker (see vite.config.js).
     // Everywhere else, hit the Worker directly.
     var isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    // Derive the base URL from the current page path so static asset fetches
+    // work at any deploy sub-path (e.g. /penny/demo/ on GitHub Pages or / in dev).
+    var pathBase = location.pathname.match(/^(.*\/penny\/demo\/)/);
     window.PENNY_CONFIG = {
       workerUrl: isLocal ? "" : "https://penny-api.nikjain1588.workers.dev",
       demoToken: "ff-demo-2026",
       defaultModel: "claude-sonnet-4-6",
-      booksModel: "claude-sonnet-4-6"
+      booksModel: "claude-sonnet-4-6",
+      baseUrl: pathBase ? pathBase[1] : "/",
     };
   </script>
 

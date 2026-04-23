@@ -1,5 +1,14 @@
 # Overlay Prompt — Penny Thread Q&A
 
+<!--
+  SCREENS USING THIS FILE
+  ───────────────────────
+  screens/thread.jsx   → intent: thread.qa   (when user asks Penny a question)
+
+  Changing this file affects ONLY the Penny (thread) screen Q&A responses.
+  For ambient greetings/nudges, edit thread.md instead.
+-->
+
 *Version 1.0 · April 2026*
 
 *Loaded when `intent === "thread.qa"`. Appended after the base system prompt. Uses Sonnet.*

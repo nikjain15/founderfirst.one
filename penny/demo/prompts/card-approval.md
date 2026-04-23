@@ -1,5 +1,13 @@
 # Overlay Prompt — Approval Card
 
+<!--
+  SCREENS USING THIS FILE
+  ───────────────────────
+  screens/card.jsx   → intent: card.approval   (all 9 approval card variants)
+
+  Changing this file affects ONLY the Card screen.
+-->
+
 *Version 1.0 · April 2026*
 
 *Loaded when `intent === "card.approval"`. Appended after the base system prompt.*

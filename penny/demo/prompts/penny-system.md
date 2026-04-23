@@ -1,5 +1,19 @@
 # Penny — Demo System Prompt (Base Layer)
 
+<!--
+  SCREENS USING THIS FILE
+  ───────────────────────
+  ⚠️  ALL SCREENS — this is the base prompt loaded for every single Claude call.
+
+  screens/thread.jsx      → thread.greeting, thread.idle, thread.qa
+  screens/onboarding.jsx  → all onboarding.* intents
+  screens/card.jsx        → card.approval
+  screens/books.jsx       → books.qa
+  screens/add.jsx         → capture.parse
+
+  Changing this file affects EVERY screen. Test all of them before deploying.
+-->
+
 *Version: 1.0 (demo) · Derived from `../../penny-system-prompt.md` v1.1.*
 *Last updated: April 2026.*
 

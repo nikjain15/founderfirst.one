@@ -1,5 +1,13 @@
 # Overlay Prompt — Free-Text Capture Parser
 
+<!--
+  SCREENS USING THIS FILE
+  ───────────────────────
+  screens/add.jsx   → intent: capture.parse   (photo / voice / receipt input)
+
+  Changing this file affects ONLY the Add screen.
+-->
+
 *Version 1.0 · April 2026*
 
 *Loaded when `intent === "capture.parse"`. Appended after the base system prompt.*

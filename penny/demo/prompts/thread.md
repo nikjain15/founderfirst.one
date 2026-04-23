@@ -1,5 +1,15 @@
 # Overlay Prompt — Thread Ambient Messages
 
+<!--
+  SCREENS USING THIS FILE
+  ───────────────────────
+  screens/thread.jsx   → intent: thread.greeting   (initial Penny greeting)
+                       → intent: thread.idle        (idle nudge messages)
+
+  Changing this file affects ONLY the Penny (thread) screen ambient messages.
+  For Q&A responses when user asks a question, edit thread-qa.md instead.
+-->
+
 *Version 1.0 · April 2026*
 
 *File: `public/prompts/thread.md`. Loaded by `worker-client.js` for both

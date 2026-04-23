@@ -3,413 +3,534 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Penny — Color Direction v3</title>
+<title>Penny — Design System v2.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', sans-serif; background: #f0f0ed; padding: 40px 24px; }
-  h1 { text-align: center; font-size: 22px; font-weight: 700; color: #0a0a0a; margin-bottom: 6px; letter-spacing: -0.02em; }
-  .subtitle { text-align: center; font-size: 14px; color: #8a8a8a; margin-bottom: 40px; }
+  body { font-family: 'Inter', sans-serif; background: #f6f6f4; color: #0a0a0a; padding: 40px 24px; -webkit-font-smoothing: antialiased; }
 
-  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; max-width: 900px; margin: 0 auto 56px; }
-  .col-label { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #8a8a8a; margin-bottom: 14px; text-align: center; }
-  .col-label span { display: inline-block; padding: 4px 14px; border-radius: 999px; background: #e8e8e5; }
-  .col-label.new span { background: #2B7A78; color: white; }
+  h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.028em; margin-bottom: 4px; }
+  .meta { font-size: 13px; color: #8a8a8a; margin-bottom: 48px; }
 
-  .section-heading { font-size: 13px; font-weight: 700; color: #0a0a0a; letter-spacing: -0.01em; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #e8e8e5; max-width: 900px; margin-left: auto; margin-right: auto; }
-  .section-wrap { margin-bottom: 12px; }
+  h2 { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #8a8a8a; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #e8e8e5; }
 
-  /* PHONE */
-  .phone { width: 100%; max-width: 320px; margin: 0 auto; background: #fff; border-radius: 36px; border: 2px solid #0a0a0a; overflow: hidden; box-shadow: 0 8px 32px rgba(10,10,10,0.12); }
-  .status-bar { display: flex; justify-content: space-between; padding: 12px 20px 4px; font-size: 11px; font-weight: 600; color: #0a0a0a; }
-  .thread-header { display: flex; align-items: center; gap: 10px; padding: 8px 16px 12px; border-bottom: 1px solid #e8e8e5; }
-  .p-mark { width: 32px; height: 32px; border-radius: 50%; background: #0a0a0a; color: white; display: flex; align-items: center; justify-content: center; font-family: Georgia, serif; font-style: italic; font-size: 14px; font-weight: 700; position: relative; flex-shrink: 0; }
-  .dot { position: absolute; bottom: 0; right: 0; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid white; }
-  .header-name { font-size: 14px; font-weight: 600; color: #0a0a0a; }
-  .header-sub { font-size: 11px; color: #8a8a8a; }
+  .section { max-width: 860px; margin: 0 auto 48px; }
 
-  .thread-body { padding: 14px 14px 8px; display: flex; flex-direction: column; gap: 10px; }
-  .slug { display: flex; align-items: center; gap: 10px; background: #f6f6f4; border-radius: 10px; padding: 10px 13px; }
-  .slug-vendor { font-size: 13px; font-weight: 500; color: #5a5a5a; flex: 1; }
-  .slug-amt { font-size: 13px; font-weight: 600; color: #5a5a5a; }
-  .penny-row { display: flex; gap: 8px; align-items: flex-start; }
-  .penny-bubble { background: #fff; border: 1px solid #e8e8e5; border-radius: 18px 18px 18px 4px; padding: 10px 14px; flex: 1; }
-  .blbl { font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #8a8a8a; margin-bottom: 4px; }
-  .bmsg { font-size: 13px; line-height: 1.5; color: #0a0a0a; }
+  /* COLOR SWATCHES */
+  .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .swatch { border-radius: 10px; overflow: hidden; border: 1px solid rgba(10,10,10,0.06); background: #fff; }
+  .swatch-color { height: 64px; }
+  .swatch-info { padding: 10px 12px; }
+  .swatch-name { font-size: 12px; font-weight: 600; color: #0a0a0a; }
+  .swatch-var { font-size: 11px; color: #8a8a8a; font-family: monospace; margin-top: 2px; }
+  .swatch-hex { font-size: 11px; color: #5a5a5a; font-family: monospace; margin-top: 1px; }
+  .swatch-note { font-size: 10px; color: #8a8a8a; margin-top: 4px; line-height: 1.4; }
 
-  /* CARDS */
-  .card { border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  /* TYPOGRAPHY */
+  .type-row { display: flex; align-items: baseline; gap: 20px; padding: 14px 0; border-bottom: 1px solid #f0f0ed; }
+  .type-label { width: 160px; flex-shrink: 0; font-size: 11px; color: #8a8a8a; font-family: monospace; }
+  .type-sample { color: #0a0a0a; }
 
-  /* Current expense: white + ink border */
-  .c-exp-old { background: white; border: 1.5px solid #0a0a0a; }
-  /* Current income: full black */
-  .c-inc-old { background: #0a0a0a; border: 1.5px solid #0a0a0a; }
+  /* RADII */
+  .radii-grid { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+  .radius-swatch { background: #e8e8e5; display: flex; align-items: center; justify-content: center; }
+  .radius-label { font-size: 11px; color: #5a5a5a; font-family: monospace; margin-top: 8px; }
+  .radius-val { font-size: 10px; color: #8a8a8a; margin-top: 2px; }
+  .radius-item { text-align: center; }
 
-  /* New expense: plain white, ink border — no background color */
-  .c-exp-new { background: #ffffff; border: 1.5px solid #0a0a0a; }
-  /* New income: plain white, ink border — no background color */
-  .c-inc-new { background: #ffffff; border: 1.5px solid #0a0a0a; }
+  /* SHADOWS */
+  .shadow-row { display: flex; gap: 24px; flex-wrap: wrap; }
+  .shadow-item { width: 180px; height: 80px; background: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #8a8a8a; font-family: monospace; }
 
-  .ch { display: flex; align-items: center; gap: 10px; }
-  .vi { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
-  .vi-neutral { background: #f6f6f4; color: #0a0a0a; }
-  .vi-cream { background: #f6f6f4; color: #0a0a0a; }    /* same neutral as expense */
-  .vi-inv { background: rgba(255,255,255,0.12); color: white; }
-  .vi-income { background: #f6f6f4; color: #0a0a0a; }   /* neutral — no green on icon */
+  /* COLOR ZONES */
+  .zone-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .zone-table th { text-align: left; font-size: 11px; font-weight: 600; color: #8a8a8a; padding: 0 12px 8px 0; }
+  .zone-table td { padding: 8px 12px 8px 0; border-top: 1px solid #f0f0ed; vertical-align: top; line-height: 1.5; }
+  .zone-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
 
-  .vn { font-size: 13px; font-weight: 600; }
-  .vn-dark { color: #0a0a0a; }
-  .vn-inv { color: white; }
-  .vd { font-size: 11px; }
-  .vd-muted { color: #8a8a8a; }
-  .vd-inv { color: rgba(255,255,255,0.6); }
-  .amt { font-size: 22px; font-weight: 700; }
-  .amt-dark { color: #0a0a0a; }
-  .amt-inv { color: white; }
-  .amt-income { color: #1A9E6A; }   /* only green touch on income card */
+  /* PHONE PREVIEW */
+  .phone-wrap { display: flex; gap: 24px; flex-wrap: wrap; }
+  .phone { width: 200px; background: #fff; border-radius: 28px; border: 2px solid #0a0a0a; overflow: hidden; box-shadow: 0 8px 32px rgba(10,10,10,0.12); }
+  .phone-label { font-size: 11px; color: #8a8a8a; text-align: center; margin-top: 8px; }
+  .status-bar { display: flex; justify-content: space-between; padding: 10px 14px 4px; font-size: 9px; font-weight: 600; }
+  .screen-title { font-size: 13px; font-weight: 700; letter-spacing: -0.02em; padding: 8px 14px; border-bottom: 1px solid #e8e8e5; }
 
-  .pill { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
-  .pill-mono { border: 1.5px solid #e8e8e5; color: #5a5a5a; }
-  .pill-inv { border: 1.5px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.85); }
+  /* Thread preview */
+  .thread-body { padding: 10px 12px; background: #fff; min-height: 120px; }
+  .bubble { display: inline-block; padding: 8px 11px; border-radius: 14px 14px 14px 3px; background: #f6f6f4; font-size: 11px; line-height: 1.4; color: #0a0a0a; max-width: 85%; margin-bottom: 6px; }
 
-  .cbar-wrap { display: flex; flex-direction: column; gap: 4px; }
-  .cbar-lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #8a8a8a; }
-  .cbar-bg { height: 4px; border-radius: 99px; background: #e8e8e5; }
-  .cbar-fill { height: 100%; border-radius: 99px; width: 94%; background: #0a0a0a; }
+  /* Card preview */
+  .mini-card { margin: 8px 10px; background: #fff; border-radius: 10px; border: 1px solid #e8e8e5; box-shadow: 0 1px 2px rgba(10,10,10,0.04); padding: 10px 12px; }
+  .card-vendor { font-size: 11px; font-weight: 600; }
+  .card-amount { font-size: 20px; font-weight: 800; letter-spacing: -0.028em; }
+  .card-amount.income { color: #1A9E6A; }
+  .card-cat { font-size: 9px; color: #8a8a8a; margin-top: 2px; }
 
-  .actions { display: flex; gap: 8px; }
-  .btn-confirm { flex: 1; padding: 10px; border-radius: 999px; background: #0a0a0a; color: white; font-size: 13px; font-weight: 600; border: none; cursor: pointer; }
-  .btn-confirm-inv { flex: 1; padding: 10px; border-radius: 999px; background: white; color: #0a0a0a; font-size: 13px; font-weight: 600; border: none; cursor: pointer; }
-  .btn-change { padding: 10px 14px; border-radius: 999px; background: transparent; color: #5a5a5a; font-size: 13px; font-weight: 500; border: 1.5px solid #e8e8e5; cursor: pointer; white-space: nowrap; }
-  .btn-change-inv { padding: 10px 14px; border-radius: 999px; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 500; border: 1.5px solid rgba(255,255,255,0.3); cursor: pointer; white-space: nowrap; }
+  /* Books preview */
+  .books-body { padding: 8px 10px; }
+  .stat-hero { background: #0a0a0a; color: #fff; border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; }
+  .stat-label { font-size: 8px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
+  .stat-value { font-size: 20px; font-weight: 800; letter-spacing: -0.028em; }
+  .badge { display: inline-block; background: #C97D1A; color: #fff; border-radius: 999px; font-size: 9px; font-weight: 700; padding: 1px 6px; }
 
-  /* TAB BAR */
-  .tab-bar { display: flex; border-top: 1px solid #e8e8e5; padding: 8px 0 12px; background: white; }
-  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; }
-  .tab-lbl { font-size: 10px; }
-  .lbl-active-mono { color: #0a0a0a; font-weight: 600; }
-  .lbl-inactive { color: #8a8a8a; }
-  .lbl-active-teal { color: #2B7A78; font-weight: 600; }
-
-  .home-indicator { width: 120px; height: 4px; border-radius: 2px; background: rgba(10,10,10,0.18); margin: 6px auto 10px; }
-
-  /* MY BOOKS */
-  .books-section { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
-  .runway { background: #0a0a0a; color: white; border-radius: 12px; padding: 14px 16px; }
-  .r-eyebrow { font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.5; margin-bottom: 4px; }
-  .r-num { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
-  .r-sub { font-size: 13px; opacity: 0.6; margin-top: 2px; }
-  .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .stat-card { background: white; border: 1px solid #e8e8e5; border-radius: 12px; padding: 12px 14px; }
-  .s-eyebrow { font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #8a8a8a; margin-bottom: 4px; }
-  .s-val { font-size: 20px; font-weight: 700; color: #0a0a0a; }
-  .s-sub { font-size: 11px; margin-top: 2px; }
-  .sub-muted { color: #8a8a8a; }
-  .sub-green { color: #1A9E6A; }
-  .sub-amber { color: #C97D1A; }
-  .needs { background: white; border: 1px solid #e8e8e5; border-radius: 12px; padding: 12px 14px; }
-  .needs-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-  .needs-title { font-size: 13px; font-weight: 600; color: #0a0a0a; flex: 1; }
-  .badge-mono { background: #0a0a0a; color: white; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
-  .badge-amber { background: #C97D1A; color: white; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
-  .needs-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f0f0ed; }
-  .needs-row:last-child { border-bottom: none; }
-  .ndot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .nvendor { font-size: 12px; font-weight: 500; color: #0a0a0a; flex: 1; }
-  .namt { font-size: 12px; font-weight: 600; color: #0a0a0a; }
-  .namt-green { font-size: 12px; font-weight: 600; color: #1A9E6A; }
-
-  /* RULE BOX */
-  .rule-box { background: white; border: 1px solid #e8e8e5; border-radius: 14px; padding: 18px 22px; max-width: 900px; margin: 0 auto 40px; }
-  .rule-box h3 { font-size: 13px; font-weight: 700; color: #0a0a0a; margin-bottom: 12px; }
-  .rule-row { display: flex; gap: 10px; margin-bottom: 7px; font-size: 12px; color: #5a5a5a; align-items: flex-start; }
-  .rule-row:last-child { margin-bottom: 0; }
-  .rule-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
-  strong { color: #0a0a0a; }
+  /* Tab bar preview */
+  .tab-bar { display: flex; border-top: 1px solid #e8e8e5; padding: 6px 0 8px; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .tab-icon { width: 16px; height: 16px; border-radius: 3px; }
+  .tab-label { font-size: 8px; font-weight: 500; color: #8a8a8a; }
+  .tab.active .tab-label { color: #2B7A78; font-weight: 600; }
+  .tab.active .tab-icon { background: #2B7A78; }
+  .tab:not(.active) .tab-icon { background: #8a8a8a; opacity: 0.4; }
 </style>
 </head>
 <body>
 
-<h1>Penny — Color Direction v3</h1>
-<p class="subtitle">Expense = warm cream card · Income = white card, green amount only · everything else stripped back</p>
-
-<div class="rule-box">
-  <h3>The rule — green appears in exactly 3 places</h3>
-  <div class="rule-row"><div class="rule-dot" style="background:#1A9E6A"></div><div><strong>Income amount text</strong> — the +$4,200 number is green. Nothing else on the income card is green. White background, ink border becomes green border.</div></div>
-  <div class="rule-row"><div class="rule-dot" style="background:#1A9E6A"></div><div><strong>Income amount in My Books "Needs a look" list</strong> — only the number, not the dot or vendor name.</div></div>
-  <div class="rule-row"><div class="rule-dot" style="background:#1A9E6A"></div><div><strong>Net subcopy in My Books stat card</strong> — "▲ $1,240 vs last month" in green. One line.</div></div>
-  <div class="rule-row"><div class="rule-dot" style="background:#2B7A78"></div><div><strong>Active tab only</strong> — Penny tab icon + label in sage teal. That's it for teal.</div></div>
-  <div class="rule-row"><div class="rule-dot" style="background:#C97D1A"></div><div><strong>Amber</strong> — "Needs a look" badge count in My Books. One badge.</div></div>
-  <div class="rule-row"><div class="rule-dot" style="background:#fdf8f0"></div><div><strong>Expense card</strong> — warm cream background (#fdf8f0) distinguishes it from income card. Both have ink borders. No other color.</div></div>
+<div class="section">
+  <h1>Penny Design System</h1>
+  <p class="meta">v2.2 · tokens.css · Last updated Apr 2026 · Source of truth: BookKeeping/design/design-system.md</p>
 </div>
 
-<!-- THREAD SECTION -->
-<div class="section-wrap"><div class="section-heading" style="margin-bottom:16px">Penny Thread — Approval Cards</div></div>
-<div class="compare-grid">
-
-  <!-- CURRENT -->
-  <div>
-    <div class="col-label"><span>Current</span></div>
-    <div class="phone">
-      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="thread-header">
-        <div class="p-mark">P<span class="dot" style="background:#0a0a0a"></span></div>
-        <div><div class="header-name">Penny</div><div class="header-sub">online · watching your accounts</div></div>
-        <svg style="margin-left:auto" width="18" height="18" fill="none" stroke="#8a8a8a" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+<!-- ── COLOR: FOUNDATION ─────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Foundation colors</h2>
+  <div class="swatch-grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#0a0a0a;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Ink</div>
+        <div class="swatch-var">--ink</div>
+        <div class="swatch-hex">#0a0a0a</div>
+        <div class="swatch-note">Primary text, filled buttons, filled marks</div>
       </div>
-      <div class="thread-body">
-        <div class="slug"><span class="slug-vendor">Figma Pro</span><span class="slug-amt">$15</span><span style="color:#5a5a5a;font-weight:700">✓</span></div>
-        <div class="penny-row">
-          <div class="p-mark" style="width:26px;height:26px;font-size:11px;flex-shrink:0">P</div>
-          <div class="penny-bubble"><div class="blbl">PENNY</div><div class="bmsg">Got it — Design Software. New card below 👇</div></div>
-        </div>
-        <div class="card c-exp-old">
-          <div class="ch"><div class="vi vi-neutral">N</div><div style="flex:1"><div class="vn vn-dark">Notion</div><div class="vd vd-muted">Apr 22 · Subscription</div></div><div class="amt amt-dark">$16</div></div>
-          <span class="pill pill-mono">Software & SaaS</span>
-          <div class="cbar-wrap"><div class="cbar-lbl">Confidence — 94%</div><div class="cbar-bg"><div class="cbar-fill"></div></div></div>
-          <div class="actions"><button class="btn-confirm">Confirm</button><button class="btn-change">Change</button></div>
-        </div>
-        <div class="card c-inc-old">
-          <div class="ch"><div class="vi vi-inv">S</div><div style="flex:1"><div class="vn vn-inv">Studio Nine LLC</div><div class="vd vd-inv">Apr 22 · Invoice paid</div></div><div class="amt amt-inv">+$4,200</div></div>
-          <span class="pill pill-inv" style="gap:5px"><svg width="11" height="11" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>Client Income</span>
-          <div class="actions"><button class="btn-confirm-inv">Confirm</button><button class="btn-change-inv">Change</button></div>
-        </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#2a2a2a;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Ink 2</div>
+        <div class="swatch-var">--ink-2</div>
+        <div class="swatch-hex">#2a2a2a</div>
+        <div class="swatch-note">Secondary text, body copy</div>
       </div>
-      <div class="tab-bar">
-        <div class="tab"><svg width="22" height="22" fill="none" stroke="#0a0a0a" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="tab-lbl lbl-active-mono">Penny</span></div>
-        <div class="tab"><svg width="22" height="22" fill="none" stroke="#8a8a8a" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span class="tab-lbl lbl-inactive">Add</span></div>
-        <div class="tab"><svg width="22" height="22" fill="none" stroke="#8a8a8a" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="tab-lbl lbl-inactive">My Books</span></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#5a5a5a;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Ink 3</div>
+        <div class="swatch-var">--ink-3</div>
+        <div class="swatch-hex">#5a5a5a</div>
+        <div class="swatch-note">Supporting text, captions</div>
       </div>
-      <div class="home-indicator"></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#8a8a8a;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Ink 4</div>
+        <div class="swatch-var">--ink-4</div>
+        <div class="swatch-hex">#8a8a8a</div>
+        <div class="swatch-note">De-emphasized text, placeholders</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#e8e8e5; border-bottom:1px solid #ddd;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Line</div>
+        <div class="swatch-var">--line</div>
+        <div class="swatch-hex">#e8e8e5</div>
+        <div class="swatch-note">Card borders, dividers</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#f0f0ed; border-bottom:1px solid #ddd;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Line 2</div>
+        <div class="swatch-var">--line-2</div>
+        <div class="swatch-hex">#f0f0ed</div>
+        <div class="swatch-note">Subtle dividers</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#f6f6f4; border-bottom:1px solid #ddd;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Paper</div>
+        <div class="swatch-var">--paper</div>
+        <div class="swatch-hex">#f6f6f4</div>
+        <div class="swatch-note">Warm off-white section backgrounds</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#ffffff; border-bottom:1px solid #ddd;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">White</div>
+        <div class="swatch-var">--white</div>
+        <div class="swatch-hex">#ffffff</div>
+        <div class="swatch-note">Default page background, card surfaces</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#b2291e;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Error</div>
+        <div class="swatch-var">--error</div>
+        <div class="swatch-hex">#b2291e</div>
+        <div class="swatch-note">Inline error text only — never a background</div>
+      </div>
     </div>
   </div>
+</div>
 
-  <!-- PROPOSED v3 -->
-  <div>
-    <div class="col-label new"><span>Proposed v3</span></div>
-    <div class="phone">
-      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="thread-header">
-        <div class="p-mark">P<span class="dot" style="background:#0a0a0a"></span></div>
-        <div><div class="header-name">Penny</div><div class="header-sub">online · watching your accounts</div></div>
-        <svg style="margin-left:auto" width="18" height="18" fill="none" stroke="#8a8a8a" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+<!-- ── COLOR: SEMANTIC ACCENTS ───────────────────────────────────────── -->
+<div class="section">
+  <h2>Semantic accent colors — strict zone rules apply</h2>
+  <div class="swatch-grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#2B7A78;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Sage</div>
+        <div class="swatch-var">--sage</div>
+        <div class="swatch-hex">#2B7A78</div>
+        <div class="swatch-note">Active tab icon + label only. Nowhere else.</div>
       </div>
-      <div class="thread-body">
-        <div class="slug"><span class="slug-vendor">Figma Pro</span><span class="slug-amt">$15</span><span style="color:#5a5a5a;font-weight:700">✓</span></div>
-        <div class="penny-row">
-          <div class="p-mark" style="width:26px;height:26px;font-size:11px;flex-shrink:0">P</div>
-          <div class="penny-bubble"><div class="blbl">PENNY</div><div class="bmsg">Got it — Design Software. New card below 👇</div></div>
-        </div>
-        <!-- Expense: white, amber amount, icon in category pill -->
-        <div class="card c-exp-new">
-          <div class="ch">
-            <div class="vi vi-neutral">N</div>
-            <div style="flex:1"><div class="vn vn-dark">Notion</div><div class="vd vd-muted">Apr 22 · Subscription</div></div>
-            <div class="amt" style="color:#C97D1A">$16</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#1A9E6A;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Income</div>
+        <div class="swatch-var">--income</div>
+        <div class="swatch-hex">#1A9E6A</div>
+        <div class="swatch-note">Income amount text + My Books income figures only</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#f0faf5; border-bottom:1px solid #ddd;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Income BG</div>
+        <div class="swatch-var">--income-bg</div>
+        <div class="swatch-hex">#f0faf5</div>
+        <div class="swatch-note">Income category icon tint background only</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#C97D1A;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Amber</div>
+        <div class="swatch-var">--amber</div>
+        <div class="swatch-hex">#C97D1A</div>
+        <div class="swatch-note">My Books "Needs a look" badge + stat subcopy only</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── COLOR: CATEGORY TINTS ─────────────────────────────────────────── -->
+<div class="section">
+  <h2>Category icon tints — icon bg + stroke only, never fills</h2>
+  <div class="swatch-grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#eef2fa;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Tech BG</div>
+        <div class="swatch-var">--cat-tech-bg</div>
+        <div class="swatch-hex">#eef2fa / #4A6FA5</div>
+        <div class="swatch-note">Software, SaaS, subscriptions</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#fdf3ea;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Food BG</div>
+        <div class="swatch-var">--cat-food-bg</div>
+        <div class="swatch-hex">#fdf3ea / #C4702A</div>
+        <div class="swatch-note">Food, meals, coffee</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#fdf3ea;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Travel BG</div>
+        <div class="swatch-var">--cat-travel-bg</div>
+        <div class="swatch-hex">#fdf3ea / #C4702A</div>
+        <div class="swatch-note">Travel, transport (shares orange family)</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#f9eff5;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Personal BG</div>
+        <div class="swatch-var">--cat-personal-bg</div>
+        <div class="swatch-hex">#f9eff5 / #9C4A6B</div>
+        <div class="swatch-note">Personal, other</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#eef6f1;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Health BG</div>
+        <div class="swatch-var">--cat-health-bg</div>
+        <div class="swatch-hex">#eef6f1 / #4A8C5C</div>
+        <div class="swatch-note">Health, wellness</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#eaf4f4;"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Office BG</div>
+        <div class="swatch-var">--cat-office-bg</div>
+        <div class="swatch-hex">#eaf4f4 / #2B7A78</div>
+        <div class="swatch-note">Office, supplies (shares sage)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── COLOR ZONES ───────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Color zone rules — enforced strictly</h2>
+  <table class="zone-table">
+    <thead>
+      <tr>
+        <th>Token</th>
+        <th>Allowed in</th>
+        <th>Never in</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="zone-dot" style="background:#2B7A78;"></span><code>--sage</code></td>
+        <td>Active tab icon fill + active tab label text</td>
+        <td>Buttons, cards, backgrounds, borders, any other element</td>
+      </tr>
+      <tr>
+        <td><span class="zone-dot" style="background:#1A9E6A;"></span><code>--income</code></td>
+        <td>Income card amount text; My Books income stat figures</td>
+        <td>Expense cards, thread bubbles, buttons, borders</td>
+      </tr>
+      <tr>
+        <td><span class="zone-dot" style="background:#f0faf5; border:1px solid #ccc;"></span><code>--income-bg</code></td>
+        <td>Income category icon tint background only</td>
+        <td>Card backgrounds, page backgrounds, any fill</td>
+      </tr>
+      <tr>
+        <td><span class="zone-dot" style="background:#C97D1A;"></span><code>--amber</code></td>
+        <td>My Books "Needs a look" badge; My Books stat subcopy</td>
+        <td>Thread, cards, buttons, onboarding, add screen</td>
+      </tr>
+      <tr>
+        <td><span class="zone-dot" style="background:#4A6FA5;"></span><code>--cat-*</code></td>
+        <td>Category icon container backgrounds + icon stroke</td>
+        <td>Any fill outside of icon containers</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── TYPOGRAPHY ────────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Typography scale — Inter</h2>
+  <div class="type-row">
+    <div class="type-label">--fs-h1 / clamp(36,5.5vw,64px)</div>
+    <div class="type-sample" style="font-size:clamp(36px,5.5vw,64px);font-weight:800;letter-spacing:-0.028em;">Penny</div>
+  </div>
+  <div class="type-row">
+    <div class="type-label">--fs-h2 / clamp(26,3.8vw,44px)</div>
+    <div class="type-sample" style="font-size:clamp(26px,3.8vw,44px);font-weight:700;letter-spacing:-0.022em;">Your books, clear.</div>
+  </div>
+  <div class="type-row">
+    <div class="type-label">--fs-h3 / clamp(17,2vw,21px)</div>
+    <div class="type-sample" style="font-size:clamp(17px,2vw,21px);font-weight:600;letter-spacing:-0.022em;">Section heading</div>
+  </div>
+  <div class="type-row">
+    <div class="type-label">--fs-card-value / clamp(30,8vw,46px)</div>
+    <div class="type-sample" style="font-size:clamp(30px,8vw,46px);font-weight:800;letter-spacing:-0.028em;">$4,200</div>
+  </div>
+  <div class="type-row">
+    <div class="type-label">--fs-screen-title / 17px</div>
+    <div class="type-sample" style="font-size:17px;font-weight:700;letter-spacing:-0.022em;">My Books</div>
+  </div>
+  <div class="type-row">
+    <div class="type-label">--fs-body / clamp(15,1.6vw,17px)</div>
+    <div class="type-sample" style="font-size:clamp(15px,1.6vw,17px);font-weight:400;">Here's what came in this week — one payment from Bright Co, $3,000.</div>
+  </div>
+  <div class="type-row">
+    <div class="type-label">--fs-eyebrow / 11px / ls 0.12em</div>
+    <div class="type-sample" style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8a8a8a;">RUNWAY · 4.2 MO</div>
+  </div>
+  <div class="type-row">
+    <div class="type-label">--fs-tiny / 10px</div>
+    <div class="type-sample" style="font-size:10px;color:#8a8a8a;">Supporting caption, de-emphasized metadata</div>
+  </div>
+</div>
+
+<!-- ── RADII ─────────────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Border radii</h2>
+  <div class="radii-grid">
+    <div class="radius-item">
+      <div class="radius-swatch" style="width:60px;height:40px;border-radius:12px;"></div>
+      <div class="radius-label">--r-card</div>
+      <div class="radius-val">12px</div>
+    </div>
+    <div class="radius-item">
+      <div class="radius-swatch" style="width:72px;height:48px;border-radius:16px;"></div>
+      <div class="radius-label">--r-card-emph</div>
+      <div class="radius-val">16px</div>
+    </div>
+    <div class="radius-item">
+      <div class="radius-swatch" style="width:80px;height:56px;border-radius:20px;"></div>
+      <div class="radius-label">--r-sheet</div>
+      <div class="radius-val">20px</div>
+    </div>
+    <div class="radius-item">
+      <div class="radius-swatch" style="width:80px;height:32px;border-radius:999px;"></div>
+      <div class="radius-label">--r-pill</div>
+      <div class="radius-val">999px</div>
+    </div>
+    <div class="radius-item">
+      <div class="radius-swatch" style="width:120px;height:48px;border-radius:18px 18px 18px 4px;"></div>
+      <div class="radius-label">--r-bubble-penny</div>
+      <div class="radius-val">18 18 18 4px</div>
+    </div>
+    <div class="radius-item">
+      <div class="radius-swatch" style="width:120px;height:48px;border-radius:14px 14px 4px 14px;"></div>
+      <div class="radius-label">--r-bubble-user</div>
+      <div class="radius-val">14 14 4 14px</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SHADOWS ────────────────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Shadows</h2>
+  <div class="shadow-row">
+    <div class="shadow-item" style="box-shadow:0 1px 2px rgba(10,10,10,0.04);">--shadow-card</div>
+    <div class="shadow-item" style="box-shadow:0 4px 16px rgba(10,10,10,0.09),0 1px 3px rgba(10,10,10,0.05);">--shadow-card-hero</div>
+    <div class="shadow-item" style="box-shadow:0 8px 32px rgba(10,10,10,0.12);">--shadow-phone</div>
+  </div>
+</div>
+
+<!-- ── LIVE SCREEN PREVIEWS ───────────────────────────────────────────── -->
+<div class="section">
+  <h2>Screen previews — current design applied</h2>
+  <div class="phone-wrap">
+
+    <!-- Thread -->
+    <div>
+      <div class="phone">
+        <div class="status-bar" style="background:#fff;color:#0a0a0a;">9:41<span>●●●</span></div>
+        <div class="screen-title">Penny</div>
+        <div class="thread-body">
+          <div class="bubble">Here's what came in this week — a payment from Bright Co, $3,000. Nice one. 👋</div>
+          <div style="margin-top:6px;">
+            <div class="mini-card">
+              <div class="card-vendor">Bright Co</div>
+              <div class="card-amount income">$3,000</div>
+              <div class="card-cat">Income · Yesterday</div>
+            </div>
           </div>
-          <span class="pill pill-mono" style="gap:5px">
-            <svg width="11" height="11" fill="none" stroke="#5a5a5a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            Software & SaaS
-          </span>
-          <div class="cbar-wrap"><div class="cbar-lbl">Confidence — 94%</div><div class="cbar-bg"><div class="cbar-fill"></div></div></div>
-          <div class="actions"><button class="btn-confirm">Confirm</button><button class="btn-change">Change</button></div>
-        </div>
-        <!-- Income: white, green amount, icon in category pill -->
-        <div class="card c-inc-new">
-          <div class="ch">
-            <div class="vi vi-neutral">S</div>
-            <div style="flex:1"><div class="vn vn-dark">Studio Nine LLC</div><div class="vd vd-muted">Apr 22 · Invoice paid</div></div>
-            <div class="amt amt-income">+$4,200</div>
+          <div style="margin-top:6px;">
+            <div class="mini-card">
+              <div class="card-vendor">Notion</div>
+              <div class="card-amount">$19</div>
+              <div class="card-cat">Software · 96% confident</div>
+            </div>
           </div>
-          <span class="pill pill-mono" style="gap:5px">
-            <svg width="11" height="11" fill="none" stroke="#5a5a5a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
-            Client Income
-          </span>
-          <div class="cbar-wrap"><div class="cbar-lbl">Confidence — 98%</div><div class="cbar-bg"><div class="cbar-fill"></div></div></div>
-          <div class="actions"><button class="btn-confirm">Confirm</button><button class="btn-change">Change</button></div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab active"><div class="tab-icon"></div><div class="tab-label" style="color:#2B7A78;">Penny</div></div>
+          <div class="tab"><div class="tab-icon"></div><div class="tab-label">Add</div></div>
+          <div class="tab"><div class="tab-icon"></div><div class="tab-label">My Books</div></div>
         </div>
       </div>
-      <div class="tab-bar">
-        <div class="tab"><svg width="22" height="22" fill="none" stroke="#2B7A78" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="tab-lbl lbl-active-teal">Penny</span></div>
-        <div class="tab"><svg width="22" height="22" fill="none" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span class="tab-lbl lbl-inactive">Add</span></div>
-        <div class="tab"><svg width="22" height="22" fill="none" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="tab-lbl lbl-inactive">My Books</span></div>
-      </div>
-      <div class="home-indicator"></div>
+      <div class="phone-label">Thread</div>
     </div>
+
+    <!-- My Books -->
+    <div>
+      <div class="phone">
+        <div class="status-bar" style="background:#fff;color:#0a0a0a;">9:41<span>●●●</span></div>
+        <div class="screen-title">My Books</div>
+        <div class="books-body">
+          <div class="stat-hero">
+            <div class="stat-label">Runway</div>
+            <div class="stat-value">4.2 mo</div>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:6px;">
+            <div style="flex:1;background:#fff;border:1px solid #e8e8e5;border-radius:10px;padding:8px 10px;">
+              <div style="font-size:8px;color:#8a8a8a;font-weight:600;letter-spacing:0.1em;">NET</div>
+              <div style="font-size:15px;font-weight:800;letter-spacing:-0.028em;">$1,840</div>
+            </div>
+            <div style="flex:1;background:#fff;border:1px solid #e8e8e5;border-radius:10px;padding:8px 10px;">
+              <div style="font-size:8px;font-weight:600;letter-spacing:0.1em;display:flex;align-items:center;gap:4px;"><span style="color:#C97D1A;">Needs a look</span> <span class="badge">3</span></div>
+              <div style="font-size:11px;color:#5a5a5a;margin-top:2px;">Review items</div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:#8a8a8a;padding:4px 0;">Coming up · This week</div>
+          <div style="background:#fff;border:1px solid #e8e8e5;border-radius:8px;padding:8px 10px;font-size:10px;">
+            <div style="font-weight:600;">Q1 estimated tax</div>
+            <div style="color:#8a8a8a;">Due Apr 15 · ~$1,200</div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab"><div class="tab-icon"></div><div class="tab-label">Penny</div></div>
+          <div class="tab"><div class="tab-icon"></div><div class="tab-label">Add</div></div>
+          <div class="tab active"><div class="tab-icon"></div><div class="tab-label" style="color:#2B7A78;">My Books</div></div>
+        </div>
+      </div>
+      <div class="phone-label">My Books</div>
+    </div>
+
+    <!-- Approval Card -->
+    <div>
+      <div class="phone">
+        <div class="status-bar" style="background:#fff;color:#0a0a0a;">9:41<span>●●●</span></div>
+        <div class="screen-title">Penny</div>
+        <div class="thread-body" style="padding-top:12px;">
+          <div class="mini-card" style="margin:0 0 8px;">
+            <div class="card-vendor">Con Edison</div>
+            <div class="card-amount">$820</div>
+            <div class="card-cat">Utilities · 5 days ago</div>
+            <div style="margin-top:8px;display:flex;gap:6px;">
+              <div style="flex:1;background:#0a0a0a;color:#fff;border-radius:6px;padding:5px 0;font-size:9px;font-weight:600;text-align:center;">Looks right</div>
+              <div style="flex:1;background:#f6f6f4;border:1px solid #e8e8e5;border-radius:6px;padding:5px 0;font-size:9px;font-weight:600;text-align:center;color:#0a0a0a;">Change</div>
+            </div>
+          </div>
+          <div class="mini-card" style="margin:0;opacity:0.5;">
+            <div class="card-vendor">Adobe Creative Cloud</div>
+            <div class="card-amount">$54.99</div>
+            <div class="card-cat">Software · rule proposal</div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab active"><div class="tab-icon"></div><div class="tab-label" style="color:#2B7A78;">Penny</div></div>
+          <div class="tab"><div class="tab-icon"></div><div class="tab-label">Add</div></div>
+          <div class="tab"><div class="tab-icon"></div><div class="tab-label">My Books</div></div>
+        </div>
+      </div>
+      <div class="phone-label">Approval Card</div>
+    </div>
+
   </div>
 </div>
 
-<!-- MY BOOKS -->
-<div class="section-wrap"><div class="section-heading" style="margin-bottom:16px">My Books</div></div>
-<div class="compare-grid">
-  <div>
-    <div class="col-label"><span>Current</span></div>
-    <div class="phone">
-      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="thread-header"><div style="font-size:15px;font-weight:600;color:#0a0a0a;flex:1">My Books</div></div>
-      <div class="books-section">
-        <div class="runway"><div class="r-eyebrow">Cash Runway</div><div class="r-num">94</div><div class="r-sub">days at current spend</div></div>
-        <div class="stat-row">
-          <div class="stat-card"><div class="s-eyebrow">Net This Month</div><div class="s-val">$5,860</div><div class="s-sub sub-muted">+$1,240 vs last</div></div>
-          <div class="stat-card"><div class="s-eyebrow">Books Status</div><div class="s-val">3</div><div class="s-sub sub-muted">items to review</div></div>
-        </div>
-        <div class="needs">
-          <div class="needs-hdr"><div class="needs-title">Needs a look</div><span class="badge-mono">3</span></div>
-          <div class="needs-row"><div class="ndot" style="background:#e8e8e5"></div><div class="nvendor">Amazon Business</div><div class="namt">$143</div></div>
-          <div class="needs-row"><div class="ndot" style="background:#e8e8e5"></div><div class="nvendor">Stripe payout</div><div class="namt">+$2,800</div></div>
-          <div class="needs-row"><div class="ndot" style="background:#e8e8e5"></div><div class="nvendor">Delta Airlines</div><div class="namt">$389</div></div>
-        </div>
-      </div>
-      <div class="home-indicator"></div>
-    </div>
-  </div>
-  <div>
-    <div class="col-label new"><span>Proposed v3</span></div>
-    <div class="phone">
-      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="thread-header"><div style="font-size:15px;font-weight:600;color:#0a0a0a;flex:1">My Books</div></div>
-      <div class="books-section">
-        <div class="runway"><div class="r-eyebrow">Cash Runway</div><div class="r-num">94</div><div class="r-sub">days at current spend</div></div>
-        <div class="stat-row">
-          <div class="stat-card"><div class="s-eyebrow">Net This Month</div><div class="s-val">$5,860</div><div class="s-sub sub-green">▲ $1,240 vs last month</div></div>
-          <div class="stat-card"><div class="s-eyebrow">Books Status</div><div class="s-val">3</div><div class="s-sub sub-amber">needs your eye</div></div>
-        </div>
-        <div class="needs">
-          <div class="needs-hdr"><div class="needs-title">Needs a look</div><span class="badge-amber">3</span></div>
-          <div class="needs-row"><div class="ndot" style="background:#C4702A"></div><div class="nvendor">Amazon Business</div><div class="namt">$143</div></div>
-          <div class="needs-row"><div class="ndot" style="background:#1A9E6A"></div><div class="nvendor">Stripe payout</div><div class="namt-green">+$2,800</div></div>
-          <div class="needs-row"><div class="ndot" style="background:#6B5EA8"></div><div class="nvendor">Delta Airlines</div><div class="namt">$389</div></div>
-        </div>
-      </div>
-      <div class="home-indicator"></div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ICON SYSTEM COMPARISON -->
-<div style="max-width:900px;margin:0 auto 12px">
-  <div class="section-heading" style="margin-bottom:16px">Icon System — Current vs Proposed</div>
-</div>
-
-<div style="max-width:900px;margin:0 auto 48px;display:grid;grid-template-columns:1fr 1fr;gap:24px">
-
-  <!-- CURRENT -->
-  <div style="background:white;border-radius:16px;border:1px solid #e8e8e5;padding:24px">
-    <div style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8a8a8a;margin-bottom:20px">Current — hand-crafted, inconsistent</div>
-    <div style="display:flex;flex-wrap:wrap;gap:16px">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#f6f6f4;border:1px solid #e8e8e5;display:flex;align-items:center;justify-content:center">
-          <svg width="20" height="20" fill="none" stroke="#0a0a0a" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        </div>
-        <span style="font-size:10px;color:#8a8a8a">Chat</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#f6f6f4;border:1px solid #e8e8e5;display:flex;align-items:center;justify-content:center">
-          <svg width="22" height="22" fill="none" stroke="#0a0a0a" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        </div>
-        <span style="font-size:10px;color:#8a8a8a">Add</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#f6f6f4;border:1px solid #e8e8e5;display:flex;align-items:center;justify-content:center">
-          <svg width="20" height="20" fill="none" stroke="#0a0a0a" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        </div>
-        <span style="font-size:10px;color:#8a8a8a">Books</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#f6f6f4;border:1px solid #e8e8e5;display:flex;align-items:center;justify-content:center">
-          <svg width="20" height="20" fill="none" stroke="#0a0a0a" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        </div>
-        <span style="font-size:10px;color:#8a8a8a">Software</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#f6f6f4;border:1px solid #e8e8e5;display:flex;align-items:center;justify-content:center">
-          <svg width="20" height="20" fill="none" stroke="#0a0a0a" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        </div>
-        <span style="font-size:10px;color:#8a8a8a">Travel</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#f6f6f4;border:1px solid #e8e8e5;display:flex;align-items:center;justify-content:center">
-          <svg width="20" height="20" fill="none" stroke="#0a0a0a" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-        </div>
-        <span style="font-size:10px;color:#8a8a8a">Food</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#f6f6f4;border:1px solid #e8e8e5;display:flex;align-items:center;justify-content:center">
-          <svg width="20" height="20" fill="none" stroke="#0a0a0a" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
-        </div>
-        <span style="font-size:10px;color:#8a8a8a">Income</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#f6f6f4;border:1px solid #e8e8e5;display:flex;align-items:center;justify-content:center">
-          <svg width="20" height="20" fill="none" stroke="#0a0a0a" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <span style="font-size:10px;color:#8a8a8a">Security</span>
-      </div>
-    </div>
-    <p style="font-size:11px;color:#8a8a8a;margin-top:18px;line-height:1.6">Stroke weights vary (1.5 / 1.8 / 2px). Optical sizes inconsistent within the same bounding box. No shared system.</p>
-  </div>
-
-  <!-- PROPOSED — Phosphor-style consistent system with semantic color tints -->
-  <div style="background:white;border-radius:16px;border:1px solid #e8e8e5;padding:24px">
-    <div style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8a8a8a;margin-bottom:20px">Proposed — Consistent 1.5px · semantic color tints</div>
-    <div style="display:flex;flex-wrap:wrap;gap:16px">
-      <!-- Active tab icon — teal tint -->
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#f0f7f6;display:flex;align-items:center;justify-content:center">
-          <svg width="22" height="22" fill="none" stroke="#2B7A78" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        </div>
-        <span style="font-size:10px;color:#2B7A78;font-weight:600">Chat ●</span>
-      </div>
-      <!-- Neutral icons -->
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#f6f6f4;border:1px solid #e8e8e5;display:flex;align-items:center;justify-content:center">
-          <svg width="22" height="22" fill="none" stroke="#0a0a0a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        </div>
-        <span style="font-size:10px;color:#8a8a8a">Add</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#f6f6f4;border:1px solid #e8e8e5;display:flex;align-items:center;justify-content:center">
-          <svg width="22" height="22" fill="none" stroke="#0a0a0a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        </div>
-        <span style="font-size:10px;color:#8a8a8a">Books</span>
-      </div>
-      <!-- Category icons with semantic tints -->
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#eef2f8;display:flex;align-items:center;justify-content:center">
-          <svg width="22" height="22" fill="none" stroke="#4A6FA5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        </div>
-        <span style="font-size:10px;color:#4A6FA5;font-weight:600">Software</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#f5eee8;display:flex;align-items:center;justify-content:center">
-          <svg width="22" height="22" fill="none" stroke="#C4702A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        </div>
-        <span style="font-size:10px;color:#C4702A;font-weight:600">Travel</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#fdf3ec;display:flex;align-items:center;justify-content:center">
-          <svg width="22" height="22" fill="none" stroke="#C4702A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-        </div>
-        <span style="font-size:10px;color:#C4702A;font-weight:600">Food</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#f0faf5;display:flex;align-items:center;justify-content:center">
-          <svg width="22" height="22" fill="none" stroke="#1A9E6A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
-        </div>
-        <span style="font-size:10px;color:#1A9E6A;font-weight:600">Income</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:44px;height:44px;border-radius:10px;background:#f6f6f4;border:1px solid #e8e8e5;display:flex;align-items:center;justify-content:center">
-          <svg width="22" height="22" fill="none" stroke="#0a0a0a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <span style="font-size:10px;color:#8a8a8a">Security</span>
-      </div>
-    </div>
-    <p style="font-size:11px;color:#5a5a5a;margin-top:18px;line-height:1.6">All 1.5px stroke, round caps/joins. Category icons get a semantic color tint — software blue, travel/food orange, income green. Navigation icons stay neutral ink.</p>
-  </div>
-
+<!-- ── SPACING + MOTION ───────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Spacing + motion tokens</h2>
+  <table class="zone-table">
+    <thead><tr><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td><code>--pad-screen</code></td><td>20px</td><td>Horizontal screen padding</td></tr>
+      <tr><td><code>--pad-card</code></td><td>16px 20px</td><td>Card internal padding</td></tr>
+      <tr><td><code>--gap-thread</code></td><td>12px</td><td>Gap between thread bubbles and cards</td></tr>
+      <tr><td><code>--gap-card</code></td><td>12px</td><td>Gap between cards in a list</td></tr>
+      <tr><td><code>--gap-section</code></td><td>24px</td><td>Gap between page sections</td></tr>
+      <tr><td><code>--phone-width</code></td><td>375px</td><td>Minimum phone width (375px floor)</td></tr>
+      <tr><td><code>--tap-min</code></td><td>44px</td><td>Minimum tap target size</td></tr>
+      <tr><td><code>--dur-fast</code></td><td>120ms</td><td>Micro-interactions, icon state changes</td></tr>
+      <tr><td><code>--dur-base</code></td><td>200ms</td><td>Standard transitions (sheets, toasts)</td></tr>
+      <tr><td><code>--dur-slow</code></td><td>320ms</td><td>Sheet open/close, overlay fade</td></tr>
+      <tr><td><code>--ease-out</code></td><td>cubic-bezier(0.2,0.8,0.2,1)</td><td>All motion curves</td></tr>
+    </tbody>
+  </table>
 </div>
 
 </body>

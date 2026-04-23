@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!--
+    Viewport: allow user zoom. Disabling pinch-zoom is an accessibility
+    failure (WCAG 1.4.4 Resize Text) — screen-magnifier users and people
+    with low vision need it. The demo is responsive; it does not need to
+    suppress the OS zoom gesture.
+  -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="description" content="Penny — interactive demo of an AI bookkeeper for US small business owners." />
+  <title>Penny — AI Bookkeeper</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script type="module" crossorigin src="/penny/demo/assets/index-DNJMJD2I.js"></script>
+  <link rel="stylesheet" crossorigin href="/penny/demo/assets/index-BgCzFDio.css">
+</head>
+<body>
+  <div id="root"></div>
+
+  <!--
+    Runtime config. Declared in the HTML (not imported as a module) so it
+    is available before any bundled code runs and can be overridden for
+    local testing without touching source files.
+  -->
+  <script>
+    // On localhost the Worker's CORS header rejects direct fetches, so
+    // Vite proxies /v1/messages to the deployed Worker (see vite.config.js).
+    // Everywhere else, hit the Worker directly.
+    var isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    window.PENNY_CONFIG = {
+      workerUrl: isLocal ? "" : "https://penny-api.nikjain1588.workers.dev",
+      demoToken: "ff-demo-2026",
+      defaultModel: "claude-sonnet-4-6",
+      booksModel: "claude-sonnet-4-6"
+    };
+  </script>
+
+  <!-- Vite handles React + JSX compile at build time; no CDN runtime needed. -->
+</body>
+</html>

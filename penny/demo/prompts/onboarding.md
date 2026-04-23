@@ -1,5 +1,16 @@
 # Overlay Prompt — Onboarding
 
+<!--
+  SCREENS USING THIS FILE
+  ───────────────────────
+  screens/onboarding.jsx   → intents: onboarding.entity · onboarding.industry
+                             onboarding.payments · onboarding.expenses
+                             onboarding.checkin · onboarding.bank · onboarding.ready
+
+  One prompt handles all 7 onboarding steps; the current step is passed via context.
+  Changing this file affects ONLY the Onboarding screen.
+-->
+
 *Version 1.0 · April 2026*
 
 *File: `public/prompts/onboarding.md`. Loaded by `worker-client.js` for every

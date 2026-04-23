@@ -1,5 +1,13 @@
 # Overlay Prompt — My Books Q&A
 
+<!--
+  SCREENS USING THIS FILE
+  ───────────────────────
+  screens/books.jsx   → intent: books.qa   (Ask Penny bar in My Books tab)
+
+  Changing this file affects ONLY the My Books screen.
+-->
+
 *Version 1.0 · April 2026*
 
 *Loaded when `intent === "books.qa"`. Appended after the base system prompt. Uses Sonnet, not Haiku — quality matters more than latency here.*

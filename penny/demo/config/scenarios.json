@@ -53,7 +53,8 @@
         "monthExpenses": 2340,
         "takehome": 5860,
         "runwayDays": 94,
-        "bestMonthYTD": true
+        "bestMonthYTD": true,
+        "netVsLastMonth": 740
       },
       "drilldown": {
         "pl": {

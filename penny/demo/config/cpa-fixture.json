@@ -25,7 +25,7 @@
           "id":           "rule-001",
           "pattern":      "Notion*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Software Subscriptions",
+          "toCategory":   "Software subscriptions",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745200000000,
@@ -33,9 +33,9 @@
         },
         {
           "id":           "rule-002",
-          "pattern":      "AWS*",
-          "fromCategory": "Software Subscriptions",
-          "toCategory":   "Cloud Infrastructure",
+          "pattern":      "Upwork*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Contractors",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745300000000,
@@ -46,21 +46,21 @@
       "flags": {
         "txn-s01-01": {
           "reason":     "needs-receipt",
-          "note":       "Missing receipt for this client dinner. Amount is over $200 — needs documentation per IRS 274.",
+          "note":       "Missing receipt for the Tartine client dinner ($140). Please attach the receipt with the client name noted — IRS 274 documentation.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745400000000,
           "resolvedAt": null
         },
         "txn-s01-02": {
           "reason":     "reclassify",
-          "note":       "This looks like a capital expense, not a deductible supply. May need Section 179 election.",
+          "note":       "Best Buy Business $48 — small office equipment. Under the $2,500 de minimis safe harbor, so fully expensable in the year of purchase. Confirm it was for the business.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745410000000,
           "resolvedAt": null
         },
         "txn-s01-03": {
           "reason":     "confirm-with-client",
-          "note":       "Stripe fee — confirm whether this is a pass-through or deductible merchant fee.",
+          "note":       "Upwork contractor payment $900 — track this contractor's YTD total. Once they hit $600 for the year, you owe them a 1099-NEC by Jan 31.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745420000000,
           "resolvedAt": null
@@ -71,7 +71,7 @@
         "txn-s01-01": [
           {
             "id":         "ann-001",
-            "text":       "Per IRS Publication 463, meals >$200 require business purpose documented. Please get the receipt from the client.",
+            "text":       "Per IRS Publication 463, business meals require a receipt plus the business purpose and attendee list. Please attach the Tartine receipt and note the client's name.",
             "authorId":   "cpa-priya-demo",
             "authorRole": "cpa",
             "createdAt":  1745400000000
@@ -96,7 +96,7 @@
         {
           "id":             "padd-007",
           "date":           "2026-04-18",
-          "vendor":         "Home Depot",
+          "vendor":         "Staples",
           "amount":         247,
           "category":       "",
           "receiptUrl":     null,
@@ -111,7 +111,7 @@
       "chatHistory": [],
 
       "taxReadiness": {
-        "score":           76,
+        "score":           83,
         "uncategorized":   1,
         "missingReceipts": 1,
         "flagged":         3,
@@ -140,7 +140,7 @@
           "id":           "rule-003",
           "pattern":      "Adobe*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Software Subscriptions",
+          "toCategory":   "Software subscriptions",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745150000000,
@@ -150,7 +150,7 @@
           "id":           "rule-004",
           "pattern":      "Squarespace*",
           "fromCategory": "Marketing",
-          "toCategory":   "Website & hosting",
+          "toCategory":   "Software subscriptions",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745160000000,
@@ -160,22 +160,22 @@
 
       "flags": {
         "txn-s02-01": {
-          "reason":     "reclassify",
-          "note":       "Owner payroll must go through S-Corp payroll to avoid SE tax scrutiny. Currently coded as Owner's draw.",
+          "reason":     "confirm-with-client",
+          "note":       "Gusto payroll $3,500 is correctly running through W-2. Confirm the split between owner W-2 wages and shareholder distributions still reflects reasonable comp for the role.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745200000000,
           "resolvedAt": null
         },
         "txn-s02-02": {
           "reason":     "needs-receipt",
-          "note":       "Equipment purchase over $2,500 — may qualify for Section 179 immediate deduction.",
+          "note":       "B&H Photo Video equipment $1,840 — under the $2,500 de minimis safe harbor, so fully expensable this year. Please attach the receipt.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745210000000,
           "resolvedAt": null
         },
         "txn-s02-03": {
           "reason":     "confirm-with-client",
-          "note":       "Home office deduction — need square footage and total home area to calculate.",
+          "note":       "Phone bill $95 — if any portion is personal use, we need to allocate. Same applies to home office utilities. Send square footage and business-use % when you can.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745220000000,
           "resolvedAt": null
@@ -189,7 +189,7 @@
       "chatHistory": [],
 
       "taxReadiness": {
-        "score":           82,
+        "score":           86,
         "uncategorized":   0,
         "missingReceipts": 1,
         "flagged":         3,
@@ -211,7 +211,7 @@
           "id":           "rule-005",
           "pattern":      "Home Depot*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Materials & supplies",
+          "toCategory":   "Job materials",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1744900000000,
@@ -231,22 +231,22 @@
 
       "flags": {
         "txn-s03-01": {
-          "reason":     "reclassify",
-          "note":       "Vehicle depreciation and loan interest should be split — principal is not deductible.",
+          "reason":     "confirm-with-client",
+          "note":       "AutoZone $156 coded as Vehicle maintenance — confirm this was for the work truck (deductible) and not the personal vehicle.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745000000000,
           "resolvedAt": null
         },
         "txn-s03-02": {
           "reason":     "needs-receipt",
-          "note":       "Large lumber purchase — need receipt and job reference to tie to COGS.",
+          "note":       "Home Depot $847 materials — please attach the receipt and note the job (Martinson, Riverdale, or Williams) so it ties cleanly to COGS.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745010000000,
           "resolvedAt": null
         },
         "txn-s03-03": {
           "reason":     "confirm-with-client",
-          "note":       "1099-NEC threshold — subcontractor paid $580 this quarter. Track toward $600 annual threshold.",
+          "note":       "NECA membership dues $180 — confirm this is the current-year membership. Also flagging the broader 1099-NEC watch: any subcontractor paid > $600 YTD will need a 1099 by Jan 31.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745020000000,
           "resolvedAt": null
@@ -274,7 +274,7 @@
       "chatHistory": [],
 
       "taxReadiness": {
-        "score":           68,
+        "score":           81,
         "uncategorized":   1,
         "missingReceipts": 2,
         "flagged":         3,
@@ -294,9 +294,9 @@
       "learnedRules": [
         {
           "id":           "rule-007",
-          "pattern":      "Shopify*",
+          "pattern":      "Shopify Plus*",
           "fromCategory": "Software Subscriptions",
-          "toCategory":   "E-commerce platform fees",
+          "toCategory":   "Platform fees",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745350000000,
@@ -304,7 +304,7 @@
         },
         {
           "id":           "rule-008",
-          "pattern":      "*inventory*",
+          "pattern":      "SQ *WHOLESALE*",
           "fromCategory": "Supplies",
           "toCategory":   "Inventory (COGS)",
           "suggestedBy":  "cpa",
@@ -316,22 +316,22 @@
 
       "flags": {
         "txn-s04-01": {
-          "reason":     "reclassify",
-          "note":       "Inventory purchased — must flow through COGS Part III, not Line 22 supplies.",
+          "reason":     "confirm-with-client",
+          "note":       "Wholesale Marketplace $2,200 is correctly coded to Inventory (COGS). Confirm your resale certificate is on file with the supplier so this isn't double-taxed when you sell.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745370000000,
           "resolvedAt": null
         },
         "txn-s04-02": {
           "reason":     "needs-receipt",
-          "note":       "Amazon bulk purchase — missing itemized receipt to separate inventory from supplies.",
+          "note":       "Wholesale goods — import $1,800 — missing the itemized invoice. Need it to allocate units to inventory and capture any duties or freight that should land in COGS.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745380000000,
           "resolvedAt": null
         },
         "txn-s04-03": {
           "reason":     "confirm-with-client",
-          "note":       "LLC ownership — single-member or multi-member? Determines Schedule C vs Form 1065.",
+          "note":       "LLC ownership — single-member or multi-member? Determines Schedule C (SMLLC) vs Form 1065 + K-1s (MMLLC). Payroll setup depends on the answer.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745390000000,
           "resolvedAt": null
@@ -345,7 +345,7 @@
       "chatHistory": [],
 
       "taxReadiness": {
-        "score":           91,
+        "score":           86,
         "uncategorized":   0,
         "missingReceipts": 1,
         "flagged":         3,
@@ -362,9 +362,9 @@
       "transactionId": "txn-s01-04",
       "suggestedBy":   "cpa-priya-demo",
       "fromCategory":  "Miscellaneous business expenses",
-      "toCategory":    "Cloud Infrastructure",
+      "toCategory":    "Software subscriptions",
       "candidates":    null,
-      "note":          "AWS charges should route to Cloud Infrastructure for cleaner Schedule C Line 27a grouping.",
+      "note":          "Adobe Creative Cloud should sit in Software subscriptions — cleaner Schedule C Line 27a grouping than Miscellaneous.",
       "status":        "pending",
       "createdAt":     1745460000000,
       "resolvedAt":    null,
@@ -379,7 +379,7 @@
       "fromCategory":  "Business meals (50%)",
       "toCategory":    "Client meals (50%)",
       "candidates":    null,
-      "note":          "This was a client-facing dinner — should be Client meals not general Business meals for clarity.",
+      "note":          "This was a client-facing meal — should be Client meals not general Business meals for clarity.",
       "status":        "pending",
       "createdAt":     1745470000000,
       "resolvedAt":    null,
@@ -439,7 +439,7 @@
       "fromCategory":  null,
       "toCategory":    null,
       "candidates":    null,
-      "note":          "Priya tried to access your books — the invite expired. Resend?",
+      "note":          "Status check (not a low-confidence categorization): Priya tried to access your books — the invite expired. Resend?",
       "status":        "pending",
       "createdAt":     1745490000000,
       "resolvedAt":    null,

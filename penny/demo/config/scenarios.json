@@ -1271,7 +1271,7 @@
           {
             "date": "Apr 18",
             "vendor": "Progressive Commercial",
-            "category": "Insurance",
+            "category": "Commercial insurance",
             "amount": 189,
             "type": "expense"
           },
@@ -1691,7 +1691,7 @@
           {
             "date": "Apr 14",
             "vendor": "Progressive Commercial Insurance",
-            "category": "Insurance",
+            "category": "Commercial insurance",
             "amount": 680,
             "type": "expense"
           },
@@ -4910,7 +4910,7 @@
           {
             "date": "Apr 3",
             "vendor": "Professional liability insurance",
-            "category": "Insurance",
+            "category": "Professional liability insurance",
             "amount": 60,
             "type": "expense"
           },

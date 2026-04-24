@@ -401,6 +401,21 @@
       "createdAt":     1745450000000,
       "resolvedAt":    null,
       "founderNote":   null
+    },
+    "appr-005": {
+      "id":            "appr-005",
+      "type":          "cpa-added-txn",
+      "clientId":      "client-003",
+      "transactionId": "padd-002",
+      "suggestedBy":   "cpa-priya-demo",
+      "fromCategory":  null,
+      "toCategory":    "Estimated tax payment",
+      "candidates":    null,
+      "note":          "Q1 estimated tax payment for Rivera Contracting — added 8 days ago.",
+      "status":        "pending",
+      "createdAt":     1744761600000,
+      "resolvedAt":    null,
+      "founderNote":   null
     }
   },
 

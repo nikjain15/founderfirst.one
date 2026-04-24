@@ -8,7 +8,8 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { groupByIrsLine, formLabelForEntity } from "../../util/irsLookup.js";
+import { groupByIrsLine } from "../../util/irsLookup.js";
+import { ENTITY_TYPES, INDUSTRY_KEYS, formLabelForEntity } from "../../constants/variants.js";
 
 const fmt = (n) =>
   new Intl.NumberFormat("en-US", {
@@ -56,7 +57,7 @@ export default function ProfitLoss({ clientId, clientData }) {
   const [toast, setToast] = useState(null);
   const toastKey = useRef(0);
 
-  const entity = clientData?.entity || "sole-prop";
+  const entity = clientData?.entity || ENTITY_TYPES.SOLE_PROP;
   const formLabel = formLabelForEntity(entity);
 
   function showToast(msg) {
@@ -70,8 +71,8 @@ export default function ProfitLoss({ clientId, clientData }) {
       .then((r) => r.json())
       .then((data) => {
         const scenarioKey = clientData?.scenarioKey ||
-          `${clientData?.entity || "sole-prop"}.${clientData?.industry || "consulting"}`;
-        const scenario = data.scenarios?.[scenarioKey] || data.scenarios?.["sole-prop.consulting"];
+          `${clientData?.entity || ENTITY_TYPES.SOLE_PROP}.${clientData?.industry || INDUSTRY_KEYS.CONSULTING}`;
+        const scenario = data.scenarios?.[scenarioKey] || data.scenarios?.[`${ENTITY_TYPES.SOLE_PROP}.${INDUSTRY_KEYS.CONSULTING}`];
         setLedger(scenario?.drilldown?.ledger || []);
       })
       .catch(() => setLedger([]))
@@ -318,7 +319,7 @@ export default function ProfitLoss({ clientId, clientData }) {
                 padding: 0,
               }}
             >
-              Preview {entity === "s-corp" ? "Form 1120-S" : entity === "partnership" ? "Form 1065" : "Schedule C"}
+              Preview {formLabelForEntity(entity)}
             </button>
             <span style={{ fontSize: 11, color: "var(--ink-4)", marginLeft: 8, fontFamily: "var(--font-sans)" }}>
               CPA review required before filing.

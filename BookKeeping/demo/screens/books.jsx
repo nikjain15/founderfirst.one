@@ -8,9 +8,16 @@
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { ApprovalCard } from "./card.jsx";
-import { groupByIrsLine, formLabelForEntity } from "../util/irsLookup.js";
+import { groupByIrsLine, shortFormLabelForEntity } from "../util/irsLookup.js";
 import { approveApproval, rejectApproval, generateInvite, revokeInvite } from "../util/cpaState.js";
 import Sheet from "../components/Sheet.jsx";
+import {
+  CARD_VARIANTS,
+  APPROVAL_TYPES,
+  ENTITY_TYPES,
+  INDUSTRY_KEYS,
+  formLabelForEntity,
+} from "../constants/variants.js";
 
 const fmt = (n) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -29,7 +36,7 @@ function InviteCpaPanel({ state, set, showToast }) {
 
   const baseUrl = window.PENNY_CONFIG?.baseUrl || "/";
   const persona  = state.persona || {};
-  const sc       = encodeURIComponent(`${persona.entity || "sole-prop"}.${persona.industry || "consulting"}`);
+  const sc       = encodeURIComponent(`${persona.entity || ENTITY_TYPES.SOLE_PROP}.${persona.industry || INDUSTRY_KEYS.CONSULTING}`);
   const fn       = encodeURIComponent(persona.firstName || "");
   const biz      = encodeURIComponent(persona.business  || "");
   const link = activeInvite
@@ -523,7 +530,7 @@ function BooksBubble({ msg, loading }) {
 // ── Flagged transaction sheet ─────────────────────────────────────────────────
 
 function FlaggedSheet({ card, persona, ai, onClose, onAction, onApprove, onReject }) {
-  const title = card.variant === "cpa-suggestion" ? "Review CPA suggestion" : "Review transaction";
+  const title = card.variant === CARD_VARIANTS.CPA_SUGGESTION ? "Review CPA suggestion" : "Review transaction";
   return (
     <Sheet open onClose={onClose} title={title} maxHeight="85%">
       <div style={{ padding: "16px 20px 32px" }}>
@@ -899,10 +906,8 @@ function TaxSheet({ ledger, ddData, onClose }) {
 
 function TaxFormPreviewSheet({ expenses, entity, month, onClose }) {
   const groups = groupByIrsLine(expenses || [], entity);
-  const formLabel = formLabelForEntity(entity);
-  const title = entity === "s-corp" ? "Form 1120-S preview"
-               : entity === "partnership" ? "Form 1065 preview"
-               : "Schedule C preview";
+  const shortLabel = shortFormLabelForEntity(entity);
+  const title = `${formLabelForEntity(entity)} preview`;
   const total = (expenses || []).reduce((s, e) => s + e.amount, 0);
 
   return (
@@ -925,7 +930,7 @@ function TaxFormPreviewSheet({ expenses, entity, month, onClose }) {
 
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 8px" }}>
           <p style={{ margin: "0 0 4px", fontSize: 12, color: "var(--ink-4)" }}>
-            {month} · {formLabel} expense lines
+            {month} · {shortLabel} expense lines
           </p>
           <p style={{ margin: "0 0 20px", fontSize: 22, fontWeight: "var(--fw-bold)", letterSpacing: "var(--ls-tighter)" }}>
             {fmt(total)} <span style={{ fontSize: 13, fontWeight: "var(--fw-medium)", color: "var(--ink-4)" }}>total expenses</span>
@@ -1039,11 +1044,11 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
   const cpaSuggestions = useMemo(() => {
     const approvals = state.cpa?.approvals || {};
     return Object.values(approvals)
-      .filter((a) => a.type === "reclassification" && a.status === "pending")
+      .filter((a) => a.type === APPROVAL_TYPES.RECLASSIFICATION && a.status === "pending")
       .map((a) => ({
         id:               a.id,
         _approvalId:      a.id,
-        variant:          "cpa-suggestion",
+        variant:          CARD_VARIANTS.CPA_SUGGESTION,
         vendor:           null,
         currentCategory:  a.fromCategory,
         suggestedCategory: a.toCategory,
@@ -1058,7 +1063,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
     const now = Date.now();
     const cpaName = state.cpa?.account?.name || "Your CPA";
     return Object.values(approvals)
-      .filter((a) => a.type === "cpa-added-txn" && a.status === "pending"
+      .filter((a) => a.type === APPROVAL_TYPES.CPA_ADDED_TXN && a.status === "pending"
         && (now - a.createdAt) >= SEVEN_DAYS_MS)
       .map((a) => {
         const age = now - a.createdAt;
@@ -1293,7 +1298,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
                       {card.vendor || "Transaction"}
                     </span>
                     <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 14, color: (card.variant === "income" || card.variant === "income-celebration") ? "var(--income)" : "var(--ink-3)" }}>
+                      <span style={{ fontSize: 14, color: (card.variant === CARD_VARIANTS.INCOME || card.variant === CARD_VARIANTS.INCOME_CELEBRATION) ? "var(--income)" : "var(--ink-3)" }}>
                         {card.amount != null ? fmt(card.amount) : ""}
                       </span>
                       <ChevronRight />
@@ -1436,9 +1441,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
               }}
             >
               <span style={{ fontSize: 15, color: "var(--ink)" }}>
-                {persona?.entity === "s-corp" ? "Form 1120-S preview"
-                 : persona?.entity === "partnership" ? "Form 1065 preview"
-                 : "Schedule C preview"}
+                {`${formLabelForEntity(persona?.entity)} preview`}
               </span>
               <ChevronRight />
             </button>

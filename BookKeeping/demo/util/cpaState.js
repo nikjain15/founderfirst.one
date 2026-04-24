@@ -11,6 +11,8 @@
  * Schema source of truth: implementation/cpa-data-model.md
  */
 
+import { APPROVAL_TYPES } from "../constants/variants.js";
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function uid() {
@@ -168,7 +170,7 @@ export function requestPriorYearAccess(cpa, clientId, year, note = "") {
   const request = { year, requestedAt: now, note, status: "pending" };
   const approval = {
     id:            approvalId,
-    type:          "year-access-request",
+    type:          APPROVAL_TYPES.YEAR_ACCESS_REQUEST,
     clientId,
     transactionId: null,
     suggestedBy:   cpa.account?.id || "cpa",
@@ -215,7 +217,7 @@ export function grantYearAccess(cpa, clientId, year) {
   const approvals = Object.fromEntries(
     Object.entries(cpa.approvals || {}).map(([id, a]) => [
       id,
-      a.type === "year-access-request" && a.clientId === clientId
+      a.type === APPROVAL_TYPES.YEAR_ACCESS_REQUEST && a.clientId === clientId
         && a.status === "pending" && (a.note?.includes(String(year)) || true)
         ? { ...a, status: "approved", resolvedAt: now }
         : a,
@@ -293,8 +295,8 @@ export function annotateTransaction(cpa, clientId, txnId, text, authorId = null,
 /**
  * suggestReclassification(cpa, clientId, txnId, fromCategory, toCategory, note) → { newCpa, approvalId }
  *
- * Creates an approval of type "reclassification". Renders as a cpa-suggestion
- * card in the founder's Needs a look.
+ * Creates an approval of type APPROVAL_TYPES.RECLASSIFICATION. Renders as a
+ * cpa-suggestion card in the founder's Needs a look.
  */
 export function suggestReclassification(cpa, clientId, txnId, fromCategory, toCategory, note = "") {
   const now        = Date.now();
@@ -302,7 +304,7 @@ export function suggestReclassification(cpa, clientId, txnId, fromCategory, toCa
 
   const approval = {
     id:            approvalId,
-    type:          "reclassification",
+    type:          APPROVAL_TYPES.RECLASSIFICATION,
     clientId,
     transactionId: txnId,
     suggestedBy:   cpa.account?.id || "cpa",
@@ -328,7 +330,7 @@ export function suggestReclassification(cpa, clientId, txnId, fromCategory, toCa
 /**
  * addTransactionAsCpa(cpa, clientId, txnFields, receiptUrl?) → { newCpa, approvalId }
  *
- * Appends to pendingAdds[]. Creates an approval of type "cpa-added-txn".
+ * Appends to pendingAdds[]. Creates an approval of type APPROVAL_TYPES.CPA_ADDED_TXN.
  * Founder is notified per notifyCpaActivity (handled in the UI layer).
  */
 export function addTransactionAsCpa(cpa, clientId, txnFields, receiptUrl = null) {
@@ -354,7 +356,7 @@ export function addTransactionAsCpa(cpa, clientId, txnFields, receiptUrl = null)
 
   const approval = {
     id:            approvalId,
-    type:          "cpa-added-txn",
+    type:          APPROVAL_TYPES.CPA_ADDED_TXN,
     clientId,
     transactionId: txnId,
     suggestedBy:   cpa.account?.id || "cpa",
@@ -411,7 +413,7 @@ export function approveApproval(cpa, id, cpaName = null) {
   const { clientId } = approval;
   const client = newCpa.clients?.[clientId];
 
-  if (approval.type === "reclassification" || approval.type === "penny-question") {
+  if (approval.type === APPROVAL_TYPES.RECLASSIFICATION || approval.type === APPROVAL_TYPES.PENNY_QUESTION) {
     if (client) {
       const rule = {
         id:           uid(),
@@ -436,7 +438,7 @@ export function approveApproval(cpa, id, cpaName = null) {
     }
   }
 
-  if (approval.type === "year-access-request" && client) {
+  if (approval.type === APPROVAL_TYPES.YEAR_ACCESS_REQUEST && client) {
     // Extract year from yearRequests
     const yearReq = (client.yearRequests || []).find(
       (r) => r.status === "pending" && String(r.note || "").includes(String(approval.note || ""))
@@ -447,7 +449,7 @@ export function approveApproval(cpa, id, cpaName = null) {
     }
   }
 
-  if (approval.type === "cpa-added-txn" && client) {
+  if (approval.type === APPROVAL_TYPES.CPA_ADDED_TXN && client) {
     newCpa = {
       ...newCpa,
       clients: {

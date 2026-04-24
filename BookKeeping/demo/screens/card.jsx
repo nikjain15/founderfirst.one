@@ -16,6 +16,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import posthog from "posthog-js";
 import { irsLineChip } from "../util/irsLookup.js";
 import Sheet from "../components/Sheet.jsx";
+import { CARD_VARIANTS, ENTITY_TYPES } from "../constants/variants.js";
 
 // Maps category name to --cat-* token key
 function catKey(category) {
@@ -222,7 +223,7 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
     ai.renderPenny({
       intent: "card.approval",
       context: {
-        entity:   persona?.entity   || "sole-prop",
+        entity:   persona?.entity   || ENTITY_TYPES.SOLE_PROP,
         industry: persona?.industry || "consulting",
         persona,
         card: {
@@ -298,10 +299,10 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
     setTimeout(() => onConfirm({ ...card, category_guess: category, ruleCreated: true }), 800);
   }, [card, category, onConfirm, showToast]);
 
-  const isCpaSuggestion = card.variant === "cpa-suggestion";
-  const isIncome  = card.variant === "income" || card.variant === "income-celebration";
-  const isOwnDraw = card.variant === "owners-draw";
-  const isRule    = card.variant === "rule-proposal";
+  const isCpaSuggestion = card.variant === CARD_VARIANTS.CPA_SUGGESTION;
+  const isIncome  = card.variant === CARD_VARIANTS.INCOME || card.variant === CARD_VARIANTS.INCOME_CELEBRATION;
+  const isOwnDraw = card.variant === CARD_VARIANTS.OWNERS_DRAW;
+  const isRule    = card.variant === CARD_VARIANTS.RULE_PROPOSAL;
   const sign      = isIncome ? "+" : isOwnDraw ? "" : "-";
 
   // Category icon colors: income uses --income on --income-bg; expenses use --cat-* on matching tint
@@ -480,16 +481,16 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
 }
 
 function fallbackMsg(card) {
-  const isIncome = card.variant === "income" || card.variant === "income-celebration";
+  const isIncome = card.variant === CARD_VARIANTS.INCOME || card.variant === CARD_VARIANTS.INCOME_CELEBRATION;
   if (isIncome) return { headline: `You just got paid 🎉`, why: `${card.vendor} — ${fmt(card.amount)}.`, tone: "celebration" };
-  if (card.variant === "owners-draw") return { headline: `${fmt(card.amount)} moved to your personal account.`, why: "That's an owner's draw — it won't count as an expense.", tone: "fyi" };
-  if (card.variant === "low-confidence") return { headline: `Caught a charge I don't recognize — ${fmt(card.amount)}.`, why: "Can you help me file this one?", ctaPrimary: "Yes, business", ctaSecondary: "Personal", tone: "action" };
+  if (card.variant === CARD_VARIANTS.OWNERS_DRAW) return { headline: `${fmt(card.amount)} moved to your personal account.`, why: "That's an owner's draw — it won't count as an expense.", tone: "fyi" };
+  if (card.variant === CARD_VARIANTS.LOW_CONFIDENCE) return { headline: `Caught a charge I don't recognize — ${fmt(card.amount)}.`, why: "Can you help me file this one?", ctaPrimary: "Yes, business", ctaSecondary: "Personal", tone: "action" };
   return { headline: `${card.vendor} — ${fmt(card.amount)}.`, why: `Looks like ${card.category_guess || "an expense"}.`, ctaPrimary: "Confirm", ctaSecondary: "Change", tone: "fyi" };
 }
 
 export default function CardScreen({ ai, state, navigate }) {
   const card = {
-    id: "preview", variant: "base-expense", vendor: "Notion",
+    id: "preview", variant: CARD_VARIANTS.BASE_EXPENSE, vendor: "Notion",
     amount: 19, daysAgo: 1, confidence: 0.96, category_guess: "Software",
   };
   return (

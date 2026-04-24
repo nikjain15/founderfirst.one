@@ -8,6 +8,11 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { generateInvite, revokeInvite, revokeCpaAccess } from "../util/cpaState.js";
 import Sheet from "../components/Sheet.jsx";
+import {
+  ENTITY_TYPES,
+  INDUSTRY_KEYS,
+  NOTIFICATION_MODES,
+} from "../constants/variants.js";
 
 function Toast({ msg }) {
   if (!msg) return null;
@@ -254,7 +259,7 @@ function YourCpaRow({ state, set, showToast }) {
 
   const baseUrl = window.PENNY_CONFIG?.baseUrl || "/";
   const persona  = state.persona || {};
-  const sc       = encodeURIComponent(`${persona.entity || "sole-prop"}.${persona.industry || "consulting"}`);
+  const sc       = encodeURIComponent(`${persona.entity || ENTITY_TYPES.SOLE_PROP}.${persona.industry || INDUSTRY_KEYS.CONSULTING}`);
   const fn       = encodeURIComponent(persona.firstName || "");
   const biz      = encodeURIComponent(persona.business  || "");
   const link = activeInvite
@@ -470,10 +475,10 @@ function ProfileScreen({ state, set, onBack, showToast }) {
   }, [pendingEntity, update, showToast]);
 
   const ENTITY_OPTIONS = [
-    { value: "sole-prop",  label: "Sole proprietor" },
-    { value: "s-corp",     label: "S-Corp" },
-    { value: "llc",        label: "LLC" },
-    { value: "partnership",label: "Partnership" },
+    { value: ENTITY_TYPES.SOLE_PROP,   label: "Sole proprietor" },
+    { value: ENTITY_TYPES.S_CORP,      label: "S-Corp" },
+    { value: ENTITY_TYPES.LLC,         label: "LLC" },
+    { value: ENTITY_TYPES.PARTNERSHIP, label: "Partnership" },
   ];
   const INDUSTRY_OPTIONS = [
     { value: "consulting",   label: "Consulting" },
@@ -673,9 +678,9 @@ function PreferencesScreen({ state, set, onBack }) {
           <div style={{ padding: "14px 20px" }}>
             <p style={{ margin: "0 0 10px", fontSize: 15, color: "var(--ink)" }}>Notify me when my CPA acts</p>
             <div style={{ display: "flex", border: "1.5px solid var(--line)", borderRadius: "var(--r-pill)", overflow: "hidden" }}>
-              {(["real-time", "daily-digest", "off"]).map((opt) => {
-                const label = opt === "real-time" ? "Real-time" : opt === "daily-digest" ? "Daily digest" : "Off";
-                const active = (prefs.notifyCpaActivity || "real-time") === opt;
+              {([NOTIFICATION_MODES.REAL_TIME, NOTIFICATION_MODES.DAILY_DIGEST, NOTIFICATION_MODES.OFF]).map((opt) => {
+                const label = opt === NOTIFICATION_MODES.REAL_TIME ? "Real-time" : opt === NOTIFICATION_MODES.DAILY_DIGEST ? "Daily digest" : "Off";
+                const active = (prefs.notifyCpaActivity || NOTIFICATION_MODES.REAL_TIME) === opt;
                 return (
                   <button
                     key={opt}

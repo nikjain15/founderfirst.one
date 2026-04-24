@@ -11,6 +11,7 @@ import React, {
   useCallback,
 } from "react";
 import posthog from "posthog-js";
+import { ENTITY_TYPES } from "../constants/variants.js";
 
 const STEP_SEQUENCE = [
   "welcome", "entity", "industry", "payments", "expenses", "checkin", "bank", "pulling",
@@ -39,11 +40,11 @@ const STEP_CONTEXT_KEY = {
 };
 
 const ENTITY_OPTIONS = [
-  { id: "sole-prop", label: "Sole proprietor", sub: "You and the business are the same thing, legally. Taxes go on your personal return." },
-  { id: "llc",       label: "LLC",             sub: "Keeps your personal assets separate. Taxes usually still go on your personal return." },
-  { id: "s-corp",    label: "S-Corp",           sub: "A corporation that pays you a salary. Often lowers your self-employment tax." },
-  { id: "c-corp",    label: "C-Corp",           sub: "Has its own tax return, separate from yours. Less common for small businesses." },
-  { id: "not-sure",  label: "Not sure",         sub: "Answer two quick questions and I'll work it out for you." },
+  { id: ENTITY_TYPES.SOLE_PROP, label: "Sole proprietor", sub: "You and the business are the same thing, legally. Taxes go on your personal return." },
+  { id: ENTITY_TYPES.LLC,       label: "LLC",             sub: "Keeps your personal assets separate. Taxes usually still go on your personal return." },
+  { id: ENTITY_TYPES.S_CORP,    label: "S-Corp",           sub: "A corporation that pays you a salary. Often lowers your self-employment tax." },
+  { id: "c-corp",               label: "C-Corp",           sub: "Has its own tax return, separate from yours. Less common for small businesses." },
+  { id: "not-sure",             label: "Not sure",         sub: "Answer two quick questions and I'll work it out for you." },
 ];
 
 const CHECKIN_OPTIONS = [
@@ -130,14 +131,14 @@ function IndustryIcon({ id }) {
 
 function resolveEntityFromDiag({ q1, q2 }) {
   if (q1 === "personal-return" && q2 === "just-me")
-    return { entity: "sole-prop",   reasons: ["You file on your personal return.", "Just you as the owner."], flag: null };
+    return { entity: ENTITY_TYPES.SOLE_PROP,   reasons: ["You file on your personal return.", "Just you as the owner."], flag: null };
   if (q1 === "personal-return" && q2 === "me-and-others")
-    return { entity: "partnership", reasons: ["You file on your personal return.", "More than one owner — usually a partnership."], flag: "Partnerships aren't in the MVP yet. I'll flag this for a CPA check." };
+    return { entity: ENTITY_TYPES.PARTNERSHIP, reasons: ["You file on your personal return.", "More than one owner — usually a partnership."], flag: "Partnerships aren't in the MVP yet. I'll flag this for a CPA check." };
   if (q1 === "separate-return" && q2 === "just-me")
-    return { entity: "s-corp",      reasons: ["You file a separate business return.", "Just you as the owner."], flag: null };
+    return { entity: ENTITY_TYPES.S_CORP,      reasons: ["You file a separate business return.", "Just you as the owner."], flag: null };
   if (q1 === "separate-return" && q2 === "me-and-others")
-    return { entity: "s-corp",      reasons: ["You file a separate business return.", "Multiple owners — we'll sort the details with your CPA."], flag: null };
-  return { entity: "sole-prop", reasons: ["We'll start simple.", "You can change this anytime."], flag: "Let's confirm this with your CPA on your next sync." };
+    return { entity: ENTITY_TYPES.S_CORP,      reasons: ["You file a separate business return.", "Multiple owners — we'll sort the details with your CPA."], flag: null };
+  return { entity: ENTITY_TYPES.SOLE_PROP, reasons: ["We'll start simple.", "You can change this anytime."], flag: "Let's confirm this with your CPA on your next sync." };
 }
 
 // --- Main component -----------------------------------------------------------
@@ -253,7 +254,7 @@ export default function OnboardingScreen({ ai, state, set, navigate }) {
 
   useEffect(() => {
     if (step !== "pulling") return;
-    const finalEntity   = entity || "sole-prop";
+    const finalEntity   = entity || ENTITY_TYPES.SOLE_PROP;
     const finalIndustry = industry || "other";
 
     // Pre-warm the two most expensive first-impression calls while the

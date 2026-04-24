@@ -1,11 +1,11 @@
 /**
  * screens/cpa/WorkQueue.jsx — Tab 1: per-client work queue.
  *
- * Priority order:
- *  1. type "reclassification" | "cpa-added-txn" + status "pending" → var(--error) dot
+ * Priority order (types from constants/variants.js → APPROVAL_TYPES):
+ *  1. RECLASSIFICATION | CPA_ADDED_TXN + status pending → var(--error) dot
  *  2. pendingAdds with no category → var(--amber) dot
  *  3. flags[txnId] not resolvedAt → var(--ink-3) dot
- *  4. type "penny-question" + status "pending" → var(--sage) dot
+ *  4. PENNY_QUESTION + status pending → var(--sage) dot
  *
  * Collapsible "Resolved" section below active items.
  * Auto-archive resolved items older than 7 days.
@@ -20,6 +20,7 @@
 import React, { useState } from "react";
 import Sheet from "../../components/Sheet.jsx";
 import { rejectApproval } from "../../util/cpaState.js";
+import { APPROVAL_TYPES } from "../../constants/variants.js";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -226,7 +227,7 @@ function ActionSheet({ item, clientData, onClose, onUpdateCpa, clientId }) {
       return (
         <>
           <p style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)", margin: "0 0 8px", letterSpacing: "var(--ls-tight)" }}>
-            {item.approvalType === "reclassification" ? "Reclassification pending" : "Added transaction pending"}
+            {item.approvalType === APPROVAL_TYPES.RECLASSIFICATION ? "Reclassification pending" : "Added transaction pending"}
           </p>
           <p style={{ fontSize: "var(--fs-data-row)", color: "var(--ink-3)", margin: "0 0 16px", lineHeight: 1.5 }}>
             {item.fullDescription}
@@ -413,13 +414,13 @@ export default function WorkQueue({ clientId, clientData, approvals, cpaAccount,
   const p1 = clientApprovals
     .filter(
       (a) =>
-        (a.type === "reclassification" || a.type === "cpa-added-txn") &&
+        (a.type === APPROVAL_TYPES.RECLASSIFICATION || a.type === APPROVAL_TYPES.CPA_ADDED_TXN) &&
         a.status === "pending"
     )
     .map((a) => {
       let description;
       let fullDescription;
-      if (a.type === "reclassification") {
+      if (a.type === APPROVAL_TYPES.RECLASSIFICATION) {
         description = `Reclassify: ${a.fromCategory} → ${a.toCategory}`;
         fullDescription = description + (a.note ? ` — ${a.note}` : "");
         if (a.note) description += ` — ${a.note}`;
@@ -482,7 +483,7 @@ export default function WorkQueue({ clientId, clientData, approvals, cpaAccount,
 
   // Priority 4: penny-question pending
   const p4 = clientApprovals
-    .filter((a) => a.type === "penny-question" && a.status === "pending")
+    .filter((a) => a.type === APPROVAL_TYPES.PENNY_QUESTION && a.status === "pending")
     .map((a) => ({
       key: a.id,
       dot: "var(--sage)",
@@ -507,11 +508,11 @@ export default function WorkQueue({ clientId, clientData, approvals, cpaAccount,
     )
     .map((a) => {
       let description;
-      if (a.type === "reclassification") {
+      if (a.type === APPROVAL_TYPES.RECLASSIFICATION) {
         description = `Reclassify: ${a.fromCategory} → ${a.toCategory}`;
-      } else if (a.type === "cpa-added-txn") {
+      } else if (a.type === APPROVAL_TYPES.CPA_ADDED_TXN) {
         description = `Added transaction (${a.toCategory || "—"})`;
-      } else if (a.type === "year-access-request") {
+      } else if (a.type === APPROVAL_TYPES.YEAR_ACCESS_REQUEST) {
         description = `Year access request — ${a.note}`;
       } else {
         description = a.note || a.type;

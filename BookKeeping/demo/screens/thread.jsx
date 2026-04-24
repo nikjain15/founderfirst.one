@@ -8,6 +8,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { ApprovalCard } from "./card.jsx";
+import { CARD_VARIANTS } from "../constants/variants.js";
 
 const fmt = (n) => {
   if (n == null) return "";
@@ -365,8 +366,8 @@ function PennyBubble({ msg, loading }) {
 // --- Confirmed slug (collapsed card) -----------------------------------------
 
 function ConfirmedSlug({ card }) {
-  const isIncome = card.variant === "income" || card.variant === "income-celebration";
-  const isOwnDraw = card.variant === "owners-draw";
+  const isIncome = card.variant === CARD_VARIANTS.INCOME || card.variant === CARD_VARIANTS.INCOME_CELEBRATION;
+  const isOwnDraw = card.variant === CARD_VARIANTS.OWNERS_DRAW;
   const sign     = isIncome ? "+" : isOwnDraw ? "" : "-";
   return (
     <div className="confirmed-slug">

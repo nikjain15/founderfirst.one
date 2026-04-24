@@ -6,6 +6,37 @@
 
 ## Changelog
 
+### 24/25 April 2026 — SCAF-2: constants/variants.js registry
+
+Every string literal that names a concept — card variants, entity types, industry keys, approval types, notification modes — now lives in one frozen module: `constants/variants.js`. Screens import from it; no screen hand-writes these strings. The two-helper naming collision on `formLabelForEntity` is resolved — short labels stay in `util/irsLookup.js` as `shortFormLabelForEntity`; full labels live on the new registry.
+
+**New:**
+- `constants/variants.js` — 5 frozen enums (`CARD_VARIANTS`, `ENTITY_TYPES`, `INDUSTRY_KEYS`, `APPROVAL_TYPES`, `NOTIFICATION_MODES`) plus 6 helpers (`isKnownVariant`, `isKnownEntity`, `isKnownIndustry`, `isSCorpOrLlc`, `isLlc`, `formLabelForEntity`).
+- `tests/variants.test.js` — freeze checks for every enum, helper-routing suites, and coverage assertions that every industry key in `industries.json` and every entity prefix in `scenarios.json` is present in the enums.
+
+**Renamed:**
+- `util/irsLookup.js` — `formLabelForEntity` → `shortFormLabelForEntity`. Chip text ("Sch C · Line 24b", "1120-S · Line 19") unchanged. Internal callers (`irsLineChip`, `groupByIrsLine`) and external importers (`books.jsx`, `cpa/ProfitLoss.jsx`) updated.
+
+**Refactored — screens import from the registry (9 files):**
+- `screens/card.jsx` — `CARD_VARIANTS` for every `card.variant ===` comparison and the preview stub.
+- `screens/books.jsx` — `CARD_VARIANTS`, `APPROVAL_TYPES`, `ENTITY_TYPES`, `INDUSTRY_KEYS`, `formLabelForEntity`. Tax-form-preview heading now drives from the helper, replacing the hand-rolled ternary.
+- `screens/thread.jsx` — `CARD_VARIANTS` for the ConfirmedSlug income/owner's-draw branches.
+- `screens/add.jsx` — `CARD_VARIANTS.BASE_EXPENSE` for stub cards; `ENTITY_TYPES.SOLE_PROP` for AI context defaults.
+- `screens/avatar-menu.jsx` — `NOTIFICATION_MODES` for the CPA-activity picker; `ENTITY_TYPES` for the entity-change editor.
+- `screens/onboarding.jsx` — `ENTITY_TYPES` for the entity picker, diagnostic resolver, and final-entity default.
+- `screens/cpa/WorkQueue.jsx` — `APPROVAL_TYPES` for every priority filter and resolved-item branch.
+- `screens/cpa/ProfitLoss.jsx` — uses `formLabelForEntity` (full) for the preview button label and `shortFormLabelForEntity` remains available from `util/irsLookup.js` for chip text.
+- `util/cpaState.js` — `APPROVAL_TYPES` on every approval creation and dispatch branch.
+
+**Grep checks (all passing):**
+- `grep -rE '"income-celebration"|"owners-draw"|"rule-proposal"|"cpa-suggestion"|"variable-recurring"|"penny-question"|"year-access-request"' demo/screens` → 0 hits.
+- `grep -rE '"base-expense"|"low-confidence"' demo/screens` → 0 runtime hits.
+- `grep -rE '"reclassification"|"cpa-added-txn"' demo/screens demo/util` → 0 runtime hits.
+
+**Settled decision 18:** every enum-typed string lives in `constants/variants.js`. Never hand-write one of these strings in a screen file. When adding a new concept-level string, add the enum member first; the screen then imports.
+
+---
+
 ### 24 April 2026 — SCAF-1: canonical `<Sheet>` + `<FullScreenOverlay>`
 
 Every bottom sheet and dark-scrim overlay in the demo (founder app + CPA view) now renders through two canonical components in `components/`. The two-pattern drift documented in `reviews/demo-stress-test-apr-2026/01-founder-code.md §A.1` is closed.
@@ -301,6 +332,31 @@ When building new screens or features, reach for these canonical components befo
   <p>Listening… {seconds}s</p>
 </FullScreenOverlay>
 ```
+
+---
+
+## Constants catalog
+
+Every string literal that names a concept lives in `constants/variants.js`. Import from there; do not hand-write these strings in a screen. When you need a new concept-level string, add the enum member first — the screen then imports. The coverage tests in `tests/variants.test.js` keep the enums in sync with `public/config/industries.json` and `public/config/scenarios.json`.
+
+| Export | Purpose |
+|---|---|
+| `CARD_VARIANTS` | Every `card.variant` value — `EXPENSE`, `BASE_EXPENSE`, `LOW_CONFIDENCE`, `INCOME`, `INCOME_CELEBRATION`, `OWNERS_DRAW`, `RULE_PROPOSAL`, `VARIABLE_RECURRING`, `CPA_SUGGESTION`. |
+| `ENTITY_TYPES` | Founder business entity — `SOLE_PROP`, `S_CORP`, `LLC`, `LLC_SINGLE`, `LLC_MULTI`, `PARTNERSHIP`. |
+| `INDUSTRY_KEYS` | The 10 industries in `industries.json`. |
+| `APPROVAL_TYPES` | `state.cpa.approvals[].type` — `RECLASSIFICATION`, `CPA_ADDED_TXN`, `PENNY_QUESTION`, `YEAR_ACCESS_REQUEST`. |
+| `NOTIFICATION_MODES` | `state.preferences.notifyCpaActivity` — `REAL_TIME`, `DAILY_DIGEST`, `OFF`. |
+| `isKnownVariant(v)` | Membership check against `CARD_VARIANTS`. |
+| `isKnownEntity(e)` | Membership check against `ENTITY_TYPES`. |
+| `isKnownIndustry(k)` | Membership check against `INDUSTRY_KEYS`. |
+| `isSCorpOrLlc(entity)` | True for S-Corp and every LLC flavour — the owner's-draw-eligible set. |
+| `isLlc(entity)` | True for any LLC flavour (`LLC`, `LLC_SINGLE`, `LLC_MULTI`). |
+| `formLabelForEntity(entity)` | Full tax-form label for page titles — `"Schedule C"` / `"Form 1120-S"` / `"Form 1065"`. For the compact chip under a category (`"Sch C · Line 24b"`), use `shortFormLabelForEntity` from `util/irsLookup.js`. |
+
+**How to add a new concept-level string (3 steps):**
+1. Add the member to the matching enum in `constants/variants.js` — keep keys `SCREAMING_SNAKE_CASE` and values kebab-case.
+2. If it's an `INDUSTRY_KEYS` or `ENTITY_TYPES` addition that should appear in live data, also add it to the relevant config JSON — the coverage test will fail otherwise.
+3. Import and use. Never hand-write the string in a screen.
 
 ---
 

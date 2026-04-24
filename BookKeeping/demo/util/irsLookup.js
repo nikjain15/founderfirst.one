@@ -72,8 +72,17 @@ export function lineKeyForEntity(entity) {
   return "schedC"; // sole-prop, llc, default
 }
 
-/** Returns the form label for a given entity value. */
-export function formLabelForEntity(entity) {
+/**
+ * Returns the SHORT form label for a given entity value — used inside the
+ * compact IRS-line chip under expense categories ("Sch C · Line 24b",
+ * "1120-S · Line 19"). For the FULL label ("Schedule C", "Form 1120-S",
+ * "Form 1065") used in page titles and preview headings, use
+ * `formLabelForEntity` from `constants/variants.js` instead.
+ *
+ * Renamed from `formLabelForEntity` in SCAF-2 (24/25 April 2026) to remove
+ * the naming collision with the full-label helper.
+ */
+export function shortFormLabelForEntity(entity) {
   if (entity === "s-corp") return "1120-S";
   if (entity === "partnership") return "1065";
   return "Sch C";
@@ -85,7 +94,7 @@ export function irsLineChip(category, entity) {
   const row = IRS_LINE_MAP[category.toLowerCase()];
   if (!row) return null;
   const key = lineKeyForEntity(entity);
-  return row[key] ? `${formLabelForEntity(entity)} · Line ${row[key]}` : null;
+  return row[key] ? `${shortFormLabelForEntity(entity)} · Line ${row[key]}` : null;
 }
 
 /**
@@ -94,7 +103,7 @@ export function irsLineChip(category, entity) {
  */
 export function groupByIrsLine(expenses, entity) {
   const lineKey = lineKeyForEntity(entity);
-  const form    = formLabelForEntity(entity);
+  const form    = shortFormLabelForEntity(entity);
   const byLine  = {};
 
   for (const exp of expenses) {

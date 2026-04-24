@@ -11,6 +11,7 @@ import { ApprovalCard } from "./card.jsx";
 import posthog from "posthog-js";
 import CanonicalSheet from "../components/Sheet.jsx";
 import FullScreenOverlay from "../components/FullScreenOverlay.jsx";
+import { CARD_VARIANTS, ENTITY_TYPES } from "../constants/variants.js";
 
 // ── SVG icon factory ──────────────────────────────────────────────────────────
 
@@ -114,7 +115,7 @@ function buildCardFromParsed(parsed, prefix) {
   const p = parsed || {};
   return {
     id: `${prefix}-${Date.now()}`,
-    variant: "base-expense",
+    variant: CARD_VARIANTS.BASE_EXPENSE,
     vendor: p.vendor || "Receipt",
     amount: p.amount ?? 0,
     category_guess: p.category_guess || "Business expense",
@@ -591,7 +592,7 @@ function VoiceModal({ ai, persona, onResult, onClose }) {
         context: {
           text: hint,
           today: new Date().toISOString().slice(0, 10),
-          entity: persona?.entity || "sole-prop",
+          entity: persona?.entity || ENTITY_TYPES.SOLE_PROP,
           industry: persona?.industry || "consulting",
           persona: { name: persona?.firstName || "there", business: persona?.business || "" },
         },
@@ -691,7 +692,7 @@ function PhotoOverlay({ ai, persona, onResult }) {
           context: {
             text: hint,
             today: new Date().toISOString().slice(0, 10),
-            entity: persona?.entity || "sole-prop",
+            entity: persona?.entity || ENTITY_TYPES.SOLE_PROP,
             industry: persona?.industry || "consulting",
             persona: { name: persona?.firstName || "there", business: persona?.business || "" },
           },
@@ -769,7 +770,7 @@ export default function AddScreen({ ai, state, set }) {
         intent: "capture.parse",
         context: {
           text, today,
-          entity: persona?.entity || "sole-prop",
+          entity: persona?.entity || ENTITY_TYPES.SOLE_PROP,
           industry: persona?.industry || "consulting",
           persona: { name: persona?.firstName || "there", business: persona?.business || "" },
         },
@@ -777,7 +778,7 @@ export default function AddScreen({ ai, state, set }) {
       const p = msg.parsed || {};
       setCaptureCard({
         id: `capture-${Date.now()}`,
-        variant: "base-expense",
+        variant: CARD_VARIANTS.BASE_EXPENSE,
         vendor: p.vendor || text,
         amount: p.amount ?? 0,
         category_guess: p.category_guess || "Uncategorized",

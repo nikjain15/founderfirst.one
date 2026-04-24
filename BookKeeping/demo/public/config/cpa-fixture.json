@@ -338,6 +338,899 @@
         "flagged":         3,
         "lastComputedAt":  1745500000000
       }
+    },
+
+    "client-005": {
+      "clientName":   "Sarah Chen — Studio Nine Consulting Inc.",
+      "scenarioKey":  "s-corp.consulting",
+      "entity":       "s-corp",
+      "industry":     "consulting",
+      "grantedAt":    1745450000000,
+      "yearGrants":   [2025, 2026],
+      "yearRequests": [],
+
+      "learnedRules": [
+        {
+          "id":           "rule-009",
+          "pattern":      "Gusto*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Payroll — officer salary",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1745100000000,
+          "active":       true
+        },
+        {
+          "id":           "rule-010",
+          "pattern":      "Mercury*",
+          "fromCategory": "Bank fees",
+          "toCategory":   "Banking fees",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1745110000000,
+          "active":       true
+        },
+        {
+          "id":           "rule-011",
+          "pattern":      "IRS EFTPS*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Estimated tax payment",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1745120000000,
+          "active":       true
+        }
+      ],
+
+      "flags": {
+        "txn-s05-01": {
+          "reason":     "reclassify",
+          "note":       "S-Corp reasonable salary — officer compensation should be at least $8,500/mo for this revenue level. Please review Gusto payroll setup.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1745430000000,
+          "resolvedAt": null
+        },
+        "txn-s05-02": {
+          "reason":     "confirm-with-client",
+          "note":       "Q1 distribution looks high relative to W-2 salary. Confirm distribution is documented with board resolution.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1745440000000,
+          "resolvedAt": null
+        }
+      },
+
+      "annotations": {
+        "txn-s05-01": [
+          {
+            "id":         "ann-002",
+            "text":       "IRS Rev. Rul. 74-44 — S-Corp must pay reasonable salary before distributions. At $14,500 monthly revenue, recommend W-2 salary of $8,500–$10,000/mo.",
+            "authorId":   "cpa-priya-demo",
+            "authorRole": "cpa",
+            "createdAt":  1745430000000
+          }
+        ]
+      },
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           90,
+        "uncategorized":   0,
+        "missingReceipts": 1,
+        "flagged":         2,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-006": {
+      "clientName":   "Jordan Reyes — Jordan Reyes Photography",
+      "scenarioKey":  "sole-prop.creative",
+      "entity":       "sole-prop",
+      "industry":     "creative",
+      "grantedAt":    1745200000000,
+      "yearGrants":   [2026],
+      "yearRequests": [],
+
+      "learnedRules": [
+        {
+          "id":           "rule-012",
+          "pattern":      "BorrowLenses*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Equipment rental",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1745050000000,
+          "active":       true
+        },
+        {
+          "id":           "rule-013",
+          "pattern":      "Dropbox*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Software subscriptions",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1745060000000,
+          "active":       true
+        }
+      ],
+
+      "flags": {
+        "txn-s06-01": {
+          "reason":     "needs-receipt",
+          "note":       "Camera body purchase over $3,000 — document serial number and business use percentage for Section 179.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1745180000000,
+          "resolvedAt": null
+        }
+      },
+
+      "annotations": {
+        "txn-s06-01": [
+          {
+            "id":         "ann-003",
+            "text":       "Camera equipment qualifies for Section 179 if >50% business use. Jordan should log personal vs. business shoot days to document the percentage.",
+            "authorId":   "cpa-priya-demo",
+            "authorRole": "cpa",
+            "createdAt":  1745180000000
+          }
+        ]
+      },
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           86,
+        "uncategorized":   2,
+        "missingReceipts": 2,
+        "flagged":         1,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-007": {
+      "clientName":   "Olivia Park — Olive & Oak Co.",
+      "scenarioKey":  "sole-prop.retail",
+      "entity":       "sole-prop",
+      "industry":     "retail",
+      "grantedAt":    1745100000000,
+      "yearGrants":   [2026],
+      "yearRequests": [],
+
+      "learnedRules": [
+        {
+          "id":           "rule-014",
+          "pattern":      "Etsy*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "E-commerce platform fees",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1744900000000,
+          "active":       true
+        },
+        {
+          "id":           "rule-015",
+          "pattern":      "*packaging*",
+          "fromCategory": "Supplies",
+          "toCategory":   "Inventory (COGS)",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1744910000000,
+          "active":       true
+        }
+      ],
+
+      "flags": {
+        "txn-s07-01": {
+          "reason":     "reclassify",
+          "note":       "Raw materials purchased — track separately from finished goods. Both are COGS but opening/closing inventory matters for Schedule C Part III.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1745080000000,
+          "resolvedAt": null
+        }
+      },
+
+      "annotations": {
+        "txn-s07-01": [
+          {
+            "id":         "ann-004",
+            "text":       "Olivia needs to do an inventory count at year-end. Schedule C Part III line 41 (beginning inventory) must reconcile with last year's ending inventory.",
+            "authorId":   "cpa-priya-demo",
+            "authorRole": "cpa",
+            "createdAt":  1745080000000
+          }
+        ]
+      },
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           83,
+        "uncategorized":   3,
+        "missingReceipts": 2,
+        "flagged":         1,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-008": {
+      "clientName":   "Carmen Vega — Carmen Vega Catering",
+      "scenarioKey":  "sole-prop.food-beverage",
+      "entity":       "sole-prop",
+      "industry":     "food-beverage",
+      "grantedAt":    1744800000000,
+      "yearGrants":   [2026],
+      "yearRequests": [],
+
+      "learnedRules": [
+        {
+          "id":           "rule-016",
+          "pattern":      "*kitchen rental*",
+          "fromCategory": "Rent",
+          "toCategory":   "Facility rental (commercial kitchen)",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1744600000000,
+          "active":       true
+        },
+        {
+          "id":           "rule-017",
+          "pattern":      "Sysco*",
+          "fromCategory": "Supplies",
+          "toCategory":   "Food & ingredients (COGS)",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1744610000000,
+          "active":       true
+        }
+      ],
+
+      "flags": {
+        "txn-s08-01": {
+          "reason":     "needs-receipt",
+          "note":       "Cash payment received for private event — Venmo record shows $1,200 but no invoice on file. Need documentation of services rendered.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1744780000000,
+          "resolvedAt": null
+        },
+        "txn-s08-02": {
+          "reason":     "reclassify",
+          "note":       "Commercial oven purchase ($2,800) — capital asset, not a supply. Depreciates over 5 years or Section 179 election.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1744790000000,
+          "resolvedAt": null
+        }
+      },
+
+      "annotations": {
+        "txn-s08-01": [
+          {
+            "id":         "ann-005",
+            "text":       "All Venmo/cash income must be reported. Recommend Carmen create invoices retroactively for any undocumented private events this year.",
+            "authorId":   "cpa-priya-demo",
+            "authorRole": "cpa",
+            "createdAt":  1744780000000
+          }
+        ]
+      },
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           74,
+        "uncategorized":   4,
+        "missingReceipts": 3,
+        "flagged":         2,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-009": {
+      "clientName":   "Tony Russo — Curbside Collective LLC",
+      "scenarioKey":  "llc.food-beverage",
+      "entity":       "llc",
+      "industry":     "food-beverage",
+      "grantedAt":    1744600000000,
+      "yearGrants":   [2026],
+      "yearRequests": [],
+
+      "learnedRules": [
+        {
+          "id":           "rule-018",
+          "pattern":      "*commissary*",
+          "fromCategory": "Rent",
+          "toCategory":   "Facility rental (commissary)",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1744400000000,
+          "active":       true
+        },
+        {
+          "id":           "rule-019",
+          "pattern":      "Gusto*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Payroll — wages",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1744410000000,
+          "active":       true
+        }
+      ],
+
+      "flags": {
+        "txn-s09-01": {
+          "reason":     "reclassify",
+          "note":       "Food purchases at Restaurant Depot mixed COGS items with paper goods supplies. Split needed — COGS vs. Line 22 supplies.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1744580000000,
+          "resolvedAt": null
+        },
+        "txn-s09-02": {
+          "reason":     "confirm-with-client",
+          "note":       "Cash tips collected by part-time helper — confirm Gusto payroll includes tip income reporting, otherwise there's a payroll tax exposure.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1744590000000,
+          "resolvedAt": null
+        }
+      },
+
+      "annotations": {
+        "txn-s09-01": [
+          {
+            "id":         "ann-006",
+            "text":       "Food truck COGS should include all ingredients and packaging that go into sold items. Non-food consumables (napkins, cleaning supplies) are Line 22 supplies, not COGS.",
+            "authorId":   "cpa-priya-demo",
+            "authorRole": "cpa",
+            "createdAt":  1744580000000
+          }
+        ]
+      },
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           69,
+        "uncategorized":   5,
+        "missingReceipts": 4,
+        "flagged":         2,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-010": {
+      "clientName":   "Alicia Monroe — Serene Wellness Studio Inc.",
+      "scenarioKey":  "s-corp.beauty-wellness",
+      "entity":       "s-corp",
+      "industry":     "beauty-wellness",
+      "grantedAt":    1745350000000,
+      "yearGrants":   [2025, 2026],
+      "yearRequests": [],
+
+      "learnedRules": [
+        {
+          "id":           "rule-020",
+          "pattern":      "Mindbody*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Software subscriptions",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1745100000000,
+          "active":       true
+        },
+        {
+          "id":           "rule-021",
+          "pattern":      "*spa supplies*",
+          "fromCategory": "Supplies",
+          "toCategory":   "Professional supplies",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1745110000000,
+          "active":       true
+        },
+        {
+          "id":           "rule-022",
+          "pattern":      "*retail product*",
+          "fromCategory": "Supplies",
+          "toCategory":   "Inventory (COGS)",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1745120000000,
+          "active":       true
+        }
+      ],
+
+      "flags": {
+        "txn-s10-01": {
+          "reason":     "needs-receipt",
+          "note":       "Massage table purchase ($1,400) — equipment asset requiring receipt for depreciation schedule.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1745330000000,
+          "resolvedAt": null
+        }
+      },
+
+      "annotations": {
+        "txn-s10-01": [
+          {
+            "id":         "ann-007",
+            "text":       "Massage tables have a 5-year MACRS class life. With Section 179, Alicia can deduct the full $1,400 in year one — just need the receipt and business-use confirmation.",
+            "authorId":   "cpa-priya-demo",
+            "authorRole": "cpa",
+            "createdAt":  1745330000000
+          }
+        ]
+      },
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           94,
+        "uncategorized":   0,
+        "missingReceipts": 1,
+        "flagged":         1,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-011": {
+      "clientName":   "Rachel Moore — Rachel Moore LCSW",
+      "scenarioKey":  "sole-prop.professional-services",
+      "entity":       "sole-prop",
+      "industry":     "professional-services",
+      "grantedAt":    1744200000000,
+      "yearGrants":   [2026],
+      "yearRequests": [],
+
+      "learnedRules": [],
+
+      "flags": {},
+
+      "annotations": {},
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           97,
+        "uncategorized":   1,
+        "missingReceipts": 0,
+        "flagged":         0,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-012": {
+      "clientName":   "David Park — Park & Associates PC",
+      "scenarioKey":  "s-corp.professional-services",
+      "entity":       "s-corp",
+      "industry":     "professional-services",
+      "grantedAt":    1745400000000,
+      "yearGrants":   [2025, 2026],
+      "yearRequests": [],
+
+      "learnedRules": [
+        {
+          "id":           "rule-023",
+          "pattern":      "LinkedIn Premium*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Marketing & business development",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1745200000000,
+          "active":       true
+        },
+        {
+          "id":           "rule-024",
+          "pattern":      "Westlaw*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Professional subscriptions",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1745210000000,
+          "active":       true
+        }
+      ],
+
+      "flags": {
+        "txn-s12-01": {
+          "reason":     "confirm-with-client",
+          "note":       "Client entertainment expenses — $3,200 total this quarter. Confirm each has a documented business purpose; entertainment is non-deductible post-TCJA.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1745380000000,
+          "resolvedAt": null
+        }
+      },
+
+      "annotations": {
+        "txn-s12-01": [
+          {
+            "id":         "ann-008",
+            "text":       "Post-TCJA (2018+), entertainment expenses are 100% non-deductible. Meals with clients are still 50% deductible if business is discussed. David should categorize these separately.",
+            "authorId":   "cpa-priya-demo",
+            "authorRole": "cpa",
+            "createdAt":  1745380000000
+          }
+        ]
+      },
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           96,
+        "uncategorized":   0,
+        "missingReceipts": 0,
+        "flagged":         1,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-013": {
+      "clientName":   "Marco Henderson — Henderson Renovations LLC",
+      "scenarioKey":  "llc.trades",
+      "entity":       "llc",
+      "industry":     "trades",
+      "grantedAt":    1744700000000,
+      "yearGrants":   [2026],
+      "yearRequests": [],
+
+      "learnedRules": [
+        {
+          "id":           "rule-025",
+          "pattern":      "Lowe's*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Materials & supplies",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1744500000000,
+          "active":       true
+        },
+        {
+          "id":           "rule-026",
+          "pattern":      "Mitchell Builders*",
+          "fromCategory": "Contractors",
+          "toCategory":   "Subcontractors",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1744510000000,
+          "active":       true
+        }
+      ],
+
+      "flags": {
+        "txn-s13-01": {
+          "reason":     "reclassify",
+          "note":       "Subcontractor paid $1,800 this quarter — tracking toward 1099-NEC threshold. Confirm W-9 on file for Mitchell Builders.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1744680000000,
+          "resolvedAt": null
+        },
+        "txn-s13-02": {
+          "reason":     "needs-receipt",
+          "note":       "Large materials purchase at Lowe's — need receipt to split deductible job materials from capital tools.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1744690000000,
+          "resolvedAt": null
+        }
+      },
+
+      "annotations": {
+        "txn-s13-01": [
+          {
+            "id":         "ann-009",
+            "text":       "Subcontractors paid $600+ in a calendar year require a 1099-NEC by Jan 31. Marco should collect W-9s at project start, not after the fact.",
+            "authorId":   "cpa-priya-demo",
+            "authorRole": "cpa",
+            "createdAt":  1744680000000
+          }
+        ]
+      },
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           74,
+        "uncategorized":   4,
+        "missingReceipts": 3,
+        "flagged":         2,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-014": {
+      "clientName":   "Dana Kim — Dana Kim Studio",
+      "scenarioKey":  "sole-prop.beauty-wellness",
+      "entity":       "sole-prop",
+      "industry":     "beauty-wellness",
+      "grantedAt":    1745000000000,
+      "yearGrants":   [2026],
+      "yearRequests": [],
+
+      "learnedRules": [],
+
+      "flags": {},
+
+      "annotations": {},
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           92,
+        "uncategorized":   2,
+        "missingReceipts": 1,
+        "flagged":         0,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-015": {
+      "clientName":   "Alex Rivera — Alex Rivera Dev",
+      "scenarioKey":  "sole-prop.tech-software",
+      "entity":       "sole-prop",
+      "industry":     "tech-software",
+      "grantedAt":    1744900000000,
+      "yearGrants":   [2026],
+      "yearRequests": [],
+
+      "learnedRules": [],
+
+      "flags": {},
+
+      "annotations": {},
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           95,
+        "uncategorized":   1,
+        "missingReceipts": 1,
+        "flagged":         0,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-016": {
+      "clientName":   "Priya Shah — Shah Software Inc.",
+      "scenarioKey":  "s-corp.tech-software",
+      "entity":       "s-corp",
+      "industry":     "tech-software",
+      "grantedAt":    1745480000000,
+      "yearGrants":   [2025, 2026],
+      "yearRequests": [],
+
+      "learnedRules": [
+        {
+          "id":           "rule-027",
+          "pattern":      "AWS*",
+          "fromCategory": "Software subscriptions",
+          "toCategory":   "Cloud infrastructure",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1745300000000,
+          "active":       true
+        },
+        {
+          "id":           "rule-028",
+          "pattern":      "Stripe*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Merchant processing fees",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1745310000000,
+          "active":       true
+        }
+      ],
+
+      "flags": {
+        "txn-s16-01": {
+          "reason":     "confirm-with-client",
+          "note":       "R&D tax credit eligibility — Priya's development activity likely qualifies for IRC 41 credit. Need time logs by project to calculate.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1745460000000,
+          "resolvedAt": null
+        }
+      },
+
+      "annotations": {
+        "txn-s16-01": [
+          {
+            "id":         "ann-010",
+            "text":       "R&D credit under IRC 41 can offset payroll tax for small businesses. Priya should track developer hours by qualifying activity (new feature development, not maintenance). Could save $8–15k this year.",
+            "authorId":   "cpa-priya-demo",
+            "authorRole": "cpa",
+            "createdAt":  1745460000000
+          }
+        ]
+      },
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           96,
+        "uncategorized":   0,
+        "missingReceipts": 0,
+        "flagged":         1,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-017": {
+      "clientName":   "Lisa Grant — Lisa Grant Physical Therapy",
+      "scenarioKey":  "sole-prop.healthcare",
+      "entity":       "sole-prop",
+      "industry":     "healthcare",
+      "grantedAt":    1744400000000,
+      "yearGrants":   [2026],
+      "yearRequests": [],
+
+      "learnedRules": [],
+
+      "flags": {},
+
+      "annotations": {},
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           88,
+        "uncategorized":   2,
+        "missingReceipts": 1,
+        "flagged":         1,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-018": {
+      "clientName":   "James Wu — Wu Family Wellness Inc.",
+      "scenarioKey":  "s-corp.healthcare",
+      "entity":       "s-corp",
+      "industry":     "healthcare",
+      "grantedAt":    1745300000000,
+      "yearGrants":   [2025, 2026],
+      "yearRequests": [],
+
+      "learnedRules": [
+        {
+          "id":           "rule-029",
+          "pattern":      "Gusto*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Payroll — staff wages",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1745100000000,
+          "active":       true
+        },
+        {
+          "id":           "rule-030",
+          "pattern":      "BCBS*",
+          "fromCategory": "Income",
+          "toCategory":   "Insurance reimbursements",
+          "suggestedBy":  "cpa",
+          "approvedBy":   "founder",
+          "approvedAt":   1745110000000,
+          "active":       true
+        }
+      ],
+
+      "flags": {
+        "txn-s18-01": {
+          "reason":     "reclassify",
+          "note":       "Health insurance premiums paid for staff — confirm these flow through Gusto as payroll benefit, not as a direct expense. Treatment differs for W-2 employees vs. officer.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1745280000000,
+          "resolvedAt": null
+        },
+        "txn-s18-02": {
+          "reason":     "confirm-with-client",
+          "note":       "Insurance billing lag — $14,200 in outstanding Aetna claims not yet paid. Confirm cash vs. accrual basis before we close Q1.",
+          "flaggedBy":  "cpa-priya-demo",
+          "flaggedAt":  1745290000000,
+          "resolvedAt": null
+        }
+      },
+
+      "annotations": {
+        "txn-s18-01": [
+          {
+            "id":         "ann-011",
+            "text":       "S-Corp officer health insurance is deductible on the officer's W-2 (Box 14) and then taken as a personal deduction on Form 1040. Non-officer employee premiums are a business expense on 1120-S Line 18.",
+            "authorId":   "cpa-priya-demo",
+            "authorRole": "cpa",
+            "createdAt":  1745280000000
+          }
+        ]
+      },
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           90,
+        "uncategorized":   0,
+        "missingReceipts": 1,
+        "flagged":         2,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-019": {
+      "clientName":   "Natalie Brooks — Natalie Brooks VA",
+      "scenarioKey":  "sole-prop.other",
+      "entity":       "sole-prop",
+      "industry":     "other",
+      "grantedAt":    1744100000000,
+      "yearGrants":   [2026],
+      "yearRequests": [],
+
+      "learnedRules": [],
+
+      "flags": {},
+
+      "annotations": {},
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           95,
+        "uncategorized":   1,
+        "missingReceipts": 1,
+        "flagged":         0,
+        "lastComputedAt":  1745500000000
+      }
+    },
+
+    "client-020": {
+      "clientName":   "Sofia Espinoza — Sparks Events LLC",
+      "scenarioKey":  "llc.other",
+      "entity":       "llc",
+      "industry":     "other",
+      "grantedAt":    1744500000000,
+      "yearGrants":   [2026],
+      "yearRequests": [],
+
+      "learnedRules": [],
+
+      "flags": {},
+
+      "annotations": {},
+
+      "pendingAdds": [],
+
+      "chatHistory": [],
+
+      "taxReadiness": {
+        "score":           86,
+        "uncategorized":   2,
+        "missingReceipts": 2,
+        "flagged":         1,
+        "lastComputedAt":  1745500000000
+      }
     }
   },
 

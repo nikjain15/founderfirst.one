@@ -76,6 +76,15 @@ Present at the bottom of the content (above the tab bar). Text input + mic butto
 
 ---
 
+## Send to CPA (added 23 Apr 2026)
+
+- "Send to CPA" pill button in the header opens a bottom sheet.
+- Sheet shows: To (CPA name + email from `persona.cpaName` / `persona.cpaEmail`), P&L summary for the month (income, expenses, net from `ddData.pl`), and an optional note textarea.
+- Send button is disabled with helper text if no CPA email is saved in Profile.
+- On send: 1.4 s "Sending…" state → sheet closes → toast "Books sent to [name] ✓".
+
+---
+
 ## Not in scope
 
 - Full ledger view — stub.

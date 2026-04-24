@@ -4,6 +4,22 @@
 
 ---
 
+## Changelog
+
+### 24 April 2026 — IRS taxonomy v1.2 label sync (Prompt 1)
+
+Propagated canonical category labels from `BookKeeping/engineering/categories.v1.json` and `BookKeeping/demo/implementation/irs-routing.md` into all demo surfaces. No feature or styling changes.
+
+**Files changed:**
+- `screens/card.jsx` DEFAULT_CATEGORIES: `"Meals"` → `"Business meals (50%)"`, `"Insurance"` → `"Commercial insurance"`, `"Other"` → `"Miscellaneous business expenses"`
+- `screens/onboarding.jsx` fallback list: `"Meals"` → `"Business meals (50%)"`
+- `public/config/industries.json`: `"Insurance"` → `"Commercial insurance"` (trades, beauty-wellness); `"Inventory"` → `"Inventory (COGS)"` (retail); `"Meals"` → `"Business meals (50%)"`, `"Other"` → `"Miscellaneous business expenses"` (other)
+- `public/config/scenarios.json`: two `category_guess: "Insurance"` (Progressive Commercial vendors) → `"Commercial insurance"`
+
+**Banned labels (0 hits in source):** `"Van lease + gas"`, `"Inventory / COGS"`, `"Other operating expenses"`, `"Truck payment"`, `"Meals"` (bare), `"Insurance"` (bare in category context)
+
+---
+
 ## What this project is
 
 A browser-based, realistic demo of Penny — an AI bookkeeper for US small business owners. The demo's job is to give a prospective user a five-minute walkthrough: onboarding → first approval → Penny thread → My Books. Feedback from this demo will shape the MVP.

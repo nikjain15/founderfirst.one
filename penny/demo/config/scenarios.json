@@ -171,13 +171,15 @@
             "type": "expense"
           },
           {
+            "id": "txn-s01-04",
             "date": "Apr 20",
             "vendor": "Adobe Creative Cloud",
-            "category": "Software subscriptions",
+            "category": "Miscellaneous business expenses",
             "amount": 120,
             "type": "expense"
           },
           {
+            "id": "txn-s01-05",
             "date": "Apr 18",
             "vendor": "SQ *BUCKLEY'S",
             "category": "Business meals (50%)",
@@ -213,6 +215,7 @@
             "type": "income"
           },
           {
+            "id": "txn-s01-01",
             "date": "Apr 12",
             "vendor": "Client dinner — Tartine",
             "category": "Business meals (50%)",
@@ -248,6 +251,7 @@
             "type": "expense"
           },
           {
+            "id": "txn-s01-03",
             "date": "Apr 7",
             "vendor": "Upwork — @jsmith_design",
             "category": "Contractors",
@@ -269,6 +273,7 @@
             "type": "income"
           },
           {
+            "id": "txn-s01-02",
             "date": "Apr 2",
             "vendor": "Best Buy Business",
             "category": "Office supplies",
@@ -915,6 +920,7 @@
             "type": "expense"
           },
           {
+            "id": "txn-s02-02",
             "date": "Apr 20",
             "vendor": "B&H PHOTO VIDEO",
             "category": "Equipment",
@@ -922,6 +928,7 @@
             "type": "expense"
           },
           {
+            "id": "txn-s02-01",
             "date": "Apr 18",
             "vendor": "Gusto — April payroll",
             "category": "Payroll",
@@ -1006,6 +1013,7 @@
             "type": "expense"
           },
           {
+            "id": "txn-s02-03",
             "date": "Apr 1",
             "vendor": "Phone — Verizon",
             "category": "Phone",
@@ -1255,6 +1263,7 @@
             "type": "income"
           },
           {
+            "id": "txn-s03-02",
             "date": "Apr 21",
             "vendor": "Home Depot #0472",
             "category": "Job materials",
@@ -1262,6 +1271,7 @@
             "type": "expense"
           },
           {
+            "id": "txn-s03-01",
             "date": "Apr 20",
             "vendor": "AUTOZONE #1128",
             "category": "Vehicle maintenance",
@@ -1325,6 +1335,7 @@
             "type": "income"
           },
           {
+            "id": "txn-s03-03",
             "date": "Apr 7",
             "vendor": "NECA membership dues",
             "category": "Membership",
@@ -2266,6 +2277,7 @@
             "type": "income"
           },
           {
+            "id": "txn-s04-01",
             "date": "Apr 21",
             "vendor": "SQ *WHOLESALE MKTPL",
             "category": "Inventory (COGS)",
@@ -2294,6 +2306,7 @@
             "type": "income"
           },
           {
+            "id": "txn-s04-03",
             "date": "Apr 15",
             "vendor": "Gusto — April payroll",
             "category": "Payroll",
@@ -2308,6 +2321,7 @@
             "type": "income"
           },
           {
+            "id": "txn-s04-02",
             "date": "Apr 12",
             "vendor": "Wholesale goods — import",
             "category": "Inventory (COGS)",

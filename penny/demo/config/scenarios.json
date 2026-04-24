@@ -1050,7 +1050,7 @@
           "vendor": "Progressive Commercial",
           "amount": 189,
           "daysAgo": 4,
-          "category_guess": "Insurance",
+          "category_guess": "Commercial insurance",
           "rollingMedian": "167–172"
         },
         {
@@ -1427,7 +1427,7 @@
           "amount": 680,
           "daysAgo": 7,
           "confidence": 0.99,
-          "category_guess": "Insurance"
+          "category_guess": "Commercial insurance"
         },
         {
           "variant": "low-confidence",

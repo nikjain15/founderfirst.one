@@ -7,10 +7,10 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { createPortal } from "react-dom";
 import { ApprovalCard } from "./card.jsx";
 import { groupByIrsLine, formLabelForEntity } from "../util/irsLookup.js";
 import { approveApproval, rejectApproval, generateInvite, revokeInvite } from "../util/cpaState.js";
+import Sheet from "../components/Sheet.jsx";
 
 const fmt = (n) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -177,29 +177,24 @@ function SendToCPASheet({ persona, ledger, ddData, state, set, onClose, showToas
     }, 1400);
   }
 
-  const root = document.getElementById("sheet-root") || document.querySelector(".phone") || document.body;
-  return createPortal(
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" style={{ maxHeight: "92%", display: "flex", flexDirection: "column" }}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="sheet-handle" />
-
-        {/* Header */}
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "10px 16px 10px 20px",
-          borderBottom: "1px solid var(--line-2)", flexShrink: 0,
-        }}>
-          <p style={{ margin: 0, fontSize: 15, fontWeight: "var(--fw-semibold)" }}>Send to CPA</p>
-          <button type="button" onClick={onClose} aria-label="Close"
-            style={{
-              background: "none", border: "none", color: "var(--ink-3)",
-              cursor: "pointer", padding: 4, minWidth: "unset", minHeight: "unset",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-            <XIcon />
-          </button>
-        </div>
+  return (
+    <Sheet open onClose={onClose} maxHeight="92%" layout="custom" ariaLabel="Send to CPA">
+      {/* Header */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "10px 16px 10px 20px",
+        borderBottom: "1px solid var(--line-2)", flexShrink: 0,
+      }}>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: "var(--fw-semibold)" }}>Send to CPA</p>
+        <button type="button" onClick={onClose} aria-label="Close"
+          style={{
+            background: "none", border: "none", color: "var(--ink-3)",
+            cursor: "pointer", padding: 4, minWidth: "unset", minHeight: "unset",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+          <XIcon />
+        </button>
+      </div>
 
         {/* Tab bar */}
         <div style={{
@@ -320,9 +315,7 @@ function SendToCPASheet({ persona, ledger, ddData, state, set, onClose, showToas
             )}
           </div>
         )}
-      </div>
-    </div>,
-    root
+    </Sheet>
   );
 }
 
@@ -530,24 +523,17 @@ function BooksBubble({ msg, loading }) {
 // ── Flagged transaction sheet ─────────────────────────────────────────────────
 
 function FlaggedSheet({ card, persona, ai, onClose, onAction, onApprove, onReject }) {
-  const root = document.getElementById("sheet-root") || document.querySelector(".phone") || document.body;
   const title = card.variant === "cpa-suggestion" ? "Review CPA suggestion" : "Review transaction";
-  return createPortal(
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" style={{ padding: "16px 20px 32px", maxHeight: "85%", overflowY: "auto" }}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="sheet-handle" />
-        <p className="sheet-title" style={{ padding: "0 0 12px", borderBottom: "1px solid var(--line-2)", marginBottom: 16 }}>
-          {title}
-        </p>
+  return (
+    <Sheet open onClose={onClose} title={title} maxHeight="85%">
+      <div style={{ padding: "16px 20px 32px" }}>
         <ApprovalCard card={card} persona={persona} ai={ai}
           onConfirm={(c) => onAction(c)}
           onSkip={(c) => onAction(c)}
           onApprove={onApprove}
           onReject={onReject} />
       </div>
-    </div>,
-    root
+    </Sheet>
   );
 }
 
@@ -803,30 +789,25 @@ function TaxSheet({ ledger, ddData, onClose }) {
   // Deductible categories (business expenses)
   const deductible   = expenses.slice(0, 5);
 
-  const root = document.getElementById("sheet-root") || document.querySelector(".phone") || document.body;
-  return createPortal(
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" style={{ maxHeight: "92%", display: "flex", flexDirection: "column" }}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="sheet-handle" />
+  return (
+    <Sheet open onClose={onClose} maxHeight="92%" layout="custom" ariaLabel="Tax summary">
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "10px 16px 10px 20px",
+        borderBottom: "1px solid var(--line-2)", flexShrink: 0,
+      }}>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: "var(--fw-semibold)" }}>Tax summary</p>
+        <button type="button" onClick={onClose} aria-label="Close"
+          style={{
+            background: "none", border: "none", color: "var(--ink-3)",
+            cursor: "pointer", padding: 4, minWidth: "unset", minHeight: "unset",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+          <XIcon />
+        </button>
+      </div>
 
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "10px 16px 10px 20px",
-          borderBottom: "1px solid var(--line-2)", flexShrink: 0,
-        }}>
-          <p style={{ margin: 0, fontSize: 15, fontWeight: "var(--fw-semibold)" }}>Tax summary</p>
-          <button type="button" onClick={onClose} aria-label="Close"
-            style={{
-              background: "none", border: "none", color: "var(--ink-3)",
-              cursor: "pointer", padding: 4, minWidth: "unset", minHeight: "unset",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-            <XIcon />
-          </button>
-        </div>
-
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 32px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 32px" }}>
 
           {/* Q2 due date banner */}
           <div style={{
@@ -912,9 +893,7 @@ function TaxSheet({ ledger, ddData, onClose }) {
             Estimates only. Consult your CPA for exact figures.
           </p>
         </div>
-      </div>
-    </div>,
-    root
+    </Sheet>
   );
 }
 
@@ -926,30 +905,25 @@ function TaxFormPreviewSheet({ expenses, entity, month, onClose }) {
                : "Schedule C preview";
   const total = (expenses || []).reduce((s, e) => s + e.amount, 0);
 
-  const root = document.getElementById("sheet-root") || document.querySelector(".phone") || document.body;
-  return createPortal(
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" style={{ maxHeight: "92%", display: "flex", flexDirection: "column" }}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="sheet-handle" />
+  return (
+    <Sheet open onClose={onClose} maxHeight="92%" layout="custom" ariaLabel={title}>
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "10px 16px 10px 20px",
+        borderBottom: "1px solid var(--line-2)", flexShrink: 0,
+      }}>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: "var(--fw-semibold)" }}>{title}</p>
+        <button type="button" onClick={onClose} aria-label="Close"
+          style={{
+            background: "none", border: "none", color: "var(--ink-3)",
+            cursor: "pointer", padding: 4, minWidth: "unset", minHeight: "unset",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+          <XIcon />
+        </button>
+      </div>
 
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "10px 16px 10px 20px",
-          borderBottom: "1px solid var(--line-2)", flexShrink: 0,
-        }}>
-          <p style={{ margin: 0, fontSize: 15, fontWeight: "var(--fw-semibold)" }}>{title}</p>
-          <button type="button" onClick={onClose} aria-label="Close"
-            style={{
-              background: "none", border: "none", color: "var(--ink-3)",
-              cursor: "pointer", padding: 4, minWidth: "unset", minHeight: "unset",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-            <XIcon />
-          </button>
-        </div>
-
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 8px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 8px" }}>
           <p style={{ margin: "0 0 4px", fontSize: 12, color: "var(--ink-4)" }}>
             {month} · {formLabel} expense lines
           </p>
@@ -1001,56 +975,47 @@ function TaxFormPreviewSheet({ expenses, entity, month, onClose }) {
             Preview — CPA review required before filing.
           </p>
         </div>
-      </div>
-    </div>,
-    root
+    </Sheet>
   );
 }
 
 function DrilldownSheet({ slug, dd, month, onClose }) {
   const title = (DD_LABELS[slug] || (() => "Detail"))(month);
 
-  const root = document.getElementById("sheet-root") || document.querySelector(".phone") || document.body;
-  return createPortal(
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" style={{ maxHeight: "92%", display: "flex", flexDirection: "column" }}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="sheet-handle" />
-
-        {/* Header */}
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "10px 16px 10px 20px",
-          borderBottom: "1px solid var(--line-2)", flexShrink: 0,
-        }}>
-          <p style={{ margin: 0, fontSize: 15, fontWeight: "var(--fw-semibold)" }}>
-            {title}
-          </p>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            style={{
-              background: "none", border: "none", color: "var(--ink-3)",
-              cursor: "pointer", padding: 4,
-              minWidth: "unset", minHeight: "unset",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >
-            <XIcon />
-          </button>
-        </div>
-
-        {/* Scrollable content */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 32px" }}>
-          {slug === "pl"       && <PLView       data={dd} />}
-          {slug === "expenses" && <ExpensesView data={dd} />}
-          {slug === "income"   && <IncomeView   data={dd} />}
-          {slug === "ledger"   && <LedgerView   data={dd} />}
-        </div>
+  return (
+    <Sheet open onClose={onClose} maxHeight="92%" layout="custom" ariaLabel={title}>
+      {/* Header */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "10px 16px 10px 20px",
+        borderBottom: "1px solid var(--line-2)", flexShrink: 0,
+      }}>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: "var(--fw-semibold)" }}>
+          {title}
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            background: "none", border: "none", color: "var(--ink-3)",
+            cursor: "pointer", padding: 4,
+            minWidth: "unset", minHeight: "unset",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <XIcon />
+        </button>
       </div>
-    </div>,
-    root
+
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 32px" }}>
+        {slug === "pl"       && <PLView       data={dd} />}
+        {slug === "expenses" && <ExpensesView data={dd} />}
+        {slug === "income"   && <IncomeView   data={dd} />}
+        {slug === "ledger"   && <LedgerView   data={dd} />}
+      </div>
+    </Sheet>
   );
 }
 

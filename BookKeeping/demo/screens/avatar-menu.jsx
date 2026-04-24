@@ -6,8 +6,8 @@
  */
 
 import React, { useState, useCallback, useMemo } from "react";
-import { createPortal } from "react-dom";
 import { generateInvite, revokeInvite, revokeCpaAccess } from "../util/cpaState.js";
+import Sheet from "../components/Sheet.jsx";
 
 function Toast({ msg }) {
   if (!msg) return null;
@@ -124,81 +124,57 @@ function ToggleRow({ label, sublabel, checked, onChange }) {
 // --- Your CPA row (inline expand) --------------------------------------------
 // Confirm-revoke sheet — portalled to #sheet-root (inside .phone)
 function RevokeConfirmSheet({ cpaName, onConfirm, onClose }) {
-  const root = document.getElementById("sheet-root") || document.querySelector(".phone") || document.body;
-  return createPortal(
-    <div
-      style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.18)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 300, pointerEvents: "auto" }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{ background: "var(--white)", borderRadius: "var(--r-sheet) var(--r-sheet) 0 0", width: "100%", maxWidth: 480, padding: "0 0 32px", fontFamily: "var(--font-sans)" }}
-      >
-        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
-        </div>
-        <div style={{ padding: "4px 20px 20px" }}>
-          <p style={{ margin: "0 0 8px", fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)" }}>
-            Remove {cpaName || "your CPA"}?
-          </p>
-          <p style={{ margin: 0, fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6 }}>
-            This will remove {cpaName || "your CPA"}'s access immediately. All their notes and flags will be saved for you to review.
-          </p>
-        </div>
-        <div style={{ padding: "0 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-          <button
-            type="button"
-            onClick={onConfirm}
-            style={{
-              width: "100%", padding: 14, background: "none", border: "1.5px solid var(--line)",
-              borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)",
-              cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--error)",
-            }}
-          >
-            Revoke access
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              width: "100%", padding: 14, background: "var(--ink)", border: "none",
-              borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)",
-              cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--white)",
-            }}
-          >
-            Cancel
-          </button>
-        </div>
+  return (
+    <Sheet open onClose={onClose} layout="custom" ariaLabel={`Remove ${cpaName || "your CPA"}?`}>
+      <div style={{ padding: "4px 20px 20px", fontFamily: "var(--font-sans)" }}>
+        <p style={{ margin: "0 0 8px", fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)" }}>
+          Remove {cpaName || "your CPA"}?
+        </p>
+        <p style={{ margin: 0, fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6 }}>
+          This will remove {cpaName || "your CPA"}'s access immediately. All their notes and flags will be saved for you to review.
+        </p>
       </div>
-    </div>,
-    root
+      <div style={{ padding: "0 20px 32px", display: "flex", flexDirection: "column", gap: 10, fontFamily: "var(--font-sans)" }}>
+        <button
+          type="button"
+          onClick={onConfirm}
+          style={{
+            width: "100%", padding: 14, background: "none", border: "1.5px solid var(--line)",
+            borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)",
+            cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--error)",
+          }}
+        >
+          Revoke access
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            width: "100%", padding: 14, background: "var(--ink)", border: "none",
+            borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)",
+            cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--white)",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </Sheet>
   );
 }
 
 // Archived-work read-only sheet — portalled to #sheet-root
 function ArchivedWorkSheet({ archive, onClose }) {
-  const root = document.getElementById("sheet-root") || document.querySelector(".phone") || document.body;
   const rules = archive?.rules?.filter((r) => r.active !== false) || [];
   const flags = Object.entries(archive?.flags || {});
   const annotations = Object.entries(archive?.annotations || {});
 
-  return createPortal(
-    <div
-      style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.18)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 300, pointerEvents: "auto" }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{ background: "var(--white)", borderRadius: "var(--r-sheet) var(--r-sheet) 0 0", width: "100%", maxWidth: 480, padding: "0 0 32px", maxHeight: "70%", overflowY: "auto", fontFamily: "var(--font-sans)" }}
-      >
-        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
-        </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px 14px", borderBottom: "1px solid var(--line-2)" }}>
-          <span style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)" }}>Archived work</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 20, padding: "0 4px" }}>×</button>
-        </div>
-        <div style={{ padding: "16px 20px 0" }}>
+  return (
+    <Sheet open onClose={onClose} layout="custom" ariaLabel="Archived work">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px 14px", borderBottom: "1px solid var(--line-2)", fontFamily: "var(--font-sans)" }}>
+        <span style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)" }}>Archived work</span>
+        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 20, padding: "0 4px" }}>×</button>
+      </div>
+      <div style={{ padding: "16px 20px 32px", overflowY: "auto", flex: 1, fontFamily: "var(--font-sans)" }}>
           <p style={{ margin: "0 0 16px", fontSize: 12, color: "var(--ink-4)" }}>
             Read-only. Archived {archive?.revokedAt ? new Date(archive.revokedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}.
           </p>
@@ -240,10 +216,8 @@ function ArchivedWorkSheet({ archive, onClose }) {
           {rules.length === 0 && flags.length === 0 && annotations.length === 0 && (
             <p style={{ fontSize: 13, color: "var(--ink-4)", textAlign: "center", padding: "20px 0" }}>No archived work to show.</p>
           )}
-        </div>
       </div>
-    </div>,
-    root
+    </Sheet>
   );
 }
 
@@ -543,26 +517,19 @@ function ProfileScreen({ state, set, onBack, showToast }) {
       </div>
 
       {/* Entity change confirm sheet */}
-      {showEntitySheet && (
-        <>
-          <div className="sheet-backdrop" onClick={() => setShowEntitySheet(false)} />
-          <div className="sheet" style={{ padding: "0 20px 24px" }}>
-            <div className="sheet-handle" />
-            <p style={{ fontSize: 16, fontWeight: "var(--fw-semibold)", lineHeight: 1.4, margin: "4px 0 12px", color: "var(--ink)" }}>
-              Changing entity type
-            </p>
-            <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.55, margin: "0 0 20px" }}>
-              Changing entity type updates how Penny tracks your books. If you're making this change with the IRS too, you'll need to file the right form (Form 2553 for S-Corp election, for example). I'll handle the books; your CPA handles the IRS side.
-            </p>
-            <button className="btn btn-full" type="button" onClick={confirmEntityChange}>
-              I got it — update Penny
-            </button>
-            <button className="btn btn-ghost btn-full" type="button" onClick={() => setShowEntitySheet(false)} style={{ marginTop: 10 }}>
-              Never mind
-            </button>
-          </div>
-        </>
-      )}
+      <Sheet open={showEntitySheet} onClose={() => setShowEntitySheet(false)} title="Changing entity type">
+        <div style={{ padding: "16px 20px 24px" }}>
+          <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.55, margin: "0 0 20px" }}>
+            Changing entity type updates how Penny tracks your books. If you're making this change with the IRS too, you'll need to file the right form (Form 2553 for S-Corp election, for example). I'll handle the books; your CPA handles the IRS side.
+          </p>
+          <button className="btn btn-full" type="button" onClick={confirmEntityChange}>
+            I got it — update Penny
+          </button>
+          <button className="btn btn-ghost btn-full" type="button" onClick={() => setShowEntitySheet(false)} style={{ marginTop: 10 }}>
+            Never mind
+          </button>
+        </div>
+      </Sheet>
     </div>
   );
 }

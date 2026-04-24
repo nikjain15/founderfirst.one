@@ -9,6 +9,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ApprovalCard } from "./card.jsx";
 import posthog from "posthog-js";
+import CanonicalSheet from "../components/Sheet.jsx";
+import FullScreenOverlay from "../components/FullScreenOverlay.jsx";
 
 // ── SVG icon factory ──────────────────────────────────────────────────────────
 
@@ -136,28 +138,23 @@ function Toast({ message, onDone }) {
 }
 
 // ── Sheet scaffold ────────────────────────────────────────────────────────────
+// Thin wrapper over the canonical <Sheet> (components/Sheet.jsx). Adds the
+// add-tab-specific close-button header pattern. Every sub-sheet in this file
+// (ProviderSheet, ExportSheet, ImportSheet, ManageSheet, ConnectEmailSheet)
+// composes this wrapper instead of rolling its own backdrop/portal.
 
 function Sheet({ onClose, title, children }) {
   return (
-    <div style={{ position:"absolute",inset:0,background:"rgba(10,10,10,0.18)",
-      zIndex:100,display:"flex",flexDirection:"column",justifyContent:"flex-end" }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background:"var(--white)",borderRadius:"var(--r-sheet) var(--r-sheet) 0 0",
-        padding:"0 0 40px",maxHeight:"82%",display:"flex",flexDirection:"column" }}>
-        {/* Drag handle */}
-        <div style={{ display:"flex",justifyContent:"center",padding:"12px 0 8px" }}>
-          <div style={{ width:36,height:4,background:"var(--line)",borderRadius:99 }} />
-        </div>
-        {/* Header */}
-        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px 16px" }}>
-          <span style={{ fontSize:15,fontWeight:"var(--fw-semibold)",color:"var(--ink)" }}>{title}</span>
-          <button onClick={onClose}
-            style={{ background:"none",border:"none",color:"var(--ink-3)",padding:4,minWidth:0,minHeight:0,cursor:"pointer" }}
-            aria-label="Close"><CloseIcon /></button>
-        </div>
-        <div style={{ overflowY:"auto",flex:1 }}>{children}</div>
+    <CanonicalSheet open onClose={onClose} maxHeight="82%" layout="custom" ariaLabel={title}>
+      {/* Header with close button — add-tab convention */}
+      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px 16px" }}>
+        <span style={{ fontSize:15,fontWeight:"var(--fw-semibold)",color:"var(--ink)" }}>{title}</span>
+        <button onClick={onClose}
+          style={{ background:"none",border:"none",color:"var(--ink-3)",padding:4,minWidth:0,minHeight:0,cursor:"pointer" }}
+          aria-label="Close"><CloseIcon /></button>
       </div>
-    </div>
+      <div style={{ overflowY:"auto",flex:1,paddingBottom:40 }}>{children}</div>
+    </CanonicalSheet>
   );
 }
 
@@ -609,10 +606,7 @@ function VoiceModal({ ai, persona, onResult, onClose }) {
   const BARS = [6,18,32,14,40,22,8,36,12,28,44,10,30,16,42,20,6,38,24,10,46,18,34,8,26,44,14,30];
 
   return (
-    <div style={{ position:"absolute",inset:0,background:"rgba(10,10,10,0.92)",
-      zIndex:200,display:"flex",flexDirection:"column",alignItems:"center",
-      justifyContent:"center",gap:28 }}>
-
+    <FullScreenOverlay open onClose={onClose} ariaLabel="Recording voice note">
       {/* Close */}
       <button onClick={onClose}
         style={{ position:"absolute",top:20,right:20,background:"none",border:"none",
@@ -680,7 +674,7 @@ function VoiceModal({ ai, persona, onResult, onClose }) {
         @keyframes pulseRing { 0%{transform:scale(1);opacity:0.6} 100%{transform:scale(2.2);opacity:0} }
         @keyframes voiceBar  { from{transform:scaleY(0.15)} to{transform:scaleY(1)} }
       `}</style>
-    </div>
+    </FullScreenOverlay>
   );
 }
 
@@ -710,13 +704,11 @@ function PhotoOverlay({ ai, persona, onResult }) {
     return () => { cancelled = true; clearTimeout(t); };
   }, []);
   return (
-    <div style={{ position:"absolute",inset:0,background:"rgba(10,10,10,0.72)",
-      zIndex:200,display:"flex",flexDirection:"column",alignItems:"center",
-      justifyContent:"center",gap:16 }}>
+    <FullScreenOverlay open scrim="rgba(10,10,10,0.72)" ariaLabel="Reading your receipt">
       <Spinner size={32} color="var(--white)" />
       <div style={{ fontSize:16,fontWeight:"var(--fw-medium)",color:"var(--white)" }}>Reading your receipt…</div>
       <div style={{ fontSize:13,color:"rgba(255,255,255,0.55)" }}>This takes just a moment</div>
-    </div>
+    </FullScreenOverlay>
   );
 }
 

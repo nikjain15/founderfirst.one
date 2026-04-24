@@ -13,9 +13,9 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import posthog from "posthog-js";
 import { irsLineChip } from "../util/irsLookup.js";
+import Sheet from "../components/Sheet.jsx";
 
 // Maps category name to --cat-* token key
 function catKey(category) {
@@ -165,35 +165,22 @@ function CategorySheet({ open, onClose, onSelect, currentCategory, industry }) {
       .catch(() => {});
   }, [industry]);
 
-  const sheetRef = useRef(null);
-  useEffect(() => { if (open) sheetRef.current?.focus(); }, [open]);
-
-  if (!open) return null;
-
-  const phoneEl = document.getElementById("sheet-root") || document.querySelector(".phone") || document.body;
-
-  return createPortal(
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" ref={sheetRef} tabIndex={-1} role="dialog" aria-label="Change category"
-        onClick={(e) => e.stopPropagation()}>
-        <div className="sheet-handle" />
-        <p className="sheet-title">Change category</p>
-        <div className="sheet-list">
-          {cats.map((cat) => (
-            <button
-              key={cat}
-              className={`sheet-item${cat === currentCategory ? " sheet-item--active" : ""}`}
-              onClick={() => onSelect(cat)}
-              type="button"
-            >
-              <span className="sheet-item-label">{cat}</span>
-              {cat === currentCategory && <span className="sheet-item-check">✓</span>}
-            </button>
-          ))}
-        </div>
+  return (
+    <Sheet open={open} onClose={onClose} title="Change category">
+      <div className="sheet-list">
+        {cats.map((cat) => (
+          <button
+            key={cat}
+            className={`sheet-item${cat === currentCategory ? " sheet-item--active" : ""}`}
+            onClick={() => onSelect(cat)}
+            type="button"
+          >
+            <span className="sheet-item-label">{cat}</span>
+            {cat === currentCategory && <span className="sheet-item-check">✓</span>}
+          </button>
+        ))}
       </div>
-    </div>,
-    phoneEl
+    </Sheet>
   );
 }
 

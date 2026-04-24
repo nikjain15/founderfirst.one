@@ -7,8 +7,8 @@
  */
 
 import React, { useState } from "react";
-import { createPortal } from "react-dom";
 import { deleteLearnedRule } from "../../util/cpaState.js";
+import Sheet from "../../components/Sheet.jsx";
 
 function formatDate(ts) {
   if (!ts) return "—";
@@ -18,39 +18,9 @@ function formatDate(ts) {
 // ── Confirm delete sheet (portalled) ─────────────────────────────────────────
 
 function ConfirmDeleteSheet({ rule, onConfirm, onCancel }) {
-  const portal = document.getElementById("sheet-root-cpa") || document.body;
-
-  return createPortal(
-    <div
-      className="sheet-backdrop"
-      onClick={onCancel}
-      style={{
-        position: "absolute",
-        inset: 0,
-        background: "rgba(10,10,10,0.18)",
-        display: "flex",
-        alignItems: "flex-end",
-        justifyContent: "center",
-        zIndex: 200,
-        pointerEvents: "auto",
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "var(--white)",
-          borderRadius: "var(--r-sheet) var(--r-sheet) 0 0",
-          width: "100%",
-          maxWidth: 480,
-          padding: "0 0 32px",
-        }}
-      >
-        {/* Drag handle */}
-        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
-        </div>
-
-        <div style={{ padding: "4px 24px 20px", fontFamily: "var(--font-sans)" }}>
+  return (
+    <Sheet open onClose={onCancel} portalTarget="#sheet-root-cpa" layout="custom" ariaLabel="Remove this rule?">
+      <div style={{ padding: "4px 24px 32px", fontFamily: "var(--font-sans)" }}>
           <p
             style={{
               fontSize: 15,
@@ -105,9 +75,7 @@ function ConfirmDeleteSheet({ rule, onConfirm, onCancel }) {
             </button>
           </div>
         </div>
-      </div>
-    </div>,
-    portal
+    </Sheet>
   );
 }
 

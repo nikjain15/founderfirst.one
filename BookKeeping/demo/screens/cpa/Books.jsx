@@ -14,8 +14,8 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import { irsLineChip } from "../../util/irsLookup.js";
+import Sheet from "../../components/Sheet.jsx";
 import {
   addTransactionAsCpa,
   flagTransaction,
@@ -99,8 +99,6 @@ function AddTxnSheet({ clientId, clientData, cpaAccount, onClose, onAdd }) {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
 
-  const portal = document.getElementById("sheet-root-cpa") || document.body;
-
   function handleSubmit(e) {
     e.preventDefault();
     if (!vendor.trim() || !amount || !category.trim()) return;
@@ -108,59 +106,29 @@ function AddTxnSheet({ clientId, clientData, cpaAccount, onClose, onAdd }) {
     onClose();
   }
 
-  return createPortal(
-    <div
-      className="sheet-backdrop"
-      onClick={onClose}
-      style={{
-        position: "absolute",
-        inset: 0,
-        background: "rgba(10,10,10,0.18)",
-        display: "flex",
-        alignItems: "flex-end",
-        justifyContent: "center",
-        zIndex: 200,
-        pointerEvents: "auto",
-      }}
-    >
+  return (
+    <Sheet open onClose={onClose} portalTarget="#sheet-root-cpa" layout="custom" ariaLabel="Add transaction">
       <div
-        onClick={(e) => e.stopPropagation()}
         style={{
-          background: "var(--white)",
-          borderRadius: "var(--r-sheet) var(--r-sheet) 0 0",
-          width: "100%",
-          maxWidth: 560,
-          padding: "0 0 32px",
-          maxHeight: "70%",
-          overflowY: "auto",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 20px 16px",
+          borderBottom: "1px solid var(--line-2)",
         }}
       >
-        {/* Drag handle */}
-        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 20px 16px",
-            borderBottom: "1px solid var(--line-2)",
-          }}
+        <span style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)", fontFamily: "var(--font-sans)" }}>
+          Add transaction
+        </span>
+        <button
+          onClick={onClose}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 20, padding: "0 4px", fontFamily: "var(--font-sans)" }}
         >
-          <span style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)", fontFamily: "var(--font-sans)" }}>
-            Add transaction
-          </span>
-          <button
-            onClick={onClose}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 20, padding: "0 4px", fontFamily: "var(--font-sans)" }}
-          >
-            ×
-          </button>
-        </div>
+          ×
+        </button>
+      </div>
 
-        <form onSubmit={handleSubmit} style={{ padding: "20px 20px 0", display: "flex", flexDirection: "column", gap: 14 }}>
+      <form onSubmit={handleSubmit} style={{ padding: "20px 20px 32px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", flex: 1 }}>
           {[
             { label: "Date", id: "date", type: "date", value: date, onChange: setDate, required: false },
             { label: "Vendor", id: "vendor", type: "text", value: vendor, onChange: setVendor, required: true, placeholder: "e.g. Amazon Business" },
@@ -217,34 +185,22 @@ function AddTxnSheet({ clientId, clientData, cpaAccount, onClose, onAdd }) {
             Add transaction
           </button>
         </form>
-      </div>
-    </div>,
-    portal
+    </Sheet>
   );
 }
 
 // ── Row action menu sheet ─────────────────────────────────────────────────────
 // Three options: Flag · Annotate · Suggest reclassification
 function RowMenuSheet({ row, onClose, onFlag, onAnnotate, onSuggest }) {
-  const portal = document.getElementById("sheet-root-cpa") || document.body;
   const options = [
     { label: "Flag", sub: "Mark for follow-up with a reason", action: "flag" },
     { label: "Annotate", sub: "Add a private note to this row", action: "annotate" },
     { label: "Suggest reclassification", sub: "Propose a different category to the founder", action: "suggest" },
   ];
 
-  return createPortal(
-    <div
-      style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.18)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200, pointerEvents: "auto" }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{ background: "var(--white)", borderRadius: "var(--r-sheet) var(--r-sheet) 0 0", width: "100%", maxWidth: 560, paddingBottom: 24, fontFamily: "var(--font-sans)" }}
-      >
-        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
-        </div>
+  return (
+    <Sheet open onClose={onClose} portalTarget="#sheet-root-cpa" layout="custom" ariaLabel="Row actions">
+      <div style={{ fontFamily: "var(--font-sans)", paddingBottom: 24 }}>
         <div style={{ padding: "0 20px 12px", borderBottom: "1px solid var(--line-2)" }}>
           <p style={{ margin: 0, fontSize: 11, fontWeight: "var(--fw-semibold)", letterSpacing: "var(--ls-eyebrow)", textTransform: "uppercase", color: "var(--ink-4)" }}>
             {row.vendor}
@@ -261,8 +217,7 @@ function RowMenuSheet({ row, onClose, onFlag, onAnnotate, onSuggest }) {
           </button>
         ))}
       </div>
-    </div>,
-    portal
+    </Sheet>
   );
 }
 
@@ -276,25 +231,15 @@ const FLAG_REASONS = [
 function FlagSheet({ row, onClose, onSubmit }) {
   const [reason, setReason] = useState("needs-receipt");
   const [note, setNote] = useState("");
-  const portal = document.getElementById("sheet-root-cpa") || document.body;
 
-  return createPortal(
-    <div
-      style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.18)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200, pointerEvents: "auto" }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{ background: "var(--white)", borderRadius: "var(--r-sheet) var(--r-sheet) 0 0", width: "100%", maxWidth: 560, padding: "0 0 32px", maxHeight: "70%", overflowY: "auto", fontFamily: "var(--font-sans)" }}
-      >
-        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
-        </div>
+  return (
+    <Sheet open onClose={onClose} portalTarget="#sheet-root-cpa" layout="custom" ariaLabel="Flag transaction">
+      <div style={{ fontFamily: "var(--font-sans)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px 14px", borderBottom: "1px solid var(--line-2)" }}>
           <span style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)" }}>Flag transaction</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 20, padding: "0 4px" }}>×</button>
         </div>
-        <div style={{ padding: "20px 20px 0", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ padding: "20px 20px 32px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto" }}>
           <div>
             <p className="eyebrow" style={{ margin: "0 0 10px" }}>Reason</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -324,33 +269,22 @@ function FlagSheet({ row, onClose, onSubmit }) {
           </button>
         </div>
       </div>
-    </div>,
-    portal
+    </Sheet>
   );
 }
 
 // ── Annotate sheet ────────────────────────────────────────────────────────────
 function AnnotateSheet({ row, existingAnnotations, onClose, onSubmit }) {
   const [text, setText] = useState("");
-  const portal = document.getElementById("sheet-root-cpa") || document.body;
 
-  return createPortal(
-    <div
-      style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.18)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200, pointerEvents: "auto" }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{ background: "var(--white)", borderRadius: "var(--r-sheet) var(--r-sheet) 0 0", width: "100%", maxWidth: 560, padding: "0 0 32px", maxHeight: "70%", overflowY: "auto", fontFamily: "var(--font-sans)" }}
-      >
-        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
-        </div>
+  return (
+    <Sheet open onClose={onClose} portalTarget="#sheet-root-cpa" layout="custom" ariaLabel="Add note">
+      <div style={{ fontFamily: "var(--font-sans)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px 14px", borderBottom: "1px solid var(--line-2)" }}>
           <span style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)" }}>Add note</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 20, padding: "0 4px" }}>×</button>
         </div>
-        <div style={{ padding: "20px 20px 0", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ padding: "20px 20px 32px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto" }}>
           {existingAnnotations?.length > 0 && (
             <div>
               <p className="eyebrow" style={{ margin: "0 0 8px" }}>Existing notes</p>
@@ -383,8 +317,7 @@ function AnnotateSheet({ row, existingAnnotations, onClose, onSubmit }) {
           </button>
         </div>
       </div>
-    </div>,
-    portal
+    </Sheet>
   );
 }
 
@@ -392,25 +325,15 @@ function AnnotateSheet({ row, existingAnnotations, onClose, onSubmit }) {
 function SuggestReclassSheet({ row, onClose, onSubmit }) {
   const [toCategory, setToCategory] = useState("");
   const [note, setNote] = useState("");
-  const portal = document.getElementById("sheet-root-cpa") || document.body;
 
-  return createPortal(
-    <div
-      style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.18)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200, pointerEvents: "auto" }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{ background: "var(--white)", borderRadius: "var(--r-sheet) var(--r-sheet) 0 0", width: "100%", maxWidth: 560, padding: "0 0 32px", maxHeight: "70%", overflowY: "auto", fontFamily: "var(--font-sans)" }}
-      >
-        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
-        </div>
+  return (
+    <Sheet open onClose={onClose} portalTarget="#sheet-root-cpa" layout="custom" ariaLabel="Suggest reclassification">
+      <div style={{ fontFamily: "var(--font-sans)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px 14px", borderBottom: "1px solid var(--line-2)" }}>
           <span style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)" }}>Suggest reclassification</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 20, padding: "0 4px" }}>×</button>
         </div>
-        <div style={{ padding: "20px 20px 0", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ padding: "20px 20px 32px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto" }}>
           <div style={{ padding: "10px 14px", background: "var(--paper)", borderRadius: "var(--r-card)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <p style={{ margin: 0, fontSize: 11, color: "var(--ink-4)", fontWeight: "var(--fw-medium)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Current</p>
@@ -456,8 +379,7 @@ function SuggestReclassSheet({ row, onClose, onSubmit }) {
           </button>
         </div>
       </div>
-    </div>,
-    portal
+    </Sheet>
   );
 }
 

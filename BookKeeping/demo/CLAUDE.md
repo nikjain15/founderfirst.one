@@ -6,6 +6,36 @@
 
 ## Changelog
 
+### 24 April 2026 — SCAF-1: canonical `<Sheet>` + `<FullScreenOverlay>`
+
+Every bottom sheet and dark-scrim overlay in the demo (founder app + CPA view) now renders through two canonical components in `components/`. The two-pattern drift documented in `reviews/demo-stress-test-apr-2026/01-founder-code.md §A.1` is closed.
+
+**New:**
+- `components/Sheet.jsx` — canonical bottom sheet. Portal + backdrop + drag handle + ESC-to-dismiss + `sheet-slide-up` animation. Standard layout (title + scrollable body + optional sticky footer) plus a `layout="custom"` escape hatch for tabbed / bespoke sheets. `portalTarget` prop supports both `#sheet-root` (founder) and `#sheet-root-cpa` (CPA view).
+- `components/FullScreenOverlay.jsx` — canonical dark-scrim overlay. Used by voice capture and photo-processing states.
+- New CSS: `.sheet-header`, `.sheet-subtitle`, `.sheet-body`, `.sheet-footer`, `.fullscreen-overlay` in `styles/components.css`.
+
+**Refactored (`createPortal` + raw `sheet-backdrop` removed from all screens):**
+- `screens/card.jsx` — CategorySheet
+- `screens/books.jsx` — SendToCPASheet · FlaggedSheet · TaxSheet · TaxFormPreviewSheet · DrilldownSheet
+- `screens/add.jsx` — local `Sheet` scaffold is now a thin wrapper over canonical `<Sheet>`; all 5 sub-sheets unchanged at call sites. VoiceModal + PhotoOverlay use `<FullScreenOverlay>`.
+- `screens/avatar-menu.jsx` — RevokeConfirmSheet · ArchivedWorkSheet · Entity-change confirm sheet
+- `screens/invoice.jsx` — SendSheet · RecurringSheet
+- `screens/cpa/Books.jsx` — AddTxnSheet · RowMenuSheet · FlagSheet · AnnotateSheet · SuggestReclassSheet
+- `screens/cpa/LearnedRules.jsx` — ConfirmDeleteSheet
+- `screens/cpa/WorkQueue.jsx` — ActionSheet
+
+**Grep checks (all passing):**
+- `grep -rE "className=\"sheet-backdrop\"" demo/screens` → 0 hits
+- `grep -rE "createPortal" demo/screens` → 0 hits
+- `grep -rE "position:\s*\"?fixed\"?" demo/screens` → only legitimate uses (clipboard textareas, doc comments)
+
+**Build verification:** `vite build` — 62 modules transformed, both bundles compile cleanly.
+
+**New settled decisions (16, 17):** all bottom sheets use `<Sheet>`; all dark-scrim overlays use `<FullScreenOverlay>`. See "Settled decisions — do not re-open" and "Shared components catalog" sections below.
+
+---
+
 ### 24 April 2026 — CPA view spec locked (v1.1) — build-ready handoff
 
 All 10 flow decisions, voice decision, responsive contract, and data model
@@ -191,6 +221,86 @@ These are locked. If your work conflicts with one, flag it and stop.
 13. **CPA voice is an overlay, not a separate system.** Same `penny-system.md` base, same JSON output contract, same validator. The only thing that changes is the tone overlay appended to the system prompt. Do not fork `penny-system.md`.
 14. **Responsive contract for CPA view.** CPA view must render at 375px (mobile) AND at 1024px+ (desktop). One codebase, one token set, responsive via media queries. Do not build a separate "mobile CPA" and "desktop CPA" surface.
 15. **`.cpa-app` positioning wrapper.** The CPA view replaces `.phone` as the positioning context for all overlays. Every sheet, backdrop, and toast inside the CPA view uses `position: absolute` anchored on `.cpa-app`. The portal target is `#sheet-root-cpa` (inside `.cpa-app`), not `#sheet-root` (inside `.phone`). Never use `position: fixed` in either context.
+16. **All bottom sheets use `<Sheet>`.** Every bottom sheet — founder app and CPA view — renders through `components/Sheet.jsx`. Never roll your own backdrop / portal / animation. See "Shared components catalog" below.
+17. **All dark-scrim overlays use `<FullScreenOverlay>`.** Voice recording, photo capture processing, and any full-viewport modal state render through `components/FullScreenOverlay.jsx`. Never roll your own.
+
+---
+
+## Shared components catalog
+
+When building new screens or features, reach for these canonical components before writing your own. Each lives in `components/` and is imported directly. If your need doesn't match one of these, propose a new shared component rather than copy-pasting a pattern.
+
+### `<Sheet>` — canonical bottom sheet
+
+**File:** `components/Sheet.jsx`
+**Use for:** any sheet that slides up from the bottom of the phone or CPA view — category pickers, send-invoice forms, flagged-transaction review, tax previews, CPA row actions, etc.
+**Never:** roll your own backdrop + portal + animation. Never use `position: fixed`.
+
+**Props:**
+
+| Prop | Type | Notes |
+|---|---|---|
+| `open` | bool | Whether the sheet is currently shown. |
+| `onClose` | fn | Called when the user dismisses (backdrop tap or ESC). |
+| `title` | string | Optional header title. Standard layout renders it in a `.sheet-header`. |
+| `subtitle` | string | Optional descriptor line under the title. |
+| `maxHeight` | CSS value | Defaults to `"70%"`. Pass `"82%"`, `"92%"`, etc. for taller sheets. Use `%`, not `vh`. |
+| `footerActions` | node | Optional sticky bottom row (standard layout only). |
+| `portalTarget` | selector | Defaults to `"#sheet-root"`. CPA view sheets pass `"#sheet-root-cpa"`. |
+| `ariaLabelledBy` | id string | Optional. Auto-filled when `title` is set. |
+| `ariaLabel` | string | Fallback screen-reader label when no `title`. |
+| `layout` | `"standard"` \| `"custom"` | Defaults to `"standard"`. See below. |
+| `children` | node | Sheet body content. |
+
+**Standard layout (`layout="standard"`, the default):** children are wrapped in a scrollable `.sheet-body`. `title`/`subtitle` render in a `.sheet-header`; `footerActions` renders in a sticky `.sheet-footer`. Use this for 80% of sheets.
+
+**Custom layout (`layout="custom"`):** children render directly between the drag handle and the sheet's bottom edge — no header, body, or footer wrapping. `title`/`subtitle`/`footerActions` props are ignored. Use when the sheet needs bespoke structure (tab bar, custom header with close button, split scroll regions).
+
+**Minimal example — standard layout:**
+```jsx
+<Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Change category">
+  <div className="sheet-list">
+    {cats.map((cat) => <button key={cat} className="sheet-item">{cat}</button>)}
+  </div>
+</Sheet>
+```
+
+**Minimal example — custom layout for a tabbed sheet:**
+```jsx
+<Sheet open onClose={onClose} maxHeight="92%" layout="custom" ariaLabel="Send to CPA">
+  <div className="custom-header">… title + close button …</div>
+  <div className="custom-tabs">… tab bar …</div>
+  <div style={{ flex: 1, overflowY: "auto" }}>… tab content …</div>
+  <div className="custom-footer">… sticky CTA …</div>
+</Sheet>
+```
+
+### `<FullScreenOverlay>` — canonical dark-scrim overlay
+
+**File:** `components/FullScreenOverlay.jsx`
+**Use for:** full-viewport modal states where the sheet metaphor doesn't fit — voice recording, photo capture processing, pulling-data screens, confirmation fullscreens.
+**Never:** roll your own with a `position: absolute; inset: 0` div. Never use `position: fixed`.
+
+**Props:**
+
+| Prop | Type | Notes |
+|---|---|---|
+| `open` | bool | Whether the overlay is currently shown. |
+| `onClose` | fn | Optional. If provided, ESC dismisses. Auto-dismissing overlays omit this. |
+| `scrim` | CSS color | Background. Defaults to `"rgba(10,10,10,0.92)"`. Permitted values are `rgba(10,10,10,N)` only — no raw hex. |
+| `portalTarget` | selector | Defaults to `"#sheet-root"`. CPA view overlays pass `"#sheet-root-cpa"`. |
+| `ariaLabel` | string | Screen-reader label for the modal. |
+| `children` | node | Centered content. Caller lays out via flex inside. |
+
+**Minimal example:**
+```jsx
+<FullScreenOverlay open onClose={onClose} ariaLabel="Recording voice note">
+  <button className="close-x" onClick={onClose}>×</button>
+  <div className="mic-circle">…</div>
+  <div className="voice-waveform">…</div>
+  <p>Listening… {seconds}s</p>
+</FullScreenOverlay>
+```
 
 ---
 
@@ -379,25 +489,11 @@ These were caught and fixed during the onboarding build. Do not repeat them.
 - `@keyframes screen-enter` is defined in `components.css`: `from { opacity: 0; transform: translateY(6px); }`.
 - Thread intro → main transition: the normal thread content is wrapped in `.thread-main-enter` which uses the same animation at 0.28s. Do not remove this wrapper.
 
-**Bottom sheet — canonical implementation (updated Apr 2026)**
-- All sheets use React `createPortal` targeting `#sheet-root` (a `<div id="sheet-root">` that is a direct child of `.phone` in `App.jsx`). This ensures sheets always render above `.phone-content`'s `overflow-y: auto` scroll container, which would otherwise clip `position: absolute` overlays.
-- `#sheet-root` has `position: absolute; inset: 0; z-index: 199; pointer-events: none`. The backdrop inside it sets `pointer-events: auto` so interactions are captured.
-- `.sheet-backdrop`: `position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; pointer-events: auto`. **The sheet is a child of the backdrop** — the backdrop is the flex container that pushes the sheet to the bottom. They must not be siblings.
-- `.sheet`: `max-height: 70%; overflow: hidden`. Uses `animation: sheet-slide-up 0.3s var(--ease-out) both`. `max-height` uses `%` not `vh` — `vh` is relative to the browser viewport and overflows the phone frame at desktop screen sizes.
-- Always add `onClick={(e) => e.stopPropagation()}` to `.sheet` to prevent backdrop click-to-close from firing when clicking inside the sheet.
-- `@keyframes sheet-slide-up`: `from { transform: translateY(100%); opacity: 0; }`. Never use `translateX` in sheet keyframes.
-- **Pattern for any new sheet:**
-  ```jsx
-  const root = document.getElementById("sheet-root") || document.querySelector(".phone") || document.body;
-  return createPortal(
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
-        ...
-      </div>
-    </div>,
-    root
-  );
-  ```
+**Bottom sheet — use the canonical `<Sheet>` component**
+- All bottom sheets render through `components/Sheet.jsx`. Do not roll your own backdrop, portal, or animation. See the "Shared components catalog" section below for the full Sheet API.
+- Underlying CSS (maintained in `styles/components.css`, do not duplicate): `#sheet-root` at `position: absolute; inset: 0; z-index: 199; pointer-events: none`; `.sheet-backdrop` is the flex container holding the sheet as a child (never as a sibling); `.sheet` has `max-height: 70%` (as a percentage, not `vh`) and uses the `sheet-slide-up` keyframe; ESC and backdrop-click both dismiss when `onClose` is provided.
+- Portal target defaults to `#sheet-root` (founder app). CPA view sheets pass `portalTarget="#sheet-root-cpa"`.
+- Never use `position: fixed` in a sheet or overlay. Never use `vh` for sheet max-height.
 
 **Voice modals**
 - `VoiceModal` in `screens/add.jsx`: receipt capture. Shows 28-bar animated waveform, auto-stops at 4s, calls `capture.parse` AI intent. Dark overlay `rgba(10,10,10,0.92)`. Do not revert waveform — required for realism.

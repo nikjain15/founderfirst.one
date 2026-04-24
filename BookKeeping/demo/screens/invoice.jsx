@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
+import Sheet from "../components/Sheet.jsx";
 
 const fmt = (n) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n || 0);
@@ -205,11 +206,8 @@ function SendSheet({ invoiceNumber, onClose, showToast }) {
   };
 
   return (
-    <>
-      <div className="sheet-backdrop" onClick={onClose} />
-      <div className="sheet" style={{ padding: "0 20px 32px" }}>
-        <div className="sheet-handle" />
-        <p style={{ margin: "0 0 16px", fontSize: 16, fontWeight: "var(--fw-semibold)" }}>Send invoice</p>
+    <Sheet open onClose={onClose} title="Send invoice">
+      <div style={{ padding: "16px 20px 32px" }}>
         <label style={{ display: "block", marginBottom: 12 }}>
           <span style={{ display: "block", fontSize: 12, color: "var(--ink-4)", marginBottom: 6, fontWeight: "var(--fw-medium)", letterSpacing: "0.05em", textTransform: "uppercase" }}>Recipient email</span>
           <input
@@ -235,7 +233,7 @@ function SendSheet({ invoiceNumber, onClose, showToast }) {
           Send invoice
         </button>
       </div>
-    </>
+    </Sheet>
   );
 }
 
@@ -276,14 +274,8 @@ function RecurringSheet({ onClose, showToast, invoiceData }) {
   const amountLabel = amount ? `$${amount.toLocaleString()}` : "invoice";
 
   return (
-    <>
-      <div className="sheet-backdrop" onClick={onClose} />
-      <div className="sheet" style={{ padding: "0 20px 32px", maxHeight: "90%", overflowY: "auto" }}>
-        <div className="sheet-handle" />
-        <p style={{ margin: "0 0 4px", fontSize: 16, fontWeight: "var(--fw-semibold)" }}>Recurring invoice</p>
-        <p style={{ margin: "0 0 20px", fontSize: 13, color: "var(--ink-4)" }}>
-          Auto-send {amountLabel} to {clientLabel} on a schedule
-        </p>
+    <Sheet open onClose={onClose} title="Recurring invoice" subtitle={`Auto-send ${amountLabel} to ${clientLabel} on a schedule`} maxHeight="90%">
+      <div style={{ padding: "16px 20px 32px" }}>
 
         {/* Frequency */}
         <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: "var(--fw-semibold)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)" }}>Frequency</p>
@@ -347,7 +339,7 @@ function RecurringSheet({ onClose, showToast, invoiceData }) {
           {confirmed ? "Scheduling…" : `Schedule ${freq.toLowerCase()} invoices`}
         </button>
       </div>
-    </>
+    </Sheet>
   );
 }
 

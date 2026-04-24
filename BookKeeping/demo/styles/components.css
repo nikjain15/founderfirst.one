@@ -773,6 +773,56 @@
   width: calc(100% - 32px);
 }
 
+/* --- Canonical Sheet component internals (see components/Sheet.jsx) ----- */
+/* Header wrapper: title + optional subtitle, separated from body by a rule. */
+.sheet-header {
+  flex-shrink: 0;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid var(--line-2);
+}
+.sheet-header .sheet-title {
+  padding: 0;
+  border-bottom: none;
+}
+.sheet-subtitle {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin: 4px 0 0;
+  line-height: 1.45;
+}
+/* Body: scrollable content area. Padding is the consumer's responsibility so
+   list-style sheets (e.g. CategorySheet) and padded-content sheets don't fight. */
+.sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+/* Footer: sticky bottom row for primary/secondary CTAs. */
+.sheet-footer {
+  flex-shrink: 0;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line-2);
+  display: flex;
+  gap: 10px;
+}
+
+/* --- Canonical FullScreenOverlay (see components/FullScreenOverlay.jsx) -- */
+/* Full-viewport dark-scrim modal state. Used by voice capture, photo capture
+   processing, and the pulling-data screen. Background is set inline via the
+   scrim prop so the opacity can vary per use; default rgba(10,10,10,0.92). */
+.fullscreen-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  pointer-events: auto;
+  animation: fade-in var(--dur-base) var(--ease-out);
+}
+
 /* --- Toast ------------------------------------------------------------- */
 .toast {
   position: absolute;

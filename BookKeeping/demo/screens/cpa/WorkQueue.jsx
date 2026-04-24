@@ -18,7 +18,7 @@
  */
 
 import React, { useState } from "react";
-import { createPortal } from "react-dom";
+import Sheet from "../../components/Sheet.jsx";
 import { rejectApproval } from "../../util/cpaState.js";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -161,7 +161,6 @@ function QueueRow({ dot, description, age, cta, onCta, founderNote }) {
 function ActionSheet({ item, clientData, onClose, onUpdateCpa, clientId }) {
   const [catInput, setCatInput] = useState("");
   const [answerInput, setAnswerInput] = useState("");
-  const portal = document.getElementById("sheet-root-cpa") || document.body;
 
   function handleRetract() {
     if (!item.approvalId || !onUpdateCpa) { onClose(); return; }
@@ -368,39 +367,12 @@ function ActionSheet({ item, clientData, onClose, onUpdateCpa, clientId }) {
     return null;
   })();
 
-  return createPortal(
-    <div
-      onClick={onClose}
-      style={{
-        position: "absolute",
-        inset: 0,
-        background: "rgba(10,10,10,0.18)",
-        display: "flex",
-        alignItems: "flex-end",
-        justifyContent: "center",
-        zIndex: 200,
-        pointerEvents: "auto",
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "var(--white)",
-          borderRadius: "var(--r-sheet) var(--r-sheet) 0 0",
-          width: "100%",
-          maxWidth: 480,
-          padding: "0 0 32px",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
-        </div>
-        <div style={{ padding: "4px 24px 0", fontFamily: "var(--font-sans)" }}>
-          {sheetContent}
-        </div>
+  return (
+    <Sheet open onClose={onClose} portalTarget="#sheet-root-cpa" layout="custom" ariaLabel="Work queue action">
+      <div style={{ padding: "4px 24px 32px", fontFamily: "var(--font-sans)" }}>
+        {sheetContent}
       </div>
-    </div>,
-    portal
+    </Sheet>
   );
 }
 

@@ -300,9 +300,22 @@ function YourCpaRow({ state, set, showToast }) {
   }
 
   function handleRevokeCpaAccess() {
-    const cpaId = cpa.account?.id || "cpa";
-    const clientId = "founder-client";
-    const newCpa = revokeCpaAccess(cpa, cpaId, clientId);
+    const cpaId = cpa.account?.id || "cpa-revoked";
+    const now = Date.now();
+    // Archive CPA work across all clients before nulling the account
+    const archive = {
+      cpaName:     cpa.account?.name || "Your CPA",
+      revokedAt:   now,
+      rules:       Object.values(cpa.clients || {}).flatMap(c => c.learnedRules || []),
+      flags:       Object.values(cpa.clients || {}).reduce((acc, c) => ({ ...acc, ...(c.flags || {}) }), {}),
+      annotations: Object.values(cpa.clients || {}).reduce((acc, c) => ({ ...acc, ...(c.annotations || {}) }), {}),
+      pendingAdds: Object.values(cpa.clients || {}).flatMap(c => c.pendingAdds || []),
+    };
+    const newCpa = {
+      ...cpa,
+      account: null,
+      archives: { ...(cpa.archives || {}), [cpaId]: archive },
+    };
     set({ cpa: newCpa });
     setRevokeOpen(false);
     showToast("CPA access removed.");

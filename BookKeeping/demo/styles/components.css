@@ -882,9 +882,12 @@
   min-height: 100vh;
 }
 
-/* Portal target for CPA bottom sheets — mirrors #sheet-root on .phone */
+/* Portal target for CPA bottom sheets.
+   position: fixed (not absolute) because .cpa-app is a full-page scrollable
+   web app — unlike .phone which has a fixed pixel height. fixed keeps the
+   backdrop viewport-anchored regardless of scroll depth. */
 #sheet-root-cpa {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 199;
   pointer-events: none;

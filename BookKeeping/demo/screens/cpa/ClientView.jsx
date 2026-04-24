@@ -12,6 +12,7 @@ import Books from "./Books.jsx";
 import ProfitLoss from "./ProfitLoss.jsx";
 import CashFlow from "./CashFlow.jsx";
 import LearnedRules from "./LearnedRules.jsx";
+import Chat from "./Chat.jsx";
 
 function Placeholder({ label }) {
   return (
@@ -65,7 +66,7 @@ export default function ClientView({
       {activeTab === "books"         && <Books        {...tabProps} />}
       {activeTab === "pl"            && <ProfitLoss   {...tabProps} />}
       {activeTab === "cash-flow"     && <CashFlow     {...tabProps} />}
-      {activeTab === "chat"          && <Placeholder label="Chat — coming in Step 8" />}
+      {activeTab === "chat"          && <Chat         {...tabProps} />}
       {activeTab === "learned-rules" && <LearnedRules {...tabProps} />}
     </div>
   );

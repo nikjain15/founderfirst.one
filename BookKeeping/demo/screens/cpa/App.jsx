@@ -516,7 +516,7 @@ function Sidebar({ cpa, clients, activeClientId, activeTab, onTabChange, onClien
 
 // ── Dashboard placeholder ─────────────────────────────────────────────────────
 
-function DashboardView({ cpa, clients }) {
+function DashboardView({ cpa, clients, onClientChange }) {
   const clientList = Object.entries(clients || {});
 
   return (
@@ -548,11 +548,13 @@ function DashboardView({ cpa, clients }) {
         {clientList.map(([id, c]) => (
           <div
             key={id}
+            onClick={() => onClientChange?.(id)}
             style={{
               background: "var(--white)",
               border: "1.5px solid var(--line)",
               borderRadius: "var(--r-card)",
               padding: 20,
+              cursor: "pointer",
             }}
           >
             <div style={{ fontSize: 14, fontWeight: "var(--fw-semibold)", color: "var(--ink)" }}>
@@ -806,7 +808,7 @@ export default function CPAApp() {
         {/* Main content */}
         <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {isDashboard && (
-            <DashboardView cpa={cpaState.account} clients={clients} />
+            <DashboardView cpa={cpaState.account} clients={clients} onClientChange={handleClientChange} />
           )}
           {isClient && (
             <ClientView

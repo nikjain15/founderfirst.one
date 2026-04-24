@@ -774,8 +774,12 @@
               "amount": 3500
             },
             {
-              "label": "Van lease + gas",
-              "amount": 820
+              "label": "Van lease",
+              "amount": 680
+            },
+            {
+              "label": "Vehicle fuel",
+              "amount": 140
             },
             {
               "label": "Contractors",
@@ -818,9 +822,14 @@
             "count": 1
           },
           {
-            "category": "Van lease + gas",
-            "amount": 820,
-            "count": 2
+            "category": "Van lease",
+            "amount": 680,
+            "count": 1
+          },
+          {
+            "category": "Vehicle fuel",
+            "amount": 140,
+            "count": 1
           },
           {
             "category": "Contractors",
@@ -971,7 +980,7 @@
           {
             "date": "Apr 7",
             "vendor": "Camera equipment insurance",
-            "category": "Insurance",
+            "category": "Camera/equipment insurance",
             "amount": 280,
             "type": "expense"
           },
@@ -2183,7 +2192,7 @@
           ],
           "expenseLines": [
             {
-              "label": "Inventory / COGS",
+              "label": "Inventory (COGS)",
               "amount": 5600
             },
             {
@@ -2206,7 +2215,7 @@
         },
         "expenses": [
           {
-            "category": "Inventory / COGS",
+            "category": "Inventory (COGS)",
             "amount": 5600,
             "count": 6
           },

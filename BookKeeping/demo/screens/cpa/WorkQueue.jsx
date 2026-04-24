@@ -9,11 +9,41 @@
  *
  * Collapsible "Resolved" section below active items.
  * Auto-archive resolved items older than 7 days.
+ *
+ * Action sheets:
+ *  View       → reclassification/cpa-added-txn detail — Retract or Close
+ *  Categorize → category picker for uncategorized pendingAdds
+ *  Resolve    → confirm mark flag as resolved
+ *  Answer     → text input to dismiss a penny-question
  */
 
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
+import { rejectApproval } from "../../util/cpaState.js";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+const CATEGORIES = [
+  "Advertising & marketing",
+  "Bank fees",
+  "Business meals (50%)",
+  "Commercial insurance",
+  "Contract labor",
+  "Equipment & tools",
+  "Home office",
+  "Inventory (COGS)",
+  "Legal & professional fees",
+  "Miscellaneous business expenses",
+  "Office supplies",
+  "Payroll",
+  "Phone & internet",
+  "Rent & lease",
+  "Software & subscriptions",
+  "Travel",
+  "Vehicle depreciation & loan interest",
+  "Vehicle fuel",
+  "Wages",
+];
 
 const fmt = (n) =>
   new Intl.NumberFormat("en-US", {
@@ -126,8 +156,259 @@ function QueueRow({ dot, description, age, cta, onCta, founderNote }) {
   );
 }
 
-export default function WorkQueue({ clientId, clientData, approvals, cpaAccount }) {
+// ── Action sheet (portalled) ─────────────────────────────────────────────────
+
+function ActionSheet({ item, clientData, onClose, onUpdateCpa, clientId }) {
+  const [catInput, setCatInput] = useState("");
+  const [answerInput, setAnswerInput] = useState("");
+  const portal = document.getElementById("sheet-root-cpa") || document.body;
+
+  function handleRetract() {
+    if (!item.approvalId || !onUpdateCpa) { onClose(); return; }
+    onUpdateCpa((prev) => rejectApproval(prev, item.approvalId, "Retracted by CPA."));
+    onClose();
+  }
+
+  function handleResolveFlag() {
+    if (!item.txnId || !onUpdateCpa) { onClose(); return; }
+    onUpdateCpa((prev) => {
+      const client = prev.clients?.[clientId];
+      if (!client) return prev;
+      const flag = client.flags?.[item.txnId];
+      if (!flag) return prev;
+      return {
+        ...prev,
+        clients: {
+          ...prev.clients,
+          [clientId]: {
+            ...client,
+            flags: {
+              ...client.flags,
+              [item.txnId]: { ...flag, resolvedAt: Date.now() },
+            },
+          },
+        },
+      };
+    });
+    onClose();
+  }
+
+  function handleCategorize() {
+    const cat = catInput.trim();
+    if (!cat || !item.pendingAddId || !onUpdateCpa) { onClose(); return; }
+    onUpdateCpa((prev) => {
+      const client = prev.clients?.[clientId];
+      if (!client) return prev;
+      return {
+        ...prev,
+        clients: {
+          ...prev.clients,
+          [clientId]: {
+            ...client,
+            pendingAdds: (client.pendingAdds || []).map((p) =>
+              p.id === item.pendingAddId ? { ...p, category: cat } : p
+            ),
+          },
+        },
+      };
+    });
+    onClose();
+  }
+
+  function handleAnswerQuestion() {
+    if (!item.approvalId || !onUpdateCpa) { onClose(); return; }
+    // Dismiss the question by rejecting (marking as resolved from CPA side)
+    onUpdateCpa((prev) => rejectApproval(prev, item.approvalId, answerInput.trim() || "Addressed."));
+    onClose();
+  }
+
+  const sheetContent = (() => {
+    if (item.ctaType === "view") {
+      return (
+        <>
+          <p style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)", margin: "0 0 8px", letterSpacing: "var(--ls-tight)" }}>
+            {item.approvalType === "reclassification" ? "Reclassification pending" : "Added transaction pending"}
+          </p>
+          <p style={{ fontSize: "var(--fs-data-row)", color: "var(--ink-3)", margin: "0 0 16px", lineHeight: 1.5 }}>
+            {item.fullDescription}
+          </p>
+          <p style={{ fontSize: 12, color: "var(--ink-4)", margin: "0 0 20px" }}>
+            Waiting for founder to approve. You can retract this suggestion.
+          </p>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={handleRetract}
+              style={{ flex: 1, padding: "13px", background: "var(--error)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 14, fontWeight: "var(--fw-semibold)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
+            >
+              Retract
+            </button>
+            <button onClick={onClose} className="btn-ghost" style={{ flex: 1, padding: "13px", fontSize: 14 }}>
+              Close
+            </button>
+          </div>
+        </>
+      );
+    }
+
+    if (item.ctaType === "resolve") {
+      return (
+        <>
+          <p style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)", margin: "0 0 8px", letterSpacing: "var(--ls-tight)" }}>
+            Mark flag as resolved?
+          </p>
+          <p style={{ fontSize: "var(--fs-data-row)", color: "var(--ink-3)", margin: "0 0 20px", lineHeight: 1.5 }}>
+            {item.fullDescription}
+          </p>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={handleResolveFlag}
+              style={{ flex: 1, padding: "13px", background: "var(--ink)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 14, fontWeight: "var(--fw-semibold)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
+            >
+              Mark resolved
+            </button>
+            <button onClick={onClose} className="btn-ghost" style={{ flex: 1, padding: "13px", fontSize: 14 }}>
+              Cancel
+            </button>
+          </div>
+        </>
+      );
+    }
+
+    if (item.ctaType === "categorize") {
+      return (
+        <>
+          <p style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)", margin: "0 0 4px", letterSpacing: "var(--ls-tight)" }}>
+            Assign category
+          </p>
+          <p style={{ fontSize: "var(--fs-data-row)", color: "var(--ink-3)", margin: "0 0 16px" }}>
+            {item.fullDescription}
+          </p>
+          <select
+            value={catInput}
+            onChange={(e) => setCatInput(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "11px 14px",
+              border: "1.5px solid var(--line)",
+              borderRadius: "var(--r-pill)",
+              fontSize: 14,
+              fontFamily: "var(--font-sans)",
+              color: catInput ? "var(--ink)" : "var(--ink-4)",
+              background: "var(--white)",
+              outline: "none",
+              marginBottom: 16,
+              boxSizing: "border-box",
+            }}
+          >
+            <option value="">Select a category…</option>
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={handleCategorize}
+              disabled={!catInput}
+              style={{ flex: 1, padding: "13px", background: catInput ? "var(--ink)" : "var(--line)", color: catInput ? "var(--white)" : "var(--ink-4)", border: "none", borderRadius: "var(--r-pill)", fontSize: 14, fontWeight: "var(--fw-semibold)", cursor: catInput ? "pointer" : "default", fontFamily: "var(--font-sans)" }}
+            >
+              Save category
+            </button>
+            <button onClick={onClose} className="btn-ghost" style={{ flex: 1, padding: "13px", fontSize: 14 }}>
+              Cancel
+            </button>
+          </div>
+        </>
+      );
+    }
+
+    if (item.ctaType === "answer") {
+      return (
+        <>
+          <p style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)", margin: "0 0 4px", letterSpacing: "var(--ls-tight)" }}>
+            Penny question
+          </p>
+          <p style={{ fontSize: "var(--fs-data-row)", color: "var(--ink-3)", margin: "0 0 16px", lineHeight: 1.5 }}>
+            {item.fullDescription}
+          </p>
+          <textarea
+            value={answerInput}
+            onChange={(e) => setAnswerInput(e.target.value)}
+            placeholder="Your answer…"
+            rows={3}
+            style={{
+              width: "100%",
+              padding: "11px 14px",
+              border: "1.5px solid var(--line)",
+              borderRadius: "12px",
+              fontSize: 14,
+              fontFamily: "var(--font-sans)",
+              color: "var(--ink)",
+              background: "var(--white)",
+              outline: "none",
+              resize: "vertical",
+              marginBottom: 16,
+              boxSizing: "border-box",
+            }}
+          />
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={handleAnswerQuestion}
+              style={{ flex: 1, padding: "13px", background: "var(--ink)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 14, fontWeight: "var(--fw-semibold)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
+            >
+              Submit answer
+            </button>
+            <button onClick={onClose} className="btn-ghost" style={{ flex: 1, padding: "13px", fontSize: 14 }}>
+              Cancel
+            </button>
+          </div>
+        </>
+      );
+    }
+
+    return null;
+  })();
+
+  return createPortal(
+    <div
+      onClick={onClose}
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: "rgba(10,10,10,0.18)",
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        zIndex: 200,
+        pointerEvents: "auto",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "var(--white)",
+          borderRadius: "var(--r-sheet) var(--r-sheet) 0 0",
+          width: "100%",
+          maxWidth: 480,
+          padding: "0 0 32px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
+        </div>
+        <div style={{ padding: "4px 24px 0", fontFamily: "var(--font-sans)" }}>
+          {sheetContent}
+        </div>
+      </div>
+    </div>,
+    portal
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+export default function WorkQueue({ clientId, clientData, approvals, cpaAccount, onUpdateCpa }) {
   const [resolvedOpen, setResolvedOpen] = useState(false);
+  const [activeSheet, setActiveSheet] = useState(null); // item object
 
   if (!clientData) {
     return (
@@ -165,19 +446,26 @@ export default function WorkQueue({ clientId, clientData, approvals, cpaAccount 
     )
     .map((a) => {
       let description;
+      let fullDescription;
       if (a.type === "reclassification") {
         description = `Reclassify: ${a.fromCategory} → ${a.toCategory}`;
+        fullDescription = description + (a.note ? ` — ${a.note}` : "");
         if (a.note) description += ` — ${a.note}`;
       } else {
         description = `Added: ${a.toCategory || "transaction"} — pending founder acknowledgment`;
+        fullDescription = description + (a.note ? `. ${a.note}` : "");
         if (a.note) description += `. ${a.note}`;
       }
       return {
         key: a.id,
         dot: "var(--error)",
         description,
+        fullDescription,
         age: ageStr(a.createdAt),
         cta: "View",
+        ctaType: "view",
+        approvalId: a.id,
+        approvalType: a.type,
         founderNote: null,
       };
     });
@@ -189,8 +477,11 @@ export default function WorkQueue({ clientId, clientData, approvals, cpaAccount 
       key: `uncategorized-${p.id}`,
       dot: "var(--amber)",
       description: `${p.vendor} — needs category (added ${fmt(p.amount)})`,
+      fullDescription: `${p.vendor} — ${fmt(p.amount)} added without a category.`,
       age: ageStr(p.addedAt),
       cta: "Categorize",
+      ctaType: "categorize",
+      pendingAddId: p.id,
       founderNote: null,
     }));
 
@@ -203,12 +494,16 @@ export default function WorkQueue({ clientId, clientData, approvals, cpaAccount 
         reclassify: "Needs reclassification",
         "confirm-with-client": "Confirm with client",
       }[f.reason] || f.reason;
+      const description = `${reasonLabel}${f.note ? ` — ${f.note}` : ""}`;
       return {
         key: `flag-${txnId}`,
         dot: "var(--ink-3)",
-        description: `${reasonLabel}${f.note ? ` — ${f.note}` : ""}`,
+        description,
+        fullDescription: description,
         age: ageStr(f.flaggedAt),
         cta: "Resolve",
+        ctaType: "resolve",
+        txnId,
         founderNote: null,
       };
     });
@@ -220,14 +515,17 @@ export default function WorkQueue({ clientId, clientData, approvals, cpaAccount 
       key: a.id,
       dot: "var(--sage)",
       description: a.note || "Penny question — input needed",
+      fullDescription: a.note || "Penny question — input needed",
       age: ageStr(a.createdAt),
       cta: "Answer",
+      ctaType: "answer",
+      approvalId: a.id,
       founderNote: null,
     }));
 
   const activeItems = [...p1, ...p2, ...p3, ...p4];
 
-  // ── Resolved items (auto-archive after 7 days) ────────────────────────────
+  // ── Resolved items (auto-archive after 7 days) ───────────────────────────
   const resolvedItems = clientApprovals
     .filter(
       (a) =>
@@ -257,6 +555,27 @@ export default function WorkQueue({ clientId, clientData, approvals, cpaAccount 
       };
     });
 
+  // Also show resolved flags in the resolved section
+  const resolvedFlags = Object.entries(flags)
+    .filter(([, f]) => f.resolvedAt)
+    .map(([txnId, f]) => {
+      const reasonLabel = {
+        "needs-receipt": "Missing receipt",
+        reclassify: "Needs reclassification",
+        "confirm-with-client": "Confirm with client",
+      }[f.reason] || f.reason;
+      return {
+        key: `resolved-flag-${txnId}`,
+        dot: "var(--ink-3)",
+        description: `Resolved: ${reasonLabel}${f.note ? ` — ${f.note}` : ""}`,
+        age: ageStr(f.resolvedAt),
+        cta: null,
+        founderNote: null,
+      };
+    });
+
+  const allResolved = [...resolvedItems, ...resolvedFlags];
+
   return (
     <div
       style={{
@@ -264,8 +583,20 @@ export default function WorkQueue({ clientId, clientData, approvals, cpaAccount 
         overflowY: "auto",
         padding: "24px var(--pad-screen)",
         fontFamily: "var(--font-sans)",
+        position: "relative",
       }}
     >
+      {/* Action sheet */}
+      {activeSheet && (
+        <ActionSheet
+          item={activeSheet}
+          clientData={clientData}
+          clientId={clientId}
+          onClose={() => setActiveSheet(null)}
+          onUpdateCpa={onUpdateCpa}
+        />
+      )}
+
       {/* Active items */}
       {activeItems.length === 0 ? (
         <div
@@ -287,7 +618,7 @@ export default function WorkQueue({ clientId, clientData, approvals, cpaAccount 
               description={item.description}
               age={item.age}
               cta={item.cta}
-              onCta={() => {}}
+              onCta={() => setActiveSheet(item)}
               founderNote={item.founderNote}
             />
           ))}
@@ -295,7 +626,7 @@ export default function WorkQueue({ clientId, clientData, approvals, cpaAccount 
       )}
 
       {/* Resolved section */}
-      {resolvedItems.length > 0 && (
+      {allResolved.length > 0 && (
         <div style={{ marginTop: 28 }}>
           <button
             onClick={() => setResolvedOpen((v) => !v)}
@@ -331,12 +662,12 @@ export default function WorkQueue({ clientId, clientData, approvals, cpaAccount 
             >
               <polyline points="4 2 8 6 4 10" />
             </svg>
-            Resolved ({resolvedItems.length})
+            Resolved ({allResolved.length})
           </button>
 
           {resolvedOpen && (
             <div style={{ marginTop: 12 }}>
-              {resolvedItems.map((item) => (
+              {allResolved.map((item) => (
                 <QueueRow
                   key={item.key}
                   dot={item.dot}

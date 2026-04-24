@@ -429,10 +429,13 @@ export default function AuthGate({ onSuccess }) {
   const [token, setToken]   = useState(null);
 
   useEffect(() => {
-    // Extract :token from /cpa/accept/:token
+    // Extract token — first from pathname (/cpa/accept/:token),
+    // then fall back to ?token= query param (GitHub Pages SPA workaround).
     const pathParts = window.location.pathname.split("/");
     const idx = pathParts.findIndex((p) => p === "accept");
-    const tok = idx !== -1 ? pathParts[idx + 1] : null;
+    const tok = (idx !== -1 ? pathParts[idx + 1] : null)
+             || new URLSearchParams(window.location.search).get("token")
+             || null;
     setToken(tok || "");
 
     if (!tok) {

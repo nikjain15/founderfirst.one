@@ -28,8 +28,12 @@ function InviteCpaPanel({ state, set, showToast }) {
   );
 
   const baseUrl = window.PENNY_CONFIG?.baseUrl || "/";
+  const persona  = state.persona || {};
+  const sc       = encodeURIComponent(`${persona.entity || "sole-prop"}.${persona.industry || "consulting"}`);
+  const fn       = encodeURIComponent(persona.firstName || "");
+  const biz      = encodeURIComponent(persona.business  || "");
   const link = activeInvite
-    ? `${window.location.origin}${baseUrl}cpa/accept/${activeInvite.token}`
+    ? `${window.location.origin}${baseUrl}cpa/?token=${activeInvite.token}&sc=${sc}&fn=${fn}&biz=${biz}`
     : null;
 
   const daysLeft = activeInvite
@@ -53,7 +57,21 @@ function InviteCpaPanel({ state, set, showToast }) {
 
   function handleCopy() {
     if (!link) return;
-    navigator.clipboard?.writeText(link).catch(() => {});
+    function fallbackCopy(text) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try { document.execCommand("copy"); } catch (_) {}
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(link).catch(() => fallbackCopy(link));
+    } else {
+      fallbackCopy(link);
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }

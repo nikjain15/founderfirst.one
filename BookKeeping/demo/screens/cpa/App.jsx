@@ -56,6 +56,13 @@ function saveCpaState(cpa) {
 // (/penny/demo/cpa/dashboard) and Vite dev's literal file path
 // (/penny/demo/cpa/index.html — treated as root).
 function getCpaRoute() {
+  // GitHub Pages can only serve /penny/demo/cpa/index.html — deep paths
+  // like /cpa/accept/:token 404 and fall back to the founder app.
+  // Invite links therefore use ?token= so the browser always loads this file.
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get("token");
+  if (token) return `/accept/${token}`;
+
   const path = window.location.pathname;
   const m = path.match(/\/cpa(\/.*)?$/);
   let sub = m ? (m[1] || "/") : "/";
@@ -584,9 +591,6 @@ function DashboardView({ cpa, clients, onClientChange }) {
                 Tax readiness: {c.taxReadiness?.score ?? "—"}%
               </span>
             </div>
-            <p style={{ fontSize: 12, color: "var(--ink-4)", margin: "10px 0 0" }}>
-              Full dashboard coming in Step 10.
-            </p>
           </div>
         ))}
       </div>
@@ -656,6 +660,16 @@ export default function CPAApp() {
   // Load CPA state — from localStorage, or hydrate from fixture for demo
   useEffect(() => {
     const existing = readCpaState();
+
+    // If arriving via an invite link (?token=), skip fixture hydration — the
+    // invite token is already in the shared localStorage state (written by the
+    // founder app). Just use what's there (or empty) and let AuthGate handle it.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("token")) {
+      setCpaState(existing || { account: null, invites: [], clients: {}, approvals: {}, archives: {} });
+      setLoading(false);
+      return;
+    }
     if (existing?.account) {
       setCpaState(existing);
       setLoading(false);
@@ -716,9 +730,46 @@ export default function CPAApp() {
   }
 
   function handleAuthSuccess(newCpaState) {
-    saveCpaState(newCpaState);
-    setCpaState(newCpaState);
-    navigate("/dashboard");
+    // If coming from an invite link, seed only the founder's matching client
+    const params = new URLSearchParams(window.location.search);
+    const sc  = params.get("sc")  ? decodeURIComponent(params.get("sc"))  : null;
+    const fn  = params.get("fn")  ? decodeURIComponent(params.get("fn"))  : "";
+    const biz = params.get("biz") ? decodeURIComponent(params.get("biz")) : "";
+
+    if (sc) {
+      fetch(`${window.PENNY_CONFIG?.baseUrl || "/"}config/cpa-fixture.json`)
+        .then((r) => r.json())
+        .then((fixture) => {
+          const matchedEntry = Object.entries(fixture.clients || {}).find(
+            ([, c]) => c.scenarioKey === sc
+          );
+          if (matchedEntry) {
+            const [clientId, clientData] = matchedEntry;
+            const clientName = [fn, biz].filter(Boolean).join(" — ") || clientData.clientName;
+            const seededState = {
+              ...newCpaState,
+              clients: { [clientId]: { ...clientData, clientName } },
+              approvals: Object.fromEntries(
+                Object.entries(fixture.approvals || {}).filter(([, a]) => a.clientId === clientId)
+              ),
+            };
+            saveCpaState(seededState);
+            setCpaState(seededState);
+          } else {
+            saveCpaState(newCpaState);
+            setCpaState(newCpaState);
+          }
+        })
+        .catch(() => {
+          saveCpaState(newCpaState);
+          setCpaState(newCpaState);
+        })
+        .finally(() => navigate("/dashboard"));
+    } else {
+      saveCpaState(newCpaState);
+      setCpaState(newCpaState);
+      navigate("/dashboard");
+    }
   }
 
   /** Accepts either a new cpaState object or an updater function (prev => next). */

@@ -741,14 +741,38 @@ export default function Books({ clientId, clientData, approvals, cpaAccount, onU
         {/* Export buttons */}
         <button
           className="btn-ghost"
-          onClick={() => showToast("Export ready — demo only.")}
+          onClick={() => showToast("PDF export coming soon.")}
           style={{ fontSize: 12, padding: "7px 14px" }}
         >
           Export PDF
         </button>
         <button
           className="btn-ghost"
-          onClick={() => showToast("Export ready — demo only.")}
+          onClick={() => {
+            const header = ["Date", "Vendor", "Category", "IRS Line", "Amount", "Status"];
+            const escCsv = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+            const csvRows = [
+              header.join(","),
+              ...filteredRows.map((row) => [
+                row.date || "",
+                row.vendor || "",
+                row.category || "",
+                row.irsLine || "",
+                row.amount ?? "",
+                row.isCpaAdded ? "CPA-added" : isFlagged(row.id) ? "Flagged" : approvalStatus(row.id) === "pending" ? "Pending" : "Cleared",
+              ].map(escCsv).join(",")),
+            ];
+            const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `ledger-${clientData?.clientName?.replace(/\s+/g, "-") || "export"}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("CSV downloaded.");
+          }}
           style={{ fontSize: 12, padding: "7px 14px" }}
         >
           Export CSV

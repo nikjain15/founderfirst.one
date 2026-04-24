@@ -44,6 +44,10 @@ Four list items:
 
 Each opens a detail view at `#/books/{slug}`. For pass 1, these can be stubbed as "coming soon" screens — the landing is the priority.
 
+### Zone 5 — Invoices
+
+A dashed-border "New invoice" tile at the bottom of the scroll area. Tapping navigates to `#/invoice`. Uses `.eyebrow` label "Invoices", document SVG icon in a `var(--paper)` 36×36px container (`border-radius: 8px`), semibold label "New invoice", muted subtitle "Create, send, or schedule recurring". Border: `1.5px dashed var(--line-2)`, `border-radius: var(--r-card)`.
+
 ---
 
 ## Ask Penny bar

@@ -475,6 +475,7 @@ If any of the above is unclear, stop and ask.
 - Needs a look: taps open a sheet with the `ApprovalCard` component. Empty state: "All caught up ✓".
 - Coming up: static list from `scenario.upcoming` with type icons (tax / invoice / recurring).
 - Drill-downs (Explore): 4 rows, all currently stub to a toast "Coming soon — full detail view."
+- **Zone 5 — Invoices:** dashed "New invoice" tile below Explore. `.eyebrow` label "Invoices", document SVG icon (16×16, `stroke-width: 1.5`) in `var(--paper)` 36×36px container (`border-radius: 8`), semibold label, muted subtitle "Create, send, or schedule recurring". `border: "1.5px dashed var(--line-2)"`, `borderRadius: "var(--r-card)"`. Tapping calls `navigate("/invoice")`.
 - Ask Penny bar submits `books.qa` intent and renders the response as a `BooksBubble` inline above the bar. Auto-scrolls to answer.
 - Scenarios loaded from `/config/scenarios.json` keyed by `{entity}.{industry}`.
 
@@ -497,6 +498,7 @@ If any of the above is unclear, stop and ask.
 - Payment methods: multi-select grid (8 options). Toggled by tapping a pill.
 - Actions: Send (sheet with email + message), Save draft, Download PDF, Set up recurring (sheet with frequency picker), all stub to toasts.
 - Back chevron navigates to `#/books`.
+- **Toast fix:** outer div must have `position: relative` so the absolute-positioned `.toast` anchors within the phone frame, not the viewport.
 
 ## Overlay / toast positioning rule (ALL screens)
 
@@ -535,6 +537,11 @@ The 4 LLC personas (llc.trades, llc.retail, llc.food-beverage, llc.other) have t
 - **Multi-member LLC (MMLLC)** → partnership → **Form 1065** + Schedule K-1
 The transaction data in scenarios.json is identical for both. The IRS line routing differs. Both paths are fully documented in `../product/irs-persona-taxonomy.md` — see the LLC IRS Line Crosswalk table and each LLC persona card (P06, P08, P10, P20).
 Penny must ask at onboarding for LLC owners: "Is this LLC owned by just you, or do you have a co-owner?" This determines which form is used.
+
+*23 April 2026 — Invoice entry point + toast fix (v2.6):*
+- *My Books Zone 5 added: "New invoice" dashed tile navigates to `#/invoice`. Design tokens compliant — `var(--line-2)` border, `var(--r-card)` radius, `var(--paper)` icon container.*
+- *Invoice screen outer div given `position: relative` so `.toast` anchors correctly within the phone frame (was escaping to viewport).*
+- *`screen-briefs/05-books.md` updated with Zone 5 spec. `screen-briefs/07-invoice.md` entry point corrected.*
 
 *23 April 2026 — UX & tone pass (v2.4):*
 - *Settled decision #2 updated: onboarding Penny copy is now static (`FALLBACK_COPY` in `screens/onboarding.jsx`), not AI-generated. Rationale: AI responses were inconsistent across loads and broke tone. `ai.renderPenny` calls removed from all onboarding steps.*

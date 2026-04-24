@@ -92,6 +92,19 @@
           "acknowledgedAt": null,
           "rejectedAt":     null,
           "rejectionNote":  null
+        },
+        {
+          "id":             "padd-007",
+          "date":           "2026-04-18",
+          "vendor":         "Home Depot",
+          "amount":         247,
+          "category":       "",
+          "receiptUrl":     null,
+          "addedBy":        "cpa-priya-demo",
+          "addedAt":        1745490000000,
+          "acknowledgedAt": null,
+          "rejectedAt":     null,
+          "rejectionNote":  null
         }
       ],
 

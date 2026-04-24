@@ -757,7 +757,7 @@ export default function Books({ clientId, clientData, approvals, cpaAccount, onU
                 row.date || "",
                 row.vendor || "",
                 row.category || "",
-                row.irsLine || "",
+                irsLineChip(row.category, entity) || "",
                 row.amount ?? "",
                 row.isCpaAdded ? "CPA-added" : isFlagged(row.id) ? "Flagged" : approvalStatus(row.id) === "pending" ? "Pending" : "Cleared",
               ].map(escCsv).join(",")),

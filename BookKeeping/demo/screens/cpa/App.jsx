@@ -590,6 +590,11 @@ function DashboardView({ cpa, clients, onClientChange }) {
               <span style={{ fontSize: 12, color: "var(--ink-4)" }}>
                 Tax readiness: {c.taxReadiness?.score ?? "—"}%
               </span>
+              {c.taxReadiness?.lastComputedAt && (
+                <span style={{ fontSize: 11, color: "var(--ink-4)" }}>
+                  Updated {new Date(c.taxReadiness.lastComputedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </span>
+              )}
             </div>
           </div>
         ))}

@@ -168,7 +168,7 @@ export default function ThreadScreen({ ai, state, set, navigate, scenario }) {
       .catch(() => {
         setQaHistory((prev) => [...prev, {
           question,
-          answer: { headline: "I couldn't get that right now.", why: "Try again in a moment.", tone: "fyi" },
+          answer: { headline: "I'm stepping away for a second.", why: "Come back in a moment — I'll have an answer waiting.", tone: "fyi" },
         }]);
         setAskLoading(false);
       });

@@ -160,7 +160,7 @@ export default function Chat({ clientId, clientData, cpaAccount, onUpdateCpa }) 
         };
       });
     } catch {
-      showToast("Penny is unavailable right now.");
+      showToast("I'm stepping away for a second — come back in a moment.");
     } finally {
       setLoading(false);
     }

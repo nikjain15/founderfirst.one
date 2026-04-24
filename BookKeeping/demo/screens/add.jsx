@@ -785,7 +785,7 @@ export default function AddScreen({ ai, state, set }) {
         daysAgo: 0,
       });
     } catch {
-      showToast("Couldn't parse that. Try again in a moment.");
+      showToast("I'm stepping away for a second — come back in a moment.");
     } finally {
       setParsing(false);
     }

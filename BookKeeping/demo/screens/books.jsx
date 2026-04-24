@@ -1125,7 +1125,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
     })
       .then((msg) => { setAnswerMsg(msg); setAskLoading(false); })
       .catch(() => {
-        setAnswerMsg({ headline: "I don't have that detail handy right now.", why: "Try again in a moment." });
+        setAnswerMsg({ headline: "I'm stepping away for a second.", why: "Come back in a moment — I'll have an answer waiting." });
         setAskLoading(false);
       });
     setAskVal("");

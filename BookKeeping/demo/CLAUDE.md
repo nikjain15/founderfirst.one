@@ -6,6 +6,28 @@
 
 ## Changelog
 
+### 24 April 2026 — IRS taxonomy v1.2 sync — master summary (Prompt 5)
+
+**Label changes propagated:**
+- "Van lease + gas" split into "Van lease" (Line 20a/11/13) and "Vehicle fuel" (Line 9/19/20). Done in `scenarios.json` P04 (prior session).
+- Generic "Insurance" made specific per persona: "Camera/equipment insurance" (P04), "Commercial insurance" (trades, beauty-wellness industries), "Malpractice insurance" (professional services, healthcare). Updated in `industries.json`, `scenarios.json`, and `card.jsx` DEFAULT_CATEGORIES.
+- "Inventory / COGS" normalized to canonical "Inventory (COGS)" in `industries.json` retail.
+- "Meals" (bare) replaced with "Business meals (50%)" everywhere in category pickers.
+- "Other" (bare) replaced with "Miscellaneous business expenses" in DEFAULT_CATEGORIES and `industries.json` other industry.
+
+**New source files — label source of truth for the demo:**
+- `BookKeeping/engineering/categories.v1.json` — machine-readable IRS taxonomy, CPA-reviewed.
+- `BookKeeping/demo/implementation/irs-routing.md` — demo-local label → IRS line mapping (v1.2, 24 Apr 2026).
+
+**New preference:** `showIrsLines` (default `false`). Toggle in Preferences → Tax display. When on, shows IRS line chip below category pill on expense approval cards.
+
+**New shared util:** `util/irsLookup.js` — exports `IRS_LINE_MAP`, `irsLineChip`, `groupByIrsLine`, and entity helpers. Imported by `card.jsx` and `books.jsx`.
+
+**Banned labels — regression check (0 hits in source):**
+`"Van lease + gas"`, `"Inventory / COGS"`, `"Other operating expenses"`, `"Truck payment"`, `"Meals"` (bare in category context), `"Insurance"` (bare in category context).
+
+---
+
 ### 24 April 2026 — Schedule C / 1120-S / 1065 preview in My Books (Prompt 4)
 
 Added a tax form preview drill-down to the Explore section in `screens/books.jsx`. Row label adapts to persona entity: "Schedule C preview" (sole-prop/LLC), "Form 1120-S preview" (S-Corp), "Form 1065 preview" (partnership). Tapping opens a bottom sheet grouping the scenario's expense categories by IRS line with a subtotal per line. Footer disclaimer: "Preview — CPA review required before filing."

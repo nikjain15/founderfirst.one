@@ -416,6 +416,21 @@
       "createdAt":     1744761600000,
       "resolvedAt":    null,
       "founderNote":   null
+    },
+    "appr-006": {
+      "id":            "appr-006",
+      "type":          "penny-question",
+      "clientId":      "client-001",
+      "transactionId": null,
+      "suggestedBy":   "penny",
+      "fromCategory":  null,
+      "toCategory":    null,
+      "candidates":    null,
+      "note":          "Priya tried to access your books — the invite expired. Resend?",
+      "status":        "pending",
+      "createdAt":     1745490000000,
+      "resolvedAt":    null,
+      "founderNote":   null
     }
   },
 

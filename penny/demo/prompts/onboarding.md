@@ -1,14 +1,17 @@
 # Overlay Prompt — Onboarding
 
 <!--
-  SCREENS USING THIS FILE
-  ───────────────────────
-  screens/onboarding.jsx   → intents: onboarding.entity · onboarding.industry
-                             onboarding.payments · onboarding.expenses
-                             onboarding.checkin · onboarding.bank · onboarding.ready
+  ⚠️  DEPRECATED — 23 April 2026
+  ────────────────────────────────
+  screens/onboarding.jsx NO LONGER calls ai.renderPenny for any onboarding step.
+  All Penny copy is static, defined in FALLBACK_COPY inside screens/onboarding.jsx.
 
-  One prompt handles all 7 onboarding steps; the current step is passed via context.
-  Changing this file affects ONLY the Onboarding screen.
+  This file is kept for reference only. Do not re-wire it to onboarding.jsx.
+  If you need to change onboarding copy, edit FALLBACK_COPY directly in the source.
+  See CLAUDE.md settled decision #2 for rationale.
+
+  This prompt IS still valid as a reference for tone and structure if building
+  a new onboarding variant in a different context.
 -->
 
 *Version 1.0 · April 2026*

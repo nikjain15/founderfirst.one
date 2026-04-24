@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Build in Public — Nik's Product Building Practice</title>
+<style>
+:root {
+  --bg:       #f7f7f5;
+  --card:     #ffffff;
+  --border:   #e8e8e2;
+  --text:     #1a1a1a;
+  --muted:    #999;
+  --soft:     #555;
+  --green:    #22c55e;
+  --orange:   #f97316;
+  --red:      #ef4444;
+  --ink:      #1a1a1a;
+  --ocean:    #2C5F8D;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0 0 80px;
+}
+
+/* ── HEADER ── */
+.header {
+  padding: 24px 24px 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.wordmark { font-size: 15px; font-weight: 800; letter-spacing: -0.03em; }
+.wordmark .dot { color: var(--ocean); }
+.tagline { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.share-btn {
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: opacity .15s;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+.share-btn:hover { opacity: .8; }
+
+/* ── LAYOUT ── */
+.page { max-width: 600px; margin: 0 auto; padding: 0 16px; }
+.gap { height: 12px; }
+.gap-lg { height: 20px; }
+
+/* ── HERO ── */
+.hero {
+  background: var(--ink);
+  color: #fff;
+  border-radius: 20px;
+  padding: 24px;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.hero-ring-wrap { position: relative; width: 88px; height: 88px; flex-shrink: 0; }
+.hero-ring-svg  { width: 88px; height: 88px; transform: rotate(-90deg); }
+.hero-ring-bg   { fill: none; stroke: rgba(255,255,255,.15); stroke-width: 7; }
+.hero-ring-fill { fill: none; stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset .7s cubic-bezier(.4,0,.2,1), stroke .4s; }
+.hero-ring-num  {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-size: 22px; font-weight: 800; letter-spacing: -0.03em; color: #fff;
+}
+.hero-body { flex: 1; min-width: 0; }
+.hero-status { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 6px; }
+.hero-sub    { font-size: 13px; color: rgba(255,255,255,.6); line-height: 1.5; }
+.hero-focus-tag {
+  display: inline-block;
+  margin-top: 10px;
+  background: rgba(255,255,255,.12);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,.8);
+  letter-spacing: 0.03em;
+}
+
+/* ── CARDS ── */
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  padding: 20px;
+}
+.card + .card { margin-top: 12px; }
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+/* ── FOCUS CARD ── */
+.focus-card {
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 12px;
+}
+.focus-day   { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; opacity: .7; color: #fff; }
+.focus-title { font-size: 19px; font-weight: 800; color: #fff; margin-bottom: 8px; line-height: 1.2; }
+.focus-desc  { font-size: 13px; color: rgba(255,255,255,.75); line-height: 1.6; margin-bottom: 14px; }
+.focus-action-box {
+  background: rgba(255,255,255,.15);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #fff;
+  line-height: 1.5;
+}
+.focus-action-box strong { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; opacity: .7; }
+
+/* Day pills */
+.day-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.day-pill {
+  padding: 4px 11px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+  letter-spacing: .01em;
+}
+.day-pill.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+/* ── HABITS ── */
+.habit-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 0;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f3f0;
+  transition: opacity .1s;
+  user-select: none;
+}
+.habit-row:last-child { border-bottom: none; padding-bottom: 0; }
+.habit-row:first-child { padding-top: 0; }
+.habit-row:active { opacity: .7; }
+.habit-check {
+  width: 22px; height: 22px;
+  border-radius: 7px;
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 12px;
+  transition: all .2s;
+  margin-top: 1px;
+}
+.habit-row.done .habit-check { background: var(--green); border-color: var(--green); color: #fff; }
+.habit-text { flex: 1; }
+.habit-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.habit-row.done .habit-name { color: #16a34a; }
+.habit-hint { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.habit-progress-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.habit-progress-text { font-size: 13px; font-weight: 700; color: var(--text); }
+.habit-progress-sub  { font-size: 12px; color: var(--muted); }
+
+/* ── STREAK + WEEK ── */
+.streak-week {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+.streak-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  flex-shrink: 0;
+}
+.streak-emoji { font-size: 24px; margin-bottom: 4px; }
+.streak-val   { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; }
+.streak-lbl   { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 1px; }
+.week-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  flex: 1;
+}
+.week-dots { display: flex; justify-content: space-between; align-items: center; }
+.week-col  { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.week-lbl  { font-size: 10px; font-weight: 700; color: var(--muted); }
+.week-dot  {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  color: var(--muted);
+}
+.week-dot.is-today   { border-color: var(--ink); background: var(--ink); color: #fff; }
+.week-dot.is-great   { background: var(--green); border-color: var(--green); color: #fff; }
+.week-dot.is-partial { background: #fed7aa; border-color: var(--orange); color: #c2410c; }
+.week-dot.is-missed  { background: #fee2e2; border-color: var(--red); color: var(--red); }
+
+/* ── TIP ── */
+.tip-card {
+  background: linear-gradient(135deg, #2C5F8D 0%, #1a3a5c 100%);
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.tip-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.5); margin-bottom: 8px; }
+.tip-text  { font-size: 14px; color: #fff; line-height: 1.6; font-weight: 500; margin-bottom: 14px; }
+.tip-nav   { display: flex; align-items: center; gap: 8px; }
+.tip-btn   {
+  background: rgba(255,255,255,.15);
+  border: none; border-radius: 8px;
+  color: #fff; padding: 5px 12px;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: background .15s;
+}
+.tip-btn:hover { background: rgba(255,255,255,.25); }
+.tip-counter { margin-left: auto; font-size: 11px; color: rgba(255,255,255,.5); font-weight: 600; }
+
+/* ── LEARNING CHIPS ── */
+.chips-wrap { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip {
+  padding: 6px 13px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+  color: var(--soft);
+  background: var(--bg);
+}
+.chip:hover { border-color: #bbb; }
+.chip.learned {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+.chip.learned::before { content: '✓ '; }
+.chips-progress { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+
+/* ── LOG ── */
+.log-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.log-input {
+  flex: 1;
+  padding: 10px 13px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+  transition: border-color .15s;
+}
+.log-input:focus { outline: none; border-color: var(--ink); }
+.log-input::placeholder { color: var(--muted); }
+.log-add-btn {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: none;
+  background: var(--ink);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .15s;
+  white-space: nowrap;
+}
+.log-add-btn:hover { opacity: .8; }
+.log-entries { display: flex; flex-direction: column; gap: 7px; max-height: 190px; overflow-y: auto; }
+.log-entry {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 9px 11px;
+  background: var(--bg);
+  border-radius: 9px;
+  font-size: 12px;
+}
+.log-entry-date { color: var(--muted); font-weight: 700; flex-shrink: 0; white-space: nowrap; }
+.log-entry-note { flex: 1; color: var(--soft); line-height: 1.5; }
+.log-entry-stars { flex-shrink: 0; font-size: 10px; }
+.log-entry:hover .log-del-btn { opacity: 1; }
+.log-del-btn {
+  opacity: 0; cursor: pointer; color: #ccc; font-size: 14px;
+  background: none; border: none; transition: .1s; flex-shrink: 0;
+  line-height: 1;
+}
+.log-del-btn:hover { color: var(--red); }
+.log-empty { font-size: 13px; color: var(--muted); text-align: center; padding: 16px 0; }
+
+/* ── MODAL ── */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-bg.hidden { display: none; }
+.modal {
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px;
+  max-width: 480px; width: 100%;
+  max-height: 85vh; overflow-y: auto;
+}
+.modal-hd { font-size: 17px; font-weight: 800; margin-bottom: 3px; }
+.modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+/* Share card */
+.share-preview {
+  background: #0f172a;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  color: #fff;
+}
+.share-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.4); margin-bottom: 16px; }
+.share-name  { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+.share-date  { font-size: 12px; color: rgba(255,255,255,.4); margin-bottom: 20px; }
+.share-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 18px; }
+.share-stat  { background: rgba(255,255,255,.07); border-radius: 10px; padding: 10px; text-align: center; }
+.share-stat-val { font-size: 22px; font-weight: 800; }
+.share-stat-lbl { font-size: 10px; color: rgba(255,255,255,.45); margin-top: 2px; font-weight: 600; letter-spacing: .03em; }
+.share-habits-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 16px; }
+.share-hab { background: rgba(255,255,255,.06); border-radius: 8px; padding: 8px 10px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.share-hab.done { background: rgba(34,197,94,.12); color: #4ade80; }
+.share-hab.undone { color: rgba(255,255,255,.3); }
+.share-insight { background: rgba(44,95,141,.2); border-radius: 10px; padding: 12px 14px; font-size: 13px; color: rgba(255,255,255,.8); line-height: 1.6; margin-bottom: 14px; }
+.share-footer { font-size: 11px; color: rgba(255,255,255,.25); border-top: 1px solid rgba(255,255,255,.08); padding-top: 12px; }
+
+.modal-copy-btn {
+  width: 100%; padding: 12px;
+  border-radius: 10px; border: none;
+  background: var(--ink); color: #fff;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer; margin-bottom: 8px;
+  transition: opacity .15s;
+}
+.modal-copy-btn:hover { opacity: .8; }
+.modal-close-btn {
+  width: 100%; padding: 11px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; color: var(--soft);
+  transition: background .15s;
+}
+.modal-close-btn:hover { background: #eee; }
+
+/* ── RESET BTN ── */
+.reset-link {
+  font-size: 11px; color: var(--muted);
+  text-align: center; display: block;
+  margin-top: 10px; cursor: pointer;
+  background: none; border: none;
+  text-decoration: underline;
+}
+
+/* ── EMPTY LOG ── */
+.select-stars { padding: 10px; border-radius: 10px; border: 1.5px solid var(--border); font-size: 13px; font-family: inherit; background: var(--bg); }
+
+@media (max-width: 480px) {
+  .hero { gap: 14px; padding: 18px; }
+  .hero-ring-wrap { width: 76px; height: 76px; }
+  .hero-ring-svg  { width: 76px; height: 76px; }
+  .hero-ring-num  { font-size: 18px; }
+  .hero-status    { font-size: 17px; }
+  .share-stats    { grid-template-columns: repeat(2,1fr); }
+  .streak-card    { width: 86px; }
+  .week-dot       { width: 24px; height: 24px; font-size: 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="wordmark">Build in Public<span class="dot">.</span></div>
+    <div class="tagline">My AI-assisted product practice, tracked daily.</div>
+  </div>
+  <button class="share-btn" onclick="openShare()">Share ↗</button>
+</div>
+
+<div class="page">
+
+  <div class="gap-lg"></div>
+
+  <!-- HERO SCORE -->
+  <div class="hero">
+    <div class="hero-ring-wrap">
+      <svg class="hero-ring-svg" viewBox="0 0 88 88">
+        <circle class="hero-ring-bg"   cx="44" cy="44" r="36"/>
+        <circle class="hero-ring-fill" id="scoreRing" cx="44" cy="44" r="36"
+                stroke-dasharray="226" stroke-dashoffset="226"/>
+      </svg>
+      <div class="hero-ring-num" id="scoreNum">0</div>
+    </div>
+    <div class="hero-body">
+      <div class="hero-status" id="heroStatus">Ready to go.</div>
+      <div class="hero-sub"   id="heroSub">Check off today's habits as you work.</div>
+      <div class="hero-focus-tag" id="heroFocusTag">Today · Monday</div>
+    </div>
+  </div>
+
+  <div class="gap"></div>
+
+  <!-- DAY PILLS -->
+  <div class="day-pills" id="dayPills"></div>
+
+  <!-- TODAY'S FOCUS -->
+  <div class="focus-card" id="focusCard">
+    <div class="focus-day"   id="focusDay">TODAY · MONDAY</div>
+    <div class="focus-title" id="focusTitle">Context Mastery</div>
+    <div class="focus-desc"  id="focusDesc">Loading...</div>
+    <div class="focus-action-box">
+      <strong>Do this today</strong>
+      <span id="focusAction">Loading...</span>
+    </div>
+  </div>
+
+  <div class="gap"></div>
+
+  <!-- HABITS -->
+  <div class="card">
+    <div class="habit-progress-row">
+      <div>
+        <div class="section-label" style="margin-bottom:2px;">Today's habits</div>
+        <div class="habit-progress-sub" id="habitSub">Tap each one when done.</div>
+      </div>
+      <div class="habit-progress-text" id="habitCount">0 / 6</div>
+    </div>
+    <div id="habitList"></div>
+    <button class="reset-link" onclick="resetToday()">Reset today</button>
+  </div>
+
+  <!-- STREAK + WEEK -->
+  <div class="streak-week">
+    <div class="streak-card">
+      <div class="streak-emoji">🔥</div>
+      <div class="streak-val" id="streakVal">0</div>
+      <div class="streak-lbl">day streak</div>
+    </div>
+    <div class="week-card">
+      <div class="section-label" style="margin-bottom:10px;">This week</div>
+      <div class="week-dots" id="weekDots"></div>
+    </div>
+  </div>
+
+  <!-- TIP -->
+  <div class="tip-card">
+    <div class="tip-label">Tip <span id="tipNum">1</span> of <span id="tipTotal">14</span></div>
+    <div class="tip-text" id="tipText">Loading...</div>
+    <div class="tip-nav">
+      <button class="tip-btn" onclick="prevTip()">←</button>
+      <button class="tip-btn" onclick="nextTip()">→</button>
+      <div class="tip-counter" id="tipCounter">Next tip tomorrow</div>
+    </div>
+  </div>
+
+  <!-- LEARNING -->
+  <div class="card" style="margin-top:12px;">
+    <div class="section-label">Concepts I've internalized</div>
+    <div class="chips-progress" id="chipsProgress">0 of 12 — tap when it's genuinely clicked.</div>
+    <div class="chips-wrap" id="chipsWrap"></div>
+  </div>
+
+  <!-- SESSION LOG -->
+  <div class="card" style="margin-top:12px;">
+    <div class="section-label">Session log</div>
+    <div class="log-input-row">
+      <input class="log-input" id="logInput" placeholder="What did you work on today?" maxlength="120"/>
+      <select class="select-stars" id="logStars">
+        <option value="5">⭐⭐⭐⭐⭐</option>
+        <option value="4">⭐⭐⭐⭐</option>
+        <option value="3" selected>⭐⭐⭐</option>
+        <option value="2">⭐⭐</option>
+        <option value="1">⭐</option>
+      </select>
+      <button class="log-add-btn" onclick="addLog()">Log</button>
+    </div>
+    <div id="logEntries"></div>
+  </div>
+
+  <div class="gap-lg"></div>
+
+</div>
+
+<!-- SHARE MODAL -->
+<div class="modal-bg hidden" id="shareModal" onclick="maybeCloseShare(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hd">Share your progress</div>
+    <div class="modal-sub">Post this to LinkedIn, X, or your community. Building in public builds credibility.</div>
+
+    <div class="share-preview">
+      <div class="share-title">Build in Public · Daily Practice</div>
+      <div class="share-name" id="sh-name">Nik's AI Building Practice</div>
+      <div class="share-date" id="sh-date"></div>
+      <div class="share-stats">
+        <div class="share-stat"><div class="share-stat-val" id="sh-score">0%</div><div class="share-stat-lbl">Today</div></div>
+        <div class="share-stat"><div class="share-stat-val" id="sh-streak">0</div><div class="share-stat-lbl">Streak</div></div>
+        <div class="share-stat"><div class="share-stat-val" id="sh-sessions">0</div><div class="share-stat-lbl">Sessions</div></div>
+        <div class="share-stat"><div class="share-stat-val" id="sh-learned">0/12</div><div class="share-stat-lbl">Concepts</div></div>
+      </div>
+      <div class="share-habits-grid" id="sh-habits"></div>
+      <div class="share-insight" id="sh-insight"></div>
+      <div class="share-footer">Build in Public · AI-assisted product building practice</div>
+    </div>
+
+    <button class="modal-copy-btn" onclick="copyText()">Copy as text</button>
+    <button class="modal-close-btn" onclick="closeShare()">Done</button>
+  </div>
+</div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+
+const HABITS = [
+  { id:'ctx',  name:'Started with CLAUDE.md',      hint:'Opened the session by asking Claude to read CLAUDE.md + STATUS.md.' },
+  { id:'goal', name:'Stated the session goal',      hint:'One sentence on what to accomplish — before any open-ended question.' },
+  { id:'dec',  name:'Locked decisions before build',hint:'All key choices made before asking Claude to write or build anything.' },
+  { id:'fmt',  name:'Specified output format',      hint:'Said "brief" / "doc" / "bullet points" / "comprehensive" upfront.' },
+  { id:'bat',  name:'Batched related asks',         hint:'Combined related requests in one message, not back-and-forth.' },
+  { id:'end',  name:'Updated docs at session end',  hint:'Asked Claude to update CLAUDE.md or STATUS.md before closing.' },
+];
+
+const GOALS = [
+  { day:'Monday',    lever:'Context Mastery',      color:'#2C5F8D',
+    desc:'Start every session with "read CLAUDE.md and STATUS.md." That one habit recovers all project context for ~2k tokens instead of ~50k. Highest-ROI action in this whole practice.',
+    action:'Before opening Claude today, say out loud what you want to accomplish. Then ask for context first.' },
+  { day:'Tuesday',   lever:'Goal Clarity',         color:'#6d28d9',
+    desc:'State what you want to accomplish at the start — one sentence, specific. Vague opens cost 3× more tokens than specific ones.',
+    action:'Write your session goal before you open Claude. Specific enough that you could judge if it was done.' },
+  { day:'Wednesday', lever:'Decision Discipline',  color:'#b45309',
+    desc:'Never ask Claude to build before the decision is locked. Every rebuild round costs 40–80k tokens. Decide, then build — never the other way.',
+    action:'For any build request today, name the 3 decisions that must be settled first. Ask those first.' },
+  { day:'Thursday',  lever:'Prompt Precision',     color:'#065f46',
+    desc:'Precision is not more words — it\'s the right words. Specify format, length, constraints. Same token cost, 5× better output.',
+    action:'Add one explicit constraint to every prompt today — format, length, audience, or tone.' },
+  { day:'Friday',    lever:'Batch Thinking',       color:'#9f1239',
+    desc:'Every exchange adds permanently to the context window. 10 short messages = ~5k extra tokens just in history. Think before sending.',
+    action:'Before sending any message, ask: is there a related thing I also need? Bundle it in.' },
+  { day:'Saturday',  lever:'Reflect & Review',     color:'#374151',
+    desc:'The fastest improvement comes from honest review. What cost the most tokens? What produced the best output? Where did you break your own rules?',
+    action:'Write 3 sentences in the session log: what worked, what burned tokens, what changes next week.' },
+  { day:'Sunday',    lever:'CLAUDE.md Update',     color:'#1e3a5f',
+    desc:'CLAUDE.md is compound interest. Every decision you capture means future sessions don\'t pay tokens to rediscover it. A well-maintained CLAUDE.md is worth 50k+ tokens per session.',
+    action:'Open CLAUDE.md. Add at least one decision or learning from this week before you close.' },
+];
+
+const TIPS = [
+  '"Read CLAUDE.md" at session start costs ~2k tokens. Not reading it costs ~50k to recover the same context.',
+  'One rich, specific message beats five back-and-forth pings. Context window fills with every exchange.',
+  'Lock decisions before asking Claude to build. A prototype rebuild round is 40–80k tokens of rework.',
+  '"Write a 3-bullet summary for a non-technical founder" produces 5× better output than "summarize this."',
+  'Claude\'s output length scales with your ask\'s complexity. Say "brief" or "comprehensive" explicitly.',
+  'Reading a large doc (e.g. app-spec.md) costs ~6k tokens. It stays in the window the rest of the session.',
+  'End every session with "update CLAUDE.md with today\'s decisions" — this is compound interest on your tokens.',
+  'New session = fresh 200k window. Good CLAUDE.md means recovery in 1 exchange, not 10.',
+  'The best Claude prompt has four things: goal + constraints + format + audience.',
+  'Vague questions get hedged answers. Specific questions get precise ones. Same token cost, 5× the value.',
+  'When Claude re-opens a settled decision, your CLAUDE.md is missing that decision. Fix the doc, not Claude.',
+  'Prototype should be spec\'d in text first. Text spec = ~3k tokens. Wrong prototype = 60k tokens wasted.',
+  'Ask "do you need to re-read X, or is it in CLAUDE.md?" before attaching large docs.',
+  'The most expensive pattern: vague ask → disappointing output → redo. Spend tokens on clarity upfront.',
+];
+
+const TOPICS = [
+  { id:'t1',  label:'Context window basics' },
+  { id:'t2',  label:'1 token ≈ ¾ of a word' },
+  { id:'t3',  label:'Input vs output tokens' },
+  { id:'t4',  label:'Start with CLAUDE.md' },
+  { id:'t5',  label:'Lock before building' },
+  { id:'t6',  label:'Batch related asks' },
+  { id:'t7',  label:'Format upfront' },
+  { id:'t8',  label:'Session close habit' },
+  { id:'t9',  label:'Specificity = quality' },
+  { id:'t10', label:'New session = new window' },
+  { id:'t11', label:'File read cost awareness' },
+  { id:'t12', label:'CLAUDE.md compounds' },
+];
+
+// ─── STORAGE ──────────────────────────────────────────────────────────────────
+const LS = {
+  get: (k,d) => { try { const v=localStorage.getItem(k); return v?JSON.parse(v):d; } catch(e){ return d; } },
+  set: (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch(e){} }
+};
+const todayStr = () => new Date().toISOString().split('T')[0];
+const getHabits  = (d=todayStr()) => LS.get('bip_h_'+d, {});
+const setHabits  = (h,d=todayStr()) => LS.set('bip_h_'+d, h);
+const getHistory = () => LS.get('bip_hist', {});
+const setHistory = h => LS.set('bip_hist', h);
+const getLearned = () => LS.get('bip_learned', {});
+const setLearned = l => LS.set('bip_learned', l);
+const getLog     = () => LS.get('bip_log', []);
+const setLog     = l => LS.set('bip_log', l);
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+const dow = () => { const d=new Date().getDay(); return d===0?6:d-1; }; // 0=Mon
+let viewDay = dow();
+let tipIdx  = LS.get('bip_tipday','') !== todayStr()
+  ? (LS.set('bip_tipday', todayStr()), Math.floor(Math.random()*TIPS.length))
+  : LS.get('bip_tipidx', 0);
+
+// ─── SCORE ────────────────────────────────────────────────────────────────────
+const calcScore = h => Math.round(HABITS.filter(x=>h[x.id]).length/HABITS.length*100);
+const scoreColor = s => s>=80?'#22c55e':s>=50?'#f97316':'#ef4444';
+const heroStatus = (done,total) => {
+  if(done===total) return 'Perfect session. ✓';
+  if(done===0) return 'Ready to go.';
+  if(done===1) return '1 habit down.';
+  return `${done} habits down.`;
+};
+const heroSub = (done,total) => {
+  const left = total-done;
+  if(done===total) return 'Every habit nailed today. This is the standard.';
+  if(done===0) return 'Check off each habit as you work through your session.';
+  if(left===1) return 'One more and it\'s a perfect session.';
+  return `${left} to go — keep it up.`;
+};
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function renderHero() {
+  const h = getHabits();
+  const done = HABITS.filter(x=>h[x.id]).length;
+  const score = calcScore(h);
+  const circ = 2*Math.PI*36, offset = circ - (score/100)*circ;
+  const ring = document.getElementById('scoreRing');
+  ring.style.strokeDashoffset = offset;
+  ring.style.stroke = scoreColor(score);
+  document.getElementById('scoreNum').textContent = score;
+  document.getElementById('heroStatus').textContent = heroStatus(done, HABITS.length);
+  document.getElementById('heroSub').textContent    = heroSub(done, HABITS.length);
+  document.getElementById('heroFocusTag').textContent = 'Today · ' + GOALS[dow()].lever;
+  // save to history
+  const hist = getHistory(); hist[todayStr()]=score; setHistory(hist);
+}
+
+function renderFocus() {
+  const g = GOALS[viewDay];
+  document.getElementById('focusCard').style.background = g.color;
+  document.getElementById('focusDay').textContent   = (viewDay===dow()?'TODAY':'') + ' · '+g.day.toUpperCase();
+  document.getElementById('focusTitle').textContent = g.lever;
+  document.getElementById('focusDesc').textContent  = g.desc;
+  document.getElementById('focusAction').textContent = g.action;
+}
+
+function renderPills() {
+  const el = document.getElementById('dayPills'); el.innerHTML='';
+  GOALS.forEach((g,i)=>{
+    const p = document.createElement('div');
+    p.className = 'day-pill'+(i===viewDay?' active':'');
+    p.textContent = g.day.slice(0,3);
+    p.onclick = ()=>{ viewDay=i; renderFocus(); renderPills(); };
+    el.appendChild(p);
+  });
+}
+
+function renderHabits() {
+  const h = getHabits();
+  const done = HABITS.filter(x=>h[x.id]).length;
+  document.getElementById('habitCount').textContent = done+' / '+HABITS.length;
+  document.getElementById('habitSub').textContent = done===HABITS.length
+    ? 'All done — great session.' : 'Tap each one when done.';
+  const list = document.getElementById('habitList'); list.innerHTML='';
+  HABITS.forEach(hab=>{
+    const row = document.createElement('div');
+    row.className = 'habit-row'+(h[hab.id]?' done':'');
+    row.innerHTML = `<div class="habit-check">${h[hab.id]?'✓':''}</div>
+      <div class="habit-text">
+        <div class="habit-name">${hab.name}</div>
+        <div class="habit-hint">${hab.hint}</div>
+      </div>`;
+    row.onclick = ()=>toggleHabit(hab.id);
+    list.appendChild(row);
+  });
+}
+
+function renderStreakWeek() {
+  const hist = getHistory();
+  // streak
+  let streak=0; const dt=new Date();
+  for(let i=0;i<60;i++){
+    const s=dt.toISOString().split('T')[0];
+    if(hist[s]!=null && hist[s]>=50){ streak++; dt.setDate(dt.getDate()-1); }
+    else break;
+  }
+  document.getElementById('streakVal').textContent = streak;
+  // week dots
+  const DAYS=['M','T','W','T','F','S','S'];
+  const todayDow=dow();
+  const now=new Date();
+  const mo=now.getDay()===0?-6:1-now.getDay();
+  const monday=new Date(now); monday.setDate(now.getDate()+mo);
+  const wrap=document.getElementById('weekDots'); wrap.innerHTML='';
+  DAYS.forEach((lbl,i)=>{
+    const dt2=new Date(monday); dt2.setDate(monday.getDate()+i);
+    const ds=dt2.toISOString().split('T')[0];
+    const sc=hist[ds];
+    const isToday=i===todayDow;
+    let cls='week-dot';
+    if(isToday) cls+=' is-today';
+    else if(sc!=null){ cls+= sc>=80?' is-great':sc>=40?' is-partial':' is-missed'; }
+    const txt=isToday?'·':(sc!=null?sc:'—');
+    const col=document.createElement('div'); col.className='week-col';
+    col.innerHTML=`<div class="week-lbl">${lbl}</div><div class="${cls}" title="${ds}: ${sc!=null?sc+'%':'no data'}">${txt}</div>`;
+    wrap.appendChild(col);
+  });
+}
+
+function renderTip() {
+  LS.set('bip_tipidx', tipIdx);
+  document.getElementById('tipText').textContent = TIPS[tipIdx];
+  document.getElementById('tipNum').textContent = tipIdx+1;
+  document.getElementById('tipTotal').textContent = TIPS.length;
+}
+
+function renderLearning() {
+  const learned = getLearned();
+  const count = Object.values(learned).filter(Boolean).length;
+  document.getElementById('chipsProgress').textContent =
+    count===12 ? '12 of 12 — you\'ve got all of them 💪' :
+    count===0  ? '0 of 12 — tap when something\'s genuinely clicked.' :
+                 `${count} of 12 — keep going.`;
+  const wrap=document.getElementById('chipsWrap'); wrap.innerHTML='';
+  TOPICS.forEach(t=>{
+    const c=document.createElement('div');
+    c.className='chip'+(learned[t.id]?' learned':'');
+    c.textContent=t.label;
+    c.onclick=()=>{ const l=getLearned(); l[t.id]=!l[t.id]; setLearned(l); renderLearning(); renderHero(); };
+    wrap.appendChild(c);
+  });
+}
+
+function renderLog() {
+  const log=getLog();
+  document.getElementById('sessionsLog_count');
+  const el=document.getElementById('logEntries'); el.innerHTML='';
+  if(log.length===0){ el.innerHTML='<div class="log-empty">Nothing logged yet. Add a note after each session.</div>'; return; }
+  [...log].reverse().forEach((e,ri)=>{
+    const i=log.length-1-ri;
+    const stars='⭐'.repeat(e.stars||3);
+    const div=document.createElement('div'); div.className='log-entry';
+    div.innerHTML=`<div class="log-entry-date">${e.date}</div>
+      <div class="log-entry-note">${e.note}</div>
+      <div class="log-entry-stars">${stars}</div>
+      <button class="log-del-btn" onclick="delLog(${i})">✕</button>`;
+    el.appendChild(div);
+  });
+}
+
+function renderAll(){
+  renderHero(); renderFocus(); renderPills();
+  renderHabits(); renderStreakWeek();
+  renderTip(); renderLearning(); renderLog();
+}
+
+// ─── ACTIONS ──────────────────────────────────────────────────────────────────
+function toggleHabit(id){
+  const h=getHabits(); h[id]=!h[id]; setHabits(h);
+  renderHabits(); renderHero(); renderStreakWeek();
+}
+function resetToday(){
+  if(confirm('Reset today\'s habits?')){ setHabits({}); renderHabits(); renderHero(); renderStreakWeek(); }
+}
+function addLog(){
+  const input=document.getElementById('logInput');
+  const note=input.value.trim(); if(!note) return;
+  const stars=parseInt(document.getElementById('logStars').value);
+  const log=getLog(); log.push({date:todayStr(),note,stars}); setLog(log);
+  input.value=''; renderLog();
+}
+function delLog(i){
+  const log=getLog(); log.splice(i,1); setLog(log); renderLog();
+}
+function nextTip(){ tipIdx=(tipIdx+1)%TIPS.length; renderTip(); }
+function prevTip(){ tipIdx=(tipIdx-1+TIPS.length)%TIPS.length; renderTip(); }
+document.getElementById('logInput').addEventListener('keydown',e=>{ if(e.key==='Enter') addLog(); });
+
+// ─── SHARE ────────────────────────────────────────────────────────────────────
+function openShare(){
+  const h=getHabits(); const score=calcScore(h);
+  const log=getLog(); const learned=getLearned();
+  const learnedCount=Object.values(learned).filter(Boolean).length;
+  const hist=getHistory();
+  let streak=0; const dt=new Date();
+  for(let i=0;i<60;i++){
+    const s=dt.toISOString().split('T')[0];
+    if(hist[s]!=null&&hist[s]>=50){ streak++; dt.setDate(dt.getDate()-1); } else break;
+  }
+  document.getElementById('sh-date').textContent =
+    new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('sh-score').textContent   = score+'%';
+  document.getElementById('sh-streak').textContent  = streak;
+  document.getElementById('sh-sessions').textContent= log.length;
+  document.getElementById('sh-learned').textContent = learnedCount+'/12';
+
+  const hg=document.getElementById('sh-habits'); hg.innerHTML='';
+  HABITS.forEach(x=>{
+    const d=document.createElement('div');
+    d.className='share-hab '+(h[x.id]?'done':'undone');
+    d.innerHTML=(h[x.id]?'✓ ':'○ ')+x.name;
+    hg.appendChild(d);
+  });
+
+  document.getElementById('sh-insight').textContent = genInsight(score,h,log.length,learnedCount,streak);
+  document.getElementById('shareModal').classList.remove('hidden');
+}
+function genInsight(score,h,sessions,learned,streak){
+  const done=HABITS.filter(x=>h[x.id]);
+  const missed=HABITS.filter(x=>!h[x.id]);
+  if(score===100) return "Perfect session — all 6 habits done. This is what disciplined AI-assisted building looks like.";
+  if(missed.length===1) return `One habit away from a perfect session — missed "${missed[0].name}". Almost there.`;
+  if(!h['ctx']) return "Biggest unlock today: start the session with CLAUDE.md. One habit that saves 50k+ tokens per session.";
+  if(!h['dec']) return "Key opportunity: lock decisions before asking Claude to build. Every rebuild round costs 40–80k tokens.";
+  if(streak>=7) return `${streak}-day streak — consistency is the whole game. ${score}% today across ${sessions} logged sessions.`;
+  return `${score}% efficiency today. ${learned} of 12 concepts internalized. ${sessions} sessions logged so far.`;
+}
+function maybeCloseShare(e){ if(e.target===document.getElementById('shareModal')) closeShare(); }
+function closeShare(){ document.getElementById('shareModal').classList.add('hidden'); }
+function copyText(){
+  const h=getHabits(); const score=calcScore(h);
+  const log=getLog(); const learned=getLearned();
+  const learnedCount=Object.values(learned).filter(Boolean).length;
+  const streak=document.getElementById('sh-streak').textContent;
+  const lines=HABITS.map(x=>(h[x.id]?'✓':'○')+' '+x.name).join('\n');
+  const insight=genInsight(score,h,log.length,learnedCount,parseInt(streak));
+  const txt=`Build in Public · Daily Practice\n\n`+
+    `${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}\n\n`+
+    `Score: ${score}%  |  Streak: ${streak} days  |  Sessions: ${log.length}  |  Concepts: ${learnedCount}/12\n\n`+
+    `Today's habits:\n${lines}\n\n${insight}\n\n#BuildInPublic #ProductBuilding #AItools`;
+  navigator.clipboard.writeText(txt)
+    .then(()=>alert('Copied — paste it anywhere.'))
+    .catch(()=>alert('Copy failed. Try manually selecting the text.'));
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderAll();
+</script>
+</body>
+</html>

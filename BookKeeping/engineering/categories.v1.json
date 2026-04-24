@@ -1,0 +1,831 @@
+{
+  "$schema": "https://penny.founderfirst.one/schemas/categories.v1.json",
+  "version": "1.0.0",
+  "status": "draft — CPA sign-off required before production",
+  "taxYears": ["2025", "2026"],
+  "lastUpdated": "2026-04-24",
+  "source": {
+    "taxonomyDoc": "BookKeeping/product/irs-persona-taxonomy.md v1.2",
+    "stressTest": "BookKeeping/reviews/irs-taxonomy-cpa-stress-test-apr-2026.md",
+    "scenariosData": "BookKeeping/demo/public/config/scenarios.json"
+  },
+  "notes": {
+    "purpose": "Machine-readable IRS category taxonomy. Consumed by Intelligence Service (categorization), Export Service (Schedule C / 1120-S / 1065 PDF), Tax Service (quarterly estimates, QBI), and AI Eval 04 (Financial Computation).",
+    "entityPaths": {
+      "soleProp": "Schedule C (Form 1040) + Schedule SE",
+      "smllc": "Schedule C (Form 1040) + Schedule SE — disregarded entity, same lines as sole prop",
+      "mmllc": "Form 1065 + Schedule K-1 → members' Schedule E Part II; K-1 Box 14 carries SE earnings for active members",
+      "sCorp": "Form 1120-S + Schedule K-1 → shareholder's Schedule E Part II; shareholder's W-2 wages subject to FICA"
+    },
+    "criticalFixes_v1_0": [
+      "Form 1065 Line 18 is Retirement plans — NOT insurance (v1.1 had this wrong)",
+      "Form 1065 Line 11 is Repairs and maintenance — dedicated line, NOT Line 20",
+      "Form 1065 Line 10 is Guaranteed payments to partners — NOT external commissions/contractors",
+      "Form 1065 Line 9 is W-2 employee wages — NOT guaranteed payments",
+      "S-Corp K-1 distributions go on Box 16 Code D — NOT Box 19 (Box 19 is partnership K-1)",
+      "2025 standard mileage rate is 70¢/mile per IRS Notice 2025-5 (was 67¢ in 2024)",
+      "De minimis safe harbor is $2,500/item for non-AFS taxpayers per Treas. Reg. §1.263(a)-1(f) — NOT $500",
+      "MMLLC active members pay SE tax on K-1 Box 1 ordinary income (Renkemeyer 136 T.C. 137) — materially different from S-Corp treatment",
+      "Reasonable compensation for S-Corp has no statutory % threshold — use IRS Fact Sheet 2008-25 nine factors"
+    ]
+  },
+
+  "irsForms": {
+    "scheduleC": {
+      "form": "Form 1040 Schedule C",
+      "appliesTo": ["soleProp", "smllc"],
+      "incomeLines": {
+        "line1": "Gross receipts or sales",
+        "line4": "Cost of goods sold (from Line 42 in Part III)",
+        "line6": "Other income"
+      },
+      "expenseLines": {
+        "line8": "Advertising",
+        "line9": "Car and truck expenses",
+        "line10": "Commissions and fees",
+        "line11": "Contract labor",
+        "line12": "Depletion",
+        "line13": "Depreciation and Section 179 (from Form 4562)",
+        "line14": "Employee benefit programs",
+        "line15": "Insurance (other than health)",
+        "line16a": "Mortgage interest (to banks)",
+        "line16b": "Other interest",
+        "line17": "Legal and professional services",
+        "line18": "Office expense",
+        "line19": "Pension and profit-sharing plans",
+        "line20a": "Rent or lease — vehicles, machinery, equipment",
+        "line20b": "Rent or lease — other business property",
+        "line21": "Repairs and maintenance",
+        "line22": "Supplies",
+        "line23": "Taxes and licenses",
+        "line24a": "Travel",
+        "line24b": "Deductible meals (50% per §274(n)(1))",
+        "line25": "Utilities",
+        "line26": "Wages",
+        "line27a": "Other expenses (itemized in Part V)",
+        "line30": "Expenses for business use of home (Form 8829 or simplified)"
+      },
+      "partIIILines": {
+        "note": "COGS for product businesses",
+        "line33": "Method used to value closing inventory",
+        "line35": "Inventory at beginning of year",
+        "line36": "Purchases (finished goods for resale)",
+        "line37": "Cost of labor (production)",
+        "line38": "Materials and supplies (raw materials consumed)",
+        "line39": "Other costs",
+        "line41": "Inventory at end of year",
+        "line42": "Cost of goods sold"
+      }
+    },
+    "form1120S": {
+      "form": "Form 1120-S",
+      "appliesTo": ["sCorp"],
+      "companionForms": ["Form 1125-A (COGS)", "Schedule K-1 per shareholder"],
+      "incomeLines": {
+        "line1a": "Gross receipts or sales",
+        "line2": "Cost of goods sold (from Form 1125-A)",
+        "line5": "Other income"
+      },
+      "deductionLines": {
+        "line7": "Compensation of officers (shareholder-employee salary)",
+        "line8": "Salaries and wages (non-officer employees)",
+        "line9": "Repairs and maintenance",
+        "line10": "Bad debts",
+        "line11": "Rents",
+        "line12": "Taxes and licenses (includes employer FICA)",
+        "line13": "Interest",
+        "line14": "Depreciation (from Form 4562)",
+        "line15": "Depletion",
+        "line16": "Advertising",
+        "line17": "Pension, profit-sharing plans",
+        "line18": "Employee benefit programs (for non-owner employees)",
+        "line19": "Other deductions (attach itemized statement)"
+      },
+      "k1Boxes": {
+        "box1": "Ordinary business income (loss) → flows to shareholder's Schedule E Part II; NOT subject to SE tax",
+        "box16": "Items affecting shareholder basis — Code D = Distributions",
+        "box17": "Other information",
+        "note": "Form 1120-S Schedule K-1 ends at Box 17 — Box 19 does NOT exist on S-Corp K-1"
+      }
+    },
+    "form1065": {
+      "form": "Form 1065",
+      "appliesTo": ["mmllc"],
+      "companionForms": ["Form 1125-A (COGS)", "Schedule K-1 per partner/member"],
+      "incomeLines": {
+        "line1a": "Gross receipts or sales",
+        "line2": "Cost of goods sold (from Form 1125-A)",
+        "line7": "Other income"
+      },
+      "deductionLines": {
+        "line9": "Salaries and wages (other than to partners) less employment credits",
+        "line10": "Guaranteed payments to partners (subject to SE tax via K-1 Box 4a)",
+        "line11": "Repairs and maintenance",
+        "line12": "Bad debts",
+        "line13": "Rent",
+        "line14": "Taxes and licenses",
+        "line15": "Interest",
+        "line16a": "Depreciation gross (Form 4562)",
+        "line16b": "Less depreciation reported on Form 1125-A or elsewhere",
+        "line16c": "Net depreciation",
+        "line17": "Depletion",
+        "line18": "Retirement plans, etc. (NOT insurance — critical v1.1 error corrected)",
+        "line19": "Employee benefit programs (health, fringe for non-partners)",
+        "line20": "Other deductions (attach itemized statement)"
+      },
+      "k1Lines": {
+        "box1": "Ordinary business income (loss) → flows to partner's Schedule E Part II",
+        "box14": "Self-employment earnings (A/B/C codes) → Schedule SE for active members per Renkemeyer 136 T.C. 137",
+        "line19": "Distributions — Code A (cash), B (marketable securities), C (other property)"
+      }
+    }
+  },
+
+  "taxYearConstants": {
+    "2024": {
+      "standardMileageRate": 0.67,
+      "mileageNotice": "IRS Notice 2024-8",
+      "ssWageBase": 168600,
+      "qbiLowerThreshold": { "single": 191950, "mfj": 383900 },
+      "qbiUpperThreshold": { "single": 241950, "mfj": 483900 },
+      "section179Limit": 1220000,
+      "section179PhaseOut": 3050000,
+      "bonusDepreciation": 0.60,
+      "deMinimisSafeHarbor_nonAFS": 2500,
+      "deMinimisSafeHarbor_withAFS": 5000,
+      "employeeDeferral401k": 23000,
+      "catchUp50Plus": 7500,
+      "sepIRALimit": 69000,
+      "simpleIRALimit": 16000,
+      "traditionalIRALimit": 7000,
+      "homeOfficeSimplifiedPerSqFt": 5,
+      "homeOfficeSimplifiedMaxSqFt": 300,
+      "cellPhoneDeMinimisPerItem": 75,
+      "nec1099Threshold": 600,
+      "k1099Threshold": 5000,
+      "additionalMedicareTaxThreshold": { "single": 200000, "mfj": 250000 }
+    },
+    "2025": {
+      "standardMileageRate": 0.70,
+      "mileageNotice": "IRS Notice 2025-5",
+      "mileageNoticeDate": "2024-12-19",
+      "ssWageBase": 176100,
+      "qbiLowerThreshold": { "single": 197300, "mfj": 394600 },
+      "qbiUpperThreshold": { "single": 247300, "mfj": 494600 },
+      "qbiSource": "Rev. Proc. 2024-40",
+      "section179Limit_preOBBBA": 1250000,
+      "section179Limit_postOBBBA": 2500000,
+      "section179PhaseOut_preOBBBA": 3130000,
+      "section179PhaseOut_postOBBBA": 4000000,
+      "bonusDepreciation_preOBBBA_Q1": 0.40,
+      "bonusDepreciation_postOBBBA_post_Jan_19": 1.00,
+      "bonusDepreciationSource": "OBBBA §70301; effective post-January 19, 2025",
+      "deMinimisSafeHarbor_nonAFS": 2500,
+      "deMinimisSafeHarbor_withAFS": 5000,
+      "employeeDeferral401k": 23500,
+      "catchUp50Plus": 7500,
+      "catchUp60to63_secure2": 11250,
+      "sepIRALimit": 70000,
+      "simpleIRALimit": 16500,
+      "traditionalIRALimit": 7000,
+      "homeOfficeSimplifiedPerSqFt": 5,
+      "homeOfficeSimplifiedMaxSqFt": 300,
+      "cellPhoneDeMinimisPerItem": 75,
+      "nec1099Threshold": 600,
+      "k1099Threshold_postOBBBA": 20000,
+      "k1099TransactionCount_postOBBBA": 200,
+      "k1099Source": "OBBBA §70432 restored pre-ARPA thresholds",
+      "additionalMedicareTaxThreshold": { "single": 200000, "mfj": 250000 },
+      "saltCap": 40000,
+      "saltCapSource": "OBBBA §70111, through 2029",
+      "qbiStatus": "Permanent per OBBBA §70112 (was sunset 12/31/2025)"
+    },
+    "2026": {
+      "standardMileageRate": "TBD — IRS publishes in December 2025 Notice",
+      "ssWageBase": "TBD — SSA publishes October 2025",
+      "qbiLowerThreshold": "TBD — IRS publishes Rev. Proc. late 2025",
+      "verifyBeforeShipping": true,
+      "criticalSunsets": {
+        "tcja_274o_employerMeals": "TCJA §13304(a)(2) scheduled to reduce employer-provided meals on premises from 50% to 0% deductible in 2026. Verify OBBBA did not repeal this sunset.",
+        "tcja_miscDeductions": "TCJA §11045 suspended 2% miscellaneous itemized deductions through 2025. Verify whether OBBBA extended or let them return."
+      }
+    }
+  },
+
+  "categories": [
+    {
+      "id": "client-income",
+      "label": "Client income",
+      "type": "income",
+      "lineMap": {
+        "scheduleC": "line1",
+        "form1120S": "line1a",
+        "form1065": "line1a"
+      },
+      "deductPct": 100,
+      "requiredFields": ["date", "amount", "payer"],
+      "recommendedFields": ["invoiceNumber", "projectName"],
+      "notes": "Gross receipts. Cash basis: record when received. For PCI/HIPAA: store payer name only, never end-client PHI."
+    },
+    {
+      "id": "sales-income",
+      "label": "Sales income",
+      "type": "income",
+      "lineMap": { "scheduleC": "line1", "form1120S": "line1a", "form1065": "line1a" },
+      "deductPct": 100,
+      "notes": "Record GROSS sales. Platform fees (Stripe, Shopify, Etsy) are a separate expense, NOT netted from revenue."
+    },
+    {
+      "id": "subscription-income",
+      "label": "Subscription income",
+      "type": "income",
+      "lineMap": { "scheduleC": "line1", "form1120S": "line1a", "form1065": "line1a" },
+      "deductPct": 100,
+      "notes": "Stripe MRR: record gross payouts, book Stripe fees separately as expense."
+    },
+    {
+      "id": "insurance-income",
+      "label": "Insurance income",
+      "type": "income",
+      "lineMap": { "scheduleC": "line1", "form1120S": "line1a", "form1065": "line1a" },
+      "deductPct": 100,
+      "requiredFields": ["date", "amount", "payer"],
+      "notes": "Healthcare insurance reimbursements. HIPAA: use payer (insurer) name only, never patient name. Recognize when ERA/remittance received."
+    },
+    {
+      "id": "tip-income",
+      "label": "Tip income",
+      "type": "income",
+      "lineMap": { "scheduleC": "line1", "form1120S": "line1a", "form1065": "line1a" },
+      "deductPct": 100,
+      "notes": "Cash/Venmo tips are taxable income per IRC §61. Must be reported even if cash-only."
+    },
+    {
+      "id": "catering-income",
+      "label": "Catering income",
+      "type": "income",
+      "lineMap": { "scheduleC": "line1", "form1120S": "line1a", "form1065": "line1a" },
+      "deductPct": 100
+    },
+    {
+      "id": "job-payment",
+      "label": "Job payment",
+      "type": "income",
+      "lineMap": { "scheduleC": "line1", "form1120S": "line1a", "form1065": "line1a" },
+      "deductPct": 100,
+      "notes": "Trades: payment on job completion."
+    },
+    {
+      "id": "product-income",
+      "label": "Product income",
+      "type": "income",
+      "lineMap": { "scheduleC": "line1", "form1120S": "line1a", "form1065": "line1a" },
+      "deductPct": 100,
+      "notes": "If physical product with cost → corresponding COGS via Part III / Form 1125-A."
+    },
+    {
+      "id": "cost-of-goods",
+      "label": "Cost of goods",
+      "type": "cogs",
+      "lineMap": {
+        "scheduleC": "partIII.line36",
+        "form1120S": "line2",
+        "form1065": "line2"
+      },
+      "deductPct": 100,
+      "recognitionRule": "Recognized when goods are SOLD, not when purchased. Inventory is an asset until sold (§471).",
+      "notes": "Retail: finished goods purchased for resale. Product businesses must track opening and closing inventory."
+    },
+    {
+      "id": "inventory-cogs",
+      "label": "Inventory (COGS)",
+      "type": "cogs",
+      "lineMap": { "scheduleC": "partIII.line36", "form1120S": "line2", "form1065": "line2" },
+      "deductPct": 100,
+      "notes": "Inventory = asset until sold. §471(c) small-taxpayer method available for taxpayers under $30M gross receipts (2025 threshold)."
+    },
+    {
+      "id": "product-inventory-cogs",
+      "label": "Product inventory (COGS)",
+      "type": "cogs",
+      "lineMap": { "scheduleC": "partIII.line36", "form1120S": "line2", "form1065": "line2" },
+      "deductPct": 100
+    },
+    {
+      "id": "food-ingredients-cogs",
+      "label": "Food & ingredients (COGS)",
+      "type": "cogs",
+      "lineMap": { "scheduleC": "partIII.line38", "form1120S": "line2", "form1065": "line2" },
+      "deductPct": 100,
+      "notes": "Raw ingredients consumed in food prep → Line 38 (Materials and supplies). Finished goods bought for resale → Line 36."
+    },
+    {
+      "id": "packaging-supplies-cogs",
+      "label": "Packaging & supplies (COGS)",
+      "type": "cogs",
+      "lineMap": { "scheduleC": "partIII.line38", "form1120S": "line2", "form1065": "line2" },
+      "deductPct": 100,
+      "notes": "Packaging that becomes part of the sold product → COGS. Cleaning supplies / non-product supplies → Line 22 / Line 20."
+    },
+    {
+      "id": "advertising",
+      "label": "Advertising",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line8", "form1120S": "line16", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "Form 1120-S has a dedicated Advertising line (16); Form 1065 routes to Line 20 Other deductions (no dedicated line)."
+    },
+    {
+      "id": "marketing",
+      "label": "Marketing",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line8", "form1120S": "line16", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "Same as Advertising. Penny should consolidate to one canonical label."
+    },
+    {
+      "id": "vehicle-fuel",
+      "label": "Vehicle fuel",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line9", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": "businessPercent",
+      "requiredFields": ["date", "amount", "vehicleId", "vehicleMethod"],
+      "notes": "Under standard mileage method, fuel is NOT separately deductible (absorbed in per-mile rate). Under actual method, fuel is a component. 2025 rate: 70¢/mi (Notice 2025-5). Q-C3 method election must be resolved at vehicle onboarding.",
+      "openFlags": ["Q-C3"]
+    },
+    {
+      "id": "van-lease",
+      "label": "Van lease",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line20a", "form1120S": "line11", "form1065": "line13" },
+      "deductPct": "businessPercent",
+      "notes": "Lease payments are Line 20a (Sch C) / Line 11 (1120-S) / Line 13 (1065). §280F luxury auto inclusion amount may apply if FMV exceeds threshold ($60,300 for 2025 passenger autos). NEVER combine with fuel into a single label — fuel goes to a different line."
+    },
+    {
+      "id": "vehicle-depreciation-interest",
+      "label": "Vehicle depreciation & loan interest",
+      "type": "splitExpense",
+      "subcomponents": [
+        { "label": "Loan interest (business %)", "lineMap": { "scheduleC": "line16b", "form1120S": "line13", "form1065": "line15" } },
+        { "label": "Depreciation (computed on basis, not cash)", "lineMap": { "scheduleC": "line13", "form1120S": "line14", "form1065": "line16c" } },
+        { "label": "Loan principal", "lineMap": null, "deductPct": 0, "notes": "NEVER deductible." }
+      ],
+      "notes": "Compound category. Loan payment must be split into principal (non-deductible), interest (Line 16b etc.), and depreciation (computed on schedule, not tied to cash outflow). If standard mileage elected, depreciation is absorbed by the per-mile rate and only interest is separately deductible."
+    },
+    {
+      "id": "platform-fees",
+      "label": "Platform fees",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line10", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "Shopify, Etsy, Amazon, eBay, Square, Stripe marketplace fees. Form 1065 Line 10 is NOT for these — that's Guaranteed payments to partners. External commissions go to Line 20 on 1065."
+    },
+    {
+      "id": "contractors",
+      "label": "Contractors",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line11", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "requiredFields": ["date", "amount", "payeeName", "w9Status"],
+      "notes": "External 1099 contractors. Form 1065: Line 20 (NOT Line 9 — Line 9 is W-2 employee wages; NOT Line 10 — Line 10 is partner guaranteed payments). 1099-NEC required if individual paid ≥$600/yr AND payment not made via credit card / third-party settlement (those get 1099-K from processor). W-9 required before first payment to avoid backup withholding §3406.",
+      "complianceFlags": ["1099-NEC-threshold", "W-9-collection", "backup-withholding"]
+    },
+    {
+      "id": "subcontractors",
+      "label": "Subcontractors",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line11", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "Same as contractors — 1099-NEC rules apply if individual/unincorporated and ≥$600/yr."
+    },
+    {
+      "id": "payroll-employees",
+      "label": "Payroll (W-2 employees)",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line26", "form1120S": "line8", "form1065": "line9" },
+      "deductPct": 100,
+      "notes": "W-2 wages to non-owner employees. Employer share of FICA (7.65%) → Line 23 / Line 12 / Line 14. Form 941 quarterly, Form 940 annually, state UI separate."
+    },
+    {
+      "id": "shareholder-payroll",
+      "label": "Shareholder payroll / Officer compensation",
+      "type": "expense",
+      "lineMap": { "scheduleC": null, "form1120S": "line7", "form1065": null },
+      "deductPct": 100,
+      "notes": "S-Corp only. IRC §1366 requires reasonable compensation to shareholder-employees (IRS Fact Sheet 2008-25 nine factors). Case law: Watson v. U.S., Glass Blocks Unlimited. No statutory % threshold. Defense is a compensation study (RCReports/BLS comparables), NOT a % ratio.",
+      "complianceFlags": ["reasonable-compensation"]
+    },
+    {
+      "id": "guaranteed-payments-partners",
+      "label": "Guaranteed payments to partners",
+      "type": "expense",
+      "lineMap": { "scheduleC": null, "form1120S": null, "form1065": "line10" },
+      "deductPct": 100,
+      "notes": "MMLLC only (Form 1065). Treated as payment for services regardless of partnership income. Subject to SE tax via K-1 Box 4a. NOT to be confused with distributions (Line 19)."
+    },
+    {
+      "id": "commercial-insurance",
+      "label": "Commercial insurance",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line15", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "General liability, commercial property, E&O, workers' comp. Form 1065 Line 20 (NOT Line 18 — Line 18 is Retirement plans). Form 1120-S Line 19 Other deductions (insurance for NON-OWNER employees → Line 18 Employee benefit programs)."
+    },
+    {
+      "id": "professional-liability-insurance",
+      "label": "Professional liability insurance",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line15", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "E&O, malpractice. Same routing as commercial insurance."
+    },
+    {
+      "id": "camera-equipment-insurance",
+      "label": "Camera/equipment insurance",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line15", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100
+    },
+    {
+      "id": "health-insurance-employees",
+      "label": "Health insurance (W-2 employees)",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line14", "form1120S": "line18", "form1065": "line19" },
+      "deductPct": 100,
+      "notes": "For W-2 employees ONLY. NOT for >2% S-Corp shareholder — see owners-health-insurance-scorp."
+    },
+    {
+      "id": "owners-health-insurance-soleprop",
+      "label": "Owner's health insurance (sole prop)",
+      "type": "nonDeductibleAtEntity_flowThroughPersonal",
+      "lineMap": { "scheduleC": null, "personal": "Schedule 1 Line 17" },
+      "deductPct": 100,
+      "notes": "Self-employed health insurance deduction. §162(l). NOT on Schedule C. Limited to earned income from the business."
+    },
+    {
+      "id": "owners-health-insurance-scorp",
+      "label": "Owner's health insurance (S-Corp ≥2% shareholder)",
+      "type": "specialRouting",
+      "lineMap": { "form1120S_line18": false, "form1120S_wages": true, "personal": "Schedule 1 Line 17" },
+      "deductPct": 100,
+      "notes": "IRC §1372(a) + §162(l) + Notice 2008-1. Premiums added to W-2 Box 1 wages (taxable income tax, NOT FICA). S-Corp takes compensation deduction on Line 7 (officer) via payroll, NOT on Line 18. Shareholder then deducts on personal Schedule 1 Line 17, capped at shareholder's W-2 wages from S-Corp."
+    },
+    {
+      "id": "officer-compensation-split",
+      "note": "Marker category for Penny to split Gusto payroll entries per D72"
+    },
+    {
+      "id": "accounting",
+      "label": "Accounting",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line17", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "CPA fees, bookkeeping, tax prep. Schedule C Line 17 (Legal and professional services) — NOT Line 27a."
+    },
+    {
+      "id": "legal-fees",
+      "label": "Legal fees",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line17", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "Business legal fees only. Attorney payments ALWAYS trigger 1099-MISC Box 10 (attorney exception to the corporate 1099 exemption).",
+      "complianceFlags": ["1099-MISC-attorney"]
+    },
+    {
+      "id": "office-supplies",
+      "label": "Office supplies",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line18", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "Administrative consumables: paper, ink, small office items. For business-production materials, use 'Supplies' (Line 22 on Sch C)."
+    },
+    {
+      "id": "supplies",
+      "label": "Supplies",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line22", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "Materials used in business production (not for resale). De minimis safe harbor items <$2,500 land here."
+    },
+    {
+      "id": "tools-equipment",
+      "label": "Tools & equipment",
+      "type": "conditionalExpense",
+      "conditional": {
+        "ifUnderDeMinimis": { "threshold": 2500, "lineMap": { "scheduleC": "line22", "form1120S": "line19", "form1065": "line20" } },
+        "ifOverDeMinimis": { "lineMap": { "scheduleC": "line13", "form1120S": "line14", "form1065": "line16c" }, "decision": "Section 179 vs. bonus depreciation vs. MACRS depreciation", "form1065Note": "Form 4562 attached; Line 16c is the net deduction (16a gross − 16b reported on 1125-A or elsewhere)" }
+      },
+      "deductPct": 100,
+      "notes": "De minimis safe harbor $2,500/item per Treas. Reg. §1.263(a)-1(f)(1)(ii) for non-AFS taxpayers. Annual election statement required."
+    },
+    {
+      "id": "hardware",
+      "label": "Hardware",
+      "type": "conditionalExpense",
+      "conditional": {
+        "ifUnderDeMinimis": { "threshold": 2500, "lineMap": { "scheduleC": "line22", "form1120S": "line19", "form1065": "line20" } },
+        "ifOverDeMinimis": { "lineMap": { "scheduleC": "line13", "form1120S": "line14", "form1065": "line16c" } }
+      },
+      "deductPct": "businessPercent",
+      "notes": "Mixed personal/business use → business % only. Penny asks once."
+    },
+    {
+      "id": "booth-rent",
+      "label": "Booth rent",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line20b", "form1120S": "line11", "form1065": "line13" },
+      "deductPct": 100
+    },
+    {
+      "id": "studio-rent",
+      "label": "Studio rent",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line20b", "form1120S": "line11", "form1065": "line13" },
+      "deductPct": 100
+    },
+    {
+      "id": "office-sublease",
+      "label": "Office sublease",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line20b", "form1120S": "line11", "form1065": "line13" },
+      "deductPct": 100,
+      "notes": "If subleasing from an individual landlord: 1099-MISC Box 1 required for rent ≥$600/yr. Corporate landlords exempt."
+    },
+    {
+      "id": "clinic-lease",
+      "label": "Clinic lease",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line20b", "form1120S": "line11", "form1065": "line13" },
+      "deductPct": 100
+    },
+    {
+      "id": "commissary-rent",
+      "label": "Commissary rent",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line20b", "form1120S": "line11", "form1065": "line13" },
+      "deductPct": 100
+    },
+    {
+      "id": "kitchen-rental",
+      "label": "Kitchen rental",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line20b", "form1120S": "line11", "form1065": "line13" },
+      "deductPct": 100
+    },
+    {
+      "id": "equipment-rental",
+      "label": "Equipment rental",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line20a", "form1120S": "line11", "form1065": "line13" },
+      "deductPct": 100,
+      "notes": "Vehicles, machinery, equipment. Sch C has separate 20a (equipment) / 20b (other property); 1120-S / 1065 combine to one Rents line."
+    },
+    {
+      "id": "home-office",
+      "label": "Home office",
+      "type": "specialRouting",
+      "methods": {
+        "simplified": { "perSqFt": 5, "maxSqFt": 300, "maxDeduction": 1500, "form": "Schedule C Line 30 direct (no Form 8829)", "depreciation": false, "basisImpact": false },
+        "actual": { "form": "Form 8829", "components": ["rent OR mortgage interest", "utilities", "insurance", "repairs", "depreciation (if owned)"], "businessPercentRequired": true, "depreciation": true, "basisImpact": "§1250 recapture on sale (25% max rate)" }
+      },
+      "lineMap": { "scheduleC": "line30" },
+      "sCorpNote": "S-Corp shareholder-employee cannot take home office on personal return (misc. itemized deduction suspended 2018-2025 by TCJA §11045). Use accountable plan under §1.62-2 to reimburse; S-Corp deducts on Line 19.",
+      "openFlags": ["Q-C4"],
+      "testsRequired": ["regular and exclusive use (§280A(c)(1)(A))", "principal place of business OR regular client meetings"]
+    },
+    {
+      "id": "repairs-maintenance",
+      "label": "Repairs and maintenance",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line21", "form1120S": "line9", "form1065": "line11" },
+      "deductPct": 100,
+      "notes": "Form 1065: Line 11 (NOT Line 20 — Line 11 is dedicated to Repairs). BAR test under Treas. Reg. §1.263(a)-3: Betterment/Adaptation/Restoration = capitalize; maintenance = expense. Routine maintenance safe harbor §1.263(a)-3(i) available."
+    },
+    {
+      "id": "license-renewal-permits",
+      "label": "License renewal & permits",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line23", "form1120S": "line12", "form1065": "line14" },
+      "deductPct": 100,
+      "notes": "Business licenses, contractor licenses, health permits."
+    },
+    {
+      "id": "professional-memberships",
+      "label": "Professional memberships",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line27a", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "Trade associations (NECA, NASW, state bars for business). NOT Line 23 — these are not taxes/licenses."
+    },
+    {
+      "id": "payroll-taxes-employer",
+      "label": "Payroll taxes (employer share)",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line23", "form1120S": "line12", "form1065": "line14" },
+      "deductPct": 100,
+      "notes": "Employer share of FICA (6.2% SS + 1.45% Medicare), FUTA, SUI. Trust fund liability under §6672 if unpaid."
+    },
+    {
+      "id": "travel",
+      "label": "Travel",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line24a", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "Overnight trips away from tax home only. Local client trips go to Vehicle (Line 9). §274(d) substantiation: date, purpose, destination, amount."
+    },
+    {
+      "id": "business-meals",
+      "label": "Business meals (50%)",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line24b", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 50,
+      "notes": "§274(n)(1) 50% limit. §274(d) substantiation: who, purpose, location, date, amount. Receipt required if ≥$75/person. Penny must split: record 100% of cost, show 50% as deductible.",
+      "exceptions_100Pct": [
+        "Meals treated as compensation (W-2/1099) — §274(e)(2)",
+        "Company party / employee social event — §274(e)(4)",
+        "Food provided to general public — §274(e)(7)",
+        "Meals sold as inventory (restaurant own menu items) — §274(e)(8)"
+      ],
+      "exceptions_0Pct": [
+        "Entertainment portion of meal + entertainment bill — §274(a)(1)(A); Notice 2018-76",
+        "Employer-provided meals on premises for convenience of employer — §274(n)(2)(B) drops to 0% starting 2026 per TCJA §13304 sunset (verify OBBBA impact)"
+      ]
+    },
+    {
+      "id": "client-meals",
+      "label": "Client meals (50%)",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line24b", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 50,
+      "notes": "Same rule as business meals. Client presence does not change 50% rule."
+    },
+    {
+      "id": "entertainment",
+      "label": "Entertainment (not deductible)",
+      "type": "expense",
+      "lineMap": { "scheduleC": null, "form1120S": null, "form1065": null },
+      "deductPct": 0,
+      "notes": "Post-TCJA, entertainment is 0% deductible per §274(a)(1)(A). If a bill combines meal + entertainment (e.g., dinner at a game), the meal portion may be 50% deductible if separately stated and documented. Notice 2018-76."
+    },
+    {
+      "id": "utilities",
+      "label": "Utilities",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line25", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "Dedicated business location: Line 25 at 100%. Home-based: utilities flow through Form 8829 at business-use %.",
+      "openFlags": ["Q-C4"]
+    },
+    {
+      "id": "phone",
+      "label": "Phone",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line25", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": "businessPercent",
+      "notes": "Dedicated business line → 100%. Shared personal/business phone → business-use % only. §274(d)(4) removed cell phones from listed-property status (Small Business Jobs Act §2043, 2010), so §162 substantiation applies.",
+      "askOnce": "Is this a dedicated business phone or shared personal/business?"
+    },
+    {
+      "id": "internet",
+      "label": "Internet",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line25", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": "businessPercent",
+      "notes": "Home-based: routes through Form 8829. Dedicated office: Line 25 direct at 100%."
+    },
+    {
+      "id": "solo-401k-employer",
+      "label": "Solo 401(k) contribution (employer portion)",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line19", "form1120S": "line17", "form1065": "line18" },
+      "deductPct": 100,
+      "limits": { "2024": 69000, "2025": 70000 },
+      "notes": "Employer portion (25% of compensation). Employee deferral portion goes on personal Schedule 1 Line 16, NOT on the entity-level return."
+    },
+    {
+      "id": "sep-ira-soleprop",
+      "label": "SEP-IRA contribution",
+      "type": "nonDeductibleAtEntity_flowThroughPersonal",
+      "lineMap": { "scheduleC": null, "personal": "Schedule 1 Line 16" },
+      "deductPct": 100,
+      "limits": { "2024": 69000, "2025": 70000 },
+      "notes": "For sole props: deducted on personal Schedule 1 Line 16, NOT on Schedule C. For S-Corps: employer portion on 1120-S Line 17."
+    },
+    {
+      "id": "software-subscriptions",
+      "label": "Software subscriptions",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line27a", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "Notion, Adobe CC, GitHub, Zoom, etc. Sch C: Part V itemized → Line 27a. Canonical label — consolidates prior variants Software / Software & tools / Software & SaaS tools."
+    },
+    {
+      "id": "cloud-infrastructure",
+      "label": "Cloud infrastructure",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line27a", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "AWS, GCP, Vercel, Cloudflare."
+    },
+    {
+      "id": "professional-development",
+      "label": "Professional development",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line27a", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "Workshops, certifications, conferences directly related to current business. NOT for preparation for a new career (not deductible)."
+    },
+    {
+      "id": "continuing-education",
+      "label": "Continuing education",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line27a", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "notes": "Must maintain or improve skills in CURRENT business. Healthcare CE credits fit this; switching career fields does not."
+    },
+    {
+      "id": "bank-fees",
+      "label": "Bank fees",
+      "type": "expense",
+      "lineMap": { "scheduleC": "line27a", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100
+    },
+    {
+      "id": "miscellaneous-business-expenses",
+      "label": "Miscellaneous business expenses",
+      "type": "expenseWithRequiredDescription",
+      "lineMap": { "scheduleC": "line27a", "form1120S": "line19", "form1065": "line20" },
+      "deductPct": 100,
+      "requiredFields": ["description", "businessPurpose"],
+      "notes": "Catch-all with DESCRIPTION REQUIRED. Penny must prompt user for a specific description (e.g., 'Bank wire fee', 'Trade association dues') — a bare 'Miscellaneous' entry is an audit trigger. Each item flows to Schedule C Part V as a named line item."
+    },
+    {
+      "id": "owner-distribution-scorp",
+      "label": "Owner's distribution (S-Corp)",
+      "type": "nonDeductible_equityEvent",
+      "lineMap": { "form1120S": "NOT ON FORM", "k1": "Box 16, Code D" },
+      "deductPct": 0,
+      "notes": "IRC §1368. Reduces AAA and stock basis. Distributions in excess of basis are capital gain (§1368(b)(2)). Form 7203 basis tracking required 2021+."
+    },
+    {
+      "id": "owner-distribution-mmllc",
+      "label": "Member distribution (MMLLC)",
+      "type": "nonDeductible_equityEvent",
+      "lineMap": { "form1065": "NOT ON FORM", "k1": "Line 19 Code A (cash) / B (marketable securities) / C (other)" },
+      "deductPct": 0,
+      "notes": "IRC §731. Reduces basis. Excess over basis is capital gain."
+    },
+    {
+      "id": "owners-draw-soleprop",
+      "label": "Owner's draw (sole prop / SMLLC)",
+      "type": "nonDeductible_equityEvent",
+      "lineMap": null,
+      "deductPct": 0,
+      "notes": "Not a deduction. Drawing account tracks owner's equity withdrawals. Income is taxed at the Schedule C net profit level regardless of how much the owner draws."
+    }
+  ],
+
+  "postCpaReview_openItems": [
+    {
+      "id": "Q-C3",
+      "issue": "Vehicle method election (standard mileage vs. actual)",
+      "status": "partially resolved by stress test — Penny default is standard mileage with per-mile rate from taxYearConstants; needs CPA sign-off on switching rules precision per Rev. Proc. 2019-46"
+    },
+    {
+      "id": "Q-C4",
+      "issue": "Home office method (simplified vs. actual)",
+      "status": "needs product stance — recommend simplified default, surface actual when annual savings > $500; add §1250 recapture warning and S-Corp accountable plan path"
+    },
+    {
+      "id": "circular-230",
+      "issue": "Preparer penalty / Circular 230 exposure",
+      "status": "OPEN — GC review required. Determines liability surface and required disclosures."
+    },
+    {
+      "id": "obbba-verification",
+      "issue": "OBBBA (July 2025) final bill text verification",
+      "status": "OPEN — verify effective dates, §174 R&E retroactivity, §274(o) meal sunset status, 1099-K final threshold against current IRS publications"
+    },
+    {
+      "id": "sstb-per-persona",
+      "issue": "SSTB determination per persona",
+      "status": "PROPOSED — classification table in taxonomy doc Part 2; needs CPA validation for borderline cases (P15 software developer, P19 VA)"
+    },
+    {
+      "id": "reasonable-compensation-tooling",
+      "issue": "Reasonable compensation data source",
+      "status": "OPEN — integrate RCReports, BLS OES, or Payscale API; abandon % heuristic"
+    }
+  ],
+
+  "cpaSignOffRequired": [
+    "Every lineMap cell for every category",
+    "All SSTB classifications in QBI section",
+    "§471(c) small-taxpayer inventory election for trades personas",
+    "De minimis safe harbor default election",
+    "S-Corp accountable plan template copy",
+    "Quarterly estimated tax safe harbor logic ($150K AGI threshold)",
+    "1099-NEC vs. 1099-MISC routing",
+    "State PTET detection per state"
+  ]
+}

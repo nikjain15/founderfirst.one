@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<title>FounderFirst OS — Lo-Fi Prototype</title>
+<style>
+/* ── RESET & BASE ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #e5e5e5;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px 0 40px;
+  min-height: 100%;
+}
+
+/* ── PHONE SHELL ── */
+.phone {
+  width: 375px;
+  min-height: 812px;
+  background: #f2f2f2;
+  border-radius: 40px;
+  border: 3px solid #333;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 24px 64px rgba(0,0,0,.18);
+  display: flex;
+  flex-direction: column;
+}
+.notch {
+  width: 120px; height: 28px;
+  background: #333;
+  border-radius: 0 0 16px 16px;
+  margin: 0 auto;
+  flex-shrink: 0;
+}
+
+/* ── SCREENS ── */
+.screen {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.screen.active { display: flex; }
+
+/* ── STATUS BAR ── */
+.status-bar {
+  padding: 6px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #333;
+  flex-shrink: 0;
+}
+
+/* ── SCREEN HEADER ── */
+.screen-hd {
+  padding: 4px 20px 12px;
+  flex-shrink: 0;
+}
+.screen-title { font-size: 22px; font-weight: 800; color: #111; letter-spacing: -.03em; }
+.screen-sub   { font-size: 13px; color: #777; margin-top: 2px; }
+
+/* ── SCROLL BODY ── */
+.body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── LO-FI BLOCKS ── */
+.block {
+  background: #fff;
+  border: 1.5px solid #ddd;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.block-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #aaa;
+  margin-bottom: 8px;
+}
+.block-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 3px;
+}
+.block-sub {
+  font-size: 12px;
+  color: #777;
+  line-height: 1.5;
+}
+
+/* ── SCORE HERO ── */
+.score-hero {
+  background: #111;
+  color: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.score-circle {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  border: 3px solid #444;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.score-num  { font-size: 22px; font-weight: 800; color: #fff; line-height: 1; }
+.score-unit { font-size: 9px; color: #777; font-weight: 700; margin-top: 1px; }
+.score-body { flex: 1; }
+.score-status { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+.score-hint   { font-size: 12px; color: #888; line-height: 1.4; }
+.score-tag {
+  margin-top: 8px;
+  display: inline-block;
+  background: #222;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #aaa;
+  letter-spacing: .04em;
+}
+
+/* ── BIG BUTTON ── */
+.big-btn {
+  width: 100%;
+  padding: 16px;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-bottom: 10px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  letter-spacing: -.01em;
+}
+.big-btn .arr { font-size: 18px; opacity: .5; }
+.big-btn-ghost {
+  width: 100%;
+  padding: 13px 16px;
+  background: #fff;
+  color: #333;
+  border: 1.5px solid #ddd;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 10px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ── LEVER BARS ── */
+.lever-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.lever-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #333;
+  width: 120px;
+  flex-shrink: 0;
+}
+.lever-bar-bg {
+  flex: 1;
+  background: #eee;
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+.lever-bar { height: 8px; border-radius: 4px; background: #111; }
+.lever-pct {
+  font-size: 11px;
+  font-weight: 800;
+  color: #333;
+  width: 30px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.lever-row.weakest .lever-name { color: #e03333; }
+.lever-row.weakest .lever-bar  { background: #e03333; }
+.lever-row.weakest .lever-pct  { color: #e03333; }
+
+/* ── TREND BARS ── */
+.trend-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 60px;
+  margin-bottom: 8px;
+}
+.trend-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.trend-bar { width: 100%; background: #ddd; border-radius: 3px 3px 0 0; }
+.trend-bar.this-week { background: #111; }
+.trend-lbl { font-size: 9px; color: #aaa; font-weight: 700; }
+
+/* ── LOG SESSION FLOW ── */
+.flow-step { display: none; }
+.flow-step.active { display: block; }
+.step-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #aaa;
+  margin-bottom: 6px;
+}
+.step-question {
+  font-size: 18px;
+  font-weight: 800;
+  color: #111;
+  margin-bottom: 16px;
+  line-height: 1.3;
+  letter-spacing: -.02em;
+}
+.option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.option-btn {
+  padding: 14px 10px;
+  border-radius: 10px;
+  border: 2px solid #ddd;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  color: #333;
+  cursor: pointer;
+  text-align: center;
+  transition: all .1s;
+}
+.option-btn .opt-icon { font-size: 20px; display: block; margin-bottom: 5px; }
+.option-btn .opt-cost { font-size: 10px; color: #aaa; font-weight: 600; margin-top: 3px; display: block; }
+.option-btn.selected { border-color: #111; background: #111; color: #fff; }
+.option-btn.selected .opt-cost { color: #888; }
+.option-yesno { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.yn-btn {
+  padding: 16px;
+  border-radius: 10px;
+  border: 2px solid #ddd;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  text-align: center;
+  transition: all .1s;
+}
+.yn-btn.yes.selected { border-color: #16a34a; background: #16a34a; color: #fff; }
+.yn-btn.no.selected  { border-color: #e03333; background: #e03333; color: #fff; }
+
+/* ── RESULT CARD ── */
+.result-card {
+  background: #111;
+  color: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 12px;
+}
+.result-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.result-stat {
+  flex: 1;
+  background: rgba(255,255,255,.08);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+}
+.result-stat-val { font-size: 20px; font-weight: 800; }
+.result-stat-lbl { font-size: 10px; color: #888; margin-top: 2px; font-weight: 600; }
+.result-insight {
+  font-size: 13px;
+  color: #ccc;
+  line-height: 1.6;
+  padding: 10px 12px;
+  background: rgba(255,255,255,.07);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.result-insight strong { color: #fff; }
+
+/* ── INSIGHT ALERT ── */
+.insight-alert {
+  background: #fffbe6;
+  border: 1.5px solid #f0d000;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+.insight-alert strong { color: #111; display: block; margin-bottom: 3px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+
+/* ── TABS ── */
+.tab-bar {
+  flex-shrink: 0;
+  display: flex;
+  border-top: 1.5px solid #ddd;
+  background: #fff;
+  padding: 8px 0 4px;
+}
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.tab-icon { font-size: 20px; }
+.tab-lbl  { font-size: 9px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .05em; }
+.tab.active .tab-lbl { color: #111; }
+.tab.active .tab-icon { filter: none; }
+
+/* ── SHEET OVERLAY ── */
+.sheet-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  display: none;
+  z-index: 50;
+  align-items: flex-end;
+}
+.sheet-overlay.open { display: flex; }
+.sheet {
+  width: 100%;
+  background: #f2f2f2;
+  border-radius: 20px 20px 0 0;
+  padding: 12px 16px 28px;
+  max-height: 88%;
+  overflow-y: auto;
+}
+.sheet-handle {
+  width: 36px; height: 4px;
+  background: #ccc;
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+.sheet-title { font-size: 17px; font-weight: 800; color: #111; margin-bottom: 4px; }
+.sheet-sub   { font-size: 12px; color: #888; margin-bottom: 20px; }
+
+/* ── PROGRESS DOTS ── */
+.progress-dots { display: flex; gap: 5px; margin-bottom: 20px; }
+.pdot { width: 6px; height: 6px; border-radius: 50%; background: #ddd; }
+.pdot.done { background: #111; }
+
+/* ── CLOSE BTN ── */
+.close-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1.5px solid #ddd;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #555;
+  margin-top: 8px;
+}
+
+/* ── DIVIDER ── */
+.divider { height: 1px; background: #eee; margin: 10px 0; }
+
+/* ── WEEK COMP ── */
+.week-comp {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.week-stat {
+  flex: 1;
+  background: #fff;
+  border: 1.5px solid #ddd;
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+}
+.week-stat-val { font-size: 22px; font-weight: 800; color: #111; }
+.week-stat-lbl { font-size: 10px; color: #aaa; font-weight: 700; margin-top: 2px; }
+.week-stat-delta { font-size: 11px; font-weight: 700; margin-top: 4px; }
+.up   { color: #16a34a; }
+.down { color: #e03333; }
+.flat { color: #aaa; }
+
+/* ── LO-FI LABEL ── */
+.lofi-badge {
+  position: absolute;
+  top: 60px; right: -1px;
+  background: #f0c040;
+  color: #333;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px 0 0 4px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 430px) {
+  body { background: #f2f2f2; padding: 0; }
+  .phone { width: 100%; min-height: 100vh; border-radius: 0; border: none; box-shadow: none; }
+  .lofi-badge { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="notch"></div>
+  <div class="lofi-badge">LO-FI v1</div>
+
+  <!-- ══════════ SCREEN 1: TODAY ══════════ -->
+  <div class="screen active" id="s-today">
+    <div class="status-bar"><span>9:41</span><span>●●● WiFi 100%</span></div>
+    <div class="screen-hd">
+      <div class="screen-title">FounderFirst OS</div>
+      <div class="screen-sub" id="today-date">Sunday, April 12</div>
+    </div>
+    <div class="body">
+
+      <!-- Score hero -->
+      <div class="score-hero">
+        <div class="score-circle">
+          <div class="score-num" id="today-score">—</div>
+          <div class="score-unit">SCORE</div>
+        </div>
+        <div class="score-body">
+          <div class="score-status" id="today-status">No sessions yet.</div>
+          <div class="score-hint"  id="today-hint">Log a session to start tracking.</div>
+          <div class="score-tag"   id="today-tag">Today · 0 sessions</div>
+        </div>
+      </div>
+
+      <!-- Log button -->
+      <button class="big-btn" onclick="openSheet()">
+        Log a session <span class="arr">→</span>
+      </button>
+
+      <!-- Insight (hidden until sessions exist) -->
+      <div class="insight-alert" id="today-insight" style="display:none;">
+        <strong>💡 System insight</strong>
+        <span id="today-insight-text"></span>
+      </div>
+
+      <!-- Today's sessions -->
+      <div class="block">
+        <div class="block-label">Today's sessions</div>
+        <div id="today-sessions-list">
+          <div class="block-sub" style="padding:8px 0;">Nothing logged yet. Tap "Log a session" after each Claude session.</div>
+        </div>
+      </div>
+
+      <!-- Quick lever status -->
+      <div class="block">
+        <div class="block-label">Weakest lever today</div>
+        <div id="today-weakest">
+          <div class="block-title">—</div>
+          <div class="block-sub">Log sessions to see your pattern.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ SCREEN 2: MY LEVERS ══════════ -->
+  <div class="screen" id="s-levers">
+    <div class="status-bar"><span>9:41</span><span>●●● WiFi 100%</span></div>
+    <div class="screen-hd">
+      <div class="screen-title">My Levers</div>
+      <div class="screen-sub">Last 14 days · auto-tracked</div>
+    </div>
+    <div class="body">
+
+      <div class="block" style="margin-bottom:10px;">
+        <div class="block-label">Input quality — 6 levers</div>
+        <div style="margin-top:4px;" id="lever-bars"></div>
+        <div class="divider"></div>
+        <div class="block-sub" style="font-size:11px;">Scores auto-calculated from your session logs. No manual input needed.</div>
+      </div>
+
+      <!-- System insight -->
+      <div class="insight-alert" id="lever-insight">
+        <strong>🎯 Where to focus</strong>
+        <span id="lever-insight-text">Log at least 3 sessions to see your pattern.</span>
+      </div>
+
+      <!-- What each lever means -->
+      <div class="block">
+        <div class="block-label">What the system tracks</div>
+        <div style="margin-top:4px;">
+          <div style="font-size:12px; color:#555; line-height:1.8;">
+            <div>📋 <b>Context Setup</b> — Did you load CLAUDE.md first?</div>
+            <div>🎯 <b>Goal Clarity</b> — Did you state the goal upfront?</div>
+            <div>🔒 <b>Decision Lock</b> — For builds: decisions before code?</div>
+            <div>📐 <b>Format Precision</b> — Did you specify format/length?</div>
+            <div>📦 <b>Batch Thinking</b> — Single rich message vs. ping-pong?</div>
+            <div>🏁 <b>Session Close</b> — Did you update docs at the end?</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ SCREEN 3: TREND ══════════ -->
+  <div class="screen" id="s-trend">
+    <div class="status-bar"><span>9:41</span><span>●●● WiFi 100%</span></div>
+    <div class="screen-hd">
+      <div class="screen-title">Trend</div>
+      <div class="screen-sub">Efficiency over time</div>
+    </div>
+    <div class="body">
+
+      <!-- Week comparison -->
+      <div class="week-comp" id="week-comp">
+        <div class="week-stat">
+          <div class="week-stat-val" id="wk-this">—</div>
+          <div class="week-stat-lbl">THIS WEEK</div>
+          <div class="week-stat-delta" id="wk-delta">—</div>
+        </div>
+        <div class="week-stat">
+          <div class="week-stat-val" id="wk-last">—</div>
+          <div class="week-stat-lbl">LAST WEEK</div>
+          <div class="week-stat-delta flat">avg score</div>
+        </div>
+        <div class="week-stat">
+          <div class="week-stat-val" id="wk-streak">0</div>
+          <div class="week-stat-lbl">DAY STREAK</div>
+          <div class="week-stat-delta" id="wk-streak-lbl">🔥</div>
+        </div>
+      </div>
+
+      <!-- Trend chart -->
+      <div class="block">
+        <div class="block-label">Efficiency score — last 8 sessions</div>
+        <div class="trend-row" id="trend-chart"></div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:10px;color:#aaa;">Older</span>
+          <span style="font-size:10px;color:#aaa;">Latest</span>
+        </div>
+      </div>
+
+      <!-- Token cost breakdown -->
+      <div class="block">
+        <div class="block-label">Token cost — by session type</div>
+        <div id="cost-breakdown" style="margin-top:4px;">
+          <div class="block-sub">No sessions logged yet.</div>
+        </div>
+      </div>
+
+      <!-- Efficiency insight -->
+      <div class="insight-alert" id="trend-insight" style="display:none;">
+        <strong>📈 Trend insight</strong>
+        <span id="trend-insight-text"></span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ TAB BAR ══════════ -->
+  <div class="tab-bar">
+    <div class="tab active" id="tab-today"  onclick="goTab('today')">
+      <div class="tab-icon">📊</div>
+      <div class="tab-lbl">Today</div>
+    </div>
+    <div class="tab" id="tab-levers" onclick="goTab('levers')">
+      <div class="tab-icon">🎯</div>
+      <div class="tab-lbl">Levers</div>
+    </div>
+    <div class="tab" id="tab-trend" onclick="goTab('trend')">
+      <div class="tab-icon">📈</div>
+      <div class="tab-lbl">Trend</div>
+    </div>
+  </div>
+
+  <!-- ══════════ LOG SESSION SHEET ══════════ -->
+  <div class="sheet-overlay" id="sheet-overlay" onclick="maybeCloseSheet(event)">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Log a session</div>
+      <div class="sheet-sub">3 taps. System does the rest.</div>
+
+      <!-- Step dots -->
+      <div class="progress-dots">
+        <div class="pdot" id="pd0"></div>
+        <div class="pdot" id="pd1"></div>
+        <div class="pdot" id="pd2"></div>
+        <div class="pdot" id="pd3"></div>
+      </div>
+
+      <!-- STEP 0: Session type -->
+      <div class="flow-step active" id="step0">
+        <div class="step-label">Step 1 of 3</div>
+        <div class="step-question">What type of session was it?</div>
+        <div class="option-grid">
+          <button class="option-btn" id="opt-quick" onclick="selectType('Quick','~2–5k tokens','low')">
+            <span class="opt-icon">⚡</span>Quick ask
+            <span class="opt-cost">~2–5k tokens</span>
+          </button>
+          <button class="option-btn" id="opt-doc" onclick="selectType('Document','~10–30k tokens','medium')">
+            <span class="opt-icon">📄</span>Doc work
+            <span class="opt-cost">~10–30k tokens</span>
+          </button>
+          <button class="option-btn" id="opt-build" onclick="selectType('Build','~40–80k tokens','high')">
+            <span class="opt-icon">🏗</span>Build
+            <span class="opt-cost">~40–80k tokens</span>
+          </button>
+          <button class="option-btn" id="opt-review" onclick="selectType('Review','~20–50k tokens','medium-high')">
+            <span class="opt-icon">🔍</span>Review
+            <span class="opt-cost">~20–50k tokens</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 1: Context loaded -->
+      <div class="flow-step" id="step1">
+        <div class="step-label">Step 2 of 3</div>
+        <div class="step-question">Did you read CLAUDE.md before starting?</div>
+        <div class="option-yesno">
+          <button class="yn-btn yes" id="yn-ctx-yes" onclick="selectContext(true)">Yes ✓</button>
+          <button class="yn-btn no"  id="yn-ctx-no"  onclick="selectContext(false)">No ✗</button>
+        </div>
+        <div class="block-sub" style="font-size:12px;color:#aaa;">This is the #1 token-saving habit. No judgment — just tracking.</div>
+      </div>
+
+      <!-- STEP 2: First try -->
+      <div class="flow-step" id="step2">
+        <div class="step-label">Step 3 of 3</div>
+        <div class="step-question">Did Claude nail it on the first try?</div>
+        <div class="option-yesno">
+          <button class="yn-btn yes" id="yn-ft-yes" onclick="selectFirstTry(true)">Yes ✓</button>
+          <button class="yn-btn no"  id="yn-ft-no"  onclick="selectFirstTry(false)">Needed rework ✗</button>
+        </div>
+        <div class="block-sub" style="font-size:12px;color:#aaa;">Rework is a direct signal of unclear input. System uses this to find your gap.</div>
+      </div>
+
+      <!-- STEP 3: Result -->
+      <div class="flow-step" id="step3">
+        <div class="result-card">
+          <div class="result-row">
+            <div class="result-stat">
+              <div class="result-stat-val" id="res-score">—</div>
+              <div class="result-stat-lbl">EFFICIENCY</div>
+            </div>
+            <div class="result-stat">
+              <div class="result-stat-val" id="res-cost">—</div>
+              <div class="result-stat-lbl">TOKEN TIER</div>
+            </div>
+            <div class="result-stat">
+              <div class="result-stat-val" id="res-quality">—</div>
+              <div class="result-stat-lbl">QUALITY</div>
+            </div>
+          </div>
+          <div class="result-insight" id="res-insight">Loading insight...</div>
+        </div>
+
+        <!-- Inferred levers -->
+        <div class="block" style="margin-bottom:10px;">
+          <div class="block-label">What the system inferred</div>
+          <div id="inferred-levers" style="margin-top:6px;font-size:12px;color:#555;line-height:1.9;"></div>
+        </div>
+
+        <button class="big-btn" onclick="saveSession()">Save this session <span class="arr">→</span></button>
+        <button class="close-btn" onclick="closeSheet()">Discard</button>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /phone -->
+
+<script>
+// ─── STORAGE ──────────────────────────────────────────────────────────────────
+const LS = {
+  get: (k,d) => { try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;} },
+  set: (k,v) => { try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
+};
+const todayStr = () => new Date().toISOString().split('T')[0];
+const getSessions = () => LS.get('fos_sessions', []);
+const saveSessions = s => LS.set('fos_sessions', s);
+
+// ─── SESSION STATE ────────────────────────────────────────────────────────────
+let sessionDraft = { type:null, typeCost:null, costTier:null, contextLoaded:null, firstTry:null };
+let currentStep = 0;
+
+const COST_MAP = { low:1, medium:2, 'medium-high':3, high:4 };
+const COST_LABEL = { low:'Low', medium:'Med', 'medium-high':'Med-Hi', high:'High' };
+
+function calcEfficiency(costTier, contextLoaded, firstTry) {
+  // Quality: first try = 5, rework = 2
+  const quality = firstTry ? 5 : 2;
+  // Context bonus
+  const ctxBonus = contextLoaded ? 1 : 0;
+  // Cost penalty: higher cost = lower efficiency if quality is low
+  const costNum = COST_MAP[costTier] || 2;
+  // Formula: (quality + ctxBonus) / costNum * normalizer
+  const raw = ((quality + ctxBonus) / costNum) * 20;
+  return Math.min(100, Math.round(raw));
+}
+
+function inferLevers(type, contextLoaded, firstTry, costTier) {
+  const inferences = [];
+  if (contextLoaded) {
+    inferences.push({ icon:'✓', text:'Context Setup — loaded CLAUDE.md', color:'#16a34a' });
+  } else {
+    inferences.push({ icon:'✗', text:'Context Setup — skipped CLAUDE.md', color:'#e03333' });
+  }
+  if (type === 'Build' && !firstTry) {
+    inferences.push({ icon:'⚠', text:'Decision Lock — likely skipped (build + rework = unclear spec)', color:'#e07700' });
+  } else if (type === 'Build' && firstTry) {
+    inferences.push({ icon:'✓', text:'Decision Lock — likely good (build worked first try)', color:'#16a34a' });
+  }
+  if (!firstTry) {
+    inferences.push({ icon:'⚠', text:'Goal Clarity — unclear upfront (rework signals vague input)', color:'#e07700' });
+  } else {
+    inferences.push({ icon:'✓', text:'Goal Clarity — clear (nailed first try)', color:'#16a34a' });
+  }
+  if (costTier === 'high' && !firstTry) {
+    inferences.push({ icon:'✗', text:'Batch Thinking — high cost + rework = likely back-and-forth', color:'#e03333' });
+  }
+  return inferences;
+}
+
+function generateInsight(type, contextLoaded, firstTry, costTier, score) {
+  if (!contextLoaded && !firstTry)
+    return '⚡ Two signals here: no context load AND rework needed. Start with CLAUDE.md and state your goal upfront — that alone can halve the token cost of sessions like this.';
+  if (!contextLoaded)
+    return '📋 Skipping CLAUDE.md is your biggest token leak. Next session: read it first. The recovery alone is worth ~50k tokens of context.';
+  if (!firstTry && type === 'Build')
+    return '🔒 Build + rework = the spec wasn\'t locked before building. Next build session: write the 3 key decisions before sending the first message.';
+  if (!firstTry)
+    return '🎯 Rework happened. That\'s a goal clarity signal — the input wasn\'t specific enough. Try adding format, audience, and length constraint to your next ask.';
+  if (score >= 80)
+    return '💪 Strong session. Context loaded, nailed first try. This is what efficient AI building looks like — keep it consistent.';
+  return '✓ Good session. ' + (costTier === 'high' ? 'High token cost is expected for builds — the key is first-try quality, which you got.' : 'Keep building the habit.');
+}
+
+// ─── SHEET FLOW ───────────────────────────────────────────────────────────────
+function openSheet() {
+  sessionDraft = { type:null, typeCost:null, costTier:null, contextLoaded:null, firstTry:null };
+  currentStep = 0;
+  showStep(0);
+  // Reset button states
+  ['opt-quick','opt-doc','opt-build','opt-review'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.classList.remove('selected');
+  });
+  ['yn-ctx-yes','yn-ctx-no','yn-ft-yes','yn-ft-no'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.classList.remove('selected');
+  });
+  document.getElementById('sheet-overlay').classList.add('open');
+}
+
+function showStep(n) {
+  for(let i=0;i<4;i++){
+    document.getElementById('step'+i).classList.toggle('active', i===n);
+    document.getElementById('pd'+i).classList.toggle('done', i<=n);
+  }
+  currentStep = n;
+}
+
+function maybeCloseSheet(e) {
+  if(e.target===document.getElementById('sheet-overlay')) closeSheet();
+}
+function closeSheet() {
+  document.getElementById('sheet-overlay').classList.remove('open');
+}
+
+function selectType(type, cost, tier) {
+  sessionDraft.type = type;
+  sessionDraft.typeCost = cost;
+  sessionDraft.costTier = tier;
+  ['opt-quick','opt-doc','opt-build','opt-review'].forEach(id=>{
+    document.getElementById(id).classList.remove('selected');
+  });
+  const map = { Quick:'opt-quick', Document:'opt-doc', Build:'opt-build', Review:'opt-review' };
+  document.getElementById(map[type]).classList.add('selected');
+  setTimeout(()=>showStep(1), 200);
+}
+
+function selectContext(val) {
+  sessionDraft.contextLoaded = val;
+  document.getElementById('yn-ctx-yes').classList.toggle('selected', val);
+  document.getElementById('yn-ctx-no').classList.toggle('selected', !val);
+  setTimeout(()=>showStep(2), 200);
+}
+
+function selectFirstTry(val) {
+  sessionDraft.firstTry = val;
+  document.getElementById('yn-ft-yes').classList.toggle('selected', val);
+  document.getElementById('yn-ft-no').classList.toggle('selected', !val);
+  // Calculate result
+  const score = calcEfficiency(sessionDraft.costTier, sessionDraft.contextLoaded, val);
+  const quality = val ? '✓ First try' : '✗ Rework';
+  document.getElementById('res-score').textContent = score + '%';
+  document.getElementById('res-cost').textContent = COST_LABEL[sessionDraft.costTier];
+  document.getElementById('res-quality').textContent = val ? '5★' : '2★';
+  document.getElementById('res-insight').textContent = generateInsight(
+    sessionDraft.type, sessionDraft.contextLoaded, val, sessionDraft.costTier, score
+  );
+  // Inferred levers
+  const levers = inferLevers(sessionDraft.type, sessionDraft.contextLoaded, val, sessionDraft.costTier);
+  const el = document.getElementById('inferred-levers');
+  el.innerHTML = levers.map(l=>`<div style="color:${l.color};">${l.icon} ${l.text}</div>`).join('');
+  setTimeout(()=>showStep(3), 200);
+}
+
+function saveSession() {
+  const score = calcEfficiency(sessionDraft.costTier, sessionDraft.contextLoaded, sessionDraft.firstTry);
+  const sessions = getSessions();
+  sessions.push({
+    date: todayStr(),
+    time: new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),
+    type: sessionDraft.type,
+    costTier: sessionDraft.costTier,
+    contextLoaded: sessionDraft.contextLoaded,
+    firstTry: sessionDraft.firstTry,
+    score
+  });
+  saveSessions(sessions);
+  closeSheet();
+  renderAll();
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function renderToday() {
+  document.getElementById('today-date').textContent =
+    new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+  const all = getSessions();
+  const todaySessions = all.filter(s=>s.date===todayStr());
+
+  if(todaySessions.length===0){
+    document.getElementById('today-score').textContent='—';
+    document.getElementById('today-status').textContent='No sessions yet.';
+    document.getElementById('today-hint').textContent='Log a session to start tracking.';
+    document.getElementById('today-tag').textContent='Today · 0 sessions';
+    document.getElementById('today-insight').style.display='none';
+    document.getElementById('today-sessions-list').innerHTML=
+      '<div class="block-sub" style="padding:8px 0;">Nothing logged yet. Tap "Log a session" after each Claude session.</div>';
+    document.getElementById('today-weakest').innerHTML=
+      '<div class="block-title">—</div><div class="block-sub">Log sessions to see your pattern.</div>';
+    return;
+  }
+
+  const avgScore = Math.round(todaySessions.reduce((a,s)=>a+s.score,0)/todaySessions.length);
+  document.getElementById('today-score').textContent = avgScore + '%';
+  document.getElementById('today-tag').textContent = `Today · ${todaySessions.length} session${todaySessions.length>1?'s':''}`;
+
+  if(avgScore>=80){ document.getElementById('today-status').textContent='Strong day.'; document.getElementById('today-hint').textContent='Efficient inputs, clean outputs. This is the standard.'; }
+  else if(avgScore>=50){ document.getElementById('today-status').textContent='Getting there.'; document.getElementById('today-hint').textContent='Good progress — one or two habits to sharpen.'; }
+  else { document.getElementById('today-status').textContent='Room to grow.'; document.getElementById('today-hint').textContent='Check your levers tab to see where to focus.'; }
+
+  // Sessions list
+  const listEl = document.getElementById('today-sessions-list');
+  listEl.innerHTML = todaySessions.map(s=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+      <div style="font-size:11px;color:#aaa;width:40px;flex-shrink:0;">${s.time}</div>
+      <div style="flex:1;">
+        <div style="font-size:12px;font-weight:700;color:#333;">${s.type} session</div>
+        <div style="font-size:11px;color:#aaa;">${COST_LABEL[s.costTier]} token cost · ${s.firstTry?'First try ✓':'Rework ✗'}</div>
+      </div>
+      <div style="font-size:14px;font-weight:800;color:${s.score>=70?'#16a34a':s.score>=50?'#e07700':'#e03333'};">${s.score}%</div>
+    </div>`).join('');
+
+  // Weakest lever today
+  const noCtx = todaySessions.filter(s=>!s.contextLoaded).length;
+  const hadRework = todaySessions.filter(s=>!s.firstTry).length;
+  const weakEl = document.getElementById('today-weakest');
+  if(noCtx>0 && noCtx>=hadRework){
+    weakEl.innerHTML=`<div class="block-title" style="color:#e03333;">Context Setup</div><div class="block-sub">${noCtx} of ${todaySessions.length} sessions skipped CLAUDE.md. Biggest lever to pull tomorrow.</div>`;
+  } else if(hadRework>0){
+    weakEl.innerHTML=`<div class="block-title" style="color:#e07700;">Goal Clarity</div><div class="block-sub">${hadRework} of ${todaySessions.length} sessions needed rework. Sharpen your input spec.</div>`;
+  } else {
+    weakEl.innerHTML=`<div class="block-title" style="color:#16a34a;">All good today ✓</div><div class="block-sub">Context loaded, first-try quality. Maintain this.</div>`;
+  }
+
+  // Insight
+  const insight = document.getElementById('today-insight');
+  const insightText = document.getElementById('today-insight-text');
+  if(noCtx>0){
+    insight.style.display='block';
+    insightText.textContent=`You skipped CLAUDE.md in ${noCtx} session${noCtx>1?'s':''}. That's roughly ${noCtx*48}k tokens of unnecessary context recovery. Start every session with it tomorrow.`;
+  } else if(hadRework>0){
+    insight.style.display='block';
+    insightText.textContent=`${hadRework} session${hadRework>1?'s':''} needed rework. The signal: your input wasn't specific enough. Try: goal + format + constraints in one message.`;
+  } else {
+    insight.style.display='none';
+  }
+}
+
+function renderLevers() {
+  const all = getSessions();
+  const LEVERS = [
+    { key:'ctx',   label:'Context Setup',   fn: s=>s.contextLoaded },
+    { key:'goal',  label:'Goal Clarity',    fn: s=>s.firstTry },
+    { key:'dec',   label:'Decision Lock',   fn: s=>!(s.type==='Build'&&!s.firstTry) },
+    { key:'fmt',   label:'Format Precision',fn: s=>s.firstTry },
+    { key:'batch', label:'Batch Thinking',  fn: s=>!(s.costTier==='high'&&!s.firstTry) },
+    { key:'close', label:'Session Close',   fn: s=>s.contextLoaded && s.firstTry },
+  ];
+  const el = document.getElementById('lever-bars');
+  const insight = document.getElementById('lever-insight-text');
+  if(all.length<3){
+    el.innerHTML='<div class="block-sub">Log at least 3 sessions to see your lever scores.</div>';
+    return;
+  }
+  const leverScores = LEVERS.map(l=>{
+    const pct = Math.round(all.filter(l.fn).length/all.length*100);
+    return { ...l, pct };
+  });
+  const weakest = [...leverScores].sort((a,b)=>a.pct-b.pct)[0];
+  el.innerHTML = leverScores.map(l=>`
+    <div class="lever-row${l.key===weakest.key?' weakest':''}">
+      <div class="lever-name">${l.label}</div>
+      <div class="lever-bar-bg"><div class="lever-bar" style="width:${l.pct}%"></div></div>
+      <div class="lever-pct">${l.pct}%</div>
+    </div>`).join('');
+  insight.textContent=`Your weakest lever is ${weakest.label} (${weakest.pct}%). Focus on this first — it's pulling your overall score down the most.`;
+}
+
+function renderTrend() {
+  const all = getSessions();
+  const streak = calcStreak(all);
+  document.getElementById('wk-streak').textContent = streak;
+  document.getElementById('wk-streak-lbl').textContent = streak>=3?'🔥 on a roll':streak>=1?'keep going':'start today';
+
+  if(all.length===0){
+    document.getElementById('wk-this').textContent='—';
+    document.getElementById('wk-last').textContent='—';
+    document.getElementById('wk-delta').textContent='No data yet';
+    document.getElementById('trend-chart').innerHTML='<div style="font-size:12px;color:#aaa;padding:8px 0;">Log sessions to build your trend.</div>';
+    document.getElementById('cost-breakdown').innerHTML='<div class="block-sub">No sessions logged yet.</div>';
+    document.getElementById('trend-insight').style.display='none';
+    return;
+  }
+
+  // Week scores
+  const now=new Date();
+  const thisWeekStart=new Date(now); thisWeekStart.setDate(now.getDate()-now.getDay());
+  const lastWeekStart=new Date(thisWeekStart); lastWeekStart.setDate(thisWeekStart.getDate()-7);
+  const thisWeek=all.filter(s=>new Date(s.date)>=thisWeekStart);
+  const lastWeek=all.filter(s=>new Date(s.date)>=lastWeekStart&&new Date(s.date)<thisWeekStart);
+  const thisAvg=thisWeek.length?Math.round(thisWeek.reduce((a,s)=>a+s.score,0)/thisWeek.length):null;
+  const lastAvg=lastWeek.length?Math.round(lastWeek.reduce((a,s)=>a+s.score,0)/lastWeek.length):null;
+  document.getElementById('wk-this').textContent=thisAvg!==null?thisAvg+'%':'—';
+  document.getElementById('wk-last').textContent=lastAvg!==null?lastAvg+'%':'—';
+  if(thisAvg&&lastAvg){
+    const delta=thisAvg-lastAvg;
+    const el=document.getElementById('wk-delta');
+    el.textContent=(delta>0?'↑ +':delta<0?'↓ ':'')+delta+'% vs last week';
+    el.className='week-stat-delta '+(delta>0?'up':delta<0?'down':'flat');
+  } else {
+    document.getElementById('wk-delta').textContent='vs last week';
+  }
+
+  // Bar chart - last 8 sessions
+  const last8=all.slice(-8);
+  const chartEl=document.getElementById('trend-chart');
+  const maxScore=Math.max(...last8.map(s=>s.score),1);
+  chartEl.innerHTML=last8.map((s,i)=>`
+    <div class="trend-col">
+      <div class="trend-bar${i===last8.length-1?' this-week':''}" style="height:${Math.max(6,Math.round(s.score/maxScore*52))}px;" title="${s.date}: ${s.score}%"></div>
+      <div class="trend-lbl">${s.score}%</div>
+    </div>`).join('');
+  if(last8.length<8){
+    const empty=8-last8.length;
+    chartEl.innerHTML='<div class="trend-col" style="flex:'+empty+'"></div>'+chartEl.innerHTML;
+  }
+
+  // Cost breakdown
+  const types=['Quick','Document','Build','Review'];
+  const cbEl=document.getElementById('cost-breakdown');
+  cbEl.innerHTML=types.map(t=>{
+    const tSessions=all.filter(s=>s.type===t);
+    if(!tSessions.length) return '';
+    const avgEff=Math.round(tSessions.reduce((a,s)=>a+s.score,0)/tSessions.length);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;">
+      <div style="font-size:12px;font-weight:700;color:#333;width:80px;">${t}</div>
+      <div style="font-size:11px;color:#aaa;flex:1;">${tSessions.length} session${tSessions.length>1?'s':''}</div>
+      <div style="font-size:12px;font-weight:800;color:${avgEff>=70?'#16a34a':avgEff>=50?'#e07700':'#e03333'};">${avgEff}% avg</div>
+    </div>`;
+  }).join('');
+
+  // Trend insight
+  if(all.length>=4){
+    const recent=all.slice(-3);
+    const earlier=all.slice(-6,-3);
+    const recentAvg=Math.round(recent.reduce((a,s)=>a+s.score,0)/recent.length);
+    const earlierAvg=earlier.length?Math.round(earlier.reduce((a,s)=>a+s.score,0)/earlier.length):null;
+    const insightEl=document.getElementById('trend-insight');
+    const insightText=document.getElementById('trend-insight-text');
+    insightEl.style.display='block';
+    if(earlierAvg&&recentAvg>earlierAvg)
+      insightText.textContent=`You're improving — up ${recentAvg-earlierAvg}% over your last 3 sessions vs the 3 before. Keep it going.`;
+    else if(earlierAvg&&recentAvg<earlierAvg)
+      insightText.textContent=`Efficiency dipped ${earlierAvg-recentAvg}% in your last 3 sessions. Check the Levers tab — something slipped.`;
+    else
+      insightText.textContent=`${all.length} sessions logged. Average efficiency: ${Math.round(all.reduce((a,s)=>a+s.score,0)/all.length)}%. Keep logging to see your trend.`;
+  }
+}
+
+function calcStreak(sessions){
+  if(!sessions.length) return 0;
+  const dates=[...new Set(sessions.map(s=>s.date))].sort().reverse();
+  const today=todayStr();
+  let streak=0; let expected=today;
+  for(const d of dates){
+    if(d===expected){ streak++; const dt=new Date(expected); dt.setDate(dt.getDate()-1); expected=dt.toISOString().split('T')[0]; }
+    else break;
+  }
+  return streak;
+}
+
+function renderAll(){ renderToday(); renderLevers(); renderTrend(); }
+
+// ─── TAB NAV ──────────────────────────────────────────────────────────────────
+function goTab(t){
+  ['today','levers','trend'].forEach(id=>{
+    document.getElementById('s-'+id).classList.toggle('active',id===t);
+    document.getElementById('tab-'+id).classList.toggle('active',id===t);
+  });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderAll();
+</script>
+</body>
+</html>

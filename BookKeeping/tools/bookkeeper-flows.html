@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bookkeeper Role — User Flows</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+/* ── design tokens ── */
+:root {
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  --teal-50:  #E1F5EE; --teal-200: #5DCAA5; --teal-400: #1D9E75;
+  --teal-600: #0F6E56; --teal-800: #085041; --teal-900: #04342C;
+  --purple-50:#EEEDFE; --purple-200:#AFA9EC; --purple-400:#7F77DD;
+  --purple-600:#534AB7;--purple-800:#3C3489;--purple-900:#26215C;
+  --amber-50: #FAEEDA; --amber-200: #EF9F27; --amber-400: #BA7517;
+  --amber-600: #854F0B;--amber-800: #633806;--amber-900: #412402;
+  --coral-50: #FAECE7; --coral-200: #F0997B; --coral-400: #D85A30;
+  --coral-600: #993C1D;--coral-800: #712B13;--coral-900: #4A1B0C;
+  --blue-50:  #E6F1FB; --blue-200:  #85B7EB; --blue-400:  #378ADD;
+  --blue-600: #185FA5; --blue-800:  #0C447C; --blue-900:  #042C53;
+  --gray-50:  #F1EFE8; --gray-100:  #D3D1C7; --gray-200:  #B4B2A9;
+  --gray-400: #888780; --gray-600:  #5F5E5A; --gray-800:  #444441;
+  --gray-900: #2C2C2A;
+
+  /* light mode surfaces */
+  --bg:        #FAFAF8;
+  --bg-card:   #FFFFFF;
+  --bg-subtle: #F4F3EF;
+  --border:    rgba(68,68,65,.12);
+  --border-md: rgba(68,68,65,.22);
+  --text-1:    #1C1C1A;
+  --text-2:    #5F5E5A;
+  --text-3:    #A0A09A;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,.10), 0 4px 8px rgba(0,0,0,.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #16160F;
+    --bg-card:   #1E1E16;
+    --bg-subtle: #252519;
+    --border:    rgba(255,255,255,.09);
+    --border-md: rgba(255,255,255,.16);
+    --text-1:    #EEEEE6;
+    --text-2:    #9A9A92;
+    --text-3:    #5A5A54;
+    --teal-50:   #04342C; --teal-200: #9FE1CB; --teal-800: #085041;
+    --purple-50: #26215C; --purple-200:#CECBF6; --purple-800:#3C3489;
+    --amber-50:  #412402; --amber-200: #FAC775; --amber-800: #633806;
+    --coral-50:  #4A1B0C; --coral-200: #F5C4B3; --coral-800: #712B13;
+    --blue-50:   #042C53; --blue-200:  #B5D4F4; --blue-800:  #0C447C;
+    --gray-50:   #2C2C2A; --gray-200:  #5F5E5A;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.3);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.4);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,.5);
+  }
+}
+
+/* ── base ── */
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── layout ── */
+.page { max-width: 900px; margin: 0 auto; padding: 40px 20px 80px; }
+
+/* ── header ── */
+.page-header { margin-bottom: 40px; }
+.page-eyebrow {
+  font-size: 11px; font-weight: 500; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text-3);
+  margin-bottom: 10px;
+}
+.page-title {
+  font-size: clamp(26px, 4vw, 38px); font-weight: 600;
+  letter-spacing: -.02em; color: var(--text-1);
+  line-height: 1.15; margin-bottom: 12px;
+}
+.page-title em { font-style: normal; color: var(--teal-400); }
+.page-subtitle { font-size: 15px; color: var(--text-2); max-width: 540px; line-height: 1.65; }
+
+.scope-bar {
+  display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;
+}
+.scope-pill {
+  font-size: 11px; font-weight: 500; padding: 5px 12px;
+  border-radius: 20px; border: 1px solid var(--border-md);
+  background: var(--bg-subtle); color: var(--text-2);
+}
+.scope-pill.in  { border-color: var(--teal-400);   color: var(--teal-600);   background: var(--teal-50);   }
+.scope-pill.out { border-color: var(--coral-400);  color: var(--coral-600);  background: var(--coral-50);  }
+
+/* ── flow nav ── */
+.flow-nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px; margin-bottom: 24px;
+}
+.flow-btn {
+  padding: 10px 12px; border-radius: var(--radius-md);
+  border: 1px solid var(--border); background: var(--bg-card);
+  cursor: pointer; text-align: left; transition: all .18s;
+  box-shadow: var(--shadow-sm);
+}
+.flow-btn:hover { border-color: var(--border-md); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.flow-btn.active { border-width: 1.5px; }
+.flow-btn-name { font-size: 12px; font-weight: 500; color: var(--text-1); display: block; margin-bottom: 3px; line-height: 1.3; }
+.flow-btn-freq { font-size: 10px; color: var(--text-3); display: block; }
+
+/* ── step stepper ── */
+.stepper-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.step-pip {
+  height: 4px; border-radius: 2px; flex: 1; min-width: 40px; max-width: 100px;
+  cursor: pointer; opacity: .3; transition: opacity .2s, background .2s;
+  background: var(--gray-200);
+}
+.step-pip.done   { opacity: .5; }
+.step-pip.active { opacity: 1; }
+.step-sep { color: var(--text-3); font-size: 10px; }
+.step-counter-text { font-size: 11px; color: var(--text-3); white-space: nowrap; margin-left: 4px; }
+
+/* ── main card ── */
+.flow-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: cardIn .22s ease;
+}
+@keyframes cardIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+.card-head {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.card-eyebrow {
+  font-size: 10px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; margin-bottom: 6px;
+}
+.card-title { font-size: 18px; font-weight: 600; letter-spacing: -.01em; color: var(--text-1); margin-bottom: 4px; }
+.card-who   { font-size: 12px; color: var(--text-3); }
+.card-who span { font-weight: 500; color: var(--text-2); }
+
+.card-body { padding: 20px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 560px) { .card-body { grid-template-columns: 1fr; } }
+
+.blk-head {
+  font-size: 10px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; margin-bottom: 10px;
+}
+.blk-list { display: flex; flex-direction: column; gap: 7px; }
+.blk-row  { display: flex; gap: 9px; align-items: flex-start; }
+.blk-dot  { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.blk-text { font-size: 13px; color: var(--text-2); line-height: 1.55; }
+
+.full-col { grid-column: 1 / -1; }
+
+.callout {
+  border-radius: var(--radius-md); padding: 14px 16px;
+  border: 1px solid transparent;
+}
+.callout-head {
+  font-size: 10px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; margin-bottom: 5px;
+}
+.callout-body { font-size: 13px; line-height: 1.65; }
+
+.friction-callout { /* styled dynamically */ }
+.output-callout {
+  background: var(--bg-subtle); border-color: var(--border);
+}
+.output-callout .callout-head { color: var(--text-3); }
+.output-callout .callout-body { color: var(--text-2); }
+
+/* ── nav footer ── */
+.card-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 24px; border-top: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+.nav-btn {
+  font-family: var(--font-sans);
+  font-size: 13px; font-weight: 500; padding: 7px 18px;
+  border-radius: var(--radius-md); border: 1px solid var(--border-md);
+  background: var(--bg-card); color: var(--text-2); cursor: pointer;
+  transition: all .15s; box-shadow: var(--shadow-sm);
+}
+.nav-btn:hover:not(:disabled) { color: var(--text-1); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.nav-btn:disabled { opacity: .3; cursor: default; transform: none; box-shadow: none; }
+.nav-info { font-size: 12px; color: var(--text-3); }
+
+/* ── divider label ── */
+.section-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 36px 0 20px;
+}
+.section-divider-line { flex: 1; height: 1px; background: var(--border); }
+.section-divider-label {
+  font-size: 11px; font-weight: 500; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--text-3);
+}
+
+/* ── footer ── */
+.page-footer {
+  margin-top: 60px; padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--text-3);
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+}
+
+/* ── theme toggle ── */
+.theme-toggle {
+  position: fixed; top: 20px; right: 20px;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--bg-card); border: 1px solid var(--border-md);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; box-shadow: var(--shadow-md); z-index: 100;
+  transition: all .2s;
+}
+.theme-toggle:hover { transform: scale(1.08); box-shadow: var(--shadow-lg); }
+
+/* ── scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode" id="themeBtn">🌙</button>
+
+<div class="page">
+
+  <!-- header -->
+  <header class="page-header">
+    <div class="page-eyebrow">Bookkeeper role · User flow reference</div>
+    <h1 class="page-title">How a bookkeeper<br>actually <em>works</em></h1>
+    <p class="page-subtitle">Every job mapped as a flow — trigger, steps, where it breaks down, and output. Built as research for an AI-first bookkeeping product for US small businesses.</p>
+    <div class="scope-bar">
+      <span class="scope-pill in">Records transactions</span>
+      <span class="scope-pill in">Reconciles bank accounts</span>
+      <span class="scope-pill in">Tracks AP &amp; AR</span>
+      <span class="scope-pill in">Produces P&amp;L</span>
+      <span class="scope-pill out">Not: tax filing</span>
+      <span class="scope-pill out">Not: payroll</span>
+      <span class="scope-pill out">Not: financial planning</span>
+    </div>
+  </header>
+
+  <!-- flow groups -->
+  <div id="app"></div>
+
+  <footer class="page-footer">
+    <span>Bookkeeper Role Reference · AI-First Product Research</span>
+    <span>Solo Bootstrapped Startup · US SMB Market</span>
+  </footer>
+</div>
+
+<script>
+/* ────────────────────────────────────────────────
+   DATA
+──────────────────────────────────────────────── */
+const COLORS = {
+  teal:  { tab:'#1D9E75', dot:'#1D9E75', head:'#0F6E56', bg:'var(--teal-50)',   frBg:'var(--coral-50)',  frHead:'var(--coral-600)', frBorder:'var(--coral-400)' },
+  purple:{ tab:'#7F77DD', dot:'#7F77DD', head:'#534AB7', bg:'var(--purple-50)', frBg:'var(--coral-50)',  frHead:'var(--coral-600)', frBorder:'var(--coral-400)' },
+  amber: { tab:'#BA7517', dot:'#BA7517', head:'#854F0B', bg:'var(--amber-50)',  frBg:'var(--coral-50)',  frHead:'var(--coral-600)', frBorder:'var(--coral-400)' },
+  coral: { tab:'#D85A30', dot:'#D85A30', head:'#993C1D', bg:'var(--coral-50)',  frBg:'var(--amber-50)',  frHead:'var(--amber-600)', frBorder:'var(--amber-400)' },
+  blue:  { tab:'#378ADD', dot:'#378ADD', head:'#185FA5', bg:'var(--blue-50)',   frBg:'var(--coral-50)',  frHead:'var(--coral-600)', frBorder:'var(--coral-400)' },
+  gray:  { tab:'#888780', dot:'#888780', head:'#5F5E5A', bg:'var(--gray-50)',   frBg:'var(--coral-50)',  frHead:'var(--coral-600)', frBorder:'var(--coral-400)' },
+};
+
+const GROUPS = [
+  { label:'Daily', flows:['collect','record','ap','ar'] },
+  { label:'Weekly', flows:['feed','chase','cash'] },
+  { label:'Monthly', flows:['recon','pl'] },
+  { label:'Annual / Always on', flows:['yearend','memory'] },
+];
+
+const FLOWS = {
+collect:{label:'Collect documents',freq:'Daily',color:'teal',steps:[
+  {title:'Money moves — event happens',who:'Owner / external party',
+   triggers:['A purchase is made in the field','A sale is completed with a customer','A bill arrives in the mail or by email','A payment is received from a customer'],
+   actions:['Owner pockets the receipt or gets an email confirmation','Vendor mails or emails a bill to the business','Bank posts the transaction to the account'],
+   friction:'Receipt is thrown away on the spot. Email confirmation is deleted. Bill goes in a pile unseen. Nothing reaches the bookkeeper yet — the event happened but left no managed record.',
+   output:'A financial event has occurred. It may be completely undocumented.'},
+  {title:'Document is gathered and sent',who:'Owner → Bookkeeper',
+   triggers:['Paper receipt from store','Email PDF from vendor','Photo taken on owner\'s phone','Forwarded bank notification','Verbal mention: "I spent about $300 on supplies"'],
+   actions:['Owner photographs receipt and texts it to bookkeeper','Owner forwards invoice email','Owner mentions purchase in passing — no document','Bookkeeper downloads bank statement at month end'],
+   friction:'Owner sends a blurry, unreadable photo. Sends it to the wrong email. Forgets entirely. Bookkeeper has to chase days later when the owner has no memory of what the purchase was for.',
+   output:'Source document reaches the bookkeeper — in some form, with varying quality.'},
+  {title:'Document is filed and queued',who:'Bookkeeper',
+   triggers:['Receipt or document received from owner','Bank statement downloaded'],
+   actions:['Save document to organised folder — by month and type','Rename file with date, vendor, and amount','Log as "pending entry" in the queue','Flag any document that is unclear, incomplete, or missing an amount'],
+   friction:'No consistent naming system so files pile up unsorted. Document is unreadable. Amount or vendor name is missing. Bookkeeper has to go back to the owner before they can file it — adding another round of delay.',
+   output:'Source document is saved, named, and ready to be entered into the books.'},
+]},
+
+record:{label:'Record transactions',freq:'Daily',color:'teal',steps:[
+  {title:'Document queue is opened',who:'Bookkeeper',
+   triggers:['Saved receipts and invoices waiting in queue','Bank feed showing new auto-imported transactions','Messages from owner about recent spending'],
+   actions:['Open accounting software','Review bank feed for new auto-imported transactions','Review document queue for items waiting to be entered','Prioritise by date — oldest first'],
+   friction:'Bank feed has auto-categorised items incorrectly. Some transactions have no matching document. The queue is weeks behind if the bookkeeper hasn\'t checked in regularly.',
+   output:'Bookkeeper has a clear list of transactions to process.'},
+  {title:'Each transaction is categorised',who:'Bookkeeper — judgment call',
+   triggers:['Transaction details: merchant, amount, date','Receipt or invoice if available','Context from owner if provided'],
+   actions:['Assign expense category — e.g. Materials, Fuel, Office Supplies','Determine if business or personal use','Split transaction if it was mixed use','Add a memo describing what it was for specifically','Choose correct income type if it is a payment received'],
+   friction:'"Amazon" could be office supplies, tools, or a personal order — the merchant name gives no context. No receipt. Owner unreachable. Bookkeeper makes a best guess and flags for review. Wrong category means wrong tax picture.',
+   output:'Transaction has a category, memo, and payment method assigned.'},
+  {title:'Transaction is entered and saved',who:'Bookkeeper',
+   triggers:['Categorised transaction ready','Matching source document available'],
+   actions:['Enter into accounting software with all required fields','Attach receipt or invoice scan to the transaction record','Mark as reviewed and approved','If a question remains, flag as "needs owner input" and move on'],
+   friction:'Software rejects the entry due to a missing required field. Receipt attachment fails. Flagged items pile up waiting for the owner to respond — blocking books from being complete.',
+   output:'Transaction is permanently recorded in the books with supporting document attached.'},
+]},
+
+ap:{label:'Pay bills (AP)',freq:'Daily',color:'purple',steps:[
+  {title:'Bill arrives',who:'Vendor → Bookkeeper / Owner',
+   triggers:['Paper invoice in the mail','PDF invoice by email','Bill from a supplier portal','Auto-generated recurring charge notice'],
+   actions:['Bookkeeper receives or is forwarded the bill','Checks it is addressed to the business and not a duplicate','Verifies amount matches what was agreed or contracted','Locates the due date and payment terms'],
+   friction:'Bill goes to the owner\'s personal email and is never forwarded. A duplicate bill is sent — risk of paying twice. Amount differs from what was quoted — needs resolution with the vendor before paying.',
+   output:'Bill is verified as legitimate and ready to be logged.'},
+  {title:'Bill is logged in accounts payable',who:'Bookkeeper',
+   triggers:['Verified bill with amount, vendor, and due date'],
+   actions:['Enter bill into AP: vendor, amount, due date, what it is for','Set a due date alert','File the original invoice document','Mark status as unpaid','Note the payment method to be used — check, ACH, or card'],
+   friction:'No AP system — tracked on a sticky note or spreadsheet. Due date not noticed until it has already passed. Bill entered with wrong amount or wrong vendor name.',
+   output:'Bill is in the system with due date visible. Nothing will be accidentally missed.'},
+  {title:'Payment is made and recorded',who:'Bookkeeper / Owner',
+   triggers:['Due date approaching','Available cash confirmed'],
+   actions:['Initiate payment — ACH, check, card, or wire','Record exact payment date and method in the books','Match payment to the original bill and mark as paid','File the payment confirmation','Note check number if paid by check'],
+   friction:'Owner pays directly without telling the bookkeeper — books still show the bill as unpaid. Payment made from personal account — never recorded. Bill accidentally paid twice.',
+   output:'Bill is marked paid. Expense is recorded. Paper trail is complete from invoice to payment.'},
+]},
+
+ar:{label:'Chase payments (AR)',freq:'Daily',color:'purple',steps:[
+  {title:'Invoice is created and sent',who:'Bookkeeper / Owner',
+   triggers:['Job is completed','Service is delivered','Agreed milestone is reached'],
+   actions:['Create invoice with line items, amount, and due date','Assign a sequential invoice number for tracking','Send to customer by email or mail','Log invoice in AR as outstanding','Note payment terms — Net 15, Net 30, or Net 60'],
+   friction:'Invoice sent to wrong email address. Wrong amount billed — customer disputes it. No invoice number system so it is hard to track which one is which. Owner sends from personal email outside the system.',
+   output:'Invoice is logged as outstanding. Customer has been billed. The clock is running.'},
+  {title:'Monitor and follow up on unpaid invoices',who:'Bookkeeper',
+   triggers:['Daily check of AR aging report','Due date alerts','Owner asking about a specific customer'],
+   actions:['Check which invoices are past due — daily habit','Send polite reminder at 7 days past due','Send firmer reminder at 14 days past due','Escalate to owner at 30 days past due for a decision','Flag 60+ day invoices as potentially uncollectable'],
+   friction:'Owner does not want to chase — the customer relationship feels too important to risk. Customer ignores all reminders. No record of which reminders were already sent. Invoice sits unpaid for months.',
+   output:'Customer is aware of overdue balance. Owner is informed of any serious delinquency.'},
+  {title:'Payment received and matched',who:'Bookkeeper',
+   triggers:['Bank notification of incoming payment','Customer emails to say they have paid'],
+   actions:['Identify which invoice the payment is for — not always obvious from the reference','Record payment against the correct invoice in the books','Mark invoice as paid and close it','If partial payment — note remaining balance and keep tracking','Send a receipt to the customer if that is the business practice'],
+   friction:'Customer pays the wrong amount — short pays or rounds differently. Payment arrives with no reference — impossible to know which invoice it is for. Multiple invoices outstanding for the same customer — ambiguous.',
+   output:'Invoice is closed. Revenue is confirmed. Books reflect actual cash received.'},
+]},
+
+feed:{label:'Bank feed review',freq:'Weekly',color:'blue',steps:[
+  {title:'Bank feed is opened and scanned',who:'Bookkeeper',
+   triggers:['New transactions auto-imported from connected bank account','Credit card feed if connected','Bookkeeper\'s regular review schedule'],
+   actions:['Open accounting software — new transactions are pulled in automatically','Scan through each new transaction in the feed','Check the auto-suggested category for each one — software guesses based on merchant name','Accept correct categorisations quickly','Flag or correct any that are wrong'],
+   friction:'Software auto-categorises "Home Depot" as Office Supplies when it should be Materials. A transfer between business accounts is imported as income. A subscription for a cancelled service is still charging.',
+   output:'Each transaction is reviewed — accepted or corrected. The feed is cleared.'},
+  {title:'Unknown transactions are investigated',who:'Bookkeeper → Owner',
+   triggers:['Transaction with unrecognised merchant name','Unusual amount from a known merchant','Transaction with no matching document in the queue'],
+   actions:['Search for the merchant online to understand what they sell','Check if it matches any pending receipt in the document queue','If still unclear — message owner with the specific date, merchant, and amount','Document the question and wait for the owner to respond'],
+   friction:'This is the core weekly bottleneck. Owner takes days to respond. Sometimes they genuinely cannot remember what a charge was. Sometimes it was a personal charge on the business card. Every unanswered question blocks the books.',
+   output:'Transaction is either categorised immediately or sits in a "pending owner response" queue.'},
+  {title:'Mixed charges are split',who:'Bookkeeper → Owner',
+   triggers:['Transaction that clearly includes both business and personal spending'],
+   actions:['Ask the owner for the split — what percentage was business use?','Enter the transaction as two lines: business portion in the correct category, personal portion as owner draw','Attach a note explaining the split rationale','File any partial receipt if available'],
+   friction:'Owner has no idea what the split was — it was months ago. Receipt was lost. This ambiguity can directly affect tax deductions if categorised incorrectly.',
+   output:'Transaction is correctly split. Business expenses are accurately reflected in the books.'},
+]},
+
+chase:{label:'Chase owner for info',freq:'Weekly',color:'coral',steps:[
+  {title:'Questions accumulate during the week',who:'Bookkeeper',
+   triggers:['Flagged transactions from bank feed review','Unidentifiable receipts in the document queue','Cash transactions mentioned verbally by owner','Missing context on specific expenses'],
+   actions:['Bookkeeper keeps a running list of questions throughout the week','Groups similar questions together to reduce the number of interruptions','Decides which are urgent — needed to close the current month — vs which can wait'],
+   friction:'The list grows faster than the owner responds. Some questions are critically time-sensitive — a transaction from three weeks ago is nearly impossible for the owner to recall accurately.',
+   output:'A list of specific, documented questions is ready to send to the owner.'},
+  {title:'Questions are sent to the owner',who:'Bookkeeper → Owner',
+   triggers:['Accumulated question list','Approaching month-end close deadline'],
+   actions:['Send email or message with all pending questions grouped clearly','Be specific: "What was the $340 charge at Fastenal on March 14th for?"','Give context: "I need this to close February\'s books by Friday"','Include a deadline if month-end close is approaching'],
+   friction:'Owner reads the message and forgets to reply. Message gets buried. Owner replies vaguely — "oh that was for a job" — not enough detail to categorise correctly. Owner is travelling or unavailable.',
+   output:'Questions are delivered. Now the bookkeeper waits — sometimes for days.'},
+  {title:'Owner responds — or does not',who:'Owner → Bookkeeper',
+   triggers:['Owner has time to look at the message','Owner is reminded again'],
+   actions:['Owner replies with specific context and the correct category','Bookkeeper categorises the transaction based on the reply','If owner genuinely cannot remember — bookkeeper makes a best guess and notes it clearly','If still disputed — leaves as uncategorised and flags for year-end review'],
+   friction:'Owner replies "I don\'t remember" for a $600 charge. Bookkeeper cannot invent a category. Transaction stays in limbo. This is the single most common reason books fall behind schedule.',
+   output:'Transaction is categorised — or documented as unresolved pending further information.'},
+]},
+
+cash:{label:'Cash position check',freq:'Weekly',color:'blue',steps:[
+  {title:'Current bank balances are checked',who:'Bookkeeper',
+   triggers:['Weekly review schedule','Owner asking "how are we doing?"','Large payment about to be made'],
+   actions:['Note the exact current balance in each business account from the live bank feed','Check if any large deposits are in transit — in the books but not yet cleared by bank','Check if any issued checks have not yet been cashed — reduces the true available balance'],
+   friction:'Bank feed is 1–2 days delayed. A large payment made yesterday does not show yet. Bookkeeper must note this lag when reporting to the owner to avoid giving a falsely optimistic number.',
+   output:'Accurate current cash position across all accounts, with timing notes.'},
+  {title:'Incoming cash is projected',who:'Bookkeeper',
+   triggers:['Outstanding AR list','Knowledge of customer payment patterns'],
+   actions:['List all outstanding invoices and their due dates','Estimate which customers are likely to pay on time based on history','Calculate expected cash inflow over the next 2–4 weeks','Highlight any single large payment that is expected and critical'],
+   friction:'Customer payment behaviour is unpredictable. A Net 30 customer may routinely pay in 45 days. The bookkeeper can project but cannot guarantee. If the owner is counting on a payment that arrives late, the cash position can swing dramatically.',
+   output:'Projected inflows for the next 2–4 weeks with an honest confidence level.'},
+  {title:'Outflows projected and position reported',who:'Bookkeeper → Owner',
+   triggers:['Completed inflow projection','All AP due dates reviewed'],
+   actions:['List all bills due in the next 2–4 weeks with exact amounts and dates','Sum total expected outflows','Calculate: current cash + expected inflows − expected outflows = projected net position','Flag clearly if projected position drops below a safe operating threshold','Report to owner in plain language: "You have $12,400 now. $8,200 in bills due. $6,000 expected in. Net in 2 weeks: ~$10,200."'],
+   friction:'Owner does not act on the warning. A projected gap is flagged but the owner has not invoiced the client yet to create the inflow. Bookkeeper can flag the risk but cannot fix the underlying business decision.',
+   output:'Owner has a clear, plain-English picture of cash for the next 2–4 weeks.'},
+]},
+
+recon:{label:'Bank reconciliation',freq:'Monthly',color:'amber',steps:[
+  {title:'All transactions for the month are confirmed entered',who:'Bookkeeper',
+   triggers:['End of calendar month','All bank feed transactions reviewed','All outstanding owner questions answered — or documented as unresolved'],
+   actions:['Confirm no transactions remain in uncategorised or needs-review status','Confirm all AP bills for the month are marked paid or still legitimately open','Confirm all AR invoices with payments received are marked closed','Do a final transaction count — does the number look reasonable for the month?'],
+   friction:'Eight owner questions are still unanswered. The month cannot be cleanly closed until these are resolved. Bookkeeper sends a final urgent chase message with a hard deadline.',
+   output:'Books are as complete as possible — all known transactions entered and categorised.'},
+  {title:'Bank statement is downloaded and matched line by line',who:'Bookkeeper',
+   triggers:['Official bank statement available for the full calendar month'],
+   actions:['Download bank statement PDF for exact date range — e.g. March 1 through March 31','Open reconciliation screen in accounting software','Enter the closing balance from the official statement','Go through every line on the bank statement and find its matching entry in the books','Tick off cleared transactions on both sides as matches are found'],
+   friction:'A transaction appears on the bank statement with no matching entry in the books — something was missed entirely. A transaction is in the books but not on the statement — a timing difference or a data entry error. Every single discrepancy must be explained before the reconciliation is complete.',
+   output:'Every line on the bank statement is matched to a book entry — or the difference is documented with a reason.'},
+  {title:'Differences are resolved and reconciliation is signed off',who:'Bookkeeper',
+   triggers:['Unmatched transactions on either side','Balance difference remaining after matching'],
+   actions:['For each unmatched bank transaction: add the missing entry to the books','For each unmatched book entry: determine if it is a timing difference or an actual error','Correct any errors found in the books','Confirm the book balance now equals the bank statement closing balance exactly','Mark the reconciliation as complete and signed off'],
+   friction:'Cannot find why the balance is off by $47.50. Have to go back through every transaction one by one. Sometimes a data entry error from weeks earlier caused it. This detective work can take hours.',
+   output:'Book balance equals bank statement balance exactly. Reconciliation is complete. Month is officially closed.'},
+]},
+
+pl:{label:'Produce P&L report',freq:'Monthly',color:'amber',steps:[
+  {title:'Pre-report check — is data clean?',who:'Bookkeeper',
+   triggers:['Reconciliation confirmed complete for all accounts','No outstanding uncategorised items'],
+   actions:['Confirm reconciliation is done for all bank and credit card accounts','Run a quick sanity check — do total income and expense totals look reasonable compared to last month?','Spot any obviously wrong entries before generating the report — a $50,000 charge that should be $500'],
+   friction:'Report is generated and immediately contains an obvious error. Bookkeeper has to go back, find the source transaction, fix it, and regenerate the report. This is exactly why the pre-check matters.',
+   output:'Confidence that the underlying data is clean and the report will be accurate.'},
+  {title:'P&L report is generated',who:'Bookkeeper',
+   triggers:['Clean closed month confirmed'],
+   actions:['Run Profit and Loss report for the calendar month in accounting software','Set comparison to prior month and same month last year if data is available','Review each category line — does every line look right and consistent?','Check the net profit or loss figure at the bottom','Export as PDF for delivery to owner'],
+   friction:'A category has been used inconsistently all month — some fuel expenses are under "Vehicle" and some under "Fuel". The report looks split and confusing. Bookkeeper needs to reclassify and rerun.',
+   output:'Clean P&L showing income, expenses by category, gross profit, and net profit for the month.'},
+  {title:'Report delivered with plain-English explanation',who:'Bookkeeper → Owner',
+   triggers:['P&L report generated','Owner expecting month-end update'],
+   actions:['Write 3–5 sentence plain-English summary: what went up, what went down, what the owner should notice','Highlight the most important number — usually net profit compared to last month','Flag any category that spiked or dropped significantly and explain what likely drove it','Send to owner by email with PDF attached','Follow up if no acknowledgement within 2–3 days'],
+   friction:'Owner glances at the bottom-line number and ignores everything else. The nuance — materials costs up 22%, margins compressing — is completely missed. The bookkeeper\'s interpretation is wasted.',
+   output:'Owner has received the month\'s financial picture in both detailed data and plain language.'},
+]},
+
+yearend:{label:'Year-end close',freq:'Annual',color:'coral',steps:[
+  {title:'All 12 months are reviewed and cleaned',who:'Bookkeeper',
+   triggers:['December books closed','Accountant handoff approaching — typically January or February'],
+   actions:['Open each month and check for any uncategorised or miscategorised transactions','Find and correct any entries that were categorised incorrectly during the year','Confirm every month\'s reconciliation is completed and signed off','Look for any duplicate entries created across the year','Identify any personal expenses incorrectly coded as business expenses'],
+   friction:'January has 23 uncategorised transactions. April\'s reconciliation was never finished. The owner used the business card for a family holiday and no one flagged it. Year-end cleanup takes 2–3 days minimum even for reasonably tidy books.',
+   output:'All 12 months are clean, fully categorised, and reconciled.'},
+  {title:'Year-end reports are generated',who:'Bookkeeper',
+   triggers:['All 12 months confirmed clean'],
+   actions:['Run full-year Profit and Loss — January through December 31','Run Balance Sheet as of December 31','Run accounts receivable aging — any invoices still open from the year?','Generate list of all fixed assets purchased during the year — needed for depreciation','Generate list of all contractors paid $600 or more — bookkeeper identifies, accountant or owner files 1099s','Export all reports as PDF'],
+   friction:'A major client invoice from November is still showing as unpaid. Is it genuinely unpaid or was the payment recorded incorrectly? Must resolve before year-end reports can be called accurate.',
+   output:'Year-end financial reports ready — accurate, complete, and ready to hand over.'},
+  {title:'Books are handed off to the accountant',who:'Bookkeeper → Accountant',
+   triggers:['Year-end reports finalised','Accountant requests access'],
+   actions:['Grant accountant access to the accounting software','Share all year-end reports as PDFs','Write a brief handoff note flagging anything unusual — one-off large expenses, category changes','Remain available to answer accountant questions during tax preparation','Make any adjusting journal entries the accountant requests after reviewing'],
+   friction:'Accountant finds a category used inconsistently all year and has to reclassify 40 transactions. That cleanup took 2 hours at $200/hr — $400 in accountant fees that clean books would have avoided entirely.',
+   output:'Accountant has everything needed to file an accurate tax return efficiently.'},
+]},
+
+memory:{label:'Answer owner questions',freq:'Always on',color:'gray',steps:[
+  {title:'Owner has a financial question — right now',who:'Owner',
+   triggers:['"How much cash do we have right now?"','"Did the Johnson project ever get paid?"','"What is my biggest expense category this year?"','"Am I making more or less than last quarter?"','"Can I actually afford to hire someone?"'],
+   actions:['Owner is mid-decision and needs a number','Owner is meeting a lender and needs to speak to their financials','Owner is just curious about how the business is doing','Owner is worried something might be wrong'],
+   friction:'Owner asks at 8pm on Friday. The bookkeeper is not available. Owner makes the decision without the information — or delays the decision entirely. The answer was knowable. The data existed. But no one could get to it in time.',
+   output:'A question is asked. Now the bookkeeper needs to find and communicate the answer.'},
+  {title:'Bookkeeper looks up the answer',who:'Bookkeeper',
+   triggers:['Owner message or call with a financial question'],
+   actions:['Log into accounting software','Run the appropriate report or filter transactions by the relevant date range or category','Find the specific number or figure being asked about','Interpret it — is this good or bad relative to prior periods? What does it mean?','Compose a plain-English reply the owner can actually use'],
+   friction:'Bookkeeper is not available or has a 24-hour response window. Owner needed the answer during the meeting that already ended. Or bookkeeper finds the number but reports just "$8,400" with no context about whether that is good, bad, or normal.',
+   output:'Owner receives an answer — usually hours or sometimes a full day later.'},
+  {title:'Answer is delivered and acted on',who:'Bookkeeper → Owner',
+   triggers:['Looked-up data ready','Owner still waiting and able to act on it'],
+   actions:['Send answer in plain language — not a report, just the answer','Add context: "That is up from $6,200 last month" or "That is your third biggest expense"','Flag if the answer reveals something the owner should act on','Suggest a next step if relevant: "You might want to invoice them again — it has been 35 days"'],
+   friction:'By the time the answer arrives the moment has passed. The owner already made the decision, the meeting is over, the opportunity is gone. The value of having accurate books evaporates entirely when there is a multi-hour delay in accessing them.',
+   output:'Owner has the information and interpretation needed to make a confident decision.'},
+]},
+};
+
+/* ────────────────────────────────────────────────
+   STATE
+──────────────────────────────────────────────── */
+const state = {};
+Object.keys(FLOWS).forEach(k => state[k] = 0);
+let activeFlow = 'collect';
+
+/* ────────────────────────────────────────────────
+   RENDER
+──────────────────────────────────────────────── */
+function renderAll() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  GROUPS.forEach(group => {
+    // divider
+    const div = document.createElement('div');
+    div.className = 'section-divider';
+    div.innerHTML = `<div class="section-divider-line"></div><div class="section-divider-label">${group.label}</div><div class="section-divider-line"></div>`;
+    app.appendChild(div);
+
+    // flow nav for this group
+    const nav = document.createElement('div');
+    nav.className = 'flow-nav';
+    group.flows.forEach(fk => {
+      const f = FLOWS[fk];
+      const c = COLORS[f.color];
+      const isActive = fk === activeFlow;
+      const btn = document.createElement('div');
+      btn.className = 'flow-btn' + (isActive ? ' active' : '');
+      btn.style.borderColor = isActive ? c.tab : '';
+      btn.innerHTML = `<span class="flow-btn-name" style="${isActive?'color:'+c.tab:''}">${f.label}</span><span class="flow-btn-freq">${f.freq}</span>`;
+      btn.onclick = () => { activeFlow = fk; renderAll(); };
+      nav.appendChild(btn);
+    });
+    app.appendChild(nav);
+
+    // if any flow in this group is active, show its card here
+    if (group.flows.includes(activeFlow)) {
+      app.appendChild(renderCard(activeFlow));
+    }
+  });
+}
+
+function renderCard(fk) {
+  const f = FLOWS[fk];
+  const c = COLORS[f.color];
+  const si = state[fk];
+  const s = f.steps[si];
+  const total = f.steps.length;
+
+  const wrap = document.createElement('div');
+  wrap.style.marginBottom = '8px';
+
+  // stepper
+  const stepRow = document.createElement('div');
+  stepRow.className = 'stepper-row';
+  f.steps.forEach((st, i) => {
+    if (i > 0) {
+      const sep = document.createElement('span');
+      sep.className = 'step-sep';
+      sep.textContent = '›';
+      stepRow.appendChild(sep);
+    }
+    const pip = document.createElement('div');
+    pip.className = 'step-pip' + (i === si ? ' active' : i < si ? ' done' : '');
+    pip.style.background = i <= si ? c.dot : '';
+    pip.title = st.title;
+    pip.onclick = () => { state[fk] = i; renderAll(); };
+    stepRow.appendChild(pip);
+  });
+  const ctr = document.createElement('span');
+  ctr.className = 'step-counter-text';
+  ctr.textContent = `Step ${si+1} of ${total}`;
+  stepRow.appendChild(ctr);
+
+  // card
+  const card = document.createElement('div');
+  card.className = 'flow-card';
+
+  // head
+  const head = document.createElement('div');
+  head.className = 'card-head';
+  head.innerHTML = `
+    <div class="card-eyebrow" style="color:${c.head}">${f.label}</div>
+    <div class="card-title">${s.title}</div>
+    <div class="card-who">Who: <span>${s.who}</span></div>`;
+
+  // body
+  const body = document.createElement('div');
+  body.className = 'card-body';
+
+  const makeBlk = (title, items, color) => {
+    const b = document.createElement('div');
+    b.innerHTML = `<div class="blk-head" style="color:${color}">${title}</div>
+      <div class="blk-list">${items.map(x=>`<div class="blk-row"><div class="blk-dot" style="background:${c.dot}"></div><span class="blk-text">${x}</span></div>`).join('')}</div>`;
+    return b;
+  };
+
+  body.appendChild(makeBlk('What triggers this', s.triggers, c.head));
+  body.appendChild(makeBlk('What happens', s.actions, c.head));
+
+  // friction
+  const fr = document.createElement('div');
+  fr.className = 'full-col callout';
+  fr.style.background = c.frBg;
+  fr.style.borderColor = c.frBorder;
+  fr.innerHTML = `<div class="callout-head" style="color:${c.frHead}">Where it breaks down</div>
+    <div class="callout-body" style="color:${c.frHead}">${s.friction}</div>`;
+  body.appendChild(fr);
+
+  // output
+  const out = document.createElement('div');
+  out.className = 'full-col callout output-callout';
+  out.innerHTML = `<div class="callout-head">Output of this step</div>
+    <div class="callout-body">${s.output}</div>`;
+  body.appendChild(out);
+
+  // nav
+  const nav = document.createElement('div');
+  nav.className = 'card-nav';
+  const prev = document.createElement('button');
+  prev.className = 'nav-btn';
+  prev.textContent = '← Previous step';
+  prev.disabled = si === 0;
+  prev.onclick = () => { state[fk] = si - 1; renderAll(); };
+
+  const info = document.createElement('span');
+  info.className = 'nav-info';
+  info.textContent = `${si+1} / ${total}`;
+
+  const next = document.createElement('button');
+  next.className = 'nav-btn';
+  next.textContent = 'Next step →';
+  next.disabled = si === total - 1;
+  next.onclick = () => { state[fk] = si + 1; renderAll(); };
+
+  nav.appendChild(prev);
+  nav.appendChild(info);
+  nav.appendChild(next);
+
+  card.appendChild(head);
+  card.appendChild(body);
+  card.appendChild(nav);
+
+  wrap.appendChild(stepRow);
+  wrap.appendChild(card);
+  return wrap;
+}
+
+/* ────────────────────────────────────────────────
+   THEME
+──────────────────────────────────────────────── */
+let darkForced = null;
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const btn = document.getElementById('themeBtn');
+  if (darkForced === null) {
+    // detect current
+    darkForced = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  darkForced = !darkForced;
+  applyTheme(darkForced);
+}
+
+function applyTheme(dark) {
+  const btn = document.getElementById('themeBtn');
+  if (dark) {
+    document.documentElement.setAttribute('data-theme','dark');
+    btn.textContent = '☀️';
+    setDarkVars();
+  } else {
+    document.documentElement.setAttribute('data-theme','light');
+    btn.textContent = '🌙';
+    setLightVars();
+  }
+}
+
+function setDarkVars() {
+  const r = document.documentElement.style;
+  r.setProperty('--bg','#16160F');
+  r.setProperty('--bg-card','#1E1E16');
+  r.setProperty('--bg-subtle','#252519');
+  r.setProperty('--border','rgba(255,255,255,.09)');
+  r.setProperty('--border-md','rgba(255,255,255,.16)');
+  r.setProperty('--text-1','#EEEEE6');
+  r.setProperty('--text-2','#9A9A92');
+  r.setProperty('--text-3','#5A5A54');
+  r.setProperty('--teal-50','#04342C');
+  r.setProperty('--teal-400','#1D9E75');
+  r.setProperty('--coral-50','#4A1B0C');
+  r.setProperty('--coral-400','#D85A30');
+  r.setProperty('--coral-600','#F0997B');
+  r.setProperty('--amber-50','#412402');
+  r.setProperty('--amber-400','#BA7517');
+  r.setProperty('--amber-600','#EF9F27');
+  r.setProperty('--purple-50','#26215C');
+  r.setProperty('--blue-50','#042C53');
+  r.setProperty('--gray-50','#2C2C2A');
+  r.setProperty('--shadow-sm','0 1px 3px rgba(0,0,0,.3)');
+  r.setProperty('--shadow-md','0 4px 12px rgba(0,0,0,.4)');
+  r.setProperty('--shadow-lg','0 12px 32px rgba(0,0,0,.5)');
+}
+
+function setLightVars() {
+  const r = document.documentElement.style;
+  r.setProperty('--bg','#FAFAF8');
+  r.setProperty('--bg-card','#FFFFFF');
+  r.setProperty('--bg-subtle','#F4F3EF');
+  r.setProperty('--border','rgba(68,68,65,.12)');
+  r.setProperty('--border-md','rgba(68,68,65,.22)');
+  r.setProperty('--text-1','#1C1C1A');
+  r.setProperty('--text-2','#5F5E5A');
+  r.setProperty('--text-3','#A0A09A');
+  r.setProperty('--teal-50','#E1F5EE');
+  r.setProperty('--teal-400','#1D9E75');
+  r.setProperty('--coral-50','#FAECE7');
+  r.setProperty('--coral-400','#D85A30');
+  r.setProperty('--coral-600','#993C1D');
+  r.setProperty('--amber-50','#FAEEDA');
+  r.setProperty('--amber-400','#BA7517');
+  r.setProperty('--amber-600','#854F0B');
+  r.setProperty('--purple-50','#EEEDFE');
+  r.setProperty('--blue-50','#E6F1FB');
+  r.setProperty('--gray-50','#F1EFE8');
+  r.setProperty('--shadow-sm','0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04)');
+  r.setProperty('--shadow-md','0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04)');
+  r.setProperty('--shadow-lg','0 12px 32px rgba(0,0,0,.10), 0 4px 8px rgba(0,0,0,.06)');
+}
+
+/* ── init ── */
+renderAll();
+</script>
+</body>
+</html>

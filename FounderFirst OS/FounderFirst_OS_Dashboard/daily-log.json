@@ -1,0 +1,58 @@
+{
+  "lastUpdated": "2026-04-23T23:00:00Z",
+  "today": {
+    "date": "2026-04-23",
+    "avgScore": 52,
+    "sessionCount": 7,
+    "streak": 3,
+    "weekAvg": 66,
+    "weakestLever": "formatPrecision",
+    "insight": "Seven sessions today averaged 52, down from yesterday's 67 — the higher volume diluted the score but reflects a productive build day. Goal Clarity and Decision Lock held at 100%: every session had a clear target and structured approach before work began. Format Precision hit 0% for the second consecutive day: not a single user message specified how the output should look (table, JSON, doc sections, etc.). Tomorrow: in your opening message for each session, add one format instruction — e.g. 'write this as a numbered checklist' or 'output as a markdown table'. That one habit would add 17 points to your daily average.",
+    "levers": {
+      "contextSetup": { "passed": false },
+      "goalClarity": { "passed": true },
+      "decisionLock": { "passed": true },
+      "formatPrecision": { "passed": false },
+      "batchThinking": { "passed": true },
+      "sessionClose": { "passed": false }
+    },
+    "sessions": [
+      { "type": "Review", "time": "9:00 am", "score": 50 },
+      { "type": "Build", "time": "10:30 am", "score": 33 },
+      { "type": "Review", "time": "11:30 am", "score": 67 },
+      { "type": "Build", "time": "12:30 pm", "score": 50 },
+      { "type": "Review", "time": "2:00 pm", "score": 50 },
+      { "type": "Build", "time": "3:30 pm", "score": 50 },
+      { "type": "Research", "time": "4:30 pm", "score": 67 }
+    ]
+  },
+  "levers14d": {
+    "contextSetup": 64,
+    "goalClarity": 86,
+    "decisionLock": 86,
+    "formatPrecision": 50,
+    "batchThinking": 88,
+    "sessionClose": 33
+  },
+  "trend": {
+    "thisWeek": 66,
+    "lastWeek": 45,
+    "bestLever": "batchThinking",
+    "sessions": [
+      { "score": 83, "label": "M" },
+      { "score": 67, "label": "T" },
+      { "score": 50, "label": "S" },
+      { "score": 50, "label": "M" },
+      { "score": 0, "label": "T" },
+      { "score": 0, "label": "W" },
+      { "score": 0, "label": "T" },
+      { "score": 50, "label": "F" },
+      { "score": 0, "label": "S" },
+      { "score": 35, "label": "S" },
+      { "score": 0, "label": "M" },
+      { "score": 79, "label": "T" },
+      { "score": 67, "label": "W" },
+      { "score": 52, "label": "T" }
+    ]
+  }
+}

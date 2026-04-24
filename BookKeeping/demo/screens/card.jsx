@@ -221,7 +221,7 @@ function CardPennyBubble({ msg, loading }) {
   );
 }
 
-export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, showIrsLines }) {
+export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, onReject, showIrsLines }) {
   const [pennyMsg,     setPennyMsg]     = useState(null);
   const [pennyLoading, setPennyLoading] = useState(true);
   const [category,     setCategory]     = useState(card.category_guess || null);
@@ -239,16 +239,20 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, showIrsLine
         industry: persona?.industry || "consulting",
         persona,
         card: {
-          variant:       card.variant,
-          vendor:        card.vendor       || null,
-          amount:        card.amount,
-          date:          dateLabel(card.daysAgo),
-          confidence:    card.confidence   ?? null,
-          category_guess: category,
-          from:          card.from         || null,
-          to:            card.to           || null,
-          rollingMedian: card.rollingMedian || null,
-          priorConfirms: card.priorConfirms || null,
+          variant:          card.variant,
+          vendor:           card.vendor          || null,
+          amount:           card.amount,
+          date:             dateLabel(card.daysAgo),
+          confidence:       card.confidence      ?? null,
+          category_guess:   category,
+          from:             card.from            || null,
+          to:               card.to              || null,
+          rollingMedian:    card.rollingMedian   || null,
+          priorConfirms:    card.priorConfirms   || null,
+          currentCategory:  card.currentCategory || null,
+          suggestedCategory: card.suggestedCategory || null,
+          cpaName:          card.cpaName         || null,
+          cpaNote:          card.cpaNote         || null,
         },
       },
     })
@@ -307,6 +311,7 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, showIrsLine
     setTimeout(() => onConfirm({ ...card, category_guess: category, ruleCreated: true }), 800);
   }, [card, category, onConfirm, showToast]);
 
+  const isCpaSuggestion = card.variant === "cpa-suggestion";
   const isIncome  = card.variant === "income" || card.variant === "income-celebration";
   const isOwnDraw = card.variant === "owners-draw";
   const isRule    = card.variant === "rule-proposal";
@@ -318,6 +323,94 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, showIrsLine
 
   const primaryLabel   = pennyMsg?.ctaPrimary   || "Confirm";
   const secondaryLabel = pennyMsg?.ctaSecondary || "Change";
+
+  // cpa-suggestion: approve / keep-as-is handlers
+  const handleApprove = useCallback(() => {
+    showToast("Category updated ✓");
+    setTimeout(() => onApprove?.(card), 300);
+  }, [card, onApprove, showToast]);
+
+  const handleKeepAsIs = useCallback(() => {
+    showToast("Kept as is.");
+    setTimeout(() => onReject?.(card), 300);
+  }, [card, onReject, showToast]);
+
+  if (isCpaSuggestion) {
+    return (
+      <div className="approval-card-wrap">
+        <CardPennyBubble msg={pennyMsg} loading={pennyLoading} />
+
+        {/* CPA note — verbatim, below bubble */}
+        {card.cpaNote && (
+          <div style={{
+            margin: "8px 0 10px",
+            padding: "10px 14px",
+            background: "var(--paper)",
+            borderRadius: "var(--r-card)",
+            borderLeft: "3px solid var(--ink-3)",
+          }}>
+            <p style={{ margin: "0 0 2px", fontSize: 11, fontWeight: "var(--fw-semibold)",
+              color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              {card.cpaName || "CPA"}'s note
+            </p>
+            <p style={{ margin: 0, fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5 }}>
+              {card.cpaNote}
+            </p>
+          </div>
+        )}
+
+        <div className="approval-card approval-card--expense">
+          <div className="card-vendor-row">
+            <div className="card-vendor-row-left">
+              <VendorIcon vendor={card.vendor || "Reclassification"} />
+              <div className="card-vendor-info">
+                <span className="card-vendor-name">{card.vendor || "Reclassification suggestion"}</span>
+                {card.cpaName && (
+                  <span className="card-vendor-date">Suggested by {card.cpaName}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Category comparison: current → suggested */}
+          <div style={{ margin: "14px 0 16px" }}>
+            <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: "var(--fw-semibold)",
+              color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Reclassification
+            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span className="card-category-pill" style={{ display: "inline-flex", alignItems: "center" }}>
+                <CategoryIcon category={card.currentCategory} stroke={`var(--cat-${catKey(card.currentCategory)})`}
+                  bg={`var(--cat-${catKey(card.currentCategory)}-bg)`} />
+                {card.currentCategory}
+              </span>
+              <svg width="14" height="14" viewBox="0 0 22 22" fill="none" stroke="var(--ink-3)"
+                strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <path d="M5 11h12M13 7l4 4-4 4" />
+              </svg>
+              <span className="card-category-pill" style={{ display: "inline-flex", alignItems: "center",
+                border: "1.5px solid var(--ink)", fontWeight: "var(--fw-semibold)" }}>
+                <CategoryIcon category={card.suggestedCategory} stroke={`var(--cat-${catKey(card.suggestedCategory)})`}
+                  bg={`var(--cat-${catKey(card.suggestedCategory)}-bg)`} />
+                {card.suggestedCategory}
+              </span>
+            </div>
+          </div>
+
+          <div className="card-actions">
+            <button className="btn btn-full" onClick={handleApprove} type="button">
+              Approve
+            </button>
+            <button className="btn btn-ghost btn-full" onClick={handleKeepAsIs} type="button">
+              Keep as is
+            </button>
+          </div>
+        </div>
+
+        <Toast message={toast.message} visible={toast.visible} />
+      </div>
+    );
+  }
 
   return (
     <div className="approval-card-wrap">

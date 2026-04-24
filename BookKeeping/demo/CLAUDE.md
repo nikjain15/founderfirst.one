@@ -6,6 +6,102 @@
 
 ## Changelog
 
+### 24 April 2026 — CPA view spec locked (v1.1) — build-ready handoff
+
+All 10 flow decisions, voice decision, responsive contract, and data model
+are locked. A fresh Claude Code session can build from these files without
+further input:
+
+- `implementation/cpa-view-spec.md` v1.1 — full product spec with decisions log
+- `implementation/cpa-data-model.md` — canonical `state.cpa` schema + mutation contracts
+- `public/prompts/cpa-chat.md` — CPA voice overlay (new prompt file)
+- `screen-briefs/09-cpa-view.md` v1.1 — tabbed build brief, 6 tabs not 7
+
+**Locked decisions — do not re-open:**
+
+1. **Single shared zone name:** "Needs a look". "Things to Watch" is retired
+   from every doc. `books.jsx:1056` already matches.
+2. **Invite entry point:** tabbed sheet on `books.jsx` Send-to-CPA button
+   ("Send snapshot" + "Invite to live books") + mirrored "Your CPA" row in
+   avatar menu → Profile. Two entry points, one flow.
+3. **Approval card variant:** new `variant: "cpa-suggestion"` on
+   `ApprovalCard` (card.jsx). Not a new component — a flag on the existing
+   one. Card data carries `currentCategory`, `suggestedCategory`, `cpaName`,
+   `cpaNote`. CTAs: "Approve" / "Keep as is".
+4. **Penny-question trigger mechanism:** four cases only — low-confidence
+   streak (3+ repeats < 70%), ambiguous IRS routing, tax-sensitive edge
+   cases (entity conversion, S-Corp payroll-vs-draw, 1099 threshold),
+   founder-initiated handoff via "ask my CPA" affordance on any flagged
+   card. Written as `approvals[].type = "penny-question"`.
+5. **Prior-year access:** CPA-initiated. Creates
+   `type: "year-access-request"` approval in founder's Needs a look. On
+   approve → year appended to `yearGrants[]`.
+6. **Chat on revocation:** **deleted**, not archived. Notes, flags, rules,
+   and pending-adds are archived. Preserves CPA privacy contract.
+7. **CPA-added staleness:** soft. Day 7 → gentle re-surface card in
+   founder's Needs a look. Day 30 → once-only opt-in prompt for auto-accept.
+   No hard timeout.
+8. **Invite-expired:** notifies founder silently (per notification
+   preference) in parallel with the CPA's "ask your client to resend"
+   message.
+9. **CPA tabs merged:** 6 tabs — Work Queue · Books · P&L · Cash Flow ·
+   Chat · Learned Rules. Books is the full ledger + CPA overlays.
+10. **Rejection surface:** CPA work queue gets a collapsible "Resolved"
+    section. Rejected items show founder's optional note; auto-archive
+    after 7 days.
+11. **Voice — different for CPA.** Overlay prompt
+    `public/prompts/cpa-chat.md` activates when `viewer_role: "cpa"` is in
+    the context block. Same JSON contract, same validator, different tone
+    rules (terser, accounting-aware, no celebration emojis, lead with
+    number/answer). Also activates for `card.approval` when
+    `variant: "cpa-suggestion"` (speaks to founder about CPA's suggestion).
+
+**New tokens added to `styles/tokens.css`:**
+
+| Token | Value | Usage |
+|---|---|---|
+| `--fs-data-row` | `clamp(13px, 1.4vw, 14px)` | CPA view table/data rows |
+| `--ls-chip`     | `0.06em`                   | IRS-line chip letter-spacing |
+
+**New CSS contract:** `.cpa-app` wrapper in `components.css` mirrors
+`.phone`'s positioning contract — `position: relative` root,
+`#sheet-root-cpa` portal target, `z-index: 199`, `pointer-events: none` on
+the portal container, `pointer-events: auto` on the backdrop. Every sheet
+pattern from the founder app works inside `.cpa-app` with only the portal
+target name changed.
+
+**New preference:** `state.preferences.notifyCpaActivity` — one of
+`"real-time" | "daily-digest" | "off"`. Added to Preferences sheet in
+`avatar-menu.jsx`.
+
+**Color zone expansions** (updated in the Color zone rules table below):
+- `--amber` now also permitted on "Pending approval" and "Added by CPA"
+  badges in CPA view.
+- `--error` now also permitted as a 3px left border on flagged rows in
+  the Books / Ledger tabs. Never as a fill.
+
+**Responsive strategy:** mobile-first from 375px. Breakpoints at 768px
+(tablet — sidebar appears, 2-column) and 1024px (desktop — full CPA
+density, optional right-side detail pane). CPA view must render and
+function at 375px even though most CPAs will open it on desktop.
+
+---
+
+### 24 April 2026 — DESIGN.md created (machine-readable design system)
+
+Created `DESIGN.md` at the root of `BookKeeping/demo/`. This is a Google Labs DESIGN.md format file — YAML front matter with all design tokens + prose rationale — so AI coding sessions automatically pick up the full token system, color zones, component rules, and Do's/Don'ts without needing to be re-briefed.
+
+**What it contains:** all 30+ color tokens, full typography scale, radii, spacing, all component definitions (buttons, cards, bubbles, pills, sheets, provider badges, tab bar), color zone rules, and the full Do's/Don'ts from this CLAUDE.md.
+
+**What it doesn't change:** zero runtime effect. No colors, fonts, or behavior are altered. `styles/tokens.css` remains the CSS source of truth. DESIGN.md is a documentation artifact only.
+
+**Files updated:**
+- `DESIGN.md`: created.
+- `CLAUDE.md` (this file): `DESIGN.md` added as step 2 in "How you build each screen" read list; added to References section.
+- `../../CLAUDE.md` (root): Design table updated to reference `DESIGN.md`.
+
+---
+
 ### 24 April 2026 — IRS taxonomy v1.2 sync — master summary (Prompt 5)
 
 **Label changes propagated:**
@@ -92,6 +188,9 @@ These are locked. If your work conflicts with one, flag it and stop.
 10. **Intent → prompt mapping is explicit.** See the `INTENT_MAP` table in `worker-client.js`. Add new intents to that map; unknown intents throw loudly.
 11. **Color zones — strictly enforced.** See full rules below. Short version: thread stays monochrome except income amount; sage only on active tab; amber only on My Books badge.
 12. **Never use `import.meta.env.BASE_URL` to build fetch URLs.** Vite bakes this in at build time, which silently breaks when the deploy path changes. Always use `window.PENNY_CONFIG?.baseUrl || "/"` instead. `window.PENNY_CONFIG.baseUrl` is injected by `index.html` from `window.location.pathname` at runtime and is always accurate. This applies to every `fetch()` call for static assets (`config/`, `prompts/`) in every screen and in `worker-client.js`.
+13. **CPA voice is an overlay, not a separate system.** Same `penny-system.md` base, same JSON output contract, same validator. The only thing that changes is the tone overlay appended to the system prompt. Do not fork `penny-system.md`.
+14. **Responsive contract for CPA view.** CPA view must render at 375px (mobile) AND at 1024px+ (desktop). One codebase, one token set, responsive via media queries. Do not build a separate "mobile CPA" and "desktop CPA" surface.
+15. **`.cpa-app` positioning wrapper.** The CPA view replaces `.phone` as the positioning context for all overlays. Every sheet, backdrop, and toast inside the CPA view uses `position: absolute` anchored on `.cpa-app`. The portal target is `#sheet-root-cpa` (inside `.cpa-app`), not `#sheet-root` (inside `.phone`). Never use `position: fixed` in either context.
 
 ---
 
@@ -99,12 +198,13 @@ These are locked. If your work conflicts with one, flag it and stop.
 
 **One Claude Code session = one screen.** Do not try to build everything at once.
 
-For each screen, read exactly these four files, no more:
+For each screen, read exactly these five files, no more:
 
 1. `CLAUDE.md` (this file)
-2. `styles/tokens.css` — the design tokens
-3. `public/prompts/penny-system.md` — the voice core
-4. `screen-briefs/0X-{screen}.md` — the scoped spec for the screen you are building
+2. `DESIGN.md` — machine-readable design system (all tokens, component rules, color zones, Do's and Don'ts)
+3. `styles/tokens.css` — the CSS custom properties (runtime source of truth — must match DESIGN.md)
+4. `public/prompts/penny-system.md` — the voice core
+5. `screen-briefs/0X-{screen}.md` — the scoped spec for the screen you are building
 
 Then build the corresponding component in `screens/{screen}.jsx`. Do not edit other screens. Do not edit config files unless the brief tells you to.
 
@@ -138,10 +238,13 @@ Every Penny utterance is assembled from two layers: `penny-system.md` (base) + o
 | `public/prompts/thread-qa.md` | `screens/thread.jsx` | `thread.qa` |
 | `public/prompts/onboarding.md` | ~~`screens/onboarding.jsx`~~ **DEPRECATED** — onboarding uses static `FALLBACK_COPY`, not AI | n/a |
 | `public/prompts/card-approval.md` | `screens/card.jsx` | `card.approval` |
-| `public/prompts/books-qa.md` | `screens/books.jsx` | `books.qa` |
+| `public/prompts/books-qa.md` | `screens/books.jsx` · CPA Chat tab | `books.qa` |
 | `public/prompts/capture-parse.md` | `screens/add.jsx` | `capture.parse` |
+| `public/prompts/cpa-chat.md` | CPA view (`screens/cpa/*`) + `card.jsx` with `variant: "cpa-suggestion"` | `books.qa` (when `viewer_role: "cpa"`) · `card.approval` (when `variant: "cpa-suggestion"`) |
 
 **Rule:** edit `penny-system.md` only for voice, brand, or output-format changes that must apply everywhere. Prefer overlay prompts for screen-specific behaviour.
+
+**CPA overlay activation:** `cpa-chat.md` is appended on top of `penny-system.md` (and on top of the intent-specific overlay, if any) whenever the context block carries `viewer_role: "cpa"`, or whenever `card.approval` is called with `variant: "cpa-suggestion"`. The overlay changes tone only — JSON output shape is identical.
 
 The full intent → file mapping lives in `INTENT_MAP` inside `worker-client.js`. Add new intents there whenever you add a new prompt file.
 
@@ -410,7 +513,8 @@ These rules define exactly where accent colors are permitted. Any use outside th
 | Sage teal | `--sage` | Active tab icon + label only | Cards, bubbles, buttons, headers, anywhere else |
 | Income green | `--income` | Income card amount text · My Books income figures · "▲ $X vs last" subcopy | Card backgrounds, category pills, confirm buttons, confidence bars |
 | Income tint | `--income-bg` | Category icon background on income card only | Any other background |
-| Amber | `--amber` | My Books "Needs a look" badge count · "needs your eye" stat subcopy | Thread, cards, buttons |
+| Amber | `--amber` | My Books "Needs a look" badge count · "needs your eye" stat subcopy · **CPA view: "Pending approval" badges · "Added by CPA" badges · 70–89 tax-readiness band on client cards** | Thread, founder expense cards, buttons |
+| Error red | `--error` | Inline error text only · **CPA view: 3px left border on flagged rows in Books/Ledger · 0–69 tax-readiness band on client cards** | Any background fill |
 | Category tints (`--cat-*`) | various | Icon tint background + icon stroke in category pills | Card backgrounds, pill borders, text, anything outside the icon |
 
 **Approval card color rules:**
@@ -506,6 +610,174 @@ Never use `fontWeight: 700` or custom `letterSpacing` values for screen titles.
 
 ---
 
+## CPA View — Product Spec Summary (Responsive Web App)
+
+Full spec lives at `implementation/cpa-view-spec.md` v1.1. Data model lives at
+`implementation/cpa-data-model.md`. Voice overlay lives at
+`public/prompts/cpa-chat.md`. This section is the builder's digest — start
+with the full spec before touching any code.
+
+### What it is
+A separate **responsive web app** for CPAs invited by their founder-clients.
+The CPA view has read+write access to a client's tax-relevant data, scoped by
+year and governed by founder approval. It is a distinct product surface at
+`/cpa`, not a tab inside the founder's mobile demo. Mobile-first from 375px;
+most CPAs use it on desktop.
+
+### Settled decisions — do not re-open
+
+1. **Responsive web, not mobile-only.** Renders at 375px (mobile) and expands
+   via breakpoints at 768px (sidebar appears) and 1024px (full density). One
+   codebase. Same Penny design tokens — no separate theme.
+2. **Free for CPAs, unlimited clients.** No paywall, no tier.
+3. **CPA must enter their license number + state** at signup (even with a
+   valid invite link) before accessing any client data. No bypass.
+4. **Invite link is founder-initiated** — tabbed sheet from `books.jsx`
+   Send-to-CPA button ("Send snapshot" + "Invite to live books") + mirrored
+   "Your CPA" row in avatar menu → Profile. Two entry points, one flow.
+   Time-limited (7 days), single-use.
+5. **Year access is founder-controlled.** CPA gets current year + any past
+   years the founder explicitly grants. CPA can request prior years via the
+   year selector → creates a `year-access-request` approval in founder's
+   Needs a look.
+6. **On CPA access revocation:** notes, flags, learned rules, and pending-adds
+   are archived to the founder. **Chat history is deleted**, not archived
+   (preserves CPA privacy contract). CPA loses access immediately on next
+   request.
+7. **CPA-added transactions** require founder acknowledgment before appearing
+   in official books. Founder notified per `notifyCpaActivity` preference.
+   Day 7 → gentle re-surface. Day 30 → opt-in for auto-accept. No hard
+   timeout.
+8. **Learning model is per-client.** Rules learned from CPA corrections never
+   cross to other clients.
+9. **CPA voice is a separate overlay** (`public/prompts/cpa-chat.md`) — same
+   JSON contract, same validator. Activated by `viewer_role: "cpa"` in the
+   context block. Terser, accounting-aware, no celebration emojis.
+10. **CPA chat history is CPA-scoped** — founder cannot see it live. And it
+    is not surfaced in the archive on revocation (decision #6).
+11. **Shared zone name: "Needs a look".** "Things to Watch" is retired.
+
+### Tax readiness score
+
+Starts at 100%. Deductions (initial weights — tunable during build):
+- uncategorized transactions × 3
+- missing receipts × 2
+- flagged items × 4
+
+Clamp to [0, 100]. Visual bands:
+- 90–100: clean (monochrome ink, no accent)
+- 70–89: `var(--amber)`
+- 0–69: `var(--error)` 3px left border on client card
+
+Recompute on every write to `flags`, `pendingAdds`, or category assignments.
+Full formula in `implementation/cpa-data-model.md`.
+
+### CPA work queue — priority order (above the fold, dashboard + per-client)
+
+1. Pending founder approvals (CPA suggested, waiting)
+2. Uncategorized transactions
+3. Missing receipts / flagged items
+4. Penny questions needing CPA input
+
+Priority indicators must be **stroke-SVG status dots** using `var(--error)` /
+`var(--amber)` / `var(--ink-3)` / `var(--sage)` — never emoji.
+
+A collapsible **"Resolved"** section lives below the active queue. Shows
+approved + rejected items with founder's optional note. Auto-archives after
+7 days.
+
+### CPA → Founder approval flow (all four approval types)
+
+```
+CPA action (reclassify / request prior year / add txn) OR
+Penny escalation (penny-question)
+  → Approval record created in state.cpa.approvals[id]
+  → Card renders in founder's "Needs a look"
+  → Founder notified per notifyCpaActivity preference
+  → Founder taps Approve / Keep as is (with optional note on reject)
+  → APPROVE:
+     · reclassification → apply change + save learnedRules[] entry
+     · year-access-request → append year to yearGrants[]
+     · cpa-added-txn → move txn into official ledger
+     · penny-question → write CPA's answer as a learned rule
+  → REJECT:
+     · state preserved
+     · CPA sees item in "Resolved" queue with founder's note
+```
+
+### Financial views (all with IRS line references via `util/irsLookup.js`)
+
+- **Books** — full general ledger with CPA overlays (flag · annotate ·
+  suggest reclassification · add transaction). Merged Ledger + Books tab.
+- **P&L Statement** — income vs expenses by category, monthly/quarterly/
+  annual, grouped by IRS form section with line chips.
+- **Cash Flow Statement** — operating / investing / financing; net cash per
+  period (GAAP indirect method).
+- All views: filterable by date range, category, tax year, IRS form type.
+  Exportable as PDF + CSV.
+
+### Six CPA tabs (per-client view)
+
+`Work Queue · Books · P&L · Cash Flow · Chat · Learned Rules`
+
+(Was 7 — Books and Ledger were duplicates. Merged.)
+
+### Penny-question escalations — four trigger cases only
+
+Penny writes `approvals[].type = "penny-question"` when:
+
+1. **Low-confidence streak** — same vendor pattern, 3+ repeats at confidence
+   < 70% with competing category candidates.
+2. **Ambiguous IRS routing** — transaction could map to two IRS lines (e.g.
+   Section 179 vs depreciation over 5 years).
+3. **Tax-sensitive edge case** — entity conversion mid-year, S-Corp owner
+   payroll-vs-draw split, 1099 eligibility threshold, foreign tax credit.
+4. **Founder-initiated handoff** — founder tapped "ask my CPA" on a flagged
+   card, routing it to the CPA queue instead of resolving in-app.
+
+No other trigger. Unknown triggers are a bug.
+
+### Build order for CPA view
+
+| Phase | What | Dependency |
+|---|---|---|
+| 1 | **Approval card variant** — add `variant: "cpa-suggestion"` to `ApprovalCard` (card.jsx). Wire into founder's Needs a look. No CPA-side UI yet. | None — builds on existing books.jsx and card.jsx |
+| 2 | **Invite flow** — tabbed Send-to-CPA sheet in books.jsx + "Your CPA" row in avatar-menu. `state.cpa.invites[]` writes. | Needs Phase 1's state.cpa scaffolding |
+| 3 | **CPA auth** — `/cpa` route + AuthGate (invite token validation, license verification, account creation). | Needs Phase 2 |
+| 4 | **CPA app shell** — `.cpa-app` wrapper, `#sheet-root-cpa` portal, responsive breakpoints, top nav, client-switch affordance. | Needs Phase 3 |
+| 5 | **Per-client view tabs** — Work Queue · Books · P&L · Cash Flow · Learned Rules. IRS line chips via `util/irsLookup.js`. | Needs Phase 4 |
+| 6 | **CPA overlays on Books** — flag · annotate · suggest reclassification · add transaction. Writes into `state.cpa.clients[].{flags, annotations, pendingAdds}`. Suggestions create approvals. | Needs Phase 5 |
+| 7 | **CPA Chat tab** — `books.qa` intent with `viewer_role: "cpa"` context. Activates `cpa-chat.md` overlay. CPA-scoped `chatHistory[]`. | Needs Phase 5 |
+| 8 | **Multi-client dashboard** — landing screen at `/cpa/dashboard`. Work queue across all clients + client card grid with tax-readiness scores. | Needs Phases 5–7 stable |
+
+### Design rules specific to CPA view
+
+- Use `styles/tokens.css` tokens only. New tokens for this view:
+  `--fs-data-row`, `--ls-chip`.
+- **Data rows:** `font-size: var(--fs-data-row)`, `--fw-regular`, `--ink`.
+- **Column headers:** `font-size: var(--fs-eyebrow)`, `--fw-semibold`,
+  `--ink-3`, `text-transform: uppercase`, `letter-spacing: var(--ls-eyebrow)`
+  — use a `.eyebrow--col` modifier class (resets mobile-section margins).
+- **IRS line chips:** monospace, `var(--ink-3)`, `var(--fs-tiny)`,
+  `text-transform: uppercase`, `letter-spacing: var(--ls-chip)` — same chip
+  helper as `irsLineChip()` in `util/irsLookup.js`.
+- **Flagged rows:** `var(--error)` 3px left border. Never a background fill.
+- **CPA-added rows:** `var(--amber)` "Added by CPA" text badge.
+- **Pending approval rows:** `var(--amber)` "Pending" text badge.
+- **Approved/clean rows:** no accent color.
+- **Priority dots in work queue:** stroke-SVG, never emoji. Colors:
+  `var(--error)` (pending approval), `var(--amber)` (uncategorized),
+  `var(--ink-3)` (missing receipt/flagged), `var(--sage)` (Penny question).
+- **Export buttons:** add a `.btn-ghost` class to `components.css` —
+  transparent background, `var(--ink)` border `1.5px`, `--fw-semibold`,
+  `--r-pill`. Used for PDF / CSV export buttons and filter actions.
+- **No third-party brand colors.** Same rule as founder app.
+- **All sheets, toasts, portals** — same rules as founder app, rooted at
+  `.cpa-app` + `#sheet-root-cpa` instead of `.phone` + `#sheet-root`. Never
+  `position: fixed`.
+
+---
+
 ## What to ask me (the CEO) before proceeding
 
 Before starting any screen, confirm:
@@ -519,11 +791,33 @@ If any of the above is unclear, stop and ask.
 
 ## References (read-only, do not modify)
 
+- `DESIGN.md` — machine-readable design system for this demo. YAML tokens + prose rules for all colors, typography, radii, spacing, components, and Do's/Don'ts. Read this at the start of every screen build session.
 - `../product/02-principles-and-voice.md` — canonical voice rules
 - `../product/19-demo-flow-brief.md` — full demo flow brief (source of all screen-briefs)
 - `../product/17-mobile-screens-and-flows.md` — mobile screens spec
-- `../design/design-system.md` v2.1 — design system (tokens already in `styles/tokens.css`)
+- `../design/design-system.md` v2.0 — design system prose (human-readable; DESIGN.md is the machine-readable companion)
 - `../penny-system-prompt.md` — production Penny system prompt (base for `prompts/penny-system.md`)
+- `implementation/cpa-view-spec.md` v1.1 — CPA view product spec (locked)
+- `implementation/cpa-data-model.md` — `state.cpa` schema + mutation contracts
+- `public/prompts/cpa-chat.md` — CPA voice overlay (appended on top of `penny-system.md` when `viewer_role: "cpa"`)
+
+## How you build each CPA screen
+
+CPA screens follow the same single-screen-per-session discipline as the
+founder app. For each CPA screen, read exactly these seven files, no more:
+
+1. `CLAUDE.md` (this file)
+2. `DESIGN.md` — machine-readable design system
+3. `styles/tokens.css` — CSS custom properties (runtime source of truth)
+4. `public/prompts/penny-system.md` — base voice
+5. `public/prompts/cpa-chat.md` — CPA voice overlay
+6. `implementation/cpa-view-spec.md` v1.1 — the product spec
+7. `implementation/cpa-data-model.md` — the state schema + mutations
+8. `screen-briefs/09-cpa-view.md` — the scoped build brief for the CPA
+   screen you are building
+
+Then build the corresponding component in `screens/cpa/*.jsx`. Do not edit
+founder screens. Do not edit the data-model doc. Do not add new tokens.
 
 ---
 

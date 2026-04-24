@@ -1,0 +1,29 @@
+{
+  "name": "penny-demo",
+  "version": "5.0.0",
+  "private": true,
+  "description": "Browser-based interactive demo of Penny — an AI bookkeeper for US small business owners.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "deploy": "vite build && cd ../.. && rsync -av --delete BookKeeping/demo/dist/ penny/demo/ && git add penny/demo/ && git commit -m \"deploy: ${npm_config_msg:-update}\" && git push origin main",
+    "deploy:prompts": "cd ../.. && rsync -av BookKeeping/demo/public/prompts/ penny/demo/prompts/ && git add penny/demo/prompts/ && git commit -m \"deploy: prompts - ${npm_config_msg:-update}\" && git push origin main"
+  },
+  "dependencies": {
+    "posthog-js": "^1.371.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.17"
+  }
+}

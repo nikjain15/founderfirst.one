@@ -6,18 +6,138 @@
  * Drill-downs: P&L · Expenses by category · Income by client · Full ledger.
  */
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { ApprovalCard } from "./card.jsx";
 import { groupByIrsLine, formLabelForEntity } from "../util/irsLookup.js";
+import { approveApproval, rejectApproval, generateInvite, revokeInvite } from "../util/cpaState.js";
 
 const fmt = (n) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
 
-// ── Send to CPA sheet ─────────────────────────────────────────────────────────
+// ── Invite CPA panel — shown in Tab 2 of the Send to CPA sheet ───────────────
 
-function SendToCPASheet({ persona, ledger, ddData, onClose, showToast }) {
+function InviteCpaPanel({ state, set, showToast }) {
+  const [email,  setEmail]  = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const cpa = state.cpa || {};
+  const activeInvite = (cpa.invites || []).find(
+    (inv) => inv.status === "pending" && inv.expiresAt > Date.now()
+  );
+
+  const baseUrl = window.PENNY_CONFIG?.baseUrl || "/";
+  const link = activeInvite
+    ? `${window.location.origin}${baseUrl}cpa/accept/${activeInvite.token}`
+    : null;
+
+  const daysLeft = activeInvite
+    ? Math.max(1, Math.ceil((activeInvite.expiresAt - Date.now()) / (24 * 60 * 60 * 1000)))
+    : 0;
+
+  function handleGenerate() {
+    const trimmed = email.trim();
+    if (!trimmed) return;
+    const { newCpa } = generateInvite(cpa, "founder-client", trimmed, state.persona?.cpaName || null);
+    set({ cpa: newCpa });
+    showToast("Invite link created.");
+  }
+
+  function handleRevoke() {
+    if (!activeInvite) return;
+    const newCpa = revokeInvite(cpa, activeInvite.id);
+    set({ cpa: newCpa });
+    showToast("Invite revoked.");
+  }
+
+  function handleCopy() {
+    if (!link) return;
+    navigator.clipboard?.writeText(link).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  if (activeInvite) {
+    return (
+      <div>
+        <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
+          Invite link active — expires in {daysLeft} day{daysLeft !== 1 ? "s" : ""}. Single-use.
+        </p>
+        <div style={{
+          background: "var(--paper)", borderRadius: "var(--r-card)",
+          padding: "10px 12px", marginBottom: 12,
+          border: "1px solid var(--line)",
+          display: "flex", alignItems: "center", gap: 8,
+        }}>
+          <p style={{
+            margin: 0, fontSize: 11, color: "var(--ink-3)", flex: 1,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            fontFamily: "monospace",
+          }}>
+            {link}
+          </p>
+          <button
+            type="button"
+            onClick={handleCopy}
+            style={{
+              background: copied ? "var(--ink)" : "var(--white)",
+              color: copied ? "var(--white)" : "var(--ink)",
+              border: "1.5px solid var(--ink)", borderRadius: "var(--r-pill)",
+              padding: "5px 12px", fontSize: 12, fontWeight: "var(--fw-semibold)",
+              cursor: "pointer", fontFamily: "var(--font-sans)",
+              flexShrink: 0, minWidth: "unset", minHeight: "unset",
+              transition: "background 0.2s, color 0.2s",
+            }}
+          >
+            {copied ? "Copied ✓" : "Copy"}
+          </button>
+        </div>
+        <button type="button" className="btn btn-ghost btn-full" onClick={handleRevoke}>
+          Revoke invite
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
+        Send your CPA a secure link to access your live books. Link expires in 7 days and is single-use.
+      </p>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") handleGenerate(); }}
+        placeholder="CPA email address"
+        style={{
+          width: "100%", boxSizing: "border-box",
+          border: "1px solid var(--line)", borderRadius: "var(--r-card)",
+          padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-sans)",
+          color: "var(--ink)", background: "var(--white)",
+          outline: "none", marginBottom: 12,
+        }}
+      />
+      <button
+        type="button"
+        className="btn btn-full"
+        onClick={handleGenerate}
+        disabled={!email.trim()}
+        style={{ opacity: email.trim() ? 1 : 0.45 }}
+      >
+        Generate invite link
+      </button>
+    </div>
+  );
+}
+
+// ── Send to CPA sheet — tabbed: "Send snapshot" | "Invite to live books" ──────
+
+const CPA_SHEET_TABS = ["Send snapshot", "Invite to live books"];
+
+function SendToCPASheet({ persona, ledger, ddData, state, set, onClose, showToast }) {
+  const [tab,  setTab]  = useState(0);
   const [note, setNote] = useState("");
   const [sent, setSent] = useState(false);
 
@@ -63,90 +183,125 @@ function SendToCPASheet({ persona, ledger, ddData, onClose, showToast }) {
           </button>
         </div>
 
+        {/* Tab bar */}
+        <div style={{
+          display: "flex", borderBottom: "1px solid var(--line-2)", flexShrink: 0,
+        }}>
+          {CPA_SHEET_TABS.map((label, i) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => setTab(i)}
+              style={{
+                flex: 1, padding: "10px 8px",
+                background: "none", border: "none",
+                borderBottom: tab === i ? "2px solid var(--ink)" : "2px solid transparent",
+                fontSize: 13, fontWeight: tab === i ? "var(--fw-semibold)" : "var(--fw-medium)",
+                color: tab === i ? "var(--ink)" : "var(--ink-3)",
+                cursor: "pointer", fontFamily: "var(--font-sans)",
+                transition: "color 0.15s, border-color 0.15s",
+                minWidth: "unset", minHeight: "unset",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Body */}
         <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 8px" }}>
 
-          {/* To field */}
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: "var(--fw-semibold)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)" }}>To</p>
-            <div className="card" style={{ padding: "12px 16px" }}>
-              {cpaEmail ? (
-                <div>
-                  <p style={{ margin: 0, fontSize: 14, fontWeight: "var(--fw-medium)" }}>{cpaName || cpaEmail}</p>
-                  {cpaName && <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--ink-4)" }}>{cpaEmail}</p>}
+          {tab === 0 && (
+            <>
+              {/* To field */}
+              <div style={{ marginBottom: 16 }}>
+                <p className="eyebrow" style={{ margin: "0 0 6px" }}>To</p>
+                <div className="card" style={{ padding: "12px 16px" }}>
+                  {cpaEmail ? (
+                    <div>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: "var(--fw-medium)" }}>{cpaName || cpaEmail}</p>
+                      {cpaName && <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--ink-4)" }}>{cpaEmail}</p>}
+                    </div>
+                  ) : (
+                    <p style={{ margin: 0, fontSize: 14, color: "var(--ink-4)" }}>
+                      No CPA email saved — add one in Profile settings.
+                    </p>
+                  )}
                 </div>
-              ) : (
-                <p style={{ margin: 0, fontSize: 14, color: "var(--ink-4)" }}>
-                  No CPA email saved — add one in Profile settings.
-                </p>
-              )}
-            </div>
-          </div>
+              </div>
 
-          {/* P&L preview */}
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: "var(--fw-semibold)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)" }}>Summary · {month}</p>
-            <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-              {[
-                { label: "Total income",   value: totalIncome   != null ? fmt(totalIncome)   : "—", color: "var(--ink)" },
-                { label: "Total expenses", value: totalExpenses != null ? `(${fmt(totalExpenses)})` : "—", color: "var(--ink-3)" },
-                { label: "Net",            value: net,  color: "var(--ink)", bold: true },
-              ].map((row, i, arr) => (
-                <div key={i} style={{
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "12px 16px",
-                  borderBottom: i < arr.length - 1 ? "1px solid var(--line-2)" : "none",
-                }}>
-                  <span style={{ fontSize: 14, color: "var(--ink-2)" }}>{row.label}</span>
-                  <span style={{ fontSize: 14, fontWeight: row.bold ? "var(--fw-semibold)" : "var(--fw-medium)", color: row.color }}>{row.value}</span>
+              {/* P&L preview */}
+              <div style={{ marginBottom: 16 }}>
+                <p className="eyebrow" style={{ margin: "0 0 6px" }}>Summary · {month}</p>
+                <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+                  {[
+                    { label: "Total income",   value: totalIncome   != null ? fmt(totalIncome)   : "—", color: "var(--ink)" },
+                    { label: "Total expenses", value: totalExpenses != null ? `(${fmt(totalExpenses)})` : "—", color: "var(--ink-3)" },
+                    { label: "Net",            value: net, color: "var(--ink)", bold: true },
+                  ].map((row, i, arr) => (
+                    <div key={i} style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      padding: "12px 16px",
+                      borderBottom: i < arr.length - 1 ? "1px solid var(--line-2)" : "none",
+                    }}>
+                      <span style={{ fontSize: 14, color: "var(--ink-2)" }}>{row.label}</span>
+                      <span style={{ fontSize: 14, fontWeight: row.bold ? "var(--fw-semibold)" : "var(--fw-medium)", color: row.color }}>{row.value}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          {/* Optional note */}
-          <div style={{ marginBottom: 20 }}>
-            <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: "var(--fw-semibold)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)" }}>Note (optional)</p>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Anything you'd like to flag for your CPA…"
-              rows={3}
-              style={{
-                width: "100%", boxSizing: "border-box",
-                border: "1px solid var(--line)", borderRadius: "var(--r-card)",
-                padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-sans)",
-                color: "var(--ink)", background: "var(--white)", resize: "none",
-                outline: "none", lineHeight: 1.5,
-              }}
-            />
-          </div>
-        </div>
+              {/* Optional note */}
+              <div style={{ marginBottom: 20 }}>
+                <p className="eyebrow" style={{ margin: "0 0 6px" }}>Note (optional)</p>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Anything you'd like to flag for your CPA…"
+                  rows={3}
+                  style={{
+                    width: "100%", boxSizing: "border-box",
+                    border: "1px solid var(--line)", borderRadius: "var(--r-card)",
+                    padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-sans)",
+                    color: "var(--ink)", background: "var(--white)", resize: "none",
+                    outline: "none", lineHeight: 1.5,
+                  }}
+                />
+              </div>
+            </>
+          )}
 
-        {/* Send button */}
-        <div style={{ padding: "12px 20px 32px", borderTop: "1px solid var(--line-2)", flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={!cpaEmail || sent}
-            style={{
-              width: "100%", padding: "14px 0",
-              background: sent ? "var(--ink-4)" : "var(--ink)",
-              color: "var(--white)", border: "none",
-              borderRadius: "var(--r-pill)", fontSize: 15,
-              fontWeight: "var(--fw-semibold)", cursor: cpaEmail && !sent ? "pointer" : "default",
-              fontFamily: "var(--font-sans)",
-              transition: "background 300ms",
-            }}
-          >
-            {sent ? "Sending…" : `Send to ${cpaName || "CPA"}`}
-          </button>
-          {!cpaEmail && (
-            <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--ink-4)", textAlign: "center" }}>
-              Add a CPA email in Profile to enable sending.
-            </p>
+          {tab === 1 && (
+            <InviteCpaPanel state={state} set={set} showToast={showToast} />
           )}
         </div>
+
+        {/* Footer — only shown on tab 0 */}
+        {tab === 0 && (
+          <div style={{ padding: "12px 20px 32px", borderTop: "1px solid var(--line-2)", flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={!cpaEmail || sent}
+              style={{
+                width: "100%", padding: "14px 0",
+                background: sent ? "var(--ink-4)" : "var(--ink)",
+                color: "var(--white)", border: "none",
+                borderRadius: "var(--r-pill)", fontSize: 15,
+                fontWeight: "var(--fw-semibold)", cursor: cpaEmail && !sent ? "pointer" : "default",
+                fontFamily: "var(--font-sans)",
+                transition: "background 300ms",
+              }}
+            >
+              {sent ? "Sending…" : `Send to ${cpaName || "CPA"}`}
+            </button>
+            {!cpaEmail && (
+              <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--ink-4)", textAlign: "center" }}>
+                Add a CPA email in Profile to enable sending.
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>,
     root
@@ -356,19 +511,22 @@ function BooksBubble({ msg, loading }) {
 
 // ── Flagged transaction sheet ─────────────────────────────────────────────────
 
-function FlaggedSheet({ card, persona, ai, onClose, onAction }) {
+function FlaggedSheet({ card, persona, ai, onClose, onAction, onApprove, onReject }) {
   const root = document.getElementById("sheet-root") || document.querySelector(".phone") || document.body;
+  const title = card.variant === "cpa-suggestion" ? "Review CPA suggestion" : "Review transaction";
   return createPortal(
     <div className="sheet-backdrop" onClick={onClose}>
       <div className="sheet" style={{ padding: "16px 20px 32px", maxHeight: "85%", overflowY: "auto" }}
         onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
         <p className="sheet-title" style={{ padding: "0 0 12px", borderBottom: "1px solid var(--line-2)", marginBottom: 16 }}>
-          Review transaction
+          {title}
         </p>
         <ApprovalCard card={card} persona={persona} ai={ai}
           onConfirm={(c) => onAction(c)}
-          onSkip={(c) => onAction(c)} />
+          onSkip={(c) => onAction(c)}
+          onApprove={onApprove}
+          onReject={onReject} />
       </div>
     </div>,
     root
@@ -889,6 +1047,50 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
   const [ddData,    setDdData]    = useState(null);   // drilldown bundle from scenario
   const [toast,     setToast]     = useState(null);
   const [sheetCard, setSheetCard] = useState(null);
+  const [cpaSheetCard, setCpaSheetCard] = useState(null);
+
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+  // Derive pending reclassification suggestions from CPA approvals
+  const cpaSuggestions = useMemo(() => {
+    const approvals = state.cpa?.approvals || {};
+    return Object.values(approvals)
+      .filter((a) => a.type === "reclassification" && a.status === "pending")
+      .map((a) => ({
+        id:               a.id,
+        _approvalId:      a.id,
+        variant:          "cpa-suggestion",
+        vendor:           null,
+        currentCategory:  a.fromCategory,
+        suggestedCategory: a.toCategory,
+        cpaName:          state.cpa?.account?.name || "Your CPA",
+        cpaNote:          a.note,
+      }));
+  }, [state.cpa]);
+
+  // Day-7 / day-30 soft re-surface for pending CPA-added transactions
+  const staleAdds = useMemo(() => {
+    const approvals = state.cpa?.approvals || {};
+    const now = Date.now();
+    const cpaName = state.cpa?.account?.name || "Your CPA";
+    return Object.values(approvals)
+      .filter((a) => a.type === "cpa-added-txn" && a.status === "pending"
+        && (now - a.createdAt) >= SEVEN_DAYS_MS)
+      .map((a) => {
+        const age = now - a.createdAt;
+        const isThirtyPlus = age >= THIRTY_DAYS_MS;
+        return {
+          id:        `stale-${a.id}`,
+          _approvalId: a.id,
+          _stale:    true,
+          _thirtyPlus: isThirtyPlus,
+          cpaName,
+          note:      a.note,
+        };
+      });
+  }, [state.cpa]);
+
   const handleFlaggedAction = useCallback((card) => {
     setFlagged((prev) => prev.filter((c) => c.id !== card.id));
     setSheetCard(null);
@@ -953,8 +1155,9 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
   // Derived stat values
   const netVsLast   = ledger?.netVsLastMonth;
   const netSubcopy  = netVsLast != null ? `▲ ${fmt(netVsLast)} vs last month` : (ledger ? `After ${fmt(ledger.monthExpenses)} in expenses` : "this month");
-  const booksValue  = flagged.length === 0 ? "Clean" : String(flagged.length);
-  const booksSubcopy = flagged.length === 0 ? "all clear" : "needs your eye";
+  const totalFlagged = flagged.length + cpaSuggestions.length + staleAdds.length;
+  const booksValue  = totalFlagged === 0 ? "Clean" : String(totalFlagged);
+  const booksSubcopy = totalFlagged === 0 ? "all clear" : "needs your eye";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
@@ -1034,7 +1237,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
                 letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)",
               }}>Books</p>
               <p style={{ margin: "0 0 3px", fontSize: 22, fontWeight: "var(--fw-bold)", letterSpacing: "var(--ls-tighter)", lineHeight: 1 }}>
-                {flagged.length > 0 ? (
+                {totalFlagged > 0 ? (
                   <span style={{
                     display: "inline-flex", alignItems: "center", justifyContent: "center",
                     background: "var(--amber)", color: "var(--white)",
@@ -1043,7 +1246,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
                   }}>{booksValue}</span>
                 ) : booksValue}
               </p>
-              <p style={{ margin: 0, fontSize: 11, color: flagged.length > 0 ? "var(--amber)" : "var(--ink-4)", lineHeight: 1.3 }}>
+              <p style={{ margin: 0, fontSize: 11, color: totalFlagged > 0 ? "var(--amber)" : "var(--ink-4)", lineHeight: 1.3 }}>
                 {booksSubcopy}
               </p>
             </div>
@@ -1055,36 +1258,97 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
         <section style={{ marginTop: 24 }}>
           <p className="eyebrow" style={{ marginBottom: 10 }}>Needs a look</p>
           <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-            {flagged.length === 0 ? (
+            {totalFlagged === 0 ? (
               <p style={{ margin: 0, padding: "16px 20px", fontSize: 14, color: "var(--ink-3)" }}>
                 All caught up ✓
               </p>
             ) : (
-              flagged.map((card, i) => (
-                <button
-                  key={card.id}
-                  type="button"
-                  onClick={() => setSheetCard(card)}
-                  style={{
-                    width: "100%", display: "flex", alignItems: "center",
-                    justifyContent: "space-between", padding: "14px 20px",
-                    background: "none", border: "none",
-                    borderBottom: i < flagged.length - 1 ? "1px solid var(--line-2)" : "none",
-                    cursor: "pointer", fontFamily: "var(--font-sans)",
-                    textAlign: "left", minHeight: "var(--tap-min)",
-                  }}
-                >
-                  <span style={{ fontSize: 14, fontWeight: "var(--fw-medium)", color: "var(--ink)" }}>
-                    {card.vendor || "Transaction"}
-                  </span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 14, color: (card.variant === "income" || card.variant === "income-celebration") ? "var(--income)" : "var(--ink-3)" }}>
-                      {card.amount != null ? fmt(card.amount) : ""}
+              <>
+                {/* CPA reclassification suggestions — rendered first */}
+                {cpaSuggestions.map((card, i) => (
+                  <button
+                    key={card.id}
+                    type="button"
+                    onClick={() => setCpaSheetCard(card)}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center",
+                      justifyContent: "space-between", padding: "14px 20px",
+                      background: "none", border: "none",
+                      borderBottom: "1px solid var(--line-2)",
+                      cursor: "pointer", fontFamily: "var(--font-sans)",
+                      textAlign: "left", minHeight: "var(--tap-min)",
+                    }}
+                  >
+                    <span style={{ fontSize: 14, fontWeight: "var(--fw-medium)", color: "var(--ink)" }}>
+                      {card.currentCategory} → {card.suggestedCategory}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 11, color: "var(--amber)", fontWeight: "var(--fw-semibold)",
+                        textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                        CPA
+                      </span>
+                      <ChevronRight />
+                    </span>
+                  </button>
+                ))}
+                {/* Regular flagged transactions */}
+                {flagged.map((card, i) => (
+                  <button
+                    key={card.id}
+                    type="button"
+                    onClick={() => setSheetCard(card)}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center",
+                      justifyContent: "space-between", padding: "14px 20px",
+                      background: "none", border: "none",
+                      borderBottom: (i < flagged.length - 1 || staleAdds.length > 0) ? "1px solid var(--line-2)" : "none",
+                      cursor: "pointer", fontFamily: "var(--font-sans)",
+                      textAlign: "left", minHeight: "var(--tap-min)",
+                    }}
+                  >
+                    <span style={{ fontSize: 14, fontWeight: "var(--fw-medium)", color: "var(--ink)" }}>
+                      {card.vendor || "Transaction"}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 14, color: (card.variant === "income" || card.variant === "income-celebration") ? "var(--income)" : "var(--ink-3)" }}>
+                        {card.amount != null ? fmt(card.amount) : ""}
+                      </span>
+                      <ChevronRight />
+                    </span>
+                  </button>
+                ))}
+
+                {/* Day-7 / day-30 soft re-surface for stale CPA-added transactions */}
+                {staleAdds.map((item, i) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => showToast(`Tap "Invite to live books" to manage ${item.cpaName}'s additions.`)}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center",
+                      justifyContent: "space-between", padding: "14px 20px",
+                      background: "none", border: "none",
+                      borderBottom: i < staleAdds.length - 1 ? "1px solid var(--line-2)" : "none",
+                      cursor: "pointer", fontFamily: "var(--font-sans)",
+                      textAlign: "left", minHeight: "var(--tap-min)",
+                    }}
+                  >
+                    <span style={{ flex: 1, paddingRight: 12 }}>
+                      <span style={{ display: "block", fontSize: 14, fontWeight: "var(--fw-medium)", color: "var(--ink)" }}>
+                        {item._thirtyPlus
+                          ? `Auto-accept future additions from ${item.cpaName}?`
+                          : `${item.cpaName} added a transaction — still pending your review.`}
+                      </span>
+                      {item.note && (
+                        <span style={{ display: "block", fontSize: 12, color: "var(--ink-4)", marginTop: 2, lineHeight: 1.4 }}>
+                          {item.note}
+                        </span>
+                      )}
                     </span>
                     <ChevronRight />
-                  </span>
-                </button>
-              ))
+                  </button>
+                ))}
+              </>
             )}
           </div>
         </section>
@@ -1290,6 +1554,29 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
           onAction={handleFlaggedAction} />
       )}
 
+      {/* CPA reclassification suggestion sheet */}
+      {cpaSheetCard && (
+        <FlaggedSheet
+          card={cpaSheetCard}
+          persona={persona}
+          ai={ai}
+          onClose={() => setCpaSheetCard(null)}
+          onAction={() => setCpaSheetCard(null)}
+          onApprove={(c) => {
+            const newCpa = approveApproval(state.cpa, c._approvalId);
+            set({ cpa: newCpa });
+            setCpaSheetCard(null);
+            showToast("Category updated ✓");
+          }}
+          onReject={(c) => {
+            const newCpa = rejectApproval(state.cpa, c._approvalId);
+            set({ cpa: newCpa });
+            setCpaSheetCard(null);
+            showToast("Kept as is.");
+          }}
+        />
+      )}
+
       {/* Drill-down sheet */}
       {drilldown && ddData && ddData[drilldown] && (
         <DrilldownSheet
@@ -1321,6 +1608,8 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
           persona={persona}
           ledger={ledger}
           ddData={ddData}
+          state={state}
+          set={set}
           onClose={() => setCpaSheet(false)}
           showToast={showToast}
         />

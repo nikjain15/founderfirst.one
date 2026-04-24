@@ -1,0 +1,1572 @@
+/**
+ * components.css — Penny component styles.
+ *
+ * Every class below maps 1:1 to a component in `screens/`. The naming is
+ * intentionally verbose to make CSS/JS links obvious.
+ *
+ * Source of truth for visual rules: BookKeeping/design/design-system.md v2.0.
+ * Do not invent new colors, fonts, or radii — use tokens from tokens.css only.
+ */
+
+/* --- Phone shell -------------------------------------------------------- */
+/*
+ * On desktop the `.phone` is a framed mockup — rounded rectangle, 2.5px ink
+ * border, drop shadow — so the demo reads as "a phone on a page". On an
+ * actual phone (viewport narrower than 420px) this frame becomes a
+ * phone-inside-a-phone effect: the user sees a rounded rectangle within
+ * their own device's rounded bezel. The media query strips the mockup
+ * chrome at phone widths so it fills the viewport edge to edge.
+ */
+/* Phone stage — full-viewport centering container */
+.phone-stage {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper);
+}
+
+.phone {
+  width: var(--phone-width);
+  height: var(--phone-min-height);
+  background: var(--white);
+  border: 2.5px solid var(--ink);
+  border-radius: 44px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-phone);
+  position: relative;
+  /* Card-value font locked to mobile floor inside the fixed-width shell.
+     The token uses 8vw which hits 46px on desktop — correct for the
+     marketing site but too large inside a 375px frame. */
+  --fs-card-value: 30px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 420px) {
+  .phone-stage {
+    padding: 0;
+    align-items: stretch;
+  }
+  .phone {
+    width: 100%;
+    height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transform: none !important;
+  }
+}
+
+.phone-content {
+  flex: 1;
+  padding: var(--pad-screen);
+  overflow-y: auto;
+  animation: screen-enter 0.22s var(--ease-out) both;
+}
+
+@keyframes screen-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* --- Avatar (P-mark) --------------------------------------------------- */
+.p-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink);
+  color: var(--white);
+  border-radius: 50%;
+  font-weight: var(--fw-bold);
+  font-family: Georgia, serif;
+  font-style: italic;
+  flex-shrink: 0;
+  position: relative;
+  /* Optical letter centering — serif descenders read lower than center */
+  padding-bottom: 1px;
+}
+.p-mark-sm { width: 30px; height: 30px; font-size: 13px; }
+.p-mark-md { width: 40px; height: 40px; font-size: 17px; }
+.p-mark-lg { width: 56px; height: 56px; font-size: 24px; }
+.p-mark-xl { width: 96px; height: 96px; font-size: 40px; }
+
+/* Online indicator — small pulse dot, only for thread header mark */
+.p-mark--online::after {
+  content: "";
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 8px;
+  height: 8px;
+  background: var(--white);
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  animation: pulse-dot 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* --- Chat bubbles ------------------------------------------------------ */
+.penny-bubble {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--r-bubble-penny);
+  padding: 16px 20px;
+  max-width: 82%;
+}
+.penny-bubble .bubble-label {
+  font-size: var(--fs-tiny);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-bottom: 6px;
+}
+.penny-bubble .bubble-msg {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.user-bubble {
+  background: var(--ink);
+  color: var(--white);
+  border-radius: var(--r-bubble-user);
+  padding: 12px 16px;
+  font-size: 15px;
+  line-height: 1.45;
+  align-self: flex-end;
+  max-width: 78%;
+}
+
+/* --- Buttons ----------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--white);
+  font-weight: var(--fw-medium);
+  font-size: 14px;
+  white-space: nowrap;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.btn:hover { opacity: 0.82; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
+.btn-white { background: var(--white); color: var(--ink); }
+.btn-sm    { padding: 8px 14px; font-size: 12px; }
+
+.btn-full {
+  width: 100%;
+  padding: 16px 22px;
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.01em;
+}
+
+/* --- Cards ------------------------------------------------------------- */
+.card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: var(--pad-card);
+}
+.card-emphasis {
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-card-emph);
+}
+.card-paper {
+  background: var(--paper);
+}
+
+/* --- Approval card ----------------------------------------------------- */
+.approval-card-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* No position:relative — .phone is the positioning context for sheets/toasts */
+  margin-top: 4px;
+}
+
+/* Subtle "now" divider before the active card in the thread */
+.thread-list .approval-card-wrap::before {
+  content: "NOW";
+  display: block;
+  font-size: 9px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.14em;
+  color: var(--ink-4);
+  margin-bottom: 2px;
+}
+
+.card-penny-row {
+  margin-bottom: -2px;
+}
+
+.approval-card {
+  background: var(--white);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-card-emph);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow-card-hero);
+}
+
+/* Expense card: warm cream bg, amber amount */
+.approval-card--expense {
+  background: var(--expense-bg);
+}
+.approval-card--expense .card-amount {
+  color: var(--amber);
+}
+
+/* Income card: white bg, green amount (via .card-amount override below) */
+.approval-card--income {
+  border-color: var(--ink);
+  background: var(--white);
+  color: var(--ink);
+}
+.approval-card--draw   { border-color: var(--line);  }
+
+/* Vendor row */
+.card-vendor-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-vendor-row-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-vendor-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+/* income card vendor icon: inherits default (paper bg, line border, ink text) */
+
+.card-vendor-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card-vendor-name {
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
+  color: var(--ink);
+}
+
+.card-vendor-date {
+  font-size: 12px;
+  color: var(--ink-4);
+}
+
+/* income card vendor name/date: inherit default ink colors */
+
+/* Amount */
+.card-amount {
+  font-size: var(--fs-card-value);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.approval-card--income .card-amount {
+  color: var(--income);
+}
+
+/* Category pill */
+.card-category-row { display: flex; }
+
+.card-category-pill {
+  font-size: 12px;
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
+  background: var(--paper);
+  border-radius: var(--r-pill);
+  padding: 5px 12px;
+  border: 1.5px solid var(--line);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+/* income card category pill: inherit default ink/paper/line styles */
+
+/* Confidence bar */
+.card-confidence {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-confidence-track {
+  flex: 1;
+  height: 3px;
+  background: var(--line);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.card-confidence-fill {
+  height: 100%;
+  background: var(--ink);
+  border-radius: 99px;
+  transition: width 0.4s var(--ease-out);
+}
+
+.card-confidence-label {
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  white-space: nowrap;
+}
+
+/* Actions */
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* income card actions: inherit default ink btn styles */
+
+.card-skip-btn {
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--ink-4);
+  text-align: center;
+  padding: 6px;
+  cursor: pointer;
+  min-height: var(--tap-min);
+}
+
+.card-skip-btn:hover { color: var(--ink-3); }
+
+/* Toast */
+.card-toast {
+  position: absolute;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--ink);
+  color: var(--white);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: var(--fw-medium);
+  padding: 10px 20px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s var(--ease-out);
+  z-index: 100;
+}
+
+.card-toast--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--line);
+  border-radius: 99px;
+  margin: 12px auto 0;
+  flex-shrink: 0;
+}
+
+.sheet-title {
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
+  color: var(--ink);
+  padding: 14px 20px 10px;
+  margin: 0;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.sheet-list {
+  overflow-y: auto;
+  padding: 8px 0 24px;
+}
+
+.sheet-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  min-height: var(--tap-min);
+}
+
+.sheet-item:active { background: var(--paper); }
+
+.sheet-item--active .sheet-item-label { font-weight: var(--fw-semibold); }
+
+.sheet-item-check {
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+/* --- Thread screen ----------------------------------------------------- */
+.thread-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+.thread-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px var(--pad-screen) 12px;
+  border-bottom: 1px solid var(--line-2);
+  flex-shrink: 0;
+}
+
+.thread-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.thread-header-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.thread-header-name {
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
+  color: var(--ink);
+  letter-spacing: var(--ls-tight);
+}
+
+.thread-header-status {
+  font-size: 12px;
+  color: var(--ink-4);
+}
+
+.thread-menu-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  margin: -8px;
+  cursor: pointer;
+  color: var(--ink-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+}
+
+.thread-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px var(--pad-screen) 12px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-thread);
+}
+
+.thread-bubble {
+  /* Slight override — thread bubbles have no PENNY label */
+}
+
+.thread-loading-cards {
+  padding: 8px 0;
+}
+
+/* Ask bar */
+.thread-ask-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--line-2);
+  background: var(--white);
+  flex-shrink: 0;
+}
+
+.thread-ask-inner {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 8px 14px;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.thread-ask-bar--focused .thread-ask-inner {
+  border-color: var(--ink-3);
+}
+
+.thread-ask-icon {
+  color: var(--ink-4);
+  flex-shrink: 0;
+}
+
+.thread-ask-bar--focused .thread-ask-icon {
+  color: var(--ink-3);
+}
+
+.thread-ask-input {
+  flex: 1;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--ink);
+  background: none;
+  border: none;
+  outline: none;
+  padding: 0;
+}
+
+.thread-ask-input::placeholder { color: var(--ink-4); }
+
+/* Inline placeholder card */
+.inline-card {
+  background: var(--white);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-card);
+  padding: var(--pad-card);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-card);
+}
+
+.inline-card--income {
+  border-color: var(--ink-3);
+}
+
+.inline-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.inline-card-vendor {
+  font-size: 17px;
+  font-weight: var(--fw-semibold);
+  color: var(--ink);
+  letter-spacing: var(--ls-tight);
+}
+
+.inline-card-amount {
+  font-size: var(--fs-card-value);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  letter-spacing: var(--ls-tighter);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.inline-card--income .inline-card-amount {
+  color: var(--ink);
+}
+
+.inline-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-card-label {
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  color: var(--ink-3);
+  background: var(--paper);
+  border-radius: var(--r-pill);
+  padding: 3px 10px;
+}
+
+.inline-card-date {
+  font-size: 13px;
+  color: var(--ink-4);
+}
+
+.inline-card-question {
+  font-size: 14px;
+  color: var(--ink-2);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.inline-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Confirmed slug */
+.confirmed-slug {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.confirmed-slug-vendor {
+  flex: 1;
+  font-size: 14px;
+  font-weight: var(--fw-medium);
+  color: var(--ink-3);
+}
+
+.confirmed-slug-amount {
+  font-size: 14px;
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
+}
+
+.confirmed-slug-check {
+  font-size: 12px;
+  font-weight: var(--fw-bold);
+  color: var(--ink-3);
+}
+
+/* --- Tab bar ----------------------------------------------------------- */
+.tab-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 8px 0 16px;
+  border-top: 1px solid var(--line);
+  background: var(--white);
+  flex-shrink: 0;
+}
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 16px;
+  background: none;
+  border: 0;
+  color: var(--ink-4);
+  font-weight: var(--fw-regular);
+  font-size: 10px;
+  letter-spacing: 0.01em;
+  min-width: 60px;
+  min-height: var(--tap-min);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.tab--active {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+}
+/* Penny tab only — active state uses income green per spec */
+.tab--penny.tab--active {
+  color: var(--income);
+}
+.tab-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tab-icon);
+  height: var(--tab-icon);
+}
+.tab-label {
+  display: block;
+}
+
+/* --- Bottom sheet ------------------------------------------------------ */
+.sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.18);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fade-in var(--dur-base) var(--ease-out);
+  z-index: 200;
+  pointer-events: auto;
+}
+.sheet {
+  width: 100%;
+  max-width: var(--phone-width);
+  max-height: 70%;
+  background: var(--white);
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  padding: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  outline: none;
+  animation: sheet-slide-up 0.3s var(--ease-out) both;
+}
+
+@keyframes sheet-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  margin: 10px auto 16px;
+}
+.sheet-cancel {
+  margin: 12px 16px 0;
+  height: 46px;
+  background: var(--paper);
+  border-radius: var(--r-pill);
+  color: var(--ink-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  border: 0;
+  width: calc(100% - 32px);
+}
+
+/* --- Toast ------------------------------------------------------------- */
+.toast {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--white);
+  padding: 12px 20px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  animation: fade-in var(--dur-base) var(--ease-out);
+  z-index: 1000;
+}
+
+/* --- Step dots (onboarding progress) ---------------------------------- */
+.step-dot {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--fw-bold);
+  font-size: 16px;
+}
+.step-dot.filled { background: var(--ink); color: var(--white); }
+.step-dot.hollow { background: var(--paper); color: var(--ink); }
+
+/* --- Ask Penny bar ---------------------------------------------------- */
+.ask-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-pill);
+  padding: 6px 11px;
+  background: var(--paper);
+  margin: 0 16px 8px;
+}
+.ask-bar-text {
+  flex: 1;
+  font-size: 14px;
+  color: var(--ink-3);
+  background: transparent;
+  border: 0;
+  outline: 0;
+}
+.ask-bar-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--white);
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- Utility ---------------------------------------------------------- */
+.eyebrow {
+  font-size: var(--fs-eyebrow);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.stack        { display: flex; flex-direction: column; gap: var(--gap-thread); }
+.stack-lg     { display: flex; flex-direction: column; gap: var(--gap-section); }
+.row          { display: flex; align-items: center; gap: 8px; }
+.row-between  { display: flex; align-items: center; justify-content: space-between; }
+
+/* --- Motion ----------------------------------------------------------- */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slide-up {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.thread-main-enter {
+  animation: screen-enter 0.28s var(--ease-out) both;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+/* --- CPA app shell ---------------------------------------------------- */
+/*
+ * .cpa-app replaces .phone as the overlay positioning context for the CPA
+ * responsive web view. All CPA sheets, toasts, and portals use
+ * position: absolute rooted here — never position: fixed.
+ */
+.cpa-app {
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Portal target for CPA bottom sheets — mirrors #sheet-root on .phone */
+#sheet-root-cpa {
+  position: absolute;
+  inset: 0;
+  z-index: 199;
+  pointer-events: none;
+}
+
+/* Column header eyebrow variant — no margin, for table use */
+.eyebrow--col {
+  margin: 0;
+}
+
+/*
+ * CPA responsive layout helpers.
+ * .cpa-sidebar — left sidebar, hidden on mobile, shown at 768px+.
+ * .cpa-bottom-nav — bottom tab bar, shown on mobile, hidden at 768px+.
+ */
+.cpa-sidebar {
+  display: none;
+}
+.cpa-bottom-nav {
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 768px) {
+  .cpa-sidebar {
+    display: flex;
+  }
+  .cpa-bottom-nav {
+    display: none;
+  }
+}
+
+/* --- Accessibility ----------------------------------------------------- */
+/*
+ * Screen-reader-only content. Kept visually hidden but still announced by
+ * assistive tech. Used for the onboarding "Step N of 7" aria-live region.
+ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Onboarding screen ------------------------------------------------- */
+/*
+ * Vertical layout: header (progress) → Penny row → body (scrollable if
+ * long) → sticky CTA. Flex owns the distribution so the CTA always sits
+ * at the bottom of the phone viewport without absolute positioning.
+ */
+.onboarding-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 20px;
+}
+
+.onboarding-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+}
+
+.onboarding-back {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border: 1.5px solid var(--line);
+  background: var(--white);
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.onboarding-back:hover { background: var(--paper); }
+
+.onboarding-header-spacer {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.progress-dots {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.progress-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: all var(--dur-base) var(--ease-out);
+}
+.progress-dot--filled {
+  background: var(--ink);
+  width: 18px;
+  border-radius: 3px;
+}
+
+/* --- Penny row (avatar + bubble, used on every onboarding step) -------- */
+.penny-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.penny-row-avatar {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.penny-row .penny-bubble {
+  flex: 1;
+  max-width: none;
+}
+.penny-bubble-headline {
+  font-size: 17px;
+  font-weight: var(--fw-semibold);
+  line-height: 1.4;
+  color: var(--ink);
+  margin: 0 0 5px;
+}
+.penny-bubble-why {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-3);
+  margin: 0;
+}
+.penny-bubble-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.penny-bubble-skel {
+  height: 14px;
+  border-radius: 4px;
+  background: var(--line);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.penny-bubble-skel:nth-child(2) { width: 72%; animation-delay: 0.15s; }
+.penny-bubble-skel:nth-child(3) { width: 55%; animation-delay: 0.3s;  }
+
+/* Welcome screen — clean hero, no bubble box */
+.ob-welcome-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 24px 0 8px;
+  gap: 0;
+}
+
+/* Welcome preview — animated transaction snippets */
+.ob-preview {
+  width: 100%;
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ob-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  animation: slide-up 0.3s var(--ease-out) both;
+}
+
+.ob-preview-item--dark {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.ob-preview-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.ob-preview-item--dark .ob-preview-dot {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.2);
+  color: var(--white);
+}
+
+.ob-preview-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ob-preview-label {
+  font-size: 14px;
+  font-weight: var(--fw-semibold);
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.ob-preview-sub {
+  font-size: 11px;
+  color: var(--ink-4);
+}
+
+.ob-preview-item--dark .ob-preview-label { color: rgba(255,255,255,0.95); }
+.ob-preview-item--dark .ob-preview-sub   { color: rgba(255,255,255,0.45); }
+
+.ob-preview-amount {
+  font-size: 15px;
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+
+.ob-preview-item--dark .ob-preview-amount { color: var(--white); }
+
+.ob-preview-caption {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--ink-4);
+  text-align: center;
+}
+.ob-welcome-greeting {
+  font-size: 17px;
+  font-weight: var(--fw-medium);
+  color: var(--ink-3);
+  margin: 14px 0 20px;
+}
+.ob-welcome-headline {
+  font-size: clamp(24px, 6.5vw, 30px);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  color: var(--ink);
+  margin: 0 0 12px;
+  outline: none;
+}
+.ob-welcome-headline:focus,
+.ob-welcome-headline:focus-visible { outline: none; }
+.ob-welcome-why {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-3);
+  margin: 0;
+}
+
+/* Chat-reply inputs on welcome screen — no labels, conversational feel */
+.ob-reply-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 32px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: var(--white);
+}
+.ob-reply-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: var(--fw-regular);
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid var(--line);
+  padding: 16px 18px;
+  outline: none;
+  transition: background var(--dur-fast) var(--ease-out);
+  -webkit-appearance: none;
+}
+.ob-reply-input:last-child { border-bottom: none; }
+.ob-reply-input::placeholder { color: var(--ink-4); }
+.ob-reply-input:focus { background: var(--paper); }
+.ob-reply-input--reveal {
+  animation: slide-up 0.18s var(--ease-out);
+}
+
+.onboarding-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.onboarding-cta {
+  padding-top: 4px;
+  background: var(--white);
+}
+
+.section-label {
+  margin: 4px 0 2px;
+}
+
+/* --- Tiles ------------------------------------------------------------- */
+/*
+ * Two visual flavours: stacked full-width rows (entity, check-in, bank)
+ * and compact grid tiles (industry 2-col grid, payments, expenses).
+ * Both share the same tap-target rules.
+ */
+.tile-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  text-align: left;
+  min-height: 72px;
+  padding: 14px 16px;
+  padding-right: 40px;
+  background: var(--white);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-card);
+  color: var(--ink);
+  font-family: inherit;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+  cursor: pointer;
+  width: 100%;
+}
+.tile:hover { border-color: var(--ink-4); }
+.tile--selected {
+  border-color: var(--ink);
+  border-width: 2px;
+  background: var(--paper);
+}
+.tile--grid {
+  min-height: 64px;
+  padding: 12px 14px;
+  padding-right: 32px;
+  align-items: flex-start;
+  justify-content: center;
+}
+.tile-label {
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
+  line-height: 1.3;
+  color: var(--ink);
+}
+.tile-sub {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-3);
+}
+.tile-check {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+
+/* --- Check-in custom time picker --------------------------------------- */
+.checkin-picker {
+  padding: 16px;
+  background: var(--paper);
+  border-radius: var(--r-card);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: slide-up 0.2s var(--ease-out);
+}
+.checkin-picker-label {
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin: 0;
+}
+/* 4-column grid — Mon–Thu row 1, Fri–Sun row 2 (last slot empty) */
+.checkin-days {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.checkin-day-btn {
+  height: 36px;
+  border-radius: var(--r-card);
+  border: 1.5px solid var(--line);
+  background: var(--white);
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+  min-width: unset;
+  min-height: unset;
+  transition: all var(--dur-fast) var(--ease-out);
+}
+.checkin-day-btn--selected {
+  background: var(--ink);
+  color: var(--white);
+  border-color: var(--ink);
+}
+/* 4-column grid for times */
+.checkin-times {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.checkin-time-btn {
+  height: 36px;
+  border-radius: var(--r-card);
+  border: 1.5px solid var(--line);
+  background: var(--white);
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  min-width: unset;
+  min-height: unset;
+  transition: all var(--dur-fast) var(--ease-out);
+}
+.checkin-time-btn--selected {
+  background: var(--ink);
+  color: var(--white);
+  border-color: var(--ink);
+}
+
+/* --- Welcome / Pulling ------------------------------------------------- */
+.welcome-body {
+  flex: 1;
+}
+.pulling-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 0;
+}
+.pulling-spinner {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid var(--line);
+  border-top-color: var(--ink);
+  animation: spin 1s linear infinite;
+}
+.pulling-hint {
+  font-size: 14px;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+/* --- Entity tile layout ------------------------------------------------ */
+.entity-tile-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+.entity-tile-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper);
+  border-radius: 8px;
+  color: var(--ink);
+  margin-top: 1px;
+}
+.entity-tile-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+/* --- Industry tile layout ---------------------------------------------- */
+.tile--industry {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 80px;
+  padding: 12px 14px 12px;
+}
+.industry-tile-icon {
+  color: var(--ink-3);
+  display: flex;
+  align-items: center;
+}
+.tile--industry.tile--selected .industry-tile-icon {
+  color: var(--ink);
+}
+
+/* --- Other industry text input ----------------------------------------- */
+.other-industry-input-wrap {
+  margin-top: 10px;
+  animation: slide-up 0.15s var(--ease-out);
+}
+.other-industry-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-card);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  outline: none;
+}
+.other-industry-input::placeholder {
+  color: var(--ink-4);
+}
+
+/* --- Entity diagnostic ------------------------------------------------- */
+.diag-resolve {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.diag-proposal {
+  font-size: 18px;
+  font-weight: var(--fw-semibold);
+  line-height: 1.35;
+  margin: 8px 0 12px;
+  color: var(--ink);
+}
+.diag-reasons {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.diag-reasons li {
+  font-size: 14px;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+.diag-flag {
+  font-size: 13px;
+  color: var(--ink-3);
+  background: var(--paper);
+  padding: 10px 12px;
+  border-radius: var(--r-card);
+  margin: 0;
+}
+
+/* --- Bank search ------------------------------------------------------- */
+.bank-step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.bank-search {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bank-search-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  color: var(--ink);
+  outline: none;
+}
+.bank-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bank-search-empty {
+  font-size: 13px;
+  color: var(--ink-3);
+  text-align: center;
+  margin: 12px 0;
+}
+.bank-search-toggle {
+  margin-top: 4px;
+}
+
+/* --- Thread intro (first-time name + business collection) -------------- */
+.intro-user-bubble {
+  align-self: flex-end;
+  margin-left: auto;
+  animation: slide-up 0.18s var(--ease-out);
+}
+
+.intro-send-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--white);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.intro-send-btn:hover { opacity: 0.8; }
+
+/* --- Responsive adjustments ------------------------------------------- */
+/*
+ * The .phone shell is 375px wide on desktop (framed mockup) and becomes
+ * fullscreen below 420px (see top of this file). These rules tune the
+ * onboarding content for phones narrower than 375px (older iPhones, folded
+ * devices) and for tablets where we want more breathing room.
+ */
+
+/* Small phones (≤ 359px — iPhone SE 1st gen et al). */
+@media (max-width: 359px) {
+  .onboarding-content {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .tile-grid {
+    gap: 8px;
+  }
+  .tile {
+    min-height: 64px;
+    padding: 12px 14px;
+    padding-right: 36px;
+  }
+  .tile-label {
+    font-size: 14px;
+  }
+  .onboarding-headline {
+    font-size: 20px;
+  }
+}
+
+/* Tablets and desktop — the phone frame stays 375px, but we give the
+   headline room to breathe on very wide viewports via the clamp() above. */
+@media (min-width: 768px) {
+  .onboarding-content {
+    padding-bottom: 24px;
+  }
+}

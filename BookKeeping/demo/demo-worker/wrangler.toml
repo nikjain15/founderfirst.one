@@ -1,0 +1,7 @@
+name = "penny-api"
+main = "src/worker.ts"
+compatibility_date = "2025-01-01"
+
+# Secrets (set via `wrangler secret put` — never commit values):
+#   ANTHROPIC_API_KEY  — Anthropic API key
+#   DEMO_TOKEN         — shared client token, currently "ff-demo-2026"

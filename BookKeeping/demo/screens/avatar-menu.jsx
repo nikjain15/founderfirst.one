@@ -5,7 +5,8 @@
  * No AI calls — static content editing.
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
+import { generateInvite, revokeInvite } from "../util/cpaState.js";
 
 function Toast({ msg }) {
   if (!msg) return null;
@@ -119,6 +120,166 @@ function ToggleRow({ label, sublabel, checked, onChange }) {
   );
 }
 
+// --- Your CPA row (inline expand) --------------------------------------------
+function YourCpaRow({ state, set, showToast }) {
+  const [expanded, setExpanded] = useState(false);
+  const [email,    setEmail]    = useState("");
+  const [copied,   setCopied]   = useState(false);
+
+  const cpa = state.cpa || {};
+
+  const activeInvite = useMemo(() => (cpa.invites || []).find(
+    (inv) => inv.status === "pending" && inv.expiresAt > Date.now()
+  ), [cpa.invites]);
+
+  const hasAccount = !!cpa.account;
+
+  const statusLabel = useMemo(() => {
+    if (hasAccount) return cpa.account.name;
+    if (activeInvite) {
+      const daysLeft = Math.max(1, Math.ceil((activeInvite.expiresAt - Date.now()) / (24 * 60 * 60 * 1000)));
+      return `Pending (${daysLeft}d left)`;
+    }
+    return "Not connected";
+  }, [hasAccount, cpa.account, activeInvite]);
+
+  const baseUrl = window.PENNY_CONFIG?.baseUrl || "/";
+  const link = activeInvite
+    ? `${window.location.origin}${baseUrl}cpa/accept/${activeInvite.token}`
+    : null;
+
+  function handleGenerate() {
+    const trimmed = email.trim();
+    if (!trimmed) return;
+    const { newCpa } = generateInvite(cpa, "founder-client", trimmed, state.persona?.cpaName || null);
+    set({ cpa: newCpa });
+    showToast("Invite link created.");
+    setEmail("");
+  }
+
+  function handleRevoke() {
+    if (!activeInvite) return;
+    const newCpa = revokeInvite(cpa, activeInvite.id);
+    set({ cpa: newCpa });
+    showToast("Invite revoked.");
+  }
+
+  function handleCopy() {
+    if (!link) return;
+    navigator.clipboard?.writeText(link).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div style={{ borderBottom: "1px solid var(--line-2)" }}>
+      {/* Row */}
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center",
+          justifyContent: "space-between", padding: "14px 20px",
+          background: "none", border: "none", cursor: "pointer",
+          fontFamily: "var(--font-sans)", textAlign: "left",
+          minHeight: "var(--tap-min)",
+        }}
+      >
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: "0 0 2px", fontSize: 12, color: "var(--ink-4)", fontWeight: "var(--fw-medium)",
+            letterSpacing: "0.05em", textTransform: "uppercase" }}>Your CPA</p>
+          <p style={{ margin: 0, fontSize: 15, color: hasAccount ? "var(--ink)" : "var(--ink-3)" }}>
+            {statusLabel}
+          </p>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+          strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+          style={{ flexShrink: 0, marginLeft: 8, color: "var(--ink-3)",
+            transform: expanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.18s" }}>
+          <polyline points="6 4 10 8 6 12"/>
+        </svg>
+      </button>
+
+      {/* Inline expand */}
+      {expanded && (
+        <div style={{ padding: "0 20px 16px" }}>
+          {hasAccount ? (
+            <p style={{ margin: 0, fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
+              {cpa.account.name} has live access to your books.
+            </p>
+          ) : activeInvite ? (
+            <>
+              <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
+                Invite link expires in {Math.max(1, Math.ceil((activeInvite.expiresAt - Date.now()) / (24 * 60 * 60 * 1000)))} days.
+              </p>
+              <div style={{
+                background: "var(--paper)", borderRadius: "var(--r-card)",
+                padding: "8px 10px", marginBottom: 10,
+                border: "1px solid var(--line)",
+                display: "flex", alignItems: "center", gap: 8,
+              }}>
+                <p style={{ margin: 0, fontSize: 11, color: "var(--ink-3)", flex: 1,
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  fontFamily: "monospace" }}>
+                  {link}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  style={{
+                    background: copied ? "var(--ink)" : "var(--white)",
+                    color: copied ? "var(--white)" : "var(--ink)",
+                    border: "1.5px solid var(--ink)", borderRadius: "var(--r-pill)",
+                    padding: "4px 10px", fontSize: 11, fontWeight: "var(--fw-semibold)",
+                    cursor: "pointer", fontFamily: "var(--font-sans)",
+                    flexShrink: 0, minWidth: "unset", minHeight: "unset",
+                    transition: "background 0.2s, color 0.2s",
+                  }}
+                >
+                  {copied ? "Copied ✓" : "Copy"}
+                </button>
+              </div>
+              <button type="button" className="btn btn-ghost btn-full" onClick={handleRevoke}
+                style={{ fontSize: 13 }}>
+                Revoke invite
+              </button>
+            </>
+          ) : (
+            <>
+              <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
+                Invite your CPA to access your live books. Link expires in 7 days.
+              </p>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleGenerate(); }}
+                placeholder="CPA email address"
+                style={{
+                  width: "100%", boxSizing: "border-box",
+                  border: "1px solid var(--line)", borderRadius: "var(--r-card)",
+                  padding: "9px 12px", fontSize: 14, fontFamily: "var(--font-sans)",
+                  color: "var(--ink)", background: "var(--white)",
+                  outline: "none", marginBottom: 10,
+                }}
+              />
+              <button
+                type="button"
+                className="btn btn-full"
+                onClick={handleGenerate}
+                disabled={!email.trim()}
+                style={{ opacity: email.trim() ? 1 : 0.45, fontSize: 14 }}
+              >
+                Generate invite link
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // --- Profile sub-screen ------------------------------------------------------
 function ProfileScreen({ state, set, onBack, showToast }) {
   const { persona } = state;
@@ -180,6 +341,11 @@ function ProfileScreen({ state, set, onBack, showToast }) {
         <div className="card" style={{ margin: "0 20px", padding: 0, overflow: "hidden" }}>
           <FieldRow label="CPA name"  value={persona?.cpaName || ""}  onChange={(v) => update("cpaName", v)} />
           <FieldRow label="CPA email" value={persona?.cpaEmail || ""} onChange={(v) => update("cpaEmail", v)} type="email" />
+        </div>
+
+        <p className="eyebrow" style={{ padding: "20px 20px 8px" }}>Live access</p>
+        <div className="card" style={{ margin: "0 20px", padding: 0, overflow: "hidden" }}>
+          <YourCpaRow state={state} set={set} showToast={showToast} />
         </div>
       </div>
 
@@ -339,6 +505,39 @@ function PreferencesScreen({ state, set, onBack }) {
               )}
             </button>
           ))}
+        </div>
+
+        {/* CPA activity */}
+        <p className="eyebrow" style={{ padding: "20px 20px 8px" }}>CPA activity</p>
+        <div className="card" style={{ margin: "0 20px", padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "14px 20px" }}>
+            <p style={{ margin: "0 0 10px", fontSize: 15, color: "var(--ink)" }}>Notify me when my CPA acts</p>
+            <div style={{ display: "flex", border: "1.5px solid var(--line)", borderRadius: "var(--r-pill)", overflow: "hidden" }}>
+              {(["real-time", "daily-digest", "off"]).map((opt) => {
+                const label = opt === "real-time" ? "Real-time" : opt === "daily-digest" ? "Daily digest" : "Off";
+                const active = (prefs.notifyCpaActivity || "real-time") === opt;
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => update("notifyCpaActivity", opt)}
+                    style={{
+                      flex: 1, padding: "8px 4px",
+                      background: active ? "var(--ink)" : "var(--white)",
+                      color: active ? "var(--white)" : "var(--ink-3)",
+                      border: "none", cursor: "pointer",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: 12, fontWeight: active ? "var(--fw-semibold)" : "var(--fw-regular)",
+                      minWidth: "unset", minHeight: "unset",
+                      transition: "background 0.15s, color 0.15s",
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Tax display */}

@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FounderFirst OS</title>
+  <style>
+    :root {
+      --bg: #F7F7F5;
+      --card: #FAFAFA;
+      --border: #E0E0E0;
+      --text: #111;
+      --text-2: #333;
+      --text-3: #888;
+      --label: #BDBDBD;
+      --accent: #2C5F8D;
+      --accent-bg: #EAF1F8;
+      --accent-border: #C5D9EE;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 390px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 56px 20px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--label);
+    }
+
+    .header-date {
+      font-size: 12px;
+      color: var(--text-3);
+    }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 14px 20px 0;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 7px 0;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-3);
+      cursor: pointer;
+      transition: all 0.12s ease;
+      letter-spacing: -0.01em;
+    }
+
+    .tab.active {
+      background: var(--card);
+      color: var(--text);
+      border-color: var(--border);
+      font-weight: 600;
+    }
+
+    /* ── Content ── */
+    .content {
+      flex: 1;
+      padding: 16px 20px 32px;
+      overflow-y: auto;
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 10px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--label);
+      margin-bottom: 12px;
+    }
+
+    /* ── TODAY: Hero ── */
+    .hero {
+      text-align: center;
+      padding: 24px 16px 20px;
+    }
+
+    .score-ring-wrap {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      margin: 0 auto 14px;
+    }
+
+    .score-ring-wrap svg {
+      position: absolute;
+      inset: 0;
+    }
+
+    .score-num {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .score-label {
+      font-size: 13px;
+      color: var(--text-3);
+      letter-spacing: -0.01em;
+    }
+
+    /* ── TODAY: Meta chips ── */
+    .meta-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .meta-chip {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 8px;
+      text-align: center;
+    }
+
+    .meta-num {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .meta-lbl {
+      font-size: 10px;
+      color: var(--text-3);
+      margin-top: 2px;
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Insight card ── */
+    .insight-card {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 12px;
+      padding: 13px 15px;
+      margin-bottom: 10px;
+    }
+
+    .insight-text {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.55;
+      letter-spacing: -0.01em;
+    }
+
+    /* ── Lever mini list ── */
+    .lever-mini {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .lever-mini:last-child { border-bottom: none; }
+
+    .lever-icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-3);
+    }
+
+    .lever-mini-name {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-2);
+      letter-spacing: -0.01em;
+    }
+
+    .lever-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .lever-dot.pass { background: var(--accent); }
+
+    /* ── Sessions list ── */
+    .session-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .session-row:last-child { border-bottom: none; }
+
+    .session-type {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .session-time {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-top: 2px;
+    }
+
+    .session-score-num {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    /* ── MY LEVERS: Bars ── */
+    .lever-row {
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .lever-row:last-child { border-bottom: none; }
+
+    .lever-row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 7px;
+    }
+
+    .lever-row-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .lever-row-pct {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .focus-tag {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      background: var(--border);
+      border-radius: 4px;
+      padding: 2px 5px;
+    }
+
+    .bar-track {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent);
+      transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .bar-fill.weak { background: var(--text-3); }
+
+    /* ── Action card ── */
+    .action-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 15px;
+      margin-top: 12px;
+    }
+
+    .action-head {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--label);
+      margin-bottom: 6px;
+    }
+
+    .action-body {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.55;
+      letter-spacing: -0.01em;
+    }
+
+    /* ── TREND: Compare chips ── */
+    .compare-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .compare-chip {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 10px;
+    }
+
+    .compare-lbl {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--label);
+      margin-bottom: 3px;
+    }
+
+    .compare-val {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .compare-val.small {
+      font-size: 14px;
+      margin-top: 3px;
+      letter-spacing: -0.01em;
+    }
+
+    .compare-delta {
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 3px;
+    }
+
+    /* ── TREND: Bar chart ── */
+    .chart-wrap {
+      height: 110px;
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+    }
+
+    .chart-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 3px;
+      height: 100%;
+    }
+
+    .chart-bar {
+      width: 100%;
+      border-radius: 2px 2px 0 0;
+      background: var(--border);
+      transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      min-height: 3px;
+    }
+
+    .chart-bar.hi { background: var(--accent); }
+
+    .chart-lbl {
+      font-size: 8px;
+      color: var(--label);
+      text-align: center;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: var(--label);
+      padding-top: 8px;
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Icons ── */
+    svg.icon { width: 20px; height: 20px; display: block; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="header">
+    <span class="header-title">FounderFirst OS</span>
+    <span class="header-date" id="hDate"></span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('today',this)">Today</button>
+    <button class="tab" onclick="showTab('levers',this)">My Levers</button>
+    <button class="tab" onclick="showTab('trend',this)">Trend</button>
+  </div>
+
+  <div class="content">
+
+    <!-- TODAY -->
+    <div class="view active" id="view-today">
+
+      <div class="card hero">
+        <div class="score-ring-wrap">
+          <svg viewBox="0 0 96 96" fill="none">
+            <circle cx="48" cy="48" r="42" stroke="#E0E0E0" stroke-width="5.5"/>
+            <circle cx="48" cy="48" r="42" stroke="#2C5F8D" stroke-width="5.5"
+              stroke-dasharray="263.9" stroke-dashoffset="263.9"
+              stroke-linecap="round" transform="rotate(-90 48 48)" id="scoreArc"/>
+          </svg>
+          <div class="score-num" id="heroNum">—</div>
+        </div>
+        <div class="score-label" id="heroLbl">Loading…</div>
+      </div>
+
+      <div class="meta-row">
+        <div class="meta-chip">
+          <div class="meta-num" id="mSessions">—</div>
+          <div class="meta-lbl">Sessions today</div>
+        </div>
+        <div class="meta-chip">
+          <div class="meta-num" id="mStreak">—</div>
+          <div class="meta-lbl">Day streak</div>
+        </div>
+        <div class="meta-chip">
+          <div class="meta-num" id="mWeek">—</div>
+          <div class="meta-lbl">Week avg</div>
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-text" id="insightTxt">—</div>
+      </div>
+
+      <div class="card">
+        <div class="section-label">Today's levers</div>
+        <div id="leverMini"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-label">Sessions</div>
+        <div id="sessionList"></div>
+      </div>
+
+    </div>
+
+    <!-- MY LEVERS -->
+    <div class="view" id="view-levers">
+      <div class="card">
+        <div class="section-label">14-day compliance</div>
+        <div id="leverBars"></div>
+      </div>
+      <div class="action-card">
+        <div class="action-head">Focus this week</div>
+        <div class="action-body" id="actionTxt">—</div>
+      </div>
+    </div>
+
+    <!-- TREND -->
+    <div class="view" id="view-trend">
+
+      <div class="compare-row">
+        <div class="compare-chip">
+          <div class="compare-lbl">This week</div>
+          <div class="compare-val" id="tThis">—</div>
+          <div class="compare-delta" id="tDelta"></div>
+        </div>
+        <div class="compare-chip">
+          <div class="compare-lbl">Last week</div>
+          <div class="compare-val" id="tLast">—</div>
+        </div>
+        <div class="compare-chip">
+          <div class="compare-lbl">Best lever</div>
+          <div class="compare-val small" id="tBest">—</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label">Last 14 sessions</div>
+        <div class="chart-wrap" id="trendChart"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-label">Lever compliance</div>
+        <div id="trendLevers"></div>
+      </div>
+
+    </div>
+
+    <div class="footer" id="footer">Auto-scored nightly at 9 pm</div>
+
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  LEVER CONFIG
+// ═══════════════════════════════════════════
+
+const LEVERS = {
+  contextSetup: {
+    name: 'Context Setup',
+    icon: `<svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="2"/><line x1="7" y1="7" x2="13" y2="7"/><line x1="7" y1="10" x2="11" y2="10"/></svg>`,
+    action: 'Open each session with "Read CLAUDE.md and STATUS.md first." Takes 30 seconds and saves 5 rounds of catch-up.'
+  },
+  goalClarity: {
+    name: 'Goal Clarity',
+    icon: `<svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><circle cx="10" cy="10" r="3"/><circle cx="10" cy="10" r="1" fill="currentColor"/></svg>`,
+    action: 'Start with one sentence: "Today I want to finish [specific deliverable]." The more specific the ask, the sharper the output.'
+  },
+  decisionLock: {
+    name: 'Decision Lock',
+    icon: `<svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="9" width="10" height="8" rx="2"/><path d="M7 9V6.5a3 3 0 016 0V9"/></svg>`,
+    action: 'For build sessions: agree on scope before the first build request. One clarifying message upfront prevents three rounds of rework.'
+  },
+  formatPrecision: {
+    name: 'Format Precision',
+    icon: `<svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="4" y1="6" x2="16" y2="6"/><line x1="4" y1="10" x2="12" y2="10"/><line x1="4" y1="14" x2="8" y2="14"/></svg>`,
+    action: 'Specify output format in every request: "one paragraph", "3 bullets", "a full doc with sections". Cuts token waste in half.'
+  },
+  batchThinking: {
+    name: 'Batch Thinking',
+    icon: `<svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="5" cy="10" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="15" cy="15" r="2"/><line x1="7" y1="9" x2="13" y2="6"/><line x1="7" y1="11" x2="13" y2="14"/></svg>`,
+    action: 'Group related asks into one message. "Do X, then Y, then Z" beats three separate messages every time.'
+  },
+  sessionClose: {
+    name: 'Session Close',
+    icon: `<svg class="icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,11 8,15 16,6"/></svg>`,
+    action: 'End sessions by asking Claude to update STATUS.md. Keeps your next session starting warm instead of cold.'
+  }
+};
+
+// ═══════════════════════════════════════════
+//  SAMPLE DATA (used until daily-log.json exists)
+// ═══════════════════════════════════════════
+
+const SAMPLE = {
+  lastUpdated: new Date().toISOString(),
+  today: {
+    date: new Date().toISOString().split('T')[0],
+    avgScore: 67,
+    sessionCount: 3,
+    streak: 4,
+    weekAvg: 71,
+    weakestLever: 'sessionClose',
+    insight: 'Strong start — all 3 sessions opened with a clear goal. Session Close was missed twice, so tomorrow starts cold. Add one line at the end of each session: "Update STATUS.md."',
+    levers: {
+      contextSetup:    { passed: true },
+      goalClarity:     { passed: true },
+      decisionLock:    { passed: false },
+      formatPrecision: { passed: true },
+      batchThinking:   { passed: true },
+      sessionClose:    { passed: false }
+    },
+    sessions: [
+      { type: 'Build',  time: '9:14 am',  score: 83 },
+      { type: 'Review', time: '2:31 pm',  score: 67 },
+      { type: 'Build',  time: '4:52 pm',  score: 50 }
+    ]
+  },
+  levers14d: {
+    contextSetup:    72,
+    goalClarity:     85,
+    decisionLock:    58,
+    formatPrecision: 79,
+    batchThinking:   91,
+    sessionClose:    44
+  },
+  trend: {
+    thisWeek: 71,
+    lastWeek: 62,
+    bestLever: 'batchThinking',
+    sessions: [
+      { score: 50, label: 'M' }, { score: 67, label: 'M' },
+      { score: 83, label: 'T' }, { score: 58, label: 'T' },
+      { score: 75, label: 'W' }, { score: 83, label: 'W' },
+      { score: 67, label: 'T' }, { score: 58, label: 'T' },
+      { score: 75, label: 'F' }, { score: 83, label: 'F' },
+      { score: 67, label: 'S' }, { score: 75, label: 'M' },
+      { score: 83, label: 'M' }, { score: 67, label: 'T' }
+    ]
+  }
+};
+
+// ═══════════════════════════════════════════
+//  DATA LOADING
+// ═══════════════════════════════════════════
+
+async function loadData() {
+  try {
+    const r = await fetch('./daily-log.json?t=' + Date.now());
+    if (r.ok) return await r.json();
+  } catch (_) {}
+  return SAMPLE;
+}
+
+// ═══════════════════════════════════════════
+//  RENDER: TODAY
+// ═══════════════════════════════════════════
+
+function renderToday(data) {
+  const d = data.today;
+
+  // Date header
+  const dateObj = new Date(d.date + 'T12:00:00');
+  document.getElementById('hDate').textContent =
+    dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  // Score ring
+  const score = d.avgScore;
+  const circ = 263.9;
+  const offset = circ - (score / 100) * circ;
+  document.getElementById('scoreArc').style.strokeDashoffset = offset;
+  document.getElementById('heroNum').textContent = score;
+  document.getElementById('heroLbl').textContent = scoreVerb(score);
+
+  // Meta chips
+  document.getElementById('mSessions').textContent = d.sessionCount;
+  document.getElementById('mStreak').textContent = d.streak + 'd';
+  document.getElementById('mWeek').textContent = d.weekAvg;
+
+  // Insight
+  document.getElementById('insightTxt').textContent = d.insight;
+
+  // Lever mini
+  document.getElementById('leverMini').innerHTML =
+    Object.entries(LEVERS).map(([k, v]) => {
+      const passed = d.levers[k] && d.levers[k].passed;
+      return `<div class="lever-mini">
+        <div class="lever-icon" style="color:${passed ? 'var(--accent)' : 'var(--border)'}">${v.icon}</div>
+        <div class="lever-mini-name">${v.name}</div>
+        <div class="lever-dot ${passed ? 'pass' : ''}"></div>
+      </div>`;
+    }).join('');
+
+  // Sessions
+  const sl = document.getElementById('sessionList');
+  if (!d.sessions || d.sessions.length === 0) {
+    sl.innerHTML = '<div style="font-size:13px;color:var(--text-3);padding:6px 0">No sessions scored yet today.</div>';
+  } else {
+    sl.innerHTML = d.sessions.map(s =>
+      `<div class="session-row">
+        <div>
+          <div class="session-type">${s.type} session</div>
+          <div class="session-time">${s.time}</div>
+        </div>
+        <div class="session-score-num">${s.score}</div>
+      </div>`
+    ).join('');
+  }
+}
+
+// ═══════════════════════════════════════════
+//  RENDER: MY LEVERS
+// ═══════════════════════════════════════════
+
+function renderLevers(data) {
+  const ld = data.levers14d;
+  const weakest = Object.entries(ld).sort((a, b) => a[1] - b[1])[0][0];
+
+  document.getElementById('leverBars').innerHTML =
+    Object.entries(LEVERS).map(([k, v]) => {
+      const pct = ld[k] || 0;
+      const isWeak = k === weakest;
+      return `<div class="lever-row">
+        <div class="lever-row-top">
+          <div class="lever-row-name">
+            <div style="color:${isWeak ? 'var(--text-3)' : 'var(--accent)'}">${v.icon}</div>
+            ${v.name}
+            ${isWeak ? '<span class="focus-tag">focus</span>' : ''}
+          </div>
+          <div class="lever-row-pct">${pct}%</div>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill ${isWeak ? 'weak' : ''}" style="width:0%" data-target="${pct}"></div>
+        </div>
+      </div>`;
+    }).join('');
+
+  document.getElementById('actionTxt').textContent = LEVERS[weakest].action;
+
+  // Animate bars
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.bar-fill[data-target]').forEach(el => {
+      el.style.width = el.dataset.target + '%';
+    });
+  });
+}
+
+// ═══════════════════════════════════════════
+//  RENDER: TREND
+// ═══════════════════════════════════════════
+
+function renderTrend(data) {
+  const t = data.trend;
+
+  document.getElementById('tThis').textContent = t.thisWeek;
+  document.getElementById('tLast').textContent = t.lastWeek;
+
+  const delta = t.thisWeek - t.lastWeek;
+  const dEl = document.getElementById('tDelta');
+  dEl.textContent = (delta >= 0 ? '+' : '') + delta + ' vs last week';
+  dEl.style.color = delta >= 0 ? 'var(--accent)' : 'var(--text-3)';
+
+  const bestName = LEVERS[t.bestLever]?.name || '—';
+  document.getElementById('tBest').textContent = bestName.split(' ')[0];
+
+  // Bar chart
+  const maxScore = Math.max(...t.sessions.map(s => s.score), 1);
+  document.getElementById('trendChart').innerHTML = t.sessions.map((s, i) => {
+    const h = Math.round((s.score / 100) * 100);
+    const isRecent = i >= t.sessions.length - 3;
+    return `<div class="chart-col">
+      <div class="chart-bar ${isRecent ? 'hi' : ''}" style="height:0%" data-target="${h}%"></div>
+      <div class="chart-lbl">${s.score}</div>
+    </div>`;
+  }).join('');
+
+  // Animate chart bars
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.chart-bar[data-target]').forEach(el => {
+      el.style.height = el.dataset.target;
+    });
+  });
+
+  // Lever trend list
+  const ld = data.levers14d;
+  const weakest = Object.entries(ld).sort((a, b) => a[1] - b[1])[0][0];
+  document.getElementById('trendLevers').innerHTML =
+    Object.entries(LEVERS).map(([k, v]) => {
+      const pct = ld[k] || 0;
+      const isWeak = k === weakest;
+      return `<div class="lever-row">
+        <div class="lever-row-top">
+          <div class="lever-row-name">
+            <div style="color:${isWeak ? 'var(--text-3)' : 'var(--accent)'}">${v.icon}</div>
+            ${v.name}
+          </div>
+          <div class="lever-row-pct">${pct}%</div>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill ${isWeak ? 'weak' : ''}" style="width:0%" data-target="${pct}"></div>
+        </div>
+      </div>`;
+    }).join('');
+
+  requestAnimationFrame(() => {
+    document.querySelectorAll('#trendLevers .bar-fill[data-target]').forEach(el => {
+      el.style.width = el.dataset.target + '%';
+    });
+  });
+}
+
+// ═══════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════
+
+function scoreVerb(s) {
+  if (s >= 83) return 'Excellent day ✓';
+  if (s >= 67) return 'Strong day';
+  if (s >= 50) return 'Getting there';
+  return 'Focus on the basics';
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+
+loadData().then(data => {
+  renderToday(data);
+  renderLevers(data);
+  renderTrend(data);
+
+  const ts = new Date(data.lastUpdated);
+  document.getElementById('footer').textContent =
+    'Last scored ' + ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+    ' at ' + ts.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+});
+</script>
+</body>
+</html>

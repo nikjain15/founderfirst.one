@@ -212,19 +212,30 @@ These were caught and fixed during the onboarding build. Do not repeat them.
 - `@keyframes screen-enter` is defined in `components.css`: `from { opacity: 0; transform: translateY(6px); }`.
 - Thread intro → main transition: the normal thread content is wrapped in `.thread-main-enter` which uses the same animation at 0.28s. Do not remove this wrapper.
 
-**Bottom sheet animation — canonical implementation**
-- Only one `.sheet-backdrop` and `.sheet` definition exists in `components.css` (the one under `/* --- Bottom sheet ---*/`). The earlier duplicate block was removed April 2026 because it caused a CSS cascade conflict where `position: absolute` + `transform: translateX(-50%)` from the first block fought with the `slide-up` keyframe from the second, causing the sheet to snap on animation end.
-- `.sheet-backdrop`: `position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; animation: fade-in`. The backdrop is the flex container — the sheet is its child.
-- `.sheet`: no `position: absolute`. It sits at the bottom naturally as a flex child. Uses `animation: sheet-slide-up 0.3s var(--ease-out) both`.
+**Bottom sheet — canonical implementation (updated Apr 2026)**
+- All sheets use React `createPortal` targeting `#sheet-root` (a `<div id="sheet-root">` that is a direct child of `.phone` in `App.jsx`). This ensures sheets always render above `.phone-content`'s `overflow-y: auto` scroll container, which would otherwise clip `position: absolute` overlays.
+- `#sheet-root` has `position: absolute; inset: 0; z-index: 199; pointer-events: none`. The backdrop inside it sets `pointer-events: auto` so interactions are captured.
+- `.sheet-backdrop`: `position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; pointer-events: auto`. **The sheet is a child of the backdrop** — the backdrop is the flex container that pushes the sheet to the bottom. They must not be siblings.
+- `.sheet`: `max-height: 70%; overflow: hidden`. Uses `animation: sheet-slide-up 0.3s var(--ease-out) both`. `max-height` uses `%` not `vh` — `vh` is relative to the browser viewport and overflows the phone frame at desktop screen sizes.
+- Always add `onClick={(e) => e.stopPropagation()}` to `.sheet` to prevent backdrop click-to-close from firing when clicking inside the sheet.
 - `@keyframes sheet-slide-up`: `from { transform: translateY(100%); opacity: 0; }`. Never use `translateX` in sheet keyframes.
-- Do not re-add a `position: absolute` or `transform: translateX(-50%)` to `.sheet` — this breaks the animation.
+- **Pattern for any new sheet:**
+  ```jsx
+  const root = document.getElementById("sheet-root") || document.querySelector(".phone") || document.body;
+  return createPortal(
+    <div className="sheet-backdrop" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        ...
+      </div>
+    </div>,
+    root
+  );
+  ```
 
-**Voice recording modal (`VoiceModal` in `screens/add.jsx`)**
-- Shows a 28-bar animated waveform during recording. Bars are defined by the `BARS` array (seeded heights for organic, stable look). Each bar uses `animation: voiceBar` with staggered delays and varying durations.
-- `@keyframes voiceBar`: `from { transform: scaleY(0.15) } to { transform: scaleY(1) }`. Applied on each bar independently.
-- Dark overlay: `rgba(10,10,10,0.92)`. Mic circle: 72×72px white circle. Pulse rings: 2 rings with `pulseRing` keyframe.
-- Auto-stops at 4 seconds and transitions to "Got it — reading now…" state while the AI parse runs.
-- Do not revert to a plain pulsing-ring-only modal — the waveform is required for realism.
+**Voice modals**
+- `VoiceModal` in `screens/add.jsx`: receipt capture. Shows 28-bar animated waveform, auto-stops at 4s, calls `capture.parse` AI intent. Dark overlay `rgba(10,10,10,0.92)`. Do not revert waveform — required for realism.
+- `VoiceAskModal` in `screens/books.jsx`: Ask Penny voice input. Shows same waveform + pulse rings, auto-stops at 3s, then picks a random question from `VOICE_PROMPTS` and calls `submitAsk(q)` directly (passing the question as an override to avoid stale closure). The mic button in the Ask Penny bar opens this modal; do not revert to populating a random prompt without submitting it.
+- `@keyframes voiceBar`: `from { transform: scaleY(0.15) } to { transform: scaleY(1) }`. Applied per bar with staggered delays.
 
 **Penny bubble stability — no layout shift on selection**
 - The `useEffect` that fetches the Penny message must only depend on `[step, diagQ]` — never on selection state (`entity`, `industry`, `paymentMethods`, etc.).
@@ -503,6 +514,27 @@ This is enforced in `styles/components.css`. Do not revert it.
 *Last updated: 23 April 2026 — Color system pass (v2.2): semantic accent tokens added, color zone rules locked, icon system documented. All 7 screens audited against `design/design-system.md` v2.1. Fixes applied to `screens/add.jsx` and `screens/books.jsx`: raw `#fff` → `var(--white)`, font-weight literals → CSS tokens, borderRadius literals → CSS tokens, third-party brand colors (Gmail red, Outlook blue) replaced with neutral ink-on-paper badges, section eyebrow labels converted to `.eyebrow` class, sheet scrim corrected to `rgba(10,10,10,0.18)`, screen title typography aligned to `--fs-screen-title`/`--fw-semibold`/`--ls-tight`. Design token discipline section added to this file. Screen brief 04-add.md updated to remove incorrect branded-badge guidance.*
 
 *23 April 2026 — BASE_URL audit (v2.3): All `import.meta.env.BASE_URL` usages replaced with `window.PENNY_CONFIG?.baseUrl || "/"` across `screens/card.jsx` (CategorySheet), `screens/onboarding.jsx` (industries.json + scenarios.json prewarm), and `worker-client.js` (prompt loader). Settled decision #12 added. Debug variable `window.__scenarioDebug` removed from `App.jsx`.*
+
+*23 April 2026 — IRS taxonomy pass (v2.5): scenarios.json audit complete. 53 category label fixes applied across all 20 scenarios. See full fix log in `../product/irs-persona-taxonomy.md` Part 4.*
+- *`"Other operating expenses"` → `"Miscellaneous business expenses"` (Sch C Line 27a) — 30 occurrences, all drilldown.ledger entries.*
+- *Meals labels → all updated with `(50%)` suffix: `"Business meals (50%)"`, `"Client meals (50%)"`, `"Travel & client meals (50%)"`, `"Meals & entertainment (50%)"`.*
+- *`"Truck payment"` → `"Vehicle depreciation & loan interest"` — loan principal is not deductible.*
+- *`"Inventory"` / `"Product inventory"` → `"Inventory (COGS)"` / `"Product inventory (COGS)"` — inventory is an asset until sold.*
+- *`"Food & ingredients"` in food-bev scenarios → `"Food & ingredients (COGS)"` — must route to Schedule C Part III, not Line 22.*
+
+**IRS taxonomy rules for scenarios.json — do not revert:**
+1. **Meals are always 50%.** Every category label containing "meal", "dining", or "entertainment" must include `(50%)` in the label. Never show meals as 100% deductible.
+2. **"Other operating expenses" is banned.** Use `"Miscellaneous business expenses"` (Schedule C Line 27a / Form 1065 Line 20). If building new scenarios, never use "Other operating expenses" — it has no IRS line.
+3. **Food & ingredients in food-bev scenarios is COGS.** Always label as `"Food & ingredients (COGS)"`. Never as a Line 22 supply.
+4. **Inventory is COGS, not an expense.** Always `"Inventory (COGS)"` or `"Product inventory (COGS)"`. Recognized when goods are sold, not when purchased.
+5. **Truck/vehicle loan payments are not deductible.** The deductible items are depreciation (Sch C Line 13) and loan interest (Line 16b). Use `"Vehicle depreciation & loan interest"` as the combined label.
+
+**LLC dual-path rule — both IRS paths are now documented:**
+The 4 LLC personas (llc.trades, llc.retail, llc.food-beverage, llc.other) have two possible IRS forms depending on ownership:
+- **Single-member LLC (SMLLC)** → disregarded entity → **Schedule C** (same lines as sole prop)
+- **Multi-member LLC (MMLLC)** → partnership → **Form 1065** + Schedule K-1
+The transaction data in scenarios.json is identical for both. The IRS line routing differs. Both paths are fully documented in `../product/irs-persona-taxonomy.md` — see the LLC IRS Line Crosswalk table and each LLC persona card (P06, P08, P10, P20).
+Penny must ask at onboarding for LLC owners: "Is this LLC owned by just you, or do you have a co-owner?" This determines which form is used.
 
 *23 April 2026 — UX & tone pass (v2.4):*
 - *Settled decision #2 updated: onboarding Penny copy is now static (`FALLBACK_COPY` in `screens/onboarding.jsx`), not AI-generated. Rationale: AI responses were inconsistent across loads and broke tone. `ai.renderPenny` calls removed from all onboarding steps.*

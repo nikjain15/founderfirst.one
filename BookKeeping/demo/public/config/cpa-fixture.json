@@ -25,7 +25,7 @@
           "id":           "rule-001",
           "pattern":      "Notion*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Software Subscriptions",
+          "toCategory":   "Software subscriptions",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745200000000,
@@ -33,9 +33,9 @@
         },
         {
           "id":           "rule-002",
-          "pattern":      "AWS*",
-          "fromCategory": "Software Subscriptions",
-          "toCategory":   "Cloud Infrastructure",
+          "pattern":      "Upwork*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Contractors",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745300000000,
@@ -127,7 +127,7 @@
           "id":           "rule-003",
           "pattern":      "Adobe*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Software Subscriptions",
+          "toCategory":   "Software subscriptions",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745150000000,
@@ -137,7 +137,7 @@
           "id":           "rule-004",
           "pattern":      "Squarespace*",
           "fromCategory": "Marketing",
-          "toCategory":   "Website & hosting",
+          "toCategory":   "Software subscriptions",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745160000000,
@@ -198,7 +198,7 @@
           "id":           "rule-005",
           "pattern":      "Home Depot*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Materials & supplies",
+          "toCategory":   "Job materials",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1744900000000,
@@ -207,7 +207,7 @@
         {
           "id":           "rule-006",
           "pattern":      "Progressive Commercial*",
-          "fromCategory": "Insurance",
+          "fromCategory": "Miscellaneous business expenses",
           "toCategory":   "Commercial insurance",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
@@ -282,8 +282,8 @@
         {
           "id":           "rule-007",
           "pattern":      "Shopify*",
-          "fromCategory": "Software Subscriptions",
-          "toCategory":   "E-commerce platform fees",
+          "fromCategory": "Software & subscriptions",
+          "toCategory":   "Platform fees & processing",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745350000000,
@@ -291,7 +291,7 @@
         },
         {
           "id":           "rule-008",
-          "pattern":      "*inventory*",
+          "pattern":      "SQ *WHOLESALE*",
           "fromCategory": "Supplies",
           "toCategory":   "Inventory (COGS)",
           "suggestedBy":  "cpa",
@@ -354,7 +354,7 @@
           "id":           "rule-009",
           "pattern":      "Gusto*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Payroll — officer salary",
+          "toCategory":   "Shareholder payroll",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745100000000,
@@ -362,9 +362,9 @@
         },
         {
           "id":           "rule-010",
-          "pattern":      "Mercury*",
-          "fromCategory": "Bank fees",
-          "toCategory":   "Banking fees",
+          "pattern":      "WeWork*",
+          "fromCategory": "Rent",
+          "toCategory":   "Home office / co-working",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745110000000,
@@ -372,9 +372,9 @@
         },
         {
           "id":           "rule-011",
-          "pattern":      "IRS EFTPS*",
+          "pattern":      "Amazon*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Estimated tax payment",
+          "toCategory":   "Office supplies",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745120000000,
@@ -385,14 +385,14 @@
       "flags": {
         "txn-s05-01": {
           "reason":     "reclassify",
-          "note":       "S-Corp reasonable salary — officer compensation should be at least $8,500/mo for this revenue level. Please review Gusto payroll setup.",
+          "note":       "S-Corp reasonable salary — shareholder payroll via Gusto should reflect reasonable compensation for this revenue level. Currently set lower than IRS guidance for a $14,500/mo business.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745430000000,
           "resolvedAt": null
         },
         "txn-s05-02": {
           "reason":     "confirm-with-client",
-          "note":       "Q1 distribution looks high relative to W-2 salary. Confirm distribution is documented with board resolution.",
+          "note":       "Owner's draw is high relative to shareholder payroll. Confirm the draw is documented as a distribution, not additional salary — needs board resolution.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745440000000,
           "resolvedAt": null
@@ -403,7 +403,7 @@
         "txn-s05-01": [
           {
             "id":         "ann-002",
-            "text":       "IRS Rev. Rul. 74-44 — S-Corp must pay reasonable salary before distributions. At $14,500 monthly revenue, recommend W-2 salary of $8,500–$10,000/mo.",
+            "text":       "IRS Rev. Rul. 74-44 — S-Corp must pay reasonable salary before distributions. At $14,500 monthly revenue, recommend increasing shareholder payroll via Gusto to $8,500–$10,000/mo.",
             "authorId":   "cpa-priya-demo",
             "authorRole": "cpa",
             "createdAt":  1745430000000
@@ -505,7 +505,7 @@
           "id":           "rule-014",
           "pattern":      "Etsy*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "E-commerce platform fees",
+          "toCategory":   "Platform fees",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1744900000000,
@@ -513,9 +513,9 @@
         },
         {
           "id":           "rule-015",
-          "pattern":      "*packaging*",
+          "pattern":      "ULINE*",
           "fromCategory": "Supplies",
-          "toCategory":   "Inventory (COGS)",
+          "toCategory":   "Shipping & packaging",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1744910000000,
@@ -526,7 +526,7 @@
       "flags": {
         "txn-s07-01": {
           "reason":     "reclassify",
-          "note":       "Raw materials purchased — track separately from finished goods. Both are COGS but opening/closing inventory matters for Schedule C Part III.",
+          "note":       "SQ *CRAFT SUPPLY CO purchase — confirm whether this is Cost of goods (raw materials for products) or Supplies (consumables not in the product). The split affects Schedule C Part III.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745080000000,
           "resolvedAt": null
@@ -537,7 +537,7 @@
         "txn-s07-01": [
           {
             "id":         "ann-004",
-            "text":       "Olivia needs to do an inventory count at year-end. Schedule C Part III line 41 (beginning inventory) must reconcile with last year's ending inventory.",
+            "text":       "Olivia needs to do a year-end inventory count. Schedule C Part III opening inventory must reconcile with last year's closing. Cost of goods is the right bucket — not Supplies.",
             "authorId":   "cpa-priya-demo",
             "authorRole": "cpa",
             "createdAt":  1745080000000
@@ -570,9 +570,9 @@
       "learnedRules": [
         {
           "id":           "rule-016",
-          "pattern":      "*kitchen rental*",
+          "pattern":      "Commercial kitchen*",
           "fromCategory": "Rent",
-          "toCategory":   "Facility rental (commercial kitchen)",
+          "toCategory":   "Kitchen rental",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1744600000000,
@@ -593,7 +593,7 @@
       "flags": {
         "txn-s08-01": {
           "reason":     "needs-receipt",
-          "note":       "Cash payment received for private event — Venmo record shows $1,200 but no invoice on file. Need documentation of services rendered.",
+          "note":       "Zelle payment received for private event ($800) — no invoice on file. All Zelle/cash income must be documented with a description of services rendered.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1744780000000,
           "resolvedAt": null
@@ -611,7 +611,7 @@
         "txn-s08-01": [
           {
             "id":         "ann-005",
-            "text":       "All Venmo/cash income must be reported. Recommend Carmen create invoices retroactively for any undocumented private events this year.",
+            "text":       "All Zelle and cash income must be reported as gross income. Recommend Carmen create invoices retroactively for any undocumented private events this year.",
             "authorId":   "cpa-priya-demo",
             "authorRole": "cpa",
             "createdAt":  1744780000000
@@ -644,9 +644,9 @@
       "learnedRules": [
         {
           "id":           "rule-018",
-          "pattern":      "*commissary*",
+          "pattern":      "Commissary*",
           "fromCategory": "Rent",
-          "toCategory":   "Facility rental (commissary)",
+          "toCategory":   "Commissary rent",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1744400000000,
@@ -656,7 +656,7 @@
           "id":           "rule-019",
           "pattern":      "Gusto*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Payroll — wages",
+          "toCategory":   "Payroll",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1744410000000,
@@ -667,7 +667,7 @@
       "flags": {
         "txn-s09-01": {
           "reason":     "reclassify",
-          "note":       "Food purchases at Restaurant Depot mixed COGS items with paper goods supplies. Split needed — COGS vs. Line 22 supplies.",
+          "note":       "Sysco Foods order includes both food ingredients (COGS) and paper goods/cleaning supplies (Line 22 supplies). Split needed — confirm which items go to Food & ingredients (COGS) vs. Packaging & supplies.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1744580000000,
           "resolvedAt": null
@@ -685,7 +685,7 @@
         "txn-s09-01": [
           {
             "id":         "ann-006",
-            "text":       "Food truck COGS should include all ingredients and packaging that go into sold items. Non-food consumables (napkins, cleaning supplies) are Line 22 supplies, not COGS.",
+            "text":       "Food & ingredients (COGS) covers everything that goes into sold items. Packaging & supplies covers non-food consumables. Sysco orders often mix both — Tony should ask Sysco for an itemized packing slip.",
             "authorId":   "cpa-priya-demo",
             "authorRole": "cpa",
             "createdAt":  1744580000000
@@ -720,7 +720,7 @@
           "id":           "rule-020",
           "pattern":      "Mindbody*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Software subscriptions",
+          "toCategory":   "Software & subscriptions",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745100000000,
@@ -728,9 +728,9 @@
         },
         {
           "id":           "rule-021",
-          "pattern":      "*spa supplies*",
-          "fromCategory": "Supplies",
-          "toCategory":   "Professional supplies",
+          "pattern":      "SQ *BEAUTY SUPPLY*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Supplies",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745110000000,
@@ -738,9 +738,9 @@
         },
         {
           "id":           "rule-022",
-          "pattern":      "*retail product*",
+          "pattern":      "Eminence*",
           "fromCategory": "Supplies",
-          "toCategory":   "Inventory (COGS)",
+          "toCategory":   "Product inventory (COGS)",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745120000000,
@@ -823,9 +823,9 @@
       "learnedRules": [
         {
           "id":           "rule-023",
-          "pattern":      "LinkedIn Premium*",
+          "pattern":      "Salesforce*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Marketing & business development",
+          "toCategory":   "Software & tools",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745200000000,
@@ -833,9 +833,9 @@
         },
         {
           "id":           "rule-024",
-          "pattern":      "Westlaw*",
+          "pattern":      "Gusto*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Professional subscriptions",
+          "toCategory":   "Shareholder payroll",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745210000000,
@@ -846,7 +846,7 @@
       "flags": {
         "txn-s12-01": {
           "reason":     "confirm-with-client",
-          "note":       "Client entertainment expenses — $3,200 total this quarter. Confirm each has a documented business purpose; entertainment is non-deductible post-TCJA.",
+          "note":       "SQ *CAPITAL GRILLE and similar client dining — confirm each meal has a documented business purpose. Post-TCJA, entertainment is 0% deductible. Meals with a client are 50% — but business must be discussed.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745380000000,
           "resolvedAt": null
@@ -890,9 +890,9 @@
       "learnedRules": [
         {
           "id":           "rule-025",
-          "pattern":      "Lowe's*",
+          "pattern":      "LOWE'S*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Materials & supplies",
+          "toCategory":   "Lowe's / Ace materials",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1744500000000,
@@ -900,9 +900,9 @@
         },
         {
           "id":           "rule-026",
-          "pattern":      "Mitchell Builders*",
-          "fromCategory": "Contractors",
-          "toCategory":   "Subcontractors",
+          "pattern":      "United Rentals*",
+          "fromCategory": "Miscellaneous business expenses",
+          "toCategory":   "Equipment rental",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1744510000000,
@@ -913,14 +913,14 @@
       "flags": {
         "txn-s13-01": {
           "reason":     "reclassify",
-          "note":       "Subcontractor paid $1,800 this quarter — tracking toward 1099-NEC threshold. Confirm W-9 on file for Mitchell Builders.",
+          "note":       "Rivera Electric (sub) paid $3,200 this month — already over $600 annual threshold for 1099-NEC. Confirm W-9 on file and track cumulative YTD payments.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1744680000000,
           "resolvedAt": null
         },
         "txn-s13-02": {
           "reason":     "needs-receipt",
-          "note":       "Large materials purchase at Lowe's — need receipt to split deductible job materials from capital tools.",
+          "note":       "LOWE'S #1842 purchase ($380) — need itemized receipt to confirm all items are job materials (deductible) vs. tools over $2,500 (must depreciate).",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1744690000000,
           "resolvedAt": null
@@ -931,7 +931,7 @@
         "txn-s13-01": [
           {
             "id":         "ann-009",
-            "text":       "Subcontractors paid $600+ in a calendar year require a 1099-NEC by Jan 31. Marco should collect W-9s at project start, not after the fact.",
+            "text":       "Rivera Electric is already over the $600 1099-NEC threshold for this year. Marco needs a W-9 on file. The upcoming date in the app (Jan 31, 2027) is the filing deadline — don't wait.",
             "authorId":   "cpa-priya-demo",
             "authorRole": "cpa",
             "createdAt":  1744680000000
@@ -1021,7 +1021,7 @@
         {
           "id":           "rule-027",
           "pattern":      "AWS*",
-          "fromCategory": "Software subscriptions",
+          "fromCategory": "Software & SaaS tools",
           "toCategory":   "Cloud infrastructure",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
@@ -1032,7 +1032,7 @@
           "id":           "rule-028",
           "pattern":      "Stripe*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Merchant processing fees",
+          "toCategory":   "Payment processing",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745310000000,
@@ -1117,7 +1117,7 @@
           "id":           "rule-029",
           "pattern":      "Gusto*",
           "fromCategory": "Miscellaneous business expenses",
-          "toCategory":   "Payroll — staff wages",
+          "toCategory":   "Payroll",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745100000000,
@@ -1126,8 +1126,8 @@
         {
           "id":           "rule-030",
           "pattern":      "BCBS*",
-          "fromCategory": "Income",
-          "toCategory":   "Insurance reimbursements",
+          "fromCategory": "Miscellaneous income",
+          "toCategory":   "Insurance income",
           "suggestedBy":  "cpa",
           "approvedBy":   "founder",
           "approvedAt":   1745110000000,
@@ -1138,14 +1138,14 @@
       "flags": {
         "txn-s18-01": {
           "reason":     "reclassify",
-          "note":       "Health insurance premiums paid for staff — confirm these flow through Gusto as payroll benefit, not as a direct expense. Treatment differs for W-2 employees vs. officer.",
+          "note":       "Medline Supply — confirm whether supplies are clinical (Supplies & equipment) or for resale. Medline orders often mix both; wrong split affects COGS vs. Line 22.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745280000000,
           "resolvedAt": null
         },
         "txn-s18-02": {
           "reason":     "confirm-with-client",
-          "note":       "Insurance billing lag — $14,200 in outstanding Aetna claims not yet paid. Confirm cash vs. accrual basis before we close Q1.",
+          "note":       "Aetna reimbursement batch — confirm James is on cash basis, not accrual. Insurance billing lag means outstanding claims should not be recognized as income until the payment lands.",
           "flaggedBy":  "cpa-priya-demo",
           "flaggedAt":  1745290000000,
           "resolvedAt": null
@@ -1156,7 +1156,7 @@
         "txn-s18-01": [
           {
             "id":         "ann-011",
-            "text":       "S-Corp officer health insurance is deductible on the officer's W-2 (Box 14) and then taken as a personal deduction on Form 1040. Non-officer employee premiums are a business expense on 1120-S Line 18.",
+            "text":       "Medline Supply orders for Wu Family Wellness should split: clinical supplies used in treatment go to Supplies & equipment (1120-S Line 14). Items sold to patients are Product inventory (COGS). James should ask for itemized invoices.",
             "authorId":   "cpa-priya-demo",
             "authorRole": "cpa",
             "createdAt":  1745280000000

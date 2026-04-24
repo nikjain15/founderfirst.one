@@ -9,7 +9,6 @@
     "sole-prop.consulting": {
       "cardQueue": [
         {
-          "id": "s01-cq-01",
           "variant": "income",
           "vendor": "Bright Co",
           "amount": 3000,
@@ -17,7 +16,6 @@
           "note": "First card — income celebration opener"
         },
         {
-          "id": "s01-cq-02",
           "variant": "base-expense",
           "vendor": "Notion",
           "amount": 19,
@@ -26,7 +24,6 @@
           "category_guess": "Software"
         },
         {
-          "id": "s01-cq-03",
           "variant": "low-confidence",
           "vendor": "SQ *BUCKLEY'S",
           "amount": 42.5,
@@ -34,7 +31,6 @@
           "confidence": 0.54
         },
         {
-          "id": "s01-cq-04",
           "variant": "rule-proposal",
           "vendor": "Adobe Creative Cloud",
           "amount": 54.99,
@@ -43,7 +39,6 @@
           "priorConfirms": 3
         },
         {
-          "id": "s01-cq-05",
           "variant": "variable-recurring",
           "vendor": "Con Edison",
           "amount": 820,
@@ -155,7 +150,6 @@
         ],
         "ledger": [
           {
-            "id": "s01-led-01",
             "date": "Apr 22",
             "vendor": "Bright Co",
             "category": "Client income",
@@ -163,7 +157,6 @@
             "type": "income"
           },
           {
-            "id": "s01-led-02",
             "date": "Apr 22",
             "vendor": "Amazon Business",
             "category": "Office supplies",
@@ -171,7 +164,6 @@
             "type": "expense"
           },
           {
-            "id": "s01-led-03",
             "date": "Apr 21",
             "vendor": "Con Edison",
             "category": "Utilities",
@@ -179,7 +171,6 @@
             "type": "expense"
           },
           {
-            "id": "s01-led-04",
             "date": "Apr 20",
             "vendor": "Adobe Creative Cloud",
             "category": "Software subscriptions",
@@ -187,7 +178,6 @@
             "type": "expense"
           },
           {
-            "id": "s01-led-05",
             "date": "Apr 18",
             "vendor": "SQ *BUCKLEY'S",
             "category": "Business meals (50%)",
@@ -195,7 +185,6 @@
             "type": "expense"
           },
           {
-            "id": "s01-led-06",
             "date": "Apr 16",
             "vendor": "Notion Teams",
             "category": "Software subscriptions",
@@ -203,7 +192,6 @@
             "type": "expense"
           },
           {
-            "id": "s01-led-07",
             "date": "Apr 15",
             "vendor": "Design Co",
             "category": "Client income",
@@ -211,7 +199,6 @@
             "type": "income"
           },
           {
-            "id": "s01-led-08",
             "date": "Apr 15",
             "vendor": "Staples",
             "category": "Office supplies",
@@ -219,7 +206,6 @@
             "type": "expense"
           },
           {
-            "id": "s01-led-09",
             "date": "Apr 12",
             "vendor": "Meridian Group",
             "category": "Client income",
@@ -227,7 +213,6 @@
             "type": "income"
           },
           {
-            "id": "s01-led-10",
             "date": "Apr 12",
             "vendor": "Client dinner — Tartine",
             "category": "Business meals (50%)",
@@ -235,7 +220,6 @@
             "type": "expense"
           },
           {
-            "id": "s01-led-11",
             "date": "Apr 10",
             "vendor": "Figma Pro",
             "category": "Software subscriptions",
@@ -243,7 +227,6 @@
             "type": "expense"
           },
           {
-            "id": "s01-led-12",
             "date": "Apr 9",
             "vendor": "Comcast Business",
             "category": "Utilities",
@@ -251,7 +234,6 @@
             "type": "expense"
           },
           {
-            "id": "s01-led-13",
             "date": "Apr 8",
             "vendor": "Sunnyside Media",
             "category": "Client income",
@@ -259,7 +241,6 @@
             "type": "income"
           },
           {
-            "id": "s01-led-14",
             "date": "Apr 8",
             "vendor": "Amazon Business",
             "category": "Office supplies",
@@ -267,7 +248,6 @@
             "type": "expense"
           },
           {
-            "id": "s01-led-15",
             "date": "Apr 7",
             "vendor": "Upwork — @jsmith_design",
             "category": "Contractors",
@@ -275,7 +255,6 @@
             "type": "expense"
           },
           {
-            "id": "s01-led-16",
             "date": "Apr 5",
             "vendor": "GitHub Pro",
             "category": "Software subscriptions",
@@ -283,7 +262,6 @@
             "type": "expense"
           },
           {
-            "id": "s01-led-17",
             "date": "Apr 3",
             "vendor": "Meridian Group",
             "category": "Client income",
@@ -291,7 +269,6 @@
             "type": "income"
           },
           {
-            "id": "s01-led-18",
             "date": "Apr 2",
             "vendor": "Best Buy Business",
             "category": "Office supplies",
@@ -299,7 +276,6 @@
             "type": "expense"
           },
           {
-            "id": "s01-led-19",
             "date": "Apr 1",
             "vendor": "Zoom Pro",
             "category": "Software subscriptions",
@@ -329,14 +305,12 @@
     "sole-prop.creative": {
       "cardQueue": [
         {
-          "id": "s05-cq-01",
           "variant": "income",
           "vendor": "Loftus Wedding",
           "amount": 2800,
           "daysAgo": 1
         },
         {
-          "id": "s05-cq-02",
           "variant": "base-expense",
           "vendor": "Adobe Creative Cloud",
           "amount": 54.99,
@@ -345,7 +319,6 @@
           "category_guess": "Software subscriptions"
         },
         {
-          "id": "s05-cq-03",
           "variant": "low-confidence",
           "vendor": "SQ *PACIFIC PROPS",
           "amount": 68,
@@ -353,7 +326,6 @@
           "confidence": 0.58
         },
         {
-          "id": "s05-cq-04",
           "variant": "rule-proposal",
           "vendor": "Dropbox Business",
           "amount": 24,
@@ -362,7 +334,6 @@
           "priorConfirms": 3
         },
         {
-          "id": "s05-cq-05",
           "variant": "variable-recurring",
           "vendor": "BorrowLenses",
           "amount": 240,
@@ -371,7 +342,6 @@
           "rollingMedian": "140–180"
         },
         {
-          "id": "s05-cq-06",
           "variant": "base-expense",
           "vendor": "Squarespace",
           "amount": 23,
@@ -380,14 +350,12 @@
           "category_guess": "Software subscriptions"
         },
         {
-          "id": "s05-cq-07",
           "variant": "income",
           "vendor": "Bright Co editorial",
           "amount": 1200,
           "daysAgo": 5
         },
         {
-          "id": "s05-cq-08",
           "variant": "low-confidence",
           "vendor": "SHELL GAS",
           "amount": 94,
@@ -568,7 +536,6 @@
         ],
         "ledger": [
           {
-            "id": "s05-led-01",
             "date": "Apr 22",
             "vendor": "Loftus Wedding — balance",
             "category": "Client income",
@@ -576,7 +543,6 @@
             "type": "income"
           },
           {
-            "id": "s05-led-02",
             "date": "Apr 21",
             "vendor": "Adobe Creative Cloud",
             "category": "Software subscriptions",
@@ -584,7 +550,6 @@
             "type": "expense"
           },
           {
-            "id": "s05-led-03",
             "date": "Apr 20",
             "vendor": "SQ *PACIFIC PROPS",
             "category": "Props & supplies",
@@ -592,7 +557,6 @@
             "type": "expense"
           },
           {
-            "id": "s05-led-04",
             "date": "Apr 18",
             "vendor": "BorrowLenses",
             "category": "Equipment rental",
@@ -600,7 +564,6 @@
             "type": "expense"
           },
           {
-            "id": "s05-led-05",
             "date": "Apr 17",
             "vendor": "SHELL GAS",
             "category": "Fuel & mileage",
@@ -608,7 +571,6 @@
             "type": "expense"
           },
           {
-            "id": "s05-led-06",
             "date": "Apr 16",
             "vendor": "Dropbox Business",
             "category": "Software subscriptions",
@@ -616,7 +578,6 @@
             "type": "expense"
           },
           {
-            "id": "s05-led-07",
             "date": "Apr 15",
             "vendor": "Bright Co editorial",
             "category": "Client income",
@@ -624,7 +585,6 @@
             "type": "income"
           },
           {
-            "id": "s05-led-08",
             "date": "Apr 12",
             "vendor": "Morrison family portraits",
             "category": "Client income",
@@ -632,7 +592,6 @@
             "type": "income"
           },
           {
-            "id": "s05-led-09",
             "date": "Apr 10",
             "vendor": "Verde Coffee brand shoot",
             "category": "Client income",
@@ -640,7 +599,6 @@
             "type": "income"
           },
           {
-            "id": "s05-led-10",
             "date": "Apr 9",
             "vendor": "Miller's Lab — prints & albums",
             "category": "Printing & albums",
@@ -648,7 +606,6 @@
             "type": "expense"
           },
           {
-            "id": "s05-led-11",
             "date": "Apr 8",
             "vendor": "CreativeLive workshop",
             "category": "Professional development",
@@ -656,7 +613,6 @@
             "type": "expense"
           },
           {
-            "id": "s05-led-12",
             "date": "Apr 7",
             "vendor": "SanDisk hard drives (2)",
             "category": "Hard drives & storage",
@@ -664,7 +620,6 @@
             "type": "expense"
           },
           {
-            "id": "s05-led-13",
             "date": "Apr 5",
             "vendor": "Stock licensing — Shutterstock",
             "category": "Client income",
@@ -672,7 +627,6 @@
             "type": "income"
           },
           {
-            "id": "s05-led-14",
             "date": "Apr 4",
             "vendor": "State Farm camera insurance",
             "category": "Camera insurance",
@@ -680,7 +634,6 @@
             "type": "expense"
           },
           {
-            "id": "s05-led-15",
             "date": "Apr 2",
             "vendor": "Squarespace website",
             "category": "Software subscriptions",
@@ -688,7 +641,6 @@
             "type": "expense"
           },
           {
-            "id": "s05-led-16",
             "date": "Apr 1",
             "vendor": "Phone — AT&T",
             "category": "Phone",
@@ -696,7 +648,6 @@
             "type": "expense"
           },
           {
-            "id": "s05-led-17",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -709,14 +660,12 @@
     "s-corp.creative": {
       "cardQueue": [
         {
-          "id": "s02-cq-01",
           "variant": "income",
           "vendor": "Apex Media Group",
           "amount": 5500,
           "daysAgo": 1
         },
         {
-          "id": "s02-cq-02",
           "variant": "owners-draw",
           "amount": 3500,
           "daysAgo": 2,
@@ -724,7 +673,6 @@
           "to": "Mercury Personal"
         },
         {
-          "id": "s02-cq-03",
           "variant": "base-expense",
           "vendor": "Adobe CC for Teams",
           "amount": 85,
@@ -733,7 +681,6 @@
           "category_guess": "Software subscriptions"
         },
         {
-          "id": "s02-cq-04",
           "variant": "low-confidence",
           "vendor": "B&H PHOTO VIDEO",
           "amount": 1840,
@@ -741,7 +688,6 @@
           "confidence": 0.61
         },
         {
-          "id": "s02-cq-05",
           "variant": "variable-recurring",
           "vendor": "Frame.io",
           "amount": 45,
@@ -750,7 +696,6 @@
           "rollingMedian": "35–45"
         },
         {
-          "id": "s02-cq-06",
           "variant": "base-expense",
           "vendor": "Gusto — April payroll",
           "amount": 3500,
@@ -759,7 +704,6 @@
           "category_guess": "Payroll"
         },
         {
-          "id": "s02-cq-07",
           "variant": "rule-proposal",
           "vendor": "Squarespace",
           "amount": 23,
@@ -768,7 +712,6 @@
           "priorConfirms": 4
         },
         {
-          "id": "s02-cq-08",
           "variant": "income",
           "vendor": "Hartfield & Co brand film",
           "amount": 4200,
@@ -958,7 +901,6 @@
         ],
         "ledger": [
           {
-            "id": "s02-led-01",
             "date": "Apr 22",
             "vendor": "Apex Media Group",
             "category": "Client income",
@@ -966,7 +908,6 @@
             "type": "income"
           },
           {
-            "id": "s02-led-02",
             "date": "Apr 21",
             "vendor": "Adobe CC for Teams",
             "category": "Software subscriptions",
@@ -974,7 +915,6 @@
             "type": "expense"
           },
           {
-            "id": "s02-led-03",
             "date": "Apr 20",
             "vendor": "B&H PHOTO VIDEO",
             "category": "Equipment",
@@ -982,7 +922,6 @@
             "type": "expense"
           },
           {
-            "id": "s02-led-04",
             "date": "Apr 18",
             "vendor": "Gusto — April payroll",
             "category": "Payroll",
@@ -990,7 +929,6 @@
             "type": "expense"
           },
           {
-            "id": "s02-led-05",
             "date": "Apr 17",
             "vendor": "Frame.io",
             "category": "Software subscriptions",
@@ -998,7 +936,6 @@
             "type": "expense"
           },
           {
-            "id": "s02-led-06",
             "date": "Apr 16",
             "vendor": "Hartfield & Co brand film",
             "category": "Client income",
@@ -1006,7 +943,6 @@
             "type": "income"
           },
           {
-            "id": "s02-led-07",
             "date": "Apr 14",
             "vendor": "Van lease — April",
             "category": "Van lease",
@@ -1014,7 +950,6 @@
             "type": "expense"
           },
           {
-            "id": "s02-led-08",
             "date": "Apr 12",
             "vendor": "Johnson Wedding Films",
             "category": "Client income",
@@ -1022,7 +957,6 @@
             "type": "income"
           },
           {
-            "id": "s02-led-09",
             "date": "Apr 10",
             "vendor": "Contractor — 2nd shooter (Reece)",
             "category": "Contractors",
@@ -1030,7 +964,6 @@
             "type": "expense"
           },
           {
-            "id": "s02-led-10",
             "date": "Apr 9",
             "vendor": "Summit 2026 event recap",
             "category": "Client income",
@@ -1038,7 +971,6 @@
             "type": "income"
           },
           {
-            "id": "s02-led-11",
             "date": "Apr 8",
             "vendor": "Gas — BP fill-up",
             "category": "Vehicle fuel",
@@ -1046,7 +978,6 @@
             "type": "expense"
           },
           {
-            "id": "s02-led-12",
             "date": "Apr 7",
             "vendor": "Camera equipment insurance",
             "category": "Camera/equipment insurance",
@@ -1054,7 +985,6 @@
             "type": "expense"
           },
           {
-            "id": "s02-led-13",
             "date": "Apr 6",
             "vendor": "Client meal — Per Se",
             "category": "Client meals (50%)",
@@ -1062,7 +992,6 @@
             "type": "expense"
           },
           {
-            "id": "s02-led-14",
             "date": "Apr 5",
             "vendor": "Stock footage — Artlist",
             "category": "Client income",
@@ -1070,7 +999,6 @@
             "type": "income"
           },
           {
-            "id": "s02-led-15",
             "date": "Apr 3",
             "vendor": "Contractor — editor (Mara)",
             "category": "Contractors",
@@ -1078,7 +1006,6 @@
             "type": "expense"
           },
           {
-            "id": "s02-led-16",
             "date": "Apr 1",
             "vendor": "Phone — Verizon",
             "category": "Phone",
@@ -1086,7 +1013,6 @@
             "type": "expense"
           },
           {
-            "id": "s02-led-17",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -1099,14 +1025,12 @@
     "sole-prop.trades": {
       "cardQueue": [
         {
-          "id": "s03-cq-01",
           "variant": "income",
           "vendor": "Martinson Residence",
           "amount": 4200,
           "daysAgo": 1
         },
         {
-          "id": "s03-cq-02",
           "variant": "base-expense",
           "vendor": "Home Depot #0472",
           "amount": 847,
@@ -1115,7 +1039,6 @@
           "category_guess": "Job materials"
         },
         {
-          "id": "s03-cq-03",
           "variant": "low-confidence",
           "vendor": "AUTOZONE #1128",
           "amount": 156,
@@ -1123,7 +1046,6 @@
           "confidence": 0.58
         },
         {
-          "id": "s03-cq-04",
           "variant": "variable-recurring",
           "vendor": "Progressive Commercial",
           "amount": 189,
@@ -1132,7 +1054,6 @@
           "rollingMedian": "167–172"
         },
         {
-          "id": "s03-cq-05",
           "variant": "base-expense",
           "vendor": "Graybar Electric Supply",
           "amount": 620,
@@ -1141,7 +1062,6 @@
           "category_guess": "Job materials"
         },
         {
-          "id": "s03-cq-06",
           "variant": "rule-proposal",
           "vendor": "Verizon Business",
           "amount": 85,
@@ -1150,14 +1070,12 @@
           "priorConfirms": 4
         },
         {
-          "id": "s03-cq-07",
           "variant": "income",
           "vendor": "Riverdale Office",
           "amount": 2800,
           "daysAgo": 5
         },
         {
-          "id": "s03-cq-08",
           "variant": "base-expense",
           "vendor": "Safety equipment — Amazon",
           "amount": 130,
@@ -1330,7 +1248,6 @@
         ],
         "ledger": [
           {
-            "id": "s03-led-01",
             "date": "Apr 22",
             "vendor": "Martinson Residence — rewire",
             "category": "Client income",
@@ -1338,7 +1255,6 @@
             "type": "income"
           },
           {
-            "id": "s03-led-02",
             "date": "Apr 21",
             "vendor": "Home Depot #0472",
             "category": "Job materials",
@@ -1346,7 +1262,6 @@
             "type": "expense"
           },
           {
-            "id": "s03-led-03",
             "date": "Apr 20",
             "vendor": "AUTOZONE #1128",
             "category": "Vehicle maintenance",
@@ -1354,7 +1269,6 @@
             "type": "expense"
           },
           {
-            "id": "s03-led-04",
             "date": "Apr 18",
             "vendor": "Progressive Commercial",
             "category": "Commercial insurance",
@@ -1362,7 +1276,6 @@
             "type": "expense"
           },
           {
-            "id": "s03-led-05",
             "date": "Apr 16",
             "vendor": "Graybar Electric Supply",
             "category": "Job materials",
@@ -1370,7 +1283,6 @@
             "type": "expense"
           },
           {
-            "id": "s03-led-06",
             "date": "Apr 15",
             "vendor": "Riverdale Office — balance",
             "category": "Client income",
@@ -1378,7 +1290,6 @@
             "type": "income"
           },
           {
-            "id": "s03-led-07",
             "date": "Apr 14",
             "vendor": "Verizon Business",
             "category": "Phone",
@@ -1386,7 +1297,6 @@
             "type": "expense"
           },
           {
-            "id": "s03-led-08",
             "date": "Apr 12",
             "vendor": "Williams kitchen upgrade",
             "category": "Client income",
@@ -1394,7 +1304,6 @@
             "type": "income"
           },
           {
-            "id": "s03-led-09",
             "date": "Apr 10",
             "vendor": "Home Depot #0472",
             "category": "Job materials",
@@ -1402,7 +1311,6 @@
             "type": "expense"
           },
           {
-            "id": "s03-led-10",
             "date": "Apr 9",
             "vendor": "Safety equipment — Amazon",
             "category": "Safety & PPE",
@@ -1410,7 +1318,6 @@
             "type": "expense"
           },
           {
-            "id": "s03-led-11",
             "date": "Apr 8",
             "vendor": "Small repair — Ortega residence",
             "category": "Client income",
@@ -1418,7 +1325,6 @@
             "type": "income"
           },
           {
-            "id": "s03-led-12",
             "date": "Apr 7",
             "vendor": "NECA membership dues",
             "category": "Membership",
@@ -1426,7 +1332,6 @@
             "type": "expense"
           },
           {
-            "id": "s03-led-13",
             "date": "Apr 6",
             "vendor": "Vehicle depreciation & loan interest",
             "category": "Vehicle depreciation & loan interest",
@@ -1434,7 +1339,6 @@
             "type": "expense"
           },
           {
-            "id": "s03-led-14",
             "date": "Apr 5",
             "vendor": "Small repair — Kim residence",
             "category": "Client income",
@@ -1442,7 +1346,6 @@
             "type": "income"
           },
           {
-            "id": "s03-led-15",
             "date": "Apr 3",
             "vendor": "License renewal — state board",
             "category": "Licenses & permits",
@@ -1450,7 +1353,6 @@
             "type": "expense"
           },
           {
-            "id": "s03-led-16",
             "date": "Apr 1",
             "vendor": "Small repair — Lee residence",
             "category": "Client income",
@@ -1458,7 +1360,6 @@
             "type": "income"
           },
           {
-            "id": "s03-led-17",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -1471,14 +1372,12 @@
     "llc.trades": {
       "cardQueue": [
         {
-          "id": "s06-cq-01",
           "variant": "income",
           "vendor": "Mitchell Builders",
           "amount": 8500,
           "daysAgo": 1
         },
         {
-          "id": "s06-cq-02",
           "variant": "owners-draw",
           "amount": 3500,
           "daysAgo": 2,
@@ -1486,7 +1385,6 @@
           "to": "Wells Fargo Personal"
         },
         {
-          "id": "s06-cq-03",
           "variant": "base-expense",
           "vendor": "Home Depot",
           "amount": 2840,
@@ -1495,7 +1393,6 @@
           "category_guess": "Materials"
         },
         {
-          "id": "s06-cq-04",
           "variant": "low-confidence",
           "vendor": "ACE HARDWARE #2145",
           "amount": 445,
@@ -1503,7 +1400,6 @@
           "confidence": 0.55
         },
         {
-          "id": "s06-cq-05",
           "variant": "variable-recurring",
           "vendor": "Rivera Electric (sub)",
           "amount": 3200,
@@ -1512,7 +1408,6 @@
           "rollingMedian": "2,400–2,800"
         },
         {
-          "id": "s06-cq-06",
           "variant": "base-expense",
           "vendor": "United Rentals",
           "amount": 1480,
@@ -1521,14 +1416,12 @@
           "category_guess": "Equipment rental"
         },
         {
-          "id": "s06-cq-07",
           "variant": "income",
           "vendor": "Ace Property Mgmt",
           "amount": 6200,
           "daysAgo": 8
         },
         {
-          "id": "s06-cq-08",
           "variant": "base-expense",
           "vendor": "Progressive Commercial Insurance",
           "amount": 680,
@@ -1537,7 +1430,6 @@
           "category_guess": "Commercial insurance"
         },
         {
-          "id": "s06-cq-09",
           "variant": "low-confidence",
           "vendor": "LOWE'S #1842",
           "amount": 380,
@@ -1755,7 +1647,6 @@
         ],
         "ledger": [
           {
-            "id": "s06-led-01",
             "date": "Apr 22",
             "vendor": "Mitchell Builders — framing contract",
             "category": "Client income",
@@ -1763,7 +1654,6 @@
             "type": "income"
           },
           {
-            "id": "s06-led-02",
             "date": "Apr 21",
             "vendor": "Home Depot",
             "category": "Materials",
@@ -1771,7 +1661,6 @@
             "type": "expense"
           },
           {
-            "id": "s06-led-03",
             "date": "Apr 20",
             "vendor": "ACE HARDWARE #2145",
             "category": "Materials",
@@ -1779,7 +1668,6 @@
             "type": "expense"
           },
           {
-            "id": "s06-led-04",
             "date": "Apr 18",
             "vendor": "Rivera Electric (sub)",
             "category": "Subcontractors",
@@ -1787,7 +1675,6 @@
             "type": "expense"
           },
           {
-            "id": "s06-led-05",
             "date": "Apr 16",
             "vendor": "United Rentals",
             "category": "Equipment rental",
@@ -1795,7 +1682,6 @@
             "type": "expense"
           },
           {
-            "id": "s06-led-06",
             "date": "Apr 15",
             "vendor": "Ace Property Mgmt — unit 1",
             "category": "Client income",
@@ -1803,7 +1689,6 @@
             "type": "income"
           },
           {
-            "id": "s06-led-07",
             "date": "Apr 14",
             "vendor": "Progressive Commercial Insurance",
             "category": "Commercial insurance",
@@ -1811,7 +1696,6 @@
             "type": "expense"
           },
           {
-            "id": "s06-led-08",
             "date": "Apr 12",
             "vendor": "Kellerman Residence — progress payment",
             "category": "Client income",
@@ -1819,7 +1703,6 @@
             "type": "income"
           },
           {
-            "id": "s06-led-09",
             "date": "Apr 11",
             "vendor": "Small repair — Ortega residence",
             "category": "Client income",
@@ -1827,7 +1710,6 @@
             "type": "income"
           },
           {
-            "id": "s06-led-10",
             "date": "Apr 10",
             "vendor": "LOWE'S #1842",
             "category": "Materials",
@@ -1835,7 +1717,6 @@
             "type": "expense"
           },
           {
-            "id": "s06-led-11",
             "date": "Apr 9",
             "vendor": "Builders FirstSource",
             "category": "Materials",
@@ -1843,7 +1724,6 @@
             "type": "expense"
           },
           {
-            "id": "s06-led-12",
             "date": "Apr 8",
             "vendor": "Ace Property Mgmt — unit 2",
             "category": "Client income",
@@ -1851,7 +1731,6 @@
             "type": "income"
           },
           {
-            "id": "s06-led-13",
             "date": "Apr 8",
             "vendor": "Small repair — Kim residence",
             "category": "Client income",
@@ -1859,7 +1738,6 @@
             "type": "income"
           },
           {
-            "id": "s06-led-14",
             "date": "Apr 7",
             "vendor": "Dump run — Iron Horse Disposal",
             "category": "Dump & disposal",
@@ -1867,7 +1745,6 @@
             "type": "expense"
           },
           {
-            "id": "s06-led-15",
             "date": "Apr 6",
             "vendor": "Truck fuel — Shell",
             "category": "Vehicle & fuel",
@@ -1875,7 +1752,6 @@
             "type": "expense"
           },
           {
-            "id": "s06-led-16",
             "date": "Apr 5",
             "vendor": "Materials reimbursement (Mitchell)",
             "category": "Materials reimbursement (contra)",
@@ -1883,7 +1759,6 @@
             "type": "expense"
           },
           {
-            "id": "s06-led-17",
             "date": "Apr 5",
             "vendor": "Small repair — Lee residence",
             "category": "Client income",
@@ -1891,7 +1766,6 @@
             "type": "income"
           },
           {
-            "id": "s06-led-18",
             "date": "Apr 4",
             "vendor": "Kellerman Residence — initial deposit",
             "category": "Client income",
@@ -1899,7 +1773,6 @@
             "type": "income"
           },
           {
-            "id": "s06-led-19",
             "date": "Apr 3",
             "vendor": "Part-time helper — April (1099 contractor)",
             "category": "Contractor — helper (1099)",
@@ -1907,7 +1780,6 @@
             "type": "expense"
           },
           {
-            "id": "s06-led-20",
             "date": "Apr 2",
             "vendor": "Permits — city building dept",
             "category": "Permits",
@@ -1915,7 +1787,6 @@
             "type": "expense"
           },
           {
-            "id": "s06-led-21",
             "date": "Apr 1",
             "vendor": "Tools — Milwaukee drill set",
             "category": "Tools & small equipment",
@@ -1923,7 +1794,6 @@
             "type": "expense"
           },
           {
-            "id": "s06-led-22",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -1936,14 +1806,12 @@
     "sole-prop.retail": {
       "cardQueue": [
         {
-          "id": "s07-cq-01",
           "variant": "income",
           "vendor": "Shopify — daily payout",
           "amount": 620,
           "daysAgo": 1
         },
         {
-          "id": "s07-cq-02",
           "variant": "base-expense",
           "vendor": "Etsy seller fees",
           "amount": 84,
@@ -1952,7 +1820,6 @@
           "category_guess": "Platform fees"
         },
         {
-          "id": "s07-cq-03",
           "variant": "low-confidence",
           "vendor": "SQ *CRAFT SUPPLY CO",
           "amount": 230,
@@ -1960,7 +1827,6 @@
           "confidence": 0.57
         },
         {
-          "id": "s07-cq-04",
           "variant": "rule-proposal",
           "vendor": "Shopify subscription",
           "amount": 29,
@@ -1969,14 +1835,12 @@
           "priorConfirms": 6
         },
         {
-          "id": "s07-cq-05",
           "variant": "income",
           "vendor": "Maison Home — wholesale",
           "amount": 1200,
           "daysAgo": 5
         },
         {
-          "id": "s07-cq-06",
           "variant": "base-expense",
           "vendor": "ULINE packaging",
           "amount": 148,
@@ -1985,7 +1849,6 @@
           "category_guess": "Shipping & packaging"
         },
         {
-          "id": "s07-cq-07",
           "variant": "variable-recurring",
           "vendor": "Etsy ads",
           "amount": 96,
@@ -2104,7 +1967,6 @@
         ],
         "ledger": [
           {
-            "id": "s07-led-01",
             "date": "Apr 22",
             "vendor": "Shopify — daily payout",
             "category": "Sales income",
@@ -2112,7 +1974,6 @@
             "type": "income"
           },
           {
-            "id": "s07-led-02",
             "date": "Apr 21",
             "vendor": "Etsy seller fees",
             "category": "Platform fees",
@@ -2120,7 +1981,6 @@
             "type": "expense"
           },
           {
-            "id": "s07-led-03",
             "date": "Apr 20",
             "vendor": "SQ *CRAFT SUPPLY CO",
             "category": "Cost of goods",
@@ -2128,7 +1988,6 @@
             "type": "expense"
           },
           {
-            "id": "s07-led-04",
             "date": "Apr 18",
             "vendor": "Maison Home — wholesale",
             "category": "Sales income",
@@ -2136,7 +1995,6 @@
             "type": "income"
           },
           {
-            "id": "s07-led-05",
             "date": "Apr 16",
             "vendor": "ULINE packaging",
             "category": "Shipping & packaging",
@@ -2144,7 +2002,6 @@
             "type": "expense"
           },
           {
-            "id": "s07-led-06",
             "date": "Apr 15",
             "vendor": "Shopify — daily payout",
             "category": "Sales income",
@@ -2152,7 +2009,6 @@
             "type": "income"
           },
           {
-            "id": "s07-led-07",
             "date": "Apr 14",
             "vendor": "Shopify subscription",
             "category": "Platform fees",
@@ -2160,7 +2016,6 @@
             "type": "expense"
           },
           {
-            "id": "s07-led-08",
             "date": "Apr 12",
             "vendor": "Etsy — payout",
             "category": "Sales income",
@@ -2168,7 +2023,6 @@
             "type": "income"
           },
           {
-            "id": "s07-led-09",
             "date": "Apr 10",
             "vendor": "Etsy ads",
             "category": "Advertising",
@@ -2176,7 +2030,6 @@
             "type": "expense"
           },
           {
-            "id": "s07-led-10",
             "date": "Apr 9",
             "vendor": "Raw materials — linen",
             "category": "Cost of goods",
@@ -2184,7 +2037,6 @@
             "type": "expense"
           },
           {
-            "id": "s07-led-11",
             "date": "Apr 8",
             "vendor": "Shopify — daily payout",
             "category": "Sales income",
@@ -2192,7 +2044,6 @@
             "type": "income"
           },
           {
-            "id": "s07-led-12",
             "date": "Apr 7",
             "vendor": "USPS shipping supplies",
             "category": "Shipping & packaging",
@@ -2200,7 +2051,6 @@
             "type": "expense"
           },
           {
-            "id": "s07-led-13",
             "date": "Apr 5",
             "vendor": "Etsy — payout",
             "category": "Sales income",
@@ -2208,7 +2058,6 @@
             "type": "income"
           },
           {
-            "id": "s07-led-14",
             "date": "Apr 3",
             "vendor": "Meta ads",
             "category": "Advertising",
@@ -2216,7 +2065,6 @@
             "type": "expense"
           },
           {
-            "id": "s07-led-15",
             "date": "Apr 2",
             "vendor": "Canva Pro",
             "category": "Platform fees",
@@ -2224,7 +2072,6 @@
             "type": "expense"
           },
           {
-            "id": "s07-led-16",
             "date": "Apr 1",
             "vendor": "Raw materials — cotton",
             "category": "Cost of goods",
@@ -2232,7 +2079,6 @@
             "type": "expense"
           },
           {
-            "id": "s07-led-17",
             "date": "Apr 2",
             "vendor": "Other income (misc)",
             "category": "Other income",
@@ -2240,7 +2086,6 @@
             "type": "income"
           },
           {
-            "id": "s07-led-18",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -2253,14 +2098,12 @@
     "llc.retail": {
       "cardQueue": [
         {
-          "id": "s04-cq-01",
           "variant": "income",
           "vendor": "Square — daily deposit",
           "amount": 1840,
           "daysAgo": 1
         },
         {
-          "id": "s04-cq-02",
           "variant": "base-expense",
           "vendor": "Gusto",
           "amount": 120,
@@ -2269,7 +2112,6 @@
           "category_guess": "Payroll software"
         },
         {
-          "id": "s04-cq-03",
           "variant": "low-confidence",
           "vendor": "SQ *WHOLESALE MKTPL",
           "amount": 2200,
@@ -2277,7 +2119,6 @@
           "confidence": 0.61
         },
         {
-          "id": "s04-cq-04",
           "variant": "variable-recurring",
           "vendor": "Storefront lease — Westside",
           "amount": 3400,
@@ -2286,7 +2127,6 @@
           "rollingMedian": "3200–3600"
         },
         {
-          "id": "s04-cq-05",
           "variant": "base-expense",
           "vendor": "Shopify Plus",
           "amount": 299,
@@ -2295,14 +2135,12 @@
           "category_guess": "Platform fees"
         },
         {
-          "id": "s04-cq-06",
           "variant": "income",
           "vendor": "Shopify — weekly payout",
           "amount": 2600,
           "daysAgo": 6
         },
         {
-          "id": "s04-cq-07",
           "variant": "rule-proposal",
           "vendor": "QuickBooks Online",
           "amount": 85,
@@ -2421,7 +2259,6 @@
         ],
         "ledger": [
           {
-            "id": "s04-led-01",
             "date": "Apr 22",
             "vendor": "Square — daily deposit",
             "category": "Sales income",
@@ -2429,7 +2266,6 @@
             "type": "income"
           },
           {
-            "id": "s04-led-02",
             "date": "Apr 21",
             "vendor": "SQ *WHOLESALE MKTPL",
             "category": "Inventory (COGS)",
@@ -2437,7 +2273,6 @@
             "type": "expense"
           },
           {
-            "id": "s04-led-03",
             "date": "Apr 20",
             "vendor": "Storefront lease",
             "category": "Rent",
@@ -2445,7 +2280,6 @@
             "type": "expense"
           },
           {
-            "id": "s04-led-04",
             "date": "Apr 18",
             "vendor": "Shopify Plus",
             "category": "Platform fees",
@@ -2453,7 +2287,6 @@
             "type": "expense"
           },
           {
-            "id": "s04-led-05",
             "date": "Apr 15",
             "vendor": "Shopify — weekly payout",
             "category": "Sales income",
@@ -2461,7 +2294,6 @@
             "type": "income"
           },
           {
-            "id": "s04-led-06",
             "date": "Apr 15",
             "vendor": "Gusto — April payroll",
             "category": "Payroll",
@@ -2469,7 +2301,6 @@
             "type": "expense"
           },
           {
-            "id": "s04-led-07",
             "date": "Apr 14",
             "vendor": "Square — daily deposit",
             "category": "Sales income",
@@ -2477,7 +2308,6 @@
             "type": "income"
           },
           {
-            "id": "s04-led-08",
             "date": "Apr 12",
             "vendor": "Wholesale goods — import",
             "category": "Inventory (COGS)",
@@ -2485,7 +2315,6 @@
             "type": "expense"
           },
           {
-            "id": "s04-led-09",
             "date": "Apr 10",
             "vendor": "Wholesale — Fillmore Coffee",
             "category": "Sales income",
@@ -2493,7 +2322,6 @@
             "type": "income"
           },
           {
-            "id": "s04-led-10",
             "date": "Apr 8",
             "vendor": "Square — daily deposit",
             "category": "Sales income",
@@ -2501,7 +2329,6 @@
             "type": "income"
           },
           {
-            "id": "s04-led-11",
             "date": "Apr 7",
             "vendor": "Meta ads",
             "category": "Marketing",
@@ -2509,7 +2336,6 @@
             "type": "expense"
           },
           {
-            "id": "s04-led-12",
             "date": "Apr 5",
             "vendor": "Shopify — weekly payout",
             "category": "Sales income",
@@ -2517,7 +2343,6 @@
             "type": "income"
           },
           {
-            "id": "s04-led-13",
             "date": "Apr 3",
             "vendor": "Wholesale goods — artisan",
             "category": "Inventory (COGS)",
@@ -2525,7 +2350,6 @@
             "type": "expense"
           },
           {
-            "id": "s04-led-14",
             "date": "Apr 1",
             "vendor": "Wholesale — Grounds Coffee",
             "category": "Sales income",
@@ -2533,7 +2357,6 @@
             "type": "income"
           },
           {
-            "id": "s04-led-15",
             "date": "Apr 2",
             "vendor": "Other income (misc)",
             "category": "Other income",
@@ -2541,7 +2364,6 @@
             "type": "income"
           },
           {
-            "id": "s04-led-16",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -2554,14 +2376,12 @@
     "sole-prop.food-beverage": {
       "cardQueue": [
         {
-          "id": "s08-cq-01",
           "variant": "income",
           "vendor": "Hartfield Wedding Party",
           "amount": 2200,
           "daysAgo": 1
         },
         {
-          "id": "s08-cq-02",
           "variant": "base-expense",
           "vendor": "Sysco Foods",
           "amount": 680,
@@ -2570,7 +2390,6 @@
           "category_guess": "Food & ingredients (COGS)"
         },
         {
-          "id": "s08-cq-03",
           "variant": "low-confidence",
           "vendor": "SQ *RESTAURANT DEPOT",
           "amount": 340,
@@ -2578,7 +2397,6 @@
           "confidence": 0.65
         },
         {
-          "id": "s08-cq-04",
           "variant": "variable-recurring",
           "vendor": "Commercial kitchen rental",
           "amount": 480,
@@ -2587,7 +2405,6 @@
           "rollingMedian": "440–520"
         },
         {
-          "id": "s08-cq-05",
           "variant": "base-expense",
           "vendor": "Smart & Final",
           "amount": 192,
@@ -2596,14 +2413,12 @@
           "category_guess": "Food & ingredients (COGS)"
         },
         {
-          "id": "s08-cq-06",
           "variant": "income",
           "vendor": "Meridian Group — corp lunch",
           "amount": 1400,
           "daysAgo": 6
         },
         {
-          "id": "s08-cq-07",
           "variant": "rule-proposal",
           "vendor": "Zelle — private client",
           "amount": 800,
@@ -2722,7 +2537,6 @@
         ],
         "ledger": [
           {
-            "id": "s08-led-01",
             "date": "Apr 22",
             "vendor": "Hartfield Wedding Party",
             "category": "Client income",
@@ -2730,7 +2544,6 @@
             "type": "income"
           },
           {
-            "id": "s08-led-02",
             "date": "Apr 21",
             "vendor": "Sysco Foods",
             "category": "Food & ingredients (COGS)",
@@ -2738,7 +2551,6 @@
             "type": "expense"
           },
           {
-            "id": "s08-led-03",
             "date": "Apr 20",
             "vendor": "SQ *RESTAURANT DEPOT",
             "category": "Food & ingredients (COGS)",
@@ -2746,7 +2558,6 @@
             "type": "expense"
           },
           {
-            "id": "s08-led-04",
             "date": "Apr 18",
             "vendor": "Commercial kitchen rental",
             "category": "Rent",
@@ -2754,7 +2565,6 @@
             "type": "expense"
           },
           {
-            "id": "s08-led-05",
             "date": "Apr 16",
             "vendor": "Smart & Final",
             "category": "Food & ingredients (COGS)",
@@ -2762,7 +2572,6 @@
             "type": "expense"
           },
           {
-            "id": "s08-led-06",
             "date": "Apr 15",
             "vendor": "Meridian Group — corp lunch",
             "category": "Client income",
@@ -2770,7 +2579,6 @@
             "type": "income"
           },
           {
-            "id": "s08-led-07",
             "date": "Apr 14",
             "vendor": "Zelle — Nguyen Family",
             "category": "Client income",
@@ -2778,7 +2586,6 @@
             "type": "income"
           },
           {
-            "id": "s08-led-08",
             "date": "Apr 12",
             "vendor": "Amazon — packaging",
             "category": "Packaging & supplies",
@@ -2786,7 +2593,6 @@
             "type": "expense"
           },
           {
-            "id": "s08-led-09",
             "date": "Apr 10",
             "vendor": "Costco Business",
             "category": "Food & ingredients (COGS)",
@@ -2794,7 +2600,6 @@
             "type": "expense"
           },
           {
-            "id": "s08-led-10",
             "date": "Apr 9",
             "vendor": "Meridian Group — corp lunch",
             "category": "Client income",
@@ -2802,7 +2607,6 @@
             "type": "income"
           },
           {
-            "id": "s08-led-11",
             "date": "Apr 8",
             "vendor": "Uber — equipment transport",
             "category": "Transportation",
@@ -2810,7 +2614,6 @@
             "type": "expense"
           },
           {
-            "id": "s08-led-12",
             "date": "Apr 7",
             "vendor": "Private event — Martinez",
             "category": "Client income",
@@ -2818,7 +2621,6 @@
             "type": "income"
           },
           {
-            "id": "s08-led-13",
             "date": "Apr 5",
             "vendor": "Smart & Final",
             "category": "Food & ingredients (COGS)",
@@ -2826,7 +2628,6 @@
             "type": "expense"
           },
           {
-            "id": "s08-led-14",
             "date": "Apr 3",
             "vendor": "Private event — Lopez",
             "category": "Client income",
@@ -2834,7 +2635,6 @@
             "type": "income"
           },
           {
-            "id": "s08-led-15",
             "date": "Apr 1",
             "vendor": "Restaurant Depot",
             "category": "Food & ingredients (COGS)",
@@ -2842,7 +2642,6 @@
             "type": "expense"
           },
           {
-            "id": "s08-led-16",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -2855,14 +2654,12 @@
     "llc.food-beverage": {
       "cardQueue": [
         {
-          "id": "s09-cq-01",
           "variant": "income",
           "vendor": "Square — truck sales",
           "amount": 3200,
           "daysAgo": 1
         },
         {
-          "id": "s09-cq-02",
           "variant": "base-expense",
           "vendor": "Gusto",
           "amount": 120,
@@ -2871,7 +2668,6 @@
           "category_guess": "Payroll software"
         },
         {
-          "id": "s09-cq-03",
           "variant": "base-expense",
           "vendor": "Sysco Foods",
           "amount": 2800,
@@ -2880,7 +2676,6 @@
           "category_guess": "Food & ingredients (COGS)"
         },
         {
-          "id": "s09-cq-04",
           "variant": "variable-recurring",
           "vendor": "Commissary kitchen rent",
           "amount": 1800,
@@ -2889,7 +2684,6 @@
           "rollingMedian": "1700–1900"
         },
         {
-          "id": "s09-cq-05",
           "variant": "low-confidence",
           "vendor": "SQ *GAS N GO",
           "amount": 180,
@@ -2897,14 +2691,12 @@
           "confidence": 0.55
         },
         {
-          "id": "s09-cq-06",
           "variant": "income",
           "vendor": "Apex Corp — catering",
           "amount": 4800,
           "daysAgo": 6
         },
         {
-          "id": "s09-cq-07",
           "variant": "rule-proposal",
           "vendor": "Toast POS subscription",
           "amount": 165,
@@ -3023,7 +2815,6 @@
         ],
         "ledger": [
           {
-            "id": "s09-led-01",
             "date": "Apr 22",
             "vendor": "Square — truck sales",
             "category": "Sales income",
@@ -3031,7 +2822,6 @@
             "type": "income"
           },
           {
-            "id": "s09-led-02",
             "date": "Apr 21",
             "vendor": "Sysco Foods",
             "category": "Food & ingredients (COGS)",
@@ -3039,7 +2829,6 @@
             "type": "expense"
           },
           {
-            "id": "s09-led-03",
             "date": "Apr 20",
             "vendor": "Commissary kitchen rent",
             "category": "Rent",
@@ -3047,7 +2836,6 @@
             "type": "expense"
           },
           {
-            "id": "s09-led-04",
             "date": "Apr 18",
             "vendor": "SQ *GAS N GO",
             "category": "Truck fuel",
@@ -3055,7 +2843,6 @@
             "type": "expense"
           },
           {
-            "id": "s09-led-05",
             "date": "Apr 16",
             "vendor": "Apex Corp — catering",
             "category": "Catering income",
@@ -3063,7 +2850,6 @@
             "type": "income"
           },
           {
-            "id": "s09-led-06",
             "date": "Apr 15",
             "vendor": "Gusto — April payroll",
             "category": "Payroll",
@@ -3071,7 +2857,6 @@
             "type": "expense"
           },
           {
-            "id": "s09-led-07",
             "date": "Apr 14",
             "vendor": "Square — truck sales",
             "category": "Sales income",
@@ -3079,7 +2864,6 @@
             "type": "income"
           },
           {
-            "id": "s09-led-08",
             "date": "Apr 12",
             "vendor": "Restaurant Depot",
             "category": "Food & ingredients (COGS)",
@@ -3087,7 +2871,6 @@
             "type": "expense"
           },
           {
-            "id": "s09-led-09",
             "date": "Apr 10",
             "vendor": "Private event — Martinez",
             "category": "Catering income",
@@ -3095,7 +2878,6 @@
             "type": "income"
           },
           {
-            "id": "s09-led-10",
             "date": "Apr 9",
             "vendor": "Amazon — packaging",
             "category": "Packaging",
@@ -3103,7 +2885,6 @@
             "type": "expense"
           },
           {
-            "id": "s09-led-11",
             "date": "Apr 8",
             "vendor": "Square — truck sales",
             "category": "Sales income",
@@ -3111,7 +2892,6 @@
             "type": "income"
           },
           {
-            "id": "s09-led-12",
             "date": "Apr 7",
             "vendor": "Truck repair — Meineke",
             "category": "Vehicle maintenance",
@@ -3119,7 +2899,6 @@
             "type": "expense"
           },
           {
-            "id": "s09-led-13",
             "date": "Apr 5",
             "vendor": "Private event — Kim",
             "category": "Catering income",
@@ -3127,7 +2906,6 @@
             "type": "income"
           },
           {
-            "id": "s09-led-14",
             "date": "Apr 3",
             "vendor": "Sysco Foods",
             "category": "Food & ingredients (COGS)",
@@ -3135,7 +2913,6 @@
             "type": "expense"
           },
           {
-            "id": "s09-led-15",
             "date": "Apr 1",
             "vendor": "Square — truck sales",
             "category": "Sales income",
@@ -3143,7 +2920,6 @@
             "type": "income"
           },
           {
-            "id": "s09-led-16",
             "date": "Apr 2",
             "vendor": "Other income (misc)",
             "category": "Other income",
@@ -3151,7 +2927,6 @@
             "type": "income"
           },
           {
-            "id": "s09-led-17",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -3164,14 +2939,12 @@
     "sole-prop.beauty-wellness": {
       "cardQueue": [
         {
-          "id": "s10-cq-01",
           "variant": "income",
           "vendor": "Square — weekly payout",
           "amount": 1480,
           "daysAgo": 1
         },
         {
-          "id": "s10-cq-02",
           "variant": "base-expense",
           "vendor": "Salon Centric",
           "amount": 220,
@@ -3180,7 +2953,6 @@
           "category_guess": "Supplies"
         },
         {
-          "id": "s10-cq-03",
           "variant": "low-confidence",
           "vendor": "Venmo — @c_johnson",
           "amount": 60,
@@ -3188,7 +2960,6 @@
           "confidence": 0.53
         },
         {
-          "id": "s10-cq-04",
           "variant": "variable-recurring",
           "vendor": "Booth rent — The Studio",
           "amount": 640,
@@ -3197,7 +2968,6 @@
           "rollingMedian": "620–660"
         },
         {
-          "id": "s10-cq-05",
           "variant": "rule-proposal",
           "vendor": "Square — weekly payout",
           "amount": 1340,
@@ -3206,7 +2976,6 @@
           "priorConfirms": 8
         },
         {
-          "id": "s10-cq-06",
           "variant": "base-expense",
           "vendor": "Amazon — styling tools",
           "amount": 84,
@@ -3325,7 +3094,6 @@
         ],
         "ledger": [
           {
-            "id": "s10-led-01",
             "date": "Apr 22",
             "vendor": "Square — weekly payout",
             "category": "Client income",
@@ -3333,7 +3101,6 @@
             "type": "income"
           },
           {
-            "id": "s10-led-02",
             "date": "Apr 21",
             "vendor": "Salon Centric",
             "category": "Supplies",
@@ -3341,7 +3108,6 @@
             "type": "expense"
           },
           {
-            "id": "s10-led-03",
             "date": "Apr 20",
             "vendor": "Venmo — @c_johnson",
             "category": "Client income — tip",
@@ -3349,7 +3115,6 @@
             "type": "income"
           },
           {
-            "id": "s10-led-04",
             "date": "Apr 18",
             "vendor": "Booth rent — The Studio",
             "category": "Rent",
@@ -3357,7 +3122,6 @@
             "type": "expense"
           },
           {
-            "id": "s10-led-05",
             "date": "Apr 15",
             "vendor": "Square — weekly payout",
             "category": "Client income",
@@ -3365,7 +3129,6 @@
             "type": "income"
           },
           {
-            "id": "s10-led-06",
             "date": "Apr 14",
             "vendor": "Amazon — styling tools",
             "category": "Tools & equipment",
@@ -3373,7 +3136,6 @@
             "type": "expense"
           },
           {
-            "id": "s10-led-07",
             "date": "Apr 12",
             "vendor": "Venmo — tips (3)",
             "category": "Client income — tip",
@@ -3381,7 +3143,6 @@
             "type": "income"
           },
           {
-            "id": "s10-led-08",
             "date": "Apr 10",
             "vendor": "Sally Beauty",
             "category": "Supplies",
@@ -3389,7 +3150,6 @@
             "type": "expense"
           },
           {
-            "id": "s10-led-09",
             "date": "Apr 8",
             "vendor": "Square — weekly payout",
             "category": "Client income",
@@ -3397,7 +3157,6 @@
             "type": "income"
           },
           {
-            "id": "s10-led-10",
             "date": "Apr 7",
             "vendor": "Paul Mitchell — retail",
             "category": "Supplies",
@@ -3405,7 +3164,6 @@
             "type": "expense"
           },
           {
-            "id": "s10-led-11",
             "date": "Apr 5",
             "vendor": "Product sales — retail",
             "category": "Product income",
@@ -3413,7 +3171,6 @@
             "type": "income"
           },
           {
-            "id": "s10-led-12",
             "date": "Apr 3",
             "vendor": "CE class — cosmetology board",
             "category": "Education",
@@ -3421,7 +3178,6 @@
             "type": "expense"
           },
           {
-            "id": "s10-led-13",
             "date": "Apr 1",
             "vendor": "Square — weekly payout",
             "category": "Client income",
@@ -3429,7 +3185,6 @@
             "type": "income"
           },
           {
-            "id": "s10-led-14",
             "date": "Apr 2",
             "vendor": "Other income (misc)",
             "category": "Other income",
@@ -3437,7 +3192,6 @@
             "type": "income"
           },
           {
-            "id": "s10-led-15",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -3450,14 +3204,12 @@
     "s-corp.beauty-wellness": {
       "cardQueue": [
         {
-          "id": "s11-cq-01",
           "variant": "income",
           "vendor": "Square — daily deposit",
           "amount": 2400,
           "daysAgo": 1
         },
         {
-          "id": "s11-cq-02",
           "variant": "owners-draw",
           "amount": 4000,
           "daysAgo": 2,
@@ -3465,7 +3217,6 @@
           "to": "Chase Personal"
         },
         {
-          "id": "s11-cq-03",
           "variant": "base-expense",
           "vendor": "Gusto",
           "amount": 120,
@@ -3474,7 +3225,6 @@
           "category_guess": "Payroll software"
         },
         {
-          "id": "s11-cq-04",
           "variant": "low-confidence",
           "vendor": "SQ *BEAUTY SUPPLY WORLD",
           "amount": 680,
@@ -3482,7 +3232,6 @@
           "confidence": 0.59
         },
         {
-          "id": "s11-cq-05",
           "variant": "variable-recurring",
           "vendor": "Studio lease — Midtown",
           "amount": 4200,
@@ -3491,7 +3240,6 @@
           "rollingMedian": "4000–4400"
         },
         {
-          "id": "s11-cq-06",
           "variant": "base-expense",
           "vendor": "Mindbody software",
           "amount": 99,
@@ -3500,7 +3248,6 @@
           "category_guess": "Software"
         },
         {
-          "id": "s11-cq-07",
           "variant": "rule-proposal",
           "vendor": "Eminence — product restock",
           "amount": 440,
@@ -3634,7 +3381,6 @@
         ],
         "ledger": [
           {
-            "id": "s11-led-01",
             "date": "Apr 22",
             "vendor": "Square — daily deposit",
             "category": "Service income",
@@ -3642,7 +3388,6 @@
             "type": "income"
           },
           {
-            "id": "s11-led-02",
             "date": "Apr 21",
             "vendor": "Beauty Supply World",
             "category": "Product inventory (COGS)",
@@ -3650,7 +3395,6 @@
             "type": "expense"
           },
           {
-            "id": "s11-led-03",
             "date": "Apr 20",
             "vendor": "Studio lease — Midtown",
             "category": "Rent",
@@ -3658,7 +3402,6 @@
             "type": "expense"
           },
           {
-            "id": "s11-led-04",
             "date": "Apr 18",
             "vendor": "Mindbody software",
             "category": "Software & subscriptions",
@@ -3666,7 +3409,6 @@
             "type": "expense"
           },
           {
-            "id": "s11-led-05",
             "date": "Apr 16",
             "vendor": "Square — daily deposit",
             "category": "Service income",
@@ -3674,7 +3416,6 @@
             "type": "income"
           },
           {
-            "id": "s11-led-06",
             "date": "Apr 15",
             "vendor": "Gusto — April payroll",
             "category": "Payroll",
@@ -3682,7 +3423,6 @@
             "type": "expense"
           },
           {
-            "id": "s11-led-07",
             "date": "Apr 14",
             "vendor": "Product retail sales",
             "category": "Product income",
@@ -3690,7 +3430,6 @@
             "type": "income"
           },
           {
-            "id": "s11-led-08",
             "date": "Apr 12",
             "vendor": "Eminence — product restock",
             "category": "Product inventory (COGS)",
@@ -3698,7 +3437,6 @@
             "type": "expense"
           },
           {
-            "id": "s11-led-09",
             "date": "Apr 11",
             "vendor": "Square — daily deposit",
             "category": "Service income",
@@ -3706,7 +3444,6 @@
             "type": "income"
           },
           {
-            "id": "s11-led-10",
             "date": "Apr 10",
             "vendor": "Square — daily deposit",
             "category": "Service income",
@@ -3714,7 +3451,6 @@
             "type": "income"
           },
           {
-            "id": "s11-led-11",
             "date": "Apr 9",
             "vendor": "Dermalogica — restock",
             "category": "Product inventory (COGS)",
@@ -3722,7 +3458,6 @@
             "type": "expense"
           },
           {
-            "id": "s11-led-12",
             "date": "Apr 8",
             "vendor": "Gift card redemptions",
             "category": "Service income",
@@ -3730,7 +3465,6 @@
             "type": "income"
           },
           {
-            "id": "s11-led-13",
             "date": "Apr 7",
             "vendor": "Vagaro subscription",
             "category": "Software & subscriptions",
@@ -3738,7 +3472,6 @@
             "type": "expense"
           },
           {
-            "id": "s11-led-14",
             "date": "Apr 6",
             "vendor": "Square — daily deposit",
             "category": "Service income",
@@ -3746,7 +3479,6 @@
             "type": "income"
           },
           {
-            "id": "s11-led-15",
             "date": "Apr 5",
             "vendor": "Square — daily deposit",
             "category": "Service income",
@@ -3754,7 +3486,6 @@
             "type": "income"
           },
           {
-            "id": "s11-led-16",
             "date": "Apr 4",
             "vendor": "Hiscox — professional liability",
             "category": "Professional liability insurance",
@@ -3762,7 +3493,6 @@
             "type": "expense"
           },
           {
-            "id": "s11-led-17",
             "date": "Apr 3",
             "vendor": "Product retail sales",
             "category": "Product income",
@@ -3770,7 +3500,6 @@
             "type": "income"
           },
           {
-            "id": "s11-led-18",
             "date": "Apr 2",
             "vendor": "Calendly Pro",
             "category": "Software & subscriptions",
@@ -3778,7 +3507,6 @@
             "type": "expense"
           },
           {
-            "id": "s11-led-19",
             "date": "Apr 2",
             "vendor": "Supplies — towels & capes",
             "category": "Supplies",
@@ -3786,7 +3514,6 @@
             "type": "expense"
           },
           {
-            "id": "s11-led-20",
             "date": "Apr 1",
             "vendor": "Gift card redemptions",
             "category": "Service income",
@@ -3794,7 +3521,6 @@
             "type": "income"
           },
           {
-            "id": "s11-led-21",
             "date": "Apr 1",
             "vendor": "Software — SaaS stack",
             "category": "Software & subscriptions",
@@ -3807,14 +3533,12 @@
     "sole-prop.professional-services": {
       "cardQueue": [
         {
-          "id": "s12-cq-01",
           "variant": "income",
           "vendor": "Private pay client — session fees",
           "amount": 2400,
           "daysAgo": 1
         },
         {
-          "id": "s12-cq-02",
           "variant": "base-expense",
           "vendor": "SimplePractice",
           "amount": 49,
@@ -3823,7 +3547,6 @@
           "category_guess": "Software"
         },
         {
-          "id": "s12-cq-03",
           "variant": "low-confidence",
           "vendor": "SQ *THERAPY SUPPLY",
           "amount": 88,
@@ -3831,7 +3554,6 @@
           "confidence": 0.55
         },
         {
-          "id": "s12-cq-04",
           "variant": "variable-recurring",
           "vendor": "Office sublease — Midtown",
           "amount": 900,
@@ -3840,14 +3562,12 @@
           "rollingMedian": "850–950"
         },
         {
-          "id": "s12-cq-05",
           "variant": "income",
           "vendor": "Coaching package — monthly",
           "amount": 1200,
           "daysAgo": 7
         },
         {
-          "id": "s12-cq-06",
           "variant": "rule-proposal",
           "vendor": "Zoom Pro",
           "amount": 14.99,
@@ -3856,7 +3576,6 @@
           "priorConfirms": 6
         },
         {
-          "id": "s12-cq-07",
           "variant": "base-expense",
           "vendor": "Amazon — office supplies",
           "amount": 64,
@@ -3966,7 +3685,6 @@
         ],
         "ledger": [
           {
-            "id": "s12-led-01",
             "date": "Apr 22",
             "vendor": "Session fees — week of Apr 21",
             "category": "Client income",
@@ -3974,7 +3692,6 @@
             "type": "income"
           },
           {
-            "id": "s12-led-02",
             "date": "Apr 21",
             "vendor": "SimplePractice",
             "category": "Software",
@@ -3982,7 +3699,6 @@
             "type": "expense"
           },
           {
-            "id": "s12-led-03",
             "date": "Apr 20",
             "vendor": "SQ *THERAPY SUPPLY",
             "category": "Office supplies",
@@ -3990,7 +3706,6 @@
             "type": "expense"
           },
           {
-            "id": "s12-led-04",
             "date": "Apr 18",
             "vendor": "Office sublease — Midtown",
             "category": "Rent",
@@ -3998,7 +3713,6 @@
             "type": "expense"
           },
           {
-            "id": "s12-led-05",
             "date": "Apr 16",
             "vendor": "Coaching package — R. Davis",
             "category": "Client income",
@@ -4006,7 +3720,6 @@
             "type": "income"
           },
           {
-            "id": "s12-led-06",
             "date": "Apr 14",
             "vendor": "Session fees — week of Apr 14",
             "category": "Client income",
@@ -4014,7 +3727,6 @@
             "type": "income"
           },
           {
-            "id": "s12-led-07",
             "date": "Apr 12",
             "vendor": "CE workshop — NASW",
             "category": "Education",
@@ -4022,7 +3734,6 @@
             "type": "expense"
           },
           {
-            "id": "s12-led-08",
             "date": "Apr 10",
             "vendor": "Zoom Pro",
             "category": "Software",
@@ -4030,7 +3741,6 @@
             "type": "expense"
           },
           {
-            "id": "s12-led-09",
             "date": "Apr 9",
             "vendor": "Coaching package — T. Williams",
             "category": "Client income",
@@ -4038,7 +3748,6 @@
             "type": "income"
           },
           {
-            "id": "s12-led-10",
             "date": "Apr 8",
             "vendor": "Coaching package — M. Johnson",
             "category": "Client income",
@@ -4046,7 +3755,6 @@
             "type": "income"
           },
           {
-            "id": "s12-led-11",
             "date": "Apr 7",
             "vendor": "Headspace for Work",
             "category": "Software",
@@ -4054,7 +3762,6 @@
             "type": "expense"
           },
           {
-            "id": "s12-led-12",
             "date": "Apr 5",
             "vendor": "Supervision session",
             "category": "Education",
@@ -4062,7 +3769,6 @@
             "type": "expense"
           },
           {
-            "id": "s12-led-13",
             "date": "Apr 3",
             "vendor": "Amazon — office supplies",
             "category": "Office supplies",
@@ -4070,7 +3776,6 @@
             "type": "expense"
           },
           {
-            "id": "s12-led-14",
             "date": "Apr 1",
             "vendor": "NASW membership",
             "category": "Professional memberships",
@@ -4078,7 +3783,6 @@
             "type": "expense"
           },
           {
-            "id": "s12-led-15",
             "date": "Apr 2",
             "vendor": "Other income (misc)",
             "category": "Other income",
@@ -4086,7 +3790,6 @@
             "type": "income"
           },
           {
-            "id": "s12-led-16",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -4099,14 +3802,12 @@
     "s-corp.professional-services": {
       "cardQueue": [
         {
-          "id": "s13-cq-01",
           "variant": "income",
           "vendor": "Davis Holdings — retainer",
           "amount": 6000,
           "daysAgo": 1
         },
         {
-          "id": "s13-cq-02",
           "variant": "owners-draw",
           "amount": 5000,
           "daysAgo": 2,
@@ -4114,7 +3815,6 @@
           "to": "Chase Personal"
         },
         {
-          "id": "s13-cq-03",
           "variant": "base-expense",
           "vendor": "Gusto",
           "amount": 120,
@@ -4123,7 +3823,6 @@
           "category_guess": "Payroll software"
         },
         {
-          "id": "s13-cq-04",
           "variant": "base-expense",
           "vendor": "Salesforce Essentials",
           "amount": 300,
@@ -4132,7 +3831,6 @@
           "category_guess": "Software"
         },
         {
-          "id": "s13-cq-05",
           "variant": "low-confidence",
           "vendor": "SQ *CAPITAL GRILLE",
           "amount": 380,
@@ -4140,7 +3838,6 @@
           "confidence": 0.62
         },
         {
-          "id": "s13-cq-06",
           "variant": "variable-recurring",
           "vendor": "Office lease — FiDi",
           "amount": 3200,
@@ -4149,7 +3846,6 @@
           "rollingMedian": "3000–3400"
         },
         {
-          "id": "s13-cq-07",
           "variant": "income",
           "vendor": "Meridian Ventures — project",
           "amount": 4000,
@@ -4276,7 +3972,6 @@
         ],
         "ledger": [
           {
-            "id": "s13-led-01",
             "date": "Apr 22",
             "vendor": "Davis Holdings — retainer",
             "category": "Client income",
@@ -4284,7 +3979,6 @@
             "type": "income"
           },
           {
-            "id": "s13-led-02",
             "date": "Apr 21",
             "vendor": "Office lease — FiDi",
             "category": "Rent",
@@ -4292,7 +3986,6 @@
             "type": "expense"
           },
           {
-            "id": "s13-led-03",
             "date": "Apr 20",
             "vendor": "Salesforce Essentials",
             "category": "Software & tools",
@@ -4300,7 +3993,6 @@
             "type": "expense"
           },
           {
-            "id": "s13-led-04",
             "date": "Apr 18",
             "vendor": "Client lunch — Capital Grille (50%)",
             "category": "Travel & client meals (50%)",
@@ -4308,7 +4000,6 @@
             "type": "expense"
           },
           {
-            "id": "s13-led-05",
             "date": "Apr 16",
             "vendor": "Meridian Ventures — project",
             "category": "Client income",
@@ -4316,7 +4007,6 @@
             "type": "income"
           },
           {
-            "id": "s13-led-06",
             "date": "Apr 15",
             "vendor": "Gusto — shareholder payroll incl. taxes",
             "category": "Shareholder payroll",
@@ -4324,7 +4014,6 @@
             "type": "expense"
           },
           {
-            "id": "s13-led-07",
             "date": "Apr 14",
             "vendor": "Harmon Corp — retainer",
             "category": "Client income",
@@ -4332,7 +4021,6 @@
             "type": "income"
           },
           {
-            "id": "s13-led-08",
             "date": "Apr 12",
             "vendor": "Nexus Group — project",
             "category": "Client income",
@@ -4340,7 +4028,6 @@
             "type": "income"
           },
           {
-            "id": "s13-led-09",
             "date": "Apr 10",
             "vendor": "Zoom Business",
             "category": "Software & tools",
@@ -4348,7 +4035,6 @@
             "type": "expense"
           },
           {
-            "id": "s13-led-10",
             "date": "Apr 8",
             "vendor": "Client lunch — Eleven Madison (50%)",
             "category": "Travel & client meals (50%)",
@@ -4356,7 +4042,6 @@
             "type": "expense"
           },
           {
-            "id": "s13-led-11",
             "date": "Apr 7",
             "vendor": "Meridian Ventures — retainer",
             "category": "Client income",
@@ -4364,7 +4049,6 @@
             "type": "income"
           },
           {
-            "id": "s13-led-12",
             "date": "Apr 5",
             "vendor": "Nexus Group — retainer",
             "category": "Client income",
@@ -4372,7 +4056,6 @@
             "type": "income"
           },
           {
-            "id": "s13-led-13",
             "date": "Apr 3",
             "vendor": "DocuSign Business",
             "category": "Software & tools",
@@ -4380,7 +4063,6 @@
             "type": "expense"
           },
           {
-            "id": "s13-led-14",
             "date": "Apr 1",
             "vendor": "Harvard Business Review",
             "category": "Professional development",
@@ -4388,7 +4070,6 @@
             "type": "expense"
           },
           {
-            "id": "s13-led-15",
             "date": "Apr 1",
             "vendor": "Slack Business+",
             "category": "Software & tools",
@@ -4401,14 +4082,12 @@
     "sole-prop.tech-software": {
       "cardQueue": [
         {
-          "id": "s14-cq-01",
           "variant": "income",
           "vendor": "Verdo Labs — retainer",
           "amount": 4000,
           "daysAgo": 1
         },
         {
-          "id": "s14-cq-02",
           "variant": "base-expense",
           "vendor": "AWS",
           "amount": 186,
@@ -4417,7 +4096,6 @@
           "category_guess": "Cloud infrastructure"
         },
         {
-          "id": "s14-cq-03",
           "variant": "low-confidence",
           "vendor": "SQ *TECH HUB CAFE",
           "amount": 44,
@@ -4425,7 +4103,6 @@
           "confidence": 0.58
         },
         {
-          "id": "s14-cq-04",
           "variant": "variable-recurring",
           "vendor": "GitHub Copilot",
           "amount": 19,
@@ -4434,7 +4111,6 @@
           "rollingMedian": "19"
         },
         {
-          "id": "s14-cq-05",
           "variant": "base-expense",
           "vendor": "Linear — dev tools",
           "amount": 8,
@@ -4443,14 +4119,12 @@
           "category_guess": "Software"
         },
         {
-          "id": "s14-cq-06",
           "variant": "income",
           "vendor": "Bright Co — project milestone",
           "amount": 3200,
           "daysAgo": 6
         },
         {
-          "id": "s14-cq-07",
           "variant": "rule-proposal",
           "vendor": "Vercel Pro",
           "amount": 20,
@@ -4569,7 +4243,6 @@
         ],
         "ledger": [
           {
-            "id": "s14-led-01",
             "date": "Apr 22",
             "vendor": "Verdo Labs — retainer",
             "category": "Client income",
@@ -4577,7 +4250,6 @@
             "type": "income"
           },
           {
-            "id": "s14-led-02",
             "date": "Apr 21",
             "vendor": "AWS",
             "category": "Cloud infrastructure",
@@ -4585,7 +4257,6 @@
             "type": "expense"
           },
           {
-            "id": "s14-led-03",
             "date": "Apr 20",
             "vendor": "SQ *TECH HUB CAFE",
             "category": "Business meals (50%)",
@@ -4593,7 +4264,6 @@
             "type": "expense"
           },
           {
-            "id": "s14-led-04",
             "date": "Apr 18",
             "vendor": "GitHub Copilot",
             "category": "Software",
@@ -4601,7 +4271,6 @@
             "type": "expense"
           },
           {
-            "id": "s14-led-05",
             "date": "Apr 16",
             "vendor": "Bright Co — project milestone",
             "category": "Client income",
@@ -4609,7 +4278,6 @@
             "type": "income"
           },
           {
-            "id": "s14-led-06",
             "date": "Apr 15",
             "vendor": "Vercel Pro",
             "category": "Cloud infrastructure",
@@ -4617,7 +4285,6 @@
             "type": "expense"
           },
           {
-            "id": "s14-led-07",
             "date": "Apr 14",
             "vendor": "Verdo Labs — retainer (Mar)",
             "category": "Client income",
@@ -4625,7 +4292,6 @@
             "type": "income"
           },
           {
-            "id": "s14-led-08",
             "date": "Apr 12",
             "vendor": "Notion Pro",
             "category": "Software",
@@ -4633,7 +4299,6 @@
             "type": "expense"
           },
           {
-            "id": "s14-led-09",
             "date": "Apr 10",
             "vendor": "Northlight Media — consulting",
             "category": "Client income",
@@ -4641,7 +4306,6 @@
             "type": "income"
           },
           {
-            "id": "s14-led-10",
             "date": "Apr 9",
             "vendor": "Cloudflare Workers",
             "category": "Cloud infrastructure",
@@ -4649,7 +4313,6 @@
             "type": "expense"
           },
           {
-            "id": "s14-led-11",
             "date": "Apr 8",
             "vendor": "Linear — dev tools",
             "category": "Software",
@@ -4657,7 +4320,6 @@
             "type": "expense"
           },
           {
-            "id": "s14-led-12",
             "date": "Apr 7",
             "vendor": "Apple Store — USB-C hub & accessories",
             "category": "Hardware",
@@ -4665,7 +4327,6 @@
             "type": "expense"
           },
           {
-            "id": "s14-led-13",
             "date": "Apr 5",
             "vendor": "Northlight Media — consulting",
             "category": "Client income",
@@ -4673,7 +4334,6 @@
             "type": "income"
           },
           {
-            "id": "s14-led-14",
             "date": "Apr 3",
             "vendor": "Figma Pro",
             "category": "Software",
@@ -4681,7 +4341,6 @@
             "type": "expense"
           },
           {
-            "id": "s14-led-15",
             "date": "Apr 1",
             "vendor": "Udemy — course",
             "category": "Professional development",
@@ -4689,7 +4348,6 @@
             "type": "expense"
           },
           {
-            "id": "s14-led-16",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -4702,14 +4360,12 @@
     "s-corp.tech-software": {
       "cardQueue": [
         {
-          "id": "s15-cq-01",
           "variant": "income",
           "vendor": "Stripe — MRR payout",
           "amount": 14200,
           "daysAgo": 1
         },
         {
-          "id": "s15-cq-02",
           "variant": "owners-draw",
           "amount": 9000,
           "daysAgo": 2,
@@ -4717,7 +4373,6 @@
           "to": "Chase Personal"
         },
         {
-          "id": "s15-cq-03",
           "variant": "base-expense",
           "vendor": "Gusto",
           "amount": 120,
@@ -4726,7 +4381,6 @@
           "category_guess": "Payroll software"
         },
         {
-          "id": "s15-cq-04",
           "variant": "variable-recurring",
           "vendor": "AWS — monthly statement",
           "amount": 1840,
@@ -4735,7 +4389,6 @@
           "rollingMedian": "1600–2100"
         },
         {
-          "id": "s15-cq-05",
           "variant": "low-confidence",
           "vendor": "DATADOG INC",
           "amount": 280,
@@ -4743,14 +4396,12 @@
           "confidence": 0.68
         },
         {
-          "id": "s15-cq-06",
           "variant": "income",
           "vendor": "Enterprise client A — invoice",
           "amount": 8000,
           "daysAgo": 6
         },
         {
-          "id": "s15-cq-07",
           "variant": "rule-proposal",
           "vendor": "Stripe fees",
           "amount": 420,
@@ -4888,7 +4539,6 @@
         ],
         "ledger": [
           {
-            "id": "s15-led-01",
             "date": "Apr 22",
             "vendor": "Stripe — MRR payout",
             "category": "Subscription income",
@@ -4896,7 +4546,6 @@
             "type": "income"
           },
           {
-            "id": "s15-led-02",
             "date": "Apr 21",
             "vendor": "AWS — monthly statement",
             "category": "Cloud infrastructure",
@@ -4904,7 +4553,6 @@
             "type": "expense"
           },
           {
-            "id": "s15-led-03",
             "date": "Apr 20",
             "vendor": "DATADOG INC",
             "category": "Cloud infrastructure",
@@ -4912,7 +4560,6 @@
             "type": "expense"
           },
           {
-            "id": "s15-led-04",
             "date": "Apr 18",
             "vendor": "Stripe fees",
             "category": "Payment processing",
@@ -4920,7 +4567,6 @@
             "type": "expense"
           },
           {
-            "id": "s15-led-05",
             "date": "Apr 16",
             "vendor": "Enterprise client A — invoice",
             "category": "Client income",
@@ -4928,7 +4574,6 @@
             "type": "income"
           },
           {
-            "id": "s15-led-06",
             "date": "Apr 15",
             "vendor": "Gusto — shareholder payroll",
             "category": "Shareholder payroll",
@@ -4936,7 +4581,6 @@
             "type": "expense"
           },
           {
-            "id": "s15-led-07",
             "date": "Apr 15",
             "vendor": "Gusto — employer payroll taxes",
             "category": "Payroll taxes",
@@ -4944,7 +4588,6 @@
             "type": "expense"
           },
           {
-            "id": "s15-led-08",
             "date": "Apr 14",
             "vendor": "Enterprise client B — invoice",
             "category": "Client income",
@@ -4952,7 +4595,6 @@
             "type": "income"
           },
           {
-            "id": "s15-led-09",
             "date": "Apr 12",
             "vendor": "Figma Organization",
             "category": "Software & SaaS tools",
@@ -4960,7 +4602,6 @@
             "type": "expense"
           },
           {
-            "id": "s15-led-10",
             "date": "Apr 10",
             "vendor": "Linear — team plan",
             "category": "Software & SaaS tools",
@@ -4968,7 +4609,6 @@
             "type": "expense"
           },
           {
-            "id": "s15-led-11",
             "date": "Apr 8",
             "vendor": "Fidelity — Solo 401(k)",
             "category": "Solo 401(k) contribution",
@@ -4976,7 +4616,6 @@
             "type": "expense"
           },
           {
-            "id": "s15-led-12",
             "date": "Apr 7",
             "vendor": "Notion Team",
             "category": "Software & SaaS tools",
@@ -4984,7 +4623,6 @@
             "type": "expense"
           },
           {
-            "id": "s15-led-13",
             "date": "Apr 5",
             "vendor": "Upwork — @qa_specialist",
             "category": "Contractors",
@@ -4992,7 +4630,6 @@
             "type": "expense"
           },
           {
-            "id": "s15-led-14",
             "date": "Apr 3",
             "vendor": "GitHub Copilot Business",
             "category": "Software & SaaS tools",
@@ -5000,7 +4637,6 @@
             "type": "expense"
           },
           {
-            "id": "s15-led-15",
             "date": "Apr 1",
             "vendor": "Zoom Business",
             "category": "Software & SaaS tools",
@@ -5008,7 +4644,6 @@
             "type": "expense"
           },
           {
-            "id": "s15-led-16",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -5021,14 +4656,12 @@
     "sole-prop.healthcare": {
       "cardQueue": [
         {
-          "id": "s16-cq-01",
           "variant": "income",
           "vendor": "Aetna — insurance payout",
           "amount": 1840,
           "daysAgo": 1
         },
         {
-          "id": "s16-cq-02",
           "variant": "base-expense",
           "vendor": "WebPT (EHR)",
           "amount": 99,
@@ -5037,7 +4670,6 @@
           "category_guess": "Software"
         },
         {
-          "id": "s16-cq-03",
           "variant": "low-confidence",
           "vendor": "SQ *MEDICAL SUPPLY CO",
           "amount": 280,
@@ -5045,7 +4677,6 @@
           "confidence": 0.6
         },
         {
-          "id": "s16-cq-04",
           "variant": "variable-recurring",
           "vendor": "Office sublease — clinic share",
           "amount": 1100,
@@ -5054,14 +4685,12 @@
           "rollingMedian": "1050–1150"
         },
         {
-          "id": "s16-cq-05",
           "variant": "income",
           "vendor": "BlueCross — insurance payout",
           "amount": 2100,
           "daysAgo": 5
         },
         {
-          "id": "s16-cq-06",
           "variant": "rule-proposal",
           "vendor": "Clinicient billing software",
           "amount": 79,
@@ -5070,7 +4699,6 @@
           "priorConfirms": 5
         },
         {
-          "id": "s16-cq-07",
           "variant": "base-expense",
           "vendor": "Amazon — therapy supplies",
           "amount": 120,
@@ -5189,7 +4817,6 @@
         ],
         "ledger": [
           {
-            "id": "s16-led-01",
             "date": "Apr 22",
             "vendor": "Aetna — insurance payout",
             "category": "Insurance income",
@@ -5197,7 +4824,6 @@
             "type": "income"
           },
           {
-            "id": "s16-led-02",
             "date": "Apr 21",
             "vendor": "WebPT (EHR)",
             "category": "Software",
@@ -5205,7 +4831,6 @@
             "type": "expense"
           },
           {
-            "id": "s16-led-03",
             "date": "Apr 20",
             "vendor": "SQ *MEDICAL SUPPLY CO",
             "category": "Supplies",
@@ -5213,7 +4838,6 @@
             "type": "expense"
           },
           {
-            "id": "s16-led-04",
             "date": "Apr 18",
             "vendor": "Office sublease — clinic share",
             "category": "Rent",
@@ -5221,7 +4845,6 @@
             "type": "expense"
           },
           {
-            "id": "s16-led-05",
             "date": "Apr 16",
             "vendor": "BlueCross — insurance payout",
             "category": "Insurance income",
@@ -5229,7 +4852,6 @@
             "type": "income"
           },
           {
-            "id": "s16-led-06",
             "date": "Apr 15",
             "vendor": "Clinicient billing software",
             "category": "Software",
@@ -5237,7 +4859,6 @@
             "type": "expense"
           },
           {
-            "id": "s16-led-07",
             "date": "Apr 14",
             "vendor": "Private pay sessions — week",
             "category": "Client income",
@@ -5245,7 +4866,6 @@
             "type": "income"
           },
           {
-            "id": "s16-led-08",
             "date": "Apr 12",
             "vendor": "Amazon — therapy supplies",
             "category": "Supplies",
@@ -5253,7 +4873,6 @@
             "type": "expense"
           },
           {
-            "id": "s16-led-09",
             "date": "Apr 10",
             "vendor": "BlueCross — insurance payout",
             "category": "Insurance income",
@@ -5261,7 +4880,6 @@
             "type": "income"
           },
           {
-            "id": "s16-led-10",
             "date": "Apr 9",
             "vendor": "Aetna — insurance payout",
             "category": "Insurance income",
@@ -5269,7 +4887,6 @@
             "type": "income"
           },
           {
-            "id": "s16-led-11",
             "date": "Apr 8",
             "vendor": "Private pay sessions — week",
             "category": "Client income",
@@ -5277,7 +4894,6 @@
             "type": "income"
           },
           {
-            "id": "s16-led-12",
             "date": "Apr 7",
             "vendor": "PT supply restock",
             "category": "Supplies",
@@ -5285,7 +4901,6 @@
             "type": "expense"
           },
           {
-            "id": "s16-led-13",
             "date": "Apr 5",
             "vendor": "APTA — continuing ed",
             "category": "Education",
@@ -5293,7 +4908,6 @@
             "type": "expense"
           },
           {
-            "id": "s16-led-14",
             "date": "Apr 3",
             "vendor": "Professional liability insurance",
             "category": "Professional liability insurance",
@@ -5301,7 +4915,6 @@
             "type": "expense"
           },
           {
-            "id": "s16-led-15",
             "date": "Apr 1",
             "vendor": "PrognoCIS billing",
             "category": "Software",
@@ -5309,7 +4922,6 @@
             "type": "expense"
           },
           {
-            "id": "s16-led-16",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -5322,14 +4934,12 @@
     "s-corp.healthcare": {
       "cardQueue": [
         {
-          "id": "s17-cq-01",
           "variant": "income",
           "vendor": "BCBS — reimbursement batch",
           "amount": 6800,
           "daysAgo": 1
         },
         {
-          "id": "s17-cq-02",
           "variant": "owners-draw",
           "amount": 6000,
           "daysAgo": 2,
@@ -5337,7 +4947,6 @@
           "to": "Chase Personal"
         },
         {
-          "id": "s17-cq-03",
           "variant": "base-expense",
           "vendor": "Gusto",
           "amount": 120,
@@ -5346,7 +4955,6 @@
           "category_guess": "Payroll software"
         },
         {
-          "id": "s17-cq-04",
           "variant": "variable-recurring",
           "vendor": "Clinic lease — Midtown",
           "amount": 4800,
@@ -5355,7 +4963,6 @@
           "rollingMedian": "4600–5000"
         },
         {
-          "id": "s17-cq-05",
           "variant": "low-confidence",
           "vendor": "SQ *MEDLINE SUPPLY",
           "amount": 640,
@@ -5363,14 +4970,12 @@
           "confidence": 0.66
         },
         {
-          "id": "s17-cq-06",
           "variant": "income",
           "vendor": "Aetna — reimbursement batch",
           "amount": 4200,
           "daysAgo": 6
         },
         {
-          "id": "s17-cq-07",
           "variant": "rule-proposal",
           "vendor": "Kareo billing platform",
           "amount": 299,
@@ -5499,7 +5104,6 @@
         ],
         "ledger": [
           {
-            "id": "s17-led-01",
             "date": "Apr 22",
             "vendor": "BCBS — reimbursement batch",
             "category": "Insurance income",
@@ -5507,7 +5111,6 @@
             "type": "income"
           },
           {
-            "id": "s17-led-02",
             "date": "Apr 21",
             "vendor": "Clinic lease — Midtown",
             "category": "Clinic lease",
@@ -5515,7 +5118,6 @@
             "type": "expense"
           },
           {
-            "id": "s17-led-03",
             "date": "Apr 20",
             "vendor": "Medline Supply",
             "category": "Supplies & equipment",
@@ -5523,7 +5125,6 @@
             "type": "expense"
           },
           {
-            "id": "s17-led-04",
             "date": "Apr 18",
             "vendor": "Aetna — reimbursement batch",
             "category": "Insurance income",
@@ -5531,7 +5132,6 @@
             "type": "income"
           },
           {
-            "id": "s17-led-05",
             "date": "Apr 16",
             "vendor": "Kareo billing platform",
             "category": "Software (EHR & billing)",
@@ -5539,7 +5139,6 @@
             "type": "expense"
           },
           {
-            "id": "s17-led-06",
             "date": "Apr 15",
             "vendor": "Gusto — April payroll",
             "category": "Payroll",
@@ -5547,7 +5146,6 @@
             "type": "expense"
           },
           {
-            "id": "s17-led-07",
             "date": "Apr 14",
             "vendor": "BCBS — reimbursement batch",
             "category": "Insurance income",
@@ -5555,7 +5153,6 @@
             "type": "income"
           },
           {
-            "id": "s17-led-08",
             "date": "Apr 12",
             "vendor": "Private pay sessions — week",
             "category": "Client income",
@@ -5563,7 +5160,6 @@
             "type": "income"
           },
           {
-            "id": "s17-led-09",
             "date": "Apr 10",
             "vendor": "UHC — reimbursement batch",
             "category": "Insurance income",
@@ -5571,7 +5167,6 @@
             "type": "income"
           },
           {
-            "id": "s17-led-10",
             "date": "Apr 9",
             "vendor": "Medline — supply restock",
             "category": "Supplies & equipment",
@@ -5579,7 +5174,6 @@
             "type": "expense"
           },
           {
-            "id": "s17-led-11",
             "date": "Apr 8",
             "vendor": "Private pay sessions — week",
             "category": "Client income",
@@ -5587,7 +5181,6 @@
             "type": "income"
           },
           {
-            "id": "s17-led-12",
             "date": "Apr 7",
             "vendor": "WebPT EHR — team plan",
             "category": "Software (EHR & billing)",
@@ -5595,7 +5188,6 @@
             "type": "expense"
           },
           {
-            "id": "s17-led-13",
             "date": "Apr 5",
             "vendor": "The Doctors Company — malpractice",
             "category": "Malpractice insurance",
@@ -5603,7 +5195,6 @@
             "type": "expense"
           },
           {
-            "id": "s17-led-14",
             "date": "Apr 3",
             "vendor": "Equipment — resistance bands",
             "category": "Supplies & equipment",
@@ -5611,7 +5202,6 @@
             "type": "expense"
           },
           {
-            "id": "s17-led-15",
             "date": "Apr 1",
             "vendor": "BCBS — reimbursement batch",
             "category": "Insurance income",
@@ -5624,14 +5214,12 @@
     "sole-prop.other": {
       "cardQueue": [
         {
-          "id": "s18-cq-01",
           "variant": "income",
           "vendor": "TechStart Co — retainer",
           "amount": 1800,
           "daysAgo": 1
         },
         {
-          "id": "s18-cq-02",
           "variant": "base-expense",
           "vendor": "Notion Pro",
           "amount": 16,
@@ -5640,7 +5228,6 @@
           "category_guess": "Software"
         },
         {
-          "id": "s18-cq-03",
           "variant": "low-confidence",
           "vendor": "SQ *OFFICE CAFE",
           "amount": 32,
@@ -5648,7 +5235,6 @@
           "confidence": 0.52
         },
         {
-          "id": "s18-cq-04",
           "variant": "variable-recurring",
           "vendor": "Zoom Pro",
           "amount": 14.99,
@@ -5657,14 +5243,12 @@
           "rollingMedian": "14.99"
         },
         {
-          "id": "s18-cq-05",
           "variant": "income",
           "vendor": "Meridian Partners — retainer",
           "amount": 1600,
           "daysAgo": 5
         },
         {
-          "id": "s18-cq-06",
           "variant": "rule-proposal",
           "vendor": "Google Workspace",
           "amount": 12,
@@ -5673,7 +5257,6 @@
           "priorConfirms": 8
         },
         {
-          "id": "s18-cq-07",
           "variant": "base-expense",
           "vendor": "Amazon — home office",
           "amount": 94,
@@ -5792,7 +5375,6 @@
         ],
         "ledger": [
           {
-            "id": "s18-led-01",
             "date": "Apr 22",
             "vendor": "TechStart Co — retainer",
             "category": "Client income",
@@ -5800,7 +5382,6 @@
             "type": "income"
           },
           {
-            "id": "s18-led-02",
             "date": "Apr 21",
             "vendor": "Notion Pro",
             "category": "Software",
@@ -5808,7 +5389,6 @@
             "type": "expense"
           },
           {
-            "id": "s18-led-03",
             "date": "Apr 20",
             "vendor": "SQ *OFFICE CAFE",
             "category": "Business meals (50%)",
@@ -5816,7 +5396,6 @@
             "type": "expense"
           },
           {
-            "id": "s18-led-04",
             "date": "Apr 18",
             "vendor": "Zoom Pro",
             "category": "Software",
@@ -5824,7 +5403,6 @@
             "type": "expense"
           },
           {
-            "id": "s18-led-05",
             "date": "Apr 16",
             "vendor": "Meridian Partners — retainer",
             "category": "Client income",
@@ -5832,7 +5410,6 @@
             "type": "income"
           },
           {
-            "id": "s18-led-06",
             "date": "Apr 15",
             "vendor": "Google Workspace",
             "category": "Software",
@@ -5840,7 +5417,6 @@
             "type": "expense"
           },
           {
-            "id": "s18-led-07",
             "date": "Apr 14",
             "vendor": "Home office — prorated rent",
             "category": "Home office",
@@ -5848,7 +5424,6 @@
             "type": "expense"
           },
           {
-            "id": "s18-led-08",
             "date": "Apr 12",
             "vendor": "Amazon — home office",
             "category": "Supplies",
@@ -5856,7 +5431,6 @@
             "type": "expense"
           },
           {
-            "id": "s18-led-09",
             "date": "Apr 10",
             "vendor": "Bloom Consulting — project",
             "category": "Client income",
@@ -5864,7 +5438,6 @@
             "type": "income"
           },
           {
-            "id": "s18-led-10",
             "date": "Apr 8",
             "vendor": "LastPass Teams",
             "category": "Software",
@@ -5872,7 +5445,6 @@
             "type": "expense"
           },
           {
-            "id": "s18-led-11",
             "date": "Apr 7",
             "vendor": "Verizon — phone plan",
             "category": "Phone",
@@ -5880,7 +5452,6 @@
             "type": "expense"
           },
           {
-            "id": "s18-led-12",
             "date": "Apr 5",
             "vendor": "Loom Pro",
             "category": "Software",
@@ -5888,7 +5459,6 @@
             "type": "expense"
           },
           {
-            "id": "s18-led-13",
             "date": "Apr 3",
             "vendor": "Udemy course",
             "category": "Professional development",
@@ -5896,7 +5466,6 @@
             "type": "expense"
           },
           {
-            "id": "s18-led-14",
             "date": "Apr 1",
             "vendor": "Comcast internet",
             "category": "Internet",
@@ -5904,7 +5473,6 @@
             "type": "expense"
           },
           {
-            "id": "s18-led-15",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -5917,14 +5485,12 @@
     "llc.other": {
       "cardQueue": [
         {
-          "id": "s19-cq-01",
           "variant": "income",
           "vendor": "Henderson family — deposit",
           "amount": 4500,
           "daysAgo": 1
         },
         {
-          "id": "s19-cq-02",
           "variant": "base-expense",
           "vendor": "HoneyBook",
           "amount": 39,
@@ -5933,7 +5499,6 @@
           "category_guess": "Software"
         },
         {
-          "id": "s19-cq-03",
           "variant": "low-confidence",
           "vendor": "SQ *EVENT RENTALS CO",
           "amount": 880,
@@ -5941,7 +5506,6 @@
           "confidence": 0.61
         },
         {
-          "id": "s19-cq-04",
           "variant": "variable-recurring",
           "vendor": "Storage unit — event supplies",
           "amount": 180,
@@ -5950,14 +5514,12 @@
           "rollingMedian": "170–190"
         },
         {
-          "id": "s19-cq-05",
           "variant": "income",
           "vendor": "Northfield Corp — team event",
           "amount": 3200,
           "daysAgo": 5
         },
         {
-          "id": "s19-cq-06",
           "variant": "rule-proposal",
           "vendor": "Canva Teams",
           "amount": 12.99,
@@ -5966,7 +5528,6 @@
           "priorConfirms": 6
         },
         {
-          "id": "s19-cq-07",
           "variant": "base-expense",
           "vendor": "Instacart Business — florals",
           "amount": 340,
@@ -6090,7 +5651,6 @@
         ],
         "ledger": [
           {
-            "id": "s19-led-01",
             "date": "Apr 22",
             "vendor": "Henderson family — deposit",
             "category": "Client income",
@@ -6098,7 +5658,6 @@
             "type": "income"
           },
           {
-            "id": "s19-led-02",
             "date": "Apr 21",
             "vendor": "HoneyBook",
             "category": "Software",
@@ -6106,7 +5665,6 @@
             "type": "expense"
           },
           {
-            "id": "s19-led-03",
             "date": "Apr 20",
             "vendor": "SQ *EVENT RENTALS CO",
             "category": "Venue & rental fees",
@@ -6114,7 +5672,6 @@
             "type": "expense"
           },
           {
-            "id": "s19-led-04",
             "date": "Apr 18",
             "vendor": "Storage unit — event supplies",
             "category": "Rent",
@@ -6122,7 +5679,6 @@
             "type": "expense"
           },
           {
-            "id": "s19-led-05",
             "date": "Apr 16",
             "vendor": "Northfield Corp — team event",
             "category": "Client income",
@@ -6130,7 +5686,6 @@
             "type": "income"
           },
           {
-            "id": "s19-led-06",
             "date": "Apr 15",
             "vendor": "Florist — Bloom & Co",
             "category": "Event supplies",
@@ -6138,7 +5693,6 @@
             "type": "expense"
           },
           {
-            "id": "s19-led-07",
             "date": "Apr 14",
             "vendor": "Murphy family — deposit",
             "category": "Client income",
@@ -6146,7 +5700,6 @@
             "type": "income"
           },
           {
-            "id": "s19-led-08",
             "date": "Apr 12",
             "vendor": "Instacart Business — florals",
             "category": "Event supplies",
@@ -6154,7 +5707,6 @@
             "type": "expense"
           },
           {
-            "id": "s19-led-09",
             "date": "Apr 10",
             "vendor": "DJ contractor — Henderson",
             "category": "Contractors",
@@ -6162,7 +5714,6 @@
             "type": "expense"
           },
           {
-            "id": "s19-led-10",
             "date": "Apr 9",
             "vendor": "Murphy family — balance",
             "category": "Client income",
@@ -6170,7 +5721,6 @@
             "type": "income"
           },
           {
-            "id": "s19-led-11",
             "date": "Apr 8",
             "vendor": "Catering contractor — Northfield",
             "category": "Contractors",
@@ -6178,7 +5728,6 @@
             "type": "expense"
           },
           {
-            "id": "s19-led-12",
             "date": "Apr 7",
             "vendor": "Uber — event transport",
             "category": "Travel",
@@ -6186,7 +5735,6 @@
             "type": "expense"
           },
           {
-            "id": "s19-led-13",
             "date": "Apr 5",
             "vendor": "Henderson family — retainer",
             "category": "Client income",
@@ -6194,7 +5742,6 @@
             "type": "income"
           },
           {
-            "id": "s19-led-14",
             "date": "Apr 3",
             "vendor": "Venue rental — venue B",
             "category": "Venue fees",
@@ -6202,7 +5749,6 @@
             "type": "expense"
           },
           {
-            "id": "s19-led-15",
             "date": "Apr 1",
             "vendor": "Canva Teams",
             "category": "Software",
@@ -6210,7 +5756,6 @@
             "type": "expense"
           },
           {
-            "id": "s19-led-16",
             "date": "Apr 2",
             "vendor": "Miscellaneous business expenses",
             "category": "Miscellaneous business expenses",
@@ -6223,14 +5768,12 @@
     "s-corp.consulting": {
       "cardQueue": [
         {
-          "id": "s20-cq-01",
           "variant": "income",
           "vendor": "Bright Co",
           "amount": 5000,
           "daysAgo": 1
         },
         {
-          "id": "s20-cq-02",
           "variant": "owners-draw",
           "amount": 2000,
           "daysAgo": 2,
@@ -6238,7 +5781,6 @@
           "to": "Chase Personal"
         },
         {
-          "id": "s20-cq-03",
           "variant": "base-expense",
           "vendor": "Gusto",
           "amount": 120,
@@ -6368,7 +5910,6 @@
         ],
         "ledger": [
           {
-            "id": "s20-led-01",
             "date": "Apr 22",
             "vendor": "Bright Co",
             "category": "Client income",
@@ -6376,7 +5917,6 @@
             "type": "income"
           },
           {
-            "id": "s20-led-02",
             "date": "Apr 21",
             "vendor": "WeWork — co-working",
             "category": "Home office / co-working",
@@ -6384,7 +5924,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-03",
             "date": "Apr 20",
             "vendor": "Adobe Creative Cloud",
             "category": "Software subscriptions",
@@ -6392,7 +5931,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-04",
             "date": "Apr 18",
             "vendor": "Client dinner — Buckley's (50%)",
             "category": "Meals & entertainment (50%)",
@@ -6400,7 +5938,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-05",
             "date": "Apr 16",
             "vendor": "Notion Teams",
             "category": "Software subscriptions",
@@ -6408,7 +5945,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-06",
             "date": "Apr 15",
             "vendor": "Data Systems Inc",
             "category": "Client income",
@@ -6416,7 +5952,6 @@
             "type": "income"
           },
           {
-            "id": "s20-led-07",
             "date": "Apr 15",
             "vendor": "Amazon Business",
             "category": "Office supplies",
@@ -6424,7 +5959,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-08",
             "date": "Apr 14",
             "vendor": "Gusto — shareholder payroll",
             "category": "Shareholder payroll",
@@ -6432,7 +5966,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-09",
             "date": "Apr 14",
             "vendor": "Gusto — employer payroll taxes",
             "category": "Payroll taxes",
@@ -6440,7 +5973,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-10",
             "date": "Apr 12",
             "vendor": "Meridian Group",
             "category": "Client income",
@@ -6448,7 +5980,6 @@
             "type": "income"
           },
           {
-            "id": "s20-led-11",
             "date": "Apr 12",
             "vendor": "Client dinner — Nobu (50%)",
             "category": "Meals & entertainment (50%)",
@@ -6456,7 +5987,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-12",
             "date": "Apr 10",
             "vendor": "Figma Organization",
             "category": "Software subscriptions",
@@ -6464,7 +5994,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-13",
             "date": "Apr 10",
             "vendor": "Home office utilities (prorated)",
             "category": "Home office / co-working",
@@ -6472,7 +6001,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-14",
             "date": "Apr 8",
             "vendor": "Sunnyside Media",
             "category": "Client income",
@@ -6480,7 +6008,6 @@
             "type": "income"
           },
           {
-            "id": "s20-led-15",
             "date": "Apr 8",
             "vendor": "Staples",
             "category": "Office supplies",
@@ -6488,7 +6015,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-16",
             "date": "Apr 8",
             "vendor": "Fidelity — SEP-IRA contribution",
             "category": "SEP-IRA contribution",
@@ -6496,7 +6022,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-17",
             "date": "Apr 7",
             "vendor": "Zoom Business",
             "category": "Software subscriptions",
@@ -6504,7 +6029,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-18",
             "date": "Apr 5",
             "vendor": "GitHub Team",
             "category": "Software subscriptions",
@@ -6512,7 +6036,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-19",
             "date": "Apr 5",
             "vendor": "Amazon Business",
             "category": "Office supplies",
@@ -6520,7 +6043,6 @@
             "type": "expense"
           },
           {
-            "id": "s20-led-20",
             "date": "Apr 3",
             "vendor": "Meridian Group",
             "category": "Client income",
@@ -6528,7 +6050,6 @@
             "type": "income"
           },
           {
-            "id": "s20-led-21",
             "date": "Apr 1",
             "vendor": "Slack Pro",
             "category": "Software subscriptions",

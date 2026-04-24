@@ -1,0 +1,24 @@
+title: "FounderFirst"
+description: "The operating software for solopreneurs and business owners. Starting with Penny — an AI bookkeeper that keeps your finances clean so you can focus on the work only you can do."
+url: "https://founderfirst.one"
+author: "Nik Jain"
+
+markdown: kramdown
+highlighter: rouge
+
+include:
+  - assets
+  - DESIGN_SYSTEM.md
+
+collections:
+  posts:
+    output: true
+    permalink: /blog/:title/
+
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+      author: "Nik Jain"

@@ -35,7 +35,7 @@ Branding section at top of preview: business name, logo (optional upload), addre
 - **Send** — opens sheet with recipient email + optional message. Stub: toast "Invoice sent to [email]."
 - **Save as draft** — toast "Saved as draft."
 - **Download PDF** — stub: toast "PDF downloaded."
-- **Set up recurring** — opens recurring config sheet.
+- **Set up recurring** — opens recurring config sheet with: frequency grid (Weekly/Monthly/Quarterly/Annually), first send date picker, upcoming sends preview (next 3 dates), "Schedule [freq] invoices" button. On confirm: 1.2s "Scheduling…" → toast "Recurring [freq] invoice scheduled ✓" → sheet closes.
 - **Payment plans** (D79) — stretch. "Split into 2 / 3 / 4 payments" preset offered at invoice creation.
 
 ---
@@ -50,7 +50,7 @@ None. Invoice generation is deterministic formatting. If Penny needs to comment 
 
 - All fields editable.
 - Live preview updates in real time.
-- Send / draft / download / recurring stubs all show appropriate toasts.
+- Send / draft / download show toasts. Recurring scheduler fully functional with date preview.
 
 ---
 

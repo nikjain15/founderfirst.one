@@ -6,6 +6,19 @@
 
 ## Changelog
 
+### 24 April 2026 — Schedule C / 1120-S / 1065 preview in My Books (Prompt 4)
+
+Added a tax form preview drill-down to the Explore section in `screens/books.jsx`. Row label adapts to persona entity: "Schedule C preview" (sole-prop/LLC), "Form 1120-S preview" (S-Corp), "Form 1065 preview" (partnership). Tapping opens a bottom sheet grouping the scenario's expense categories by IRS line with a subtotal per line. Footer disclaimer: "Preview — CPA review required before filing."
+
+**New file:** `util/irsLookup.js` — shared lookup module (`IRS_LINE_MAP`, `irsLineChip`, `lineKeyForEntity`, `formLabelForEntity`, `groupByIrsLine`). Card.jsx and books.jsx both import from this util.
+
+**Files changed:**
+- `util/irsLookup.js`: created (shared IRS line lookup).
+- `screens/card.jsx`: removed inline `IRS_LINE_MAP` / `irsLineChip`; now imports from `util/irsLookup.js`.
+- `screens/books.jsx`: added `TaxFormPreviewSheet` component, `formPreview` state, and Explore row.
+
+---
+
 ### 24 April 2026 — IRS-line chip on approval cards (Prompt 3)
 
 Added per-category IRS line chip to `ApprovalCard` in `screens/card.jsx`. Chip shows the Schedule C / 1120-S / 1065 line for the active persona's entity type. Gated on `state.preferences.showIrsLines` (default `false`). Only renders on expense cards (not income, not owner's draw). 60-entry `IRS_LINE_MAP` lookup table hard-coded from `implementation/irs-routing.md` v1.2.

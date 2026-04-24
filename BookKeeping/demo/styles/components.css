@@ -1570,3 +1570,28 @@
     padding-bottom: 24px;
   }
 }
+
+/* ── CPA Books table responsive classes ──────────────────────────────────────
+ * books-table-desktop: shown at ≥1024px (full 7-column layout)
+ * books-table-tablet:  shown at 768–1023px (5-column, IRS under category)
+ * books-cards-mobile:  shown at ≤767px (2-line card layout)
+ * Same pattern for rules table.
+ */
+.books-table-desktop { display: none; }
+.books-table-tablet  { display: none; }
+.books-cards-mobile  { display: block; }
+
+.rules-table-wide    { display: none; }
+.rules-cards-mobile  { display: block; }
+
+@media (min-width: 768px) {
+  .books-table-tablet { display: block; }
+  .books-cards-mobile { display: none; }
+  .rules-table-wide   { display: block; }
+  .rules-cards-mobile { display: none; }
+}
+
+@media (min-width: 1024px) {
+  .books-table-desktop { display: block; }
+  .books-table-tablet  { display: none; }
+}

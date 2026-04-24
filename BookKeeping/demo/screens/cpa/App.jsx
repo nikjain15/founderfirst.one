@@ -22,6 +22,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import AuthGate from "./AuthGate.jsx";
+import ClientView from "./ClientView.jsx";
 
 const STATE_KEY = "penny-demo-state-v5";
 const FIXTURE_URL = `${window.PENNY_CONFIG?.baseUrl || "/"}config/cpa-fixture.json`;
@@ -718,6 +719,15 @@ export default function CPAApp() {
     navigate("/dashboard");
   }
 
+  /** Accepts either a new cpaState object or an updater function (prev => next). */
+  function updateCpaState(updaterOrValue) {
+    setCpaState((prev) => {
+      const next = typeof updaterOrValue === "function" ? updaterOrValue(prev) : updaterOrValue;
+      saveCpaState(next);
+      return next;
+    });
+  }
+
   if (loading) {
     return (
       <div
@@ -799,12 +809,13 @@ export default function CPAApp() {
             <DashboardView cpa={cpaState.account} clients={clients} />
           )}
           {isClient && (
-            <ClientViewShell
+            <ClientView
               clientId={activeClientId}
               clients={clients}
+              approvals={cpaState.approvals || {}}
               activeTab={activeTab}
-              onTabChange={setActiveTab}
-              onDashboard={handleDashboard}
+              cpaAccount={cpaState.account}
+              onUpdateCpa={updateCpaState}
             />
           )}
         </main>

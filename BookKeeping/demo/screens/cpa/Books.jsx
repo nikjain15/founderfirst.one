@@ -16,7 +16,35 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { irsLineChip } from "../../util/irsLookup.js";
-import { addTransactionAsCpa } from "../../util/cpaState.js";
+import {
+  addTransactionAsCpa,
+  flagTransaction,
+  annotateTransaction,
+  suggestReclassification,
+} from "../../util/cpaState.js";
+
+// Common expense categories for reclassification picker
+const RECLASSIFY_CATEGORIES = [
+  "Advertising & marketing",
+  "Bank fees",
+  "Business meals (50%)",
+  "Commercial insurance",
+  "Contract labor",
+  "Equipment & tools",
+  "Home office",
+  "Inventory (COGS)",
+  "Legal & professional fees",
+  "Miscellaneous business expenses",
+  "Office supplies",
+  "Payroll",
+  "Phone & internet",
+  "Rent & lease",
+  "Software & subscriptions",
+  "Travel",
+  "Vehicle depreciation & loan interest",
+  "Vehicle fuel",
+  "Wages",
+];
 
 const fmt = (n) =>
   new Intl.NumberFormat("en-US", {
@@ -195,6 +223,244 @@ function AddTxnSheet({ clientId, clientData, cpaAccount, onClose, onAdd }) {
   );
 }
 
+// ── Row action menu sheet ─────────────────────────────────────────────────────
+// Three options: Flag · Annotate · Suggest reclassification
+function RowMenuSheet({ row, onClose, onFlag, onAnnotate, onSuggest }) {
+  const portal = document.getElementById("sheet-root-cpa") || document.body;
+  const options = [
+    { label: "Flag", sub: "Mark for follow-up with a reason", action: "flag" },
+    { label: "Annotate", sub: "Add a private note to this row", action: "annotate" },
+    { label: "Suggest reclassification", sub: "Propose a different category to the founder", action: "suggest" },
+  ];
+
+  return createPortal(
+    <div
+      style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.18)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200, pointerEvents: "auto" }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ background: "var(--white)", borderRadius: "var(--r-sheet) var(--r-sheet) 0 0", width: "100%", maxWidth: 560, paddingBottom: 24, fontFamily: "var(--font-sans)" }}
+      >
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
+        </div>
+        <div style={{ padding: "0 20px 12px", borderBottom: "1px solid var(--line-2)" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: "var(--fw-semibold)", letterSpacing: "var(--ls-eyebrow)", textTransform: "uppercase", color: "var(--ink-4)" }}>
+            {row.vendor}
+          </p>
+        </div>
+        {options.map((opt) => (
+          <button
+            key={opt.action}
+            onClick={() => { onClose(); setTimeout(() => { if (opt.action === "flag") onFlag(); else if (opt.action === "annotate") onAnnotate(); else onSuggest(); }, 80); }}
+            style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "flex-start", padding: "14px 20px", background: "none", border: "none", borderBottom: "1px solid var(--line-2)", cursor: "pointer", textAlign: "left", minHeight: "var(--tap-min)" }}
+          >
+            <span style={{ fontSize: 15, fontWeight: "var(--fw-medium)", color: "var(--ink)" }}>{opt.label}</span>
+            <span style={{ fontSize: 12, color: "var(--ink-4)", marginTop: 2 }}>{opt.sub}</span>
+          </button>
+        ))}
+      </div>
+    </div>,
+    portal
+  );
+}
+
+// ── Flag sheet ────────────────────────────────────────────────────────────────
+const FLAG_REASONS = [
+  { value: "needs-receipt",       label: "Needs receipt" },
+  { value: "reclassify",          label: "Needs reclassification" },
+  { value: "confirm-with-client", label: "Confirm with client" },
+];
+
+function FlagSheet({ row, onClose, onSubmit }) {
+  const [reason, setReason] = useState("needs-receipt");
+  const [note, setNote] = useState("");
+  const portal = document.getElementById("sheet-root-cpa") || document.body;
+
+  return createPortal(
+    <div
+      style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.18)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200, pointerEvents: "auto" }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ background: "var(--white)", borderRadius: "var(--r-sheet) var(--r-sheet) 0 0", width: "100%", maxWidth: 560, padding: "0 0 32px", maxHeight: "70%", overflowY: "auto", fontFamily: "var(--font-sans)" }}
+      >
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px 14px", borderBottom: "1px solid var(--line-2)" }}>
+          <span style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)" }}>Flag transaction</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 20, padding: "0 4px" }}>×</button>
+        </div>
+        <div style={{ padding: "20px 20px 0", display: "flex", flexDirection: "column", gap: 16 }}>
+          <div>
+            <p className="eyebrow" style={{ margin: "0 0 10px" }}>Reason</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {FLAG_REASONS.map((r) => (
+                <label key={r.value} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "10px 14px", borderRadius: "var(--r-card)", border: `1.5px solid ${reason === r.value ? "var(--ink)" : "var(--line)"}`, background: reason === r.value ? "var(--paper)" : "var(--white)" }}>
+                  <input type="radio" name="flag-reason" value={r.value} checked={reason === r.value} onChange={() => setReason(r.value)} style={{ accentColor: "var(--ink)" }} />
+                  <span style={{ fontSize: 14, color: "var(--ink)", fontWeight: reason === r.value ? "var(--fw-semibold)" : "var(--fw-regular)" }}>{r.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="eyebrow" style={{ margin: "0 0 8px" }}>Note (optional)</p>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Add context for the founder…"
+              rows={3}
+              style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", border: "1.5px solid var(--line)", borderRadius: "var(--r-card)", fontSize: 14, fontFamily: "var(--font-sans)", color: "var(--ink)", resize: "none", outline: "none", background: "var(--white)" }}
+            />
+          </div>
+          <button
+            onClick={() => { onSubmit(reason, note.trim()); onClose(); }}
+            style={{ padding: 14, background: "var(--ink)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
+          >
+            Flag transaction
+          </button>
+        </div>
+      </div>
+    </div>,
+    portal
+  );
+}
+
+// ── Annotate sheet ────────────────────────────────────────────────────────────
+function AnnotateSheet({ row, existingAnnotations, onClose, onSubmit }) {
+  const [text, setText] = useState("");
+  const portal = document.getElementById("sheet-root-cpa") || document.body;
+
+  return createPortal(
+    <div
+      style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.18)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200, pointerEvents: "auto" }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ background: "var(--white)", borderRadius: "var(--r-sheet) var(--r-sheet) 0 0", width: "100%", maxWidth: 560, padding: "0 0 32px", maxHeight: "70%", overflowY: "auto", fontFamily: "var(--font-sans)" }}
+      >
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px 14px", borderBottom: "1px solid var(--line-2)" }}>
+          <span style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)" }}>Add note</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 20, padding: "0 4px" }}>×</button>
+        </div>
+        <div style={{ padding: "20px 20px 0", display: "flex", flexDirection: "column", gap: 16 }}>
+          {existingAnnotations?.length > 0 && (
+            <div>
+              <p className="eyebrow" style={{ margin: "0 0 8px" }}>Existing notes</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {existingAnnotations.map((a) => (
+                  <div key={a.id} style={{ padding: "8px 12px", background: "var(--paper)", borderRadius: "var(--r-card)", fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5 }}>
+                    {a.text}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div>
+            <p className="eyebrow" style={{ margin: "0 0 8px" }}>New note</p>
+            <textarea
+              autoFocus
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Your note about this transaction…"
+              rows={4}
+              style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", border: "1.5px solid var(--line)", borderRadius: "var(--r-card)", fontSize: 14, fontFamily: "var(--font-sans)", color: "var(--ink)", resize: "none", outline: "none", background: "var(--white)" }}
+            />
+          </div>
+          <button
+            onClick={() => { if (text.trim()) { onSubmit(text.trim()); onClose(); } }}
+            disabled={!text.trim()}
+            style={{ padding: 14, background: "var(--ink)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)", cursor: text.trim() ? "pointer" : "default", fontFamily: "var(--font-sans)", opacity: text.trim() ? 1 : 0.45 }}
+          >
+            Save note
+          </button>
+        </div>
+      </div>
+    </div>,
+    portal
+  );
+}
+
+// ── Suggest reclassification sheet ────────────────────────────────────────────
+function SuggestReclassSheet({ row, onClose, onSubmit }) {
+  const [toCategory, setToCategory] = useState("");
+  const [note, setNote] = useState("");
+  const portal = document.getElementById("sheet-root-cpa") || document.body;
+
+  return createPortal(
+    <div
+      style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.18)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200, pointerEvents: "auto" }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ background: "var(--white)", borderRadius: "var(--r-sheet) var(--r-sheet) 0 0", width: "100%", maxWidth: 560, padding: "0 0 32px", maxHeight: "70%", overflowY: "auto", fontFamily: "var(--font-sans)" }}
+      >
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px 14px", borderBottom: "1px solid var(--line-2)" }}>
+          <span style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)" }}>Suggest reclassification</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 20, padding: "0 4px" }}>×</button>
+        </div>
+        <div style={{ padding: "20px 20px 0", display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ padding: "10px 14px", background: "var(--paper)", borderRadius: "var(--r-card)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <p style={{ margin: 0, fontSize: 11, color: "var(--ink-4)", fontWeight: "var(--fw-medium)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Current</p>
+              <p style={{ margin: "2px 0 0", fontSize: 14, color: "var(--ink)" }}>{row.category || "Uncategorized"}</p>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--ink-4)" }}>
+              <polyline points="6 4 10 8 6 12"/>
+            </svg>
+            <div style={{ textAlign: "right" }}>
+              <p style={{ margin: 0, fontSize: 11, color: "var(--ink-4)", fontWeight: "var(--fw-medium)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Suggested</p>
+              <p style={{ margin: "2px 0 0", fontSize: 14, color: toCategory ? "var(--ink)" : "var(--ink-4)" }}>{toCategory || "Select below"}</p>
+            </div>
+          </div>
+          <div>
+            <p className="eyebrow" style={{ margin: "0 0 8px" }}>New category</p>
+            <select
+              value={toCategory}
+              onChange={(e) => setToCategory(e.target.value)}
+              style={{ width: "100%", padding: "10px 14px", border: "1.5px solid var(--line)", borderRadius: "var(--r-card)", fontSize: 14, fontFamily: "var(--font-sans)", color: "var(--ink)", background: "var(--white)", outline: "none", appearance: "none" }}
+            >
+              <option value="">Select a category…</option>
+              {RECLASSIFY_CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <p className="eyebrow" style={{ margin: "0 0 8px" }}>Note for founder (optional)</p>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Explain why this category is more accurate…"
+              rows={3}
+              style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", border: "1.5px solid var(--line)", borderRadius: "var(--r-card)", fontSize: 14, fontFamily: "var(--font-sans)", color: "var(--ink)", resize: "none", outline: "none", background: "var(--white)" }}
+            />
+          </div>
+          <button
+            onClick={() => { if (toCategory) { onSubmit(row.category || "", toCategory, note.trim()); onClose(); } }}
+            disabled={!toCategory}
+            style={{ padding: 14, background: "var(--ink)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)", cursor: toCategory ? "pointer" : "default", fontFamily: "var(--font-sans)", opacity: toCategory ? 1 : 0.45 }}
+          >
+            Send to founder for approval
+          </button>
+        </div>
+      </div>
+    </div>,
+    portal
+  );
+}
+
 // ── IRS chip display ──────────────────────────────────────────────────────────
 
 function IrsChip({ category, entity }) {
@@ -243,6 +509,10 @@ export default function Books({ clientId, clientData, approvals, cpaAccount, onU
   const [addOpen, setAddOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const toastKey = useRef(0);
+
+  // Row overlay state: which row + which sheet
+  const [activeRow, setActiveRow] = useState(null);       // row object
+  const [overlaySheet, setOverlaySheet] = useState(null); // "menu"|"flag"|"annotate"|"suggest"
 
   function showToast(msg) {
     toastKey.current++;
@@ -316,12 +586,37 @@ export default function Books({ clientId, clientData, approvals, cpaAccount, onU
 
   function handleAdd(txnFields) {
     if (!onUpdateCpa || !clientData) return;
-    // We need full cpaState — call cpaState util via parent
     onUpdateCpa((prev) => {
       const result = addTransactionAsCpa(prev, clientId, txnFields, null);
       return result.newCpa;
     });
     showToast("Transaction added — pending founder acknowledgment.");
+  }
+
+  function handleFlag(reason, note) {
+    if (!onUpdateCpa || !activeRow) return;
+    onUpdateCpa((prev) => flagTransaction(prev, clientId, activeRow.id, reason, note));
+    showToast("Transaction flagged.");
+  }
+
+  function handleAnnotate(text) {
+    if (!onUpdateCpa || !activeRow) return;
+    onUpdateCpa((prev) => annotateTransaction(prev, clientId, activeRow.id, text));
+    showToast("Note saved.");
+  }
+
+  function handleSuggest(fromCategory, toCategory, note) {
+    if (!onUpdateCpa || !activeRow) return;
+    onUpdateCpa((prev) => {
+      const { newCpa } = suggestReclassification(prev, clientId, activeRow.id, fromCategory, toCategory, note);
+      return newCpa;
+    });
+    showToast("Suggestion sent to founder for approval.");
+  }
+
+  function openMenu(row) {
+    setActiveRow(row);
+    setOverlaySheet("menu");
   }
 
   if (loading) {
@@ -352,6 +647,39 @@ export default function Books({ clientId, clientData, approvals, cpaAccount, onU
           cpaAccount={cpaAccount}
           onClose={() => setAddOpen(false)}
           onAdd={handleAdd}
+        />
+      )}
+
+      {/* Row overlay sheets */}
+      {overlaySheet === "menu" && activeRow && (
+        <RowMenuSheet
+          row={activeRow}
+          onClose={() => setOverlaySheet(null)}
+          onFlag={() => setOverlaySheet("flag")}
+          onAnnotate={() => setOverlaySheet("annotate")}
+          onSuggest={() => setOverlaySheet("suggest")}
+        />
+      )}
+      {overlaySheet === "flag" && activeRow && (
+        <FlagSheet
+          row={activeRow}
+          onClose={() => { setOverlaySheet(null); setActiveRow(null); }}
+          onSubmit={handleFlag}
+        />
+      )}
+      {overlaySheet === "annotate" && activeRow && (
+        <AnnotateSheet
+          row={activeRow}
+          existingAnnotations={clientData?.annotations?.[activeRow.id] || []}
+          onClose={() => { setOverlaySheet(null); setActiveRow(null); }}
+          onSubmit={handleAnnotate}
+        />
+      )}
+      {overlaySheet === "suggest" && activeRow && (
+        <SuggestReclassSheet
+          row={activeRow}
+          onClose={() => { setOverlaySheet(null); setActiveRow(null); }}
+          onSubmit={handleSuggest}
         />
       )}
 
@@ -519,7 +847,7 @@ export default function Books({ clientId, clientData, approvals, cpaAccount, onU
                 </div>
                 <div style={{ padding: "10px 0", textAlign: "center" }}>
                   <button
-                    onClick={() => showToast("Coming in Step 8.")}
+                    onClick={() => openMenu(row)}
                     style={{
                       background: "none",
                       border: "none",

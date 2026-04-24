@@ -6,7 +6,8 @@
  */
 
 import React, { useState, useCallback, useMemo } from "react";
-import { generateInvite, revokeInvite } from "../util/cpaState.js";
+import { createPortal } from "react-dom";
+import { generateInvite, revokeInvite, revokeCpaAccess } from "../util/cpaState.js";
 
 function Toast({ msg }) {
   if (!msg) return null;
@@ -121,10 +122,137 @@ function ToggleRow({ label, sublabel, checked, onChange }) {
 }
 
 // --- Your CPA row (inline expand) --------------------------------------------
+// Confirm-revoke sheet — portalled to #sheet-root (inside .phone)
+function RevokeConfirmSheet({ cpaName, onConfirm, onClose }) {
+  const root = document.getElementById("sheet-root") || document.querySelector(".phone") || document.body;
+  return createPortal(
+    <div
+      style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.18)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 300, pointerEvents: "auto" }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ background: "var(--white)", borderRadius: "var(--r-sheet) var(--r-sheet) 0 0", width: "100%", maxWidth: 480, padding: "0 0 32px", fontFamily: "var(--font-sans)" }}
+      >
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
+        </div>
+        <div style={{ padding: "4px 20px 20px" }}>
+          <p style={{ margin: "0 0 8px", fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)" }}>
+            Remove {cpaName || "your CPA"}?
+          </p>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6 }}>
+            This will remove {cpaName || "your CPA"}'s access immediately. All their notes and flags will be saved for you to review.
+          </p>
+        </div>
+        <div style={{ padding: "0 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+          <button
+            type="button"
+            onClick={onConfirm}
+            style={{
+              width: "100%", padding: 14, background: "none", border: "1.5px solid var(--line)",
+              borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)",
+              cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--error)",
+            }}
+          >
+            Revoke access
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              width: "100%", padding: 14, background: "var(--ink)", border: "none",
+              borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)",
+              cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--white)",
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>,
+    root
+  );
+}
+
+// Archived-work read-only sheet — portalled to #sheet-root
+function ArchivedWorkSheet({ archive, onClose }) {
+  const root = document.getElementById("sheet-root") || document.querySelector(".phone") || document.body;
+  const rules = archive?.rules?.filter((r) => r.active !== false) || [];
+  const flags = Object.entries(archive?.flags || {});
+  const annotations = Object.entries(archive?.annotations || {});
+
+  return createPortal(
+    <div
+      style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.18)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 300, pointerEvents: "auto" }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ background: "var(--white)", borderRadius: "var(--r-sheet) var(--r-sheet) 0 0", width: "100%", maxWidth: 480, padding: "0 0 32px", maxHeight: "70%", overflowY: "auto", fontFamily: "var(--font-sans)" }}
+      >
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--line)" }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px 14px", borderBottom: "1px solid var(--line-2)" }}>
+          <span style={{ fontSize: 15, fontWeight: "var(--fw-semibold)", color: "var(--ink)" }}>Archived work</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 20, padding: "0 4px" }}>×</button>
+        </div>
+        <div style={{ padding: "16px 20px 0" }}>
+          <p style={{ margin: "0 0 16px", fontSize: 12, color: "var(--ink-4)" }}>
+            Read-only. Archived {archive?.revokedAt ? new Date(archive.revokedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}.
+          </p>
+
+          {rules.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <p className="eyebrow" style={{ margin: "0 0 8px" }}>Learned rules ({rules.length})</p>
+              {rules.map((r, i) => (
+                <div key={r.id || i} style={{ padding: "8px 12px", background: "var(--paper)", borderRadius: "var(--r-card)", marginBottom: 6, fontSize: 13, color: "var(--ink-2)" }}>
+                  {r.fromCategory} → {r.toCategory}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {flags.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <p className="eyebrow" style={{ margin: "0 0 8px" }}>Flags ({flags.length})</p>
+              {flags.map(([id, f]) => (
+                <div key={id} style={{ padding: "8px 12px", background: "var(--paper)", borderRadius: "var(--r-card)", marginBottom: 6, fontSize: 13, color: "var(--ink-2)" }}>
+                  <span style={{ color: "var(--ink-3)" }}>{id}</span>
+                  {" — "}{f.reason}{f.note ? `: ${f.note}` : ""}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {annotations.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <p className="eyebrow" style={{ margin: "0 0 8px" }}>Notes ({annotations.length})</p>
+              {annotations.map(([id, list]) => (list || []).map((a, i) => (
+                <div key={`${id}-${i}`} style={{ padding: "8px 12px", background: "var(--paper)", borderRadius: "var(--r-card)", marginBottom: 6, fontSize: 13, color: "var(--ink-2)" }}>
+                  {a.text}
+                </div>
+              )))}
+            </div>
+          )}
+
+          {rules.length === 0 && flags.length === 0 && annotations.length === 0 && (
+            <p style={{ fontSize: 13, color: "var(--ink-4)", textAlign: "center", padding: "20px 0" }}>No archived work to show.</p>
+          )}
+        </div>
+      </div>
+    </div>,
+    root
+  );
+}
+
 function YourCpaRow({ state, set, showToast }) {
-  const [expanded, setExpanded] = useState(false);
-  const [email,    setEmail]    = useState("");
-  const [copied,   setCopied]   = useState(false);
+  const [expanded,      setExpanded]      = useState(false);
+  const [email,         setEmail]         = useState("");
+  const [copied,        setCopied]        = useState(false);
+  const [revokeOpen,    setRevokeOpen]    = useState(false);
+  const [archiveOpen,   setArchiveOpen]   = useState(false);
 
   const cpa = state.cpa || {};
 
@@ -134,13 +262,20 @@ function YourCpaRow({ state, set, showToast }) {
 
   const hasAccount = !!cpa.account;
 
+  // Most recent archive entry (after revocation)
+  const latestArchive = useMemo(() => {
+    const entries = Object.values(cpa.archives || {});
+    if (!entries.length) return null;
+    return entries.reduce((a, b) => ((a.revokedAt || 0) > (b.revokedAt || 0) ? a : b));
+  }, [cpa.archives]);
+
   const statusLabel = useMemo(() => {
     if (hasAccount) return cpa.account.name;
     if (activeInvite) {
       const daysLeft = Math.max(1, Math.ceil((activeInvite.expiresAt - Date.now()) / (24 * 60 * 60 * 1000)));
       return `Pending (${daysLeft}d left)`;
     }
-    return "Not connected";
+    return "No CPA connected";
   }, [hasAccount, cpa.account, activeInvite]);
 
   const baseUrl = window.PENNY_CONFIG?.baseUrl || "/";
@@ -157,11 +292,20 @@ function YourCpaRow({ state, set, showToast }) {
     setEmail("");
   }
 
-  function handleRevoke() {
+  function handleRevokeInvite() {
     if (!activeInvite) return;
     const newCpa = revokeInvite(cpa, activeInvite.id);
     set({ cpa: newCpa });
     showToast("Invite revoked.");
+  }
+
+  function handleRevokeCpaAccess() {
+    const cpaId = cpa.account?.id || "cpa";
+    const clientId = "founder-client";
+    const newCpa = revokeCpaAccess(cpa, cpaId, clientId);
+    set({ cpa: newCpa });
+    setRevokeOpen(false);
+    showToast("CPA access removed.");
   }
 
   function handleCopy() {
@@ -171,31 +315,67 @@ function YourCpaRow({ state, set, showToast }) {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  // Invite panel — reused in both "no account" and "post-revocation" states
+  function InvitePanel() {
+    return (
+      <>
+        <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
+          Invite your CPA to access your live books. Link expires in 7 days.
+        </p>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") handleGenerate(); }}
+          placeholder="CPA email address"
+          style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--line)", borderRadius: "var(--r-card)", padding: "9px 12px", fontSize: 14, fontFamily: "var(--font-sans)", color: "var(--ink)", background: "var(--white)", outline: "none", marginBottom: 10 }}
+        />
+        <button
+          type="button"
+          className="btn btn-full"
+          onClick={handleGenerate}
+          disabled={!email.trim()}
+          style={{ opacity: email.trim() ? 1 : 0.45, fontSize: 14 }}
+        >
+          Generate invite link
+        </button>
+      </>
+    );
+  }
+
   return (
     <div style={{ borderBottom: "1px solid var(--line-2)" }}>
+      {/* Confirm-revoke sheet */}
+      {revokeOpen && (
+        <RevokeConfirmSheet
+          cpaName={cpa.account?.name}
+          onConfirm={handleRevokeCpaAccess}
+          onClose={() => setRevokeOpen(false)}
+        />
+      )}
+
+      {/* Archived work sheet */}
+      {archiveOpen && latestArchive && (
+        <ArchivedWorkSheet
+          archive={latestArchive}
+          onClose={() => setArchiveOpen(false)}
+        />
+      )}
+
       {/* Row */}
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        style={{
-          width: "100%", display: "flex", alignItems: "center",
-          justifyContent: "space-between", padding: "14px 20px",
-          background: "none", border: "none", cursor: "pointer",
-          fontFamily: "var(--font-sans)", textAlign: "left",
-          minHeight: "var(--tap-min)",
-        }}
+        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", textAlign: "left", minHeight: "var(--tap-min)" }}
       >
         <div style={{ flex: 1 }}>
-          <p style={{ margin: "0 0 2px", fontSize: 12, color: "var(--ink-4)", fontWeight: "var(--fw-medium)",
-            letterSpacing: "0.05em", textTransform: "uppercase" }}>Your CPA</p>
+          <p style={{ margin: "0 0 2px", fontSize: 12, color: "var(--ink-4)", fontWeight: "var(--fw-medium)", letterSpacing: "0.05em", textTransform: "uppercase" }}>Your CPA</p>
           <p style={{ margin: 0, fontSize: 15, color: hasAccount ? "var(--ink)" : "var(--ink-3)" }}>
             {statusLabel}
           </p>
         </div>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-          strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-          style={{ flexShrink: 0, marginLeft: 8, color: "var(--ink-3)",
-            transform: expanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.18s" }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+          style={{ flexShrink: 0, marginLeft: 8, color: "var(--ink-3)", transform: expanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.18s" }}>
           <polyline points="6 4 10 8 6 12"/>
         </svg>
       </button>
@@ -204,74 +384,56 @@ function YourCpaRow({ state, set, showToast }) {
       {expanded && (
         <div style={{ padding: "0 20px 16px" }}>
           {hasAccount ? (
-            <p style={{ margin: 0, fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
-              {cpa.account.name} has live access to your books.
-            </p>
+            <>
+              <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
+                {cpa.account.name} has live access to your books.
+              </p>
+              <button
+                type="button"
+                onClick={() => setRevokeOpen(true)}
+                style={{
+                  background: "none", border: "1.5px solid var(--line)", borderRadius: "var(--r-pill)",
+                  padding: "10px 16px", fontSize: 13, fontWeight: "var(--fw-semibold)",
+                  cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--error)",
+                  width: "100%",
+                }}
+              >
+                Revoke access
+              </button>
+            </>
           ) : activeInvite ? (
             <>
               <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
                 Invite link expires in {Math.max(1, Math.ceil((activeInvite.expiresAt - Date.now()) / (24 * 60 * 60 * 1000)))} days.
               </p>
-              <div style={{
-                background: "var(--paper)", borderRadius: "var(--r-card)",
-                padding: "8px 10px", marginBottom: 10,
-                border: "1px solid var(--line)",
-                display: "flex", alignItems: "center", gap: 8,
-              }}>
-                <p style={{ margin: 0, fontSize: 11, color: "var(--ink-3)", flex: 1,
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  fontFamily: "monospace" }}>
+              <div style={{ background: "var(--paper)", borderRadius: "var(--r-card)", padding: "8px 10px", marginBottom: 10, border: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 8 }}>
+                <p style={{ margin: 0, fontSize: 11, color: "var(--ink-3)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "monospace" }}>
                   {link}
                 </p>
                 <button
                   type="button"
                   onClick={handleCopy}
-                  style={{
-                    background: copied ? "var(--ink)" : "var(--white)",
-                    color: copied ? "var(--white)" : "var(--ink)",
-                    border: "1.5px solid var(--ink)", borderRadius: "var(--r-pill)",
-                    padding: "4px 10px", fontSize: 11, fontWeight: "var(--fw-semibold)",
-                    cursor: "pointer", fontFamily: "var(--font-sans)",
-                    flexShrink: 0, minWidth: "unset", minHeight: "unset",
-                    transition: "background 0.2s, color 0.2s",
-                  }}
+                  style={{ background: copied ? "var(--ink)" : "var(--white)", color: copied ? "var(--white)" : "var(--ink)", border: "1.5px solid var(--ink)", borderRadius: "var(--r-pill)", padding: "4px 10px", fontSize: 11, fontWeight: "var(--fw-semibold)", cursor: "pointer", fontFamily: "var(--font-sans)", flexShrink: 0, minWidth: "unset", minHeight: "unset", transition: "background 0.2s, color 0.2s" }}
                 >
                   {copied ? "Copied ✓" : "Copy"}
                 </button>
               </div>
-              <button type="button" className="btn btn-ghost btn-full" onClick={handleRevoke}
-                style={{ fontSize: 13 }}>
+              <button type="button" className="btn btn-ghost btn-full" onClick={handleRevokeInvite} style={{ fontSize: 13 }}>
                 Revoke invite
               </button>
             </>
           ) : (
             <>
-              <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
-                Invite your CPA to access your live books. Link expires in 7 days.
-              </p>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleGenerate(); }}
-                placeholder="CPA email address"
-                style={{
-                  width: "100%", boxSizing: "border-box",
-                  border: "1px solid var(--line)", borderRadius: "var(--r-card)",
-                  padding: "9px 12px", fontSize: 14, fontFamily: "var(--font-sans)",
-                  color: "var(--ink)", background: "var(--white)",
-                  outline: "none", marginBottom: 10,
-                }}
-              />
-              <button
-                type="button"
-                className="btn btn-full"
-                onClick={handleGenerate}
-                disabled={!email.trim()}
-                style={{ opacity: email.trim() ? 1 : 0.45, fontSize: 14 }}
-              >
-                Generate invite link
-              </button>
+              {latestArchive && (
+                <button
+                  type="button"
+                  onClick={() => setArchiveOpen(true)}
+                  style={{ background: "none", border: "none", padding: "0 0 10px", fontSize: 13, color: "var(--ink-3)", cursor: "pointer", fontFamily: "var(--font-sans)", textDecoration: "underline", textAlign: "left" }}
+                >
+                  View archived work
+                </button>
+              )}
+              <InvitePanel />
             </>
           )}
         </div>

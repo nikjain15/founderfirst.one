@@ -6,6 +6,19 @@
 
 ## Changelog
 
+### 24 April 2026 — IRS-line chip on approval cards (Prompt 3)
+
+Added per-category IRS line chip to `ApprovalCard` in `screens/card.jsx`. Chip shows the Schedule C / 1120-S / 1065 line for the active persona's entity type. Gated on `state.preferences.showIrsLines` (default `false`). Only renders on expense cards (not income, not owner's draw). 60-entry `IRS_LINE_MAP` lookup table hard-coded from `implementation/irs-routing.md` v1.2.
+
+**Files changed:**
+- `screens/card.jsx`: `IRS_LINE_MAP` lookup, `irsLineChip()` helper, chip render in `ApprovalCard`, `showIrsLines` prop added.
+- `screens/thread.jsx`: passes `showIrsLines={state.preferences?.showIrsLines ?? false}` to `ApprovalCard`.
+- `screens/avatar-menu.jsx`: "Show IRS line on cards" `ToggleRow` added to Preferences under new "Tax display" section.
+
+**Style:** monospace, `var(--ink-3)`, 10px, uppercase, letter-spacing 0.06em. Tokens only — no new colors.
+
+---
+
 ### 24 April 2026 — IRS taxonomy v1.2 label sync (Prompt 1)
 
 Propagated canonical category labels from `BookKeeping/engineering/categories.v1.json` and `BookKeeping/demo/implementation/irs-routing.md` into all demo surfaces. No feature or styling changes.

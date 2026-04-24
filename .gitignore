@@ -11,3 +11,7 @@ test-results/
 
 # Claude Code settings
 .claude/
+
+.dev.vars*
+!.dev.vars.example
+!.env.example

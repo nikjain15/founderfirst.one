@@ -6,6 +6,26 @@
 
 ## Changelog
 
+### 25 April 2026 — rate limit resilience + session-fresh reset
+
+**Problem:** Demo was returning "I couldn't get that right now." when multiple AI calls fired on load, because Anthropic's Tier 1 limit (30K input TPM for Sonnet) was exhausted within seconds of page load.
+
+**Three fixes shipped:**
+
+1. **Ambient calls → Haiku.** `thread.greeting`, `thread.idle`, and `card.approval` now route to `claude-haiku-4-5-20251001` (50K input TPM, ~20× cheaper). User-initiated calls (`thread.qa`, `books.qa`, `capture.parse`) stay on Sonnet. Routing lives in `AMBIENT_INTENTS` set in `worker-client.js`. Config token `ambientModel` added to `index.html` `PENNY_CONFIG`.
+
+2. **429 backoff.** `guardrails/retry-on-fail.js` now has a `RateLimitError` class and `MAX_RATE_RETRIES = 2` budget with exponential backoff (8s → 16s). Previously a 429 was treated like a transient error and retried immediately (always failing). `worker-client.js` throws `RateLimitError` on 429 before passing to the retry wrapper. `ERROR_COPY.threadQaRateLimit` added to `constants/copy.js` with friendlier copy ("Give me just a moment — I'm catching up."); `thread.jsx` distinguishes `RateLimitError` from generic errors.
+
+3. **Mount-time stagger.** Greeting call is deferred 800ms after mount; idle call is deferred 1.5s after queue exhaustion. Prevents all ambient calls from hitting the API simultaneously.
+
+4. **Session-fresh reset.** App state (`penny-demo-state-v5`) moved from `localStorage` to `sessionStorage`. New tab or new browser session = fresh first-time onboarding. Refresh mid-walkthrough still works. AI response cache (`penny.cache.v1.*`) stays in `localStorage` — no reason to re-fetch.
+
+**Settled decision 22:** ambient AI intents (`thread.greeting`, `thread.idle`, `card.approval`) always use `ambientModel` (Haiku). User-initiated accuracy-critical intents (`thread.qa`, `books.qa`, `capture.parse`) use `defaultModel` (Sonnet). Never collapse these tiers — the split is load management, not just cost.
+
+**Settled decision 23:** demo app state is `sessionStorage`-scoped. Every new browser tab or session sees fresh onboarding. Never move back to `localStorage` — demo visitors must always experience the first-time flow.
+
+---
+
 ### 25 April 2026 — phase-2-audit-3: config, data, and IRS taxonomy fixes (21 findings)
 
 Full audit of `public/config/`, `util/irsLookup.js`, and IRS routing documentation. 4 Critical · 7 High · 6 Medium · 4 Low findings. All 21 fixed. Deployed to main as commit `bbe5ce0`.

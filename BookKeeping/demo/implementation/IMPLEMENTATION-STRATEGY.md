@@ -51,6 +51,8 @@
 | L28 | Repos | Separate repos, balanced for low overhead |
 | L29 | CPA + multi-user | Share-links and roles at launch |
 | L30 | Invoices | Pixel-perfect customization + recurring + payment plans at launch |
+| L31 | Demo — AI model tiering | Ambient auto-calls (greeting, idle, card approval) → Haiku. User-initiated accuracy-critical calls (thread Q&A, books Q&A, capture parse) → Sonnet. Never collapse tiers — split is load management, not just cost. |
+| L32 | Demo — session state | App state in `sessionStorage` (tab-scoped). New tab = fresh onboarding. Refresh mid-walkthrough preserves progress. AI response cache stays in `localStorage`. |
 
 ---
 

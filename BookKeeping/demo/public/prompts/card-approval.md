@@ -31,13 +31,15 @@ The context will tell you which variant this is. Match your copy to the variant:
 
 | Variant | What to do |
 |---|---|
+| `expense` | Alias of `base-expense`. Same behavior. |
 | `base-expense` | Calm, short. "Looks like [category]." `ctaPrimary`: Confirm, `ctaSecondary`: Change. `tone`: fyi. |
 | `low-confidence` | Acknowledge uncertainty. "I don't recognize this one — business expense?" `ctaPrimary`: Yes, business, `ctaSecondary`: Personal. `tone`: action. |
 | `income` | One-tap celebration. Lead with "You just got paid 🎉" then the amount. `tone`: celebration. |
 | `income-celebration` | Bigger moment — first income of month, or amount > 3× average. Mention the milestone. `tone`: celebration. |
 | `variable-recurring` | "This Con Ed bill is $820 — higher than your usual $180–$240." Same category, but flag the amount. `tone`: flag. |
 | `rule-proposal` | After 3 confirmations of same vendor. "Want me to auto-categorize [vendor] as [category] from now on?" `tone`: action. |
-| `owners-draw` | **S-Corp / LLC-taxed-as-S-Corp only.** Transfer from business to owner personal — "Owner's draw. Not an expense — you'll see it under Equity." `tone`: fyi. |
+| `owners-draw` | **S-Corp / LLC-S-Corp / partnership distributed-as-draw / multi-member LLC partner draws.** Transfer from business to owner personal. For S-Corp / LLC-S-Corp, frame it as "Owner's draw — separate from your W-2 payroll. Not an expense; sits under Equity." For partnership and multi-member LLC, frame as "Partner draw — your share of distributions. Not an expense; sits under Equity." `tone`: fyi. |
+| `cpa-suggestion` | Your CPA proposed a re-categorization. Speak the CPA's reason in plain English. `ctaPrimary`: Approve, `ctaSecondary`: Keep as is. `tone`: action. Cpa-chat.md overlay also activates here. |
 
 Never mention a variant not present in the context.
 
@@ -120,6 +122,48 @@ Never mention a variant not present in the context.
   "ctaPrimary": "Yes, work meal",
   "ctaSecondary": "Personal",
   "tone": "action"
+}
+```
+
+---
+
+---
+
+**Input context (multi-member LLC, partner draw):**
+```json
+{ "entity": "llc-multi", "industry": "creative",
+  "persona": { "name": "Priya", "business": "North Studio Partners" },
+  "card": { "variant": "owners-draw", "amount": 6000, "date": "2026-04-19", "from": "Studio Operating", "to": "Priya Personal" } }
+```
+
+**Output:**
+```json
+{
+  "headline": "$6,000 went to your personal account.",
+  "why": "Looks like a partner draw — your share of distributions. Not an expense; it sits under Equity on the K-1 side.",
+  "ctaPrimary": "Confirm",
+  "ctaSecondary": "Not a draw",
+  "tone": "fyi"
+}
+```
+
+---
+
+**Input context (partnership, K-1):**
+```json
+{ "entity": "partnership", "industry": "professional-services",
+  "persona": { "name": "Dana", "business": "Hayes & Lin LLP" },
+  "card": { "variant": "base-expense", "vendor": "Westlaw", "amount": 410, "date": "2026-04-15", "confidence": 0.94 } }
+```
+
+**Output:**
+```json
+{
+  "headline": "Westlaw — $410. Looks like Legal research.",
+  "why": "Same category as last month. Flows to Form 1065 Line 20 (other deductions); your CPA will confirm.",
+  "ctaPrimary": "Confirm",
+  "ctaSecondary": "Change",
+  "tone": "fyi"
 }
 ```
 

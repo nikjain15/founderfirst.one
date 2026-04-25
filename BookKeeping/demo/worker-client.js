@@ -38,15 +38,10 @@ const INTENT_MAP = {
   "thread.idle": "thread",
   "thread.qa": "thread-qa",
 
-  // Onboarding — one prompt handles all seven steps; the step is passed
-  // in context.
-  "onboarding.entity": "onboarding",
-  "onboarding.industry": "onboarding",
-  "onboarding.payments": "onboarding",
-  "onboarding.expenses": "onboarding",
-  "onboarding.checkin": "onboarding",
-  "onboarding.bank": "onboarding",
-  "onboarding.ready": "onboarding",
+  // Onboarding intents are intentionally NOT mapped. Per settled decision #2
+  // (CLAUDE.md), onboarding uses static FALLBACK_COPY in screens/onboarding.jsx —
+  // no AI call. If a renderPenny({ intent: "onboarding.*" }) call appears,
+  // the unknown-intent throw in resolveOverlayName flags the regression.
 
   // Approval cards — one prompt covers all nine variants; the variant is
   // passed in context.
@@ -136,7 +131,8 @@ export function createClient({ workerUrl, demoToken, defaultModel, booksModel })
   }
 
   async function renderPenny({ intent, context, nocache = false, model }) {
-    const key = hashKey({ intent, context });
+    const effectiveModel = model || (intent === "books.qa" ? booksModel : defaultModel);
+    const key = hashKey({ intent, context, model: effectiveModel });
     if (!nocache) {
       const cached = localStorage.getItem(key);
       if (cached) {
@@ -161,7 +157,7 @@ export function createClient({ workerUrl, demoToken, defaultModel, booksModel })
       const raw = await callClaude({
         systemPrompt,
         userMessage,
-        model: model || (intent === "books.qa" ? booksModel : defaultModel),
+        model: effectiveModel,
       });
 
       // Penny's contract is JSON. Extract from fenced block if present.
@@ -192,26 +188,39 @@ class ValidationError extends Error {
 }
 
 function extractJSON(text) {
-  const fenced = text.match(/```json\s*([\s\S]+?)\s*```/);
-  const source = fenced ? fenced[1] : text;
-  const start = source.indexOf("{");
-  if (start === -1) throw new Error("No JSON found in model output");
+  // Prefer the LAST top-level fenced ```json block, then fall back to the
+  // LAST balanced top-level {...} object in the raw text. Models occasionally
+  // echo an example object before the real response — taking the last one
+  // keeps the live answer rather than the example.
+  const fences = [...text.matchAll(/```json\s*([\s\S]+?)\s*```/g)];
+  const source = fences.length > 0 ? fences[fences.length - 1][1] : text;
+
+  const objects = [];
   let depth = 0;
+  let start = -1;
   let inString = false;
   let escape = false;
-  for (let i = start; i < source.length; i++) {
+  for (let i = 0; i < source.length; i++) {
     const ch = source[i];
     if (escape) { escape = false; continue; }
     if (ch === "\\") { escape = true; continue; }
     if (ch === '"') { inString = !inString; continue; }
     if (inString) continue;
-    if (ch === "{") depth++;
-    else if (ch === "}") {
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
       depth--;
-      if (depth === 0) return source.slice(start, i + 1);
+      if (depth === 0 && start !== -1) {
+        objects.push(source.slice(start, i + 1));
+        start = -1;
+      } else if (depth < 0) {
+        throw new Error("Unbalanced JSON in model output");
+      }
     }
   }
-  throw new Error("Unbalanced JSON in model output");
+  if (objects.length === 0) throw new Error("No JSON found in model output");
+  return objects[objects.length - 1];
 }
 
 // Exported for unit tests.

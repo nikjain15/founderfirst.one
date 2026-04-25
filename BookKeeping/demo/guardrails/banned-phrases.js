@@ -80,11 +80,9 @@ export const BANNED_PATTERNS = [
   },
 
   // --- Banned emoji -------------------------------------------------------
-  {
-    // Uses surrogate pair ranges to catch the common disallowed smileys/warnings.
-    pattern: /[\u{1F600}\u{1F601}\u{1F602}\u{1F603}\u{1F604}\u{1F605}\u{1F606}\u{1F607}\u{1F608}\u{1F609}\u{1F60A}\u{1F44D}\u2705\u26A0]/u,
-    reason: "Disallowed emoji. Only 🎉 👋 💪 and the ✓ text character are approved."
-  },
+  // Emoji enforcement lives in voice-validator.js via the APPROVED_EMOJI
+  // allow-list (only 🎉 👋 💪 are permitted; ✓ rides through as text).
+  // The previous deny-list duplicated and contradicted that gate — retired.
 
   // --- British spellings (sample — validator adds more) ------------------
   {

@@ -13,6 +13,8 @@ export default function Toast({ message, onDone, duration = 2400, bottom = 80 })
 
   return (
     <div
+      role="status"
+      aria-live="polite"
       style={{
         position: "absolute",
         bottom,

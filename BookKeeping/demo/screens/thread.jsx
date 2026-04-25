@@ -9,6 +9,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { ApprovalCard } from "./card.jsx";
 import { CARD_VARIANTS } from "../constants/variants.js";
+import { THREAD_INTRO_COPY, ERROR_COPY } from "../constants/copy.js";
 
 const fmt = (n) => {
   if (n == null) return "";
@@ -41,14 +42,14 @@ export default function ThreadScreen({ ai, state, set, navigate, scenario }) {
     if (introStep === "name") {
       set({ persona: { ...persona, firstName: val, name: val } });
       setIntroHistory((p) => [...p,
-        { headline: "What's your name?", why: "So Penny can speak to you directly.", isUser: false },
+        { ...THREAD_INTRO_COPY.nameQuestion, isUser: false },
         { text: val, isUser: true },
       ]);
       setIntroInput("");
       setIntroLoading(true);
       setTimeout(() => {
         setIntroLoading(false);
-        setIntroHistory((p) => [...p, { headline: `Nice to meet you, ${val}! What's your business called?`, why: "So Penny speaks to you, not just anyone.", isUser: false }]);
+        setIntroHistory((p) => [...p, { ...THREAD_INTRO_COPY.businessQuestion(val), isUser: false }]);
         setIntroStep("business");
       }, 700);
     } else if (introStep === "business") {
@@ -96,11 +97,7 @@ export default function ThreadScreen({ ai, state, set, navigate, scenario }) {
       .then((msg) => { if (!cancelled) { setGreetingMsg(msg); setGreetingLoading(false); } })
       .catch(() => {
         if (!cancelled) {
-          setGreetingMsg({
-            headline: `Hi${persona.firstName ? `, ${persona.firstName}` : ""}. Here's what I'm seeing.`,
-            why: "I pulled in the last 30 days.",
-            tone: "fyi",
-          });
+          setGreetingMsg(THREAD_INTRO_COPY.greetingFallback(persona.firstName || ""));
           setGreetingLoading(false);
         }
       });
@@ -123,7 +120,7 @@ export default function ThreadScreen({ ai, state, set, navigate, scenario }) {
       .then((msg) => { if (!cancelled) { setIdleMsg(msg); setIdleLoading(false); } })
       .catch(() => {
         if (!cancelled) {
-          setIdleMsg({ headline: "That's it for now. I'll keep watching.", tone: "fyi" });
+          setIdleMsg(THREAD_INTRO_COPY.idleFallback);
           setIdleLoading(false);
         }
       });
@@ -169,7 +166,7 @@ export default function ThreadScreen({ ai, state, set, navigate, scenario }) {
       .catch(() => {
         setQaHistory((prev) => [...prev, {
           question,
-          answer: { headline: "I couldn't get that right now.", why: "Try again in a moment.", tone: "fyi" },
+          answer: ERROR_COPY.threadQaError,
         }]);
         setAskLoading(false);
       });
@@ -193,7 +190,7 @@ export default function ThreadScreen({ ai, state, set, navigate, scenario }) {
           <div className="p-mark p-mark-sm p-mark--online">P</div>
           <div className="thread-header-meta">
             <span className="thread-header-name">Penny</span>
-            <span className="thread-header-status">online · watching your accounts</span>
+            <span className="thread-header-status">{THREAD_INTRO_COPY.headerStatus}</span>
           </div>
         </div>
         <button className="thread-menu-btn" onClick={() => navigate("#/avatar")} aria-label="Open menu" type="button">
@@ -212,7 +209,7 @@ export default function ThreadScreen({ ai, state, set, navigate, scenario }) {
           <>
             {/* First-time intro — Penny asks name then business conversationally */}
             {introStep === "name" && introHistory.length === 0 && (
-              <PennyBubble msg={{ headline: "What's your name?", why: "So Penny can speak to you directly." }} loading={false} />
+              <PennyBubble msg={THREAD_INTRO_COPY.nameQuestion} loading={false} />
             )}
             {introHistory.map((m, i) =>
               m.isUser
@@ -280,7 +277,7 @@ export default function ThreadScreen({ ai, state, set, navigate, scenario }) {
             ref={askInputRef}
             className="thread-ask-input"
             type="text"
-            placeholder={introStep === "name" ? "Your first name…" : "Your business name…"}
+            placeholder={introStep === "name" ? THREAD_INTRO_COPY.namePlaceholder : THREAD_INTRO_COPY.businessPlaceholder}
             value={introInput}
             onChange={(e) => setIntroInput(e.target.value)}
             onFocus={() => setAskFocused(true)}
@@ -292,7 +289,7 @@ export default function ThreadScreen({ ai, state, set, navigate, scenario }) {
           <input
             className="thread-ask-input"
             type="text"
-            placeholder="Ask Penny anything…"
+            placeholder={THREAD_INTRO_COPY.askPlaceholder}
             value={askVal}
             onChange={(e) => setAskVal(e.target.value)}
             onFocus={() => setAskFocused(true)}
@@ -371,7 +368,7 @@ function ConfirmedSlug({ card }) {
   const sign     = isIncome ? "+" : isOwnDraw ? "" : "-";
   return (
     <div className="confirmed-slug">
-      <span className="confirmed-slug-vendor">{card.vendor || "Transaction"}</span>
+      <span className="confirmed-slug-vendor">{card.vendor || THREAD_INTRO_COPY.confirmedSlugFallbackVendor}</span>
       <span className="confirmed-slug-amount">{sign}{fmt(card.amount)}</span>
       <span className="confirmed-slug-check">✓</span>
     </div>

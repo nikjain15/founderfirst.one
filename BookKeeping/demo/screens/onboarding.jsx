@@ -12,6 +12,7 @@ import React, {
 } from "react";
 import posthog from "posthog-js";
 import { ENTITY_TYPES } from "../constants/variants.js";
+import { ONBOARDING_COPY } from "../constants/copy.js";
 
 const STEP_SEQUENCE = [
   "welcome", "entity", "industry", "payments", "expenses", "checkin", "bank", "pulling",
@@ -57,16 +58,10 @@ const CHECKIN_OPTIONS = [
 const CUSTOM_DAYS  = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const CUSTOM_TIMES = ["7am", "8am", "9am", "10am", "12pm", "3pm", "5pm", "6pm", "7pm", "8pm"];
 
-const FALLBACK_COPY = {
-  welcome:       { greeting: "👋 Hi, I'm Penny.", headline: "Nice to meet you. The books are on me from here.", why: "One quick setup and I take it from here — for good." },
-  entity:        { headline: "Let me make sure I understand your setup first.",  why: "Get this right once and I'll handle everything the right way — every time."  },
-  "entity-diag": { headline: "No worries at all — let's work it out together.", why: "Two questions and I'll know exactly what to do."                              },
-  industry:      { headline: "What kind of work do you do?",                    why: "I want to know your business the way you know it."                            },
-  payments:      { headline: "How do your clients pay you?",                    why: "Every payment you earn — I'll be watching for it."                            },
-  expenses:      { headline: "What do you usually spend on?",                   why: "Tell me once. I'll recognize it every time after that."                       },
-  checkin:       { headline: "When's a good time for me to check in?",          why: "I'll have everything ready — you just show up."                               },
-  bank:          { headline: "Which account should I start watching?",          why: "I read every transaction as it comes in. Your money never moves."             },
-};
+// Per-step Penny copy lives in constants/copy.js → ONBOARDING_COPY (SCAF-3).
+// FALLBACK_COPY is a thin alias kept so the rest of this file reads naturally;
+// the source of truth is the registry import above.
+const FALLBACK_COPY = ONBOARDING_COPY;
 
 // --- Entity SVG icons (professional, stroke-based, no emoji) -----------------
 
@@ -178,7 +173,7 @@ export default function OnboardingScreen({ ai, state, set, navigate }) {
   useEffect(() => {
     if (step === "entity-diag" && diagQ === "resolve") { setPennyMsg(null); setPennyLoading(false); return; }
     if (step === "pulling") {
-      setPennyMsg({ headline: "Pulling the last 30 days…", why: "Reading transactions. Nothing is being moved." });
+      setPennyMsg(ONBOARDING_COPY.pulling);
       return;
     }
     const intent = STEP_INTENT[step];
@@ -447,9 +442,9 @@ function WelcomePreview() {
 }
 
 function WelcomeSpeech({ msg, loading, headlineRef }) {
-  const greeting = msg?.greeting || "👋 Hi, I'm Penny.";
+  const greeting = msg?.greeting || ONBOARDING_COPY.welcomeFallbackGreeting;
   const headline = msg?.headline || (loading ? "\u00A0" : FALLBACK_COPY.welcome.headline);
-  const why      = msg?.why      || "Takes about 60 seconds to get started.";
+  const why      = msg?.why      || ONBOARDING_COPY.welcomeFallbackWhy;
   return (
     <div className="ob-welcome-wrap">
       <div className="p-mark p-mark-md">P</div>
@@ -495,7 +490,7 @@ function PullingBody() {
     <div className="pulling-body">
       <div className="p-mark p-mark-lg" style={{ margin: "0 auto" }}>P</div>
       <div className="pulling-spinner" aria-hidden="true" />
-      <p className="pulling-hint">I'll show you the first few in a moment.</p>
+      <p className="pulling-hint">{ONBOARDING_COPY.pullingHint}</p>
     </div>
   );
 }

@@ -6,6 +6,46 @@
 
 ## Changelog
 
+### 25 April 2026 — SCAF-3: constants/copy.js registry
+
+Every static Penny utterance, fallback message, empty-state line, toast, and user-visible error now lives in one frozen module: `constants/copy.js`. Screens import from it; no screen hand-writes these strings. AI-generated copy still flows through `worker-client.js → renderPenny()` — the registry only owns STATIC fallbacks and acknowledgments.
+
+**New:**
+- `constants/copy.js` — six frozen top-level groups: `ONBOARDING_COPY` (the 8 locked headline/why pairs + welcome + pulling fallbacks), `THREAD_INTRO_COPY` (name/business intro + greeting/idle fallbacks + placeholders + header status), `CARD_FALLBACK_COPY` (every branch of `fallbackMsg()` + default CTAs + confidence-bar labels + CPA-suggestion variant labels), `EMPTY_STATE_COPY` (Needs-a-look empty, drill-down empties, memory empty, archived-work empty, CPA-side empties), `TOAST_COPY` (every toast across founder + CPA screens, grouped by source), and `ERROR_COPY` (Penny-voice qa errors + the five CPA AuthGate form-validation strings, extracted as-is — Penny-voice rewrite ships in a small follow-up commit).
+- `tests/copy.test.js` — freeze checks for every group + nested onboarding row, byte-identical assertions for all 8 locked onboarding strings against the "Approved onboarding copy" table in this file, and shape tests for every interpolation function (`businessQuestion`, `greetingFallback`, `income`, `ownersDraw`, `lowConfidence`, `expenseDefault`, `changedTo`, `ruleCreated`, `booksSentToCpa`, `staleAddRedirect`, `alreadyConnected`, `providerConnected`, `emailConnectedWatching`, `importComplete`, `invoiceSent`, `recurringScheduled`).
+
+**Refactored — screens import from the registry (13 files):**
+- `screens/onboarding.jsx` — `FALLBACK_COPY` is now a thin alias over `ONBOARDING_COPY`. Pulling-step copy + WelcomeSpeech defensive defaults route through the registry.
+- `screens/thread.jsx` — intro questions, placeholders, greeting/idle fallbacks, qa-error fallback, header status, confirmed-slug vendor fallback.
+- `screens/card.jsx` — `fallbackMsg()` switches on `CARD_FALLBACK_COPY` per variant; CTAs, vendor fallbacks, sheet title, confidence labels, CPA-suggestion eyebrow/buttons, and every toast (`Got it ✓`, `Changed to ${cat}`, `Saved for later. I'll bring it back.`, `Auto-categorizing ${vendor} as ${category} going forward ✓`, `Category updated ✓`, `Kept as is.`).
+- `screens/books.jsx` — `All caught up ✓`, all four `No data available.` / `No transactions found.` / `No expense data available.` empty states, the books.qa fallback, six toasts (`Detail data still loading.`, `Invite link created.`, `Invite revoked.`, `Books sent to ${cpaName} ✓`, the stale-add redirect, `Category updated ✓` + `Kept as is.` on cpa-suggestion approve/reject).
+- `screens/add.jsx` — `No providers matched.` empty state and seven toasts (`Logged. I'll add it to your books.`, `Saved for later. I'll bring it back.`, `${name} is already connected.`, `${name} connected.`, `Account disconnected.`, `${name} connected — watching for receipts.`, `${count} transactions imported. Check your Penny thread.`, `Couldn't parse that. Try again in a moment.`).
+- `screens/avatar-menu.jsx` — `Nothing here yet.` + `No archived work to show.` empty states, six toasts (`Invite link created.`, `Invite revoked.`, `CPA access removed.`, `Forgotten.`, `Entity type updated.`).
+- `screens/invoice.jsx` — three toasts (`Invoice sent to ${email}.`, `Recurring ${freq} invoice scheduled ✓`, `Draft saved.`).
+- `screens/cpa/Books.jsx` — seven toasts (`Transaction added — pending founder acknowledgment.`, `Transaction flagged.`, `Note saved.`, `Suggestion sent to founder for approval.`, `PDF export coming soon.`, `CSV downloaded.`, `Coming in Step 8.`).
+- `screens/cpa/Chat.jsx` — `Ask about specific transactions, IRS lines, totals, or anything in these books.` empty hint, the `Thinking…` loading label, the `I don't have enough data to answer that right now.` no-data fallback, and the `Penny is unavailable right now.` toast.
+- `screens/cpa/CashFlow.jsx` — `Export ready — demo only.` toast (× 2).
+- `screens/cpa/ProfitLoss.jsx` — `Export ready — demo only.` toast (× 3).
+- `screens/cpa/LearnedRules.jsx` — `No rules yet. Corrections you approve will appear here.` empty state.
+- `screens/cpa/AuthGate.jsx` — five form-validation strings extracted to `ERROR_COPY` (extract-as-is in this commit; Penny-voice rewrite ships in a follow-up).
+
+**Grep checks (all passing):**
+- `grep -rE '"(Hi|Hello|Nice to meet|Let me|I.ll watch|Tap .Invite|All caught up)"' demo/screens` → 0 hits.
+- `grep -rn 'Saved for later' demo/constants demo/screens` → only the registry definition + two import-call sites (`card.jsx`, `add.jsx`).
+- `grep -rn 'All caught up' demo/constants demo/screens` → only the registry definition.
+
+**Build verification:** `vite build` — 64 modules transformed (one more than SCAF-2's 63 due to the new copy.js). Both bundles compile cleanly. Test suite: 76/78 pass (21 variants + 48 copy + 7 of 9 validator; the 2 validator failures are pre-existing and untouched by this commit — empty diff vs. HEAD on `tests/validator.test.js` and `guardrails/`).
+
+**Out of scope for this commit (tracked for follow-ups):**
+- Sheet titles, eyebrow labels, screen titles (UI structural chrome — not Penny voice).
+- Action-state button labels (`Sending…`, `Connecting…`, etc. — tightly coupled to local component state).
+- Penny-tonal narrative helper text (e.g. `Things Penny has learned. Tap "Forget" to remove any rule.`, `Penny watches your inbox for receipts and invoices.`) — these are real Penny copy but were not enumerated in the SCAF-3 proposal; a separate commit may extract them.
+- Penny-voice rewrite of the five CPA AuthGate form-validation strings (CEO-approved direction, 25 Apr 2026; ships as a small follow-up commit).
+
+**Settled decision 19:** all static Penny copy lives in `constants/copy.js`. Never hard-code a static Penny utterance in a screen file. When adding a new static string (toast, empty state, fallback, error), add it to the registry first; the screen then imports.
+
+---
+
 ### 24/25 April 2026 — SCAF-2: constants/variants.js registry
 
 Every string literal that names a concept — card variants, entity types, industry keys, approval types, notification modes — now lives in one frozen module: `constants/variants.js`. Screens import from it; no screen hand-writes these strings. The two-helper naming collision on `formLabelForEntity` is resolved — short labels stay in `util/irsLookup.js` as `shortFormLabelForEntity`; full labels live on the new registry.
@@ -254,6 +294,8 @@ These are locked. If your work conflicts with one, flag it and stop.
 15. **`.cpa-app` positioning wrapper.** The CPA view replaces `.phone` as the positioning context for all overlays. Every sheet, backdrop, and toast inside the CPA view uses `position: absolute` anchored on `.cpa-app`. The portal target is `#sheet-root-cpa` (inside `.cpa-app`), not `#sheet-root` (inside `.phone`). Never use `position: fixed` in either context.
 16. **All bottom sheets use `<Sheet>`.** Every bottom sheet — founder app and CPA view — renders through `components/Sheet.jsx`. Never roll your own backdrop / portal / animation. See "Shared components catalog" below.
 17. **All dark-scrim overlays use `<FullScreenOverlay>`.** Voice recording, photo capture processing, and any full-viewport modal state render through `components/FullScreenOverlay.jsx`. Never roll your own.
+18. **All enum-typed strings live in `constants/variants.js`.** Card variants, entity types, industry keys, approval types, notification modes. Never hand-write one in a screen — import the enum.
+19. **All static Penny copy lives in `constants/copy.js`.** Locked onboarding lines, thread-intro and card fallbacks, empty-state lines, toasts, and user-visible errors. Never hard-code a static Penny utterance in a screen — import from the registry. AI-generated copy still flows through `worker-client.js → renderPenny()`; the registry only owns STATIC fallbacks and acknowledgments. The 8 onboarding headline/why pairs are LOCKED — see "Approved onboarding copy" table below.
 
 ---
 
@@ -337,7 +379,9 @@ When building new screens or features, reach for these canonical components befo
 
 ## Constants catalog
 
-Every string literal that names a concept lives in `constants/variants.js`. Import from there; do not hand-write these strings in a screen. When you need a new concept-level string, add the enum member first — the screen then imports. The coverage tests in `tests/variants.test.js` keep the enums in sync with `public/config/industries.json` and `public/config/scenarios.json`.
+Every string literal that names a concept lives in `constants/variants.js`. Every static Penny utterance, fallback, empty-state, toast, and user-visible error lives in `constants/copy.js`. Import from these two modules; do not hand-write the strings in a screen. When you need a new entry, add it to the matching registry first — the screen then imports. Coverage tests in `tests/variants.test.js` and `tests/copy.test.js` keep the registries honest.
+
+### `constants/variants.js` — concept-level enums
 
 | Export | Purpose |
 |---|---|
@@ -353,10 +397,26 @@ Every string literal that names a concept lives in `constants/variants.js`. Impo
 | `isLlc(entity)` | True for any LLC flavour (`LLC`, `LLC_SINGLE`, `LLC_MULTI`). |
 | `formLabelForEntity(entity)` | Full tax-form label for page titles — `"Schedule C"` / `"Form 1120-S"` / `"Form 1065"`. For the compact chip under a category (`"Sch C · Line 24b"`), use `shortFormLabelForEntity` from `util/irsLookup.js`. |
 
+### `constants/copy.js` — static Penny copy
+
+| Export | Purpose |
+|---|---|
+| `ONBOARDING_COPY` | The 8 LOCKED headline/why pairs from the "Approved onboarding copy" table below, plus welcome screen + pulling-step fallbacks. Editing any of the 8 locked rows requires CEO sign-off — `tests/copy.test.js` enforces byte-identity. |
+| `THREAD_INTRO_COPY` | First-time intro flow (`What's your name?` / `Nice to meet you, ${name}!`), ask-bar placeholders, header status (`online · watching your accounts`), and Penny-thread greeting/idle fallbacks. `businessQuestion(name)` and `greetingFallback(firstName)` are interpolation functions; everything else is plain string. |
+| `CARD_FALLBACK_COPY` | Every branch of `fallbackMsg()` in `card.jsx` — `income(vendor, amountFmt)`, `ownersDraw(amountFmt)`, `lowConfidence(amountFmt)`, `expenseDefault(vendor, amountFmt, categoryGuess)`. Plus default CTAs (`Confirm`, `Change`), variant-specific buttons (`Yes, auto-categorize`, `Skip for now`, `Approve`, `Keep as is`), vendor fallbacks, the category-sheet title, and confidence-bar labels (`High confidence`, `Medium confidence`, `I'm not sure`). |
+| `EMPTY_STATE_COPY` | `All caught up ✓` (Needs a look empty), drill-down empties (`No data available.`, `No expense data available.`, `No transactions found.`), `No providers matched.`, memory empty, archived-work empty, and the CPA-side learned-rules + chat empties. ✓ in "All caught up ✓" is the Unicode character U+2713, never an emoji. |
+| `TOAST_COPY` | Every toast across founder + CPA screens. Plain strings for fixed copy (`Got it ✓`, `Saved for later. I'll bring it back.`, `Account disconnected.`, `Draft saved.`, `Note saved.`, etc.); functions for interpolated values (`changedTo(category)`, `ruleCreated(vendor, category)`, `booksSentToCpa(cpaName)`, `staleAddRedirect(cpaName)`, `alreadyConnected(name)`, `providerConnected(name)`, `emailConnectedWatching(name)`, `importComplete(count)`, `invoiceSent(email)`, `recurringScheduled(freqLowercase)`). Grouped by source screen in inline comments. |
+| `ERROR_COPY` | Recovery-oriented Penny-voice errors (`threadQaError`, `booksQaError`, `cpaPennyNoData`, `cpaChatThinking`) plus the five CPA AuthGate form-validation strings (`fieldRequiredName`, `fieldInvalidEmail`, `fieldPasswordMin`, `fieldLicenseFormat`, `fieldStateCode`). The form strings ship as-is in SCAF-3; a small follow-up commit rewrites them in Penny voice (CEO direction, 25 Apr 2026). |
+
 **How to add a new concept-level string (3 steps):**
 1. Add the member to the matching enum in `constants/variants.js` — keep keys `SCREAMING_SNAKE_CASE` and values kebab-case.
 2. If it's an `INDUSTRY_KEYS` or `ENTITY_TYPES` addition that should appear in live data, also add it to the relevant config JSON — the coverage test will fail otherwise.
 3. Import and use. Never hand-write the string in a screen.
+
+**How to add a new static Penny copy entry (3 steps):**
+1. Pick the right bucket in `constants/copy.js` — toast → `TOAST_COPY`, empty state → `EMPTY_STATE_COPY`, AI-fallback → the matching `*_FALLBACK_COPY` group, error → `ERROR_COPY`.
+2. Add a plain string for fixed copy. Use a function only when runtime values must be interpolated; the function returns the same string or message-object shape the call site previously inlined.
+3. Import the bucket and use the new key. If the new entry is a Penny utterance fallback (not just a toast), add a tone check to `tests/copy.test.js` so future edits are caught.
 
 ---
 
@@ -508,6 +568,7 @@ These were caught and fixed during the onboarding build. Do not repeat them.
 - Do not add any input fields, labels, or capture logic to the welcome screen.
 
 **Penny bubble copy (sub-headline / "why" line)**
+- The only legal home for the static strings is `constants/copy.js → ONBOARDING_COPY`. The 8 entries in the locked table below are duplicated byte-identically in the registry; `tests/copy.test.js` enforces parity. Editing copy means editing the registry, not the component.
 - Must pass the one-line test: *would a caring, knowledgeable human bookkeeper say this?*
 - The goal: the user should feel *handled* — not informed, not processed. Someone capable has this.
 - Never say "I'll tune myself" — robotic. Never "so you don't have to think about it" — dismissive. Never "from day one" — cliché. Never "I'll watch for these automatically" alone — too mechanical without warmth.

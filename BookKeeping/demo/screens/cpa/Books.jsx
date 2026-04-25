@@ -22,6 +22,7 @@ import {
   annotateTransaction,
   suggestReclassification,
 } from "../../util/cpaState.js";
+import { TOAST_COPY } from "../../constants/copy.js";
 
 // Common expense categories for reclassification picker
 const RECLASSIFY_CATEGORIES = [
@@ -512,19 +513,19 @@ export default function Books({ clientId, clientData, approvals, cpaAccount, onU
       const result = addTransactionAsCpa(prev, clientId, txnFields, null);
       return result.newCpa;
     });
-    showToast("Transaction added — pending founder acknowledgment.");
+    showToast(TOAST_COPY.cpaTxnAdded);
   }
 
   function handleFlag(reason, note) {
     if (!onUpdateCpa || !activeRow) return;
     onUpdateCpa((prev) => flagTransaction(prev, clientId, activeRow.id, reason, note));
-    showToast("Transaction flagged.");
+    showToast(TOAST_COPY.cpaTxnFlagged);
   }
 
   function handleAnnotate(text) {
     if (!onUpdateCpa || !activeRow) return;
     onUpdateCpa((prev) => annotateTransaction(prev, clientId, activeRow.id, text));
-    showToast("Note saved.");
+    showToast(TOAST_COPY.cpaNoteSaved);
   }
 
   function handleSuggest(fromCategory, toCategory, note) {
@@ -533,7 +534,7 @@ export default function Books({ clientId, clientData, approvals, cpaAccount, onU
       const { newCpa } = suggestReclassification(prev, clientId, activeRow.id, fromCategory, toCategory, note);
       return newCpa;
     });
-    showToast("Suggestion sent to founder for approval.");
+    showToast(TOAST_COPY.cpaSuggestionSent);
   }
 
   function openMenu(row) {
@@ -663,7 +664,7 @@ export default function Books({ clientId, clientData, approvals, cpaAccount, onU
         {/* Export buttons */}
         <button
           className="btn-ghost"
-          onClick={() => showToast("PDF export coming soon.")}
+          onClick={() => showToast(TOAST_COPY.cpaPdfComingSoon)}
           style={{ fontSize: 12, padding: "7px 14px" }}
         >
           Export PDF
@@ -693,7 +694,7 @@ export default function Books({ clientId, clientData, approvals, cpaAccount, onU
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast("CSV downloaded.");
+            showToast(TOAST_COPY.cpaCsvDownloaded);
           }}
           style={{ fontSize: 12, padding: "7px 14px" }}
         >
@@ -884,7 +885,7 @@ export default function Books({ clientId, clientData, approvals, cpaAccount, onU
                 </div>
                 <div style={{ padding: "10px 0", textAlign: "center" }}>
                   <button
-                    onClick={() => showToast("Coming in Step 8.")}
+                    onClick={() => showToast(TOAST_COPY.cpaComingInStep8)}
                     style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 16, padding: "2px 4px", fontFamily: "var(--font-sans)" }}
                   >
                     ⋯

@@ -13,6 +13,7 @@ import {
   INDUSTRY_KEYS,
   NOTIFICATION_MODES,
 } from "../constants/variants.js";
+import { EMPTY_STATE_COPY, TOAST_COPY } from "../constants/copy.js";
 
 function Toast({ msg }) {
   if (!msg) return null;
@@ -219,7 +220,7 @@ function ArchivedWorkSheet({ archive, onClose }) {
           )}
 
           {rules.length === 0 && flags.length === 0 && annotations.length === 0 && (
-            <p style={{ fontSize: 13, color: "var(--ink-4)", textAlign: "center", padding: "20px 0" }}>No archived work to show.</p>
+            <p style={{ fontSize: 13, color: "var(--ink-4)", textAlign: "center", padding: "20px 0" }}>{EMPTY_STATE_COPY.noArchivedWork}</p>
           )}
       </div>
     </Sheet>
@@ -271,7 +272,7 @@ function YourCpaRow({ state, set, showToast }) {
     if (!trimmed) return;
     const { newCpa } = generateInvite(cpa, "founder-client", trimmed, state.persona?.cpaName || null);
     set({ cpa: newCpa });
-    showToast("Invite link created.");
+    showToast(TOAST_COPY.inviteCreated);
     setEmail("");
   }
 
@@ -279,7 +280,7 @@ function YourCpaRow({ state, set, showToast }) {
     if (!activeInvite) return;
     const newCpa = revokeInvite(cpa, activeInvite.id);
     set({ cpa: newCpa });
-    showToast("Invite revoked.");
+    showToast(TOAST_COPY.inviteRevoked);
   }
 
   function handleRevokeCpaAccess() {
@@ -301,7 +302,7 @@ function YourCpaRow({ state, set, showToast }) {
     };
     set({ cpa: newCpa });
     setRevokeOpen(false);
-    showToast("CPA access removed.");
+    showToast(TOAST_COPY.cpaAccessRemoved);
   }
 
   function handleCopy() {
@@ -471,7 +472,7 @@ function ProfileScreen({ state, set, onBack, showToast }) {
   const confirmEntityChange = useCallback(() => {
     update("entity", pendingEntity);
     setShowEntitySheet(false);
-    showToast("Entity type updated.");
+    showToast(TOAST_COPY.entityTypeUpdated);
   }, [pendingEntity, update, showToast]);
 
   const ENTITY_OPTIONS = [
@@ -553,7 +554,7 @@ function MemoryScreen({ onBack, showToast }) {
 
   const forget = (id) => {
     setMemories((prev) => prev.filter((m) => m.id !== id));
-    showToast("Forgotten.");
+    showToast(TOAST_COPY.memoryForgotten);
   };
 
   return (
@@ -564,7 +565,7 @@ function MemoryScreen({ onBack, showToast }) {
           Things Penny has learned. Tap "Forget" to remove any rule.
         </p>
         {memories.length === 0 ? (
-          <p style={{ fontSize: 14, color: "var(--ink-4)", textAlign: "center", marginTop: 40 }}>Nothing here yet.</p>
+          <p style={{ fontSize: 14, color: "var(--ink-4)", textAlign: "center", marginTop: 40 }}>{EMPTY_STATE_COPY.memoryEmpty}</p>
         ) : (
           <div className="card" style={{ padding: 0, overflow: "hidden" }}>
             {memories.map((m, i) => (

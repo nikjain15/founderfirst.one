@@ -9,6 +9,7 @@
 import React, { useState } from "react";
 import { deleteLearnedRule } from "../../util/cpaState.js";
 import Sheet from "../../components/Sheet.jsx";
+import { EMPTY_STATE_COPY } from "../../constants/copy.js";
 
 function formatDate(ts) {
   if (!ts) return "—";
@@ -119,7 +120,7 @@ export default function LearnedRules({ clientId, clientData, onUpdateCpa }) {
             fontSize: "var(--fs-body)",
           }}
         >
-          No rules yet. Corrections you approve will appear here.
+          {EMPTY_STATE_COPY.cpaLearnedRulesEmpty}
         </div>
       ) : (
         <>

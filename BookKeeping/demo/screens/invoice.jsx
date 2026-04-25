@@ -8,6 +8,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import Sheet from "../components/Sheet.jsx";
+import { TOAST_COPY } from "../constants/copy.js";
 
 const fmt = (n) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(n || 0);
@@ -201,7 +202,7 @@ function SendSheet({ invoiceNumber, onClose, showToast }) {
 
   const send = () => {
     if (!email.trim()) return;
-    showToast(`Invoice sent to ${email.trim()}.`);
+    showToast(TOAST_COPY.invoiceSent(email.trim()));
     onClose();
   };
 
@@ -264,7 +265,7 @@ function RecurringSheet({ onClose, showToast, invoiceData }) {
   function handleConfirm() {
     setConfirmed(true);
     setTimeout(() => {
-      showToast(`Recurring ${freq.toLowerCase()} invoice scheduled ✓`);
+      showToast(TOAST_COPY.recurringScheduled(freq.toLowerCase()));
       onClose();
     }, 1200);
   }
@@ -637,7 +638,7 @@ ${data.paymentMethods?.length ? `<div class="notes"><p class="eyebrow" style="ma
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn btn-ghost" type="button" style={{ flex: 1 }} onClick={() => {
               set({ invoiceDraft: invoiceData });
-              showToast("Draft saved.");
+              showToast(TOAST_COPY.draftSaved);
             }}>
               Save draft
             </button>

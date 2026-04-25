@@ -11,6 +11,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { createClient } from "../../worker-client.js";
+import { EMPTY_STATE_COPY, TOAST_COPY, ERROR_COPY } from "../../constants/copy.js";
 
 // ── Local toast ───────────────────────────────────────────────────────────────
 function Toast({ message, onDone }) {
@@ -71,7 +72,7 @@ function Bubble({ role, text, loading }) {
       >
         {loading ? (
           <span style={{ color: isCpa ? "rgba(255,255,255,0.5)" : "var(--ink-4)" }}>
-            Thinking…
+            {ERROR_COPY.cpaChatThinking}
           </span>
         ) : (
           text
@@ -141,7 +142,7 @@ export default function Chat({ clientId, clientData, cpaAccount, onUpdateCpa }) 
 
       const pennyMsg = {
         role: "penny",
-        text: response?.headline || response?.answer || response?.why || "I don't have enough data to answer that right now.",
+        text: response?.headline || response?.answer || response?.why || ERROR_COPY.cpaPennyNoData,
         ts: Date.now(),
       };
 
@@ -160,7 +161,7 @@ export default function Chat({ clientId, clientData, cpaAccount, onUpdateCpa }) 
         };
       });
     } catch {
-      showToast("Penny is unavailable right now.");
+      showToast(TOAST_COPY.cpaPennyUnavailable);
     } finally {
       setLoading(false);
     }
@@ -213,7 +214,7 @@ export default function Chat({ clientId, clientData, cpaAccount, onUpdateCpa }) 
               fontSize: "var(--fs-body)",
             }}
           >
-            Ask about specific transactions, IRS lines, totals, or anything in these books.
+            {EMPTY_STATE_COPY.cpaChatEmptyHint}
           </div>
         )}
 

@@ -18,6 +18,7 @@ import {
   INDUSTRY_KEYS,
   formLabelForEntity,
 } from "../constants/variants.js";
+import { EMPTY_STATE_COPY, TOAST_COPY, ERROR_COPY } from "../constants/copy.js";
 
 const fmt = (n) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -52,14 +53,14 @@ function InviteCpaPanel({ state, set, showToast }) {
     if (!trimmed) return;
     const { newCpa } = generateInvite(cpa, "founder-client", trimmed, state.persona?.cpaName || null);
     set({ cpa: newCpa });
-    showToast("Invite link created.");
+    showToast(TOAST_COPY.inviteCreated);
   }
 
   function handleRevoke() {
     if (!activeInvite) return;
     const newCpa = revokeInvite(cpa, activeInvite.id);
     set({ cpa: newCpa });
-    showToast("Invite revoked.");
+    showToast(TOAST_COPY.inviteRevoked);
   }
 
   function handleCopy() {
@@ -180,7 +181,7 @@ function SendToCPASheet({ persona, ledger, ddData, state, set, onClose, showToas
     setSent(true);
     setTimeout(() => {
       onClose();
-      showToast(`Books sent to ${cpaName || cpaEmail || "your CPA"} ✓`);
+      showToast(TOAST_COPY.booksSentToCpa(cpaName || cpaEmail || "your CPA"));
     }, 1400);
   }
 
@@ -549,7 +550,7 @@ function FlaggedSheet({ card, persona, ai, onClose, onAction, onApprove, onRejec
 // P&L view — income lines, expense lines, net
 function PLView({ data }) {
   if (!data) return (
-    <p style={{ padding: "24px 0", color: "var(--ink-4)", fontSize: 14 }}>No data available.</p>
+    <p style={{ padding: "24px 0", color: "var(--ink-4)", fontSize: 14 }}>{EMPTY_STATE_COPY.noData}</p>
   );
 
   const totalIncome   = data.incomeLines.reduce((s, l) => s + l.amount, 0);
@@ -623,7 +624,7 @@ function PLView({ data }) {
 // Expenses by category — proportion bars
 function ExpensesView({ data }) {
   if (!data || !data.length) return (
-    <p style={{ padding: "24px 0", color: "var(--ink-4)", fontSize: 14 }}>No data available.</p>
+    <p style={{ padding: "24px 0", color: "var(--ink-4)", fontSize: 14 }}>{EMPTY_STATE_COPY.noData}</p>
   );
 
   const total = data.reduce((s, c) => s + c.amount, 0);
@@ -670,7 +671,7 @@ function ExpensesView({ data }) {
 // Income by client — sorted by amount, with % badge
 function IncomeView({ data }) {
   if (!data || !data.length) return (
-    <p style={{ padding: "24px 0", color: "var(--ink-4)", fontSize: 14 }}>No data available.</p>
+    <p style={{ padding: "24px 0", color: "var(--ink-4)", fontSize: 14 }}>{EMPTY_STATE_COPY.noData}</p>
   );
 
   const total  = data.reduce((s, c) => s + c.amount, 0);
@@ -726,7 +727,7 @@ function IncomeView({ data }) {
 // Full ledger — flat list, most recent first
 function LedgerView({ data }) {
   if (!data || !data.length) return (
-    <p style={{ padding: "24px 0", color: "var(--ink-4)", fontSize: 14 }}>No transactions found.</p>
+    <p style={{ padding: "24px 0", color: "var(--ink-4)", fontSize: 14 }}>{EMPTY_STATE_COPY.noTransactions}</p>
   );
 
   return (
@@ -937,7 +938,7 @@ function TaxFormPreviewSheet({ expenses, entity, month, onClose }) {
           </p>
 
           {groups.length === 0 ? (
-            <p style={{ fontSize: 14, color: "var(--ink-4)" }}>No expense data available.</p>
+            <p style={{ fontSize: 14, color: "var(--ink-4)" }}>{EMPTY_STATE_COPY.noExpenseData}</p>
           ) : (
             groups.map((group, gi) => (
               <div key={group.lineLabel} style={{ marginBottom: 16 }}>
@@ -1113,7 +1114,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
 
   const handleDrilldown = useCallback((slug) => {
     if (!ddData || !ddData[slug]) {
-      showToast("Detail data still loading.");
+      showToast(TOAST_COPY.detailLoading);
       return;
     }
     setDrilldown(slug);
@@ -1130,7 +1131,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
     })
       .then((msg) => { setAnswerMsg(msg); setAskLoading(false); })
       .catch(() => {
-        setAnswerMsg({ headline: "I don't have that detail handy right now.", why: "Try again in a moment." });
+        setAnswerMsg(ERROR_COPY.booksQaError);
         setAskLoading(false);
       });
     setAskVal("");
@@ -1248,7 +1249,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
           <div className="card" style={{ padding: 0, overflow: "hidden" }}>
             {totalFlagged === 0 ? (
               <p style={{ margin: 0, padding: "16px 20px", fontSize: 14, color: "var(--ink-3)" }}>
-                All caught up ✓
+                {EMPTY_STATE_COPY.needsALookEmpty}
               </p>
             ) : (
               <>
@@ -1311,7 +1312,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => showToast(`Tap "Invite to live books" to manage ${item.cpaName}'s additions.`)}
+                    onClick={() => showToast(TOAST_COPY.staleAddRedirect(item.cpaName))}
                     style={{
                       width: "100%", display: "flex", alignItems: "center",
                       justifyContent: "space-between", padding: "14px 20px",
@@ -1552,13 +1553,13 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
             const newCpa = approveApproval(state.cpa, c._approvalId);
             set({ cpa: newCpa });
             setCpaSheetCard(null);
-            showToast("Category updated ✓");
+            showToast(TOAST_COPY.cpaSuggestionApproved);
           }}
           onReject={(c) => {
             const newCpa = rejectApproval(state.cpa, c._approvalId);
             set({ cpa: newCpa });
             setCpaSheetCard(null);
-            showToast("Kept as is.");
+            showToast(TOAST_COPY.cpaSuggestionKeptAsIs);
           }}
         />
       )}

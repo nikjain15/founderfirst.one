@@ -10,6 +10,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { groupByIrsLine } from "../../util/irsLookup.js";
 import { ENTITY_TYPES, INDUSTRY_KEYS, formLabelForEntity } from "../../constants/variants.js";
+import { TOAST_COPY } from "../../constants/copy.js";
 
 const fmt = (n) =>
   new Intl.NumberFormat("en-US", {
@@ -149,10 +150,10 @@ export default function ProfitLoss({ clientId, clientData }) {
 
         <div style={{ flex: 1 }} />
 
-        <button className="btn-ghost" onClick={() => showToast("Export ready — demo only.")} style={{ fontSize: 12, padding: "7px 14px" }}>
+        <button className="btn-ghost" onClick={() => showToast(TOAST_COPY.cpaExportReadyDemo)} style={{ fontSize: 12, padding: "7px 14px" }}>
           Export PDF
         </button>
-        <button className="btn-ghost" onClick={() => showToast("Export ready — demo only.")} style={{ fontSize: 12, padding: "7px 14px" }}>
+        <button className="btn-ghost" onClick={() => showToast(TOAST_COPY.cpaExportReadyDemo)} style={{ fontSize: 12, padding: "7px 14px" }}>
           Export CSV
         </button>
       </div>
@@ -307,7 +308,7 @@ export default function ProfitLoss({ clientId, clientData }) {
           {/* Footer: preview form */}
           <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--line-2)" }}>
             <button
-              onClick={() => showToast("Export ready — demo only.")}
+              onClick={() => showToast(TOAST_COPY.cpaExportReadyDemo)}
               style={{
                 background: "none",
                 border: "none",

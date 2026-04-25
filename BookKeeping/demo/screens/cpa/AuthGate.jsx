@@ -20,6 +20,7 @@
 
 import React, { useState, useEffect } from "react";
 import { acceptInvite } from "../../util/cpaState.js";
+import { ERROR_COPY } from "../../constants/copy.js";
 
 // ── US state codes ────────────────────────────────────────────────────────────
 
@@ -202,15 +203,15 @@ function SignupForm({ token, invite, onSuccess }) {
 
   function validate() {
     const e = {};
-    if (!fields.name.trim()) e.name = "Full name is required.";
+    if (!fields.name.trim()) e.name = ERROR_COPY.fieldRequiredName;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email))
-      e.email = "Enter a valid email address.";
+      e.email = ERROR_COPY.fieldInvalidEmail;
     if (fields.password.length < 8)
-      e.password = "Password must be at least 8 characters.";
+      e.password = ERROR_COPY.fieldPasswordMin;
     if (!/^[A-Za-z0-9]{6,12}$/.test(fields.licenseNumber))
-      e.licenseNumber = "License number must be 6–12 alphanumeric characters.";
+      e.licenseNumber = ERROR_COPY.fieldLicenseFormat;
     if (!US_STATES.includes(fields.licenseState.toUpperCase()))
-      e.licenseState = "Enter a valid 2-letter US state code.";
+      e.licenseState = ERROR_COPY.fieldStateCode;
     return e;
   }
 

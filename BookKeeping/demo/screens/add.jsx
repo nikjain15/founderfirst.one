@@ -12,6 +12,7 @@ import posthog from "posthog-js";
 import CanonicalSheet from "../components/Sheet.jsx";
 import FullScreenOverlay from "../components/FullScreenOverlay.jsx";
 import { CARD_VARIANTS, ENTITY_TYPES } from "../constants/variants.js";
+import { EMPTY_STATE_COPY, TOAST_COPY } from "../constants/copy.js";
 
 // ── SVG icon factory ──────────────────────────────────────────────────────────
 
@@ -223,7 +224,7 @@ function ProviderSheet({ connections, onConnect, onClose }) {
           );
         })}
         {filtered.length === 0 && (
-          <p style={{ fontSize:14,color:"var(--ink-4)",padding:"16px 0" }}>No providers matched.</p>
+          <p style={{ fontSize:14,color:"var(--ink-4)",padding:"16px 0" }}>{EMPTY_STATE_COPY.noProvidersMatched}</p>
         )}
       </div>
     </Sheet>
@@ -786,7 +787,7 @@ export default function AddScreen({ ai, state, set }) {
         daysAgo: 0,
       });
     } catch {
-      showToast("Couldn't parse that. Try again in a moment.");
+      showToast(TOAST_COPY.parseFailed);
     } finally {
       setParsing(false);
     }
@@ -794,29 +795,29 @@ export default function AddScreen({ ai, state, set }) {
 
   function handleCardConfirm() {
     setCaptureCard(null); setTellText(""); setJustTellMe(false);
-    showToast("Logged. I'll add it to your books.");
+    showToast(TOAST_COPY.capturedLogged);
   }
 
   function handleCardSkip() {
     setCaptureCard(null); setJustTellMe(false); setTellText("");
-    showToast("Saved for later. I'll bring it back.");
+    showToast(TOAST_COPY.savedForLater);
   }
 
   // ── Connections ───────────────────────────────────────────────────────────
 
   function handleConnectProvider(p, reason) {
     setSheet(null);
-    if (reason === "already") { showToast(`${p.name} is already connected.`); return; }
+    if (reason === "already") { showToast(TOAST_COPY.alreadyConnected(p.name)); return; }
     posthog.capture("account_connected", { provider: p.name, provider_type: p.type });
     set({ connections: [...connections,
       { id:p.id, name:p.name, type:p.type, initial:p.initial, syncLabel:"Just now" }] });
-    showToast(`${p.name} connected.`);
+    showToast(TOAST_COPY.providerConnected(p.name));
   }
 
   function handleDisconnect(connId) {
     posthog.capture("account_disconnected", { provider_id: connId });
     set({ connections: connections.filter(c => c.id !== connId) });
-    showToast("Account disconnected.");
+    showToast(TOAST_COPY.accountDisconnected);
   }
 
   function handleConnectEmail(p) {
@@ -824,12 +825,12 @@ export default function AddScreen({ ai, state, set }) {
     posthog.capture("email_connected", { provider: p.name });
     set({ emailConnections: [...emailConnections,
       { id:p.id, name:p.name }] });
-    showToast(`${p.name} connected — watching for receipts.`);
+    showToast(TOAST_COPY.emailConnectedWatching(p.name));
   }
 
   function handleImport(count) {
     posthog.capture("data_imported", { transaction_count: count });
-    showToast(`${count} transactions imported. Check your Penny thread.`);
+    showToast(TOAST_COPY.importComplete(count));
   }
 
   // ── Render ────────────────────────────────────────────────────────────────

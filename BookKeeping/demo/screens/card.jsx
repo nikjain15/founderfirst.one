@@ -17,6 +17,7 @@ import posthog from "posthog-js";
 import { irsLineChip } from "../util/irsLookup.js";
 import Sheet from "../components/Sheet.jsx";
 import { CARD_VARIANTS, ENTITY_TYPES } from "../constants/variants.js";
+import { CARD_FALLBACK_COPY, TOAST_COPY } from "../constants/copy.js";
 
 // Maps category name to --cat-* token key
 function catKey(category) {
@@ -125,7 +126,11 @@ function dateLabel(daysAgo) {
 function ConfidenceBar({ confidence }) {
   if (confidence == null) return null;
   const pct = Math.round(confidence * 100);
-  const label = confidence >= 0.9 ? "High confidence" : confidence >= 0.7 ? "Medium confidence" : "I'm not sure";
+  const label = confidence >= 0.9
+    ? CARD_FALLBACK_COPY.confidenceHigh
+    : confidence >= 0.7
+    ? CARD_FALLBACK_COPY.confidenceMedium
+    : CARD_FALLBACK_COPY.confidenceLow;
   return (
     <div className="card-confidence">
       <div className="card-confidence-track">
@@ -167,7 +172,7 @@ function CategorySheet({ open, onClose, onSelect, currentCategory, industry }) {
   }, [industry]);
 
   return (
-    <Sheet open={open} onClose={onClose} title="Change category">
+    <Sheet open={open} onClose={onClose} title={CARD_FALLBACK_COPY.categorySheetTitle}>
       <div className="sheet-list">
         {cats.map((cat) => (
           <button
@@ -266,7 +271,7 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
       confidence: card.confidence,
       variant: card.variant,
     });
-    showToast("Got it ✓");
+    showToast(TOAST_COPY.confirmed);
     setTimeout(() => onConfirm({ ...card, category_guess: category }), 300);
   }, [card, category, onConfirm, showToast]);
 
@@ -280,7 +285,7 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
     }
     setCategory(cat);
     setSheetOpen(false);
-    showToast(`Changed to ${cat}`);
+    showToast(TOAST_COPY.changedTo(cat));
   }, [card.vendor, category, showToast]);
 
   const handleSkip = useCallback(() => {
@@ -290,12 +295,12 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
       category: category,
       variant: card.variant,
     });
-    showToast("Saved for later. I'll bring it back.");
+    showToast(TOAST_COPY.savedForLater);
     setTimeout(() => onSkip?.(card), 800);
   }, [card, category, onSkip, showToast]);
 
   const handleRule = useCallback(() => {
-    showToast(`Auto-categorizing ${card.vendor} as ${category} going forward ✓`);
+    showToast(TOAST_COPY.ruleCreated(card.vendor, category));
     setTimeout(() => onConfirm({ ...card, category_guess: category, ruleCreated: true }), 800);
   }, [card, category, onConfirm, showToast]);
 
@@ -309,17 +314,17 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
   const catStroke = isIncome ? "var(--income)" : `var(--cat-${catKey(category)})`;
   const catBg     = isIncome ? "var(--income-bg)" : `var(--cat-${catKey(category)}-bg)`;
 
-  const primaryLabel   = pennyMsg?.ctaPrimary   || "Confirm";
-  const secondaryLabel = pennyMsg?.ctaSecondary || "Change";
+  const primaryLabel   = pennyMsg?.ctaPrimary   || CARD_FALLBACK_COPY.defaultPrimaryCta;
+  const secondaryLabel = pennyMsg?.ctaSecondary || CARD_FALLBACK_COPY.defaultSecondaryCta;
 
   // cpa-suggestion: approve / keep-as-is handlers
   const handleApprove = useCallback(() => {
-    showToast("Category updated ✓");
+    showToast(TOAST_COPY.cpaSuggestionApproved);
     setTimeout(() => onApprove?.(card), 300);
   }, [card, onApprove, showToast]);
 
   const handleKeepAsIs = useCallback(() => {
-    showToast("Kept as is.");
+    showToast(TOAST_COPY.cpaSuggestionKeptAsIs);
     setTimeout(() => onReject?.(card), 300);
   }, [card, onReject, showToast]);
 
@@ -339,7 +344,7 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
           }}>
             <p style={{ margin: "0 0 2px", fontSize: 11, fontWeight: "var(--fw-semibold)",
               color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              {card.cpaName || "CPA"}'s note
+              {card.cpaName || CARD_FALLBACK_COPY.cpaNoteAuthorFallback}'s note
             </p>
             <p style={{ margin: 0, fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5 }}>
               {card.cpaNote}
@@ -350,9 +355,9 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
         <div className="approval-card approval-card--expense">
           <div className="card-vendor-row">
             <div className="card-vendor-row-left">
-              <VendorIcon vendor={card.vendor || "Reclassification"} />
+              <VendorIcon vendor={card.vendor || CARD_FALLBACK_COPY.cpaSuggestionGenericVendor} />
               <div className="card-vendor-info">
-                <span className="card-vendor-name">{card.vendor || "Reclassification suggestion"}</span>
+                <span className="card-vendor-name">{card.vendor || CARD_FALLBACK_COPY.cpaSuggestionVendorFallback}</span>
                 {card.cpaName && (
                   <span className="card-vendor-date">Suggested by {card.cpaName}</span>
                 )}
@@ -364,7 +369,7 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
           <div style={{ margin: "14px 0 16px" }}>
             <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: "var(--fw-semibold)",
               color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Reclassification
+              {CARD_FALLBACK_COPY.cpaReclassEyebrow}
             </p>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span className="card-category-pill" style={{ display: "inline-flex", alignItems: "center" }}>
@@ -387,10 +392,10 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
 
           <div className="card-actions">
             <button className="btn btn-full" onClick={handleApprove} type="button">
-              Approve
+              {CARD_FALLBACK_COPY.cpaSuggestionApprove}
             </button>
             <button className="btn btn-ghost btn-full" onClick={handleKeepAsIs} type="button">
-              Keep as is
+              {CARD_FALLBACK_COPY.cpaSuggestionKeep}
             </button>
           </div>
         </div>
@@ -411,7 +416,7 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
             <VendorIcon vendor={card.vendor} />
             <div className="card-vendor-info">
               <span className="card-vendor-name">
-                {card.vendor || (isOwnDraw ? "Owner's draw" : "Transaction")}
+                {card.vendor || (isOwnDraw ? CARD_FALLBACK_COPY.ownersDrawVendorFallback : CARD_FALLBACK_COPY.vendorFallback)}
               </span>
               {card.daysAgo != null && (
                 <span className="card-vendor-date">{dateLabel(card.daysAgo)}</span>
@@ -451,7 +456,7 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
 
           {isRule ? (
             <button className="btn btn-ghost btn-full" onClick={handleRule} type="button">
-              Yes, auto-categorize
+              {CARD_FALLBACK_COPY.ruleProposalCta}
             </button>
           ) : (
             <button className="btn btn-ghost btn-full" onClick={() => setSheetOpen(true)} type="button">
@@ -461,7 +466,7 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
 
           {!isIncome && !isOwnDraw && (
             <button className="card-skip-btn" onClick={handleSkip} type="button">
-              Skip for now
+              {CARD_FALLBACK_COPY.skipForNowCta}
             </button>
           )}
         </div>
@@ -482,10 +487,10 @@ export function ApprovalCard({ card, persona, ai, onConfirm, onSkip, onApprove, 
 
 function fallbackMsg(card) {
   const isIncome = card.variant === CARD_VARIANTS.INCOME || card.variant === CARD_VARIANTS.INCOME_CELEBRATION;
-  if (isIncome) return { headline: `You just got paid 🎉`, why: `${card.vendor} — ${fmt(card.amount)}.`, tone: "celebration" };
-  if (card.variant === CARD_VARIANTS.OWNERS_DRAW) return { headline: `${fmt(card.amount)} moved to your personal account.`, why: "That's an owner's draw — it won't count as an expense.", tone: "fyi" };
-  if (card.variant === CARD_VARIANTS.LOW_CONFIDENCE) return { headline: `Caught a charge I don't recognize — ${fmt(card.amount)}.`, why: "Can you help me file this one?", ctaPrimary: "Yes, business", ctaSecondary: "Personal", tone: "action" };
-  return { headline: `${card.vendor} — ${fmt(card.amount)}.`, why: `Looks like ${card.category_guess || "an expense"}.`, ctaPrimary: "Confirm", ctaSecondary: "Change", tone: "fyi" };
+  if (isIncome)                                  return CARD_FALLBACK_COPY.income(card.vendor, fmt(card.amount));
+  if (card.variant === CARD_VARIANTS.OWNERS_DRAW) return CARD_FALLBACK_COPY.ownersDraw(fmt(card.amount));
+  if (card.variant === CARD_VARIANTS.LOW_CONFIDENCE) return CARD_FALLBACK_COPY.lowConfidence(fmt(card.amount));
+  return CARD_FALLBACK_COPY.expenseDefault(card.vendor, fmt(card.amount), card.category_guess);
 }
 
 export default function CardScreen({ ai, state, navigate }) {

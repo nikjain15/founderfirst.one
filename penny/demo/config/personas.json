@@ -1,14 +1,17 @@
 {
   "_meta": {
-    "description": "20 personas (2 entity types × 10 industries). Selected after onboarding based on the user's entity + industry picks. Used to seed vendor names, amounts, and context in the Penny thread so the demo feels like a real person's books.",
-    "source": "../../product/19-demo-flow-brief.md §20 persona-driven scenario seeding",
-    "version": 3,
-    "keyFormat": "`<entity>__<industry>` — double underscore separator. Avoids collision with the dot separator used in AI intent names.",
-    "note": "v3 — all 20 personas complete. Numbers are industry-realistic: a food truck, a solo therapist, and a SaaS founder look nothing alike."
+    "description": "20 personas (2 entity types × 10 industries). Loaded by App.jsx after onboarding completes to merge rich attributes (voiceContext, commonClients, monthlyRevenue, monthlyExpenses, primaryBank) into state.persona for use in AI prompts and thread context.",
+    "source": "BookKeeping/product/19-demo-flow-brief.md §20 persona-driven scenario seeding",
+    "version": 4,
+    "keyFormat": "`<entity>.<industry>` — dot separator, matches scenarios.json keys and App.jsx scenarioKeyFor() output. llc-single and llc-multi normalize to `llc` when looking up scenarios.json.",
+    "note": "v4 — key separator unified to dot; LLC personas split into llc-single (SMLLC → Sch C) and llc-multi (MMLLC → Form 1065). Consulting industry intentionally reuses Sarah Chen for both sole-prop and s-corp to demonstrate the same founder at two entity stages.",
+    "schema": {
+      "payrollProvider": "Required for s-corp and llc-multi (payroll is mandatory for S-Corp officer comp and multi-member LLC owners on payroll). Optional for llc-single if they have employees. Omitted for sole-prop and other entity types that don't run payroll."
+    }
   },
   "personas": [
     {
-      "key": "sole-prop__consulting",
+      "key": "sole-prop.consulting",
       "entity": "sole-prop",
       "industry": "consulting",
       "firstName": "Sarah",
@@ -22,7 +25,7 @@
       "voiceContext": "mid-career consultant running solo, focused on retainer clients, wants clean books at tax time"
     },
     {
-      "key": "s-corp__consulting",
+      "key": "s-corp.consulting",
       "entity": "s-corp",
       "industry": "consulting",
       "firstName": "Sarah",
@@ -37,7 +40,7 @@
       "voiceContext": "established S-Corp consultant, pays herself through payroll, watches quarterly estimated tax deadlines closely"
     },
     {
-      "key": "sole-prop__creative",
+      "key": "sole-prop.creative",
       "entity": "sole-prop",
       "industry": "creative",
       "firstName": "Jordan",
@@ -51,7 +54,7 @@
       "voiceContext": "photographer with a mix of event and editorial work, lumpy income month-to-month, careful about gear deductions"
     },
     {
-      "key": "s-corp__creative",
+      "key": "s-corp.creative",
       "entity": "s-corp",
       "industry": "creative",
       "firstName": "Marcus",
@@ -66,7 +69,7 @@
       "voiceContext": "video production S-Corp, pays himself through payroll, manages heavy equipment costs and subcontractor payments"
     },
     {
-      "key": "sole-prop__trades",
+      "key": "sole-prop.trades",
       "entity": "sole-prop",
       "industry": "trades",
       "firstName": "Jake",
@@ -80,8 +83,8 @@
       "voiceContext": "independent electrician doing residential and small commercial jobs, tracks materials carefully, hates paperwork"
     },
     {
-      "key": "llc__trades",
-      "entity": "llc",
+      "key": "llc-single.trades",
+      "entity": "llc-single",
       "industry": "trades",
       "firstName": "Marco",
       "lastName": "Henderson",
@@ -91,10 +94,10 @@
       "monthlyExpenses": 14200,
       "primaryBank": "Wells Fargo Business",
       "commonClients": ["Homeowner projects", "Mitchell Builders", "Ace Property Mgmt"],
-      "voiceContext": "small contracting LLC, subcontracts out electrical and plumbing, materials costs dominate the P&L"
+      "voiceContext": "single-member LLC contractor, subcontracts out electrical and plumbing, materials costs dominate the P&L, Schedule C filer"
     },
     {
-      "key": "sole-prop__retail",
+      "key": "sole-prop.retail",
       "entity": "sole-prop",
       "industry": "retail",
       "firstName": "Olivia",
@@ -108,8 +111,8 @@
       "voiceContext": "handmade home goods seller on Shopify and Etsy, watches COGS tightly, manages thin margins across two platforms"
     },
     {
-      "key": "llc__retail",
-      "entity": "llc",
+      "key": "llc-single.retail",
+      "entity": "llc-single",
       "industry": "retail",
       "firstName": "Mei",
       "lastName": "Chen",
@@ -120,10 +123,10 @@
       "primaryBank": "Chase Business",
       "commonClients": ["Walk-in store customers", "Shopify online customers", "Local coffee shops (wholesale)"],
       "payrollProvider": "Gusto",
-      "voiceContext": "gift shop owner with one part-time employee, balancing inventory spend against rent and daily Square deposits"
+      "voiceContext": "single-member LLC gift shop owner with one part-time employee, balancing inventory spend against rent and daily Square deposits, Schedule C filer"
     },
     {
-      "key": "sole-prop__food-beverage",
+      "key": "sole-prop.food-beverage",
       "entity": "sole-prop",
       "industry": "food-beverage",
       "firstName": "Carmen",
@@ -137,8 +140,8 @@
       "voiceContext": "personal chef and caterer, event-driven lumpy revenue, rents commercial kitchen by the hour, COGS is everything"
     },
     {
-      "key": "llc__food-beverage",
-      "entity": "llc",
+      "key": "llc-multi.food-beverage",
+      "entity": "llc-multi",
       "industry": "food-beverage",
       "firstName": "Tony",
       "lastName": "Russo",
@@ -149,10 +152,10 @@
       "primaryBank": "Chase Business",
       "commonClients": ["Daily food truck customers", "Apex Corp (catering)", "Martinez family (private event)"],
       "payrollProvider": "Gusto",
-      "voiceContext": "food truck owner with one part-time helper, high food costs (~40% COGS), commissary rent is a fixed anchor"
+      "voiceContext": "multi-member LLC food truck with a co-owner, high food costs (~40% COGS), commissary rent is a fixed anchor, Form 1065 filer"
     },
     {
-      "key": "sole-prop__beauty-wellness",
+      "key": "sole-prop.beauty-wellness",
       "entity": "sole-prop",
       "industry": "beauty-wellness",
       "firstName": "Dana",
@@ -166,7 +169,7 @@
       "voiceContext": "independent stylist renting a booth, strong weekly cadence, cash and Venmo tips add complexity at tax time"
     },
     {
-      "key": "s-corp__beauty-wellness",
+      "key": "s-corp.beauty-wellness",
       "entity": "s-corp",
       "industry": "beauty-wellness",
       "firstName": "Alicia",
@@ -181,7 +184,7 @@
       "voiceContext": "wellness studio owner paying herself through payroll, managing product inventory and a team of contracted practitioners"
     },
     {
-      "key": "sole-prop__professional-services",
+      "key": "sole-prop.professional-services",
       "entity": "sole-prop",
       "industry": "professional-services",
       "firstName": "Rachel",
@@ -195,7 +198,7 @@
       "voiceContext": "licensed therapist in private practice, session income is predictable, low overhead, wants taxes handled stress-free"
     },
     {
-      "key": "s-corp__professional-services",
+      "key": "s-corp.professional-services",
       "entity": "s-corp",
       "industry": "professional-services",
       "firstName": "David",
@@ -210,7 +213,7 @@
       "voiceContext": "management consultant S-Corp, retainer-heavy client mix, watches profitability by engagement and plans quarterly distributions"
     },
     {
-      "key": "sole-prop__tech-software",
+      "key": "sole-prop.tech-software",
       "entity": "sole-prop",
       "industry": "tech-software",
       "firstName": "Alex",
@@ -224,7 +227,7 @@
       "voiceContext": "freelance full-stack developer, retainer plus project mix, manages modest but real cloud costs across multiple clients"
     },
     {
-      "key": "s-corp__tech-software",
+      "key": "s-corp.tech-software",
       "entity": "s-corp",
       "industry": "tech-software",
       "firstName": "Priya",
@@ -239,7 +242,7 @@
       "voiceContext": "solo SaaS founder, mostly predictable MRR from Stripe, managing AWS costs and two enterprise relationships alongside subscriptions"
     },
     {
-      "key": "sole-prop__healthcare",
+      "key": "sole-prop.healthcare",
       "entity": "sole-prop",
       "industry": "healthcare",
       "firstName": "Lisa",
@@ -253,7 +256,7 @@
       "voiceContext": "cash-pay physical therapist, billing insurance directly, wants clean separation of insurance payouts and private-pay sessions"
     },
     {
-      "key": "s-corp__healthcare",
+      "key": "s-corp.healthcare",
       "entity": "s-corp",
       "industry": "healthcare",
       "firstName": "James",
@@ -268,7 +271,7 @@
       "voiceContext": "PT clinic with two staff PTs, payroll dominates expenses, insurance billing cycle creates cash flow gaps to watch"
     },
     {
-      "key": "sole-prop__other",
+      "key": "sole-prop.other",
       "entity": "sole-prop",
       "industry": "other",
       "firstName": "Natalie",
@@ -282,8 +285,8 @@
       "voiceContext": "virtual assistant for small businesses, fully remote, low overhead but tool-heavy workflow, wants to know if she can deduct her home office"
     },
     {
-      "key": "llc__other",
-      "entity": "llc",
+      "key": "llc-multi.other",
+      "entity": "llc-multi",
       "industry": "other",
       "firstName": "Sofia",
       "lastName": "Espinoza",
@@ -293,7 +296,7 @@
       "monthlyExpenses": 5400,
       "primaryBank": "Chase Business",
       "commonClients": ["Henderson family (wedding)", "Northfield Corp (team event)", "Murphy family (baby shower)"],
-      "voiceContext": "event planner, project revenue is lumpy with large deposits, heavy contractor spend during events, watching profit per event"
+      "voiceContext": "multi-member LLC event planner with a business partner, project revenue is lumpy with large deposits, heavy contractor spend during events, Form 1065 filer"
     }
   ]
 }

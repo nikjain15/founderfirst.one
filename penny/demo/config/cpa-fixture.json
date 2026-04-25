@@ -12,7 +12,7 @@
 
   "clients": {
     "client-001": {
-      "clientName":   "Sarah Lin — Studio Nine",
+      "clientName":   "Sarah Chen — Studio Nine Consulting",
       "scenarioKey":  "sole-prop.consulting",
       "entity":       "sole-prop",
       "industry":     "consulting",
@@ -120,7 +120,7 @@
     },
 
     "client-002": {
-      "clientName":   "Alex Carter — Meridian Studio",
+      "clientName":   "Marcus Webb — Marcus Webb Productions Inc.",
       "scenarioKey":  "s-corp.creative",
       "entity":       "s-corp",
       "industry":     "creative",
@@ -198,7 +198,7 @@
     },
 
     "client-003": {
-      "clientName":   "Marco Rivera — Rivera Contracting",
+      "clientName":   "Jake Torres — Jake Torres Electric",
       "scenarioKey":  "sole-prop.trades",
       "entity":       "sole-prop",
       "industry":     "trades",
@@ -283,9 +283,9 @@
     },
 
     "client-004": {
-      "clientName":   "Kenji Park — Park Supply Co.",
+      "clientName":   "Mei Chen — Westside Goods LLC",
       "scenarioKey":  "llc.retail",
-      "entity":       "llc",
+      "entity":       "llc-single",
       "industry":     "retail",
       "grantedAt":    1745300000000,
       "yearGrants":   [2026],
@@ -424,7 +424,7 @@
       "fromCategory":  null,
       "toCategory":    "Estimated tax payment",
       "candidates":    null,
-      "note":          "Q1 estimated tax payment for Rivera Contracting — added 8 days ago.",
+      "note":          "Q1 estimated tax payment for Jake Torres Electric — added 8 days ago.",
       "status":        "pending",
       "createdAt":     1744761600000,
       "resolvedAt":    null,

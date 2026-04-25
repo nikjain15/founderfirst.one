@@ -1,7 +1,7 @@
 {
   "_meta": {
     "description": "10 industries + their banks, expense categories, payment methods, and sample vendors. Drives step 3–7 of onboarding and the copy rotation on approval cards.",
-    "source": "../product/19-demo-flow-brief.md §11 industry matrix",
+    "source": "BookKeeping/product/19-demo-flow-brief.md §11 industry matrix",
     "version": 1
   },
   "industries": {
@@ -74,7 +74,7 @@
     "professional-services": {
       "label": "Professional services",
       "icon": "scale",
-      "paymentMethods": ["Bank transfer", "Check", "Stripe", "LawPay", "QuickBooks"],
+      "paymentMethods": ["Bank transfer", "Check", "Stripe", "LawPay", "QuickBooks Invoices"],
       "expenseCategories": ["Research", "Continuing education", "Software", "Malpractice insurance", "Office", "Client meals", "Travel"],
       "banks": ["Chase Business", "Wells Fargo", "BofA Business", "Truist", "Citi"],
       "sampleIncomeVendor": "Law Firm Client A",
@@ -87,7 +87,7 @@
       "icon": "code",
       "paymentMethods": ["Stripe", "Paddle", "PayPal", "Wise", "Bank transfer"],
       "expenseCategories": ["Cloud & hosting", "Software tools", "Contractors", "Domains & SSL", "Marketing", "Travel", "Hardware"],
-      "banks": ["Mercury", "Brex", "Chase Business", "SVB (First Citizens)", "Relay"],
+      "banks": ["Mercury", "Brex", "Chase Business", "SVB (First Citizens Bank)", "Relay"],
       "sampleIncomeVendor": "Stripe",
       "sampleIncomeLabel": "Subscription revenue",
       "sampleExpenseVendor": "AWS",
@@ -112,8 +112,8 @@
       "banks": ["Chase Business", "Wells Fargo", "BofA Business", "Capital One", "Ally"],
       "sampleIncomeVendor": "Generic Client",
       "sampleIncomeLabel": "Client payment",
-      "sampleExpenseVendor": "Generic Vendor",
-      "sampleExpenseLabel": "Business expense"
+      "sampleExpenseVendor": "Notion",
+      "sampleExpenseLabel": "Software"
     }
   }
 }

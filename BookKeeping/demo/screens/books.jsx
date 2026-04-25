@@ -819,10 +819,11 @@ function TaxSheet({ ledger, ddData, onClose }) {
 
           {/* Q2 due date banner */}
           <div style={{
-            background: "var(--amber)", borderRadius: "var(--r-card)", padding: "12px 16px",
+            background: "var(--paper)", borderRadius: "var(--r-card)", padding: "12px 16px",
             marginBottom: 20, display: "flex", alignItems: "center", gap: 10,
+            border: "1px solid var(--line)",
           }}>
-            <svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="var(--white)"
+            <svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="var(--amber)"
               strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="3" width="18" height="17" rx="2"/>
               <line x1="16" y1="1" x2="16" y2="5"/>
@@ -830,10 +831,10 @@ function TaxSheet({ ledger, ddData, onClose }) {
               <line x1="2" y1="9" x2="20" y2="9"/>
             </svg>
             <div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: "var(--fw-semibold)", color: "var(--white)" }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: "var(--fw-semibold)", color: "var(--ink)" }}>
                 Q2 estimated tax due Jun 15
               </p>
-              <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.8)" }}>
+              <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--ink-3)" }}>
                 Set aside {fmt(quarterly)} from your next payment
               </p>
             </div>
@@ -1226,14 +1227,9 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
                 letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)",
               }}>Books</p>
               <p style={{ margin: "0 0 3px", fontSize: 22, fontWeight: "var(--fw-bold)", letterSpacing: "var(--ls-tighter)", lineHeight: 1 }}>
-                {totalFlagged > 0 ? (
-                  <span style={{
-                    display: "inline-flex", alignItems: "center", justifyContent: "center",
-                    background: "var(--amber)", color: "var(--white)",
-                    borderRadius: "var(--r-pill)", padding: "2px 10px",
-                    fontSize: 18, fontWeight: "var(--fw-bold)", letterSpacing: "var(--ls-tighter)",
-                  }}>{booksValue}</span>
-                ) : booksValue}
+                <span style={totalFlagged > 0 ? { color: "var(--amber)" } : {}}>
+                  {booksValue}
+                </span>
               </p>
               <p style={{ margin: 0, fontSize: 11, color: totalFlagged > 0 ? "var(--amber)" : "var(--ink-4)", lineHeight: 1.3 }}>
                 {booksSubcopy}

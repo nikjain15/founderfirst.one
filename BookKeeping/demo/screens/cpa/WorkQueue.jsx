@@ -238,7 +238,7 @@ function ActionSheet({ item, clientData, onClose, onUpdateCpa, clientId }) {
           <div style={{ display: "flex", gap: 10 }}>
             <button
               onClick={handleRetract}
-              style={{ flex: 1, padding: "13px", background: "var(--error)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 14, fontWeight: "var(--fw-semibold)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
+              style={{ flex: 1, padding: "13px", background: "none", color: "var(--error)", border: "1.5px solid var(--line)", borderRadius: "var(--r-pill)", fontSize: 14, fontWeight: "var(--fw-semibold)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
             >
               Retract
             </button>

@@ -6,7 +6,7 @@
 
     { "id": "phase-2-audit-2", "status": "completed",   "output": "BookKeeping/reviews/demo-stress-test-apr-2026/02-prompts-voice.md", "commit": "237ecb7" },
     { "id": "phase-2-audit-3", "status": "completed",    "output": "BookKeeping/reviews/demo-stress-test-apr-2026/03-config-data-irs.md", "commit": "bbe5ce0" },
-    { "id": "phase-2-audit-4", "status": "completed",    "output": "BookKeeping/reviews/demo-stress-test-apr-2026/04-cpa-spec-buildability.md", "commit": null },
+    { "id": "phase-2-audit-4", "status": "completed",    "output": "BookKeeping/reviews/demo-stress-test-apr-2026/04-cpa-spec-buildability.md", "commit": "ed9e83b" },
     { "id": "phase-2-audit-5", "status": "pending",      "output": "BookKeeping/reviews/demo-stress-test-apr-2026/05-end-user-walkthrough.md", "commit": null },
     { "id": "phase-2-audit-6", "status": "pending",      "output": "BookKeeping/reviews/demo-stress-test-apr-2026/06-doc-consistency.md", "commit": null },
     { "id": "phase-3-flow-1",  "status": "pending",      "output": "BookKeeping/demo/workstream/flows/flow-onboarding.md", "commit": null },

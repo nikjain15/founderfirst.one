@@ -432,6 +432,8 @@ npm run deploy:prompts --msg="tweak onboarding voice"
 ```
 Rsyncs `public/prompts/` directly to `penny/demo/prompts/` → commits → pushes. Live in ~10s.
 
+Both `--msg="text"` (npm env-var form) and `-- --msg="text"` (positional form, with the `--` separator) are accepted; either lands in the deploy commit message. With no flag, the message falls back to `update`.
+
 ### Local dev (no deploy)
 ```bash
 npm run dev        # HMR at localhost:5173 — use this while iterating

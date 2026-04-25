@@ -10,8 +10,8 @@
     "preview": "vite preview --port 4173",
     "test": "vitest run",
     "test:watch": "vitest",
-    "deploy": "vite build && cd ../.. && rsync -av --delete BookKeeping/demo/dist/ penny/demo/ && git add penny/demo/ && git commit -m \"deploy: ${npm_config_msg:-update}\" && git push origin main",
-    "deploy:prompts": "cd ../.. && rsync -av BookKeeping/demo/public/prompts/ penny/demo/prompts/ && git add penny/demo/prompts/ && git commit -m \"deploy: prompts - ${npm_config_msg:-update}\" && git push origin main"
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:prompts": "bash scripts/deploy-prompts.sh"
   },
   "dependencies": {
     "posthog-js": "^1.371.2",

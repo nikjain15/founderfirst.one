@@ -111,6 +111,7 @@ These have been explicitly decided. Do not suggest reversing them unless Nik exp
 | **App structure** | Three persistent tabs only: Penny · Add · My Books. Connect functionality merges into Add. Profile / Memory / Preferences live behind the avatar menu, not a tab. (Settled 23 Apr 2026 during demo v5 rebuild.) |
 | **Notification labels** | "Real-time" and "Daily digest" (not "Instant" / "Batch" or British variants). |
 | **Emoji rules** | Approved: 🎉 (payment received), 👋 (first hello), ✓ (text character — not emoji), 💪 (milestone). Never: 😊 👍 ✅ ⚠️. |
+| **Analytics** | Public pages on founderfirst.one carry both PostHog (product analytics) and Google Analytics 4 (Measurement ID `G-FLF1HF4ZK2`). Any new public HTML page must include the GA4 gtag snippet immediately after `<title>`. If the page sets a CSP `<meta>`, it must allow `https://www.googletagmanager.com` in `script-src`; `https://www.google-analytics.com https://*.analytics.google.com https://*.google-analytics.com https://www.googletagmanager.com` in `connect-src`; and `https://www.google-analytics.com https://*.google-analytics.com` in `img-src`. |
 
 ---
 

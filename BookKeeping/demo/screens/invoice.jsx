@@ -8,6 +8,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import Sheet from "../components/Sheet.jsx";
+import Toast from "../components/Toast.jsx";
 import { TOAST_COPY } from "../constants/copy.js";
 
 const fmt = (n) =>
@@ -31,10 +32,6 @@ function invoiceNumber() {
   return `INV-${String(Math.floor(Math.random() * 9000) + 1000)}`;
 }
 
-function Toast({ msg }) {
-  if (!msg) return null;
-  return <div className="toast">{msg}</div>;
-}
 
 // --- Line item row -----------------------------------------------------------
 function LineItem({ item, idx, onChange, onRemove }) {
@@ -368,10 +365,7 @@ export default function InvoiceScreen({ state, set, navigate, onSaveDraft }) {
   const [toast,         setToast]         = useState(null);
   const [showPreview,   setShowPreview]   = useState(false);
 
-  const showToast = useCallback((msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2400);
-  }, []);
+  const showToast = useCallback((msg) => { setToast(msg); }, []);
 
   const update = (key, val) => setInvoiceData((prev) => ({ ...prev, [key]: val }));
 
@@ -660,7 +654,7 @@ ${data.paymentMethods?.length ? `<div class="notes"><p class="eyebrow" style="ma
 
       {showSend && <SendSheet invoiceNumber={invoiceData.invoiceNumber} onClose={() => setShowSend(false)} showToast={showToast} />}
       {showRecurring && <RecurringSheet onClose={() => setShowRecurring(false)} showToast={showToast} invoiceData={invoiceData} />}
-      {toast && <Toast msg={toast} />}
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
   );
 }

@@ -11,37 +11,8 @@
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { createClient } from "../../worker-client.js";
+import Toast from "../../components/Toast.jsx";
 import { EMPTY_STATE_COPY, TOAST_COPY, ERROR_COPY } from "../../constants/copy.js";
-
-// ── Local toast ───────────────────────────────────────────────────────────────
-function Toast({ message, onDone }) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 2400);
-    return () => clearTimeout(t);
-  }, [onDone]);
-  return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: 24,
-        left: "50%",
-        transform: "translateX(-50%)",
-        background: "var(--ink)",
-        color: "var(--white)",
-        padding: "10px 20px",
-        borderRadius: "var(--r-pill)",
-        fontSize: 13,
-        fontWeight: "var(--fw-medium)",
-        fontFamily: "var(--font-sans)",
-        whiteSpace: "nowrap",
-        zIndex: 300,
-        pointerEvents: "none",
-      }}
-    >
-      {message}
-    </div>
-  );
-}
 
 // ── Chat bubble ───────────────────────────────────────────────────────────────
 function Bubble({ role, text, loading }) {
@@ -179,7 +150,7 @@ export default function Chat({ clientId, clientData, cpaAccount, onUpdateCpa }) 
       }}
     >
       {toast && (
-        <Toast key={toast.key} message={toast.msg} onDone={() => setToast(null)} />
+        <Toast key={toast.key} message={toast.msg} onDone={() => setToast(null)} bottom={24} />
       )}
 
       {/* Header eyebrow */}

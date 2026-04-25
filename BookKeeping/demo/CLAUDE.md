@@ -6,6 +6,51 @@
 
 ## Changelog
 
+### 25 April 2026 — SCAF-6: shared micro-components extracted
+
+Four inline component patterns that were duplicated across 8 screen files are now canonical shared components in `components/`. Settled decision #21 added — never re-implement these inline.
+
+**New files:**
+- `components/Spinner.jsx` — rotating arc; `size` + `color` props. `@keyframes spin` lives in `styles/components.css`.
+- `components/Toast.jsx` — auto-dismissing pill; `{ message, onDone, duration=2400, bottom=80 }`. Parent calls `setToast(msg)`; component owns the `setTimeout`. Always `position: absolute`.
+- `components/VoiceWaveform.jsx` — animated bar array; `{ bars, isRecording }`. Renders `null` when `isRecording` is false. `@keyframes voiceBar` lives in `styles/components.css`.
+- `components/EyebrowLabel.jsx` — `<p className="eyebrow">` wrapper for cases where a plain `<p>` would be structurally misleading.
+
+**`styles/components.css` additions:** `@keyframes voiceBar` and `@keyframes pulseRing` moved from inline `<style>` tags to the shared stylesheet.
+
+**Screens migrated (8 files):**
+- `screens/books.jsx` — removed local Spinner, local Toast (pattern B → canonical pattern A), inline waveform bars, inline `<style>` block with all three keyframes.
+- `screens/add.jsx` — removed local Spinner, local Toast, inline waveform bars, inline `<style>` block.
+- `screens/invoice.jsx` — removed local Toast (pattern B → canonical).
+- `screens/avatar-menu.jsx` — removed local Toast (pattern B → canonical, 4 render sites updated).
+- `screens/cpa/Books.jsx` — removed local Toast (already pattern A; import replaces definition). Two inline eyebrow style blocks converted to `className="eyebrow"`.
+- `screens/cpa/Chat.jsx` — removed local Toast.
+- `screens/cpa/CashFlow.jsx` — removed local Toast.
+- `screens/cpa/ProfitLoss.jsx` — removed local Toast.
+
+**Toast API unification:** two patterns existed — (A) `{ message, onDone }` with useEffect auto-dismiss inside the component, (B) `{ msg }` CSS-class wrapper with `setTimeout` in the parent. Canonical is pattern A. All pattern B screens (books, invoice, avatar-menu) updated: `showToast` simplified (no setTimeout), Toast calls updated to `message` + `onDone`.
+
+**`bottom` prop values:** `bottom={80}` (founder app, above tab bar, the default) vs `bottom={24}` (CPA view, no tab bar). All CPA screen Toast renders pass `bottom={24}` explicitly.
+
+**Settled decision 21:** never re-implement Spinner, Toast, VoiceWaveform, or EyebrowLabel inline in a screen file. Import from `components/`.
+
+---
+
+### 25 April 2026 — SCAF-5: color-zone rule alignment
+
+All accent-color violations are closed. Three background-fill violations were found and fixed; all other accent uses confirmed in-zone.
+
+**Violations fixed:**
+- `screens/books.jsx` — tax banner: `background: "var(--amber)"` (amber fill) → `background: "var(--paper)"` + `border: "1px solid var(--line)"`. SVG icon stroke and text colors updated from white to `var(--amber)` / `var(--ink)` / `var(--ink-3)`.
+- `screens/books.jsx` — Books stat pill: amber-filled `<span>` wrapper removed → `<span style={{ color: "var(--amber)" }}>` text-only treatment (conditional on `totalFlagged > 0`).
+- `screens/cpa/WorkQueue.jsx` — "Flag" button: `background: "var(--error)"` (error fill) → `background: "none"` + `color: "var(--error)"` + `border: "1.5px solid var(--line)"`. Error is text-only outside the documented 3px-left-border row exception.
+
+**Audit scope:** all `--amber`, `--income`, `--income-bg`, `--sage`, `--error`, `--cat-*` token usages across every screen and component file. Zero additional violations found beyond the three above.
+
+**Color zone rules unchanged** — SCAF-5 enforces the existing rules from the table in this file; no new zones were added.
+
+---
+
 ### 25 April 2026 — SCAF-4: token-discipline sweep + pre-commit enforcement
 
 Raw design-token values are now blocked at commit time. The four violation classes documented in DESIGN.md and the existing "Design token discipline" section of this file (raw hex strings, raw `fontWeight` numbers, raw `borderRadius` numbers, `position: fixed`) are caught by `scripts/check-tokens.sh` before every commit and again inside `npm run build`.
@@ -356,6 +401,7 @@ These are locked. If your work conflicts with one, flag it and stop.
 18. **All enum-typed strings live in `constants/variants.js`.** Card variants, entity types, industry keys, approval types, notification modes. Never hand-write one in a screen — import the enum.
 19. **All static Penny copy lives in `constants/copy.js`.** Locked onboarding lines, thread-intro and card fallbacks, empty-state lines, toasts, and user-visible errors. Never hard-code a static Penny utterance in a screen — import from the registry. AI-generated copy still flows through `worker-client.js → renderPenny()`; the registry only owns STATIC fallbacks and acknowledgments. The 8 onboarding headline/why pairs are LOCKED — see "Approved onboarding copy" table below.
 20. **Token discipline is enforced by pre-commit hook.** `scripts/check-tokens.sh` runs automatically before every commit (via `.githooks/pre-commit`, wired by `npm run prepare`) and inside `npm run build`. It blocks four violation classes in `screens/*.jsx` and `components/*.jsx`: raw hex strings, raw `fontWeight` numbers, raw `borderRadius` numbers, and `position: fixed`. Exemptions are allowed only when the offending line carries `// token-exempt: <reason>` (e.g. clipboard textareas that are never rendered) or `// radius-literal: <reason>` (the documented `borderRadius: 8` icon containers, `10` provider badges, and similar values that have no named token). Never bypass with `--no-verify` to ship a violation — `npm run build` will still catch it. Run on demand with `npm run check:tokens`.
+21. **Never re-implement `Spinner`, `Toast`, `VoiceWaveform`, or `EyebrowLabel` inline in a screen file.** All four live in `components/` and are imported directly. If you need a loading spinner, a dismissing toast, animated voice bars, or an uppercase section label — import from the catalog. Inline copies of any of these are a bug. See "Shared components catalog" for each component's API.
 
 ---
 
@@ -434,6 +480,96 @@ When building new screens or features, reach for these canonical components befo
   <p>Listening… {seconds}s</p>
 </FullScreenOverlay>
 ```
+
+### `<Spinner>` — canonical loading indicator
+
+**File:** `components/Spinner.jsx`
+**Use for:** any inline loading state — connecting spinners, generating spinners, AI-thinking states — wherever a rotating arc is needed.
+**Never:** define a local spinner SVG with `@keyframes spin` inside a screen file.
+
+**Props:**
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `size` | number | `20` | Width and height in px. |
+| `color` | CSS color | `"var(--ink)"` | Stroke color. Use `rgba(255,255,255,N)` on dark backgrounds. |
+
+The `@keyframes spin` animation is defined in `styles/components.css` — never re-declare it inline.
+
+**Minimal example:**
+```jsx
+import Spinner from "../components/Spinner.jsx";
+<Spinner size={22} color="rgba(255,255,255,0.7)" />
+```
+
+---
+
+### `<Toast>` — canonical dismissing notification
+
+**File:** `components/Toast.jsx`
+**Use for:** every transient acknowledgment in the founder app and CPA view — action confirmations, export notifications, connection status, error recovery.
+**Never:** define a local `Toast` function in a screen. Never call `setTimeout` in the parent to clear the toast — the component handles its own dismiss timer.
+
+**Props:**
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `message` | string | — | The toast text. If falsy, the component renders nothing. |
+| `onDone` | fn | — | Called after `duration` ms. Parent sets `toast` state back to `null`. |
+| `duration` | number | `2400` | Auto-dismiss delay in ms. |
+| `bottom` | number | `80` | Distance from bottom of the positioning context in px. Use `80` (founder, above tab bar) or `24` (CPA view, no tab bar). |
+
+**Parent pattern — the only correct pattern:**
+```jsx
+const [toast, setToast] = useState(null);
+const showToast = useCallback((msg) => { setToast(msg); }, []);
+// render:
+{toast && <Toast message={toast} onDone={() => setToast(null)} />}
+// CPA view (no tab bar):
+{toast && <Toast message={toast} onDone={() => setToast(null)} bottom={24} />}
+```
+
+Toast uses `position: absolute` — it anchors inside `.phone` or `.cpa-app`. Never use `position: fixed`.
+
+---
+
+### `<VoiceWaveform>` — animated recording bars
+
+**File:** `components/VoiceWaveform.jsx`
+**Use for:** any voice-recording UI that needs animated vertical bars — `VoiceModal` in `add.jsx`, `VoiceAskModal` in `books.jsx`.
+**Never:** define bar arrays + inline `@keyframes voiceBar` in a screen file.
+
+**Props:**
+
+| Prop | Type | Notes |
+|---|---|---|
+| `bars` | number[] | Array of pixel heights. Values in the 14–46 range look best at 52px container height. |
+| `isRecording` | bool | When `false` the component renders `null`. Attach/detach from the DOM by toggling this prop. |
+
+The `@keyframes voiceBar` animation is defined in `styles/components.css`. Bar stagger delay is computed from the array index inside the component.
+
+**Minimal example:**
+```jsx
+import VoiceWaveform from "../components/VoiceWaveform.jsx";
+const BARS = [14, 28, 44, 32, 20, 38, 24, 46, 18, 36, 28, 42, 16, 32, 22, 44, 26, 38, 20, 34, 28, 42, 18, 30, 24, 46, 22, 36];
+<VoiceWaveform bars={BARS} isRecording={step === "recording"} />
+```
+
+---
+
+### `<EyebrowLabel>` — uppercase section header
+
+**File:** `components/EyebrowLabel.jsx`
+**Use for:** any section label that needs the `.eyebrow` CSS treatment where the element isn't already a `<p>` (e.g. inside flex rows where a `<p>` margin would disrupt layout).
+**Note:** In most cases, just using `<p className="eyebrow" style={{ margin: "0 0 10px" }}>` directly is simpler and preferred. Reserve `<EyebrowLabel>` when the wrapping paragraph semantics would be misleading.
+**Never:** duplicate the eyebrow styles inline (`fontSize: 11, fontWeight: "var(--fw-semibold)", letterSpacing: "var(--ls-eyebrow)", textTransform: "uppercase"`) in a screen.
+
+**Props:**
+
+| Prop | Type | Notes |
+|---|---|---|
+| `children` | node | The label text. |
+| `style` | object | Optional — margin/padding overrides only. Never override color, font, or letter-spacing here. |
 
 ---
 

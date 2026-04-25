@@ -8,17 +8,13 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { generateInvite, revokeInvite, revokeCpaAccess } from "../util/cpaState.js";
 import Sheet from "../components/Sheet.jsx";
+import Toast from "../components/Toast.jsx";
 import {
   ENTITY_TYPES,
   INDUSTRY_KEYS,
   NOTIFICATION_MODES,
 } from "../constants/variants.js";
 import { EMPTY_STATE_COPY, TOAST_COPY } from "../constants/copy.js";
-
-function Toast({ msg }) {
-  if (!msg) return null;
-  return <div className="toast">{msg}</div>;
-}
 
 // --- Shared back header ------------------------------------------------------
 function OverlayHeader({ title, onBack }) {
@@ -745,16 +741,13 @@ export default function AvatarMenuScreen({ state, set, navigate }) {
   const [sub,   setSub]   = useState(null); // null | "profile" | "memory" | "preferences"
   const [toast, setToast] = useState(null);
 
-  const showToast = useCallback((msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2400);
-  }, []);
+  const showToast = useCallback((msg) => { setToast(msg); }, []);
 
   const back = () => setSub(null);
 
-  if (sub === "profile")     return <><ProfileScreen     state={state} set={set} onBack={back} showToast={showToast} />{toast && <Toast msg={toast} />}</>;
-  if (sub === "memory")      return <><MemoryScreen      onBack={back} showToast={showToast} />{toast && <Toast msg={toast} />}</>;
-  if (sub === "preferences") return <><PreferencesScreen state={state} set={set} onBack={back} />{toast && <Toast msg={toast} />}</>;
+  if (sub === "profile")     return <><ProfileScreen     state={state} set={set} onBack={back} showToast={showToast} />{toast && <Toast message={toast} onDone={() => setToast(null)} />}</>;
+  if (sub === "memory")      return <><MemoryScreen      onBack={back} showToast={showToast} />{toast && <Toast message={toast} onDone={() => setToast(null)} />}</>;
+  if (sub === "preferences") return <><PreferencesScreen state={state} set={set} onBack={back} />{toast && <Toast message={toast} onDone={() => setToast(null)} />}</>;
 
   const MENU_ITEMS = [
     { key: "profile",     label: "Profile",     sub: "Manage your name, business, and CPA details." },
@@ -825,7 +818,7 @@ export default function AvatarMenuScreen({ state, set, navigate }) {
         </button>
       </div>
 
-      {toast && <Toast msg={toast} />}
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
   );
 }

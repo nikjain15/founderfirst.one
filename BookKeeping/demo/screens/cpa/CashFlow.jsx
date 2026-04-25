@@ -10,6 +10,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { categorizeCashFlow } from "../../util/cashFlow.js";
+import Toast from "../../components/Toast.jsx";
 import { TOAST_COPY } from "../../constants/copy.js";
 
 const fmt = (n) =>
@@ -18,36 +19,6 @@ const fmt = (n) =>
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(Math.abs(n));
-
-function Toast({ message, onDone }) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 2400);
-    return () => clearTimeout(t);
-  }, [onDone]);
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: 24,
-        left: "50%",
-        transform: "translateX(-50%)",
-        background: "var(--ink)",
-        color: "var(--white)",
-        padding: "10px 20px",
-        borderRadius: "var(--r-pill)",
-        fontSize: 13,
-        fontWeight: "var(--fw-medium)",
-        fontFamily: "var(--font-sans)",
-        whiteSpace: "nowrap",
-        zIndex: 300,
-        pointerEvents: "none",
-      }}
-    >
-      {message}
-    </div>
-  );
-}
 
 const PERIODS = ["Monthly", "Quarterly", "Annual"];
 
@@ -165,7 +136,7 @@ export default function CashFlow({ clientId, clientData }) {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", fontFamily: "var(--font-sans)" }}>
 
-      {toast && <Toast key={toast.key} message={toast.msg} onDone={() => setToast(null)} />}
+      {toast && <Toast key={toast.key} message={toast.msg} onDone={() => setToast(null)} bottom={24} />}
 
       {/* Toolbar */}
       <div

@@ -11,6 +11,9 @@ import { ApprovalCard } from "./card.jsx";
 import { groupByIrsLine, shortFormLabelForEntity } from "../util/irsLookup.js";
 import { approveApproval, rejectApproval, generateInvite, revokeInvite } from "../util/cpaState.js";
 import Sheet from "../components/Sheet.jsx";
+import Spinner from "../components/Spinner.jsx";
+import Toast from "../components/Toast.jsx";
+import VoiceWaveform from "../components/VoiceWaveform.jsx";
 import {
   CARD_VARIANTS,
   APPROVAL_TYPES,
@@ -433,34 +436,17 @@ function VoiceAskModal({ onDone, onClose }) {
         }}>
           {step === "recording"
             ? <MicIcon style={{ color: "var(--ink)", width: 28, height: 28 }} />
-            : <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="9" strokeDasharray="56" strokeDashoffset="14" style={{ animation: "spin 0.8s linear infinite", transformOrigin: "center" }} /></svg>
+            : <Spinner size={22} color="rgba(255,255,255,0.7)" />
           }
         </div>
       </div>
 
-      {step === "recording" && (
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 48 }}>
-          {BARS.map((h, i) => (
-            <div key={i} style={{
-              width: 3, borderRadius: 2, // radius-literal: voice waveform bar — geometry, no named token
-              background: "rgba(255,255,255,0.7)",
-              height: `${h}%`,
-              animation: `voiceBar ${0.4 + (i % 5) * 0.09}s ease-in-out infinite alternate`,
-              animationDelay: `${(i * 0.07) % 0.4}s`,
-            }} />
-          ))}
-        </div>
-      )}
+      <VoiceWaveform bars={BARS} isRecording={step === "recording"} />
 
       <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, margin: 0 }}>
         {step === "recording" ? `Listening… (${seconds}s)` : "Got it — asking Penny…"}
       </p>
 
-      <style>{`
-        @keyframes pulseRing { 0%{transform:scale(1);opacity:0.6} 100%{transform:scale(1.6);opacity:0} }
-        @keyframes voiceBar  { from{transform:scaleY(0.15)} to{transform:scaleY(1)} }
-        @keyframes spin      { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-      `}</style>
     </div>
   );
 }
@@ -494,12 +480,6 @@ function UpcomingIcon({ type }) {
   );
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
-
-function Toast({ msg }) {
-  if (!msg) return null;
-  return <div className="toast">{msg}</div>;
-}
 
 // ── Penny answer bubble ───────────────────────────────────────────────────────
 
@@ -1108,10 +1088,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
     setDdData(scenario.drilldown || null);
   }, [persona, scenario]);
 
-  const showToast = useCallback((msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2400);
-  }, []);
+  const showToast = useCallback((msg) => { setToast(msg); }, []);
 
   const handleDrilldown = useCallback((slug) => {
     if (!ddData || !ddData[slug]) {
@@ -1598,7 +1575,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
         />
       )}
 
-      {toast && <Toast msg={toast} />}
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
   );
 }

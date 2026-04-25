@@ -16,6 +16,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { irsLineChip } from "../../util/irsLookup.js";
 import Sheet from "../../components/Sheet.jsx";
+import Toast from "../../components/Toast.jsx";
 import {
   addTransactionAsCpa,
   flagTransaction,
@@ -60,37 +61,6 @@ function rowId(clientId, index) {
   return `txn-s${String(n).padStart(2, "0")}-${String(index + 1).padStart(2, "0")}`;
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
-
-function Toast({ message, onDone }) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 2400);
-    return () => clearTimeout(t);
-  }, [onDone]);
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: 24,
-        left: "50%",
-        transform: "translateX(-50%)",
-        background: "var(--ink)",
-        color: "var(--white)",
-        padding: "10px 20px",
-        borderRadius: "var(--r-pill)",
-        fontSize: 13,
-        fontWeight: "var(--fw-medium)",
-        fontFamily: "var(--font-sans)",
-        whiteSpace: "nowrap",
-        zIndex: 300,
-        pointerEvents: "none",
-      }}
-    >
-      {message}
-    </div>
-  );
-}
 
 // ── Add-transaction sheet (portalled to #sheet-root-cpa) ─────────────────────
 
@@ -139,7 +109,7 @@ function AddTxnSheet({ clientId, clientData, cpaAccount, onClose, onAdd }) {
             <div key={id} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <label
                 htmlFor={id}
-                style={{ fontSize: 11, fontWeight: "var(--fw-semibold)", color: "var(--ink-3)", letterSpacing: "var(--ls-eyebrow)", textTransform: "uppercase", fontFamily: "var(--font-sans)" }}
+                className="eyebrow"
               >
                 {label}
               </label>
@@ -203,7 +173,7 @@ function RowMenuSheet({ row, onClose, onFlag, onAnnotate, onSuggest }) {
     <Sheet open onClose={onClose} portalTarget="#sheet-root-cpa" layout="custom" ariaLabel="Row actions">
       <div style={{ fontFamily: "var(--font-sans)", paddingBottom: 24 }}>
         <div style={{ padding: "0 20px 12px", borderBottom: "1px solid var(--line-2)" }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: "var(--fw-semibold)", letterSpacing: "var(--ls-eyebrow)", textTransform: "uppercase", color: "var(--ink-4)" }}>
+          <p className="eyebrow" style={{ margin: 0, color: "var(--ink-4)" }}>
             {row.vendor}
           </p>
         </div>
@@ -559,6 +529,7 @@ export default function Books({ clientId, clientData, approvals, cpaAccount, onU
           key={toast.key}
           message={toast.msg}
           onDone={() => setToast(null)}
+          bottom={24}
         />
       )}
 

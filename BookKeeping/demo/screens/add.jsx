@@ -11,6 +11,9 @@ import { ApprovalCard } from "./card.jsx";
 import posthog from "posthog-js";
 import CanonicalSheet from "../components/Sheet.jsx";
 import FullScreenOverlay from "../components/FullScreenOverlay.jsx";
+import Spinner from "../components/Spinner.jsx";
+import Toast from "../components/Toast.jsx";
+import VoiceWaveform from "../components/VoiceWaveform.jsx";
 import { CARD_VARIANTS, ENTITY_TYPES } from "../constants/variants.js";
 import { EMPTY_STATE_COPY, TOAST_COPY } from "../constants/copy.js";
 
@@ -49,20 +52,6 @@ const OutlookBadge = () => (
     color:"var(--ink-2)",flexShrink:0 }}>O</div>
 );
 
-// ── Spinner ───────────────────────────────────────────────────────────────────
-
-function Spinner({ size = 18, color = "var(--ink-3)" }) {
-  return (
-    <>
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-        style={{ animation:"spin 0.8s linear infinite",display:"block" }}>
-        <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2.5"
-          strokeDasharray="40 20" strokeLinecap="round"/>
-      </svg>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </>
-  );
-}
 
 // ── Provider / email catalogues ───────────────────────────────────────────────
 
@@ -125,19 +114,6 @@ function buildCardFromParsed(parsed, prefix) {
   };
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
-
-function Toast({ message, onDone }) {
-  useEffect(() => { const t = setTimeout(onDone, 2400); return () => clearTimeout(t); }, [onDone]);
-  return (
-    <div style={{ position:"absolute",bottom:80,left:"50%",transform:"translateX(-50%)",
-      background:"var(--ink)",color:"var(--white)",fontSize:13,fontWeight:"var(--fw-medium)",
-      padding:"10px 18px",borderRadius:"var(--r-pill)",whiteSpace:"nowrap",
-      zIndex:300,boxShadow:"0 4px 16px rgba(10,10,10,0.18)",pointerEvents:"none" }}>
-      {message}
-    </div>
-  );
-}
 
 // ── Sheet scaffold ────────────────────────────────────────────────────────────
 // Thin wrapper over the canonical <Sheet> (components/Sheet.jsx). Adds the
@@ -291,7 +267,7 @@ function ExportSheet({ onClose, persona }) {
 
             {/* Share with CPA */}
             <div style={{ marginTop:8, borderTop:"1px solid var(--line-2)", paddingTop:16 }}>
-              <p style={{ margin:"0 0 10px", fontSize:11, fontWeight:"var(--fw-semibold)", letterSpacing:"0.1em", textTransform:"uppercase", color:"var(--ink-4)" }}>Share with CPA</p>
+              <p className="eyebrow" style={{ margin:"0 0 10px" }}>Share with CPA</p>
               {shared ? (
                 <div style={{ display:"flex",alignItems:"center",gap:10,background:"var(--paper)",border:"1px solid var(--line)",borderRadius:"var(--r-card)",padding:"14px 16px" }}>
                   <CheckCircle />
@@ -635,20 +611,7 @@ function VoiceModal({ ai, persona, onResult, onClose }) {
       </div>
 
       {/* Waveform — only during recording */}
-      {step === "recording" && (
-        <div style={{ display:"flex",alignItems:"center",gap:3,height:52 }}>
-          {BARS.map((h, i) => (
-            <div key={i} style={{
-              width: 3,
-              height: `${h}px`,
-              borderRadius: "var(--r-pill)",
-              background: "rgba(255,255,255,0.8)",
-              animation: `voiceBar ${0.4 + (i % 5) * 0.09}s ease-in-out infinite alternate`,
-              animationDelay: `${(i * 0.06) % 0.8}s`,
-            }} />
-          ))}
-        </div>
-      )}
+      <VoiceWaveform bars={BARS} isRecording={step === "recording"} />
 
       {/* Label */}
       <div style={{ textAlign:"center" }}>
@@ -672,10 +635,6 @@ function VoiceModal({ ai, persona, onResult, onClose }) {
         </button>
       )}
 
-      <style>{`
-        @keyframes pulseRing { 0%{transform:scale(1);opacity:0.6} 100%{transform:scale(2.2);opacity:0} }
-        @keyframes voiceBar  { from{transform:scaleY(0.15)} to{transform:scaleY(1)} }
-      `}</style>
     </FullScreenOverlay>
   );
 }

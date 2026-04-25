@@ -168,14 +168,14 @@ working on — do not load all phases at once.
 | Task | Status | Blocked by |
 |---|---|---|
 | Answer 5 open questions (`04-open-questions.md`) | **Pending CEO approval** | — |
-| SCAF-1 Sheet + FullScreenOverlay | Not started | Open questions approval |
-| SCAF-2 constants/variants.js | Not started | SCAF-1 |
-| SCAF-3 constants/copy.js | Not started | SCAF-2 |
-| SCAF-4 Token-discipline sweep | Not started | SCAF-3 |
-| SCAF-5 Color-zone fix | Not started | SCAF-4 |
-| SCAF-6 Shared micro-components | Not started | SCAF-5 |
-| SCAF-7 Dead code + CSS sweep | Not started | SCAF-6 |
-| Phase 2 audits (×6) | Not started | SCAF-7 |
+| SCAF-1 Sheet + FullScreenOverlay | ✅ Done (25 Apr 2026) | — |
+| SCAF-2 constants/variants.js | ✅ Done (25 Apr 2026) | — |
+| SCAF-3 constants/copy.js | ✅ Done (25 Apr 2026) | — |
+| SCAF-4 Token-discipline sweep | ✅ Done (25 Apr 2026) | — |
+| SCAF-5 Color-zone fix | ✅ Done (25 Apr 2026) | — |
+| SCAF-6 Shared micro-components | ✅ Done (25 Apr 2026) | — |
+| SCAF-7 Dead code + CSS sweep | ✅ Done (25 Apr 2026) | — |
+| Phase 2 audits (×6) | **Ready to start** | SCAF-7 ✅ |
 | Phase 3 flow docs (×7) | Not started | Phase 2 |
 
 *Update this table at the end of every session.*

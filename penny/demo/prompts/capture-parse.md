@@ -30,7 +30,7 @@ Required output shape:
 {
   "amount": 80.00,
   "vendor": "Sarah (lunch)",
-  "category_guess": "Client meals",
+  "category_guess": "Client meals (50%)",
   "date": "2026-04-23",
   "confidence": 0.78
 }
@@ -61,7 +61,7 @@ Required output shape:
   "why": "Looks like a client meal. You can deduct 50% of business meals under current IRS rules.",
   "ctaPrimary": "Confirm",
   "ctaSecondary": "Change",
-  "parsed": { "amount": 80, "vendor": "Sarah (lunch)", "category_guess": "Client meals", "date": "2026-04-23", "confidence": 0.78 },
+  "parsed": { "amount": 80, "vendor": "Sarah (lunch)", "category_guess": "Client meals (50%)", "date": "2026-04-23", "confidence": 0.78 },
   "tone": "action"
 }
 ```

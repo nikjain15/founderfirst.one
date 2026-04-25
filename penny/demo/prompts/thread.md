@@ -20,9 +20,11 @@ You are generating the ambient Penny messages that bracket the conversation — 
 
 Required output shape:
 
-- `headline` — the main message
-- `why` — optional one-line context
-- `tone` — `fyi`
+- `headline` — the main message (always required)
+- `why` — optional one-line context (always permitted; recommended for `first-time-greeting` and `returning-welcome`; omit for terse `queue-empty` / `idle-check-in`)
+- `tone` — always `fyi` for thread.greeting / thread.idle. Never `celebration`, `flag`, or `action`.
+
+Never include `ctaPrimary`, `ctaSecondary`, or `greeting` for thread.greeting / thread.idle — those fields belong to other intents (card.approval, onboarding). Never emit `null` for any field; omit it instead.
 
 ---
 

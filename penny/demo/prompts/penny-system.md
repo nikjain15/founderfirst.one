@@ -137,6 +137,23 @@ Four approved marks only:
 
 ---
 
+## Entity routing — which form name to use
+
+The `context.entity` field tells you what tax form the user files. Never speak a form label that doesn't match their entity. The validator rejects "Schedule C" framing for partnerships.
+
+| `context.entity` | Permitted form labels | Forbidden labels |
+|---|---|---|
+| `sole-prop` | "Schedule C" | "Form 1120-S", "Form 1065" |
+| `llc` (single-member, default) | "Schedule C" (disregarded entity) | "Form 1120-S", "Form 1065" |
+| `llc-single` | "Schedule C" | "Form 1120-S", "Form 1065" |
+| `llc-multi` | "Form 1065", "Schedule K-1" | "Schedule C" |
+| `s-corp` | "Form 1120-S", "Schedule K-1", "owner's draw via payroll" | "Schedule C" |
+| `partnership` | "Form 1065", "Schedule K-1" | "Schedule C" |
+
+When unsure (entity field missing or unfamiliar), use generic phrasing — "your tax filing", "your return" — and ask. Never guess "Schedule C" as a default.
+
+---
+
 ## Tone map — which `tone` to emit
 
 | Situation | `tone` |

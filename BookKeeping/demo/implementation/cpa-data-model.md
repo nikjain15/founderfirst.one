@@ -62,7 +62,7 @@ state.cpa = {
   clients: {
     [clientId]: {
       clientName:   string,
-      entity:       "sole-prop" | "llc" | "s-corp" | "partnership",
+      entity:       "sole-prop" | "llc" | "llc-single" | "llc-multi" | "s-corp" | "partnership",
       industry:     string,
       grantedAt:    number,
       yearGrants:   number[],    // years the CPA can view, e.g. [2025, 2026]
@@ -81,7 +81,7 @@ state.cpa = {
       learnedRules: [
         {
           id:           string,
-          pattern:      string,  // vendor or description pattern, e.g. "AWS*"
+          pattern:      string,  // case-insensitive glob: "*" matches any substring, "AWS*" matches prefix. e.g. "AWS*", "SQ *WHOLESALE*"
           fromCategory: string,
           toCategory:   string,
           suggestedBy:  "cpa" | "founder" | "penny",
@@ -231,42 +231,41 @@ other write path is a bug.
 ## Seed file
 
 `public/config/cpa-fixture.json` assembles 3–5 clients from existing scenario
-keys so the CPA dashboard has something meaningful on first load. Required
-shape:
+keys so the CPA dashboard has something meaningful on first load.
+
+The fixture is an **object map** (not an array) matching the runtime schema
+exactly — `clients` is keyed by `clientId`, and every client object carries
+full inline data (`learnedRules`, `flags`, `pendingAdds`, `chatHistory`,
+`taxReadiness`). There is no `seeded` count-summary field; the fixture IS the
+seed. See `public/config/cpa-fixture.json` for the canonical example.
 
 ```json
 {
-  "account": {
-    "id": "cpa-demo",
-    "name": "Priya Sharma",
-    "email": "priya@sharmacpa.com",
-    "licenseNumber": "CA-112233",
-    "licenseState": "CA",
-    "verifiedAt": 1745500000000
-  },
-  "clients": [
-    {
-      "clientId": "client-001",
-      "scenarioKey": "sole-prop.consulting",
-      "clientName": "Sarah Lin — Studio Nine",
-      "entity": "sole-prop",
-      "industry": "consulting",
-      "yearGrants": [2026],
-      "seeded": {
-        "learnedRules": 2,
-        "flags":        3,
-        "pendingAdds":  1,
-        "approvalsPending": 2
-      }
+  "account": { "id": "cpa-priya-demo", "name": "Priya Sharma", "..." },
+  "clients": {
+    "client-001": {
+      "clientName":   "Sarah Chen — Studio Nine Consulting",
+      "scenarioKey":  "sole-prop.consulting",
+      "entity":       "sole-prop",
+      "industry":     "consulting",
+      "grantedAt":    1745500000000,
+      "yearGrants":   [2026],
+      "yearRequests": [],
+      "learnedRules": [ ... ],
+      "flags":        { "txn-id": { ... } },
+      "annotations":  { "txn-id": [ ... ] },
+      "pendingAdds":  [ ... ],
+      "chatHistory":  [],
+      "taxReadiness": { "score": 83, "..." }
     }
-    // 2–4 more ...
-  ]
+  },
+  "approvals": { "appr-001": { ... } },
+  "archives":  {},
+  "invites":   []
 }
 ```
 
-On boot the CPA app reads this fixture, hydrates `state.cpa.clients`, and
-synthesizes realistic `flags`, `pendingAdds`, and `approvals` from the
-referenced scenario's ledger.
+On boot the CPA app reads this fixture and hydrates `state.cpa` directly.
 
 ---
 

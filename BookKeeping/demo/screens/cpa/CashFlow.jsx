@@ -12,6 +12,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { categorizeCashFlow } from "../../util/cashFlow.js";
 import Toast from "../../components/Toast.jsx";
 import { TOAST_COPY } from "../../constants/copy.js";
+import { DEFAULT_SCENARIO_KEY, scenarioKeyFor } from "../../constants/variants.js";
 
 const fmt = (n) =>
   new Intl.NumberFormat("en-US", {
@@ -98,8 +99,8 @@ export default function CashFlow({ clientId, clientData }) {
       .then((r) => r.json())
       .then((data) => {
         const scenarioKey = clientData?.scenarioKey ||
-          `${clientData?.entity || "sole-prop"}.${clientData?.industry || "consulting"}`;
-        const scenario = data.scenarios?.[scenarioKey] || data.scenarios?.["sole-prop.consulting"];
+          scenarioKeyFor(clientData?.entity, clientData?.industry);
+        const scenario = data.scenarios?.[scenarioKey] || data.scenarios?.[DEFAULT_SCENARIO_KEY];
         setLedger(scenario?.drilldown?.ledger || []);
       })
       .catch(() => setLedger([]))

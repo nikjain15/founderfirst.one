@@ -141,3 +141,18 @@ export function formLabelForEntity(entity) {
   if (entity === ENTITY_TYPES.PARTNERSHIP)  return "Form 1065";
   return "Schedule C";
 }
+
+/**
+ * Returns the scenarios.json key for a given entity + industry pair.
+ * llc-single and llc-multi both map to the generic "llc" scenario bucket
+ * since scenarios.json uses a single "llc.*" key for all LLC flavours.
+ */
+export function scenarioKeyFor(entity, industry) {
+  const e = (entity === ENTITY_TYPES.LLC_SINGLE || entity === ENTITY_TYPES.LLC_MULTI)
+    ? ENTITY_TYPES.LLC
+    : (entity || ENTITY_TYPES.SOLE_PROP);
+  return `${e}.${industry || INDUSTRY_KEYS.CONSULTING}`;
+}
+
+/** Default scenario key — used as the fallback when no persona is set. */
+export const DEFAULT_SCENARIO_KEY = scenarioKeyFor(ENTITY_TYPES.SOLE_PROP, INDUSTRY_KEYS.CONSULTING);

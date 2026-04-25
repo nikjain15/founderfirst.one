@@ -20,17 +20,15 @@ import AvatarMenuScreen from "./screens/avatar-menu.jsx";
 import InvoiceScreen from "./screens/invoice.jsx";
 import TabBar from "./components/TabBar.jsx";
 import { createClient } from "./worker-client.js";
+import { scenarioKeyFor, DEFAULT_SCENARIO_KEY } from "./constants/variants.js";
 import posthog from "posthog-js";
 
 const STATE_KEY = "penny-demo-state-v5";
 // Read base from the runtime config injected by index.html — avoids Vite's
 // static BASE_URL replacement which always compiles to "/" in dev mode.
-const SCENARIOS_URL = `${(window.PENNY_CONFIG?.baseUrl || "/")}config/scenarios.json`;
-
-function scenarioKey(persona) {
-  if (!persona) return null;
-  return `${persona.entity || "sole-prop"}.${persona.industry || "consulting"}`;
-}
+const BASE_URL      = window.PENNY_CONFIG?.baseUrl || "/";
+const SCENARIOS_URL = `${BASE_URL}config/scenarios.json`;
+const PERSONAS_URL  = `${BASE_URL}config/personas.json`;
 
 function usePhoneScale() {
   const [scale, setScale] = useState(1);
@@ -129,21 +127,41 @@ export default function App() {
     }
   }, [state.persona?.firstName, state.persona?.business]);
 
-  // Load scenario once when persona is set, share across all screens.
+  // Load scenario + merge persona attributes once when persona is set, share across all screens.
   useEffect(() => {
-    const key = scenarioKey(state.persona);
-    if (!key) { setScenario(null); return; }
+    const { entity, industry } = state.persona || {};
+    if (!entity) { setScenario(null); return; }
+    const key = scenarioKeyFor(entity, industry);
     let cancelled = false;
-    fetch(SCENARIOS_URL)
-      .then((r) => r.json())
-      .then((json) => {
-        if (cancelled) return;
-        const s = json.scenarios?.[key] || json.scenarios?.["sole-prop.consulting"] || {};
-        setScenario(s);
-      })
-      .catch(() => {
-        if (!cancelled) setScenario((prev) => prev ?? {});
-      });
+    Promise.all([
+      fetch(SCENARIOS_URL).then((r) => r.json()),
+      fetch(PERSONAS_URL).then((r) => r.json()).catch(() => null),
+    ]).then(([scenarioJson, personasJson]) => {
+      if (cancelled) return;
+      const s = scenarioJson.scenarios?.[key] || scenarioJson.scenarios?.[DEFAULT_SCENARIO_KEY] || {};
+      setScenario(s);
+      // Merge rich persona attributes (voiceContext, commonClients, monthlyRevenue, etc.)
+      // into state.persona so AI prompts can use them without re-fetching.
+      if (personasJson?.personas) {
+        const dotKey = `${entity}.${industry}`;
+        const personaData = personasJson.personas.find((p) => p.key === dotKey);
+        if (personaData) {
+          setState((prev) => ({
+            ...prev,
+            persona: {
+              ...prev.persona,
+              voiceContext:    personaData.voiceContext    ?? prev.persona?.voiceContext,
+              commonClients:   personaData.commonClients   ?? prev.persona?.commonClients,
+              monthlyRevenue:  personaData.monthlyRevenue  ?? prev.persona?.monthlyRevenue,
+              monthlyExpenses: personaData.monthlyExpenses ?? prev.persona?.monthlyExpenses,
+              primaryBank:     personaData.primaryBank     ?? prev.persona?.primaryBank,
+            },
+          }));
+        }
+      }
+    }).catch(() => {
+      if (!cancelled) setScenario((prev) => prev ?? {});
+    });
     return () => { cancelled = true; };
   }, [state.persona?.entity, state.persona?.industry]);
 

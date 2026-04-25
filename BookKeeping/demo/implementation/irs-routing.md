@@ -225,7 +225,17 @@ When a demo surface needs to show an IRS line next to a category (My Books → E
 
 ---
 
-## v1.2 critical fixes applied to this map (24 April 2026)
+## CHANGELOG
+
+### v1.3 — 25 April 2026
+
+- `util/irsLookup.js` expanded from ~55 to ~120 labels to cover all entries in this doc.
+- `lineKeyForEntity` and `shortFormLabelForEntity` updated to handle `llc-multi` → Form 1065 (was silently routing to Schedule C).
+- Lookup normalization added: `.toLowerCase().trim()` + whitespace collapse + apostrophe normalization.
+- `groupByIrsLine` sort fixed: "Part III" COGS sorts before numbered lines; "20a"/"20b" sort stably by suffix.
+- Chip format updated: COGS entries display "Sch C · Part III" not "Sch C · Line Part III".
+
+### v1.2 — 24 April 2026 (critical fixes)
 
 1. **"Van lease + gas" → split** into "Van lease" (Line 20a / 11 / 13) and "Vehicle fuel" (Line 9 / 19 / 20). Done in `scenarios.json` P04.
 2. **"Inventory / COGS" → normalized** to "Inventory (COGS)" canonical. Done.

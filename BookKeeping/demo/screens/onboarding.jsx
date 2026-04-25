@@ -11,7 +11,7 @@ import React, {
   useCallback,
 } from "react";
 import posthog from "posthog-js";
-import { ENTITY_TYPES } from "../constants/variants.js";
+import { ENTITY_TYPES, DEFAULT_SCENARIO_KEY, scenarioKeyFor } from "../constants/variants.js";
 import { ONBOARDING_COPY } from "../constants/copy.js";
 
 const STEP_SEQUENCE = [
@@ -250,8 +250,8 @@ export default function OnboardingScreen({ ai, state, set, navigate }) {
     fetch(`${window.PENNY_CONFIG?.baseUrl || "/"}config/scenarios.json`)
       .then((r) => r.json())
       .then((json) => {
-        const key = `${finalEntity}.${finalIndustry}`;
-        const scenario = json.scenarios?.[key] || json.scenarios?.["sole-prop.consulting"];
+        const key = scenarioKeyFor(finalEntity, finalIndustry);
+        const scenario = json.scenarios?.[key] || json.scenarios?.[DEFAULT_SCENARIO_KEY];
         const firstCard = scenario?.cardQueue?.[0];
         if (firstCard) {
           ai.renderPenny({ intent: "card.approval", context: { entity: finalEntity, industry: finalIndustry, persona: prewarmPersona, card: firstCard } }).catch(() => {});

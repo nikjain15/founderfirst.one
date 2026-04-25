@@ -24,6 +24,7 @@ import {
   suggestReclassification,
 } from "../../util/cpaState.js";
 import { TOAST_COPY } from "../../constants/copy.js";
+import { DEFAULT_SCENARIO_KEY, scenarioKeyFor } from "../../constants/variants.js";
 
 // Common expense categories for reclassification picker
 const RECLASSIFY_CATEGORIES = [
@@ -420,10 +421,9 @@ export default function Books({ clientId, clientData, approvals, cpaAccount, onU
     fetch(`${base}config/scenarios.json`)
       .then((r) => r.json())
       .then((data) => {
-        const scenarioKey = clientData?.scenarioKey || clientData?.industry
-          ? `${clientData.entity || "sole-prop"}.${clientData.industry}`
-          : "sole-prop.consulting";
-        const scenario = data.scenarios?.[scenarioKey] || data.scenarios?.["sole-prop.consulting"];
+        const scenarioKey = clientData?.scenarioKey ||
+          scenarioKeyFor(clientData?.entity, clientData?.industry);
+        const scenario = data.scenarios?.[scenarioKey] || data.scenarios?.[DEFAULT_SCENARIO_KEY];
         const rows = (scenario?.drilldown?.ledger || []).map((row, i) => ({
           ...row,
           id: rowId(clientId, i),

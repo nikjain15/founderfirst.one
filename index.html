@@ -55,6 +55,19 @@
   --dark:       #0a0a0a;   /* dark section bg */
   --sans:       'Inter', Helvetica, 'Helvetica Neue', Arial, sans-serif;
 
+  /* Font weights — mirror BookKeeping/demo/styles/tokens.css */
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+  --fw-extra:    800;
+
+  /* Radii — mirror tokens.css */
+  --r-card:      12px;
+  --r-card-emph: 16px;
+  --r-sheet:     20px;
+  --r-pill:      999px;
+
   /* Layout — one consistent left edge */
   --page-max:   1080px;
   --page-pad-x: clamp(24px, 6vw, 80px);
@@ -110,19 +123,19 @@ h1 {
   font-size: clamp(36px, 5.5vw, 64px);
   line-height: 1.04;
   letter-spacing: -0.028em;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
 }
 h2 {
   font-size: clamp(26px, 3.8vw, 44px);
   line-height: 1.08;
   letter-spacing: -0.022em;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
 }
 h3 {
   font-size: clamp(17px, 2vw, 21px);
   line-height: 1.25;
   letter-spacing: -0.01em;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 p {
   font-size: clamp(15px, 1.6vw, 17px);
@@ -131,7 +144,7 @@ p {
 }
 .eyebrow {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -149,7 +162,7 @@ p {
   border-radius: 6px;
   background: var(--ink);
   color: var(--white);
-  font-weight: 800;
+  font-weight: var(--fw-extra);
   letter-spacing: -0.05em;
   flex-shrink: 0;
 }
@@ -164,7 +177,7 @@ p {
   border-radius: 50%;
   background: var(--ink);
   color: var(--white);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   flex-shrink: 0;
 }
 .p-mark-sm { width: 28px; height: 28px; font-size: 11px; }
@@ -182,7 +195,7 @@ p {
 }
 .penny-bubble .bubble-label {
   font-size: 10px;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -218,7 +231,7 @@ p {
   align-items: center;
   justify-content: center;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   flex-shrink: 0;
 }
 
@@ -229,10 +242,10 @@ p {
   justify-content: center;
   gap: 6px;
   padding: 12px 22px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--ink);
   color: var(--white);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
   font-size: 14px;
   white-space: nowrap;
   transition: opacity 0.15s;
@@ -249,7 +262,7 @@ a:focus-visible,
 button:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 3px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 .btn-white:focus-visible,
 .btn-ghost-white:focus-visible,
@@ -263,7 +276,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   border: 1.5px solid var(--ink);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   overflow: hidden;
   background: var(--white);
   width: 100%;
@@ -285,11 +298,11 @@ button:focus-visible {
   flex-shrink: 0;
   margin: 4px;
   padding: 10px 18px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--ink);
   color: var(--white);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: var(--fw-medium);
   white-space: nowrap;
   font-family: var(--sans);
 }
@@ -306,7 +319,7 @@ button:focus-visible {
   font-size: 11px;
   color: var(--ink-4);
 }
-.form-note.on-dark { color: #777; }
+.form-note.on-dark { color: rgba(255,255,255,0.55); }
 
 /* ══════════════════════════════════════════
    NAV
@@ -329,7 +342,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   font-size: 16px;
   letter-spacing: -0.01em;
 }
@@ -351,8 +364,8 @@ button:focus-visible {
   align-items: center;
   gap: 5px;
   font-size: 14px;
-  font-weight: 600;
-  color: var(--penny);
+  font-weight: var(--fw-semibold);
+  color: var(--ink);
   cursor: pointer;
   background: none;
   border: none;
@@ -370,8 +383,8 @@ button:focus-visible {
   right: 0;
   background: var(--white);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.10);
+  border-radius: var(--r-card);
+  box-shadow: 0 12px 32px rgba(10,10,10,0.10);
   min-width: 300px;
   max-width: calc(100vw - 32px);
   z-index: 200;
@@ -390,7 +403,7 @@ button:focus-visible {
 .nav-dropdown-menu .dd-label {
   display: block;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--ink);
   line-height: 1.3;
 }
@@ -398,7 +411,7 @@ button:focus-visible {
   display: block;
   margin-top: 4px;
   font-size: 12.5px;
-  font-weight: 400;
+  font-weight: var(--fw-regular);
   color: var(--ink-2);
   line-height: 1.4;
 }
@@ -441,7 +454,7 @@ button:focus-visible {
 }
 /* ~20% scale-up on Penny in the hero */
 .hero-penny .p-mark-lg { width: 68px; height: 68px; font-size: 28px; }
-.hero-penny .penny-bubble { padding: 20px 24px; border-radius: 20px 20px 20px 4px; }
+.hero-penny .penny-bubble { padding: 20px 24px; border-radius: var(--r-sheet) 20px 20px 4px; }
 .hero-penny .penny-bubble .bubble-label { font-size: 11px; margin-bottom: 8px; }
 .hero-penny .penny-bubble .bubble-msg { font-size: 17px; line-height: 1.55; }
 .hero-penny .check-item { font-size: 15px; gap: 12px; }
@@ -472,7 +485,7 @@ button:focus-visible {
 .diagram {
   margin-top: 48px;
   border: 1.5px solid var(--ink);
-  border-radius: 20px;
+  border-radius: var(--r-sheet);
   padding: clamp(28px, 4vw, 52px) clamp(24px, 4vw, 48px);
   background: var(--white);
 }
@@ -499,8 +512,8 @@ button:focus-visible {
 .scatter-card:nth-child(4) { transform: rotate(1.4deg); }
 .scatter-card:nth-child(5) { transform: rotate(-0.8deg); }
 .scatter-card:nth-child(6) { transform: rotate(0.6deg); }
-.sc-source { font-size: 10px; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
-.sc-value  { font-size: 15px; font-weight: 600; margin-top: 3px; letter-spacing: -0.01em; }
+.sc-source { font-size: 10px; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.08em; font-weight: var(--fw-semibold); }
+.sc-value  { font-size: 15px; font-weight: var(--fw-semibold); margin-top: 3px; letter-spacing: -0.01em; }
 
 .diagram-arrow {
   display: flex;
@@ -508,28 +521,28 @@ button:focus-visible {
   align-items: center;
   gap: 10px;
 }
-.arrow-lbl { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
+.arrow-lbl { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; font-weight: var(--fw-semibold); }
 
 .unified-card {
   border: 1.5px solid var(--ink);
-  border-radius: 12px;
+  border-radius: var(--r-card);
   padding: 20px;
   background: var(--white);
 }
-.profit-label { font-size: 10px; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
-.profit-amt   { font-size: clamp(30px, 4vw, 46px); font-weight: 700; letter-spacing: -0.03em; line-height: 1; margin-top: 8px; }
+.profit-label { font-size: 10px; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.1em; font-weight: var(--fw-semibold); }
+.profit-amt   { font-size: clamp(30px, 4vw, 46px); font-weight: var(--fw-bold); letter-spacing: -0.03em; line-height: 1; margin-top: 8px; }
 .profit-meta  { font-size: 12px; color: var(--ink-4); margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
 .unified-rows { display: flex; flex-direction: column; gap: 6px; font-size: 12px; border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; }
 .unified-row  { display: flex; justify-content: space-between; }
 .unified-row span:first-child { color: var(--ink-3); }
-.unified-row span:last-child  { font-weight: 600; }
+.unified-row span:last-child  { font-weight: var(--fw-semibold); }
 
 /* Mobile diagram */
 .diagram-mobile { display: none; }
 .mob-scatter { display: flex; flex-direction: column; gap: 7px; margin-top: 14px; }
 .mob-row { display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 11px 14px; background: var(--white); }
-.mob-src { font-size: 12px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
-.mob-val { font-size: 14px; font-weight: 600; }
+.mob-src { font-size: 12px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: var(--fw-semibold); }
+.mob-val { font-size: 14px; font-weight: var(--fw-semibold); }
 
 /* ══════════════════════════════════════════
    03 · MEET PENNY — bg-dark
@@ -544,10 +557,10 @@ button:focus-visible {
   align-items: center;
   max-width: 860px;
 }
-#meet-penny .eyebrow { color: #9a9a9a; }
+#meet-penny .eyebrow { color: rgba(255,255,255,0.6); }
 #meet-penny h2 { color: var(--white); margin-top: 10px; font-size: clamp(32px, 5vw, 68px); }
-#meet-penny .mp-sub  { color: #888; font-size: clamp(14px, 1.5vw, 17px); margin-top: 8px; }
-#meet-penny .mp-body { color: #ccc; font-size: clamp(15px, 1.6vw, 18px); margin-top: 14px; max-width: 520px; }
+#meet-penny .mp-sub  { color: rgba(255,255,255,0.55); font-size: clamp(14px, 1.5vw, 17px); margin-top: 8px; }
+#meet-penny .mp-body { color: rgba(255,255,255,0.8); font-size: clamp(15px, 1.6vw, 18px); margin-top: 14px; max-width: 520px; }
 
 /* ══════════════════════════════════════════
    04 · HOW IT WORKS — bg-white
@@ -588,7 +601,7 @@ button:focus-visible {
 }
 .promise-card {
   border: 1.5px solid var(--ink);
-  border-radius: 16px;
+  border-radius: var(--r-card-emph);
   padding: clamp(20px, 2.5vw, 28px);
   background: var(--paper);
   display: flex;
@@ -609,7 +622,7 @@ button:focus-visible {
 .tax-rows { display: flex; flex-direction: column; gap: 8px; }
 .tax-row  { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
 .tax-row span:first-child { color: var(--ink-3); }
-.tax-row span:last-child  { font-weight: 600; }
+.tax-row span:last-child  { font-weight: var(--fw-semibold); }
 
 /* ══════════════════════════════════════════
    05 · SNAPSHOTS — bg-paper
@@ -657,11 +670,11 @@ button:focus-visible {
   border-radius: 50%;
   border: 1.5px solid var(--ink);
   display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 16px;
+  font-weight: var(--fw-bold); font-size: 16px;
 }
 .step-dot.filled { background: var(--ink); color: var(--white); }
 .step-dot.hollow { background: var(--paper); color: var(--ink); }
-.step-who { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; color: var(--ink-3); }
+.step-who { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: var(--fw-semibold); color: var(--ink-3); }
 
 /* Phone mockup */
 .phone-mock {
@@ -682,7 +695,7 @@ button:focus-visible {
 .phone-status {
   position: absolute; top: 7px; left: 0; right: 0;
   display: flex; justify-content: space-between;
-  padding: 0 18px; font-size: 9px; font-weight: 600; color: var(--ink-2);
+  padding: 0 18px; font-size: 9px; font-weight: var(--fw-semibold); color: var(--ink-2);
 }
 .phone-body {
   height: 340px; overflow: hidden; font-family: var(--sans);
@@ -692,11 +705,11 @@ button:focus-visible {
   display: flex; justify-content: space-between; align-items: center;
   padding: 9px 11px 6px; border-bottom: 1px solid var(--line);
 }
-.ps-app { display: flex; align-items: center; gap: 5px; font-weight: 600; font-size: 11px; }
+.ps-app { display: flex; align-items: center; gap: 5px; font-weight: var(--fw-semibold); font-size: 11px; }
 .ps-time { font-size: 9px; color: var(--ink-4); }
 .ask-bar {
   margin: auto 10px 10px;
-  border: 1.5px solid var(--ink); border-radius: 999px;
+  border: 1.5px solid var(--ink); border-radius: var(--r-pill);
   padding: 6px 11px; background: var(--paper);
   display: flex; align-items: center; gap: 7px;
 }
@@ -704,15 +717,15 @@ button:focus-visible {
 .ask-bar-btn  { width: 18px; height: 18px; border-radius: 50%; background: var(--ink); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 9px; }
 
 .snap-caption { max-width: 240px; }
-.cap-title { font-size: clamp(14px, 1.5vw, 16px); font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; }
+.cap-title { font-size: clamp(14px, 1.5vw, 16px); font-weight: var(--fw-semibold); letter-spacing: -0.01em; line-height: 1.3; }
 .cap-body  { margin-top: 6px; font-size: 13px; color: var(--ink-3); line-height: 1.5; }
 
 .snap-summary { margin-top: 52px; }
 .snap-pill {
   display: inline-flex;
-  border: 1.5px solid var(--ink); border-radius: 999px;
+  border: 1.5px solid var(--ink); border-radius: var(--r-pill);
   padding: 13px 26px; background: var(--white);
-  font-size: 15px; font-weight: 500;
+  font-size: 15px; font-weight: var(--fw-medium);
 }
 
 /* ══════════════════════════════════════════
@@ -729,7 +742,7 @@ button:focus-visible {
   max-width: 760px;
 }
 #waitlist h2 { color: var(--white); margin-top: 8px; }
-#waitlist .wl-sub { color: #ccc; margin-top: 12px; font-size: clamp(15px, 1.6vw, 17px); }
+#waitlist .wl-sub { color: rgba(255,255,255,0.8); margin-top: 12px; font-size: clamp(15px, 1.6vw, 17px); }
 
 .steps-grid {
   margin-top: 44px;
@@ -737,13 +750,13 @@ button:focus-visible {
   grid-template-columns: repeat(3, 1fr);
   gap: 2px;
   background: rgba(255,255,255,0.12);
-  border-radius: 16px;
+  border-radius: var(--r-card-emph);
   overflow: hidden;
 }
 .step-tile { background: var(--dark); padding: clamp(20px, 2.5vw, 30px) clamp(18px, 2.2vw, 26px); }
-.tile-num  { color: #9a9a9a; }
-.tile-h    { color: var(--white); font-size: clamp(15px, 1.6vw, 18px); font-weight: 600; margin-top: 10px; letter-spacing: -0.01em; line-height: 1.3; }
-.tile-p    { color: #b8b8b8; font-size: 13px; line-height: 1.55; margin-top: 7px; }
+.tile-num  { color: rgba(255,255,255,0.6); }
+.tile-h    { color: var(--white); font-size: clamp(15px, 1.6vw, 18px); font-weight: var(--fw-semibold); margin-top: 10px; letter-spacing: -0.01em; line-height: 1.3; }
+.tile-p    { color: rgba(255,255,255,0.72); font-size: 13px; line-height: 1.55; margin-top: 7px; }
 
 .wl-form-wrap {
   margin-top: 44px;
@@ -769,7 +782,7 @@ button:focus-visible {
   justify-content: space-between;
   align-items: center;
 }
-.footer-logo { display: flex; align-items: center; gap: 9px; font-weight: 600; color: var(--ink-2); font-size: 13px; }
+.footer-logo { display: flex; align-items: center; gap: 9px; font-weight: var(--fw-semibold); color: var(--ink-2); font-size: 13px; }
 .footer-links { display: flex; gap: 24px; font-size: 13px; color: var(--ink-4); }
 .footer-links a:hover { color: var(--ink); }
 .footer-copy { font-size: 12px; color: var(--ink-4); }
@@ -830,7 +843,7 @@ button:focus-visible {
   margin-top: 36px;
   max-width: 520px;
   width: 100%;
-  border: 1.5px solid var(--ink); border-radius: 16px;
+  border: 1.5px solid var(--ink); border-radius: var(--r-card-emph);
   padding: clamp(20px, 2.8vw, 28px); background: var(--white);
   text-align: left;
 }
@@ -840,11 +853,11 @@ button:focus-visible {
 .tl-num {
   width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 700;
+  font-size: 13px; font-weight: var(--fw-bold);
 }
 .tl-num.done { background: var(--ink); color: var(--white); }
 .tl-num.next { background: var(--white); border: 1.5px solid var(--ink); color: var(--ink); }
-.tl-step h4 { font-size: 16px; font-weight: 600; }
+.tl-step h4 { font-size: 16px; font-weight: var(--fw-semibold); }
 .tl-step p  { font-size: 14px; color: var(--ink-4); margin-top: 2px; line-height: 1.45; }
 
 .conf-hint {
@@ -883,7 +896,7 @@ button:focus-visible {
 }
 
 .ref-link-box {
-  background: #111;
+  background: var(--ink);
   border: 1px solid rgba(255,255,255,0.18);
   border-radius: 14px;
   padding: 20px 22px;
@@ -899,7 +912,7 @@ button:focus-visible {
 .ref-share { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
 
 .ref-progress {
-  background: #111;
+  background: var(--ink);
   border: 1px solid rgba(255,255,255,0.18);
   border-radius: 14px;
   padding: 22px;
@@ -907,10 +920,10 @@ button:focus-visible {
   text-align: left;
 }
 .ref-prog-top { display: flex; justify-content: space-between; align-items: baseline; }
-.ref-big { font-size: 44px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; color: var(--white); }
-.ref-of  { color: rgba(255,255,255,0.5); font-size: 24px; font-weight: 500; }
+.ref-big { font-size: 44px; font-weight: var(--fw-bold); letter-spacing: -0.02em; line-height: 1; color: var(--white); }
+.ref-of  { color: rgba(255,255,255,0.5); font-size: 24px; font-weight: var(--fw-medium); }
 .ref-to-go-lbl { font-size: 11px; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px; }
-.ref-to-go { font-size: 22px; font-weight: 600; color: var(--white); }
+.ref-to-go { font-size: 22px; font-weight: var(--fw-semibold); color: var(--white); }
 .progress-bar { height: 7px; background: rgba(255,255,255,0.12); border-radius: 4px; overflow: hidden; margin-top: 16px; }
 .progress-fill { width: 0%; height: 100%; background: var(--white); transition: width 0.35s ease; }
 .ref-fine { display: block; color: rgba(255,255,255,0.6); font-size: 12px; text-align: center; margin-top: 14px; }
@@ -921,8 +934,8 @@ button:focus-visible {
 .toast {
   position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
   background: var(--ink); color: var(--white);
-  padding: 12px 20px; border-radius: 999px;
-  font-size: 13px; font-weight: 500;
+  padding: 12px 20px; border-radius: var(--r-pill);
+  font-size: 13px; font-weight: var(--fw-medium);
   z-index: 999; opacity: 0; pointer-events: none;
   transition: opacity 0.2s;
 }
@@ -1006,7 +1019,7 @@ button:focus-visible {
   .waitlist-form {
     flex-direction: row;
     align-items: center;
-    border-radius: 999px;
+    border-radius: var(--r-pill);
     padding: 0;
     overflow: hidden;
   }
@@ -1020,7 +1033,7 @@ button:focus-visible {
     margin: 4px;
     padding: 10px 18px;
     font-size: 13px;
-    border-radius: 999px;
+    border-radius: var(--r-pill);
     white-space: nowrap;
   }
   /* Slightly more nav breathing room */
@@ -1235,7 +1248,7 @@ button:focus-visible {
       </div>
 
       <!-- Mobile diagram -->
-      <div class="diagram-mobile" style="margin-top:32px;border:1.5px solid var(--ink);border-radius:16px;padding:22px 18px;background:var(--white);">
+      <div class="diagram-mobile" style="margin-top:32px;border:1.5px solid var(--ink);border-radius:var(--r-card-emph);padding:22px 18px;background:var(--white);">
         <div class="eyebrow">Today · scattered</div>
         <div class="mob-scatter">
           <div class="mob-row"><span class="mob-src">Stripe</span><span class="mob-val">$4,820</span></div>
@@ -1314,7 +1327,7 @@ button:focus-visible {
           <h3>Know what you're actually making.</h3>
           <div class="card-ui">
             <div style="font-size:10px;color:var(--ink-4);text-transform:uppercase;letter-spacing:0.1em;">Real profit · April</div>
-            <div style="font-size:30px;font-weight:700;letter-spacing:-0.03em;line-height:1;margin-top:6px;">$8,420</div>
+            <div style="font-size:30px;font-weight:var(--fw-bold);letter-spacing:-0.03em;line-height:1;margin-top:6px;">$8,420</div>
             <div class="mini-chart">
               <div class="bar" style="height:30%"></div><div class="bar" style="height:45%"></div>
               <div class="bar" style="height:38%"></div><div class="bar" style="height:60%"></div>
@@ -1329,10 +1342,10 @@ button:focus-visible {
           <div class="eyebrow">02 · Cash flow</div>
           <h3>Never chase a late payment again.</h3>
           <div class="card-ui">
-            <div style="font-size:12px;font-weight:600;">To: Acme Studio</div>
+            <div style="font-size:12px;font-weight:var(--fw-semibold);">To: Acme Studio</div>
             <div style="font-size:10px;color:var(--ink-4);margin-top:3px;">Invoice #1042 · 14 days late</div>
             <div style="margin-top:10px;font-size:12px;line-height:1.5;color:var(--ink-2);">Hi Sarah — just a friendly nudge on invoice #1042…</div>
-            <div style="margin-top:10px;font-size:10px;font-weight:600;">✓ Sent by Penny · 8:02am</div>
+            <div style="margin-top:10px;font-size:10px;font-weight:var(--fw-semibold);">✓ Sent by Penny · 8:02am</div>
           </div>
           <p class="card-desc">Professional reminders — sent from your email, in your voice.</p>
         </div>
@@ -1388,10 +1401,10 @@ button:focus-visible {
                 </div>
               </div>
               <div style="padding:0 9px;display:flex;flex-wrap:wrap;gap:4px;">
-                <div style="background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 7px;font-size:9px;white-space:nowrap;">What's my profit?</div>
-                <div style="background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 7px;font-size:9px;white-space:nowrap;">Taxes on track?</div>
+                <div style="background:var(--paper);border:1px solid var(--line);border-radius:var(--r-pill);padding:3px 7px;font-size:9px;white-space:nowrap;">What's my profit?</div>
+                <div style="background:var(--paper);border:1px solid var(--line);border-radius:var(--r-pill);padding:3px 7px;font-size:9px;white-space:nowrap;">Taxes on track?</div>
               </div>
-              <div style="padding:7px 9px 0;font-size:9px;color:var(--ink-4);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Recent · auto-sorted</div>
+              <div style="padding:7px 9px 0;font-size:9px;color:var(--ink-4);text-transform:uppercase;letter-spacing:0.06em;font-weight:var(--fw-semibold);">Recent · auto-sorted</div>
               <div style="padding:0 9px;margin-top:5px;display:flex;flex-direction:column;gap:4px;">
                 <div style="display:flex;justify-content:space-between;font-size:10px;padding:5px 7px;border:1px solid var(--line);border-radius:5px;"><span>Software · $49</span><span>✓</span></div>
                 <div style="display:flex;justify-content:space-between;font-size:10px;padding:5px 7px;border:1px solid var(--line);border-radius:5px;"><span>Client · +$2,400</span><span>✓</span></div>
@@ -1418,17 +1431,17 @@ button:focus-visible {
                 <span class="ps-time">TUE</span>
               </div>
               <div style="margin:9px;border:1.5px solid var(--ink);border-radius:10px;padding:11px;background:var(--paper);">
-                <div style="font-size:8px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Penny categorized</div>
+                <div style="font-size:8px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.06em;font-weight:var(--fw-semibold);">Penny categorized</div>
                 <div style="margin-top:6px;display:flex;justify-content:space-between;align-items:baseline;">
-                  <div style="font-size:11px;font-weight:600;">Hilton Chicago</div>
-                  <div style="font-size:11px;font-weight:700;">$240</div>
+                  <div style="font-size:11px;font-weight:var(--fw-semibold);">Hilton Chicago</div>
+                  <div style="font-size:11px;font-weight:var(--fw-bold);">$240</div>
                 </div>
-                <div style="margin-top:5px;display:inline-flex;align-items:center;gap:4px;padding:3px 7px;background:var(--ink);color:var(--white);border-radius:999px;font-size:9px;font-weight:600;">✈ Travel · Business</div>
+                <div style="margin-top:5px;display:inline-flex;align-items:center;gap:4px;padding:3px 7px;background:var(--ink);color:var(--white);border-radius:var(--r-pill);font-size:9px;font-weight:var(--fw-semibold);">✈ Travel · Business</div>
                 <div style="margin-top:7px;font-size:9px;color:var(--ink-3);line-height:1.4;">Matched your Mar 12 client trip.</div>
               </div>
               <div style="text-align:center;font-size:9px;color:var(--ink-4);padding:0 9px 4px;">Looks right?</div>
               <div style="display:flex;gap:6px;padding:0 9px;">
-                <button style="flex:1;border:1.5px solid var(--ink);background:var(--ink);color:var(--white);border-radius:6px;padding:7px;font-size:10px;font-weight:600;font-family:inherit;">✓ Yes</button>
+                <button style="flex:1;border:1.5px solid var(--ink);background:var(--ink);color:var(--white);border-radius:6px;padding:7px;font-size:10px;font-weight:var(--fw-semibold);font-family:inherit;">✓ Yes</button>
                 <button style="flex:1;border:1px solid var(--line);background:var(--white);border-radius:6px;padding:7px;font-size:10px;font-family:inherit;">Fix</button>
               </div>
               <div style="padding:5px 9px;font-size:8px;color:var(--ink-4);text-align:center;">Penny learns from every tap.</div>
@@ -1452,12 +1465,12 @@ button:focus-visible {
                 <div class="ps-app"><span class="p-mark p-mark-sm" style="width:16px;height:16px;font-size:8px;">P</span> Penny</div>
                 <span class="ps-time">TUE</span>
               </div>
-              <div style="padding:7px 9px 0;font-size:8px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Sent for you</div>
+              <div style="padding:7px 9px 0;font-size:8px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.06em;font-weight:var(--fw-semibold);">Sent for you</div>
               <div style="margin:7px 9px;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--white);">
-                <div style="font-size:10px;font-weight:600;">To: Acme Studio</div>
+                <div style="font-size:10px;font-weight:var(--fw-semibold);">To: Acme Studio</div>
                 <div style="font-size:9px;color:var(--ink-4);margin-top:1px;">Invoice #1042 · 14 days late</div>
-                <div style="margin-top:7px;font-size:10px;line-height:1.4;color:var(--ink-2);">Hi Sarah, hope you're well! Just a gentle check-in on invoice #1042 — no rush, just wanted to make sure it didn't slip through. 🙂</div>
-                <div style="margin-top:7px;font-size:9px;font-weight:600;">✓ Delivered · 8:02am</div>
+                <div style="margin-top:7px;font-size:10px;line-height:1.4;color:var(--ink-2);">Hi Sarah, hope you're well! Just a gentle check-in on invoice #1042 — no rush, just wanted to make sure it didn't slip through.</div>
+                <div style="margin-top:7px;font-size:9px;font-weight:var(--fw-semibold);">✓ Delivered · 8:02am</div>
               </div>
               <div class="ask-bar"><span class="ask-bar-text">Follow up on this invoice?</span><span class="ask-bar-btn">↑</span></div>
             </div>
@@ -1482,7 +1495,7 @@ button:focus-visible {
       <div class="waitlist-top">
         <span class="p-mark p-mark-md p-mark-inv" style="margin-top:14px;">P</span>
         <div>
-          <div class="eyebrow" style="color:#555;">Penny</div>
+          <div class="eyebrow" style="color:rgba(255,255,255,0.55);">Penny</div>
           <h2>Want to try me?</h2>
           <p class="wl-sub">Drop your email — I'll save your spot and cover your first 3 months of bookkeeping.</p>
         </div>
@@ -1584,8 +1597,8 @@ button:focus-visible {
         </div>
 
         <div class="ref-share">
-          <button class="btn btn-ghost-white" onclick="shareByEmail()" aria-label="Share by email">✉ Share by email</button>
-          <button class="btn btn-ghost-white" onclick="shareByMessage()" aria-label="Share by message">💬 Share by message</button>
+          <button class="btn btn-ghost-white" onclick="shareByEmail()" aria-label="Share by email">Share by email</button>
+          <button class="btn btn-ghost-white" onclick="shareByMessage()" aria-label="Share by message">Share by message</button>
         </div>
 
         <div class="ref-progress" aria-label="Referral progress">
@@ -1885,7 +1898,7 @@ async function shareByMessage() {
   // Desktop fallback: copy to clipboard + toast
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(text).then(() => {
-      showToast('Message copied — paste it into your favourite chat app.');
+      showToast('Message copied — paste it into your favorite chat app.');
     }).catch(() => {
       showToast('Copy failed — long-press the link to copy manually.');
     });

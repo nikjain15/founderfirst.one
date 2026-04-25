@@ -187,3 +187,4 @@ Auto-logged on every push to `main` → deployed to GitHub Pages at [founderfirs
 | 179 | 2026-04-25T11:54:43Z | [`2792034`](https://github.com/nikjain15/founderfirst.one/commit/279203456bbfe13d39655e025eb2235f7193614f) | Merge branch 'main' of github.com:nikjain15/founderfirst.one | Nik Jain | `` |
 | 180 | 2026-04-25T12:00:23Z | [`a9a2766`](https://github.com/nikjain15/founderfirst.one/commit/a9a2766b969e9b5c1e652960e7f1b32d5ad3d187) | docs: add ANALYTICS.md — GA4 + PostHog reference | Nik Jain | `ANALYTICS.md` |
 | 181 | 2026-04-25T12:00:58Z | [`144d10f`](https://github.com/nikjain15/founderfirst.one/commit/144d10f3de19e9db86cb086b627cc0aad926dded) | fix: align founderfirst.one with Penny brand guidelines | Nik Jain | `index.html` |
+| 182 | 2026-04-25T12:06:22Z | [`c3200f5`](https://github.com/nikjain15/founderfirst.one/commit/c3200f5ce7ba6aa7fa297f215dc081e380c11f1a) | fix: resolve merge conflict — keep Georgia italic on p-mark | Nik Jain | `` |

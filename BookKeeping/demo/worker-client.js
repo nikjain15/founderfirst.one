@@ -14,7 +14,7 @@
  */
 
 import { validate } from "./guardrails/voice-validator.js";
-import { retryWithFeedback } from "./guardrails/retry-on-fail.js";
+import { retryWithFeedback, RateLimitError } from "./guardrails/retry-on-fail.js";
 
 const PROMPT_CACHE = new Map(); // in-memory prompt file cache
 const RESPONSE_CACHE_PREFIX = "penny.cache.v1.";
@@ -110,7 +110,11 @@ function hashKey(parts) {
 }
 
 // --- Client factory -----------------------------------------------------------
-export function createClient({ workerUrl, demoToken, defaultModel, booksModel }) {
+// Intents that fire automatically (not user-initiated) — routed to Haiku to
+// preserve Sonnet's 30K input TPM budget for user Q&A.
+const AMBIENT_INTENTS = new Set(["thread.greeting", "thread.idle", "card.approval"]);
+
+export function createClient({ workerUrl, demoToken, defaultModel, booksModel, ambientModel }) {
   async function callClaude({ systemPrompt, userMessage, model }) {
     const res = await fetch(`${workerUrl}/v1/messages`, {
       method: "POST",
@@ -125,13 +129,18 @@ export function createClient({ workerUrl, demoToken, defaultModel, booksModel })
         messages: [{ role: "user", content: userMessage }],
       }),
     });
+    if (res.status === 429) throw new RateLimitError();
     if (!res.ok) throw new Error(`Worker error: ${res.status}`);
     const json = await res.json();
     return json.content?.[0]?.text || "";
   }
 
   async function renderPenny({ intent, context, nocache = false, model }) {
-    const effectiveModel = model || (intent === "books.qa" ? booksModel : defaultModel);
+    const effectiveModel = model || (
+      intent === "books.qa"             ? booksModel :
+      AMBIENT_INTENTS.has(intent)       ? (ambientModel || defaultModel) :
+      defaultModel
+    );
     const key = hashKey({ intent, context, model: effectiveModel });
     if (!nocache) {
       const cached = localStorage.getItem(key);

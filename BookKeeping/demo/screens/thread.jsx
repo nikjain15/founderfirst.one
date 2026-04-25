@@ -85,23 +85,27 @@ export default function ThreadScreen({ ai, state, set, navigate, scenario }) {
     let cancelled = false;
     setGreetingLoading(true);
     const queueLength = cardQueue?.length ?? 0;
-    ai.renderPenny({
-      intent: "thread.greeting",
-      context: {
-        mode: state.returningUser ? "returning-welcome" : "first-time-greeting",
-        persona,
-        queueLength,
-        lastSeenHours: state.lastSeenHours || 0,
-      },
-    })
-      .then((msg) => { if (!cancelled) { setGreetingMsg(msg); setGreetingLoading(false); } })
-      .catch(() => {
-        if (!cancelled) {
-          setGreetingMsg(THREAD_INTRO_COPY.greetingFallback(persona.firstName || ""));
-          setGreetingLoading(false);
-        }
-      });
-    return () => { cancelled = true; };
+    // Small stagger so greeting and card-approval prompts don't all fire simultaneously
+    // on mount — reduces the chance of hitting Anthropic's per-minute request limit.
+    const t = setTimeout(() => {
+      ai.renderPenny({
+        intent: "thread.greeting",
+        context: {
+          mode: state.returningUser ? "returning-welcome" : "first-time-greeting",
+          persona,
+          queueLength,
+          lastSeenHours: state.lastSeenHours || 0,
+        },
+      })
+        .then((msg) => { if (!cancelled) { setGreetingMsg(msg); setGreetingLoading(false); } })
+        .catch(() => {
+          if (!cancelled) {
+            setGreetingMsg(THREAD_INTRO_COPY.greetingFallback(persona.firstName || ""));
+            setGreetingLoading(false);
+          }
+        });
+    }, 800);
+    return () => { cancelled = true; clearTimeout(t); };
   // Re-run only when cardQueue first resolves (so queueLength is accurate).
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persona, cardQueue !== null]);
@@ -116,15 +120,19 @@ export default function ThreadScreen({ ai, state, set, navigate, scenario }) {
     if (!queueDone) return;
     let cancelled = false;
     setIdleLoading(true);
-    ai.renderPenny({ intent: "thread.idle", context: { mode: "queue-empty" } })
-      .then((msg) => { if (!cancelled) { setIdleMsg(msg); setIdleLoading(false); } })
-      .catch(() => {
-        if (!cancelled) {
-          setIdleMsg(THREAD_INTRO_COPY.idleFallback);
-          setIdleLoading(false);
-        }
-      });
-    return () => { cancelled = true; };
+    // Stagger idle call 1.5s after queue completes — card confirmation already
+    // fired an AI call (card-approval), so give the API a moment to breathe.
+    const t = setTimeout(() => {
+      ai.renderPenny({ intent: "thread.idle", context: { mode: "queue-empty" } })
+        .then((msg) => { if (!cancelled) { setIdleMsg(msg); setIdleLoading(false); } })
+        .catch(() => {
+          if (!cancelled) {
+            setIdleMsg(THREAD_INTRO_COPY.idleFallback);
+            setIdleLoading(false);
+          }
+        });
+    }, 1_500);
+    return () => { cancelled = true; clearTimeout(t); };
   }, [queueDone]);
 
   // --- Confirm a card ---
@@ -163,11 +171,11 @@ export default function ThreadScreen({ ai, state, set, navigate, scenario }) {
         setQaHistory((prev) => [...prev, { question, answer: msg }]);
         setAskLoading(false);
       })
-      .catch(() => {
-        setQaHistory((prev) => [...prev, {
-          question,
-          answer: ERROR_COPY.threadQaError,
-        }]);
+      .catch((err) => {
+        const answer = err?.name === "RateLimitError"
+          ? ERROR_COPY.threadQaRateLimit
+          : ERROR_COPY.threadQaError;
+        setQaHistory((prev) => [...prev, { question, answer }]);
         setAskLoading(false);
       });
   }, [askVal, askLoading, cardQueue, activeIdx, persona, ai]);

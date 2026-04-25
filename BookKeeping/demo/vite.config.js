@@ -23,7 +23,6 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    strictPort: true,
     // The deployed Worker only allows CORS from founderfirst.one, so a
     // direct fetch from localhost would be blocked. Proxy the Worker
     // path through Vite in dev so the browser sees a same-origin call.

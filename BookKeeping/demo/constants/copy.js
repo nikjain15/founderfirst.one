@@ -333,6 +333,13 @@ export const ERROR_COPY = Object.freeze({
     tone:     "fyi",
   }),
 
+  // thread.jsx — thread.qa rate-limit path (shown after backoff exhausted).
+  threadQaRateLimit: Object.freeze({
+    headline: "Give me just a moment — I'm catching up.",
+    why:      "Try your question again in about 30 seconds.",
+    tone:     "fyi",
+  }),
+
   // books.jsx — books.qa AI failure path.
   booksQaError: Object.freeze({
     headline: "I don't have that detail handy right now.",

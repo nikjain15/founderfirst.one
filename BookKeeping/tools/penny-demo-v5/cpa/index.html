@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="description" content="Penny CPA — review and act on your clients' books." />
+  <title>Penny CPA</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script type="module" crossorigin src="/penny/demo/assets/cpa-B5PjSv5L.js"></script>
+  <link rel="modulepreload" crossorigin href="/penny/demo/assets/analytics-C2FpAMZV.js">
+  <link rel="stylesheet" crossorigin href="/penny/demo/assets/analytics-CMwBtR8u.css">
+</head>
+<body>
+  <div id="cpa-root"></div>
+
+  <!--
+    Runtime config — same shape as index.html but scoped to the CPA entry.
+    baseUrl points to /penny/demo/ so static asset fetches (prompts/, config/)
+    resolve identically to the founder app.
+  -->
+  <script>
+    var isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    var pathBase = location.pathname.match(/^(.*\/penny\/demo\/)/);
+    window.PENNY_CONFIG = {
+      workerUrl: isLocal ? "" : "https://penny-api.nikjain1588.workers.dev",
+      demoToken: "ff-demo-2026",
+      defaultModel: "claude-sonnet-4-6",
+      booksModel: "claude-sonnet-4-6",
+      baseUrl: pathBase ? pathBase[1] : "/",
+    };
+  </script>
+
+</body>
+</html>

@@ -1066,7 +1066,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
     setSheetCard(null);
   }, []);
   const [drilldown,    setDrilldown]    = useState(null);  // "pl"|"expenses"|"income"|"ledger"|null
-  const [cpaSheeet,    setCpaSheet]     = useState(false);
+  const [cpaSheet,     setCpaSheet]     = useState(false);
   const [taxSheet,     setTaxSheet]     = useState(false);
   const [formPreview,  setFormPreview]  = useState(false);
 
@@ -1563,7 +1563,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
       )}
 
       {/* Send to CPA sheet */}
-      {cpaSheeet && (
+      {cpaSheet && (
         <SendToCPASheet
           persona={persona}
           ledger={ledger}

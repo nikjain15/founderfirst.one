@@ -43,14 +43,13 @@ const TABS = [
 
 export default function TabBar({ active, navigate }) {
   return (
-    <nav className="tab-bar" role="tablist" aria-label="Primary">
+    <nav className="tab-bar" aria-label="Primary navigation">
       {TABS.map(({ id, label, Icon }) => {
         const isActive = active === id;
         return (
           <button
             key={id}
-            role="tab"
-            aria-selected={isActive}
+            aria-current={isActive ? "page" : undefined}
             className={"tab tab--" + id + (isActive ? " tab--active" : "")}
             onClick={() => navigate(`/${id}`)}
           >

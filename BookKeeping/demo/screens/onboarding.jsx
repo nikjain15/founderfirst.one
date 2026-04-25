@@ -29,16 +29,6 @@ const STEP_INTENT = {
   bank:          "onboarding.bank",
 };
 
-const STEP_CONTEXT_KEY = {
-  welcome:       "welcome",
-  entity:        "entity",
-  "entity-diag": "entity-not-sure",
-  industry:      "industry",
-  payments:      "payment-methods",
-  expenses:      "expenses",
-  checkin:       "check-in",
-  bank:          "bank",
-};
 
 const ENTITY_OPTIONS = [
   { id: ENTITY_TYPES.SOLE_PROP, label: "Sole proprietor", sub: "You and the business are the same thing, legally. Taxes go on your personal return." },
@@ -176,8 +166,7 @@ export default function OnboardingScreen({ ai, state, set, navigate }) {
       setPennyMsg(ONBOARDING_COPY.pulling);
       return;
     }
-    const intent = STEP_INTENT[step];
-    if (!intent) return;
+    if (!STEP_INTENT[step]) return;
 
     // Show fallback copy immediately so there's no blank/skeleton state.
     // AI response replaces it silently when ready — the wording is similar enough

@@ -1,7 +1,7 @@
 # CPA Data Model — v1 Schema
 
 **Status:** Locked
-**Last updated:** 2026-04-24
+**Last updated:** 2026-04-25
 **Owners:** Nik (CEO)
 
 This document is the canonical shape of `state.cpa`. The demo persists it in
@@ -62,7 +62,11 @@ state.cpa = {
   clients: {
     [clientId]: {
       clientName:   string,
-      entity:       "sole-prop" | "llc" | "llc-single" | "llc-multi" | "s-corp" | "partnership",
+      // Matches ENTITY_TYPES enum in constants/variants.js exactly.
+      // "llc" = undifferentiated (treated as SMLLC / Schedule C by default).
+      // "llc-single" = confirmed single-member LLC → Schedule C.
+      // "llc-multi"  = confirmed multi-member LLC → Form 1065 + K-1.
+      entity: "sole-prop" | "s-corp" | "llc" | "llc-single" | "llc-multi" | "partnership",
       industry:     string,
       grantedAt:    number,
       yearGrants:   number[],    // years the CPA can view, e.g. [2025, 2026]
@@ -140,6 +144,12 @@ state.cpa = {
         }
       ],
 
+      // Timestamp of the most recent write to this client's data (flags,
+      // annotations, pendingAdds, approvals, learnedRules). Used by the
+      // CPA dashboard to show "Last activity" on each client card.
+      // Updated automatically by bumpLastActivity() in util/cpaState.js.
+      lastActivityAt: number,
+
       // Computed, cached. Recomputed on any data write.
       taxReadiness: {
         score:           number, // 0–100
@@ -166,7 +176,8 @@ state.cpa = {
       suggestedBy:   string,      // cpaId or "penny"
       fromCategory:  string | null,
       toCategory:    string | null,
-      candidates:    string[] | null,   // for penny-question type
+      candidates:    string[] | null,   // for penny-question: competing category options
+      question:      string | null,     // for penny-question: the question Penny escalated
       note:          string,
       status:        "pending" | "approved" | "rejected",
       createdAt:     number,
@@ -191,6 +202,71 @@ state.cpa = {
 };
 ```
 
+---
+
+## ApprovalCard `card` object — shape per approval type
+
+When an approval renders in the founder's Needs a look, the calling code
+constructs a `card` object and passes it to `<ApprovalCard>`. The shape
+below is the canonical contract — screens must not invent extra fields.
+
+```ts
+// All approval card objects share these base fields:
+{
+  variant:   string,       // from CARD_VARIANTS — e.g. "cpa-suggestion"
+  approvalId: string,      // state.cpa.approvals[id].id — required for mutation dispatch
+  vendor:    string,       // display name in the card header (e.g. "Adobe Creative Cloud")
+  amount:    number | null,// transaction amount, null for year-access-request
+  date:      string | null,// display date, null for non-transaction approvals
+}
+
+// RECLASSIFICATION / cpa-suggestion variant — extra fields:
+{
+  currentCategory:   string,  // the category before CPA's change
+  suggestedCategory: string,  // what the CPA recommends
+  cpaName:           string,  // CPA's display name (from state.cpa.clients[clientId].entity or account.name)
+  cpaNote:           string,  // verbatim from approvals[id].note — rendered below Penny's copy
+}
+
+// YEAR_ACCESS_REQUEST variant — extra fields:
+{
+  yearRequested:  number,  // e.g. 2025
+  cpaName:        string,
+  cpaNote:        string,
+}
+
+// CPA_ADDED_TXN variant — extra fields:
+{
+  cpaName:   string,
+  cpaNote:   string,
+}
+
+// PENNY_QUESTION variant — extra fields (CPA has already answered; founder approves the rule):
+{
+  question:     string,  // the question Penny escalated
+  cpAnswer:     string,  // the CPA's chosen answer (from toCategory)
+  cpaName:      string,
+}
+```
+
+---
+
+## Pattern derivation rule (learnedRules)
+
+When `approveApproval` writes a `learnedRules[]` entry it must derive a
+`pattern` that future transactions can match against. The rule is:
+
+1. Take the first 1–3 words of `approvals[id].note` as the vendor prefix.
+2. Append `*` — e.g. note begins `"Adobe Creative Cloud should sit in..."` → pattern `"Adobe Creative Cloud*"`.
+3. Fallback: if the note is empty, use `fromCategory + "*"`.
+
+This logic lives in `derivePattern()` in `util/cpaState.js`. The pattern
+applies to future transactions for this client only (never cross-client).
+Matching is prefix/substring at the vendor normalisation layer — the demo
+uses `txn.vendor.startsWith(pattern.replace("*",""))`.
+
+---
+
 ## Preferences extension
 
 ```ts
@@ -212,7 +288,8 @@ other write path is a bug.
 
 | Function | Who calls it | What it does |
 |---|---|---|
-| `generateInvite(clientId, cpaEmail, cpaName?)` | Founder app | Pushes a new record to `invites[]` with `status: "pending"`. Returns `{ token, expiresAt }`. |
+| `inviteUrl(token, baseUrl?)` | Founder app | Builds the shareable invite link: `<origin><baseUrl>cpa.html?token=<token>`. Uses `window.PENNY_CONFIG?.baseUrl` as default base. |
+| `generateInvite(clientId, cpaEmail, cpaName?)` | Founder app | Pushes a new record to `invites[]` with `status: "pending"`. Returns `{ token, expiresAt }`. Call `inviteUrl(token)` for the shareable URL. |
 | `revokeInvite(inviteId)` | Founder app | Sets status to `"revoked"`. Invite link stops working. |
 | `acceptInvite(token, cpaAccountFields)` | CPA app (signup) | Validates token + license fields. Creates `account`. Promotes the matching invite to `"accepted"`. Creates `clients[clientId]` with current-year grant. |
 | `requestPriorYearAccess(clientId, year, note)` | CPA app | Appends to `clients[clientId].yearRequests[]`. Creates an `approvals[]` record of type `year-access-request`. |
@@ -225,8 +302,38 @@ other write path is a bug.
 | `rejectApproval(id, founderNote?)` | Founder app | Resolves approval as `"rejected"`. Original state preserved. CPA's Resolved queue shows the note. |
 | `deleteLearnedRule(clientId, ruleId)` | CPA app | Sets `active: false` on the rule. Rule stays in the array for audit but stops applying. Penny does not moralize — rule-deletion is metadata, not a ledger edit. |
 | `revokeCpaAccess(cpaId)` | Founder app | Moves `clients[clientId]` entries into `archives[cpaId]`, **deletes** `chatHistory`, sets all outstanding `approvals` for this CPA to rejected-by-revocation, CPA loses access immediately on next request. |
+| `recomputeTaxReadiness(clientId)` | Any mutation that writes `flags`, `pendingAdds`, or category assignments | Pure helper — reads `clients[clientId]` and returns an updated `taxReadiness` object. Called automatically inside `flagTransaction`, `addTransactionAsCpa`, and `approveApproval`. UI never calls this directly. |
+| `bumpLastActivity(cpa, clientId)` | Every mutation that modifies a client's data | Sets `clients[clientId].lastActivityAt = Date.now()`. Called internally at the end of every mutation that touches a client. UI never calls this directly. |
+| `inviteUrl(token, baseUrl?)` | Founder app UI | Builds the shareable invite link string. Pure function, no state change. |
 
 ---
+
+## Fixture synthesis rules
+
+`public/config/cpa-fixture.json` is the canonical pre-built fixture — it
+contains fully hydrated `flags`, `annotations`, `pendingAdds`, `approvals`,
+and `learnedRules` for each client. Builders should use this fixture as-is
+and not attempt to synthesize records from scenario data at runtime.
+
+If adding a new client to the fixture, follow these rules:
+
+1. **Transaction IDs** — use the format `txn-s{N}-{M}` where N is the
+   client ordinal (01, 02, …) and M is the transaction index. These IDs
+   are fictional for the demo but must be stable across refreshes.
+2. **Flags** — pick 2–4 transactions. Mix `needs-receipt`, `reclassify`,
+   `confirm-with-client` evenly. Notes must be substantive CPA-quality
+   text referencing specific IRS publications, thresholds, or form lines.
+3. **Learned rules** — 2 rules minimum. Patterns use the format
+   `"VendorPrefix*"`. Categories must be from `categories.v1.json`.
+4. **Pending adds** — 0–2 per client. `IRS EFTPS` estimated tax payments
+   are the canonical example; use realistic amounts for the entity type.
+5. **Approvals** — at least one `reclassification` + one `cpa-added-txn`
+   per client. A `year-access-request` for S-Corp clients. A
+   `penny-question` to demonstrate the escalation path.
+6. **Tax readiness** — compute manually from the formula above; do not
+   guess. Weights: uncategorized × 3, missingReceipts × 2, flagged × 4.
+7. **`lastActivityAt`** — set to the most recent `createdAt` /
+   `flaggedAt` / `addedAt` across that client's records.
 
 ## Seed file
 
@@ -266,6 +373,31 @@ seed. See `public/config/cpa-fixture.json` for the canonical example.
 ```
 
 On boot the CPA app reads this fixture and hydrates `state.cpa` directly.
+
+---
+
+## Dashboard computed values
+
+### Open-items count (per client card on the CPA dashboard)
+
+```
+openItemsCount = unresolved flags count
+               + uncategorized pendingAdds count   (pendingAdds where category === "")
+               + pending penny-questions count      (approvals[].type === "penny-question" && status === "pending")
+```
+
+Used for the amber badge on client cards. Shows 0 with no badge when all clear.
+
+### Pending approvals count (per client card on the CPA dashboard)
+
+```
+pendingApprovalsCount = count of approvals[].status === "pending"
+                        where approvals[].clientId === this clientId
+                        AND   approvals[].type !== "penny-question"
+```
+
+Penny-questions are excluded because they appear in the work queue under
+priority-4, not the same "pending CPA suggestion" bucket.
 
 ---
 

@@ -20,10 +20,59 @@ function uid() {
 }
 
 function randomToken() {
+  // Use Web Crypto when available (all modern browsers + Workers).
+  // Falls back to Math.random only if SubtleCrypto is unavailable.
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    const arr = new Uint8Array(24);
+    crypto.getRandomValues(arr);
+    return Array.from(arr, (b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+  }
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let t = "";
   for (let i = 0; i < 32; i++) t += chars[Math.floor(Math.random() * chars.length)];
   return t;
+}
+
+/**
+ * derivePattern(approval) → string
+ *
+ * Determines the vendor pattern written to learnedRules[].pattern when
+ * an approval is approved. Rule: use the vendor name from the approval's
+ * note if present (format: "Vendor* — reason"), otherwise fall back to
+ * fromCategory. The trailing "*" wildcard means "this vendor prefix".
+ *
+ * Examples:
+ *   note = "Adobe Creative Cloud should sit in..."  → "Adobe Creative Cloud*"
+ *   note = ""  + fromCategory = "Misc expenses"     → "Misc expenses*"
+ */
+function derivePattern(approval) {
+  const noteWords = (approval.note || "").trim().split(/\s+/);
+  // Use up to the first 3 words of the note as the vendor prefix pattern.
+  // This matches how the fixture generates patterns (e.g. "Adobe*", "Home Depot*").
+  if (noteWords.length >= 1 && noteWords[0].length > 1) {
+    const vendorPrefix = noteWords.slice(0, 3).join(" ");
+    return `${vendorPrefix}*`;
+  }
+  return `${approval.fromCategory || "*"}*`;
+}
+
+/**
+ * bumpLastActivity(cpa, clientId) → newCpa
+ *
+ * Updates clients[clientId].lastActivityAt to the current timestamp.
+ * Called by every mutation that modifies a client's data. The dashboard
+ * uses this field to sort and display "Last activity" on client cards.
+ */
+function bumpLastActivity(cpa, clientId) {
+  const client = cpa.clients?.[clientId];
+  if (!client) return cpa;
+  return {
+    ...cpa,
+    clients: {
+      ...cpa.clients,
+      [clientId]: { ...client, lastActivityAt: Date.now() },
+    },
+  };
 }
 
 const SEVEN_DAYS_MS  = 7  * 24 * 60 * 60 * 1000;
@@ -63,10 +112,27 @@ export function computeTaxReadiness(clientData) {
 // ── Mutations ─────────────────────────────────────────────────────────────────
 
 /**
+ * inviteUrl(token, baseUrl?) → string
+ *
+ * Builds the invite link a founder copies and sends to their CPA.
+ * The CPA lands on cpa.html (the second HTML entry) with the token
+ * as a query param, then the AuthGate reads it to pre-fill the form.
+ *
+ * baseUrl defaults to window.PENNY_CONFIG?.baseUrl || "/".
+ */
+export function inviteUrl(token, baseUrl = null) {
+  const base = baseUrl ?? (typeof window !== "undefined" ? (window.PENNY_CONFIG?.baseUrl || "/") : "/");
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const normalised = base.endsWith("/") ? base : base + "/";
+  return `${origin}${normalised}cpa.html?token=${token}`;
+}
+
+/**
  * generateInvite(cpa, clientId, cpaEmail, cpaName?) → { newCpa, token, expiresAt }
  *
  * Pushes a new invite record with status "pending". Returns the updated
  * state.cpa and the invite token so the founder can copy the link.
+ * Use inviteUrl(token) to build the shareable URL.
  */
 export function generateInvite(cpa, clientId, cpaEmail, cpaName = null) {
   const now      = Date.now();
@@ -254,13 +320,13 @@ export function flagTransaction(cpa, clientId, txnId, reason, note = "") {
     flags: { ...(client.flags || {}), [txnId]: flag },
   };
 
-  return {
+  return bumpLastActivity({
     ...cpa,
     clients: {
       ...cpa.clients,
       [clientId]: { ...updatedClient, taxReadiness: computeTaxReadiness(updatedClient) },
     },
-  };
+  }, clientId);
 }
 
 /**
@@ -280,7 +346,7 @@ export function annotateTransaction(cpa, clientId, txnId, text, authorId = null,
 
   const existing = client.annotations?.[txnId] || [];
 
-  return {
+  return bumpLastActivity({
     ...cpa,
     clients: {
       ...cpa.clients,
@@ -289,7 +355,7 @@ export function annotateTransaction(cpa, clientId, txnId, text, authorId = null,
         annotations: { ...(client.annotations || {}), [txnId]: [...existing, annotation] },
       },
     },
-  };
+  }, clientId);
 }
 
 /**
@@ -319,10 +385,10 @@ export function suggestReclassification(cpa, clientId, txnId, fromCategory, toCa
   };
 
   return {
-    newCpa: {
+    newCpa: bumpLastActivity({
       ...cpa,
       approvals: { ...(cpa.approvals || {}), [approvalId]: approval },
-    },
+    }, clientId),
     approvalId,
   };
 }
@@ -376,14 +442,14 @@ export function addTransactionAsCpa(cpa, clientId, txnFields, receiptUrl = null)
   };
 
   return {
-    newCpa: {
+    newCpa: bumpLastActivity({
       ...cpa,
       clients: {
         ...cpa.clients,
         [clientId]: { ...updatedClient, taxReadiness: computeTaxReadiness(updatedClient) },
       },
       approvals: { ...(cpa.approvals || {}), [approvalId]: approval },
-    },
+    }, clientId),
     approvalId,
   };
 }
@@ -415,9 +481,13 @@ export function approveApproval(cpa, id, cpaName = null) {
 
   if (approval.type === APPROVAL_TYPES.RECLASSIFICATION || approval.type === APPROVAL_TYPES.PENNY_QUESTION) {
     if (client) {
+      // Pattern derivation: derive from the CPA's note (first 1–3 words + "*").
+      // This creates patterns like "Adobe Creative Cloud*", "Home Depot*".
+      // Future transactions whose vendor starts with this prefix will be
+      // auto-suggested in the same category for this client only.
       const rule = {
         id:           uid(),
-        pattern:      approval.transactionId || approval.fromCategory || "*",
+        pattern:      derivePattern(approval),
         fromCategory: approval.fromCategory  || "",
         toCategory:   approval.toCategory    || "",
         suggestedBy:  "cpa",
@@ -464,7 +534,7 @@ export function approveApproval(cpa, id, cpaName = null) {
     };
   }
 
-  return newCpa;
+  return bumpLastActivity(newCpa, approval.clientId);
 }
 
 /**
@@ -477,13 +547,13 @@ export function rejectApproval(cpa, id, founderNote = null) {
   const approval = cpa.approvals?.[id];
   if (!approval || approval.status !== "pending") return cpa;
 
-  return {
+  return bumpLastActivity({
     ...cpa,
     approvals: {
       ...(cpa.approvals || {}),
       [id]: { ...approval, status: "rejected", resolvedAt: Date.now(), founderNote },
     },
-  };
+  }, approval.clientId);
 }
 
 /**

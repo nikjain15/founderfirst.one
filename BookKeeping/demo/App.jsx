@@ -72,7 +72,21 @@ function readState() {
     const raw = localStorage.getItem(STATE_KEY);
     if (!raw) return { ...DEFAULT_STATE };
     const parsed = JSON.parse(raw);
-    return { ...DEFAULT_STATE, ...parsed };
+    // Deep-merge nested objects so new default keys reach returning users.
+    // Top-level spread only would wholesale-replace `cpa` or `preferences`,
+    // dropping any new keys added to DEFAULT_STATE after the user first ran the demo.
+    return {
+      ...DEFAULT_STATE,
+      ...parsed,
+      cpa: {
+        ...DEFAULT_STATE.cpa,
+        ...(parsed.cpa || {}),
+      },
+      preferences: {
+        ...DEFAULT_STATE.preferences,
+        ...(parsed.preferences || {}),
+      },
+    };
   } catch {
     return { ...DEFAULT_STATE };
   }
@@ -108,6 +122,33 @@ export default function App() {
     const onHash = () => setRoute(parseRoute());
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  // Sync state.cpa when the CPA app (running in an adjacent browser tab)
+  // writes to the shared localStorage key. Without this, a CPA approval or
+  // reclassification written in one tab would not appear in the founder's
+  // Needs a look until the founder manually refreshes.
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key !== STATE_KEY || !e.newValue) return;
+      try {
+        const incoming = JSON.parse(e.newValue);
+        if (incoming?.cpa) {
+          setState((prev) => ({
+            ...prev,
+            cpa: {
+              ...DEFAULT_STATE.cpa,
+              ...prev.cpa,
+              ...incoming.cpa,
+            },
+          }));
+        }
+      } catch {
+        // Malformed storage entry — ignore.
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   useEffect(() => {

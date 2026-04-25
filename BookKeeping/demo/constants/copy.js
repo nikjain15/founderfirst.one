@@ -242,6 +242,27 @@ export const EMPTY_STATE_COPY = Object.freeze({
 
   // cpa/Chat.jsx — chat history is empty.
   cpaChatEmptyHint: "Ask about specific transactions, IRS lines, totals, or anything in these books.",
+
+  // cpa/WorkQueue.jsx — no active items for this client.
+  cpaWorkQueueEmpty: "All clear. No items need your attention right now.",
+
+  // cpa/WorkQueue.jsx — Resolved section has no archived items.
+  cpaResolvedEmpty: "No resolved items yet.",
+
+  // cpa/Books.jsx — ledger has no transactions for the selected filters.
+  cpaBooksEmpty: "No transactions match the selected filters.",
+
+  // cpa/ProfitLoss.jsx — no data for the selected period.
+  cpaProfitLossEmpty: "No data available for this period.",
+
+  // cpa/CashFlow.jsx — no data for the selected period.
+  cpaCashFlowEmpty: "No cash flow data for this period.",
+
+  // cpa/ClientView.jsx — year selector has no granted years (edge case: year revoked mid-session).
+  cpaNoYearsGranted: "No tax years are available. Ask the client to grant access.",
+
+  // cpa/Dashboard.jsx — CPA has no clients yet (new account or all revoked).
+  cpaDashboardEmpty: "No clients yet. Share your invite link to get started.",
 });
 
 // ── Toasts ───────────────────────────────────────────────────────────────────
@@ -330,4 +351,14 @@ export const ERROR_COPY = Object.freeze({
   fieldPasswordMin:   "Let's make that password at least 8 characters.",
   fieldLicenseFormat: "License numbers run 6–12 letters and numbers — could you check yours?",
   fieldStateCode:     "I need a 2-letter state code (like NY or CA).",
+
+  // cpa/AuthGate.jsx — invite link is expired or revoked.
+  inviteExpired: "This invite has expired. Ask your client to resend the link.",
+  inviteRevoked: "This invite has been revoked. Ask your client to resend the link.",
+  inviteAlreadyUsed: "This invite has already been used.",
+  inviteNotFound: "This invite link isn't valid. Ask your client to generate a new one.",
+
+  // cpa/AuthGate.jsx — founder silent notification copy (surfaced in Penny thread or Needs a look).
+  // Used when CPA attempts access with expired invite: founder sees this notification.
+  founderInviteExpiredNotice: (cpaEmail) => `${cpaEmail} tried to access your books — the invite expired. Resend?`,
 });

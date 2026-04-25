@@ -1,7 +1,7 @@
 # Penny CPA View — Product Specification
 
-**Version:** 1.1
-**Date:** 2026-04-24
+**Version:** 1.2
+**Date:** 2026-04-25
 **Status:** Locked — Ready for build
 **Author:** Nik Jain
 
@@ -432,7 +432,7 @@ on `.cpa-app`; portal target is `#sheet-root-cpa`. Never `position: fixed`.
 
 | ID | Question | Decision | Status |
 |---|---|---|---|
-| OQ-1 | Tax readiness % formula | Initial weights: `uncategorized × 3`, `missingReceipts × 2`, `flagged × 4`. Bands: 90+ clean, 70–89 amber, 0–69 error. Tunable during build. | Locked v1.1 |
+| OQ-1 | Tax readiness % formula | Weights locked as v1 final: `uncategorized × 3`, `missingReceipts × 2`, `flagged × 4`. Clamped to [0, 100]. Bands: 90+ clean, 70–89 amber, 0–69 error. Not tunable post-v1 without a spec revision. | Locked v1.2 |
 | OQ-2 | Prior-year access — automatic or founder-controlled | **Founder-controlled.** CPA gets current year automatically. Prior years require explicit grant via `type: "year-access-request"` approval. | Locked v1.1 |
 | OQ-3 | CPA-added transactions — how does founder get notified | New preference `notifyCpaActivity` (`real-time` / `daily-digest` / `off`). Day 7 gentle re-surface; day 30 opt-in for auto-accept. | Locked v1.1 |
 | OQ-4 | Does CPA need to verify credentials | **Yes.** CPA license number + state required at signup. No bypass even with valid invite. | Locked v1.1 |
@@ -445,6 +445,24 @@ on `.cpa-app`; portal target is `#sheet-root-cpa`. Never `position: fixed`.
 | OQ-11 | CPA-added transaction timeout | **No hard timeout.** Day 7 gentle re-surface + day 30 opt-in auto-accept. | Locked v1.1 |
 | OQ-12 | Invite-expired — who hears about it | Both. CPA sees "ask your client to resend" error; founder gets silent notification per `notifyCpaActivity`. | Locked v1.1 |
 | OQ-13 | CPA rejection visibility | Collapsible "Resolved" section in CPA work queue. Rejected items show founder's optional note. Auto-archive after 7 days. | Locked v1.1 |
+| OQ-14 | CPA app routing strategy | **`cpa.html` second HTML entry** (not path-based routing). Vite config emits two HTML entry points: `index.html` (founder demo at `#/`) and `cpa.html` (CPA app, path-based within itself using React Router or similar). Hash routing cannot be used for the CPA app because it requires server rewrites that GitHub Pages does not support at arbitrary sub-paths. | Locked v1.2 |
+| OQ-15 | `notifyCpaActivity` UI control | **3-segment pill** in Preferences ("Real-time / Daily digest / Off"), replacing the 2-option pill used for the existing general notifications. Sits in its own "CPA notifications" sub-section below the general notifications row. | Locked v1.2 |
+| OQ-16 | "Your CPA" row — 3 states | (a) **No CPA:** label "Your CPA", value "None — Invite", tap → invite sheet. (b) **Invite pending:** label "Your CPA", value `"Invite sent to ${cpaEmail}"`, tap → invite sheet with "Resend / Revoke" actions. (c) **Active CPA:** label "Your CPA", value CPA name, tap → CPA detail sheet (name + access date + revoke button). | Locked v1.2 |
+| OQ-17 | Founder silent notification channel | When a CPA attempts access with an expired invite, Penny surfaces a `penny-question` type approval in the founder's Needs a look with the copy from `ERROR_COPY.founderInviteExpiredNotice(cpaEmail)`. Does NOT fire a toast (toast is ephemeral; this message must persist until acknowledged). Notification only fires if `notifyCpaActivity !== "off"`. | Locked v1.2 |
+| OQ-18 | CPA top nav dropdown items | Logo + "Penny for CPAs" wordmark left-aligned. Right side: CPA name avatar (first initial) → dropdown with: "Account settings" (stub toast), "Sign out" (clears `state.cpa.account` + redirects to `/cpa`), divider, "Switch client" (same as client-switch breadcrumb). | Locked v1.2 |
+| OQ-19 | Client-switch affordance | At 768px+: breadcrumb link "← All clients" at top of left sidebar. At 375–767px: "← All clients" in the mobile header row. Both navigate to `/cpa/dashboard`. No dropdown — the breadcrumb is the only switch affordance (the dashboard is one tap away). | Locked v1.2 |
+| OQ-20 | Responsive CSS approach | CSS media queries on `.cpa-app` root. Breakpoint variables: `--bp-tablet: 768px`, `--bp-desktop: 1024px`. No container queries in v1. Pattern: mobile styles are the default; tablet/desktop styles use `@media (min-width: var(--bp-tablet))` / `@media (min-width: var(--bp-desktop))`. | Locked v1.2 |
+| OQ-21 | Filter bar persistence | Per-tab, session-scoped only (React component state). Filters reset on tab switch and on navigation away. No URL serialisation. No localStorage persistence for filters. | Locked v1.2 |
+| OQ-22 | Add-transaction form — auto-computed vs user fields | User-input: `date`, `vendor`, `amount`, `category` (picker), `receipt` (file, optional). Auto-computed by `addTransactionAsCpa()`: `addedBy` (from `state.cpa.account.id`), `addedAt` (timestamp). Do not render auto-computed fields in the form. | Locked v1.2 |
+| OQ-23 | Suggest-reclassification category source | Load the client's industry list from `industries.json` merged with `DEFAULT_CATEGORIES` — same source as the founder's category picker in `screens/card.jsx`. Use the `clientData.industry` field from `state.cpa.clients[clientId]` to select the right industry key. Fallback: `DEFAULT_CATEGORIES` if industry has no list. | Locked v1.2 |
+| OQ-24 | Receipt upload — demo behavior | Accept any file (`accept="*/*"`). On select: generate a blob URL via `URL.createObjectURL(file)` and store it as `receiptUrl`. No upload to a server. The URL is only valid for the current browser session — on refresh it will 404, which is acceptable for the demo. | Locked v1.2 |
+| OQ-25 | Annotation max length and format | Plain text only. Maximum 500 characters. No rich text, no markdown rendering in the annotation note. Validate on submit with a live character counter below the textarea. | Locked v1.2 |
+| OQ-26 | Cross-app state sync (founder ↔ CPA in adjacent tabs) | `App.jsx` listens to the `storage` event on `window`. When the `STATE_KEY` localStorage entry changes from another tab, it reads `incoming.cpa` and merges it into `state.cpa` via `setState`. This means CPA approvals, reclassifications, and added transactions become visible to the founder without a refresh. Wired in Phase 1. | Locked v1.2 |
+| OQ-27 | CPA chat loading and error states | Loading: render a Penny bubble with `ERROR_COPY.cpaChatThinking` ("Thinking…") while the AI call is in flight. Error / no data: render a Penny bubble with `ERROR_COPY.cpaPennyNoData`. These copy keys live in `constants/copy.js`. | Locked v1.2 |
+| OQ-28 | `ledgerSummary` shape for CPA chat context | `{ totalIncome: number, totalExpenses: number, netIncome: number, period: string, topCategories: { category: string, amount: number }[], flaggedCount: number, uncategorizedCount: number }`. Built from the client's scenario data + CPA overlays. Same structure as the founder's `books.qa` context; the `viewer_role: "cpa"` flag in the same object activates the CPA voice overlay. | Locked v1.2 |
+| OQ-29 | Tax-readiness band conflict (error border + error approval badge) | Band border takes priority: the 3px `var(--error)` left border on the entire client card signals overall book health. The `var(--error)` pending-approvals count badge is still shown as a separate badge inside the card. The two do not conflict visually because the border is on the card edge and the badge is inside the content area. | Locked v1.2 |
+| OQ-30 | Dashboard canonical URL | `/cpa/dashboard` is the primary URL for the multi-client dashboard. After `acceptInvite` succeeds, the CPA is redirected to `/cpa/dashboard`. The bare `/cpa` path redirects to `/cpa/dashboard` or the auth gate if not logged in. | Locked v1.2 |
+| OQ-31 | Token-discipline exemptions in CPA view | Same rules as the founder app — raw hex, raw font-weight numbers, raw border-radius numbers, and `position: fixed` are blocked by `scripts/check-tokens.sh`. Exemptions require `// token-exempt: <reason>` or `// radius-literal: <reason>` inline comments. The `.cpa-app` `#sheet-root-cpa` CSS uses `position: fixed` because `.cpa-app` is a full-page scrollable context (unlike `.phone` which has a fixed pixel height) — this is a documented exemption in `styles/components.css`. | Locked v1.2 |
 
 ---
 

@@ -1,6 +1,6 @@
 # Screen Brief 09 — CPA View (Responsive Web App)
 
-*Version 1.1 — locked for build, 2026-04-24.*
+*Version 1.2 — updated 2026-04-25 (findngs 3.C.1, 3.H.2, 5.H.3, 5.H.4, 5.H.5, 5.L.1, 8.C.1 resolved).*
 
 **Read these files before writing any code, in this order:**
 
@@ -64,9 +64,11 @@ Before any CPA can see client data:
 2. CPA clicks link → lands on CPA signup page at `/cpa/accept/:token`.
 3. CPA enters: name, email, password, **CPA license number**, **CPA
    license state** (two-letter US code).
-4. Validation: email format, license number format (alphanumeric, 6–12
-   chars), license state in the 50-state list. Demo does not validate
-   against a real license database.
+4. Validation: email format, license number format regex
+   `^[A-Za-z0-9-]{6,12}$` (alphanumeric + hyphens, 6–12 chars),
+   license state must be one of the 50 US state codes. Demo does not
+   validate against a real license database. Use `ERROR_COPY.fieldLicenseFormat`
+   for the inline validation message.
 5. On valid submission → `acceptInvite(token, cpaAccountFields)` →
    CPA account created → `clients[clientId]` record created with
    current-year grant → redirected to `/cpa/dashboard`.
@@ -139,10 +141,17 @@ Below the queue. Each card (CSS grid; `repeat(auto-fill, minmax(280px,
 - Tax year selector (years in `yearGrants[]`; "Request prior year" button
   opens a small sheet that calls
   `requestPriorYearAccess(clientId, year, note)`).
+  **No-grant empty state:** if `yearGrants[]` is empty, show
+  `EMPTY_STATE_COPY.cpaNoYearsGranted` in place of the selector with a
+  "Request access" CTA that opens the prior-year request sheet for the
+  current calendar year.
 - 6 nav items: Work Queue · Books · P&L · Cash Flow · Chat · Learned Rules
 - "Back to all clients" link at top
 
 ### Tab 1 — Work Queue (default on open)
+
+**Empty states:** active queue empty → `EMPTY_STATE_COPY.cpaWorkQueueEmpty`.
+Resolved section empty → `EMPTY_STATE_COPY.cpaResolvedEmpty`.
 
 Same priority sort as global queue, scoped to this client. Each item is
 actionable inline:
@@ -160,6 +169,8 @@ Collapsible **Resolved** section below active items (same behavior as
 global dashboard).
 
 ### Tab 2 — Books
+
+**Empty state:** no transactions for selected year → `EMPTY_STATE_COPY.cpaBooksEmpty`.
 
 Full general ledger. Columns at 1024px+:
 `Date · Vendor · Category · IRS Line · Amount · Receipt · Status · Actions`
@@ -184,6 +195,8 @@ At 375–767px: 2-line card layout — line 1 vendor + amount, line 2 category
 - **Export:** PDF + CSV buttons (top right, `.btn-ghost` style).
 
 ### Tab 3 — P&L
+
+**Empty state:** no data → `EMPTY_STATE_COPY.cpaProfitLossEmpty`.
 
 Standard income statement grouped by IRS form section (uses
 `groupByIrsLine()` from `util/irsLookup.js`). Structure:
@@ -211,6 +224,8 @@ Net Income ............. $XX,XXX
 - Export: PDF + CSV (`.btn-ghost`).
 
 ### Tab 4 — Cash Flow
+
+**Empty state:** no data → `EMPTY_STATE_COPY.cpaCashFlowEmpty`.
 
 Standard cash flow statement, GAAP indirect method:
 
@@ -328,10 +343,11 @@ On revoke:
 - **Priority dots:** stroke-SVG only, never emoji. Colors per the global
   queue section above.
 - **No third-party brand colors.** Same rule as founder app.
-- **No emoji as icons.** Stroke SVG only. The four approved Penny emoji
-  (`🎉 👋 ✓ 💪`) are **banned in CPA context** — `cpa-chat.md` enforces
-  this at the voice layer. UI must not surface `🎉 👋 💪` either; `✓`
-  (text character) is fine as a logged/confirmed mark.
+- **No emoji as icons.** Stroke SVG only. In CPA context, `🎉 👋 💪` are
+  **banned** in both UI and voice — `cpa-chat.md` rule 6 enforces the voice
+  layer; UI code must not surface them either. `✓` (Unicode text character
+  U+2713, not an emoji) is the only permitted mark in CPA context and is
+  fine as a logged/confirmed indicator.
 - **Export buttons:** use `.btn-ghost` class (to be added to
   `components.css` in Phase 4). Transparent background, `var(--ink)`
   `1.5px` border, `--fw-semibold`, `--r-pill`.
@@ -445,7 +461,11 @@ in `cpa-chat.md` when either condition is true. Context block extension:
 - [ ] Day-7 and day-30 staleness cards surface in founder's Needs a look
 
 ### Phase 3 — CPA auth
-- [ ] Create `/cpa` path route (second HTML entry or path-based routing)
+- [ ] Create `cpa.html` as a **second Vite HTML entry** (`vite.config.js`
+      `build.rollupOptions.input`). The CPA app is a separate React root —
+      not a hash route inside the founder's `index.html`. Routing within the
+      CPA app uses hash-based routes (`#/dashboard`, `#/client/:id`) so it
+      works on any static host without server rewrites. (OQ-14 decision.)
 - [ ] `screens/cpa/AuthGate.jsx` — invite token validation + license form
 - [ ] Update `worker-client.js` `INTENT_MAP` to load `cpa-chat.md` overlay
       when context has `viewer_role: "cpa"` or
@@ -462,12 +482,29 @@ in `cpa-chat.md` when either condition is true. Context block extension:
 
 ### Phase 5 — Per-client view (5 of 6 tabs)
 - [ ] `screens/cpa/ClientView.jsx` — sidebar + content with tab routing
-- [ ] `screens/cpa/WorkQueue.jsx` — priority-sorted queue + Resolved section
-- [ ] `screens/cpa/Books.jsx` — full ledger with IRS chips + filter bar
-- [ ] `screens/cpa/ProfitLoss.jsx` — P&L grouped by IRS line
-- [ ] `screens/cpa/CashFlow.jsx` — GAAP indirect-method cash flow
-- [ ] `screens/cpa/LearnedRules.jsx` — rule table with delete
+- [ ] `screens/cpa/WorkQueue.jsx` — priority-sorted queue + Resolved section;
+      active empty → `EMPTY_STATE_COPY.cpaWorkQueueEmpty`;
+      resolved empty → `EMPTY_STATE_COPY.cpaResolvedEmpty`
+- [ ] `screens/cpa/Books.jsx` — full ledger with IRS chips + filter bar;
+      empty → `EMPTY_STATE_COPY.cpaBooksEmpty`
+- [ ] `screens/cpa/ProfitLoss.jsx` — P&L grouped by IRS line;
+      empty → `EMPTY_STATE_COPY.cpaProfitLossEmpty`
+- [ ] `screens/cpa/CashFlow.jsx` — GAAP indirect-method cash flow;
+      empty → `EMPTY_STATE_COPY.cpaCashFlowEmpty`
+- [ ] `screens/cpa/LearnedRules.jsx` — rule table with delete;
+      empty → `EMPTY_STATE_COPY.cpaLearnedRulesEmpty` (already in copy.js as the
+      canonical "No rules yet" string in `EMPTY_STATE_COPY`)
 - [ ] Create `util/cashFlow.js` with ledger → bucket mapping
+- [ ] Extract `TaxFormPreviewSheet` into `components/TaxFormPreviewSheet.jsx`
+      so both `screens/books.jsx` and `screens/cpa/ProfitLoss.jsx` can import
+      the same component without duplication
+- [ ] Year selector no-grant state: if `yearGrants[]` is empty, render
+      `EMPTY_STATE_COPY.cpaNoYearsGranted` + "Request access" CTA
+      (calls `requestPriorYearAccess` for current calendar year)
+- [ ] **Toast in CPA view:** import `Toast` from `components/Toast.jsx` and
+      always pass `bottom={24}` (no tab bar in CPA view). Never use the default
+      `bottom={80}` — that value is correct only for the founder phone app above
+      the tab bar.
 
 ### Phase 6 — CPA overlays on Books
 - [ ] Row ⋯ menu with Flag · Annotate · Suggest reclassification
@@ -486,9 +523,46 @@ in `cpa-chat.md` when either condition is true. Context block extension:
 
 ### Phase 8 — Multi-client dashboard
 - [ ] `screens/cpa/Dashboard.jsx` at `/cpa/dashboard`
-- [ ] Global work queue across all clients
-- [ ] Client card grid with tax-readiness bands
-- [ ] Dashboard search (P1 — optional in v1 MVP)
+      (canonical URL: `cpa.html#/dashboard` per OQ-30)
+- [ ] **Global work queue** — spans all `state.cpa.clients` the CPA can access.
+      Priority sort: (1) pending founder approvals `var(--error)` dot,
+      (2) uncategorized `var(--amber)` dot, (3) missing receipts / flagged
+      `var(--ink-3)` dot, (4) Penny questions `var(--sage)` dot.
+      Each item: client name · transaction summary · age ("3d") · quick-action
+      CTA → navigates to `/cpa/client/:clientId` with relevant tab pre-selected.
+      Collapsible **Resolved** section below active items; auto-archive after 7d.
+      Active queue empty → `EMPTY_STATE_COPY.cpaWorkQueueEmpty`.
+      Resolved section empty → `EMPTY_STATE_COPY.cpaResolvedEmpty`.
+- [ ] **Client card grid** — CSS grid `repeat(auto-fill, minmax(280px, 1fr))`
+      at 768px+; single column at 375–767px. Each card fields (sources):
+      - Client name: `clients[clientId].name`
+      - Entity badge: `clients[clientId].entity` — render via `formLabelForEntity()`
+        short form: "Sole Prop" / "LLC" / "S-Corp" / "Partnership"
+      - Tax year selector: years in `clients[clientId].yearGrants[]`
+      - Tax readiness score (0–100): `recomputeTaxReadiness(cpa, clientId)`;
+        band colors: 90+ monochrome, 70–89 `var(--amber)`, 0–69
+        `var(--error)` 3px left border on the card
+      - Open items count badge: `var(--amber)` if > 0; computed as
+        flagged.length + uncategorized.length + missingReceipts.length
+      - Pending approvals count badge: `var(--error)` if > 0; count of
+        `approvals` where `clientId` matches and status is `"pending"`
+      - Last activity: `clients[clientId].lastActivityAt` formatted as
+        relative time ("3d ago", "Just now") via `util/time.js`
+      - "Open" CTA → navigate to `/cpa/client/:clientId`
+      No clients yet → `EMPTY_STATE_COPY.cpaDashboardEmpty`.
+- [ ] **Top nav bar** — Penny wordmark (left) + CPA account avatar dropdown
+      (right). Dropdown items: "My account" (stub toast), "Sign out" (clears
+      `state.cpa.account` + redirects to auth gate). Dropdown is a small
+      absolute-positioned menu anchored on `.cpa-app` — never `position: fixed`.
+- [ ] **Responsive layout** — 375–767px: single column, no sidebar.
+      768px+: global queue top, client grid below. Full browser width — no
+      `.phone` frame.
+- [ ] **Tax-readiness band conflict guard** — if a client's computed score
+      qualifies for both amber and error bands (impossible by the formula, but
+      check edge case of score exactly at 70), amber wins; error only at < 70.
+      (OQ-29 locked decision.)
+- [ ] Dashboard search: **P1, post-MVP** — omit entirely in v1. Do not add a
+      placeholder search bar.
 
 ---
 

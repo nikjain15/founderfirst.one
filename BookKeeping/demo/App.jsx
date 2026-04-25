@@ -4,10 +4,12 @@
  * Routing is hash-based so the demo can be hosted at any static URL
  * (GitHub Pages, a sub-path, a preview deploy) without rewrites.
  *
- * Demo state is persisted to localStorage under a single key so a refresh
- * mid-walkthrough doesn't drop the user back at the start. Clearing the
- * demo is an explicit user action (avatar menu → "Reset demo"), not
- * something that happens on every boot.
+ * Demo state is persisted to sessionStorage — scoped to the browser tab.
+ * Closing the tab or opening a new one starts a fresh session, which is
+ * the correct demo behaviour (every visitor sees the first-time experience).
+ * Refreshing mid-walkthrough still works because sessionStorage survives reloads.
+ * AI response cache (penny.cache.v1.*) stays in localStorage — no reason to
+ * re-fetch those between sessions.
  */
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
@@ -69,7 +71,7 @@ const DEFAULT_STATE = {
 
 function readState() {
   try {
-    const raw = localStorage.getItem(STATE_KEY);
+    const raw = sessionStorage.getItem(STATE_KEY);
     if (!raw) return { ...DEFAULT_STATE };
     const parsed = JSON.parse(raw);
     // Deep-merge nested objects so new default keys reach returning users.
@@ -94,7 +96,7 @@ function readState() {
 
 function writeState(state) {
   try {
-    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    sessionStorage.setItem(STATE_KEY, JSON.stringify(state));
   } catch {
     // Storage quota or private mode — demo still works, just not persistent.
   }

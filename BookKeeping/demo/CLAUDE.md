@@ -6,6 +6,17 @@
 
 ## Changelog
 
+### 25 April 2026 — SCAF-3 follow-up: Penny-voice form validation
+
+The five CPA AuthGate form-validation strings in `ERROR_COPY`
+(`fieldRequiredName`, `fieldInvalidEmail`, `fieldPasswordMin`,
+`fieldLicenseFormat`, `fieldStateCode`) were rewritten in Penny's voice
+per the CEO direction noted in the SCAF-3 changelog. No screen-file edits
+— `cpa/AuthGate.jsx` already routes through the registry. Single-file
+change in `constants/copy.js` plus this changelog note.
+
+---
+
 ### 25 April 2026 — SCAF-3: constants/copy.js registry
 
 Every static Penny utterance, fallback message, empty-state line, toast, and user-visible error now lives in one frozen module: `constants/copy.js`. Screens import from it; no screen hand-writes these strings. AI-generated copy still flows through `worker-client.js → renderPenny()` — the registry only owns STATIC fallbacks and acknowledgments.

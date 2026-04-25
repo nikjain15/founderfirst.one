@@ -29,9 +29,8 @@
  *                         Grouped by source screen in inline comments.
  *   ERROR_COPY          — recovery-oriented Penny-voice errors plus the five
  *                         CPA AuthGate form-validation strings. The form
- *                         strings are extracted as-is in this commit and
- *                         will be rewritten in Penny voice in a small
- *                         follow-up commit (per CEO direction, 25 Apr 2026).
+ *                         strings were rewritten in Penny voice on
+ *                         25 Apr 2026 (CEO-approved follow-up).
  *
  * Rules:
  *   - Never hand-write a static Penny utterance in a screen file. Import.
@@ -304,8 +303,6 @@ export const TOAST_COPY = Object.freeze({
 
 // ── Errors ───────────────────────────────────────────────────────────────────
 // Recovery-oriented Penny-voice errors + CPA AuthGate form-validation strings.
-// The five form-validation strings are extracted AS-IS in this commit and
-// will be rewritten in Penny voice in a small follow-up commit.
 
 export const ERROR_COPY = Object.freeze({
   // thread.jsx — thread.qa AI failure path.
@@ -327,11 +324,10 @@ export const ERROR_COPY = Object.freeze({
   // cpa/Chat.jsx — loading bubble label.
   cpaChatThinking:  "Thinking…",
 
-  // cpa/AuthGate.jsx — form validation. Penny-voice rewrite ships in a
-  // follow-up commit; in this commit they remain byte-identical extracts.
-  fieldRequiredName:  "Full name is required.",
-  fieldInvalidEmail:  "Enter a valid email address.",
-  fieldPasswordMin:   "Password must be at least 8 characters.",
-  fieldLicenseFormat: "License number must be 6–12 alphanumeric characters.",
-  fieldStateCode:     "Enter a valid 2-letter US state code.",
+  // cpa/AuthGate.jsx — form validation, rewritten in Penny voice (25 Apr 2026).
+  fieldRequiredName:  "I'll need your full name to set this up.",
+  fieldInvalidEmail:  "That email doesn't look right — mind checking it?",
+  fieldPasswordMin:   "Let's make that password at least 8 characters.",
+  fieldLicenseFormat: "License numbers run 6–12 letters and numbers — could you check yours?",
+  fieldStateCode:     "I need a 2-letter state code (like NY or CA).",
 });

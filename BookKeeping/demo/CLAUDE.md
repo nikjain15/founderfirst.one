@@ -6,6 +6,54 @@
 
 ## Changelog
 
+### 25 April 2026 — SCAF-4: token-discipline sweep + pre-commit enforcement
+
+Raw design-token values are now blocked at commit time. The four violation classes documented in DESIGN.md and the existing "Design token discipline" section of this file (raw hex strings, raw `fontWeight` numbers, raw `borderRadius` numbers, `position: fixed`) are caught by `scripts/check-tokens.sh` before every commit and again inside `npm run build`.
+
+Per Q1 (CEO answer 25 Apr 2026): pre-commit grep hook, no new dependencies. ESLint deferred — revisit only if Phase 2 audits surface a violation that editor-time feedback would have caught.
+
+**New:**
+- `scripts/check-tokens.sh` — bash; greps staged `.jsx` files (or `--all` for the full tree) across the four classes; exits 1 on violation with file:line + a hint pointing at the right token. Permitted exemptions tagged `// token-exempt: <reason>` or `// radius-literal: <reason>`. Comment-only mentions of the rule (JSDoc bodies, `{/* ... */}` JSX comments) are filtered out via the `:\s*\*` and `\{\s*/\*` patterns.
+- `.githooks/pre-commit` — one-liner that calls `scripts/check-tokens.sh`. Activated by `npm run prepare` setting `core.hooksPath` to `.githooks` — zero new deps, version-controlled hook.
+- `package.json` — three script edits: `prepare` (auto-installs the hook on `npm install`), `build` (now runs `check-tokens.sh --all` before `vite build`), and a new `check:tokens` for on-demand runs.
+
+**Sweep — Phase A fixes (4 token replacements + ~19 documented exemptions):**
+
+Real token replacements (the rule was being violated, no exemption applied):
+- `screens/invoice.jsx:106` — invoice preview card outer: `borderRadius: 12` → `var(--r-card)`.
+- `screens/add.jsx:135` — Toast pill: `borderRadius: 999` → `var(--r-pill)`.
+- `screens/add.jsx:476` — account-info monogram avatar (44×44): `borderRadius: 12` → `var(--r-card)`.
+- `screens/add.jsx:644` — voice-waveform bar: `borderRadius: 99` → `var(--r-pill)`.
+- `screens/books.jsx:1188` — Net hero card: `borderRadius: 16` → `var(--r-card-emph)`.
+
+Documented exemptions (no named token exists; lines now carry `// radius-literal:` or `// token-exempt:`):
+- All five provider-badge `borderRadius: 10` instances (`screens/add.jsx` Gmail / Outlook / provider-sheet / connections list / data-action row).
+- All three icon-container `borderRadius: 8` instances in `screens/books.jsx` (28×28, 32×32, 36×36 paper-tinted icon tiles).
+- Icon-container `borderRadius: 8` in `screens/cpa/App.jsx:292` — comment format upgraded from `/* icon container — no named token */` to `// radius-literal: icon container — DESIGN.md spec`.
+- Three text-input / button `borderRadius: 8` instances in `screens/invoice.jsx` (input style helper, dashed add-line button, payment-method pill).
+- Two textarea `borderRadius: 10` instances in `screens/add.jsx` (just-tell-me input).
+- Toggle pill `borderRadius: 13` in `screens/avatar-menu.jsx:113` (half-of-26-height for the on/off switch).
+- Inline category icon `borderRadius: 4` in `screens/card.jsx:91` (16×16 tinted square).
+- Three progress-bar `borderRadius: 2` instances in `screens/books.jsx` (voice waveform bar + progress-bar track + fill — pure geometry).
+- Two clipboard-textarea `position: fixed` instances in `screens/avatar-menu.jsx:313` and `screens/books.jsx:71` — off-screen DOM utilities for `document.execCommand("copy")`, never rendered. Tagged `// token-exempt: clipboard textarea utility — never rendered`.
+
+**Already clean (zero hits — the SCAF-2/3 sweep work paid off):**
+- Raw hex strings in JSX inline styles.
+- Raw `fontWeight` numbers.
+
+**CLAUDE.md amendment:** Settled decision #20 added — the new enforcement contract.
+
+**Verification:** `bash scripts/check-tokens.sh --all` exits 0 against the cleaned tree. A deliberately-violating dummy file gets blocked by the pre-commit hook (smoke test).
+
+**Out of scope for this commit (deferred):**
+- Color-zone rule alignment — that's SCAF-5.
+- `import.meta.env.BASE_URL` violations of settled decision #12 — could ride the same hook, but the proposal scopes them out; defer to SCAF-7.
+- Dead code / duplicate CSS — SCAF-7.
+
+**Settled decision 20:** raw design-token values are blocked at commit time and at build time by `scripts/check-tokens.sh`. Exemptions require an inline `// token-exempt:` or `// radius-literal:` tag.
+
+---
+
 ### 25 April 2026 — SCAF-3 follow-up: Penny-voice form validation
 
 The five CPA AuthGate form-validation strings in `ERROR_COPY`
@@ -307,6 +355,7 @@ These are locked. If your work conflicts with one, flag it and stop.
 17. **All dark-scrim overlays use `<FullScreenOverlay>`.** Voice recording, photo capture processing, and any full-viewport modal state render through `components/FullScreenOverlay.jsx`. Never roll your own.
 18. **All enum-typed strings live in `constants/variants.js`.** Card variants, entity types, industry keys, approval types, notification modes. Never hand-write one in a screen — import the enum.
 19. **All static Penny copy lives in `constants/copy.js`.** Locked onboarding lines, thread-intro and card fallbacks, empty-state lines, toasts, and user-visible errors. Never hard-code a static Penny utterance in a screen — import from the registry. AI-generated copy still flows through `worker-client.js → renderPenny()`; the registry only owns STATIC fallbacks and acknowledgments. The 8 onboarding headline/why pairs are LOCKED — see "Approved onboarding copy" table below.
+20. **Token discipline is enforced by pre-commit hook.** `scripts/check-tokens.sh` runs automatically before every commit (via `.githooks/pre-commit`, wired by `npm run prepare`) and inside `npm run build`. It blocks four violation classes in `screens/*.jsx` and `components/*.jsx`: raw hex strings, raw `fontWeight` numbers, raw `borderRadius` numbers, and `position: fixed`. Exemptions are allowed only when the offending line carries `// token-exempt: <reason>` (e.g. clipboard textareas that are never rendered) or `// radius-literal: <reason>` (the documented `borderRadius: 8` icon containers, `10` provider badges, and similar values that have no named token). Never bypass with `--no-verify` to ship a violation — `npm run build` will still catch it. Run on demand with `npm run check:tokens`.
 
 ---
 

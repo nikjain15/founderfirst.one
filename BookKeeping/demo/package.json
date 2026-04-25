@@ -6,10 +6,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "bash scripts/check-tokens.sh --all && vite build",
     "preview": "vite preview --port 4173",
     "test": "vitest run",
     "test:watch": "vitest",
+    "check:tokens": "bash scripts/check-tokens.sh --all",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "deploy": "bash scripts/deploy.sh",
     "deploy:prompts": "bash scripts/deploy-prompts.sh"
   },
@@ -19,6 +21,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@vitejs/plugin-react": "^4.3.1",
     "vite": "^5.4.0",
     "vitest": "^2.0.0"

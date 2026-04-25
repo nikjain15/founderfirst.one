@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit — SCAF-4 token-discipline gate.
+# Wired by `npm run prepare` (sets git config core.hooksPath to .githooks).
+# To bypass in an emergency: `git commit --no-verify` — but `npm run build`
+# will still catch the violation on deploy.
+exec bash "$(dirname "$0")/../scripts/check-tokens.sh"

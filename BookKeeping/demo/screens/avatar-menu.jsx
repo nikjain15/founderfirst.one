@@ -110,7 +110,7 @@ function ToggleRow({ label, sublabel, checked, onChange }) {
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         style={{
-          width: 44, height: 26, borderRadius: 13, border: "none", cursor: "pointer", flexShrink: 0,
+          width: 44, height: 26, borderRadius: 13 /* radius-literal: toggle pill — half of 26px height */, border: "none", cursor: "pointer", flexShrink: 0,
           background: checked ? "var(--ink)" : "var(--line)",
           position: "relative", transition: "background 0.18s",
           minWidth: "unset", minHeight: "unset",
@@ -310,7 +310,7 @@ function YourCpaRow({ state, set, showToast }) {
     function fallbackCopy(text) {
       const ta = document.createElement("textarea");
       ta.value = text;
-      ta.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0";
+      ta.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0"; // token-exempt: clipboard textarea utility — never rendered
       document.body.appendChild(ta);
       ta.focus();
       ta.select();

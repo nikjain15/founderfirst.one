@@ -68,7 +68,7 @@ function InviteCpaPanel({ state, set, showToast }) {
     function fallbackCopy(text) {
       const ta = document.createElement("textarea");
       ta.value = text;
-      ta.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0";
+      ta.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0"; // token-exempt: clipboard textarea utility — never rendered
       document.body.appendChild(ta);
       ta.focus();
       ta.select();
@@ -442,7 +442,7 @@ function VoiceAskModal({ onDone, onClose }) {
         <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 48 }}>
           {BARS.map((h, i) => (
             <div key={i} style={{
-              width: 3, borderRadius: 2,
+              width: 3, borderRadius: 2, // radius-literal: voice waveform bar — geometry, no named token
               background: "rgba(255,255,255,0.7)",
               height: `${h}%`,
               animation: `voiceBar ${0.4 + (i % 5) * 0.09}s ease-in-out infinite alternate`,
@@ -651,9 +651,9 @@ function ExpensesView({ data }) {
               <span style={{ fontSize: 14, fontWeight: "var(--fw-semibold)" }}>{fmt(cat.amount)}</span>
             </div>
             {/* Proportion bar */}
-            <div style={{ height: 4, background: "var(--line)", borderRadius: 2, overflow: "hidden", marginBottom: 5 }}>
+            <div style={{ height: 4, background: "var(--line)", borderRadius: 2 /* radius-literal: progress-bar track — geometry */, overflow: "hidden", marginBottom: 5 }}>
               <div style={{
-                height: "100%", background: "var(--ink-2)", borderRadius: 2,
+                height: "100%", background: "var(--ink-2)", borderRadius: 2, // radius-literal: progress-bar fill — geometry
                 width: `${(cat.amount / max) * 100}%`,
                 transition: "width 0.4s var(--ease-out)",
               }} />
@@ -1185,7 +1185,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
 
           {/* Net — full-width dark hero card (primary financial signal) */}
           <div style={{
-            background: "var(--ink)", borderRadius: 16, padding: "18px 20px",
+            background: "var(--ink)", borderRadius: "var(--r-card-emph)", padding: "18px 20px",
             display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
             <div>
@@ -1356,7 +1356,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
                 }}
               >
                 <div style={{
-                  width: 28, height: 28, borderRadius: 8, background: "var(--paper)",
+                  width: 28, height: 28, borderRadius: 8 /* radius-literal: icon container — DESIGN.md spec */, background: "var(--paper)",
                   border: "1px solid var(--line)", display: "flex", alignItems: "center",
                   justifyContent: "center", color: "var(--ink-3)", flexShrink: 0,
                 }}>
@@ -1384,7 +1384,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
           >
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{
-                width: 32, height: 32, borderRadius: 8, background: "var(--paper)",
+                width: 32, height: 32, borderRadius: 8 /* radius-literal: icon container — DESIGN.md spec */, background: "var(--paper)",
                 border: "1px solid var(--line)", display: "flex", alignItems: "center",
                 justifyContent: "center", color: "var(--amber)", flexShrink: 0,
               }}>
@@ -1463,7 +1463,7 @@ export default function BooksScreen({ ai, state, set, navigate, scenario }) {
             }}
           >
             <span style={{
-              width: 36, height: 36, borderRadius: 8, background: "var(--paper)",
+              width: 36, height: 36, borderRadius: 8 /* radius-literal: icon container — DESIGN.md spec */, background: "var(--paper)",
               display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
             }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

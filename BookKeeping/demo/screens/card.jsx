@@ -88,7 +88,7 @@ function CategoryIcon({ category, stroke, bg, type: typeProp }) {
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", justifyContent: "center",
-      width: 16, height: 16, borderRadius: 4, background: bg,
+      width: 16, height: 16, borderRadius: 4 /* radius-literal: small inline icon container — no named token */, background: bg,
       marginRight: 5, flexShrink: 0, verticalAlign: "middle",
     }}>
       <svg width="11" height="11" viewBox="0 0 12 12" fill="none"

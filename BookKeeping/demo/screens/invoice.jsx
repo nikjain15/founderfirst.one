@@ -83,7 +83,7 @@ function inputStyle(extra = {}) {
     fontSize: 14,
     color: "var(--ink)",
     border: "1.5px solid var(--line)",
-    borderRadius: 8,
+    borderRadius: 8, // radius-literal: text input — no named token
     padding: "8px 10px",
     background: "var(--white)",
     outline: "none",
@@ -103,7 +103,7 @@ function InvoicePreview({ data }) {
     <div style={{
       background: "var(--white)",
       border: "1.5px solid var(--line)",
-      borderRadius: 12,
+      borderRadius: "var(--r-card)",
       padding: "24px 20px",
       fontSize: 13,
       lineHeight: 1.5,
@@ -562,7 +562,7 @@ ${data.paymentMethods?.length ? `<div class="notes"><p class="eyebrow" style="ma
             <button
               type="button"
               onClick={addItem}
-              style={{ background: "none", border: "1.5px dashed var(--line)", borderRadius: 8, width: "100%", padding: "10px", cursor: "pointer", fontSize: 14, color: "var(--ink-3)", fontFamily: "var(--font-sans)", marginBottom: 20, minHeight: "var(--tap-min)" }}
+              style={{ background: "none", border: "1.5px dashed var(--line)", borderRadius: 8 /* radius-literal: dashed add-line button — no named token */, width: "100%", padding: "10px", cursor: "pointer", fontSize: 14, color: "var(--ink-3)", fontFamily: "var(--font-sans)", marginBottom: 20, minHeight: "var(--tap-min)" }}
             >
               + Add line
             </button>
@@ -610,7 +610,7 @@ ${data.paymentMethods?.length ? `<div class="notes"><p class="eyebrow" style="ma
                     style={{
                       padding: "10px 14px",
                       border: `1.5px solid ${active ? "var(--ink)" : "var(--line)"}`,
-                      borderRadius: 8,
+                      borderRadius: 8, // radius-literal: payment-method button — no named token
                       background: active ? "var(--paper)" : "var(--white)",
                       cursor: "pointer",
                       fontFamily: "var(--font-sans)",

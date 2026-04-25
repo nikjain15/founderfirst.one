@@ -289,7 +289,7 @@ function TopNav({ cpa, clients, activeClientId, onClientChange, onSignOut }) {
             style={{
               width: 28,
               height: 28,
-              borderRadius: 8, /* icon container — no named token */
+              borderRadius: 8, // radius-literal: icon container — DESIGN.md spec
               background: "var(--ink)",
               display: "flex",
               alignItems: "center",

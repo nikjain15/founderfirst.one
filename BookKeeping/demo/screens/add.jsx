@@ -39,12 +39,12 @@ const CloseIcon    = () => <Svg size={18} sw={1.5}><line x1="5" y1="5" x2="17" y
 
 // Email provider badges — neutral ink-on-paper, no accent colors
 const GmailBadge = () => (
-  <div style={{ width:36,height:36,borderRadius:10,background:"var(--paper)",border:"1.5px solid var(--line)",
+  <div style={{ width:36,height:36,borderRadius:10 /* radius-literal: provider badge — DESIGN.md spec */,background:"var(--paper)",border:"1.5px solid var(--line)",
     display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:"var(--fw-bold)",
     color:"var(--ink-2)",flexShrink:0,letterSpacing:"-0.02em" }}>G</div>
 );
 const OutlookBadge = () => (
-  <div style={{ width:36,height:36,borderRadius:10,background:"var(--paper)",border:"1.5px solid var(--line)",
+  <div style={{ width:36,height:36,borderRadius:10 /* radius-literal: provider badge — DESIGN.md spec */,background:"var(--paper)",border:"1.5px solid var(--line)",
     display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:"var(--fw-bold)",
     color:"var(--ink-2)",flexShrink:0 }}>O</div>
 );
@@ -132,7 +132,7 @@ function Toast({ message, onDone }) {
   return (
     <div style={{ position:"absolute",bottom:80,left:"50%",transform:"translateX(-50%)",
       background:"var(--ink)",color:"var(--white)",fontSize:13,fontWeight:"var(--fw-medium)",
-      padding:"10px 18px",borderRadius:999,whiteSpace:"nowrap",
+      padding:"10px 18px",borderRadius:"var(--r-pill)",whiteSpace:"nowrap",
       zIndex:300,boxShadow:"0 4px 16px rgba(10,10,10,0.18)",pointerEvents:"none" }}>
       {message}
     </div>
@@ -203,7 +203,7 @@ function ProviderSheet({ connections, onConnect, onClose }) {
                 background:"none",border:"none",borderBottom:"1px solid var(--line-2)",
                 padding:"12px 0",textAlign:"left",minHeight:0,cursor:"pointer",
                 opacity: connecting && !isConnecting ? 0.4 : 1,transition:"opacity 200ms" }}>
-              <div style={{ width:36,height:36,borderRadius:10,background:"var(--paper)",
+              <div style={{ width:36,height:36,borderRadius:10 /* radius-literal: provider badge — DESIGN.md spec */,background:"var(--paper)",
                 border:"1px solid var(--line)",display:"flex",alignItems:"center",
                 justifyContent:"center",fontSize:14,fontWeight:"var(--fw-bold)",color:"var(--ink-2)",flexShrink:0 }}>
                 {p.initial}
@@ -473,7 +473,7 @@ function ManageSheet({ conn, onDisconnect, onClose }) {
         {/* Account info card */}
         <div style={{ background:"var(--paper)",borderRadius:"var(--r-card)",padding:"16px",marginBottom:20,
           display:"flex",alignItems:"center",gap:12 }}>
-          <div style={{ width:44,height:44,borderRadius:12,background:"var(--white)",
+          <div style={{ width:44,height:44,borderRadius:"var(--r-card)",background:"var(--white)",
             border:"1.5px solid var(--line)",display:"flex",alignItems:"center",
             justifyContent:"center",fontSize:17,fontWeight:"var(--fw-bold)",color:"var(--ink-2)",flexShrink:0 }}>
             {conn.initial}
@@ -641,7 +641,7 @@ function VoiceModal({ ai, persona, onResult, onClose }) {
             <div key={i} style={{
               width: 3,
               height: `${h}px`,
-              borderRadius: 99,
+              borderRadius: "var(--r-pill)",
               background: "rgba(255,255,255,0.8)",
               animation: `voiceBar ${0.4 + (i % 5) * 0.09}s ease-in-out infinite alternate`,
               animationDelay: `${(i * 0.06) % 0.8}s`,
@@ -882,7 +882,7 @@ export default function AddScreen({ ai, state, set }) {
                 onKeyDown={e => { if (e.key==="Enter"&&!e.shiftKey){e.preventDefault();handleParse();} }}
                 placeholder="e.g. lunch with a client, $60"
                 style={{ width:"100%",resize:"none",border:"1.5px solid var(--line)",
-                  borderRadius:10,padding:"10px 12px",fontSize:15,background:"var(--white)",
+                  borderRadius:10 /* radius-literal: textarea input — no named token */,padding:"10px 12px",fontSize:15,background:"var(--white)",
                   color:"var(--ink)",outline:"none",lineHeight:1.5 }} />
               <div style={{ display:"flex",gap:8,marginTop:10 }}>
                 <button className="btn btn-full" onClick={handleParse}
@@ -927,7 +927,7 @@ export default function AddScreen({ ai, state, set }) {
                 <div key={conn.id} style={{ display:"flex",alignItems:"center",gap:12,
                   padding:"13px 16px",
                   borderBottom: i < connections.length-1 ? "1px solid var(--line-2)" : "none" }}>
-                  <div style={{ width:36,height:36,borderRadius:10,background:"var(--paper)",
+                  <div style={{ width:36,height:36,borderRadius:10 /* radius-literal: provider badge — DESIGN.md spec */,background:"var(--paper)",
                     border:"1px solid var(--line)",display:"flex",alignItems:"center",
                     justifyContent:"center",fontSize:14,fontWeight:"var(--fw-bold)",
                     color:"var(--ink-2)",flexShrink:0 }}>{conn.initial}</div>
@@ -1049,7 +1049,7 @@ function DataActionRow({ icon, label, sub, onClick, isLast, trailingNode }) {
       borderBottom: !isLast ? "1px solid var(--line-2)" : "none",
       padding:"15px 16px",textAlign:"left",cursor:"pointer",minHeight:0,
     }}>
-      <div style={{ width:36,height:36,borderRadius:10,background:"var(--paper)",
+      <div style={{ width:36,height:36,borderRadius:10 /* radius-literal: data-action icon container — DESIGN.md spec */,background:"var(--paper)",
         border:"1.5px solid var(--line)",display:"flex",alignItems:"center",
         justifyContent:"center",color:"var(--ink)",flexShrink:0 }}>{icon}</div>
       <div style={{ flex:1,minWidth:0 }}>

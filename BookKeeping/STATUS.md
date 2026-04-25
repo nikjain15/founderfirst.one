@@ -1,5 +1,5 @@
 # Penny — Project Status
-*Updated: 21 April 2026*
+*Updated: 25 April 2026*
 
 **What we're building:** An AI-first, mobile-first bookkeeper for US sole proprietors. Conversation is the product. AI does the work, owner confirms in one tap. Grows through word-of-mouth. Own ledger from day one.
 
@@ -7,7 +7,17 @@
 
 ## Where We Are
 
-**Pre-build.** Product is fully thought through. Core docs written. Two workstreams active: (1) the core Penny product, (2) a Healthcare & Wellness vertical prototype. Engineering not started. Three gaps block building: tech stack, two AI eval docs, and two product experience docs.
+**Demo v5 complete and live.** All 7 screens built (Onboarding · Penny thread · Approval card · Add · My Books · Avatar menu · Invoice designer). CPA view built with 6 tabs (Work Queue · Books · P&L · Cash Flow · Chat · Learned Rules). Phase-2 stress-test audits in progress — see audit tracker below.
+
+**Phase-2 demo stress-test audits (6 audits):**
+| # | Audit | Status | Report |
+|---|---|---|---|
+| 1 | Founder code quality (SCAF-1–6) | ✅ Complete | `reviews/demo-stress-test-apr-2026/01-founder-code.md` |
+| 2 | Prompts + voice | 🟡 In progress | `reviews/demo-stress-test-apr-2026/02-prompts-voice.md` |
+| 3 | Config, data + IRS taxonomy | ✅ Complete (21 findings fixed, `bbe5ce0`) | `reviews/demo-stress-test-apr-2026/03-config-data-irs.md` |
+| 4 | CPA spec buildability | ⏳ Pending | `reviews/demo-stress-test-apr-2026/04-cpa-spec-buildability.md` |
+| 5 | End-user walkthrough | ⏳ Pending | `reviews/demo-stress-test-apr-2026/05-end-user-walkthrough.md` |
+| 6 | Doc consistency | ⏳ Pending | `reviews/demo-stress-test-apr-2026/06-doc-consistency.md` |
 
 **FounderFirst OS is execution-ready.** 8 expert roles fully defined with HANDOFFS between them. Standing rules enforce: ask-first, CEO authority, best thinking without constraints, trade-offs not gatekeeping, concise output. Nightly scorer automation confirmed running.
 
@@ -22,12 +32,10 @@
 **Product**
 | | File | What it covers | Notes |
 |---|---|---|---|
-| ✅ | `product/app-spec.md` v1.2 | Every screen, tab, onboarding flow, approval card | Two stress test passes applied |
-| ✅ | `product/tone-guide.md` | Penny's voice, conversation rules, 8 scenarios | ⚠️ British spelling bug: "categorised" needs find-replace |
-| ✅ | `product/persona-freelancer.md` | MVP user — who Alex is, her pain, her life | |
-| ✅ | `product/user-flows-freelancer.md` | 5 core activities, notifications, invoice reminders | |
 | ✅ | `product/spec-brainstorm-decisions.md` v2.2 | 86 product decisions (data input, categorization, learning, notifications, invoicing, tax/CPA, platform, hard rules) | 8 open questions (7 IRS → research doc + Q-A1); 2 active deliverables; 6 research pre-commits |
-| ⚠️ | `product/data-input-categorization-spec.md` v1.0 | Early Layer 1 + Layer 2 spec (ingest / normalize / categorize / approval) | **Stale — needs rewrite to v2.0 based on brainstorm-decisions v2.2 locks.** Do not treat as current source of truth |
+| ✅ | `product/01-overview.md` through `16-success-metrics.md` | 16 focused spec files — one per product area | Decision-ID refs to spec-brainstorm-decisions v2.2 and engineering-ID refs to implementation-strategy v2 |
+| ✅ | `product/17-mobile-screens-and-flows.md` | Full mobile wireframing spec — 15 parts | Self-sufficient for wireframing |
+| ✅ | `product/18-web-screens-and-flows.md` | Full web wireframing spec — 15 parts | Self-sufficient for wireframing |
 | ❌ | `product/error-empty-states.md` | What Alex sees when things go wrong or are empty | Needed before launch |
 | ❌ | `product/day-2-30-experience.md` | What happens after first approval — habit formation | Critical for retention |
 | ❌ | `product/persona-product-seller.md` | Segment 2 of 3 — not documented yet | |
@@ -43,8 +51,8 @@
 **Design**
 | | File | What it covers | Notes |
 |---|---|---|---|
-| ✅ | `design/design-system.md` | Colors, type, components, layout rules | |
-| ✅ | `design/wireframes/` | 17 screens + full prototype | `prototype.html` + `penny-wireframe-v3.html` |
+| ✅ | `design/design-system.md` v2.0 | Colors, type, components, layout rules | Unified with FounderFirst.one tokens |
+| ✅ | `demo/DESIGN.md` | Machine-readable design system for demo | YAML tokens + prose rules for AI coding agents |
 
 **AI Evals** *(all 5 must pass before any model ships)*
 | | File | What it covers | Notes |
@@ -68,8 +76,11 @@
 **Reviews**
 | | File | What it covers | Notes |
 |---|---|---|---|
-| ✅ | `reviews/app-spec-stress-test-apr-2026.md` | Pass 1 & 2 stress test | Applied in app-spec v1.1 and v1.2 |
 | ✅ | `reviews/comprehensive-review-apr-2026.md` | Cross-document consistency audit | 7 contradictions, 14 gaps identified |
+| ✅ | `reviews/spec-v2.2-tech-stress-test-apr-2026.md` | Technical stress test of v2.2 spec | 4C/6H/10M/5L. All resolved in implementation-strategy v2 |
+| ✅ | `reviews/demo-stress-test-apr-2026/01-founder-code.md` | Phase-2 audit-1: founder code quality | SCAF-1–6 fixes applied |
+| 🟡 | `reviews/demo-stress-test-apr-2026/02-prompts-voice.md` | Phase-2 audit-2: prompts + voice | In progress |
+| ✅ | `reviews/demo-stress-test-apr-2026/03-config-data-irs.md` | Phase-2 audit-3: config, data + IRS taxonomy | 21 findings — all fixed (`bbe5ce0`) |
 
 ### FounderFirst OS (in `FounderFirst OS/FounderFirst_OS_Role/`)
 
@@ -107,26 +118,20 @@
 
 ---
 
-## Known Issues — Must Fix Before External Demos
-
-From `reviews/comprehensive-review-apr-2026.md`:
-
-- "Categorised" → "Categorized" find-replace needed in tone-guide.md and app-spec.md
-- 😊 emoji still in tone guide (banned by design system)
-- Notification label consistency not confirmed resolved
-
----
-
 ## What to Build Next (Priority Order)
 
-1. **Rewrite `product/data-input-categorization-spec.md` to v2.0** — apply the 86 locked decisions from `spec-brainstorm-decisions.md` v2.2. Current v1.0 is stale.
-2. **Commission IRS research** per `research/solo-freelancer/irs-tax-research.md` (Option C hybrid) — unblocks 7 tax decisions + Layer 2 taxonomy
-3. `engineering/engineering-decisions.md` — pick the stack (**nothing can be built without this**)
-4. `ai-evals/04-financial-computation.md` — wrong P&L numbers break user trust permanently
-5. `ai-evals/03-data-capture.md` and `ai-evals/05-anomaly-detection.md` — complete the eval gate (add S-Corp test cases per D72)
-6. `product/error-empty-states.md` — product feels unfinished without these
-7. `product/day-2-30-experience.md` — where users stay or leave
-8. American English find-replace across tone guide and app spec
+**Immediate — demo phase-2 audits:**
+1. Complete **audit-2** (prompts + voice) — `reviews/demo-stress-test-apr-2026/02-prompts-voice.md`
+2. Complete **audit-4** (CPA spec buildability) — `reviews/demo-stress-test-apr-2026/04-cpa-spec-buildability.md`
+3. Complete **audit-5** (end-user walkthrough) and **audit-6** (doc consistency)
+
+**After demo audits — product Phase 0:**
+1. **Commission IRS research** per `research/solo-freelancer/irs-tax-research.md` (Option C hybrid) — unblocks 7 tax decisions + Layer 2 taxonomy
+2. `engineering/engineering-decisions.md` — populate from implementation-strategy v2 §1 and §0.5
+3. `ai-evals/04-financial-computation.md` — wrong P&L numbers break user trust permanently
+4. `ai-evals/03-data-capture.md` and `ai-evals/05-anomaly-detection.md` — complete the eval gate
+5. `product/error-empty-states.md` — product feels unfinished without these
+6. `product/day-2-30-experience.md` — where users stay or leave
 
 ---
 

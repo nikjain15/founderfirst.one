@@ -6,6 +6,34 @@
 
 ## Changelog
 
+### 25 April 2026 — phase-2-audit-3: config, data, and IRS taxonomy fixes (21 findings)
+
+Full audit of `public/config/`, `util/irsLookup.js`, and IRS routing documentation. 4 Critical · 7 High · 6 Medium · 4 Low findings. All 21 fixed. Deployed to main as commit `bbe5ce0`.
+
+**Critical fixes (C):**
+- **C.1 — Persona key format mismatch:** personas.json keys changed from `__` to `.` separator to match scenarios.json convention (`sole-prop.consulting`, etc.). All 20 personas re-keyed.
+- **C.2 — LLC dual-path split:** 4 generic LLC personas split into `llc-single.*` (SMLLC → Schedule C) and `llc-multi.*` (MMLLC → Form 1065). `variants.js` gained `ENTITY_TYPES.LLC_SINGLE` and `LLC_MULTI`. `scenarioKeyFor()` normalizes both to `llc` for scenarios.json lookup. `App.jsx`, `onboarding.jsx`, `Books.jsx`, `CashFlow.jsx` all updated.
+- **C.3 — Hardcoded scenario fallback:** `"sole-prop.consulting"` string removed from `App.jsx`, `onboarding.jsx`, `cpa/Books.jsx`, `cpa/CashFlow.jsx`. Replaced with `DEFAULT_SCENARIO_KEY` from `constants/variants.js`.
+- **C.4 — IRS label normalization gap:** `normalizeLabel()` added to `util/irsLookup.js` — lowercase + trim + collapse spaces + normalize apostrophes. Applied to all `IRS_LINE_MAP` lookups so labels with spacing/case/apostrophe variants match correctly.
+
+**High fixes (H):**
+- **H.1–H.5 — Missing IRS_LINE_MAP entries:** map expanded from ~55 to ~120 entries. New entries: COGS (Part III), vehicle fuel/depreciation variants, contractor variants, insurance generic, materials, permits, education, software variants, SEP-IRA, shareholder payroll, medical supplies, venue fees, event supplies, and more.
+- **H.6 — COGS chip display:** "Part III" handled as special case — chip shows `"Sch C · Part III"` not `"Sch C · Line Part III"`.
+- **H.7 — groupByIrsLine sort:** Part III appears first, then numeric lines, then suffixed (20a < 20b), then unmapped (null) last.
+
+**Medium + Low fixes:**
+- cpa-fixture.json client names aligned with personas.json (`Sarah Chen`, `Marcus Webb`, `Jake Torres`, `Mei Chen`).
+- client-004 entity corrected: `"llc"` → `"llc-single"`.
+- industries.json: `_meta.source` path fixed, `"QuickBooks"` → `"QuickBooks Invoices"`, `"Generic Vendor"/"Business expense"` → `"Notion"/"Software"`, `"SVB (First Citizens)"` → `"SVB (First Citizens Bank)"`.
+- cpa-data-model.md: entity union updated to include `"llc-single" | "llc-multi"`. Seed file section corrected (array → object map).
+- irs-routing.md: CHANGELOG reorganized; v1.3 entry added.
+
+**Files changed (11):** `util/irsLookup.js` · `constants/variants.js` · `App.jsx` · `screens/onboarding.jsx` · `screens/cpa/Books.jsx` · `screens/cpa/CashFlow.jsx` · `public/config/personas.json` · `public/config/cpa-fixture.json` · `public/config/industries.json` · `implementation/cpa-data-model.md` · `implementation/irs-routing.md`
+
+**Audit report:** `BookKeeping/reviews/demo-stress-test-apr-2026/03-config-data-irs.md`
+
+---
+
 ### 25 April 2026 — SCAF-6: shared micro-components extracted
 
 Four inline component patterns that were duplicated across 8 screen files are now canonical shared components in `components/`. Settled decision #21 added — never re-implement these inline.

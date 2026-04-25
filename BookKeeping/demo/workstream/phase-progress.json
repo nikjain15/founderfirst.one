@@ -5,7 +5,7 @@
     { "id": "phase-2-audit-1", "status": "completed",    "output": "BookKeeping/reviews/demo-stress-test-apr-2026/01-founder-code.md", "commit": null },
 
     { "id": "phase-2-audit-2", "status": "in_progress",   "output": "BookKeeping/reviews/demo-stress-test-apr-2026/02-prompts-voice.md", "commit": null },
-    { "id": "phase-2-audit-3", "status": "completed",    "output": "BookKeeping/reviews/demo-stress-test-apr-2026/03-config-data-irs.md", "commit": null },
+    { "id": "phase-2-audit-3", "status": "completed",    "output": "BookKeeping/reviews/demo-stress-test-apr-2026/03-config-data-irs.md", "commit": "bbe5ce0" },
     { "id": "phase-2-audit-4", "status": "pending",      "output": "BookKeeping/reviews/demo-stress-test-apr-2026/04-cpa-spec-buildability.md", "commit": null },
     { "id": "phase-2-audit-5", "status": "pending",      "output": "BookKeeping/reviews/demo-stress-test-apr-2026/05-end-user-walkthrough.md", "commit": null },
     { "id": "phase-2-audit-6", "status": "pending",      "output": "BookKeeping/reviews/demo-stress-test-apr-2026/06-doc-consistency.md", "commit": null },

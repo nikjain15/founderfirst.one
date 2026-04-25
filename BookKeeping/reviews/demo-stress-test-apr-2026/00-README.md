@@ -68,7 +68,8 @@ Every finding carries an explicit **AI-scalability impact** line describing what
 
 | File | Critical | High | Medium | Low | Scalability | Total |
 |---|---|---|---|---|---|---|
-| 01-founder-code | 5 | 21 | 28 | 18 | 9 | 81 |
+| 01-founder-code | 5 | 21 | 28 | 18 | 9 | 81 (v1) |
+| 01-founder-code v2 | 0 | 0 | 5 | 4 | — | 9 remaining post-SCAF |
 | 02-prompts-voice | _pending_ | | | | | |
 | 03-config-data-irs | _pending_ | | | | | |
 | 04-cpa-spec-buildability | _pending_ | | | | | |

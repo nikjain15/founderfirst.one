@@ -1,0 +1,20 @@
+{
+  "phase": "2",
+  "updated": "2026-04-25",
+  "tasks": [
+    { "id": "phase-2-audit-1", "status": "completed",    "output": "BookKeeping/reviews/demo-stress-test-apr-2026/01-founder-code.md", "commit": null },
+
+    { "id": "phase-2-audit-2", "status": "in_progress",   "output": "BookKeeping/reviews/demo-stress-test-apr-2026/02-prompts-voice.md", "commit": null },
+    { "id": "phase-2-audit-3", "status": "pending",      "output": "BookKeeping/reviews/demo-stress-test-apr-2026/03-config-data-irs.md", "commit": null },
+    { "id": "phase-2-audit-4", "status": "pending",      "output": "BookKeeping/reviews/demo-stress-test-apr-2026/04-cpa-spec-buildability.md", "commit": null },
+    { "id": "phase-2-audit-5", "status": "pending",      "output": "BookKeeping/reviews/demo-stress-test-apr-2026/05-end-user-walkthrough.md", "commit": null },
+    { "id": "phase-2-audit-6", "status": "pending",      "output": "BookKeeping/reviews/demo-stress-test-apr-2026/06-doc-consistency.md", "commit": null },
+    { "id": "phase-3-flow-1",  "status": "pending",      "output": "BookKeeping/demo/workstream/flows/flow-onboarding.md", "commit": null },
+    { "id": "phase-3-flow-2",  "status": "pending",      "output": "BookKeeping/demo/workstream/flows/flow-thread-and-card.md", "commit": null },
+    { "id": "phase-3-flow-3",  "status": "pending",      "output": "BookKeeping/demo/workstream/flows/flow-add.md", "commit": null },
+    { "id": "phase-3-flow-4",  "status": "pending",      "output": "BookKeeping/demo/workstream/flows/flow-books.md", "commit": null },
+    { "id": "phase-3-flow-5",  "status": "pending",      "output": "BookKeeping/demo/workstream/flows/flow-avatar.md", "commit": null },
+    { "id": "phase-3-flow-6",  "status": "pending",      "output": "BookKeeping/demo/workstream/flows/flow-invoice.md", "commit": null },
+    { "id": "phase-3-flow-7",  "status": "pending",      "output": "BookKeeping/demo/workstream/flows/flow-cpa.md", "commit": null }
+  ]
+}

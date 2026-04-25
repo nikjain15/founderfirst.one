@@ -286,3 +286,170 @@ The below is the unedited output from the first forensic pass. It contains items
 - Currency formatting consistent.
 
 </details>
+
+---
+
+---
+
+# v2 Re-audit — Post-SCAF Pass (25 April 2026)
+
+**Audited:** 25 April 2026 (after SCAF-1 through SCAF-7 all merged to origin/main)
+**Surface:** same as v1 — `screens/*.jsx` (7 screens), `components/*.jsx` (7 components), `App.jsx`, `worker-client.js`, `constants/`, `util/`, `guardrails/`, `tests/`.
+**Ground truth:** `BookKeeping/demo/CLAUDE.md`, `BookKeeping/demo/DESIGN.md`.
+**Goal:** Verify SCAF improvements, document remaining issues, confirm success criteria.
+
+---
+
+## v2 Counts
+
+| Severity | [CURRENT] | [FUTURE] | [BOTH] | Total |
+|---|---|---|---|---|
+| Critical | 0 | 0 | 0 | **0** |
+| High | 0 | 0 | 0 | **0** |
+| Medium | 3 | 2 | 0 | **5** |
+| Low | 2 | 2 | 0 | **4** |
+
+**Success criteria result:**
+- Category A [CURRENT] ≤2: ✅ 0 Critical, 0 High remain.
+- Zero Category A [FUTURE]: ✅ 0 Critical/High [FUTURE] items.
+
+---
+
+## SCAF Resolution Summary
+
+Every original Category A item from v1 is now resolved or acceptably mitigated:
+
+| ID | Original finding | SCAF fix | Status |
+|---|---|---|---|
+| A.1 | Two sheet/overlay patterns | SCAF-1: `Sheet.jsx` + `FullScreenOverlay.jsx` | ✅ Resolved |
+| A.2 | Color-zone violations (amber fill) | SCAF-5: amber-fill → paper+border, error → text-only | ✅ Resolved |
+| A.3 | Card variants as magic strings | SCAF-2: `constants/variants.js` + `CARD_VARIANTS` enum | ✅ Resolved |
+| A.4 | Penny copy scattered across files | SCAF-3: `constants/copy.js` registry; 13 screens refactored | ✅ Resolved |
+| A.5 | Token discipline violations | SCAF-4: 5 real fixes + ~19 documented exemptions + pre-commit hook | ✅ Resolved (1 rgba bypass remains — see M1) |
+| A.6 | Two near-identical waveform components | SCAF-6: `components/VoiceWaveform.jsx` | ✅ Resolved |
+| A.7 | Duplicate/dead CSS | SCAF-7: duplicate `.sheet-handle` removed, empty `.thread-bubble` removed, redundant `@keyframes spin` in `books.jsx` removed | ✅ Mostly resolved (1 inline keyframe in `add.jsx` — see L2) |
+| A.8 | Dead constants in `onboarding.jsx` | SCAF-7: `STEP_CONTEXT_KEY` removed | ⚠️ Partial — `STEP_INTENT` values now dead documentation (see M4) |
+| A.9 | TabBar ARIA misuse (`role="tab"` / `role="tablist"`) | SCAF-7: removed; `<nav>` semantics only | ✅ Resolved |
+
+Runtime bugs fixed by SCAF:
+- B.6 (`cpaSheeet` typo) ✅ Fixed
+- B.7 (income fallback missing CTAs) ✅ Resolved — `card.jsx` now falls back to `CARD_FALLBACK_COPY.defaultPrimaryCta` / `defaultSecondaryCta`
+- B.5 (invoice number regenerates on mount) ✅ Resolved — `state.invoiceDraft` check added
+- C.1 (thread intro strings hard-coded in JSX) ✅ Resolved — `thread.jsx` now routes through `constants/copy.js`
+
+---
+
+## v2 Findings
+
+### M1 — Raw `rgba()` color escaped the SCAF-4 token sweep [CURRENT]
+
+**Severity:** Medium · `screens/books.jsx:1178`
+**What is wrong:** `color: netVsLast != null ? "rgba(26,158,106,0.9)" : "rgba(255,255,255,0.45)"`. The first value is a hand-computed derivation of `--income` (`#1A9E6A` = `rgb(26,158,106)`). `scripts/check-tokens.sh` only catches raw hex strings (starting with `#`) — it does not match `rgba()` literals. This bypassed SCAF-4 undetected.
+**Why it matters:** `--income` is a design-system token. If the income color is ever updated, this hardcoded value silently diverges. `rgba(255,255,255,0.45)` is acceptable as a deliberate opacity variant (no named token for partial-white-on-dark).
+**Fix:** `color: netVsLast != null ? "rgba(var(--income-rgb), 0.9)" : "rgba(255,255,255,0.45)"` — requires adding `--income-rgb: 26,158,106` to `tokens.css`. Alternatively, use `var(--income)` at full opacity and set `opacity` via wrapper.
+**AI-scalability impact:** An agent building a new stat card will look at books.jsx for the income color pattern and learn to hardcode `rgba(26,158,106,...)`. Correcting this in the source example eliminates the anti-pattern from future training.
+
+---
+
+### M2 — `netSubcopy` always shows upward arrow regardless of sign [CURRENT]
+
+**Severity:** Medium · `screens/books.jsx:1124`
+**What is wrong:** `const netSubcopy = netVsLast != null ? \`▲ ${fmt(netVsLast)} vs last month\` : ...`. The `▲` character is hardcoded. If `netVsLast` is negative (a net below last month), the stat card still shows ▲ — misleading the user about direction.
+**Why it matters:** Trust-critical product. Wrong directional signal on the P&L card directly undermines the claim that Penny's numbers are reliable.
+**Fix:** One line: `const arrow = netVsLast >= 0 ? "▲" : "▼"; const netSubcopy = netVsLast != null ? \`${arrow} ${fmt(Math.abs(netVsLast))} vs last month\` : ...`.
+**AI-scalability impact:** Low. One-line fix. Not a pattern agents would clone.
+
+---
+
+### M3 — `avatar-menu.jsx` box shadow uses `rgba(0,0,0,...)` instead of `rgba(10,10,10,...)` [CURRENT]
+
+**Severity:** Medium · `screens/avatar-menu.jsx:119`
+**What is wrong:** `boxShadow: "0 1px 3px rgba(0,0,0,0.18)"`. The `--ink` token is `#0a0a0a` (rgb 10,10,10). All shadow constructions should derive from this base. `rgba(0,0,0,...)` is slightly purer black and creates a subtle but inconsistent shadow tone. This was called out in v1 raw findings but not caught by check-tokens.sh (rgba check not implemented).
+**Fix:** `boxShadow: "0 1px 3px rgba(10,10,10,0.18)"`.
+**AI-scalability impact:** Medium. Agents building new overlays will scan `avatar-menu.jsx` for shadow examples and learn the wrong base color.
+
+---
+
+### M4 — `STEP_INTENT` in `onboarding.jsx` is dead documentation [FUTURE]
+
+**Severity:** Medium · `screens/onboarding.jsx:21-29`
+**What is wrong:** `STEP_INTENT` maps step names to Penny intent strings (`"onboarding.ready"`, `"onboarding.entity"`, etc.). These intent strings were meaningful when onboarding made live AI calls per step. SCAF-3 replaced all onboarding copy with static `ONBOARDING_COPY` from the registry. Now only the map's *keys* matter (as a presence-check gate: `if (!STEP_INTENT[step]) return;`), not the values. The intent strings are read by no caller.
+**Why it matters:** A fresh agent sees `STEP_INTENT` with intent values and concludes onboarding makes per-step AI calls matching `INTENT_MAP` in `worker-client.js`. It searches `INTENT_MAP` for `"onboarding.ready"`, doesn't find it, and either (a) adds it incorrectly or (b) breaks trying to re-wire the flow.
+**Fix:** Replace `STEP_INTENT` with a simple Set: `const STEPS_WITH_PENNY = new Set(["welcome","entity","entity-diag","industry","payments","expenses","checkin","bank"]);` and update the guard: `if (!STEPS_WITH_PENNY.has(step)) return;`.
+**AI-scalability impact:** High. Misleading documentation of the AI call boundary is the most common source of regressions in AI-built features.
+
+---
+
+### M5 — LLC dual-path entity types defined but not demonstrated in demo data [FUTURE/BOTH]
+
+**Severity:** Medium · `constants/variants.js`, `public/config/personas.json`, `public/config/scenarios.json`
+**What is wrong:** `ENTITY_TYPES` exports `LLC_SINGLE = "llc-single"` and `LLC_MULTI = "llc-multi"` as distinct members. The audit brief, `CLAUDE.md`, and `implementation/irs-routing.md` all require coverage of all 4 entity paths (sole-prop, S-Corp, llc-single, llc-multi). But:
+- `personas.json` uses only `"llc"` (undifferentiated) — no `llc-single` or `llc-multi` persona exists.
+- `scenarios.json` keys are `"llc.trades"`, `"llc.retail"`, `"llc.food-beverage"`, `"llc.other"` — all use the generic "llc" entity prefix.
+- No scenario demonstrates Form 1065 (LLC multi-member) IRS routing in the demo thread.
+- The onboarding entity diagnostic does not ask the single vs. multi-member question for LLC path.
+**Why it matters:** [BOTH] For current demo: anyone selecting LLC sees "llc" entity data, which is acceptable for the demo but is factually ambiguous about which IRS form applies. For future AI builds: an agent adding LLC-multi content will use `ENTITY_TYPES.LLC_MULTI = "llc-multi"` but find no scenario key like `"llc-multi.trades"` — the fetch falls back to `"sole-prop.consulting"` silently.
+**Fix (phased):**
+1. Near-term: document in `screen-briefs/01-onboarding.md` and `CLAUDE.md` that "llc" in demo data represents the LLC undifferentiated path (single-member / Sch C default), and `llc-multi` is explicitly out of scope for v1 demo.
+2. Before CPA view goes live: add at least two `llc-multi` personas (multi-member LLC) with 1065 routing to demonstrate the full entity matrix.
+**AI-scalability impact:** High. A future agent building Form 1065 view content searches for `llc-multi` examples and finds none. Every new LLC feature built without this data will silently default to sole-prop behavior.
+
+---
+
+### L1 — Unused `useRef` import in `App.jsx` [CURRENT]
+
+**Severity:** Low · `App.jsx:13`
+**What is wrong:** `import React, { useEffect, useRef, useState, useCallback, useMemo } from "react"` — `useRef` is imported but not used anywhere in `App.jsx`.
+**Fix:** Remove `useRef` from the import destructure.
+**AI-scalability impact:** Low. Agents extending App.jsx may import `useRef` thinking it's needed, or assume there's a ref somewhere.
+
+---
+
+### L2 — Inline `@keyframes slideUp` in `add.jsx` JSX `<style>` block [CURRENT]
+
+**Severity:** Low · `screens/add.jsx:956-958`
+**What is wrong:**
+```jsx
+<style>{`
+  @keyframes slideUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+`}</style>
+```
+This inline style block was missed by SCAF-7. The animation is referenced at line 932: `animation:"slideUp 180ms var(--ease-out) both"`. SCAF-7 was supposed to remove all inline keyframe definitions and consolidate into `styles/components.css`.
+**Fix:** Move `@keyframes slideUp` to `styles/components.css` alongside the other keyframes. Remove the `<style>` block from `add.jsx`.
+**AI-scalability impact:** Medium. An agent adding a new animation to any screen will look for existing keyframe patterns. Finding one inline and the rest in `components.css` will produce inconsistent results: next feature may also use inline `<style>`.
+
+---
+
+### L3 — `ENTITY_TYPES.PARTNERSHIP` resolves but no scenario exists for it [CURRENT]
+
+**Severity:** Low · `screens/onboarding.jsx:246`, `public/config/scenarios.json`
+**What is wrong:** The entity diagnostic at `onboarding.jsx:246` can resolve to `ENTITY_TYPES.PARTNERSHIP = "partnership"` when a user answers `q1=personal-return, q2=me-and-others`. `scenarioKey({ entity: "partnership", industry: "consulting" })` → `"partnership.consulting"`. `scenarios.json` has no such key. `App.jsx` falls back silently to `"sole-prop.consulting"`. The user sees Sarah Chen's data as a diagnosed "Partnership" owner.
+**Why it matters:** Silent wrong-persona fallback. The user's onboarding resolves to Partnership but all demo cards are for a sole-prop consultant. Penny's intro copy will feel disconnected.
+**Fix near-term:** Display a "Partnership isn't fully supported yet — we'll use your closest match for now" message in the diagnostic resolution. Flag `is_partnership_flag: true` in persona state so downstream screens can adapt copy.
+**AI-scalability impact:** Low. Agents extending partnership support would need to add scenario data anyway.
+
+---
+
+### L4 — Two validator tests permanently failing: empty-string handling undefined [CURRENT]
+
+**Severity:** Low · `tests/validator.test.js:29-42`
+**What is wrong:** Two tests have been failing since v1:
+1. `"rejects missing headline"` — expects `ok: false` for `headline: ""`, but `validateField("", "headline", 120)` returns `ok: true` (empty string passes all current checks).
+2. `"rejects missing why"` — expects `ok: false` for `why: ""`, but `if (response.why)` evaluates to `false` for empty string, skipping validation entirely.
+These failures are acknowledged in CLAUDE.md: "the 2 validator failures are pre-existing and untouched by this commit."
+**Why it matters:** The validator is the voice gate. A Penny response with an empty `headline` or empty `why` passes validation and reaches the user. This is a trust-critical path.
+**Fix:** Add a minimum non-empty check to `validateField`: `if (!text.trim()) return { ok: false, reason: \`Field "${label}" must not be empty.\` };`. Update both tests to reflect the intended contract.
+**AI-scalability impact:** Medium. An agent building a new intent and testing it will see 2 pre-existing failures in the test suite and may assume the validator intentionally allows empty strings — or may decide not to test the validator at all.
+
+---
+
+## v2 Positive Observations
+
+1. **All 20 scenarios present and correct.** `scenarios.json` includes S-Corp `owners-draw` variants in every S-Corp scenario's cardQueue (7 occurrences verified). Entity-appropriate variant routing works as designed.
+2. **Token enforcement is now automated.** `scripts/check-tokens.sh` runs on staged files at commit and on the full tree at build. The 4 documented violation classes are blocked before merge.
+3. **`constants/copy.js` is clean and comprehensive.** All 6 frozen groups contain the correct copy. `tests/copy.test.js` covers all interpolation functions.
+4. **`constants/variants.js` is exhaustive.** All enum values used in screens are imported from the registry. `tests/variants.test.js` confirms every industry key and entity prefix from config JSON is present in the enums.
+5. **Sheet + FullScreenOverlay canonical pattern holds.** Zero `createPortal` calls remain in screen files; all are in the two component files. `#sheet-root` portal target defined in `App.jsx`; `#sheet-root-cpa` in `cpa/index.html`.
+6. **Post-SCAF color zones are clean.** No amber-as-background, no error-as-background. `check-tokens.sh` does not catch rgba() but the fix for M1 above closes the gap.
+7. **TabBar ARIA is clean.** `<nav aria-label="Primary navigation">` with `aria-current="page"` on active tab — correct pattern.
+8. **`CARD_FALLBACK_COPY.defaultPrimaryCta` defense pattern.** Card.jsx correctly falls back to `defaultPrimaryCta`/`defaultSecondaryCta` when the AI response or fallback function omits CTA fields. This protects against any future fallback function that forgets to include CTAs.

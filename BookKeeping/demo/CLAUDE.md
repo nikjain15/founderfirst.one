@@ -434,6 +434,14 @@ Rsyncs `public/prompts/` directly to `penny/demo/prompts/` → commits → pushe
 
 Both `--msg="text"` (npm env-var form) and `-- --msg="text"` (positional form, with the `--` separator) are accepted; either lands in the deploy commit message. With no flag, the message falls back to `update`.
 
+### Recovery — if a deploy crashes mid-stash
+
+If a deploy aborts during a stash and subsequent `git stash` fails with
+"Cannot save the current status", check for a stale lock at
+`.git/refs/stash.lock` and remove it: `rm .git/refs/stash.lock`. If
+`git stash list` is empty but `.git/refs/stash` still exists, the ref
+is orphaned — `rm .git/refs/stash .git/logs/refs/stash` clears it.
+
 ### Local dev (no deploy)
 ```bash
 npm run dev        # HMR at localhost:5173 — use this while iterating

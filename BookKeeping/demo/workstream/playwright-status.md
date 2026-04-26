@@ -1,6 +1,6 @@
 # Playwright E2E Status
 
-*Last updated: 2026-04-25*
+*Last updated: 2026-04-26*
 
 ## Summary
 
@@ -56,6 +56,14 @@
 | `tests/e2e/founder.spec.js` | ✅ Created — 15 tests (F1–F10 + F2b, F4b, F4c, F8b, F8c) |
 | `tests/e2e/cpa.spec.js` | ✅ Created — 16 tests (C1–C16) |
 | `tests/e2e/invite.spec.js` | ✅ Created — 1 test (E1) |
+
+---
+
+## Session 2026-04-26 Fix
+
+### sessionStorage migration (F3–F10, 12 tests re-broken, all re-fixed)
+
+`tests/e2e/helpers.js:29` — `seedFounderState` was writing to `localStorage`, but in the 2026-04-25 rate-limit session, `App.jsx` was migrated to read/write app state from `sessionStorage` (settled decision #23). The seeded state was invisible to the app, causing every seeded test to see onboarding instead of the thread/tab bar. Fix: `localStorage.setItem` → `sessionStorage.setItem` in `seedFounderState`. One line, one file. All 32 tests green.
 
 ---
 

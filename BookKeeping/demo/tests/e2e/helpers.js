@@ -26,7 +26,7 @@ export async function seedFounderState(page, opts = {}) {
       checkIn: "fri-4",
       bankConnected: "Chase Business",
     };
-    localStorage.setItem(key, JSON.stringify(state));
+    sessionStorage.setItem(key, JSON.stringify(state));
   }, { key: STATE_KEY, persona });
   return persona;
 }

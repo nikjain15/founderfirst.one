@@ -1,6 +1,6 @@
 # Playwright E2E Status
 
-*Last updated: 2026-04-25*
+*Last updated: 2026-04-26*
 
 ## Summary
 
@@ -60,6 +60,9 @@
 ---
 
 ## Key Fixes Applied
+
+### 5. `seedFounderState` wrote to `localStorage` but app reads `sessionStorage` (session resumed 2026-04-26)
+Settled decision #23 moved founder app state from `localStorage` to `sessionStorage`. The test helper `seedFounderState` in `tests/e2e/helpers.js` was still writing to `localStorage`, so the app saw no seeded state and started from onboarding — causing `nav.tab-bar` to never appear (F3–F10 all failed). Fixed by changing `localStorage.setItem` → `sessionStorage.setItem` on line 29 of helpers.js.
 
 ### 1. Playwright browser version mismatch
 `@playwright/test@1.59.1` expected chromium-1217 (not downloadable). Downgraded to `^1.56.0` to match pre-installed `/opt/pw-browsers/chromium-1194`. Run with `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`.

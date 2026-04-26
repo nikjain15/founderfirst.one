@@ -1,6 +1,6 @@
 # Playwright E2E Status
 
-*Last updated: 2026-04-25*
+*Last updated: 2026-04-26*
 
 ## Summary
 
@@ -73,16 +73,25 @@
 ### 4. C16 back button also hidden
 `← All clients` button lives inside `.cpa-sidebar` (visible only at ≥768px) AND also inline in the client view header. At 414px, both can be hidden depending on layout. `dispatchEvent("click")` reaches the first matching button regardless.
 
+### Session 2 (2026-04-26)
+
+#### 5. F3–F10 all failing — `nav.tab-bar` not found after seeding state
+Root cause: the "Rate limit resilience + session-fresh reset" session (25 Apr 2026) moved app state from `localStorage` to `sessionStorage` (`App.jsx:74` — `sessionStorage.getItem(STATE_KEY)`). The `helpers.js` `seedFounderState` function was still writing to `localStorage`, so the app never saw the seeded onboarding state and always showed onboarding instead of the tab bar.
+
+Fix: `tests/e2e/helpers.js` line 23 — `localStorage.setItem` → `sessionStorage.setItem`.
+
 ---
 
 ## Build Output
 
 ```
 vite v5.4.21 — 67 modules transformed
-dist/cpa/index.html      1.57 kB (gzip: 0.81 kB)
-dist/index.html          2.31 kB (gzip: 1.22 kB)
-dist/assets/main.js    163.34 kB (gzip: 37.32 kB)
-dist/assets/cpa.js      74.98 kB (gzip: 15.93 kB)
+dist/cpa/index.html                   1.57 kB (gzip: 0.81 kB)
+dist/index.html                       2.35 kB (gzip: 1.24 kB)
+dist/assets/analytics-CMwBtR8u.css  25.92 kB (gzip: 5.49 kB)
+dist/assets/cpa-BqqXsTRd.js         74.88 kB (gzip: 15.88 kB)
+dist/assets/main-osPwk9Zv.js       164.24 kB (gzip: 37.60 kB)
+dist/assets/analytics-B7Vfh0Jt.js  363.18 kB (gzip: 119.89 kB)
 ```
 
 Built and copied to `../tools/penny-demo-v5/`.

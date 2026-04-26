@@ -178,12 +178,12 @@ describe("copy — bucket sanity", () => {
       expect(["string", "function"], `TOAST_COPY.${k}`).toContain(typeof v);
     }
   });
-  it("ERROR_COPY entries are strings or frozen message objects", () => {
+  it("ERROR_COPY entries are strings, functions, or frozen message objects", () => {
     for (const [k, v] of Object.entries(ERROR_COPY)) {
       if (typeof v === "object" && v !== null) {
         expect(Object.isFrozen(v), `ERROR_COPY.${k}`).toBe(true);
       } else {
-        expect(typeof v, `ERROR_COPY.${k}`).toBe("string");
+        expect(["string", "function"], `ERROR_COPY.${k}`).toContain(typeof v);
       }
     }
   });

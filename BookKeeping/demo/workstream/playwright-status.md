@@ -1,6 +1,6 @@
 # Playwright E2E Status
 
-*Last updated: 2026-04-25*
+*Last updated: 2026-04-26*
 
 ## Summary
 
@@ -86,6 +86,11 @@ dist/assets/cpa.js      74.98 kB (gzip: 15.93 kB)
 ```
 
 Built and copied to `../tools/penny-demo-v5/`.
+
+---
+
+### 5. State seeding: localStorage → sessionStorage (session 2026-04-26)
+`helpers.js:29` was seeding via `localStorage.setItem`. App.jsx (settled decision 23) reads from `sessionStorage`, so every seeded test saw a new-visitor state and landed on onboarding (no tab bar) instead of the thread screen. Fixed by changing `localStorage.setItem` to `sessionStorage.setItem` in `helpers.js`. Unblocked F3–F10 (12 tests).
 
 ---
 

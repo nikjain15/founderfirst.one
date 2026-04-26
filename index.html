@@ -869,6 +869,26 @@ button:focus-visible {
   font-size: 14px; color: var(--ink-3);
 }
 
+/* Try Penny — bg-white, between conf-hero and referral */
+.try-section { background: var(--white); padding-block: clamp(48px, 7vw, 72px); }
+.try-inner { max-width: 720px; margin: 0 auto; }
+.try-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-4); margin-bottom: 12px; }
+.try-heading { font-size: clamp(22px, 3vw, 28px); font-weight: 800; color: var(--ink); letter-spacing: -.02em; line-height: 1.2; margin-bottom: 8px; }
+.try-sub { font-size: 15px; color: var(--ink-3); margin-bottom: 32px; line-height: 1.5; }
+.try-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.try-card { border: 1.5px solid var(--line); border-radius: var(--r-card); padding: 28px 24px; display: flex; flex-direction: column; gap: 14px; cursor: pointer; transition: border-color .18s, box-shadow .18s, transform .18s; text-decoration: none; color: inherit; }
+.try-card:hover { border-color: var(--ink); box-shadow: 0 4px 20px rgba(10,10,10,.1); transform: translateY(-2px); }
+.try-card-icon { width: 44px; height: 44px; border-radius: 10px; background: var(--paper); display: flex; align-items: center; justify-content: center; }
+.try-card-icon svg { width: 22px; height: 22px; stroke: var(--ink); }
+.try-card-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-4); }
+.try-card-title { font-size: 17px; font-weight: 700; color: var(--ink); letter-spacing: -.01em; line-height: 1.25; margin-top: 2px; }
+.try-card-desc { font-size: 13px; color: var(--ink-3); line-height: 1.6; flex: 1; }
+.try-card-cta { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink); margin-top: 4px; }
+.try-card-cta svg { width: 14px; height: 14px; stroke: var(--ink); transition: transform .15s; }
+.try-card:hover .try-card-cta svg { transform: translateX(3px); }
+.try-hint { margin-top: 24px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-4); }
+@media (max-width: 540px) { .try-cards { grid-template-columns: 1fr; } }
+
 /* Referral — bg-dark, centered */
 .referral-section { background: var(--dark); }
 .ref-inner {
@@ -1575,6 +1595,49 @@ button:focus-visible {
         <div class="conf-hint">
           <span class="p-mark p-mark-sm">P</span>
           <span>Penny is warming up her calculator…</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Try Penny — white -->
+  <section class="try-section">
+    <div class="wrap">
+      <div class="try-inner">
+        <div class="try-eyebrow">While you wait</div>
+        <h2 class="try-heading">Want to see Penny in action?</h2>
+        <p class="try-sub">Pick your role — we'll show you the experience built for you.</p>
+        <div class="try-cards">
+          <a class="try-card" href="/penny/demo/" target="_blank" rel="noopener">
+            <div class="try-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <div>
+              <div class="try-card-label">Business owner</div>
+              <div class="try-card-title">See how Penny keeps your books clean</div>
+            </div>
+            <div class="try-card-desc">No spreadsheets. No chasing receipts. Approve one transaction and Penny handles the rest.</div>
+            <div class="try-card-cta">Try the owner demo <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+          </a>
+          <a class="try-card" href="/penny/demo/cpa/" target="_blank" rel="noopener">
+            <div class="try-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>
+              </svg>
+            </div>
+            <div>
+              <div class="try-card-label">CPA / Accountant</div>
+              <div class="try-card-title">See what your clients' books look like</div>
+            </div>
+            <div class="try-card-desc">Every transaction categorized. Every receipt attached. Everything you need at tax time — already done.</div>
+            <div class="try-card-cta">Try the CPA demo <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+          </a>
+        </div>
+        <div class="try-hint">
+          <div class="p-mark p-mark-sm">P</div>
+          <span>No login needed — just click and explore.</span>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 # Playwright E2E Status
 
-*Last updated: 2026-04-25*
+*Last updated: 2026-04-26*
 
 ## Summary
 
@@ -73,16 +73,19 @@
 ### 4. C16 back button also hidden
 `← All clients` button lives inside `.cpa-sidebar` (visible only at ≥768px) AND also inline in the client view header. At 414px, both can be hidden depending on layout. `dispatchEvent("click")` reaches the first matching button regardless.
 
+### 5. F3–F10 + F2b regression (2026-04-26 session)
+App state (`penny-demo-state-v5`) was moved from `localStorage` to `sessionStorage` in the rate-limit-resilience commit (settled decision 23). `helpers.js:seedFounderState` still seeded `localStorage`, so the app always saw a blank state and showed onboarding instead of the main thread. Fixed: `localStorage.setItem` → `sessionStorage.setItem` in `tests/e2e/helpers.js:29`.
+
 ---
 
 ## Build Output
 
 ```
 vite v5.4.21 — 67 modules transformed
-dist/cpa/index.html      1.57 kB (gzip: 0.81 kB)
-dist/index.html          2.31 kB (gzip: 1.22 kB)
-dist/assets/main.js    163.34 kB (gzip: 37.32 kB)
-dist/assets/cpa.js      74.98 kB (gzip: 15.93 kB)
+dist/cpa/index.html      1.57 kB │ gzip:   0.81 kB
+dist/index.html          2.35 kB │ gzip:   1.24 kB
+dist/assets/main.js    164.24 kB │ gzip:  37.60 kB
+dist/assets/cpa.js      74.88 kB │ gzip:  15.88 kB
 ```
 
 Built and copied to `../tools/penny-demo-v5/`.

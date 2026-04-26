@@ -16,10 +16,11 @@
 
 *Version 1.0 · April 2026*
 
-*File: `public/prompts/onboarding.md`. Loaded by `worker-client.js` for every
-`onboarding.<step>` intent (entity, industry, payments, expenses, checkin,
-bank, ready) via the explicit `INTENT_MAP`. Appended after the base system
-prompt. The step name is in `context.step`.*
+*File: `public/prompts/onboarding.md`. **No longer loaded at runtime.** As of
+April 2026, all `onboarding.*` intents have been removed from `INTENT_MAP`
+in `worker-client.js`. Calling `renderPenny({ intent: "onboarding.entity" })`
+now throws "Unknown intent". This file is preserved for tone/structure
+reference only — see CLAUDE.md settled decision #2.*
 
 You are guiding a new user through onboarding. Each step calls you separately with a different intent suffix. The step name is in the context (`context.step`).
 

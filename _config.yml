@@ -10,6 +10,18 @@ include:
   - assets
   - DESIGN_SYSTEM.md
 
+exclude:
+  - _dev
+  - tools
+  - BookKeeping
+  - CLAUDE.md
+  - ANALYTICS.md
+  - README.md
+  - "FounderFirst OS"
+  - .claude
+  - node_modules
+  - "**/*.sh"
+
 collections:
   posts:
     output: true

@@ -2086,6 +2086,7 @@ async function handleSignup(e, source) {
   } catch (_) {}
   sessionStorage.setItem('ff_email', email);
   if (finalSlug) sessionStorage.setItem(SLUG_LOCAL_KEY, finalSlug);
+  sessionStorage.setItem('ff_just_confirmed', '1');
 
   if (alreadyOnList) showToast("You're already on the list — welcome back!");
   showConfirmation();
@@ -2321,15 +2322,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /* Deep-link / refresh: if URL says we're on confirmation, render it */
+  /* Deep-link / refresh: only show confirmation if user just signed up
+     in this session. Otherwise strip stale ?confirmed=1 from the URL so
+     returning visitors land on the hero. */
   try {
     const params = new URLSearchParams(location.search);
-    if (params.get('confirmed') === '1' || location.hash === '#confirmation') {
-      // Seed history so back works even on direct load
+    const hasConfirmFlag = params.get('confirmed') === '1' || location.hash === '#confirmation';
+    const justConfirmed = sessionStorage.getItem('ff_just_confirmed') === '1';
+    if (hasConfirmFlag && justConfirmed) {
+      sessionStorage.removeItem('ff_just_confirmed');
       history.replaceState({ page: 'confirmation' }, '', location.pathname + '?confirmed=1');
       showConfirmation(true);
     } else {
-      history.replaceState({ page: 'landing' }, '', location.pathname + location.search);
+      history.replaceState({ page: 'landing' }, '', location.pathname);
     }
   } catch(_) {}
 });

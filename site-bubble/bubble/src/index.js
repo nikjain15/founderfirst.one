@@ -79,6 +79,29 @@ function Pmark() {
   return html`<div class="penny-pmark" aria-hidden="true">P</div>`;
 }
 
+// Renders text with bare URLs turned into clickable anchors. We split on a
+// simple http/https regex; the resulting array alternates text segments and
+// matches, which we map to text-or-anchor.
+const URL_RE = /(https?:\/\/[^\s<>"')]+)/g;
+function renderWithLinks(text) {
+  if (typeof text !== "string" || !text) return text;
+  const parts = text.split(URL_RE);
+  return parts.map((part, i) => {
+    if (i % 2 === 1) {
+      const clean = part.replace(/[.,;:!?)]+$/, "");
+      const trailing = part.slice(clean.length);
+      return html`<a
+        key=${i}
+        class="penny-link"
+        href=${clean}
+        target="_blank"
+        rel="noopener noreferrer"
+      >${clean}</a>${trailing}`;
+    }
+    return part;
+  });
+}
+
 function App({ workerUrl }) {
   const [open, setOpen] = useState(false);
   const [bubbles, setBubbles] = useState(() => {
@@ -221,7 +244,7 @@ function App({ workerUrl }) {
       <div class="penny-thread" ref=${threadRef}>
         ${bubbles.map((b, i) => html`
           <div key=${i} class="penny-bubble ${b.from === "user" ? "from-user" : "from-penny"}">
-            ${b.headline}
+            ${b.from === "user" ? b.headline : renderWithLinks(b.headline)}
           </div>
         `)}
         ${sending && html`

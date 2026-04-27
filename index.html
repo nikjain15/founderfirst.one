@@ -1390,8 +1390,275 @@ button:focus-visible {
     </div>
   </section>
 
-  <!-- 05 · SNAPSHOTS — paper -->
-  <section id="snapshots">
+  <!-- 05 · TRY PENNY — paper -->
+  <section class="tp" id="try-penny" aria-labelledby="tp-heading">
+    <div class="wrap">
+      <div class="section-header">
+        <div class="eyebrow">Try Penny</div>
+        <h2 id="tp-heading">See Penny work — for real, right now.</h2>
+        <p class="tp__sub" data-tp-sub="owner">Connect an account and Penny starts watching. She categorizes every transaction and shows you a card. You confirm with a tap — she remembers it next time.</p>
+        <p class="tp__sub" data-tp-sub="cpa" hidden>Keep QuickBooks or Xero — nothing to migrate. Penny does the data entry your client always forgets and queues it for you. You review, approve, and export in your usual format.</p>
+      </div><!-- /.section-header -->
+
+      <div class="tp__toggle" role="tablist" aria-label="Choose a perspective">
+        <button class="tp__pill is-active" role="tab" aria-selected="true" aria-controls="tp-panel-owner" id="tp-tab-owner" data-stage="owner" tabindex="0" type="button">
+          <span class="tp__dot" aria-hidden="true"></span>Business owner
+        </button>
+        <button class="tp__pill" role="tab" aria-selected="false" aria-controls="tp-panel-cpa" id="tp-tab-cpa" data-stage="cpa" tabindex="-1" type="button">
+          <span class="tp__dot" aria-hidden="true"></span>CPA
+        </button>
+      </div>
+
+      <div class="tp__stage" id="tp-panel-owner" role="tabpanel" aria-labelledby="tp-tab-owner" data-stage="owner">
+        <div class="tp__phone">
+          <div class="tp__phone-notch" aria-hidden="true"></div>
+          <div class="tp__phone-screen" data-tp-mount="owner" data-tp-src="/penny/demo/" data-tp-title="Penny — business owner view">
+            <div class="tp__placeholder" hidden>
+              <p class="tp__ph-eyebrow">Live demo</p>
+              <p class="tp__ph-line">The live Penny demo loads here from <code>/penny/demo/</code>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tp__stage" id="tp-panel-cpa" role="tabpanel" aria-labelledby="tp-tab-cpa" data-stage="cpa" hidden>
+        <div class="tp__browser">
+          <div class="tp__browser-bar" aria-hidden="true">
+            <span class="tp__tl"></span><span class="tp__tl"></span><span class="tp__tl"></span>
+            <span class="tp__url">penny.app/cpa</span>
+          </div>
+          <div class="tp__browser-screen" data-tp-mount="cpa" data-tp-src="/penny/demo/cpa/" data-tp-title="Penny — CPA view">
+            <div class="tp__placeholder" hidden>
+              <p class="tp__ph-eyebrow">Live demo</p>
+              <p class="tp__ph-line">The CPA view loads here from <code>/penny/demo/cpa/</code>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tp__cta">
+        <p class="tp__cta-line">Want Penny watching your books for real?</p>
+        <a class="tp__cta-btn" href="#waitlist" data-tp-scroll>Join the waitlist</a>
+      </div>
+    </div>
+  </section>
+
+  <style>
+    .tp{
+      --tp-ink:#0a0a0a; --tp-ink-2:#2a2a2a; --tp-ink-3:#5a5a5a; --tp-ink-4:#8a8a8a;
+      --tp-line:#e8e8e5; --tp-paper:#f6f6f4; --tp-white:#fff; --tp-sage:#2B7A78;
+      --tp-r-pill:999px; --tp-r-card:12px; --tp-r-card-emph:16px;
+      --tp-shadow-card:0 1px 2px rgba(10,10,10,.04);
+      --tp-shadow-phone:0 30px 60px rgba(10,10,10,.18), 0 8px 18px rgba(10,10,10,.08);
+      background:var(--tp-paper); padding:96px 20px;
+      font-family:Inter,-apple-system,"SF Pro Text","Segoe UI",Helvetica,Arial,sans-serif;
+      color:var(--tp-ink);
+    }
+    .tp__inner{max-width:1100px; margin:0 auto; text-align:center;}
+    .tp__eyebrow{
+      font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
+      color:var(--tp-ink-4); margin:0 0 12px;
+    }
+    .tp__headline{
+      font-size:clamp(26px,3.8vw,44px); font-weight:700; letter-spacing:-.028em;
+      line-height:1.12; margin:0 auto 16px; max-width:18ch;
+    }
+    .tp .section-header{ max-width: 880px; margin-bottom: 40px; }
+    .tp .section-header h2{ margin-top: 10px; }
+    .tp__sub{
+      font-size:clamp(15px,1.6vw,17px); line-height:1.55; color:var(--tp-ink-2);
+      margin:20px 0 0;
+    }
+    @media (max-width: 900px){
+      .tp .section-header h2{ font-size: clamp(26px, 5vw, 36px); }
+    }
+    .tp__toggle{
+      display:inline-flex; gap:4px; padding:4px; background:var(--tp-white);
+      border:1px solid var(--tp-line); border-radius:var(--tp-r-pill);
+      box-shadow:var(--tp-shadow-card); margin-bottom:40px;
+    }
+    .tp__pill{
+      display:inline-flex; align-items:center; gap:8px; min-height:44px;
+      padding:10px 20px; border:0; background:transparent;
+      border-radius:var(--tp-r-pill); cursor:pointer;
+      font:inherit; font-weight:600; font-size:14px; letter-spacing:-.01em;
+      color:var(--tp-ink-3); transition:background .18s ease, color .18s ease;
+    }
+    .tp__pill:hover{color:var(--tp-ink);}
+    .tp__pill.is-active{background:var(--tp-ink); color:var(--tp-white);}
+    .tp__dot{
+      width:6px; height:6px; border-radius:50%; background:var(--tp-ink-4);
+      transition:background .18s ease;
+    }
+    .tp__pill.is-active .tp__dot{background:var(--tp-sage);}
+    .tp__pill:focus-visible{outline:2px solid var(--tp-ink); outline-offset:3px;}
+    .tp__stage{
+      display:flex; justify-content:center; opacity:1; transform:translateY(0);
+      transition:opacity .2s ease, transform .2s ease;
+    }
+    .tp__stage[hidden]{display:none;}
+    .tp.is-swapping .tp__stage{opacity:0; transform:translateY(4px);}
+    .tp__phone{
+      position:relative; width:380px; max-width:100%;
+      background:#0a0a0a; border-radius:44px; padding:14px;
+      box-shadow:var(--tp-shadow-phone);
+    }
+    .tp__phone-notch{
+      position:absolute; top:18px; left:50%; transform:translateX(-50%);
+      width:108px; height:28px; background:#000; border-radius:999px; z-index:2;
+    }
+    .tp__phone-screen{
+      position:relative; width:100%; aspect-ratio:375/780;
+      background:var(--tp-white); border-radius:32px; overflow:hidden;
+    }
+    @media (max-width:480px){
+      .tp__phone{width:340px; border-radius:38px; padding:12px;}
+      .tp__phone-screen{border-radius:28px;}
+    }
+    .tp__browser{
+      width:100%; max-width:1040px; background:var(--tp-white);
+      border:1px solid var(--tp-line); border-radius:var(--tp-r-card-emph);
+      overflow:hidden; box-shadow:var(--tp-shadow-card);
+    }
+    .tp__browser-bar{
+      display:flex; align-items:center; gap:8px; padding:12px 16px;
+      background:var(--tp-paper); border-bottom:1px solid var(--tp-line);
+    }
+    .tp__tl{width:10px; height:10px; border-radius:50%; background:#d8d8d4;}
+    .tp__url{
+      margin-left:14px; padding:4px 12px; background:var(--tp-white);
+      border:1px solid var(--tp-line); border-radius:var(--tp-r-pill);
+      font-size:12px; color:var(--tp-ink-3); font-variant-numeric:tabular-nums;
+    }
+    .tp__browser-screen{
+      position:relative; width:100%; aspect-ratio:16/10; background:var(--tp-white);
+    }
+    @media (max-width:720px){
+      .tp__browser-bar{display:none;}
+      .tp__browser{border-radius:var(--tp-r-card);}
+      .tp__browser-screen{aspect-ratio:4/3;}
+    }
+    .tp__phone-screen iframe,
+    .tp__browser-screen iframe{
+      position:absolute; inset:0; width:100%; height:100%; border:0; display:block;
+    }
+    .tp__placeholder{
+      position:absolute; inset:0; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; padding:24px; text-align:center;
+      background:var(--tp-paper);
+    }
+    .tp__ph-eyebrow{
+      font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
+      color:var(--tp-ink-4); margin:0 0 8px;
+    }
+    .tp__ph-line{font-size:14px; color:var(--tp-ink-2); margin:0; max-width:36ch;}
+    .tp__ph-line code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;
+      background:var(--tp-white); padding:2px 6px; border-radius:6px;
+      border:1px solid var(--tp-line);
+    }
+    .tp__cta{margin-top:48px; display:flex; flex-direction:column; align-items:center; gap:14px;}
+    .tp__cta-line{font-size:clamp(15px,1.6vw,17px); color:var(--tp-ink-2); margin:0;}
+    .tp__cta-btn{
+      display:inline-flex; align-items:center; min-height:44px;
+      padding:14px 24px; background:var(--tp-ink); color:var(--tp-white);
+      border-radius:var(--tp-r-pill); font-weight:600; font-size:15px;
+      text-decoration:none; letter-spacing:-.01em;
+      transition:transform .18s ease;
+    }
+    .tp__cta-btn:hover{transform:translateY(-1px);}
+    .tp__cta-btn:focus-visible{outline:2px solid var(--tp-ink); outline-offset:3px;}
+    @media (prefers-reduced-motion:reduce){
+      .tp__stage, .tp__pill, .tp__dot, .tp__cta-btn{transition:none;}
+      .tp.is-swapping .tp__stage{opacity:1; transform:none;}
+    }
+  </style>
+
+  <script>
+  (function(){
+    var section = document.getElementById('try-penny');
+    if(!section) return;
+    var tabs   = section.querySelectorAll('.tp__pill');
+    var panels = {
+      owner: section.querySelector('#tp-panel-owner'),
+      cpa:   section.querySelector('#tp-panel-cpa')
+    };
+    var subs = {
+      owner: section.querySelector('[data-tp-sub="owner"]'),
+      cpa:   section.querySelector('[data-tp-sub="cpa"]')
+    };
+    var loaded = {owner:false, cpa:false};
+
+    function mountIframe(stage){
+      if(loaded[stage]) return;
+      var mount = section.querySelector('[data-tp-mount="'+stage+'"]');
+      if(!mount) return;
+      var src   = mount.getAttribute('data-tp-src');
+      var title = mount.getAttribute('data-tp-title');
+      var placeholder = mount.querySelector('.tp__placeholder');
+      loaded[stage] = true;
+
+      fetch(src, {method:'GET', credentials:'same-origin'})
+        .then(function(r){
+          if(!r.ok) throw new Error('not ok');
+          var f = document.createElement('iframe');
+          f.src = src;
+          f.title = title;
+          f.loading = 'lazy';
+          f.setAttribute('referrerpolicy','no-referrer-when-downgrade');
+          mount.appendChild(f);
+        })
+        .catch(function(){
+          if(placeholder) placeholder.hidden = false;
+        });
+    }
+
+    function activate(stage, focus){
+      section.classList.add('is-swapping');
+      window.setTimeout(function(){
+        tabs.forEach(function(t){
+          var isActive = t.dataset.stage === stage;
+          t.classList.toggle('is-active', isActive);
+          t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+          t.tabIndex = isActive ? 0 : -1;
+        });
+        Object.keys(panels).forEach(function(k){
+          panels[k].hidden = (k !== stage);
+          subs[k].hidden   = (k !== stage);
+        });
+        mountIframe(stage);
+        section.classList.remove('is-swapping');
+        if(focus){ section.querySelector('#tp-tab-'+stage).focus(); }
+      }, 180);
+    }
+
+    tabs.forEach(function(tab, idx){
+      tab.addEventListener('click', function(){ activate(tab.dataset.stage, false); });
+      tab.addEventListener('keydown', function(e){
+        if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        e.preventDefault();
+        var next = tabs[(idx + (e.key==='ArrowRight'?1:-1) + tabs.length) % tabs.length];
+        activate(next.dataset.stage, true);
+      });
+    });
+
+    mountIframe('owner');
+
+    var cta = section.querySelector('[data-tp-scroll]');
+    if(cta){
+      cta.addEventListener('click', function(e){
+        var target = document.querySelector(cta.getAttribute('href'));
+        if(!target) return;
+        e.preventDefault();
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        target.scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block:'start'});
+      });
+    }
+  })();
+  </script>
+
+  <!-- 05 · SNAPSHOTS (legacy — replaced by Try Penny above) -->
+  <section id="snapshots" hidden>
     <div class="wrap">
       <div class="section-header" style="margin-bottom:0;">
         <div class="eyebrow">See Penny work</div>

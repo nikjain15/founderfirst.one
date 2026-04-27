@@ -1464,8 +1464,10 @@ button:focus-visible {
       font-size:clamp(26px,3.8vw,44px); font-weight:700; letter-spacing:-.028em;
       line-height:1.12; margin:0 auto 16px; max-width:18ch;
     }
-    .tp .section-header{ max-width: 880px; margin-bottom: 40px; }
+    .tp .section-header{ max-width: 880px; margin: 0 auto 40px; text-align: center; }
     .tp .section-header h2{ margin-top: 10px; }
+    .tp .wrap{ text-align: center; }
+    .tp__toggle{ margin-left: auto; margin-right: auto; }
     .tp__sub{
       font-size:clamp(15px,1.6vw,17px); line-height:1.55; color:var(--tp-ink-2);
       margin:20px 0 0;
@@ -1643,7 +1645,19 @@ button:focus-visible {
       });
     });
 
-    mountIframe('owner');
+    // Lazy-mount: only load the iframe when the section scrolls into view.
+    // Mounting eagerly causes the demo's autofocused input to scroll the
+    // parent page down to the Try Penny section on initial load.
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          if(entry.isIntersecting){ mountIframe('owner'); io.disconnect(); }
+        });
+      }, {rootMargin: '200px'});
+      io.observe(section);
+    } else {
+      mountIframe('owner');
+    }
 
     var cta = section.querySelector('[data-tp-scroll]');
     if(cta){

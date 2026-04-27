@@ -1,0 +1,17 @@
+{
+  "name": "penny-site-bubble-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch"
+  },
+  "dependencies": {
+    "preact": "^10.22.0",
+    "htm": "^3.1.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0"
+  }
+}

@@ -1,0 +1,5 @@
+node_modules/
+bubble/dist/
+.wrangler/
+*.log
+.DS_Store

@@ -1,0 +1,17 @@
+{
+  "name": "penny-site-bubble-worker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "sync": "node scripts/sync-assets.mjs",
+    "deploy": "cd ../bubble && npm run build && cd ../worker && node scripts/sync-assets.mjs && wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "typescript": "^5.5.0",
+    "wrangler": "^3.80.0"
+  }
+}

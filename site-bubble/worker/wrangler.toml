@@ -1,0 +1,21 @@
+name = "penny-site-bubble"
+main = "src/worker.ts"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+# KV namespace for site-content cache (15-min TTL).
+# Create once: `wrangler kv:namespace create SITE_CACHE`
+# Then paste the id below.
+[[kv_namespaces]]
+binding = "SITE_CACHE"
+id = "0ae05a489e5e435e80256b637bdc607e"
+
+# Secrets (set via `wrangler secret put NAME`):
+#   ANTHROPIC_API_KEY
+#   SUPABASE_URL
+#   SUPABASE_SERVICE_KEY
+
+[vars]
+ALLOWED_ORIGINS = "https://founderfirst.one,https://www.founderfirst.one,http://localhost:4000,http://127.0.0.1:4000"
+ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
+SITE_URL = "https://founderfirst.one"

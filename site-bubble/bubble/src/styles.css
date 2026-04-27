@@ -152,6 +152,16 @@
   color: var(--p-white);
 }
 
+.penny-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1.5px;
+  font-weight: 500;
+  word-break: break-all;
+}
+.penny-link:hover { text-decoration-thickness: 2px; }
+
 .penny-typing {
   align-self: flex-start;
   display: inline-flex;

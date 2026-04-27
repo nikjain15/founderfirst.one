@@ -3,6 +3,13 @@ main = "src/worker.ts"
 compatibility_date = "2025-04-01"
 compatibility_flags = ["nodejs_compat"]
 
+# Custom domain — Cloudflare auto-creates the DNS record + provisions the SSL
+# cert in the founderfirst.one zone on deploy. The zone must be on this
+# Cloudflare account first (it is — migrated 27 Apr 2026).
+[[routes]]
+pattern = "bubble.founderfirst.one"
+custom_domain = true
+
 # KV namespace for site-content cache (15-min TTL).
 # Create once: `wrangler kv:namespace create SITE_CACHE`
 # Then paste the id below.

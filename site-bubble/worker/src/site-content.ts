@@ -48,10 +48,10 @@ Your books stay clean, your real profit stays clear, and Penny chases your late 
 
 Two interactive demos are live on the site. Anyone can click and explore — no account, no email, no setup. Penny should always offer these when a visitor asks to "see Penny", "try Penny", "watch a demo", "show me how it works", or anything similar:
 
-- **Business owner demo** — see Penny keep your books clean. Approve one transaction and Penny handles the rest. URL: /penny/businessowner/ (full URL: https://founderfirst.one/penny/businessowner/)
-- **CPA demo** — see what your clients' books look like. Every transaction categorized, every receipt attached. URL: /penny/cpa/ (full URL: https://founderfirst.one/penny/cpa/)
+- **Business owner demo** — see Penny keep your books clean. Approve one transaction and Penny handles the rest. URL: /penny/demo/ (full URL: https://founderfirst.one/penny/demo/)
+- **CPA demo** — see what your clients' books look like. Every transaction categorized, every receipt attached. URL: /penny/demo/cpa/ (full URL: https://founderfirst.one/penny/demo/cpa/)
 
-When a visitor asks to see/try Penny, give the link in plain language: "Try the owner demo at https://founderfirst.one/penny/businessowner/ — no login, just click." Same for CPA.
+When a visitor asks to see/try Penny, give the link in plain language: "Try the owner demo at https://founderfirst.one/penny/demo/ — no login, just click." For CPA: "Try the CPA demo at https://founderfirst.one/penny/demo/cpa/ — no login, just click."
 
 The "Try Penny" link in the site's top navigation also leads to these demos.
 

@@ -2035,52 +2035,37 @@ async function handleSignup(e, source) {
   try { referredBy = localStorage.getItem(REF_LOCAL_KEY) || null; } catch(_) {}
 
   if (db && SUPABASE_URL !== 'YOUR_SUPABASE_PROJECT_URL') {
-    // Try up to 3 times to avoid slug collisions
-    let inserted = false;
-    for (let attempt = 0; attempt < 3 && !inserted; attempt++) {
-      const candidateSlug = makeSlug(email);
-      const payload = { email, source, slug: candidateSlug };
-      if (referredBy) payload.referred_by = referredBy;
+    // Signup goes through a SECURITY DEFINER RPC so the anon key has no
+    // direct read access to the waitlist table (which would otherwise
+    // expose every signup email). The RPC handles slug allocation and
+    // duplicate-email recovery server-side.
+    try {
+      const { data, error } = await db.rpc('signup_to_waitlist', {
+        p_email: email,
+        p_source: source,
+        p_referred_by: referredBy,
+        p_slug_seed: makeSlug(email).split('-')[0] || null,
+      });
 
-      try {
-        const { data, error } = await db.from('waitlist')
-          .insert(payload)
-          .select('slug')
-          .single();
-
-        if (error) {
-          // 23505 on email = already on list. 23505 on slug = collision, retry.
-          if (error.code === '23505') {
-            const msg = (error.message || '').toLowerCase();
-            if (msg.includes('email')) {
-              // Fetch existing slug for this email so they still get their link
-              alreadyOnList = true;
-              const { data: existing } = await db.from('waitlist')
-                .select('slug').eq('email', email).single();
-              finalSlug = existing ? existing.slug : null;
-              inserted = true;
-            } else {
-              // Slug collision — loop and retry
-              continue;
-            }
-          } else {
-            console.error('Supabase error:', error.message);
-            showToast('Something went wrong — try again.');
-            btn.textContent = originalLabel;
-            btn.disabled = false;
-            return;
-          }
-        } else {
-          finalSlug = data && data.slug ? data.slug : candidateSlug;
-          inserted = true;
-        }
-      } catch(err) {
-        console.error(err);
-        showToast('Network issue — try again in a moment.');
+      if (error) {
+        console.error('Supabase error:', error.message);
+        showToast('Something went wrong — try again.');
         btn.textContent = originalLabel;
         btn.disabled = false;
         return;
       }
+
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row) {
+        finalSlug = row.slug || null;
+        alreadyOnList = !!row.already_on_list;
+      }
+    } catch(err) {
+      console.error(err);
+      showToast('Network issue — try again in a moment.');
+      btn.textContent = originalLabel;
+      btn.disabled = false;
+      return;
     }
     if (!inserted) {
       showToast('Could not generate a unique link — try again.');

@@ -1,6 +1,6 @@
 # FounderFirst
 
-**The operating software for business owners.**
+**Operating software for business owners.**
 
 You focus on your business. We handle what runs behind it.
 
@@ -10,7 +10,7 @@ You focus on your business. We handle what runs behind it.
 
 FounderFirst builds the back-office tools that founders wish existed — starting with the biggest pain point: the books.
 
-We talked to 100+ solopreneurs and small business owners. The loudest frustration was almost always the same. Money moves across Stripe, PayPal, bank, and card. Clients owe you and you're losing track. The financial picture you need to make real decisions is spread across five different places — and every tool available was built for accountants, not founders.
+You started a business to do the work. Not to chase receipts, chase payments, or untangle a spreadsheet on a Sunday. Money moves across Stripe, your bank, your card — and the financial picture you need to make real decisions ends up spread across five different places. Every tool out there was built for accountants, not founders.
 
 So we built something different.
 
@@ -18,44 +18,40 @@ So we built something different.
 
 ## Penny — Our First Product
 
-**An autonomous bookkeeper for US sole proprietors.**
+**Your autonomous 24/7 bookkeeper.**
 
-Penny watches every payment and expense across your accounts. She sorts them into the categories your CPA needs, tells you what matters, and asks only when she genuinely needs you.
+No setup. No spreadsheets. Clean books, real profit, tax-ready.
 
-A few one-tap confirmations a week — and your books stay clean, your profit stays clear, and the money side of your business finally feels handled.
+Connect Stripe, your bank, your card — anywhere money moves. Penny categorizes every transaction. You confirm with one tap.
 
-**What Penny does:**
+**What Penny gives you:**
 
-- **Always know your real profit.** Not just revenue — what you actually took home after expenses, updated as the money moves.
+- **Know what you're actually making.** Real profit, updated as the money moves — not just revenue.
 - **Never chase a late payment again.** Penny sends professional reminders to late-paying clients, so you don't have to.
-- **Tax-ready, year round.** Your books stay clean and CPA-ready. No scramble when tax season comes back around.
+- **No scramble come tax season.** Books stay clean and CPA-ready, year round.
 
-**Who it's for:**
+**For business owners:** No spreadsheets. No chasing receipts. Just clean books.
 
-Solo service providers — freelancers, consultants, coaches, designers — who are doing well at their craft but drowning in the business of running a business. US-based. Solo proprietors.
+**For CPAs:** Every transaction categorized. Every receipt attached.
 
 ---
 
-## Where We Are
+## Try the Demo
 
-**Stage: Build**
+Penny is live as an interactive demo. Two views, both clickable:
 
-The product spec, design system, and core user flows are complete. We're making tech stack decisions before starting engineering.
+- **[Business owner view →](https://founderfirst.one/penny/demo/)** — the mobile experience. Onboarding, the Penny conversation thread, one-tap approval cards, capture (photo / voice / upload / "just tell me"), My Books, and the invoice designer.
+- **[CPA view →](https://founderfirst.one/penny/demo/cpa/)** — what your accountant sees: client work queue, P&L, cash flow, learned rules, and a chat surface to ask Penny questions about the books.
 
-Key decisions locked:
-- Mobile-first (phone is the primary device for our users)
-- Conversation is the UX — no forms, no dashboards. Penny talks, you tap.
-- We own the ledger from day one
-- US market only to start
-- Growth through word-of-mouth until 100 users minimum
+The demo runs on real Claude responses through a Cloudflare Worker — so what you see is the actual product voice and intelligence, not canned screens.
 
 ---
 
 ## Early Access
 
-Penny is in early access. Waitlist members get Penny free for 3+ months.
+Penny is in early access. **3 months on us** for waitlist members — and each founder you refer adds a free month, up to 12 total.
 
-We're opening in small batches. **[Join the list →](https://founderfirst.one)**
+We're opening in small batches. **[Join the waitlist →](https://founderfirst.one)**
 
 ---
 
@@ -63,7 +59,7 @@ We're opening in small batches. **[Join the list →](https://founderfirst.one)*
 
 FounderFirst is built by [Nik Jain](https://github.com/nikjain15) — three-time founder, Forbes 30 Under 30 Asia.
 
-The mission is simple: give solopreneurs and small business owners the back-office support that used to only exist inside bigger companies.
+The mission is simple: give business owners the back-office support that used to only exist inside bigger companies.
 
 ---
 

@@ -2348,7 +2348,21 @@ document.addEventListener('DOMContentLoaded', () => {
       history.replaceState({ page: 'confirmation' }, '', location.pathname + '?confirmed=1');
       showConfirmation(true);
     } else {
-      history.replaceState({ page: 'landing' }, '', location.pathname);
+      // Preserve hash (e.g. #waitlist) so deep-links scroll to the right section.
+      const keepHash = location.hash && location.hash !== '#confirmation' ? location.hash : '';
+      history.replaceState({ page: 'landing' }, '', location.pathname + keepHash);
+      if (keepHash) {
+        const target = document.querySelector(keepHash);
+        if (target) {
+          // Layout can shift after fonts / lazy images load, so re-scroll a
+          // few times to lock onto the right offset.
+          const snap = () => target.scrollIntoView({ block: 'start' });
+          requestAnimationFrame(snap);
+          window.addEventListener('load', () => requestAnimationFrame(snap), { once: true });
+          setTimeout(snap, 300);
+          setTimeout(snap, 800);
+        }
+      }
     }
   } catch(_) {}
 });

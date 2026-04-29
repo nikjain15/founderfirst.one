@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!--
+    Viewport: allow user zoom. Disabling pinch-zoom is an accessibility
+    failure (WCAG 1.4.4 Resize Text) — screen-magnifier users and people
+    with low vision need it. The demo is responsive; it does not need to
+    suppress the OS zoom gesture.
+  -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="description" content="Penny — interactive demo of an AI bookkeeper for US small business owners." />
+  <title>Penny — AI Bookkeeper</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script type="module" crossorigin src="/penny/demo/assets/main-Crl1xwLj.js"></script>
+  <link rel="modulepreload" crossorigin href="/penny/demo/assets/analytics-CwIWizHC.js">
+  <link rel="stylesheet" crossorigin href="/penny/demo/assets/analytics-CMwBtR8u.css">
+  <!-- Penny site bubble — see /site-bubble/README.md -->
+  <script defer src="https://bubble.founderfirst.one/bubble.js"></script>
+</head>
+<body>
+  <style>
+    html.ff-embedded #ff-demo-header { display: none; }
+    #ff-demo-header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+      border-bottom: 1px solid #e8e8e5;
+      font-family: Inter, Helvetica, 'Helvetica Neue', Arial, sans-serif;
+      color: #0a0a0a;
+    }
+    #ff-demo-header .ff-inner {
+      width: 100%; max-width: 1080px; margin-inline: auto;
+      padding-inline: clamp(24px, 6vw, 80px); padding-block: 16px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    #ff-demo-header .ff-brand {
+      display: inline-flex; align-items: center; gap: 9px;
+      font-weight: 700; font-size: 16px; letter-spacing: -0.01em;
+      color: #0a0a0a; text-decoration: none;
+    }
+    #ff-demo-header .ff-mark {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 6px;
+      background: #0a0a0a; color: #fff;
+      font-weight: 800; font-size: 13px; letter-spacing: -0.05em;
+    }
+    #ff-demo-header .ff-context { font-size: 13px; color: #5a5a5a; letter-spacing: 0.02em; }
+    #ff-demo-header .ff-context b { color: #0a0a0a; font-weight: 600; }
+    #ff-demo-header .ff-cta {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 14px; font-weight: 600;
+      color: #fff; background: #0a0a0a; text-decoration: none;
+      padding: 9px 16px; border-radius: 999px; transition: opacity .15s;
+    }
+    #ff-demo-header .ff-cta:hover { opacity: 0.85; }
+    @media (max-width: 640px) {
+      #ff-demo-header .ff-context { display: none; }
+      #ff-demo-header .ff-inner { padding-block: 12px; }
+    }
+  </style>
+  <script>
+    if (window.self !== window.top) {
+      document.documentElement.classList.add('ff-embedded');
+    }
+  </script>
+  <header id="ff-demo-header">
+    <div class="ff-inner">
+      <a class="ff-brand" href="https://founderfirst.one/">
+        <span class="ff-mark">FF</span>
+        FounderFirst
+      </a>
+      <span class="ff-context"><b>Try Penny</b> — Business owner view</span>
+      <a class="ff-cta" href="/#waitlist">Join the waitlist →</a>
+    </div>
+  </header>
+  <div id="root"></div>
+
+  <!--
+    Runtime config. Declared in the HTML (not imported as a module) so it
+    is available before any bundled code runs and can be overridden for
+    local testing without touching source files.
+  -->
+  <script>
+    // On localhost the Worker's CORS header rejects direct fetches, so
+    // Vite proxies /v1/messages to the deployed Worker (see vite.config.js).
+    // Everywhere else, hit the Worker directly.
+    var isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    // Derive the base URL from the current page path so static asset fetches
+    // work at any deploy sub-path (e.g. /penny/demo/ on GitHub Pages or / in dev).
+    var pathBase = location.pathname.match(/^(.*\/penny\/demo\/)/);
+    window.PENNY_CONFIG = {
+      workerUrl: isLocal ? "" : "https://penny-api.nikjain1588.workers.dev",
+      demoToken: "ff-demo-2026",
+      defaultModel: "claude-sonnet-4-6",
+      booksModel: "claude-sonnet-4-6",
+      baseUrl: pathBase ? pathBase[1] : "/",
+    };
+  </script>
+
+  <!-- Vite handles React + JSX compile at build time; no CDN runtime needed. -->
+</body>
+</html>

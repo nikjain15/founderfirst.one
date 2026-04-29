@@ -1,0 +1,68 @@
+name: Deploy to GitHub Pages
+
+# Builds the workspace (marketing + blog + vendored Penny demo) and deploys
+# dist/ to GitHub Pages.
+#
+# Activation: GitHub → Settings → Pages → "Source: GitHub Actions".
+# Until that switch is flipped, this workflow runs builds but the legacy
+# Jekyll/branch deploy keeps serving founderfirst.one. Stage B in PHASE-4.md.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Pages deploys are mutually exclusive — let the latest in-flight run win.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (marketing + blog + assemble)
+        env:
+          # Build-time env. Configure in repo Settings → Secrets and variables.
+          # Values fall back to empty strings; the apps degrade to preview mode.
+          VITE_SUPABASE_URL:      ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_POSTHOG_KEY:       ${{ secrets.VITE_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST:      ${{ vars.VITE_POSTHOG_HOST }}
+          VITE_GA_ID:             ${{ vars.VITE_GA_ID }}
+        run: pnpm build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

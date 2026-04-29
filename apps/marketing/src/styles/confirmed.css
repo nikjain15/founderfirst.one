@@ -1,0 +1,191 @@
+/* Confirmation page — sections only.
+   Tokens, typography, ff-mark, p-mark, button, etc. come from @ff/design-system.
+   Reset, layout helpers (.wrap, section bg), nav, footer base come from ./site.css. */
+
+/* ══════════════════════════════════════════
+   CONF HERO — paper, centered
+══════════════════════════════════════════ */
+.conf-hero {
+  background: var(--paper);
+  padding-block: clamp(56px, 8vw, 88px);
+}
+.conf-hero-inner {
+  max-width: 680px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.conf-badge { position: relative; width: 104px; height: 104px; }
+.conf-badge-circle {
+  position: absolute; inset: 0; border-radius: 50%; background: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 46px; color: var(--white); line-height: 1;
+}
+.conf-dot { position: absolute; border-radius: 50%; background: var(--ink); }
+.conf-hero h1 {
+  margin-top: 28px;
+  font-size: clamp(38px, 5.2vw, 60px);
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+}
+.conf-hero .conf-sub {
+  margin-top: 14px;
+  font-size: clamp(17px, 1.8vw, 21px);
+  color: var(--ink-2);
+  max-width: 560px;
+  line-height: 1.55;
+}
+
+.timeline-card {
+  margin-top: 36px;
+  max-width: 520px;
+  width: 100%;
+  border: 1.5px solid var(--ink); border-radius: var(--r-card-emph);
+  padding: clamp(20px, 2.8vw, 28px); background: var(--white);
+  text-align: left;
+}
+.tl-eyebrow { margin-bottom: 18px; }
+.tl-steps { display: flex; flex-direction: column; gap: 16px; }
+.tl-step  { display: flex; gap: 14px; align-items: flex-start; }
+.tl-num {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: var(--fw-bold);
+}
+.tl-num.done { background: var(--ink); color: var(--white); }
+.tl-num.next { background: var(--white); border: 1.5px solid var(--ink); color: var(--ink); }
+.tl-step h4 { font-size: 16px; font-weight: var(--fw-semibold); }
+.tl-step p  { font-size: 14px; color: var(--ink-4); margin-top: 2px; line-height: 1.45; }
+
+.conf-hint {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; margin-top: 28px;
+  font-size: 14px; color: var(--ink-3);
+}
+
+/* ══════════════════════════════════════════
+   TRY PENNY CARDS — bg-white
+══════════════════════════════════════════ */
+.try-section { background: var(--white); padding-block: clamp(48px, 7vw, 72px); }
+.try-inner   { max-width: 720px; margin: 0 auto; }
+.try-heading {
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: var(--fw-extra);
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+.try-sub { font-size: 15px; color: var(--ink-3); margin-bottom: 32px; line-height: 1.5; }
+.try-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.try-card {
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 28px 24px;
+  display: flex; flex-direction: column; gap: 14px;
+  cursor: pointer;
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+  text-decoration: none;
+  color: inherit;
+}
+.try-card:hover {
+  border-color: var(--ink);
+  box-shadow: 0 4px 20px rgba(10,10,10,0.1);
+  transform: translateY(-2px);
+}
+.try-card-icon {
+  width: 44px; height: 44px; border-radius: 10px; background: var(--paper);
+  display: flex; align-items: center; justify-content: center;
+}
+.try-card-icon svg { width: 22px; height: 22px; stroke: var(--ink); }
+.try-card-label { font-size: 11px; font-weight: var(--fw-bold); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-4); }
+.try-card-title { font-size: 17px; font-weight: var(--fw-bold); color: var(--ink); letter-spacing: -0.01em; line-height: 1.25; margin-top: 2px; }
+.try-card-desc  { font-size: 13px; color: var(--ink-3); line-height: 1.6; flex: 1; }
+.try-card-cta   { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: var(--fw-semibold); color: var(--ink); margin-top: 4px; }
+.try-card-cta svg { width: 14px; height: 14px; stroke: var(--ink); transition: transform 0.15s; }
+.try-card:hover .try-card-cta svg { transform: translateX(3px); }
+.try-hint { margin-top: 24px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-4); }
+
+@media (max-width: 540px) { .try-cards { grid-template-columns: 1fr; } }
+
+/* ══════════════════════════════════════════
+   REFERRAL — bg-dark, centered
+══════════════════════════════════════════ */
+.referral-section { background: var(--dark); }
+.ref-inner {
+  max-width: 620px;
+  margin: 0 auto;
+  text-align: center;
+}
+.ref-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 36px;
+}
+.ref-top .eyebrow { color: rgba(255,255,255,0.7); margin-top: 4px; }
+.ref-top h2 {
+  color: var(--white);
+  font-size: clamp(24px, 3.8vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.ref-top p {
+  color: rgba(255,255,255,0.72);
+  margin-top: 6px;
+  font-size: clamp(15px, 1.6vw, 17px);
+  line-height: 1.6;
+  max-width: 560px;
+}
+
+.ref-link-box {
+  background: var(--ink);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 14px;
+  padding: 20px 22px;
+  text-align: left;
+}
+.ref-link-label { font-size: 11px; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.1em; }
+.ref-link-row   { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
+.ref-url        { flex: 1; font-size: 15px; color: var(--white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ref-share { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+
+.ref-progress {
+  background: var(--ink);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 14px;
+  padding: 22px;
+  margin-top: 22px;
+  text-align: left;
+}
+.ref-prog-top  { display: flex; justify-content: space-between; align-items: baseline; }
+.ref-big       { font-size: 44px; font-weight: var(--fw-bold); letter-spacing: -0.02em; line-height: 1; color: var(--white); }
+.ref-of        { color: rgba(255,255,255,0.5); font-size: 24px; font-weight: var(--fw-medium); }
+.ref-to-go-lbl { font-size: 11px; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px; }
+.ref-to-go     { font-size: 22px; font-weight: var(--fw-semibold); color: var(--white); }
+.progress-bar  { height: 7px; background: rgba(255,255,255,0.12); border-radius: 4px; overflow: hidden; margin-top: 16px; }
+.progress-fill { width: 0%; height: 100%; background: var(--white); transition: width 0.35s ease; }
+.ref-fine      { display: block; color: rgba(255,255,255,0.6); font-size: 12px; text-align: center; margin-top: 14px; }
+
+@media (max-width: 560px) {
+  .ref-share { grid-template-columns: 1fr; }
+}
+
+/* ══════════════════════════════════════════
+   FOOTER (dark variant for confirmation page)
+══════════════════════════════════════════ */
+.site-footer-dark {
+  background: var(--dark);
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.site-footer-dark .footer-logo  { color: rgba(255,255,255,0.85); }
+.site-footer-dark .footer-links { color: rgba(255,255,255,0.65); }
+.site-footer-dark .footer-links a       { color: rgba(255,255,255,0.65); }
+.site-footer-dark .footer-links a:hover { color: var(--white); }
+.site-footer-dark .footer-copy  { color: rgba(255,255,255,0.55); }
+
+/* Toast styles moved to site.css (shared between landing + confirmed). */

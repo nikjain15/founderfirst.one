@@ -11,3 +11,10 @@ test-results/
 
 # Claude Code settings
 .claude/
+
+# Internal — not for the public repo
+BookKeeping/
+FounderFirst OS/
+_dev/
+CLAUDE.md
+ANALYTICS.md

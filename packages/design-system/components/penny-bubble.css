@@ -1,0 +1,56 @@
+/* Penny chat bubble — used in hero, conversational flows, and the demo.
+   Compose with .p-mark for the avatar. */
+
+.penny-bubble {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 18px 18px 18px 4px;
+  padding: 16px 20px;
+}
+
+.penny-bubble .bubble-label {
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-bottom: 6px;
+}
+
+.penny-bubble .bubble-msg {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+/* Optional check-list inside a bubble (used on the hero) */
+.check-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+}
+
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.check-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: var(--fw-bold);
+  flex-shrink: 0;
+}

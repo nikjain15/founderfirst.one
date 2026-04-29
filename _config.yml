@@ -21,6 +21,16 @@ exclude:
   - .claude
   - node_modules
   - "**/*.sh"
+  # Phase 0+ workspace — not built by Jekyll. The Vite/VitePress build
+  # produces a separate dist/ that gets deployed in Phase 4.
+  - apps
+  - packages
+  - scripts
+  - vendor
+  - pnpm-workspace.yaml
+  - package.json
+  - pnpm-lock.yaml
+  - tsconfig.json
 
 collections:
   posts:

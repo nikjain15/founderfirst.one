@@ -1,0 +1,24 @@
+/* Penny "P" mark — Georgia italic serif badge.
+   Sizes: sm (30px), md (40px), lg (56px), xl (96px).
+   Modifier: .p-mark-inv for use on dark backgrounds. */
+
+.p-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--white);
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-weight: var(--fw-bold);
+  flex-shrink: 0;
+  padding-bottom: 1px; /* optical compensation for serif descender */
+}
+
+.p-mark-sm { width: 30px; height: 30px; font-size: 13px; }
+.p-mark-md { width: 40px; height: 40px; font-size: 17px; }
+.p-mark-lg { width: 56px; height: 56px; font-size: 24px; }
+.p-mark-xl { width: 96px; height: 96px; font-size: 40px; }
+
+.p-mark-inv { background: var(--white); color: var(--ink); }

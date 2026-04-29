@@ -1,0 +1,12 @@
+/* Map VitePress theme variables onto @ff/design-system tokens.
+   Phase 0: minimal hookup. Full type/spacing alignment lands with Phase 6 (blog content). */
+
+:root {
+  --vp-c-text-1: var(--ink);
+  --vp-c-text-2: var(--ink-2);
+  --vp-c-text-3: var(--ink-3);
+  --vp-c-bg: var(--white);
+  --vp-c-bg-alt: var(--paper);
+  --vp-c-divider: var(--line);
+  --vp-font-family-base: var(--sans);
+}

@@ -11,7 +11,7 @@
  *   │  └─ …
  *   ├─ penny/demo/
  *   │  ├─ index.html                        ← redirect → /penny/demo/businessowner/
- *   │  ├─ assets/  config/  prompts/        ← shared (from vendor/penny-demo/_shared)
+ *   │  ├─ assets/  config/  prompts/        ← shared (from apps/demo build)
  *   │  ├─ businessowner/index.html
  *   │  └─ cpa/index.html
  *   └─ CNAME                                ← founderfirst.one

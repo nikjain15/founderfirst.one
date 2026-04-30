@@ -111,6 +111,29 @@ function main(): void {
     "Penny — redirecting…",
   );
 
+  step("Writing legacy /penny/* compatibility redirects");
+  // The legacy Jekyll site exposed /penny/, /penny/businessowner/, and
+  // /penny/cpa/ as standalone pages. Anyone with an old link or bookmark
+  // would 404 against the new pipeline. Send them to the canonical demo URLs.
+  const pennyOut = resolve(DIST, "penny");
+  writeRedirect(
+    resolve(pennyOut, "index.html"),
+    "/penny/demo/businessowner/",
+    "Penny — redirecting…",
+  );
+  mkdirSync(resolve(pennyOut, "businessowner"), { recursive: true });
+  writeRedirect(
+    resolve(pennyOut, "businessowner/index.html"),
+    "/penny/demo/businessowner/",
+    "Penny — redirecting…",
+  );
+  mkdirSync(resolve(pennyOut, "cpa"), { recursive: true });
+  writeRedirect(
+    resolve(pennyOut, "cpa/index.html"),
+    "/penny/demo/cpa/",
+    "Penny — redirecting…",
+  );
+
   step("Copying CNAME");
   if (existsSync(resolve(ROOT, "CNAME"))) {
     cpSync(resolve(ROOT, "CNAME"), resolve(DIST, "CNAME"));

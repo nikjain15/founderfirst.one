@@ -22,6 +22,13 @@ permissions:
   pages: write
   id-token: write
 
+# Opt into Node.js 24 for all JS-based actions ahead of the June 2026
+# forced default. Validates compatibility now; can flip back via
+# ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION if anything regresses.
+# https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -32,9 +39,11 @@ jobs:
       # Don't also pass `version:` here — action-setup@v4 errors on both.
       - uses: pnpm/action-setup@v4
 
+      # Node version for the build itself (separate from the action runtimes
+      # above). Bump in lockstep with engines requirements as needed.
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install

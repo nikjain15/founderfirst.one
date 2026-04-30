@@ -1,0 +1,15 @@
+.DS_Store
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+.vscode/
+.idea/
+
+# Vite dev server temp files
+vite.config.js.timestamp-*.mjs
+
+# Playwright test artifacts
+test-results/

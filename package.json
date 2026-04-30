@@ -1,0 +1,19 @@
+{
+  "name": "founderfirst-web",
+  "private": true,
+  "version": "0.0.0",
+  "description": "FounderFirst monorepo — marketing site, blog, shared design system, and vendored Penny demo.",
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev:marketing": "pnpm --filter @ff/marketing dev",
+    "dev:blog": "pnpm --filter @ff/blog dev",
+    "build:marketing": "pnpm --filter @ff/marketing build",
+    "build:blog": "pnpm --filter @ff/blog build",
+    "build": "tsx scripts/build-all.ts",
+    "vendor:demo": "tsx scripts/vendor-demo.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}

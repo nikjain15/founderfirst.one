@@ -13,7 +13,9 @@ export default defineConfig({
   },
   head: [
     ["link", { rel: "icon", href: "/favicon.ico" }],
-    ["meta", { name: "robots", content: "index,follow" }],
+    // noindex while we have placeholder content. When the first real post
+    // ships, flip to "index,follow" and the sitemap below picks up.
+    ["meta", { name: "robots", content: "noindex,follow" }],
     ["meta", { property: "og:site_name", content: "FounderFirst" }],
     ["meta", { property: "og:type", content: "article" }],
   ],

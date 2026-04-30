@@ -1,0 +1,148 @@
+/**
+ * tokens.css — Penny design tokens.
+ *
+ * Source of truth: BookKeeping/design/design-system.md v2.2.
+ * These tokens are shared with the FounderFirst.one marketing site so the
+ * product and the brand look like the same company.
+ *
+ * Do not add new tokens here without updating the design system doc first.
+ */
+
+:root {
+  /* -- Color (ink on paper foundation) ------------------------------------- */
+  --ink:      #0a0a0a;   /* primary text, primary buttons, filled marks */
+  --ink-2:    #2a2a2a;   /* secondary text, body copy */
+  --ink-3:    #5a5a5a;   /* supporting text, captions */
+  --ink-4:    #8a8a8a;   /* de-emphasized text, placeholders */
+  --line:     #e8e8e5;   /* card borders, dividers */
+  --line-2:   #f0f0ed;   /* subtle dividers */
+  --paper:    #f6f6f4;   /* warm off-white section backgrounds */
+  --white:    #ffffff;   /* default page background */
+  --dark:     #0a0a0a;   /* semantic alias for dark-section bg */
+  --error:    #b2291e;   /* inline error text only — never a background */
+
+  /* -- Semantic accent colors (use only in the zones documented below) ----- */
+  --sage:        #2B7A78;   /* active tab icon + label only. nowhere else. */
+  --income:      #1A9E6A;   /* income amount text + My Books income figures */
+  --income-bg:   #f0faf5;   /* income category icon tint background only */
+  --amber:       #C97D1A;   /* My Books "Needs a look" badge + stat subcopy */
+  --expense-bg:  #fdf8f0;   /* expense card warm cream background */
+
+  /* -- Category icon tint colors (icon bg + stroke only — never fills) ----- */
+  --cat-tech:       #4A6FA5;   /* software / SaaS / subscriptions */
+  --cat-food:       #C4702A;   /* food / meals / coffee */
+  --cat-travel:     #C4702A;   /* travel / transport (shares orange family) */
+  --cat-personal:   #5a5a5a;   /* personal / other — neutral ink per spec */
+  --cat-health:     #5a5a5a;   /* health / wellness — neutral ink per spec */
+  --cat-office:     #5a5a5a;   /* office / supplies — neutral ink per spec */
+
+  /* Tint backgrounds for category icon containers */
+  --cat-tech-bg:    #eef2fa;
+  --cat-food-bg:    #fdf3ea;
+  --cat-travel-bg:  #fdf3ea;
+  --cat-personal-bg:#f6f6f4;   /* neutral paper tint */
+  --cat-health-bg:  #f6f6f4;   /* neutral paper tint */
+  --cat-office-bg:  #f6f6f4;   /* neutral paper tint */
+
+  /* -- Typography --------------------------------------------------------- */
+  --font-sans: 'Inter', -apple-system, 'SF Pro Text', 'Segoe UI', Helvetica, Arial, sans-serif;
+
+  /* Fluid type scale. Use with clamp() on web; mobile sizes are the floor. */
+  --fs-h1:         clamp(36px, 5.5vw, 64px);
+  --fs-h2:         clamp(26px, 3.8vw, 44px);
+  --fs-h3:         clamp(17px, 2vw, 21px);
+  --fs-body:       clamp(15px, 1.6vw, 17px);
+  /*
+   * Card-value type scales from mobile (~34px at 375px viewport) up to
+   * ~46px on tablet and above. Previous 4vw middle term locked to the
+   * 30px floor on phones and never reached the 46px ceiling until
+   * viewport > 1150px — effectively constant. 8vw is the right slope.
+   */
+  --fs-card-value: clamp(30px, 8vw, 46px);
+  --fs-screen-title: 17px;
+  --fs-eyebrow:    11px;
+  --fs-tiny:       10px;
+  --fs-data-row:   clamp(13px, 1.4vw, 14px);  /* CPA view ledger / P&L / Cash Flow data rows */
+
+  --ls-tight:   -0.028em;
+  --ls-tighter: -0.022em;
+  --ls-normal:  0;
+  --ls-eyebrow: 0.12em;
+  --ls-chip:    0.06em;   /* IRS-line chip letter-spacing (CPA view + card.jsx) */
+
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+  --fw-extra:    800;
+
+  /* -- Radii -------------------------------------------------------------- */
+  --r-card:      12px;
+  --r-card-emph: 16px;
+  --r-sheet:     20px;
+  --r-pill:      999px;
+  --r-bubble-penny: 18px 18px 18px 4px;
+  --r-bubble-user:  14px 14px 4px 14px;
+
+  /* -- Spacing (mobile-first) -------------------------------------------- */
+  --pad-screen: 20px;
+  --pad-card:   16px 20px;
+  --gap-thread: 12px;
+  --gap-card:   12px;
+  --gap-section:24px;
+
+  /* -- Sizes ------------------------------------------------------------- */
+  --phone-width: 375px;
+  --phone-min-height: 720px;
+  --tab-icon: 22px;
+  --tap-min:  44px;
+
+  /* -- Shadows ----------------------------------------------------------- */
+  --shadow-phone:      0 8px 32px rgba(10, 10, 10, 0.12);
+  --shadow-card:       0 1px 2px rgba(10, 10, 10, 0.04);
+  --shadow-card-hero:  0 4px 16px rgba(10, 10, 10, 0.09), 0 1px 3px rgba(10, 10, 10, 0.05);
+
+  /* -- Motion ------------------------------------------------------------ */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast:  120ms;
+  --dur-base:  200ms;
+  --dur-slow:  320ms;
+}
+
+/* --- Base -------------------------------------------------------------- */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button, input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button { cursor: pointer; }
+
+/* Prevent iOS zoom on input focus — minimum 16px font size on inputs. */
+input, textarea, select { font-size: 16px; }
+
+/* Tap targets never smaller than 44×44pt. */
+button, [role="button"], a {
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+}
+
+/* Accessibility focus ring — pill-corner matched. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: var(--r-pill);
+}

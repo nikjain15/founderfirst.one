@@ -33,7 +33,7 @@ const ROOT = resolve(__dirname, "..");
 const DIST = resolve(ROOT, "dist");
 const MARKETING_DIST = resolve(ROOT, "apps/marketing/dist");
 const BLOG_DIST = resolve(ROOT, "apps/blog/.vitepress/dist");
-const VENDOR = resolve(ROOT, "vendor/penny-demo");
+const DEMO_DIST = resolve(ROOT, "apps/demo/dist");
 
 function step(label: string): void {
   console.info(`\n▸ ${label}`);
@@ -78,6 +78,9 @@ function main(): void {
   step("Building blog");
   run("pnpm --filter @ff/blog build");
 
+  step("Building Penny demo");
+  run("pnpm --filter @ff/demo build");
+
   step("Wiping dist/");
   rmSync(DIST, { recursive: true, force: true });
   mkdirSync(DIST, { recursive: true });
@@ -91,18 +94,9 @@ function main(): void {
   step("Copying penny demo → dist/penny/demo/");
   const demoOut = resolve(DIST, "penny/demo");
   mkdirSync(demoOut, { recursive: true });
-  // Shared assets first, then persona index.htmls.
-  copyDir(resolve(VENDOR, "_shared"), demoOut);
-  mkdirSync(resolve(demoOut, "businessowner"), { recursive: true });
-  cpSync(
-    resolve(VENDOR, "businessowner/index.html"),
-    resolve(demoOut, "businessowner/index.html"),
-  );
-  mkdirSync(resolve(demoOut, "cpa"), { recursive: true });
-  cpSync(
-    resolve(VENDOR, "cpa/index.html"),
-    resolve(demoOut, "cpa/index.html"),
-  );
+  // apps/demo builds with base "/penny/demo/" and emits both personas
+  // (businessowner/, cpa/) plus shared assets/ + the public/ tree (config/, prompts/).
+  copyDir(DEMO_DIST, demoOut);
 
   step("Writing /penny/demo/ → /penny/demo/businessowner/ redirect");
   writeRedirect(

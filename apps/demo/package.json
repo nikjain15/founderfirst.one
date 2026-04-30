@@ -1,0 +1,27 @@
+{
+  "name": "@ff/demo",
+  "version": "5.0.0",
+  "private": true,
+  "description": "Penny — interactive demo of an AI bookkeeper for US small business owners. Served at /penny/demo/.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "bash scripts/check-tokens.sh --all && vite build",
+    "preview": "vite preview --port 4173",
+    "test": "vitest run",
+    "check:tokens": "bash scripts/check-tokens.sh --all"
+  },
+  "dependencies": {
+    "posthog-js": "^1.371.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.17"
+  }
+}

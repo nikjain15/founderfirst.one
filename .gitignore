@@ -18,3 +18,14 @@ FounderFirst OS/
 _dev/
 CLAUDE.md
 ANALYTICS.md
+
+# Workspace — Phase 0+
+node_modules/
+.env.local
+.env.*.local
+apps/*/dist/
+apps/*/.vitepress/dist/
+apps/*/.vitepress/cache/
+packages/*/dist/
+# Final assembled deploy artifact — produced by `pnpm build`.
+/dist/

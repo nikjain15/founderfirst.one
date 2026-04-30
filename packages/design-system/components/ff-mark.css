@@ -1,0 +1,16 @@
+/* FounderFirst "FF" logo mark — square, weight-extrabold, ink background. */
+
+.ff-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--white);
+  font-weight: var(--fw-extra);
+  letter-spacing: -0.05em;
+  flex-shrink: 0;
+}
+
+.ff-mark-sm { width: 22px; height: 22px; font-size: 10px; }
+.ff-mark-md { width: 28px; height: 28px; font-size: 13px; }

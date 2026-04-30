@@ -1,0 +1,21 @@
+{
+  "name": "@ff/design-system",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared design tokens and CSS components for FounderFirst marketing, blog, and demo.",
+  "type": "module",
+  "files": [
+    "tokens.css",
+    "components",
+    "README.md"
+  ],
+  "exports": {
+    "./tokens.css": "./tokens.css",
+    "./components/typography.css": "./components/typography.css",
+    "./components/ff-mark.css": "./components/ff-mark.css",
+    "./components/p-mark.css": "./components/p-mark.css",
+    "./components/penny-bubble.css": "./components/penny-bubble.css",
+    "./components/button.css": "./components/button.css",
+    "./components/waitlist-form.css": "./components/waitlist-form.css"
+  }
+}

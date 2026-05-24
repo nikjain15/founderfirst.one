@@ -34,6 +34,7 @@ const DIST = resolve(ROOT, "dist");
 const MARKETING_DIST = resolve(ROOT, "apps/marketing/dist");
 const BLOG_DIST = resolve(ROOT, "apps/blog/.vitepress/dist");
 const DEMO_DIST = resolve(ROOT, "apps/demo/dist");
+const ADMIN_DIST = resolve(ROOT, "apps/admin/dist");
 
 function step(label: string): void {
   console.info(`\n▸ ${label}`);
@@ -81,6 +82,9 @@ function main(): void {
   step("Building Penny demo");
   run("pnpm --filter @ff/demo build");
 
+  step("Building admin app");
+  run("pnpm --filter @ff/admin build");
+
   step("Wiping dist/");
   rmSync(DIST, { recursive: true, force: true });
   mkdirSync(DIST, { recursive: true });
@@ -90,6 +94,19 @@ function main(): void {
 
   step("Copying blog → dist/blog/");
   copyDir(BLOG_DIST, resolve(DIST, "blog"));
+
+  step("Copying admin → dist/admin/");
+  const adminOut = resolve(DIST, "admin");
+  copyDir(ADMIN_DIST, adminOut);
+  // SPA fallback: GH Pages only honors a root /404.html, not per-directory,
+  // so duplicate admin's index.html to the static react-router routes. This
+  // ensures magic-link landings on /admin/support and refreshes on /admin/login
+  // boot the SPA. Dynamic routes (/admin/support/:ticketId) are reachable via
+  // in-app navigation; deep-reloading one falls back to /admin/ — acceptable.
+  mkdirSync(resolve(adminOut, "login"), { recursive: true });
+  cpSync(resolve(adminOut, "index.html"), resolve(adminOut, "login/index.html"));
+  mkdirSync(resolve(adminOut, "support"), { recursive: true });
+  cpSync(resolve(adminOut, "index.html"), resolve(adminOut, "support/index.html"));
 
   step("Copying penny demo → dist/penny/demo/");
   const demoOut = resolve(DIST, "penny/demo");

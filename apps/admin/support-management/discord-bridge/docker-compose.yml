@@ -1,0 +1,15 @@
+services:
+  discord-bridge:
+    build: .
+    container_name: ff-discord-bridge
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      # Persist conversation_map.json across container restarts so multi-turn
+      # memory survives. Mounted under /app/data — bridge.py reads BRIDGE_STATE_DIR.
+      - bridge-state:/app/data
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+volumes:
+  bridge-state:

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listTickets, type TicketRow } from "../lib/supabase";
 import { channelIcon, IconAlert } from "../lib/icons";
+import { bySlaUrgency, slaForTicket, slaLabel } from "../lib/sla";
 
 type StatusFilter = TicketRow["status"] | "all";
 
@@ -67,29 +68,41 @@ export function Inbox() {
 
       {!loading && !error && tickets.length > 0 && (
         <ul className="ticket-list">
-          {tickets.map((t) => (
-            <li key={t.id}>
-              <Link to={`/support/${t.id}`} className="ticket-row">
-                <span className={`priority-pill ${t.priority}`}>{t.priority.toUpperCase()}</span>
-                <div>
-                  <p className="ticket-subject">{t.subject || "(no subject)"}</p>
-                  <p className="ticket-meta">
-                    <span className="channel-tag">
-                      {channelIcon(t.channel)}
-                      {t.channel}
-                    </span>
-                    <span className="sep">·</span>
-                    <span>{t.contact_email || t.contact_discord || "no contact"}</span>
-                    <span className="sep">·</span>
-                    <span>{t.message_count} message{t.message_count === 1 ? "" : "s"}</span>
-                    <span className="sep">·</span>
-                    <span>{timeAgo(t.created_at)}</span>
-                  </p>
-                </div>
-                <span className="ticket-status">{t.status === "in_progress" ? "in progress" : t.status}</span>
-              </Link>
-            </li>
-          ))}
+          {/* Sort by SLA urgency only when viewing actionable buckets; resolved/all
+              keep the server's order so history reads chronologically. */}
+          {(filter === "open" || filter === "in_progress" ? bySlaUrgency(tickets) : tickets).map((t) => {
+            const sla = slaForTicket(t);
+            return (
+              <li key={t.id}>
+                <Link to={`/support/${t.id}`} className="ticket-row">
+                  <span className={`priority-pill ${t.priority}`}>{t.priority.toUpperCase()}</span>
+                  <div>
+                    <p className="ticket-subject">{t.subject || "(no subject)"}</p>
+                    <p className="ticket-meta">
+                      <span className="channel-tag">
+                        {channelIcon(t.channel)}
+                        {t.channel}
+                      </span>
+                      <span className="sep">·</span>
+                      <span>{t.contact_email || t.contact_discord || "no contact"}</span>
+                      <span className="sep">·</span>
+                      <span>{t.message_count} message{t.message_count === 1 ? "" : "s"}</span>
+                      <span className="sep">·</span>
+                      <span>{timeAgo(t.created_at)}</span>
+                    </p>
+                  </div>
+                  <span className="ticket-status">
+                    {sla !== "na" && (
+                      <span className={`sla-pill ${sla}`} title={`SLA: ${slaLabel(sla)}`}>
+                        {slaLabel(sla)}
+                      </span>
+                    )}
+                    {t.status === "in_progress" ? "in progress" : t.status}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

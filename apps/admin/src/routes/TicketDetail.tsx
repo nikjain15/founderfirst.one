@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getTicket, replyToTicket, type TicketDetail as TD } from "../lib/supabase";
 import { IconArrowLeft, IconSend, IconAlert, channelIcon } from "../lib/icons";
+import { slaForTicket, slaLabel } from "../lib/sla";
 
 export function TicketDetail() {
   const { ticketId = "" } = useParams();
@@ -78,6 +79,10 @@ export function TicketDetail() {
           <h1>{ticket.subject || "(no subject)"}</h1>
           <div className="ticket-tags">
             <span className={`priority-pill ${ticket.priority}`}>{ticket.priority.toUpperCase()}</span>
+            {(() => {
+              const sla = slaForTicket(ticket);
+              return sla !== "na" ? <span className={`sla-pill ${sla}`}>{slaLabel(sla)}</span> : null;
+            })()}
             <span className="tag">{channelIcon(ticket.channel, 12)}{ticket.channel}</span>
             <span className="tag">{ticket.status === "in_progress" ? "in progress" : ticket.status}</span>
             {ticket.contact_email && <span className="tag">{ticket.contact_email}</span>}

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { getClient } from "../lib/supabase";
 import { ADMIN_EMAIL } from "../lib/env";
+import { IconCheck, IconAlert } from "../lib/icons";
 
 export function Login() {
   const [email, setEmail] = useState("");
@@ -26,38 +27,44 @@ export function Login() {
       setStatus({ kind: "err", msg: error.message });
       return;
     }
-    setStatus({ kind: "ok", msg: "Check your email — link's on its way." });
+    setStatus({ kind: "ok", msg: "Link's on its way. Check your inbox." });
   }
 
   return (
-    <div className="login-card">
-      <h1 className="page-title">Sign in</h1>
-      <p className="page-sub">Magic link, no password.</p>
+    <div className="login-wrap">
+      <div className="login-card">
+        <span className="ff-mark ff-mark-md">FF</span>
+        <div className="eyebrow">Admin · support</div>
+        <h1>Sign in.</h1>
+        <p className="sub">One email, one link. No password to remember.</p>
 
-      <form onSubmit={onSubmit}>
-        <div className="field">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@founderfirst.one"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-
-        <button className="btn" type="submit" disabled={status.kind === "sending"}>
-          {status.kind === "sending" ? "Sending…" : "Send link"}
-        </button>
-
-        {status.msg && (
-          <div className={`login-status ${status.kind === "err" ? "err" : status.kind === "ok" ? "ok" : ""}`}>
-            {status.msg}
+        <form onSubmit={onSubmit}>
+          <div className="field">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@founderfirst.one"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
-        )}
-      </form>
+
+          <button className="btn" type="submit" disabled={status.kind === "sending"}>
+            {status.kind === "sending" ? "Sending…" : "Send link →"}
+          </button>
+
+          {status.msg && (
+            <div className={`login-status ${status.kind === "err" ? "err" : status.kind === "ok" ? "ok" : ""}`}>
+              {status.kind === "ok" && <IconCheck size={14} />}
+              {status.kind === "err" && <IconAlert size={14} />}
+              {status.msg}
+            </div>
+          )}
+        </form>
+      </div>
     </div>
   );
 }

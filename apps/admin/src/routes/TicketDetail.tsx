@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getTicket, replyToTicket, getFeedbackForTicket, type TicketDetail as TD, type TicketFeedback } from "../lib/supabase";
+import { getTicket, replyToTicket, getFeedbackForTicket, setTicketTopic, type TicketDetail as TD, type TicketFeedback } from "../lib/supabase";
 import { IconArrowLeft, IconSend, IconAlert, channelIcon } from "../lib/icons";
 import { slaForTicket, slaLabel } from "../lib/sla";
+import { TOPICS } from "../lib/topics";
 
 export function TicketDetail() {
   const { ticketId = "" } = useParams();
@@ -90,6 +91,22 @@ export function TicketDetail() {
             })()}
             <span className="tag">{channelIcon(ticket.channel, 12)}{ticket.channel}</span>
             <span className="tag">{ticket.status === "in_progress" ? "in progress" : ticket.status}</span>
+            <label className="topic-edit tag" title="Edit topic">
+              <span>topic:</span>
+              <select
+                value={ticket.topic ?? ""}
+                onChange={async (e) => {
+                  const next = e.target.value || null;
+                  // Optimistic update so the dropdown reflects the change immediately.
+                  setData((d) => d ? { ...d, ticket: { ...d.ticket, topic: next } } : d);
+                  try { await setTicketTopic(ticket.id, next); }
+                  catch (err) { setError((err as Error).message); await refresh(); }
+                }}
+              >
+                <option value="">untagged</option>
+                {TOPICS.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </label>
             {ticket.contact_email && <span className="tag">{ticket.contact_email}</span>}
             {ticket.contact_discord && <span className="tag">@{ticket.contact_discord}</span>}
           </div>

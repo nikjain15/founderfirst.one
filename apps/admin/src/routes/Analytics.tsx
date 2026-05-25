@@ -73,6 +73,10 @@ export function Analytics() {
             </div>
             <div className="mix-grid">
               <div className="card">
+                <div className="card-eyebrow">By topic</div>
+                <HBarBreakdown items={topicItems(data.topic_30d)} />
+              </div>
+              <div className="card">
                 <div className="card-eyebrow">By channel</div>
                 <HBarBreakdown items={channelItems(data.channel_30d)} />
               </div>
@@ -195,4 +199,12 @@ function priorityItems(p: AnalyticsSnapshot["priority_30d"]) {
   return (["p1", "p2", "p3"] as const)
     .map((k) => ({ key: k, label: k.toUpperCase(), value: p[k] ?? 0 }))
     .filter((x) => x.value > 0 || true);
+}
+
+function topicItems(t: AnalyticsSnapshot["topic_30d"]) {
+  // Sort descending by count, cap at 8 rows so the card stays compact.
+  return Object.entries(t ?? {})
+    .map(([k, v]) => ({ key: k, label: k, value: v as number }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
 }

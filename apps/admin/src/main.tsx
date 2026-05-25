@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import "@ff/design-system/tokens.css";
 import "@ff/design-system/components/typography.css";
 import "@ff/design-system/components/ff-mark.css";
+import "@ff/design-system/components/p-mark.css";
 import "@ff/design-system/components/button.css";
 import "./styles.css";
 

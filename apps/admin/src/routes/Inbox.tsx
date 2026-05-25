@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listTickets, type TicketRow } from "../lib/supabase";
+import { channelIcon, IconAlert } from "../lib/icons";
 
 type StatusFilter = TicketRow["status"] | "all";
 
@@ -31,8 +32,9 @@ export function Inbox() {
 
   return (
     <div>
-      <h1 className="page-title">Support inbox</h1>
-      <p className="page-sub">Tickets the bot filed because it couldn't answer alone.</p>
+      <div className="eyebrow" style={{ marginBottom: 10 }}>Support · inbox</div>
+      <h1 className="page-title">What needs you.</h1>
+      <p className="page-sub">Tickets the bot couldn't close on its own. Top of the list first.</p>
 
       <div className="toolbar">
         {(["open", "in_progress", "resolved", "all"] as StatusFilter[]).map((s) => (
@@ -48,10 +50,19 @@ export function Inbox() {
       </div>
 
       {loading && <div className="empty">Loading…</div>}
-      {error && <div className="empty" style={{ color: "#b3261e" }}>Error: {error}</div>}
+      {error && (
+        <div className="empty" style={{ color: "#b3261e", borderColor: "#fde2e1" }}>
+          <IconAlert size={18} />
+          <p className="empty-title" style={{ marginTop: 10 }}>Something broke.</p>
+          {error}
+        </div>
+      )}
 
       {!loading && !error && tickets.length === 0 && (
-        <div className="empty">Nothing here. Quiet day.</div>
+        <div className="empty">
+          <p className="empty-title">Quiet day.</p>
+          Nothing in the queue. Go ship something.
+        </div>
       )}
 
       {!loading && !error && tickets.length > 0 && (
@@ -63,9 +74,16 @@ export function Inbox() {
                 <div>
                   <p className="ticket-subject">{t.subject || "(no subject)"}</p>
                   <p className="ticket-meta">
-                    {t.channel} · {t.contact_email || t.contact_discord || "no contact"} · {t.message_count} message{t.message_count === 1 ? "" : "s"}
-                    {" · "}
-                    {timeAgo(t.created_at)}
+                    <span className="channel-tag">
+                      {channelIcon(t.channel)}
+                      {t.channel}
+                    </span>
+                    <span className="sep">·</span>
+                    <span>{t.contact_email || t.contact_discord || "no contact"}</span>
+                    <span className="sep">·</span>
+                    <span>{t.message_count} message{t.message_count === 1 ? "" : "s"}</span>
+                    <span className="sep">·</span>
+                    <span>{timeAgo(t.created_at)}</span>
                   </p>
                 </div>
                 <span className="ticket-status">{t.status === "in_progress" ? "in progress" : t.status}</span>

@@ -1,0 +1,118 @@
+/*
+ * Inline SVG icon set. Style mirrors marketing site:
+ * - 24×24 viewBox, currentColor stroke, stroke-width 1.5
+ * - round line caps/joins
+ * - default rendered size 16px (override with `size` prop)
+ *
+ * Keep tiny. Add new icons here only when actually used.
+ */
+
+type IconProps = {
+  size?: number;
+  className?: string;
+  "aria-label"?: string;
+};
+
+function base({ size = 16, className, ...rest }: IconProps) {
+  return {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.5,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": rest["aria-label"] ? undefined : true,
+    role: rest["aria-label"] ? "img" : undefined,
+    className,
+    ...rest,
+  };
+}
+
+export function IconGlobe(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+    </svg>
+  );
+}
+
+export function IconDiscord(p: IconProps = {}) {
+  // Simplified Discord glyph as monoline strokes to match the rest of the set.
+  return (
+    <svg {...base(p)}>
+      <path d="M8 9a8 8 0 0 1 8 0" />
+      <path d="M5 7l2.5 1M19 7l-2.5 1" />
+      <path d="M7 17l-1.5 2c-1-.5-2-1.5-2.5-3l1-7c.5-1.5 2-2.5 3.5-3" />
+      <path d="M17 17l1.5 2c1-.5 2-1.5 2.5-3l-1-7c-.5-1.5-2-2.5-3.5-3" />
+      <circle cx="9.5" cy="13" r="1" />
+      <circle cx="14.5" cy="13" r="1" />
+    </svg>
+  );
+}
+
+export function IconSend(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <path d="M22 2 11 13" />
+      <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+    </svg>
+  );
+}
+
+export function IconCheck(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+export function IconAlert(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 8v5M12 16h.01" />
+    </svg>
+  );
+}
+
+export function IconArrowLeft(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <path d="M19 12H5M12 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
+export function IconLogOut(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+    </svg>
+  );
+}
+
+export function IconInbox(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+      <path d="M5.5 5h13l3 7v6a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2v-6l3-7z" />
+    </svg>
+  );
+}
+
+export function IconChevronDown(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
+export function channelIcon(channel: string, size = 14) {
+  if (channel === "discord") return <IconDiscord size={size} />;
+  return <IconGlobe size={size} />;
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getTicket, replyToTicket, type TicketDetail as TD } from "../lib/supabase";
+import { IconArrowLeft, IconSend, IconAlert, channelIcon } from "../lib/icons";
 
 export function TicketDetail() {
   const { ticketId = "" } = useParams();
@@ -50,21 +51,34 @@ export function TicketDetail() {
   }
 
   if (loading) return <div className="empty">Loading…</div>;
-  if (error) return <div className="empty" style={{ color: "#b3261e" }}>Error: {error}</div>;
+  if (error) {
+    return (
+      <div className="empty" style={{ color: "#b3261e", borderColor: "#fde2e1" }}>
+        <IconAlert size={18} />
+        <p className="empty-title" style={{ marginTop: 10 }}>Something broke.</p>
+        {error}
+      </div>
+    );
+  }
   if (!data) return <div className="empty">Ticket not found.</div>;
 
   const { ticket, messages } = data;
+  const canReply = ticket.status !== "resolved" && ticket.status !== "closed";
 
   return (
     <div>
-      <Link to="/support" className="back-link">← Back to inbox</Link>
+      <Link to="/support" className="back-link">
+        <IconArrowLeft size={14} />
+        Back to inbox
+      </Link>
 
       <header className="ticket-header">
         <div>
+          <div className="eyebrow" style={{ marginBottom: 8 }}>Ticket · {ticket.id.slice(0, 8)}</div>
           <h1>{ticket.subject || "(no subject)"}</h1>
           <div className="ticket-tags">
             <span className={`priority-pill ${ticket.priority}`}>{ticket.priority.toUpperCase()}</span>
-            <span className="tag">{ticket.channel}</span>
+            <span className="tag">{channelIcon(ticket.channel, 12)}{ticket.channel}</span>
             <span className="tag">{ticket.status === "in_progress" ? "in progress" : ticket.status}</span>
             {ticket.contact_email && <span className="tag">{ticket.contact_email}</span>}
             {ticket.contact_discord && <span className="tag">@{ticket.contact_discord}</span>}
@@ -75,18 +89,30 @@ export function TicketDetail() {
       <div className="thread">
         {messages.map((m) => (
           <div key={m.id} className={`msg ${m.author}`}>
-            <div className="msg-head">
-              {m.author === "user" ? "User" : m.author === "bot" ? "Bot" : "You"} · {new Date(m.created_at).toLocaleString()}
+            {m.author === "bot" ? (
+              <span className="p-mark p-mark-sm" aria-label="Bot">P</span>
+            ) : m.author === "admin" ? (
+              <span className="ff-mark ff-mark-sm" aria-label="Admin">FF</span>
+            ) : (
+              <span className="msg-mark user" aria-label="User">U</span>
+            )}
+            <div className="msg-body-wrap">
+              <div className="msg-head">
+                {m.author === "user" ? "User" : m.author === "bot" ? "Penny" : "You"}
+                {" · "}
+                {new Date(m.created_at).toLocaleString()}
+              </div>
+              <div className="msg-body">{m.body}</div>
             </div>
-            <div className="msg-body">{m.body}</div>
           </div>
         ))}
       </div>
 
-      {ticket.status !== "resolved" && ticket.status !== "closed" && (
+      {canReply && (
         <div className="reply-card">
+          <div className="eyebrow">Your reply</div>
           <div className="field">
-            <label htmlFor="reply">Reply</label>
+            <label htmlFor="reply" className="visually-hidden" style={{ position: "absolute", left: -9999 }}>Reply</label>
             <textarea
               id="reply"
               placeholder="Short, direct, on-brand. The user sees this in their original channel."
@@ -95,11 +121,12 @@ export function TicketDetail() {
             />
           </div>
           <div className="reply-actions">
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--text-sm)", color: "var(--ink-3)" }}>
+            <label>
               <input type="checkbox" checked={resolve} onChange={(e) => setResolve(e.target.checked)} />
               Mark resolved
             </label>
             <button className="btn" disabled={sending || !reply.trim()} onClick={onSend}>
+              <IconSend size={14} />
               {sending ? "Sending…" : "Send reply"}
             </button>
           </div>

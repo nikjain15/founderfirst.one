@@ -47,7 +47,7 @@ export function Analytics() {
             <KPI label="Open now"        value={data.open_count} />
             <KPI label="Stale (>24h)"    value={data.stale_count} tone={data.stale_count > 0 ? "warn" : undefined} />
             <KPI label="Avg first reply" value={formatMinutes(data.avg_first_response_minutes_7d)} sub="last 7d" />
-            <KPI label="Resolved"        value={data.resolved_7d} sub="last 7d" />
+            <KPI label="Resolved"        value={data.resolved_7d} sub="last 7d" tone="pos" />
           </div>
 
           {/* Time series */}
@@ -61,6 +61,8 @@ export function Analytics() {
                 series={zipOpensResolves(data.opens_by_day, data.resolves_by_day)}
                 labelA="Opened"
                 labelB="Resolved"
+                colorA="var(--ink)"
+                colorB="var(--income)"
               />
             </div>
           </section>
@@ -103,13 +105,21 @@ export function Analytics() {
                 ) : (
                   <>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 8 }}>
-                      <div className="kpi-value num">{data.csat_7d.score_pct}%</div>
+                      <div className={`kpi-value num csat-${csatTone(data.csat_7d.score_pct)}`}>
+                        {data.csat_7d.score_pct}%
+                      </div>
                       <div className="num" style={{ color: "var(--ink-3)", fontSize: 13 }}>
                         {data.csat_7d.up} 👍 · {data.csat_7d.down} 👎 · {data.csat_7d.count} total
                       </div>
                     </div>
                     <div className="hbar-track">
-                      <div className="hbar-fill" style={{ width: `${data.csat_7d.score_pct ?? 0}%` }} />
+                      <div
+                        className="hbar-fill"
+                        style={{
+                          width: `${data.csat_7d.score_pct ?? 0}%`,
+                          background: `var(--${csatToneColor(csatTone(data.csat_7d.score_pct))})`,
+                        }}
+                      />
                     </div>
                   </>
                 )}
@@ -175,11 +185,12 @@ export function Analytics() {
   );
 }
 
-function KPI({ label, value, sub, tone }: { label: string; value: string | number; sub?: string; tone?: "warn" }) {
+function KPI({ label, value, sub, tone }: { label: string; value: string | number; sub?: string; tone?: "warn" | "pos" }) {
+  const toneClass = tone === "warn" ? "kpi-warn" : tone === "pos" ? "kpi-pos" : "";
   return (
-    <div className={`kpi ${tone === "warn" ? "kpi-warn" : ""}`}>
+    <div className={`kpi ${toneClass}`}>
       <div className="kpi-label">{label}</div>
-      <div className="kpi-value">{value}</div>
+      <div className="kpi-value num">{value}</div>
       {sub && <div className="kpi-sub">{sub}</div>}
     </div>
   );
@@ -281,6 +292,18 @@ function Swatch({ token, label, bordered }: { token: string; label: string; bord
   );
 }
 
+// CSAT traffic-light: mirrors the SLA fresh/aging/stale pattern so green
+// always means "doing well", amber "watch it", red "act now".
+function csatTone(pct: number | null): "good" | "warn" | "bad" | "neutral" {
+  if (pct == null) return "neutral";
+  if (pct >= 80) return "good";
+  if (pct >= 50) return "warn";
+  return "bad";
+}
+function csatToneColor(t: "good" | "warn" | "bad" | "neutral"): "income" | "amber" | "error" | "ink" {
+  return t === "good" ? "income" : t === "warn" ? "amber" : t === "bad" ? "error" : "ink";
+}
+
 function formatMinutes(n: number | null): string {
   if (n == null) return "—";
   if (n < 60) return `${Math.round(n)}m`;
@@ -296,8 +319,15 @@ function channelItems(c: AnalyticsSnapshot["channel_30d"]) {
 }
 
 function priorityItems(p: AnalyticsSnapshot["priority_30d"]) {
+  // P1 tinted red to match the priority pill; P2/P3 stay ink so we don't
+  // burn the eye with three competing colors (DS-General §1.2).
+  const tones: Record<"p1" | "p2" | "p3", "error" | undefined> = {
+    p1: "error",
+    p2: undefined,
+    p3: undefined,
+  };
   return (["p1", "p2", "p3"] as const)
-    .map((k) => ({ key: k, label: k.toUpperCase(), value: p[k] ?? 0 }))
+    .map((k) => ({ key: k, label: k.toUpperCase(), value: p[k] ?? 0, tone: tones[k] }))
     .filter((x) => x.value > 0 || true);
 }
 

@@ -103,8 +103,8 @@ export function Analytics() {
                 ) : (
                   <>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 8 }}>
-                      <div className="kpi-value">{data.csat_7d.score_pct}%</div>
-                      <div style={{ color: "var(--ink-3)", fontSize: 13 }}>
+                      <div className="kpi-value num">{data.csat_7d.score_pct}%</div>
+                      <div className="num" style={{ color: "var(--ink-3)", fontSize: 13 }}>
                         {data.csat_7d.up} 👍 · {data.csat_7d.down} 👎 · {data.csat_7d.count} total
                       </div>
                     </div>

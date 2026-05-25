@@ -3,12 +3,14 @@ import { Link } from "react-router-dom";
 import { listTickets, getAnalytics, type TicketRow, type AnalyticsSnapshot } from "../lib/supabase";
 import { channelIcon, IconAlert } from "../lib/icons";
 import { bySlaUrgency, slaForTicket, slaLabel } from "../lib/sla";
+import { TOPICS } from "../lib/topics";
 
 type StatusFilter = TicketRow["status"] | "all";
 
 export function Inbox() {
   const [tickets, setTickets] = useState<TicketRow[]>([]);
   const [filter, setFilter] = useState<StatusFilter>("open");
+  const [topicFilter, setTopicFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<AnalyticsSnapshot | null>(null);
@@ -69,6 +71,17 @@ export function Inbox() {
             {s === "in_progress" ? "in progress" : s}
           </button>
         ))}
+        <div className="toolbar-spacer" />
+        <select
+          className="topic-select"
+          value={topicFilter}
+          onChange={(e) => setTopicFilter(e.target.value)}
+          aria-label="Filter by topic"
+        >
+          <option value="all">All topics</option>
+          <option value="untagged">Untagged</option>
+          {TOPICS.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
 
       {loading && <div className="empty">Loading…</div>}
@@ -91,7 +104,10 @@ export function Inbox() {
         <ul className="ticket-list">
           {/* Sort by SLA urgency only when viewing actionable buckets; resolved/all
               keep the server's order so history reads chronologically. */}
-          {(filter === "open" || filter === "in_progress" ? bySlaUrgency(tickets) : tickets).map((t) => {
+          {(filter === "open" || filter === "in_progress" ? bySlaUrgency(tickets) : tickets)
+            .filter((t) => topicFilter === "all"
+              || (topicFilter === "untagged" ? !t.topic : t.topic === topicFilter))
+            .map((t) => {
             const sla = slaForTicket(t);
             return (
               <li key={t.id}>
@@ -104,6 +120,12 @@ export function Inbox() {
                         {channelIcon(t.channel)}
                         {t.channel}
                       </span>
+                      {t.topic && (
+                        <>
+                          <span className="sep">·</span>
+                          <span className="topic-tag">{t.topic}</span>
+                        </>
+                      )}
                       <span className="sep">·</span>
                       <span>{t.contact_email || t.contact_discord || "no contact"}</span>
                       <span className="sep">·</span>

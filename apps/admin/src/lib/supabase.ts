@@ -35,6 +35,7 @@ export interface TicketRow {
   first_message: string;
   contact_email: string | null;
   contact_discord: string | null;
+  topic: string | null;
   created_at: string;
   updated_at: string;
   message_count: number;
@@ -56,6 +57,7 @@ export interface TicketDetail {
     channel_thread_ref: string;
     subject: string;
     first_message: string;
+    topic: string | null;
     created_at: string;
     updated_at: string;
     resolved_at: string | null;
@@ -95,6 +97,7 @@ export interface AnalyticsSnapshot {
   resolves_by_day: Array<{ day: string; count: number }>;
   channel_30d: Partial<Record<"discord" | "web", number>>;
   priority_30d: Partial<Record<"p1" | "p2" | "p3", number>>;
+  topic_30d: Record<string, number>;
   csat_7d: { up: number; down: number; count: number; score_pct: number | null };
 }
 
@@ -137,6 +140,15 @@ export async function getAnalytics(): Promise<AnalyticsSnapshot> {
   const { data, error } = await db.rpc("get_analytics");
   if (error) throw new Error(`get_analytics: ${error.message}`);
   return data as AnalyticsSnapshot;
+}
+
+export async function setTicketTopic(ticketId: string, topic: string | null): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("set_ticket_topic", {
+    p_ticket_id: ticketId,
+    p_topic: topic ?? "",
+  });
+  if (error) throw new Error(`set_ticket_topic: ${error.message}`);
 }
 
 export async function replyToTicket(

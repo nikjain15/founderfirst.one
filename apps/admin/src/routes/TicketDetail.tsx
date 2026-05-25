@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getTicket, replyToTicket, type TicketDetail as TD } from "../lib/supabase";
+import { getTicket, replyToTicket, getFeedbackForTicket, type TicketDetail as TD, type TicketFeedback } from "../lib/supabase";
 import { IconArrowLeft, IconSend, IconAlert, channelIcon } from "../lib/icons";
 import { slaForTicket, slaLabel } from "../lib/sla";
 
@@ -8,6 +8,7 @@ export function TicketDetail() {
   const { ticketId = "" } = useParams();
   const navigate = useNavigate();
   const [data, setData] = useState<TD | null>(null);
+  const [feedback, setFeedback] = useState<TicketFeedback | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,8 +19,12 @@ export function TicketDetail() {
   async function refresh() {
     setLoading(true);
     try {
-      const d = await getTicket(ticketId);
+      const [d, f] = await Promise.all([
+        getTicket(ticketId),
+        getFeedbackForTicket(ticketId).catch(() => null),
+      ]);
       setData(d);
+      setFeedback(f);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -90,6 +95,18 @@ export function TicketDetail() {
           </div>
         </div>
       </header>
+
+      {feedback && (
+        <div className={`feedback-strip ${feedback.rating}`}>
+          <span className="feedback-rating">{feedback.rating === "up" ? "👍" : "👎"}</span>
+          <div>
+            <div className="feedback-strip-label">
+              User rated this {feedback.rating === "up" ? "helpful" : "not helpful"} · {new Date(feedback.created_at).toLocaleDateString()}
+            </div>
+            {feedback.comment && <div className="feedback-comment">"{feedback.comment}"</div>}
+          </div>
+        </div>
+      )}
 
       <div className="thread">
         {messages.map((m) => (

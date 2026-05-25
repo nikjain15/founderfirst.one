@@ -16,6 +16,17 @@
   --white:      #ffffff;
   --dark:       #0a0a0a;
 
+  /* Semantic accents — shared with Penny demo. Use sparingly and only for
+     the meaning each one carries. Backgrounds are soft tints suitable for
+     pills, strips, and warn states. Don't introduce new accent hex anywhere
+     downstream; extend this list instead. */
+  --income:     #1A9E6A;   /* success, positive, up, fresh, resolved */
+  --income-bg:  #f0faf5;
+  --amber:      #C97D1A;   /* warning, aging, needs-attention */
+  --amber-bg:   #fdf8f0;
+  --error:      #b2291e;   /* error, down, stale, destructive */
+  --error-bg:   #fdf2f1;
+
   /* Type */
   --sans:       'Inter', Helvetica, 'Helvetica Neue', Arial, sans-serif;
   --fw-regular:  400;

@@ -384,6 +384,19 @@ workflow:
           type: string
           description: The user's email address if they mentioned one in this turn or earlier in the conversation. Empty string if no email is known yet.
           required: false
+        - name: topic
+          type: string
+          description: |
+            Pick exactly one topic that best describes the ticket. Use lowercase, no quotes. Choose from this fixed vocabulary:
+              - billing          (pricing, payments, invoices, refunds, plan changes)
+              - bug              (something is broken — errors, wrong output, crashes)
+              - integration      (Stripe, QuickBooks, Xero, bank connections, anything 3rd-party)
+              - how-to           (usage questions, "how do I…", "where is the X button")
+              - feature-request  (wishes, missing capabilities)
+              - account          (login, profile, password, account deletion, email change)
+              - other            (doesn't fit cleanly into the above)
+            If the question doesn't fit any bucket cleanly, return "other". Never invent a new topic name.
+          required: false
         instruction: |
           You are classifying a single turn of a FounderFirst support conversation to decide whether a human ticket should be filed.
 
@@ -462,7 +475,8 @@ workflow:
                 "p_bot_reply": "{{#llm.text#}}",
                 "p_priority": "p2",
                 "p_bot_confidence": "low",
-                "p_bot_reason": "classifier"
+                "p_bot_reason": "classifier",
+                "p_topic": "{{#classify.topic#}}"
               }
         timeout:
           connect: 10

@@ -1,10 +1,56 @@
 # CSAT — Integration with Dify and the Discord bridge
 
-The Supabase side is done (`SCHEMA-005-csat.sql`). The admin UI shows CSAT
-metrics on `/admin/analytics` and inline on each ticket. Until Penny + the
-Discord bridge actually call `submit_feedback`, those panels just sit at zero.
+The Supabase side ships in `SCHEMA-005-csat.sql` and the admin surfaces in
+`/admin/analytics` + `/admin/support/:ticketId`. The bridge ships the
+Discord-side CSAT prompts and reaction handling. This doc spells out the
+architecture and what's left for non-Discord channels.
 
-This doc spells out exactly what each surface needs to do.
+---
+
+## Architecture (Discord — what's live now)
+
+```
+Penny answers in Discord ──► bridge sends answer
+                            ──► bridge sends CSAT prompt + seeds 👍/👎
+                                                │
+              User taps a reaction ◄────────────┘
+                            │
+                            ▼
+              bridge.on_raw_reaction_add
+                            │
+                            ▼
+              POST /rest/v1/rpc/submit_feedback
+                source: "bot_resolved"
+                conversation_ref: <discord channel id>
+```
+
+```
+Admin replies in /admin/support/:ticketId (resolve=true)
+                            │
+                            ▼
+              support_messages row created (author=admin)
+                            │
+                            ▼
+              bridge poller → fetch_undelivered_admin_messages
+                            │
+                            ▼
+              bridge posts admin embed to Discord
+                            │
+                            ▼
+              IF ticket_status = "resolved":
+                bridge sends CSAT prompt + seeds 👍/👎
+                                │
+              User reacts  ◄────┘
+                            │
+                            ▼
+              POST submit_feedback
+                source: "admin_resolved"
+                ticket_id: <uuid>
+```
+
+Both flows use the same in-memory map (`csat_prompt_map`) keyed on the
+Discord message id of the prompt. The reaction handler dispatches on the
+`source` stored alongside the ticket/conversation refs.
 
 ---
 
@@ -39,78 +85,39 @@ Rules enforced by the RPC:
 
 ---
 
-## Surface 1 · Penny resolves on her own  →  `source = "bot_resolved"`
+## Why the bridge owns Discord CSAT (not Dify)
 
-**Where it lives:** Dify workflow.
+Dify doesn't see Discord reactions — only the bridge does. The bridge
+already owns the Discord I/O surface (sending messages, polling Supabase,
+delivering admin replies), so adding reaction handling is one event handler
+and one HTTP call. Routing through Dify for this would mean an extra hop
+that buys nothing.
 
-**Trigger:** Penny's answer node finishes and confidence ≥ threshold (i.e. no
-escalation). At the end of the "answer" branch, append:
-
-1. A short follow-up message to the user: _"Did that help? React 👍 or 👎."_
-2. An HTTP node (or downstream Discord/web handler) that listens for the
-   reaction and posts to `submit_feedback`:
-
-```json
-{
-  "p_source": "bot_resolved",
-  "p_channel": "discord",
-  "p_conversation_ref": "<discord thread id>",
-  "p_rating": "up" | "down",
-  "p_discord_user_id": "<author id>"
-}
-```
-
-For the web widget the same call uses `"p_channel": "web"` and a session ID.
+For the **web widget** (when we build it), Dify *can* own CSAT natively —
+emit the prompt as a message, add up/down buttons, and route the click to
+an HTTP node that POSTs `submit_feedback` with `source: "bot_resolved"` and
+`channel: "web"`. The RPC accepts that shape today.
 
 ---
 
-## Surface 2 · Admin resolves a ticket  →  `source = "admin_resolved"`
+## Gating (current behavior)
 
-**Where it lives:** the Discord bridge (Python) — and the web widget when we
-build that path.
-
-**Trigger:** the bridge already polls Supabase for new admin messages and
-posts them back to the Discord thread (see `discord-bridge/bridge.py`). When
-the admin reply is delivered with `resolve = true`, the bridge follows the
-delivered message with a short prompt:
-
-> _"Did that solve it? React 👍 or 👎 — and reply with any thoughts."_
-
-A reaction handler in the bridge then posts to `submit_feedback` with the
-ticket id it just delivered:
-
-```json
-{
-  "p_source": "admin_resolved",
-  "p_ticket_id": "<ticket uuid>",
-  "p_channel": "discord",
-  "p_conversation_ref": "<discord thread id>",
-  "p_rating": "up" | "down",
-  "p_comment": "<optional text reply>",
-  "p_discord_user_id": "<author id>"
-}
-```
+- **Bot CSAT**: prompt fires after *every* Penny reply. Some are escalation
+  messages where "did that help?" is a slightly weird question — those
+  prompts just sit ignored. Acceptable noise for v1. We can refine by
+  having Dify emit a sentinel that the bridge strips and uses to gate
+  prompting.
+- **Admin CSAT**: prompt fires only when the admin marked the ticket
+  *resolved*. In-progress replies stay quiet — user is mid-conversation.
 
 ---
 
-## Visibility in the admin
+## Failure modes (designed)
 
-- **`/admin/analytics`** — CSAT card (7-day score, up/down counts, total) and a
-  recent-ratings panel that shows the last 20 with comments and a link to the
-  ticket when one exists.
-- **`/admin/support/:ticketId`** — green/red strip above the thread when the
-  user rated that ticket.
-
----
-
-## Why both sources
-
-Bot ratings tell you the quality of Penny's answers — the only signal that
-feeds back into the system prompt + KB tuning.
-
-Admin ratings tell you the quality of your own replies — useful but secondary;
-you usually know.
-
-Keeping the two `source` values separate lets the analytics card report a
-single overall score *and* break it down by who did the resolving when we
-want to look closer.
+- Bridge can't reach Supabase → reaction is logged but never recorded.
+  Idempotent retry not implemented — feedback is "best effort" and we
+  don't want a flaky network to break the bridge.
+- Bridge restarts → `csat_prompt_map` resets (in-memory only). Reactions
+  on old prompts are dropped silently. This is fine: the prompt is
+  ephemeral, the rating window is hours not days.
+- User reacts with something other than 👍/👎 → ignored.

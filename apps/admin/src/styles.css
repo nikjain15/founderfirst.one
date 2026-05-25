@@ -214,8 +214,8 @@ a:hover { opacity: 0.7; }
   align-items: center;
   gap: 6px;
 }
-.login-status.ok  { color: #1b8a3e; }
-.login-status.err { color: #b3261e; }
+.login-status.ok  { color: var(--income); }
+.login-status.err { color: var(--error); }
 
 /* ---- Inbox -------------------------------------------------------------- */
 
@@ -332,7 +332,7 @@ a:hover { opacity: 0.7; }
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-.priority-pill.p1 { background: #fde2e1; color: #b3261e; }
+.priority-pill.p1 { background: var(--error-bg); color: var(--error); }
 .priority-pill.p2 { background: var(--paper); color: var(--ink-2); border: 1px solid var(--line); }
 .priority-pill.p3 { background: var(--white); color: var(--ink-3); border: 1px solid var(--line); }
 
@@ -396,13 +396,13 @@ a:hover { opacity: 0.7; }
   background: var(--ink-4);
   flex-shrink: 0;
 }
-.sla-pill.fresh::before { background: #1b8a3e; }
-.sla-pill.aging::before { background: #c47a14; }
-.sla-pill.stale::before { background: #b3261e; }
+.sla-pill.fresh::before { background: var(--income); }
+.sla-pill.aging::before { background: var(--amber); }
+.sla-pill.stale::before { background: var(--error); }
 .sla-pill.stale {
-  background: #fff3f2;
-  border-color: #fde2e1;
-  color: #8a1f17;
+  background: var(--error-bg);
+  border-color: var(--error-bg);
+  color: var(--error);
 }
 
 .empty {
@@ -569,9 +569,10 @@ a:hover { opacity: 0.7; }
   padding: 12px 14px;
 }
 .kpi-tile.kpi-warn {
-  border-color: #fde2e1;
-  background: #fff8f7;
+  border-color: var(--error-bg);
+  background: var(--error-bg);
 }
+.kpi-tile.kpi-warn .kpi-tile-value { color: var(--error); }
 .kpi-tile-label {
   font-size: 11px;
   text-transform: uppercase;
@@ -619,9 +620,10 @@ a:hover { opacity: 0.7; }
   padding: 16px 18px;
 }
 .kpi.kpi-warn {
-  border-color: #fde2e1;
-  background: #fff8f7;
+  border-color: var(--error-bg);
+  background: var(--error-bg);
 }
+.kpi.kpi-warn .kpi-value { color: var(--error); }
 .kpi-label {
   font-size: 11px;
   text-transform: uppercase;
@@ -802,12 +804,12 @@ a:hover { opacity: 0.7; }
   margin-bottom: 18px;
 }
 .feedback-strip.down {
-  background: #fff8f7;
-  border-color: #fde2e1;
+  background: var(--error-bg);
+  border-color: var(--error-bg);
 }
 .feedback-strip.up {
-  background: #f0faf3;
-  border-color: #cfe8d6;
+  background: var(--income-bg);
+  border-color: var(--income-bg);
 }
 .feedback-strip-label {
   font-size: 13px;

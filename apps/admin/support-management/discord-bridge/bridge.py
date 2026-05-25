@@ -49,6 +49,24 @@ DISCORD_MAX_MESSAGE_CHARS = 1900   # Discord caps at 2000; leave headroom for pl
 DISCORD_EMBED_DESC_LIMIT  = 4000   # Discord embed description limit is 4096; leave headroom.
 FOUNDERFIRST_INK_COLOR    = 0x0a0a0a  # var(--ink) from the design system
 
+# CSAT — two reactions we recognize. Anything else on the prompt message is ignored.
+CSAT_THUMBS_UP    = "\N{THUMBS UP SIGN}"
+CSAT_THUMBS_DOWN  = "\N{THUMBS DOWN SIGN}"
+CSAT_PROMPT_TEXT  = (
+    "Was that helpful? React 👍 or 👎 below — totally optional, helps me get better."
+)
+
+# In-memory map: discord prompt message id → {
+#   source:            "bot_resolved" | "admin_resolved",
+#   ticket_id:         str | None,        # set only for admin_resolved
+#   channel_thread_ref: str               # discord channel id
+# }
+# When a reaction lands on one of these prompt messages, on_raw_reaction_add
+# routes it to submit_feedback with the right source.
+# Bounded to last ~500 prompts to keep memory flat; older entries get pruned.
+csat_prompt_map: dict[int, dict[str, str | None]] = {}
+CSAT_PROMPT_MAP_LIMIT = 500
+
 # --- Logging -----------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
@@ -183,9 +201,10 @@ async def _send_reply_to_message(message: discord.Message, text: str) -> None:
             await message.channel.send(chunk)
 
 
-async def _send_admin_embed(channel: discord.abc.Messageable, body: str) -> None:
+async def _send_admin_embed(channel: discord.abc.Messageable, body: str) -> discord.Message:
     """Render the admin reply as a Discord embed so it's visually distinct
-    from bot turns. Truncates if absurdly long."""
+    from bot turns. Truncates if absurdly long. Returns the sent Message so
+    callers can chain a CSAT prompt onto it."""
     description = body if len(body) <= DISCORD_EMBED_DESC_LIMIT else (body[:DISCORD_EMBED_DESC_LIMIT - 16] + "\n…(truncated)")
     embed = discord.Embed(
         description=description,
@@ -194,7 +213,76 @@ async def _send_admin_embed(channel: discord.abc.Messageable, body: str) -> None
     )
     embed.set_author(name="FounderFirst team")
     embed.set_footer(text="Replied via the admin inbox")
-    await channel.send(embed=embed)
+    return await channel.send(embed=embed)
+
+
+async def _send_csat_prompt(
+    channel: discord.abc.Messageable,
+    *,
+    source: str,                    # "bot_resolved" | "admin_resolved"
+    channel_thread_ref: str,
+    ticket_id: str | None = None,   # only for admin_resolved
+) -> None:
+    """Send a CSAT prompt and pre-react with 👍/👎 so the user can click,
+    not type. Remember the prompt id so on_raw_reaction_add can route the
+    reaction back with the right source."""
+    try:
+        msg = await channel.send(CSAT_PROMPT_TEXT)
+        await msg.add_reaction(CSAT_THUMBS_UP)
+        await msg.add_reaction(CSAT_THUMBS_DOWN)
+    except discord.DiscordException:
+        log.exception("csat-prompt | failed to send/seed reactions | source=%s", source)
+        return
+
+    csat_prompt_map[msg.id] = {
+        "source":             source,
+        "ticket_id":          ticket_id,
+        "channel_thread_ref": channel_thread_ref,
+    }
+    # Prune oldest entries if we've blown the cap.
+    if len(csat_prompt_map) > CSAT_PROMPT_MAP_LIMIT:
+        for k in list(csat_prompt_map.keys())[: len(csat_prompt_map) - CSAT_PROMPT_MAP_LIMIT]:
+            csat_prompt_map.pop(k, None)
+
+
+async def _submit_feedback(
+    *,
+    source: str,
+    rating: str,
+    ticket_id: str | None = None,
+    channel: str | None = None,
+    conversation_ref: str | None = None,
+    discord_user_id: str | None = None,
+    comment: str | None = None,
+) -> None:
+    """POST to Supabase RPC submit_feedback. Service-role key bypasses RLS;
+    the RPC itself enforces shape (rating, source, target). Failures are
+    logged but never raised — feedback is best-effort and must never break
+    the bridge."""
+    url = f"{SUPABASE_URL}/rest/v1/rpc/submit_feedback"
+    headers = {
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "p_source":           source,
+        "p_rating":           rating,
+        "p_ticket_id":        ticket_id,
+        "p_channel":          channel,
+        "p_conversation_ref": conversation_ref,
+        "p_discord_user_id":  discord_user_id,
+        "p_comment":          comment,
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10) as http:
+            r = await http.post(url, json=payload, headers=headers)
+            r.raise_for_status()
+        log.info("csat-submit | source=%s rating=%s ticket=%s", source, rating, ticket_id)
+    except httpx.HTTPStatusError as e:
+        log.warning("csat-submit | %s: %s", e.response.status_code, e.response.text[:300])
+    except httpx.HTTPError:
+        log.exception("csat-submit | http error")
 
 
 # --- Event handlers ----------------------------------------------------------
@@ -247,6 +335,45 @@ async def on_message(message: discord.Message):
         )
 
     await _send_reply_to_message(message, answer)
+
+    # Bot CSAT — after Penny replies, prompt the user. We don't gate on
+    # "was this confident vs escalated" because Dify doesn't surface that
+    # signal cleanly today; downvotes on escalation messages would actually
+    # be useful data anyway. Refine later if it gets noisy.
+    await _send_csat_prompt(
+        message.channel,
+        source="bot_resolved",
+        channel_thread_ref=str(message.channel.id),
+    )
+
+
+# --- CSAT reaction handler --------------------------------------------------
+@client.event
+async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
+    """Route 👍/👎 reactions on CSAT prompt messages to submit_feedback.
+    Uses on_raw_reaction_add (not on_reaction_add) so it fires even when the
+    prompt message isn't in the bot's message cache."""
+    if client.user and payload.user_id == client.user.id:
+        return  # ignore our own seed reactions
+    info = csat_prompt_map.get(payload.message_id)
+    if info is None:
+        return  # not a prompt we track
+    emoji = str(payload.emoji)
+    if emoji == CSAT_THUMBS_UP:
+        rating = "up"
+    elif emoji == CSAT_THUMBS_DOWN:
+        rating = "down"
+    else:
+        return  # any other reaction is just noise
+
+    await _submit_feedback(
+        source=info["source"] or "bot_resolved",
+        rating=rating,
+        ticket_id=info.get("ticket_id"),
+        channel="discord",
+        conversation_ref=info.get("channel_thread_ref"),
+        discord_user_id=str(payload.user_id),
+    )
 
 
 # --- Admin reply poller ------------------------------------------------------
@@ -307,6 +434,19 @@ async def _push_admin_message(row: dict) -> None:
         log.exception(
             "admin-push | failed | message_id=%s channel_id=%s",
             row.get("message_id"), discord_channel_id,
+        )
+        return
+
+    # Follow up with a CSAT prompt only when the admin resolved the ticket.
+    # In-progress replies stay quiet — the user is mid-conversation.
+    ticket_id = row.get("ticket_id")
+    ticket_status = (row.get("ticket_status") or "").lower()
+    if ticket_id and ticket_status == "resolved":
+        await _send_csat_prompt(
+            channel,
+            source="admin_resolved",
+            ticket_id=str(ticket_id),
+            channel_thread_ref=str(discord_channel_id),
         )
 
 

@@ -33,7 +33,7 @@ export function Analytics() {
 
       {loading && <div className="empty">Loading…</div>}
       {error && (
-        <div className="empty" style={{ color: "#b3261e", borderColor: "#fde2e1" }}>
+        <div className="empty" style={{ color: "var(--error)", borderColor: "var(--error-bg)" }}>
           <IconAlert size={18} />
           <p className="empty-title" style={{ marginTop: 10 }}>Couldn't load analytics.</p>
           {error}

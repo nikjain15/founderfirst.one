@@ -691,3 +691,72 @@ a:hover { opacity: 0.7; }
   transition: width 0.3s;
 }
 .empty-inline { color: var(--ink-4); font-size: 13px; padding: 6px 0; }
+
+/* ---- CSAT / feedback --------------------------------------------------- */
+
+.feedback-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.feedback-row {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.feedback-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.feedback-rating { font-size: 18px; line-height: 1; }
+.feedback-body { min-width: 0; }
+.feedback-meta {
+  font-size: 12px;
+  color: var(--ink-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.feedback-comment {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.5;
+  margin-top: 2px;
+}
+.feedback-ticket-link {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ink-3);
+  text-decoration: none;
+}
+.feedback-ticket-link:hover { color: var(--ink); opacity: 1; }
+
+.feedback-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--r-card);
+  background: var(--line-2);
+  border: 1px solid var(--line);
+  margin-bottom: 18px;
+}
+.feedback-strip.down {
+  background: #fff8f7;
+  border-color: #fde2e1;
+}
+.feedback-strip.up {
+  background: #f0faf3;
+  border-color: #cfe8d6;
+}
+.feedback-strip-label {
+  font-size: 13px;
+  font-weight: var(--fw-semibold);
+  color: var(--ink);
+}

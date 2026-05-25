@@ -95,6 +95,41 @@ export interface AnalyticsSnapshot {
   resolves_by_day: Array<{ day: string; count: number }>;
   channel_30d: Partial<Record<"discord" | "web", number>>;
   priority_30d: Partial<Record<"p1" | "p2" | "p3", number>>;
+  csat_7d: { up: number; down: number; count: number; score_pct: number | null };
+}
+
+export interface FeedbackRow {
+  id: string;
+  source: "bot_resolved" | "admin_resolved";
+  rating: "up" | "down";
+  comment: string | null;
+  channel: "discord" | "web" | null;
+  ticket_id: string | null;
+  ticket_subject: string | null;
+  created_at: string;
+}
+
+export interface TicketFeedback {
+  id: string;
+  source: "bot_resolved" | "admin_resolved";
+  rating: "up" | "down";
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function listRecentFeedback(limit = 20): Promise<FeedbackRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_recent_feedback", { p_limit: limit });
+  if (error) throw new Error(`list_recent_feedback: ${error.message}`);
+  return (data as FeedbackRow[]) ?? [];
+}
+
+export async function getFeedbackForTicket(ticketId: string): Promise<TicketFeedback | null> {
+  const db = getClient();
+  const { data, error } = await db.rpc("get_feedback_for_ticket", { p_ticket_id: ticketId });
+  if (error) throw new Error(`get_feedback_for_ticket: ${error.message}`);
+  return (data as TicketFeedback | null) ?? null;
 }
 
 export async function getAnalytics(): Promise<AnalyticsSnapshot> {

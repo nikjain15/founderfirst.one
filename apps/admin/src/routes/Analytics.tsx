@@ -1,18 +1,25 @@
 import { useEffect, useState } from "react";
-import { getAnalytics, type AnalyticsSnapshot } from "../lib/supabase";
+import { Link } from "react-router-dom";
+import {
+  getAnalytics,
+  listRecentFeedback,
+  type AnalyticsSnapshot,
+  type FeedbackRow,
+} from "../lib/supabase";
 import { DualBarChart, HBarBreakdown, zipOpensResolves } from "../lib/charts";
 import { IconAlert } from "../lib/icons";
 
 export function Analytics() {
   const [data, setData] = useState<AnalyticsSnapshot | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    getAnalytics()
-      .then((d) => { if (!cancelled) setData(d); })
+    Promise.all([getAnalytics(), listRecentFeedback(20).catch(() => [] as FeedbackRow[])])
+      .then(([d, f]) => { if (!cancelled) { setData(d); setFeedback(f); } })
       .catch((e: Error) => { if (!cancelled) setError(e.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -72,6 +79,65 @@ export function Analytics() {
               <div className="card">
                 <div className="card-eyebrow">By priority</div>
                 <HBarBreakdown items={priorityItems(data.priority_30d)} />
+              </div>
+            </div>
+          </section>
+
+          {/* CSAT */}
+          <section className="analytics-section">
+            <div className="section-head">
+              <div className="eyebrow">Last 7 days · customer satisfaction</div>
+              <h2 className="section-title">How users feel.</h2>
+            </div>
+            <div className="mix-grid">
+              <div className="card">
+                <div className="card-eyebrow">CSAT score</div>
+                {data.csat_7d.count === 0 ? (
+                  <p style={{ margin: 0, color: "var(--ink-3)", fontSize: 14, lineHeight: 1.55 }}>
+                    No ratings yet. Wire Penny + the bridge to call <code>submit_feedback</code> after each resolution.
+                  </p>
+                ) : (
+                  <>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 8 }}>
+                      <div className="kpi-value">{data.csat_7d.score_pct}%</div>
+                      <div style={{ color: "var(--ink-3)", fontSize: 13 }}>
+                        {data.csat_7d.up} 👍 · {data.csat_7d.down} 👎 · {data.csat_7d.count} total
+                      </div>
+                    </div>
+                    <div className="hbar-track">
+                      <div className="hbar-fill" style={{ width: `${data.csat_7d.score_pct ?? 0}%` }} />
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="card">
+                <div className="card-eyebrow">Recent ratings</div>
+                {feedback.length === 0 ? (
+                  <p className="empty-inline">Nothing yet.</p>
+                ) : (
+                  <ul className="feedback-list">
+                    {feedback.slice(0, 8).map((f) => (
+                      <li key={f.id} className={`feedback-row ${f.rating}`}>
+                        <span className="feedback-rating">{f.rating === "up" ? "👍" : "👎"}</span>
+                        <div className="feedback-body">
+                          <div className="feedback-meta">
+                            <span>{f.source === "bot_resolved" ? "Penny" : "You"}</span>
+                            <span className="sep">·</span>
+                            <span>{f.channel ?? "—"}</span>
+                            <span className="sep">·</span>
+                            <span>{new Date(f.created_at).toLocaleDateString()}</span>
+                          </div>
+                          {f.comment && <div className="feedback-comment">"{f.comment}"</div>}
+                          {f.ticket_id && (
+                            <Link to={`/support/${f.ticket_id}`} className="feedback-ticket-link">
+                              {f.ticket_subject || "view ticket"} →
+                            </Link>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           </section>

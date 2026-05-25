@@ -9,7 +9,7 @@ import {
 import { DualBarChart, HBarBreakdown, zipOpensResolves } from "../lib/charts";
 import { IconAlert } from "../lib/icons";
 
-export function Analytics() {
+export function AnalyticsSupport() {
   const [data, setData] = useState<AnalyticsSnapshot | null>(null);
   const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
   const [loading, setLoading] = useState(true);

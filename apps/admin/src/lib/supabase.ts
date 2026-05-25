@@ -83,6 +83,27 @@ export async function getTicket(ticketId: string): Promise<TicketDetail> {
   return data as TicketDetail;
 }
 
+export interface AnalyticsSnapshot {
+  now: string;
+  open_count: number;
+  in_progress: number;
+  stale_count: number;
+  resolved_7d: number;
+  opened_7d: number;
+  avg_first_response_minutes_7d: number | null;
+  opens_by_day: Array<{ day: string; count: number }>;
+  resolves_by_day: Array<{ day: string; count: number }>;
+  channel_30d: Partial<Record<"discord" | "web", number>>;
+  priority_30d: Partial<Record<"p1" | "p2" | "p3", number>>;
+}
+
+export async function getAnalytics(): Promise<AnalyticsSnapshot> {
+  const db = getClient();
+  const { data, error } = await db.rpc("get_analytics");
+  if (error) throw new Error(`get_analytics: ${error.message}`);
+  return data as AnalyticsSnapshot;
+}
+
 export async function replyToTicket(
   ticketId: string,
   body: string,

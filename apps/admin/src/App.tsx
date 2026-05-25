@@ -8,6 +8,7 @@ import { IconLogOut } from "./lib/icons";
 import { Login } from "./routes/Login";
 import { Inbox } from "./routes/Inbox";
 import { TicketDetail } from "./routes/TicketDetail";
+import { Analytics } from "./routes/Analytics";
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -56,6 +57,12 @@ export function App() {
             Admin
           </Link>
           <div className="nav-meta">
+            {signedIn && (
+              <div className="nav-links">
+                <Link to="/support" className={location.pathname.startsWith("/support") ? "active" : ""}>Inbox</Link>
+                <Link to="/analytics" className={location.pathname.startsWith("/analytics") ? "active" : ""}>Analytics</Link>
+              </div>
+            )}
             {signedIn ? (
               <>
                 <span className="nav-email">{session?.user.email}</span>
@@ -85,6 +92,10 @@ export function App() {
           <Route
             path="/support/:ticketId"
             element={signedIn ? <TicketDetail /> : <Navigate to="/login" replace state={{ from: location }} />}
+          />
+          <Route
+            path="/analytics"
+            element={signedIn ? <Analytics /> : <Navigate to="/login" replace state={{ from: location }} />}
           />
         </Routes>
       </main>

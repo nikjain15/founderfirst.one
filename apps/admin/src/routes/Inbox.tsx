@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { listTickets, type TicketRow } from "../lib/supabase";
+import { listTickets, getAnalytics, type TicketRow, type AnalyticsSnapshot } from "../lib/supabase";
 import { channelIcon, IconAlert } from "../lib/icons";
 import { bySlaUrgency, slaForTicket, slaLabel } from "../lib/sla";
 
@@ -11,6 +11,17 @@ export function Inbox() {
   const [filter, setFilter] = useState<StatusFilter>("open");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<AnalyticsSnapshot | null>(null);
+
+  // KPI strip — fetched once. Failures here are silent so a broken RPC
+  // doesn't take the inbox down with it.
+  useEffect(() => {
+    let cancelled = false;
+    getAnalytics()
+      .then((s) => { if (!cancelled) setStats(s); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,6 +47,16 @@ export function Inbox() {
       <div className="eyebrow" style={{ marginBottom: 10 }}>Support · inbox</div>
       <h1 className="page-title">What needs you.</h1>
       <p className="page-sub">Tickets the bot couldn't close on its own. Top of the list first.</p>
+
+      {stats && (
+        <div className="kpi-strip">
+          <KpiTile label="Open"          value={stats.open_count} />
+          <KpiTile label="Stale"         value={stats.stale_count} tone={stats.stale_count > 0 ? "warn" : undefined} />
+          <KpiTile label="Avg first reply" value={formatMins(stats.avg_first_response_minutes_7d)} sub="7d" />
+          <KpiTile label="Resolved"      value={stats.resolved_7d} sub="7d" />
+          <Link to="/analytics" className="kpi-more">More →</Link>
+        </div>
+      )}
 
       <div className="toolbar">
         {(["open", "in_progress", "resolved", "all"] as StatusFilter[]).map((s) => (
@@ -107,6 +128,23 @@ export function Inbox() {
       )}
     </div>
   );
+}
+
+function KpiTile({ label, value, sub, tone }: { label: string; value: string | number; sub?: string; tone?: "warn" }) {
+  return (
+    <div className={`kpi-tile ${tone === "warn" ? "kpi-warn" : ""}`}>
+      <div className="kpi-tile-label">{label}</div>
+      <div className="kpi-tile-value">{value}{sub && <span className="kpi-tile-sub"> · {sub}</span>}</div>
+    </div>
+  );
+}
+
+function formatMins(n: number | null): string {
+  if (n == null) return "—";
+  if (n < 60) return `${Math.round(n)}m`;
+  const h = n / 60;
+  if (h < 24) return `${h.toFixed(1)}h`;
+  return `${(h / 24).toFixed(1)}d`;
 }
 
 function timeAgo(iso: string): string {

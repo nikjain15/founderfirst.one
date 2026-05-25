@@ -13,11 +13,15 @@ export function DualBarChart({
   height = 140,
   labelA = "A",
   labelB = "B",
+  colorA = "var(--ink)",
+  colorB = "var(--ink-4)",
 }: {
   series: Array<{ day: string; a: number; b: number }>;
   height?: number;
   labelA?: string;
   labelB?: string;
+  colorA?: string;
+  colorB?: string;
 }) {
   const w = 720;
   const h = height;
@@ -55,7 +59,7 @@ export function DualBarChart({
                 y={h - padBottom - ha}
                 width={barW}
                 height={ha}
-                fill="var(--ink)"
+                fill={colorA}
                 rx="2"
               />
               <rect
@@ -63,7 +67,7 @@ export function DualBarChart({
                 y={h - padBottom - hb}
                 width={barW}
                 height={hb}
-                fill="var(--ink-4)"
+                fill={colorB}
                 rx="2"
               />
               {(i === 0 || i === series.length - 1 || i === Math.floor(series.length / 2)) && (
@@ -83,8 +87,8 @@ export function DualBarChart({
         })}
       </svg>
       <div className="chart-legend">
-        <span><span className="dot dot-ink" /> {labelA}</span>
-        <span><span className="dot dot-ink-4" /> {labelB}</span>
+        <span><span className="dot" style={{ background: colorA }} /> {labelA}</span>
+        <span><span className="dot" style={{ background: colorB }} /> {labelB}</span>
       </div>
     </div>
   );
@@ -94,7 +98,7 @@ export function HBarBreakdown({
   items,
   total,
 }: {
-  items: Array<{ key: string; label: string; value: number }>;
+  items: Array<{ key: string; label: string; value: number; tone?: "error" | "amber" | "income" }>;
   total?: number;
 }) {
   const sum = total ?? items.reduce((s, x) => s + x.value, 0);
@@ -102,6 +106,7 @@ export function HBarBreakdown({
     <div className="hbar-list">
       {items.map((x) => {
         const pct = sum > 0 ? (x.value / sum) * 100 : 0;
+        const fill = x.tone ? `var(--${x.tone})` : "var(--ink)";
         return (
           <div key={x.key} className="hbar-row">
             <div className="hbar-meta">
@@ -111,7 +116,7 @@ export function HBarBreakdown({
               </span>
             </div>
             <div className="hbar-track">
-              <div className="hbar-fill" style={{ width: `${pct}%` }} />
+              <div className="hbar-fill" style={{ width: `${pct}%`, background: fill }} />
             </div>
           </div>
         );

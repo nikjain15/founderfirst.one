@@ -635,6 +635,12 @@ a:hover { opacity: 0.7; }
   background: var(--error-bg);
 }
 .kpi.kpi-warn .kpi-value { color: var(--error); }
+.kpi.kpi-pos  .kpi-value { color: var(--income); }
+
+/* CSAT traffic-light — green/amber/red mirrors SLA fresh/aging/stale. */
+.kpi-value.csat-good { color: var(--income); }
+.kpi-value.csat-warn { color: var(--amber); }
+.kpi-value.csat-bad  { color: var(--error); }
 .kpi-label {
   font-size: var(--fs-eyebrow);
   text-transform: uppercase;

@@ -47,6 +47,17 @@ function getWorkerUrl() {
   return ""; // last resort — same origin
 }
 
+/**
+ * Dispatch an analytics event to the host page. The marketing site's
+ * penny-event-bridge listens and forwards through track(), so the same
+ * consent rules and anon_id apply. Fire-and-forget; never throws.
+ */
+function emitPennyEvent(name, props) {
+  try {
+    window.dispatchEvent(new CustomEvent("penny:event", { detail: { name, props: props || {} } }));
+  } catch { /* swallow */ }
+}
+
 function uuid() {
   if (crypto && crypto.randomUUID) return crypto.randomUUID();
   return "p-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
@@ -136,6 +147,11 @@ function App({ workerUrl }) {
     setBubbles(nextBubbles);
     setDraft("");
     setSending(true);
+    const sentAt = Date.now();
+    emitPennyEvent("penny_message_sent", {
+      message_index: state.turn_count + 1,
+      message_length: text.length,
+    });
 
     const history = nextBubbles
       .filter((b) => b.from)
@@ -164,6 +180,11 @@ function App({ workerUrl }) {
       setBubbles((prev) => [...prev, ...replyBubbles]);
       setState(data.sessionState || state);
       if (data.reply.cta) setPendingCta(data.reply.cta);
+      emitPennyEvent("penny_first_response", {
+        message_index: state.turn_count + 1,
+        latency_ms: Date.now() - sentAt,
+        cta_shown: !!data.reply.cta,
+      });
     } catch {
       setBubbles((prev) => [...prev, {
         headline: "Give me just a moment — I'm catching up.",
@@ -224,7 +245,10 @@ function App({ workerUrl }) {
       <button
         class="penny-launcher"
         aria-label="Open Penny"
-        onClick=${() => setOpen(true)}
+        onClick=${() => {
+          setOpen(true);
+          emitPennyEvent("penny_opened", { trigger: "launcher", message_count: bubbles.filter((b) => b.from).length });
+        }}
       >P</button>
     `;
   }
@@ -237,7 +261,13 @@ function App({ workerUrl }) {
           <div class="penny-name">Penny</div>
           <div class="penny-status">online</div>
         </div>
-        <button class="penny-close" aria-label="Close" onClick=${() => setOpen(false)}>×</button>
+        <button class="penny-close" aria-label="Close" onClick=${() => {
+          setOpen(false);
+          emitPennyEvent("penny_closed", {
+            messages_sent: state.turn_count,
+            had_cta: !!pendingCta,
+          });
+        }}>×</button>
       </div>
       <div class="penny-privacy">Conversations are saved to help Penny get better.</div>
 

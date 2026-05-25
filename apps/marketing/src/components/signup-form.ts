@@ -25,6 +25,15 @@ export function initSignupForms(): void {
   const forms = document.querySelectorAll<HTMLFormElement>("[data-signup-form]");
   for (const form of forms) {
     form.addEventListener("submit", (e) => handleSubmit(e, form));
+    const input = form.querySelector<HTMLInputElement>('input[type="email"]');
+    if (input) {
+      let firedFocus = false;
+      input.addEventListener("focus", () => {
+        if (firedFocus) return;
+        firedFocus = true;
+        track("signup_form_focus", { source: form.dataset.signupForm ?? "unknown" });
+      });
+    }
   }
 }
 
@@ -38,8 +47,11 @@ async function handleSubmit(e: SubmitEvent, form: HTMLFormElement): Promise<void
 
   const email = input.value.trim();
   const source = form.dataset.signupForm ?? "unknown";
+  const validEmail = EMAIL_RE.test(email);
 
-  if (!EMAIL_RE.test(email)) {
+  track("signup_form_submit_attempt", { source, valid_email: validEmail });
+
+  if (!validEmail) {
     input.focus();
     showToast("Please enter a valid email.");
     return;

@@ -25,20 +25,25 @@ import { captureInboundRef } from "./lib/referral";
 import { initAnalytics } from "./lib/analytics";
 
 // UI components.
-import { initNavDropdown }   from "./components/nav-dropdown";
-import { initNavTracking }   from "./components/nav-tracking";
-import { initTryPenny }      from "./components/try-penny";
-import { initSignupForms }   from "./components/signup-form";
-import { markDecorativeAria } from "./components/a11y";
+import { initNavDropdown }       from "./components/nav-dropdown";
+import { initNavTracking }       from "./components/nav-tracking";
+import { initTryPenny }          from "./components/try-penny";
+import { initSignupForms }       from "./components/signup-form";
+import { markDecorativeAria }    from "./components/a11y";
+import { initConsentBanner }     from "./components/consent-banner";
+import { initCtaTracking }       from "./components/cta-tracking";
+import { initPennyEventBridge }  from "./components/penny-event-bridge";
 
 captureInboundRef();
+initPennyEventBridge(); // listen early so events emitted before init aren't missed
 initAnalytics();
 
-// Wait for DOM so component selectors can resolve (defer-equivalent for module scripts).
 document.addEventListener("DOMContentLoaded", () => {
   markDecorativeAria();
   initNavDropdown();
   initNavTracking();
   initTryPenny();
   initSignupForms();
+  initCtaTracking();
+  initConsentBanner();
 });

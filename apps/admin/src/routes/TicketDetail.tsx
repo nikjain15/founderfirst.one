@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getTicket, replyToTicket, getFeedbackForTicket, setTicketTopic, type TicketDetail as TD, type TicketFeedback } from "../lib/supabase";
+import { getTicket, replyToTicket, getFeedbackForTicket, setTicketTopic, logAudit, type TicketDetail as TD, type TicketFeedback } from "../lib/supabase";
 import { IconArrowLeft, IconSend, IconAlert, channelIcon } from "../lib/icons";
 import { slaForTicket, slaLabel } from "../lib/sla";
 import { TOPICS } from "../lib/topics";
@@ -43,7 +43,15 @@ export function TicketDetail() {
     if (!reply.trim()) return;
     setSending(true);
     try {
-      await replyToTicket(ticketId, reply.trim(), resolve);
+      const body = reply.trim();
+      await replyToTicket(ticketId, body, resolve);
+      void logAudit("ticket.reply", "ticket", ticketId, {
+        body,
+        resolved: resolve,
+        ticket_subject: data?.ticket.subject ?? null,
+        contact_email:  data?.ticket.contact_email ?? null,
+        channel:        data?.ticket.channel ?? null,
+      });
       setReply("");
       if (resolve) {
         navigate("/support");
@@ -99,7 +107,11 @@ export function TicketDetail() {
                   const next = e.target.value || null;
                   // Optimistic update so the dropdown reflects the change immediately.
                   setData((d) => d ? { ...d, ticket: { ...d.ticket, topic: next } } : d);
-                  try { await setTicketTopic(ticket.id, next); }
+                  const prev = ticket.topic ?? null;
+                  try {
+                    await setTicketTopic(ticket.id, next);
+                    void logAudit("ticket.topic_set", "ticket", ticket.id, { from: prev, to: next });
+                  }
                   catch (err) { setError((err as Error).message); await refresh(); }
                 }}
               >

@@ -829,3 +829,55 @@ a:hover { opacity: 0.7; }
   font-weight: var(--fw-semibold);
   color: var(--ink);
 }
+
+/* ---- Style reference (analytics page) --------------------------------- */
+
+.palette-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.palette-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  align-items: center;
+}
+@media (max-width: 640px) {
+  .palette-row { grid-template-columns: 1fr; gap: 8px; }
+}
+.palette-label {
+  font-size: var(--fs-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-chip);
+  color: var(--ink-3);
+  font-weight: var(--fw-semibold);
+}
+.palette-swatches {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.palette-note {
+  font-size: 12px;
+  color: var(--ink-4);
+  font-style: normal;
+}
+
+.swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.swatch-chip {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: inline-block;
+}
+.swatch-label {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}

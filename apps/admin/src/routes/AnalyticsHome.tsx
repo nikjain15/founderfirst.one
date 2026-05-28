@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AnalyticsSupport } from "./Analytics";
 import { AnalyticsWaitlist } from "./AnalyticsWaitlist";
 import { AnalyticsProduct } from "./AnalyticsProduct";
+import { AnalyticsMarketing } from "./AnalyticsMarketing";
 
 type Tab = "waitlist" | "product" | "marketing" | "support";
 
@@ -46,18 +47,9 @@ export function AnalyticsHome() {
       <div className="tab-panel">
         {tab === "waitlist"  && <AnalyticsWaitlist />}
         {tab === "product"   && <AnalyticsProduct />}
-        {tab === "marketing" && <ComingSoon name="Marketing analytics" hint="Google Analytics 4 via API. Needs a service-account key — Step 5." />}
+        {tab === "marketing" && <AnalyticsMarketing />}
         {tab === "support"   && <AnalyticsSupport />}
       </div>
-    </div>
-  );
-}
-
-function ComingSoon({ name, hint }: { name: string; hint: string }) {
-  return (
-    <div className="empty" style={{ marginTop: 20 }}>
-      <p className="empty-title">{name}</p>
-      {hint}
     </div>
   );
 }

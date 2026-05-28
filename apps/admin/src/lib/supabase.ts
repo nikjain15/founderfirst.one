@@ -212,6 +212,34 @@ export async function getAuditFacets(): Promise<{ actions: string[]; actors: str
   };
 }
 
+// ---- Google Analytics 4 (via Supabase Edge Function) -----------------------
+
+export interface GaOverview {
+  totalUsers: number;
+  sessions: number;
+  pageViews: number;
+  bounceRate: number;     // 0..1
+  avgSessionSec: number;
+}
+export interface GaTrafficRow { date: string; sessions: number; users: number }
+export interface GaPageRow    { path: string;  views: number;    users: number }
+export interface GaSourceRow  { source: string; sessions: number; users: number }
+
+async function callGaProxy<T>(body: Record<string, unknown>): Promise<T> {
+  const db = getClient();
+  const { data, error } = await db.functions.invoke("ga-proxy", { body });
+  if (error) throw new Error(`ga-proxy: ${error.message}`);
+  if (data?.error) throw new Error(`ga-proxy: ${data.error}${data.hint ? ` (${data.hint})` : ""}`);
+  return data as T;
+}
+
+export const ga = {
+  overview:  (days = 30)              => callGaProxy<GaOverview>({ action: "overview",  days }),
+  traffic:   (days = 30)              => callGaProxy<{ rows: GaTrafficRow[] }>({ action: "traffic",   days }),
+  topPages:  (days = 30, limit = 10)  => callGaProxy<{ rows: GaPageRow[]    }>({ action: "topPages",  days, limit }),
+  sources:   (days = 30, limit = 10)  => callGaProxy<{ rows: GaSourceRow[]  }>({ action: "sources",   days, limit }),
+};
+
 // ---- Product funnel --------------------------------------------------------
 
 export interface FunnelStageRow { stage: string; unique_users: number; total_events: number }

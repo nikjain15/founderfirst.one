@@ -1,0 +1,4 @@
+project_id = "ejqsfzggyfsjzrcevlnq"
+
+[functions.ga-proxy]
+verify_jwt = true

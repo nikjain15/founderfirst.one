@@ -12,6 +12,7 @@ import { AnalyticsHome } from "./routes/AnalyticsHome";
 import { Users } from "./routes/Users";
 import { Audit } from "./routes/Audit";
 import { Admins } from "./routes/Admins";
+import { ContentHome } from "./routes/ContentHome";
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -118,6 +119,7 @@ export function App() {
                 <Link to="/support" className={location.pathname.startsWith("/support") ? "active" : ""}>Support</Link>
                 <Link to="/users" className={location.pathname.startsWith("/users") ? "active" : ""}>Users</Link>
                 <Link to="/analytics" className={location.pathname.startsWith("/analytics") ? "active" : ""}>Analytics</Link>
+                <Link to="/content" className={location.pathname.startsWith("/content") ? "active" : ""}>Content</Link>
                 <Link to="/audit" className={location.pathname.startsWith("/audit") ? "active" : ""}>Audit</Link>
                 <Link to="/admins" className={location.pathname.startsWith("/admins") ? "active" : ""}>Admins</Link>
               </div>
@@ -171,6 +173,10 @@ export function App() {
           <Route
             path="/analytics"
             element={signedIn ? <AnalyticsHome /> : <Navigate to="/login" replace state={{ from: location }} />}
+          />
+          <Route
+            path="/content"
+            element={signedIn ? <ContentHome /> : <Navigate to="/login" replace state={{ from: location }} />}
           />
           <Route
             path="/audit"

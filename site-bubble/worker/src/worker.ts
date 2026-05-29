@@ -18,6 +18,38 @@
 import { SYSTEM_PROMPT_BASE } from "./system-prompt";
 import { SITE_CONTENT } from "./site-content";
 import { Supabase } from "./supabase";
+import { PROMPT_GUARDRAILS } from "./prompt-guardrails";
+
+/**
+ * Module-level cache for the live system prompt.
+ *
+ * The Worker fetches the live prompt from Supabase so admins can edit it from
+ * /admin/content without redeploying. We cache it for 60s in the isolate to
+ * keep the hot path fast — at our volume that's at most ~60 Supabase calls
+ * per hour per isolate, negligible.
+ *
+ * On any error (network, RLS, table not yet migrated) we fall back to
+ * SYSTEM_PROMPT_BASE so Penny stays online.
+ */
+const PROMPT_TTL_MS = 60_000;
+let promptCache: { body: string; fetchedAt: number } | null = null;
+
+async function getCachedLiveSystemPrompt(supa: Supabase): Promise<string> {
+  const now = Date.now();
+  if (promptCache && now - promptCache.fetchedAt < PROMPT_TTL_MS) {
+    return promptCache.body;
+  }
+  try {
+    const live = await supa.getLivePrompt();
+    const body = live?.body ?? SYSTEM_PROMPT_BASE;
+    promptCache = { body, fetchedAt: now };
+    return body;
+  } catch (e) {
+    // Don't poison the cache on failure — fall back, retry next request.
+    console.error("getLivePrompt failed, using baked-in prompt:", e);
+    return SYSTEM_PROMPT_BASE;
+  }
+}
 import {
   extractEmail,
   extractPhone,
@@ -217,8 +249,18 @@ async function handleChat(req: Request, env: Env, origin: string | null): Promis
   });
 
   // Build the prompt.
+  //   PROMPT_GUARDRAILS = locked runtime contract (output schema + input format).
+  //                       Lives in prompt-guardrails.ts; admins cannot edit it.
+  //   promptBase        = editable body (persona, voice, CTA decision tree,
+  //                       off-topic templates). Fetched from Supabase, falls
+  //                       back to SYSTEM_PROMPT_BASE if unreachable.
+  //   <site_content>    = live page text, injected per request.
+  //   <session_state>   = runtime-tracked flags for the CTA decision tree.
   const site = await getSiteContent(env);
-  const system = `${SYSTEM_PROMPT_BASE}
+  const promptBase = await getCachedLiveSystemPrompt(supa);
+  const system = `${PROMPT_GUARDRAILS}
+
+${promptBase}
 
 <site_content>
 ${site}

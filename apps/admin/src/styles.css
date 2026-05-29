@@ -1124,6 +1124,23 @@ a:hover { opacity: 0.7; }
   .analytics-two-col { grid-template-columns: 1fr; gap: 28px; }
 }
 
+/* ---- Content / prompt editor ------------------------------------------ */
+.prompt-editor { min-width: 0; }
+.prompt-editor textarea,
+.prompt-editor input[type="text"] {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.prompt-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  gap: 20px;
+}
+.prompt-editor-grid > * { min-width: 0; }
+@media (max-width: 760px) {
+  .prompt-editor-grid { grid-template-columns: 1fr; gap: 16px; }
+}
+
 /* ---- Sparkline --------------------------------------------------------- */
 .sparkline-wrap {
   border: 1px solid var(--line);

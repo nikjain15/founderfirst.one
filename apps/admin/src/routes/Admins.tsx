@@ -53,21 +53,24 @@ export function Admins({ currentEmail }: Props) {
   }
 
   return (
-    <div className="wrap">
+    <div>
       <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · access</div>
       <h1 className="page-title">Admins.</h1>
       <p className="page-sub">Who can sign in to this admin app.</p>
 
       {isSuper && (
-        <form onSubmit={onInvite} style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
-          <input
-            type="email"
-            placeholder="newadmin@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ flex: "1 1 240px", minHeight: "var(--tap-min)" }}
-          />
+        <form onSubmit={onInvite} className="toolbar admins-invite">
+          <div className="field" style={{ flex: "1 1 260px", margin: 0 }}>
+            <label htmlFor="invite-email">Invite new admin</label>
+            <input
+              id="invite-email"
+              type="email"
+              placeholder="newadmin@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
           <button className="btn" type="submit">Invite admin →</button>
         </form>
       )}
@@ -79,14 +82,14 @@ export function Admins({ currentEmail }: Props) {
         </div>
       )}
 
-      <div className="table-wrap" style={{ marginTop: 20 }}>
-        <table>
+      <div className="table-wrap">
+        <table className="data-table">
           <thead>
             <tr>
               <th>Email</th>
               <th>Added by</th>
               <th>Added</th>
-              {isSuper && <th></th>}
+              {isSuper && <th aria-label="Actions" />}
             </tr>
           </thead>
           <tbody>
@@ -97,15 +100,17 @@ export function Admins({ currentEmail }: Props) {
             ) : rows.map((r) => (
               <tr key={r.email}>
                 <td>
-                  {r.email}
-                  {r.email === SUPER_ADMIN_EMAIL && <span className="eyebrow" style={{ marginLeft: 8 }}>super</span>}
+                  <span className="admin-email">{r.email}</span>
+                  {r.email === SUPER_ADMIN_EMAIL && <span className="chip chip-super">super</span>}
                 </td>
                 <td>{r.added_by ?? "—"}</td>
                 <td>{new Date(r.added_at).toLocaleDateString()}</td>
                 {isSuper && (
-                  <td>
+                  <td className="row-actions">
                     {r.email !== SUPER_ADMIN_EMAIL && (
-                      <button className="btn btn-ghost" onClick={() => onRemove(r.email)}>Remove</button>
+                      <button type="button" className="link-danger" onClick={() => onRemove(r.email)}>
+                        Remove
+                      </button>
                     )}
                   </td>
                 )}

@@ -113,6 +113,8 @@ function main(): void {
   cpSync(resolve(adminOut, "index.html"), resolve(adminOut, "users/index.html"));
   mkdirSync(resolve(adminOut, "audit"), { recursive: true });
   cpSync(resolve(adminOut, "index.html"), resolve(adminOut, "audit/index.html"));
+  mkdirSync(resolve(adminOut, "admins"), { recursive: true });
+  cpSync(resolve(adminOut, "index.html"), resolve(adminOut, "admins/index.html"));
 
   step("Copying penny demo → dist/penny/demo/");
   const demoOut = resolve(DIST, "penny/demo");

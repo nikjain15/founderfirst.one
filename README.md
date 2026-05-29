@@ -63,4 +63,21 @@ The mission is simple: give business owners the back-office support that used to
 
 ---
 
+## Engineering guardrails
+
+**Responsive standard** — every page, tab, and component must render correctly at any viewport width from 320px to 1920px+. Full rules in [apps/admin/RESPONSIVE.md](apps/admin/RESPONSIVE.md). Quick version:
+
+1. Fluid first (`clamp`, `min`, `max`, `flex-wrap`, `grid auto-fit`); breakpoints only when a layout must change shape.
+2. No hardcoded pixel widths in horizontal layouts — use `minmax(0, …)` so tracks can shrink.
+3. Touch targets ≥ 44×44 px (`min-height: var(--tap-min)`).
+4. Tables go inside `.table-wrap` for horizontal scroll + edge-fade affordance.
+5. Inputs ≥ 16px font-size (prevents iOS auto-zoom).
+6. Fixed-position elements (Penny bubble, cookie banner) must not cover CTAs at any width.
+
+**Width-ladder test before merging any new UI:** 320 · 360 · 375 · 414 · 480 · 540 · 640 · 768 · 834 · 1024 · 1280 · 1440 · 1920. At each, `document.documentElement.scrollWidth > innerWidth` must be `false`.
+
+**Design tokens** — all color, spacing, radius, and font-size come from [packages/design-system/tokens.css](packages/design-system/tokens.css). Never inline hex values or magic px.
+
+---
+
 *© 2026 FounderFirst. All rights reserved.*

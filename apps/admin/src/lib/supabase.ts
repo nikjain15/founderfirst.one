@@ -373,3 +373,61 @@ export async function replyToTicket(
   if (error) throw new Error(`reply_to_ticket: ${error.message}`);
   return data as string;
 }
+
+// ---- Penny prompts ---------------------------------------------------------
+
+export interface PromptRow {
+  id: string;
+  version: number;
+  body: string;
+  notes: string | null;
+  is_live: boolean;
+  created_at: string;
+  created_by: string | null;
+  created_by_email: string | null;
+}
+
+export interface LivePromptRow {
+  id: string;
+  version: number;
+  body: string;
+  updated_at: string;
+}
+
+export async function listPrompts(): Promise<PromptRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_prompts");
+  if (error) throw new Error(`list_prompts: ${error.message}`);
+  return ((data as PromptRow[]) ?? []).map((r) => ({
+    ...r,
+    version: Number(r.version),
+  }));
+}
+
+export async function getLivePrompt(): Promise<LivePromptRow | null> {
+  const db = getClient();
+  const { data, error } = await db.rpc("get_live_prompt");
+  if (error) throw new Error(`get_live_prompt: ${error.message}`);
+  const rows = (data as LivePromptRow[]) ?? [];
+  if (!rows.length) return null;
+  return { ...rows[0], version: Number(rows[0].version) };
+}
+
+export async function createPromptVersion(
+  body: string,
+  notes?: string,
+): Promise<string> {
+  const db = getClient();
+  const { data, error } = await db.rpc("create_prompt_version", {
+    p_body: body,
+    p_notes: notes ?? null,
+  });
+  if (error) throw new Error(`create_prompt_version: ${error.message}`);
+  return data as string;
+}
+
+export async function setLivePrompt(id: string): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("set_live_prompt", { p_id: id });
+  if (error) throw new Error(`set_live_prompt: ${error.message}`);
+}

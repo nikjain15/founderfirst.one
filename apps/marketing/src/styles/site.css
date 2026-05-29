@@ -60,6 +60,7 @@ section.bg-white + section.bg-white { border-top: 1px solid var(--line); }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding-block: 16px;
 }
 .nav-logo {
@@ -471,7 +472,8 @@ section.bg-white + section.bg-white { border-top: 1px solid var(--line); }
 .ff-consent {
   position: fixed;
   right: 16px;
-  bottom: 16px;
+  /* Clear the Penny launcher (56px high, bottom:20px). */
+  bottom: 92px;
   max-width: 380px;
   background: var(--white, #fff);
   border: 1px solid var(--line, #e5e5e5);
@@ -508,4 +510,9 @@ section.bg-white + section.bg-white { border-top: 1px solid var(--line); }
 .ff-consent-actions button:hover { opacity: 0.9; }
 @media (max-width: 480px) {
   .ff-consent { left: 16px; right: 16px; max-width: none; }
+}
+/* Hide brand wordmark when there isn't room — keep the FF mark visible. */
+@media (max-width: 400px) {
+  .nav-logo { font-size: 0; gap: 0; }
+  .nav-logo .ff-mark { font-size: 13px; }
 }

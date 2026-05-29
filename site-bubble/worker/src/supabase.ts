@@ -64,4 +64,27 @@ export class Supabase {
       Prefer: "return=minimal,resolution=ignore-duplicates",
     });
   }
+
+  /**
+   * Fetch the currently live system prompt via the get_live_prompt() RPC.
+   * Returns null if no live row is set (caller should fall back to a baked-in
+   * default). Throws on transport errors.
+   */
+  async getLivePrompt(): Promise<{ id: string; version: number; body: string; updated_at: string } | null> {
+    const res = await fetch(`${this.url}/rest/v1/rpc/get_live_prompt`, {
+      method: "POST",
+      headers: {
+        apikey: this.serviceKey,
+        Authorization: `Bearer ${this.serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`get_live_prompt failed (${res.status}): ${body}`);
+    }
+    const rows = (await res.json()) as Array<{ id: string; version: number; body: string; updated_at: string }>;
+    return rows[0] ?? null;
+  }
 }

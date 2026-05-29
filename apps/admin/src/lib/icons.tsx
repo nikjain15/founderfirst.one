@@ -112,6 +112,22 @@ export function IconChevronDown(p: IconProps = {}) {
   );
 }
 
+export function IconMenu(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <path d="M3 6h18M3 12h18M3 18h18" />
+    </svg>
+  );
+}
+
+export function IconClose(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
 export function channelIcon(channel: string, size = 14) {
   if (channel === "discord") return <IconDiscord size={size} />;
   return <IconGlobe size={size} />;

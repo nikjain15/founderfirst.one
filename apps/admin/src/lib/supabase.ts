@@ -24,6 +24,50 @@ export function getClient(): SupabaseClient {
   return client;
 }
 
+// ---- Admin allow-list ------------------------------------------------------
+
+export interface AdminRow {
+  email: string;
+  added_at: string;
+  added_by: string | null;
+}
+
+export async function isAdmin(email: string): Promise<boolean> {
+  const db = getClient();
+  const { data, error } = await db
+    .from("admins")
+    .select("email")
+    .eq("email", email.toLowerCase())
+    .maybeSingle();
+  if (error) throw new Error(`isAdmin: ${error.message}`);
+  return !!data;
+}
+
+export async function listAdmins(): Promise<AdminRow[]> {
+  const db = getClient();
+  const { data, error } = await db
+    .from("admins")
+    .select("email, added_at, added_by")
+    .order("added_at", { ascending: true });
+  if (error) throw new Error(`listAdmins: ${error.message}`);
+  return (data as AdminRow[]) ?? [];
+}
+
+export async function inviteAdmin(email: string): Promise<void> {
+  const db = getClient();
+  const me = (await db.auth.getUser()).data.user?.email ?? null;
+  const { error } = await db
+    .from("admins")
+    .insert({ email: email.trim().toLowerCase(), added_by: me });
+  if (error) throw new Error(error.message);
+}
+
+export async function removeAdmin(email: string): Promise<void> {
+  const db = getClient();
+  const { error } = await db.from("admins").delete().eq("email", email);
+  if (error) throw new Error(error.message);
+}
+
 // ---- Types matching the RPC return shapes ----------------------------------
 
 export interface TicketRow {

@@ -7,10 +7,10 @@ export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? "";
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? "";
 
 /**
- * Allowed admin email. Only this address can sign in. Set via
- * VITE_ADMIN_EMAIL at build time. If empty, any authenticated email works
- * (useful for local dev).
+ * Super-admin email. The only address allowed to invite or remove other
+ * admins. Admin membership itself lives in the `admins` table in Supabase;
+ * this constant only controls who sees the management UI.
  */
-export const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL ?? "").toLowerCase();
+export const SUPER_ADMIN_EMAIL = "nikjain1588@gmail.com";
 
 export const hasSupabase = !!SUPABASE_URL && !!SUPABASE_ANON_KEY;

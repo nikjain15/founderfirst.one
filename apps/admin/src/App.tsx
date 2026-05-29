@@ -2,20 +2,25 @@ import { useEffect, useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 
-import { getClient, logAudit } from "./lib/supabase";
+import { getClient, isAdmin, logAudit } from "./lib/supabase";
 import { hasSupabase } from "./lib/env";
-import { IconLogOut } from "./lib/icons";
+import { IconLogOut, IconMenu, IconClose } from "./lib/icons";
 import { Login } from "./routes/Login";
 import { Inbox } from "./routes/Inbox";
 import { TicketDetail } from "./routes/TicketDetail";
 import { AnalyticsHome } from "./routes/AnalyticsHome";
 import { Users } from "./routes/Users";
 import { Audit } from "./routes/Audit";
+import { Admins } from "./routes/Admins";
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [navOpen, setNavOpen] = useState(false);
+  const [denied, setDenied] = useState(false);
   const location = useLocation();
+
+  useEffect(() => { setNavOpen(false); }, [location.pathname]);
 
   useEffect(() => {
     if (!hasSupabase) {
@@ -23,8 +28,18 @@ export function App() {
       return;
     }
     const db = getClient();
-    db.auth.getSession().then(({ data }) => {
-      setSession(data.session ?? null);
+    db.auth.getSession().then(async ({ data }) => {
+      const s = data.session ?? null;
+      if (s) {
+        const ok = await isAdmin(s.user.email ?? "").catch(() => false);
+        if (!ok) {
+          setDenied(true);
+          await db.auth.signOut();
+          setSession(null);
+        } else {
+          setSession(s);
+        }
+      }
       setLoading(false);
     });
     // Supabase fires SIGNED_IN on every page load (rehydrate) and on token refresh —
@@ -34,11 +49,22 @@ export function App() {
     const { data: sub } = db.auth.onAuthStateChange((event, s) => {
       setSession(s ?? null);
       if (event === "SIGNED_IN" && s) {
-        const uid = s.user.id;
-        if (sessionStorage.getItem(LOGGED_KEY) !== uid) {
-          sessionStorage.setItem(LOGGED_KEY, uid);
-          void logAudit("auth.sign_in", "auth", s.user.email ?? null, {});
-        }
+        const email = s.user.email ?? "";
+        // Gate: confirm the signed-in email is in the admins allow-list.
+        // If not, sign them out immediately and show a denial screen.
+        void isAdmin(email).then((ok) => {
+          if (!ok) {
+            setDenied(true);
+            void db.auth.signOut();
+            return;
+          }
+          setDenied(false);
+          const uid = s.user.id;
+          if (sessionStorage.getItem(LOGGED_KEY) !== uid) {
+            sessionStorage.setItem(LOGGED_KEY, uid);
+            void logAudit("auth.sign_in", "auth", email, {});
+          }
+        });
       }
       if (event === "SIGNED_OUT") {
         sessionStorage.removeItem(LOGGED_KEY);
@@ -69,12 +95,23 @@ export function App() {
 
   return (
     <div className="admin-shell">
-      <nav className="admin-nav">
+      <nav className={`admin-nav ${signedIn ? "signed-in" : ""} ${navOpen ? "is-open" : ""}`}>
         <div className="wrap nav-inner">
           <Link to="/support" className="brand">
             <span className="ff-mark ff-mark-md">FF</span>
             Admin
           </Link>
+          {signedIn && (
+            <button
+              type="button"
+              className="nav-toggle"
+              aria-label={navOpen ? "Close menu" : "Open menu"}
+              aria-expanded={navOpen}
+              onClick={() => setNavOpen((v) => !v)}
+            >
+              {navOpen ? <IconClose size={18} /> : <IconMenu size={18} />}
+            </button>
+          )}
           <div className="nav-meta">
             {signedIn && (
               <div className="nav-links">
@@ -82,6 +119,7 @@ export function App() {
                 <Link to="/users" className={location.pathname.startsWith("/users") ? "active" : ""}>Users</Link>
                 <Link to="/analytics" className={location.pathname.startsWith("/analytics") ? "active" : ""}>Analytics</Link>
                 <Link to="/audit" className={location.pathname.startsWith("/audit") ? "active" : ""}>Audit</Link>
+                <Link to="/admins" className={location.pathname.startsWith("/admins") ? "active" : ""}>Admins</Link>
               </div>
             )}
             {signedIn ? (
@@ -104,7 +142,19 @@ export function App() {
           <Route path="/" element={<Navigate to="/support" replace />} />
           <Route
             path="/login"
-            element={signedIn ? <Navigate to="/support" replace /> : <Login />}
+            element={signedIn ? <Navigate to="/support" replace /> : (
+              denied ? (
+                <div className="login-wrap">
+                  <div className="login-card">
+                    <span className="ff-mark ff-mark-md">FF</span>
+                    <div className="eyebrow">Admin · access</div>
+                    <h1>Not authorized.</h1>
+                    <p className="sub">Your email isn't on the admin list. Contact the super admin to request access.</p>
+                    <button className="btn" onClick={() => setDenied(false)}>Try a different email</button>
+                  </div>
+                </div>
+              ) : <Login />
+            )}
           />
           <Route
             path="/support"
@@ -125,6 +175,10 @@ export function App() {
           <Route
             path="/audit"
             element={signedIn ? <Audit /> : <Navigate to="/login" replace state={{ from: location }} />}
+          />
+          <Route
+            path="/admins"
+            element={signedIn ? <Admins currentEmail={session?.user.email ?? ""} /> : <Navigate to="/login" replace state={{ from: location }} />}
           />
         </Routes>
       </main>

@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from "react";
 import { getClient } from "../lib/supabase";
-import { ADMIN_EMAIL } from "../lib/env";
 import { IconCheck, IconAlert } from "../lib/icons";
 
 export function Login() {
@@ -12,11 +11,9 @@ export function Login() {
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return;
 
-    if (ADMIN_EMAIL && trimmed !== ADMIN_EMAIL) {
-      setStatus({ kind: "err", msg: "Not an admin address." });
-      return;
-    }
-
+    // Membership is checked server-side after sign-in (see App.tsx). We
+    // intentionally don't pre-check here: it would require a public read of
+    // the admins table, and the post-login gate is the authoritative one.
     setStatus({ kind: "sending" });
     const db = getClient();
     const { error } = await db.auth.signInWithOtp({

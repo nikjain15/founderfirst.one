@@ -71,7 +71,10 @@ export function ContentVoice() {
   );
 
   const dirty = selected ? draft !== selected.body : draft.trim().length > 0 && draft !== VOICE_MD;
-  const rendered = useMemo(() => marked.parse(draft || "_(empty)_") as string, [draft]);
+  const rendered = useMemo(() => {
+    const html = marked.parse(draft || "_(empty)_") as string;
+    return upgradeRenderedHtml(html);
+  }, [draft]);
 
   function pickVersion(r: VoiceRow) {
     if (editing && dirty && !window.confirm("You have unsaved changes. Discard them?")) return;
@@ -345,6 +348,61 @@ function RenderedBody({ html }: { html: string }) {
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
+}
+
+/**
+ * Walks the rendered HTML and upgrades a few specific patterns into richer
+ * visual components — without changing the markdown source of truth.
+ *
+ *   1. The blockquote whose **bold opener** matches "the one-line test"
+ *      becomes a large callout box.
+ *   2. Tables whose header row is "Instead of this | Say this" become a
+ *      side-by-side card pair (red strikethrough left, green check right).
+ *   3. The unordered list following any H2/H3 whose title contains
+ *      "banned" becomes a chip row of pill-shaped warning chips.
+ *   4. The unordered list following an H2/H3 containing "approved emoji"
+ *      becomes a chip row of green chips.
+ */
+function upgradeRenderedHtml(html: string): string {
+  if (typeof window === "undefined" || typeof DOMParser === "undefined") return html;
+  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
+  const root = doc.body.firstElementChild;
+  if (!root) return html;
+
+  // 1. One-line test callout
+  root.querySelectorAll("blockquote").forEach((bq) => {
+    const opener = bq.querySelector("strong")?.textContent ?? "";
+    if (/one[- ]line test/i.test(opener)) bq.classList.add("voice-callout");
+  });
+
+  // 2. Say-this / not-that table
+  root.querySelectorAll("table").forEach((table) => {
+    const ths = Array.from(table.querySelectorAll("thead th")).map((th) =>
+      (th.textContent ?? "").trim().toLowerCase(),
+    );
+    if (ths.length === 2 && ths[0].includes("instead") && ths[1].includes("say this")) {
+      table.classList.add("voice-saythis-table");
+    }
+  });
+
+  // 3 & 4. Heading-driven chip lists
+  root.querySelectorAll("h2, h3").forEach((h) => {
+    const txt = (h.textContent ?? "").toLowerCase();
+    let sib = h.nextElementSibling;
+    // Skip any intervening paragraphs (e.g. "These are blocked automatically.")
+    while (sib && sib.tagName === "P") sib = sib.nextElementSibling;
+    if (!sib || sib.tagName !== "UL") return;
+
+    if (txt.includes("banned")) {
+      sib.classList.add("voice-chips", "voice-chips-red");
+    } else if (txt.includes("emoji")) {
+      // Inside the emoji section the first list (approved) is green.
+      // Subsequent strong+ul "Never use" stays as a normal list inline.
+      sib.classList.add("voice-chips", "voice-chips-green");
+    }
+  });
+
+  return root.innerHTML;
 }
 
 function FootnoteHint() {

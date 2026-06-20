@@ -6,6 +6,11 @@ import {
   type VoiceRow,
 } from "../lib/supabase";
 import { IconAlert, IconCheck } from "../lib/icons";
+// Repo-root VOICE.md, bundled as a string so the empty-state editor seeds
+// from the canonical file instead of an empty textarea. Updates to VOICE.md
+// will appear here after the next admin build; the live-served voice is
+// always whatever was last published from this screen.
+import VOICE_MD from "../../../../VOICE.md?raw";
 
 /**
  * Voice guide editor.
@@ -40,9 +45,12 @@ export function ContentVoice() {
           setDraft(live.body);
           setNotes("");
         } else {
+          // First-run seed: pre-fill the editor with the canonical VOICE.md
+          // from the repo so the admin can review/edit before saving v1
+          // instead of pasting from scratch.
           setSelectedId(null);
-          setDraft("");
-          setNotes("");
+          setDraft(VOICE_MD);
+          setNotes("Seeded from VOICE.md");
         }
       }
     } catch (e) {
@@ -119,7 +127,7 @@ export function ContentVoice() {
         <ContextBanner />
         <div className="empty" style={{ marginBottom: 16 }}>
           <p className="empty-title">No voice versions yet.</p>
-          <p>Paste the contents of <code>VOICE.md</code> below and click <strong>Save as new version</strong> to seed v1. Then click <strong>Set live</strong> and every surface that reads the voice (Penny site bubble, support bot, in-product Penny) will pick it up on its next request.</p>
+          <p>The editor below is pre-loaded with the current <code>VOICE.md</code> from the repo. Review or tweak, then click <strong>Save as new version</strong> to seed v1. Then click <strong>Set live</strong> and every surface that reads the voice (Penny site bubble, support bot, in-product Penny) will pick it up on its next request.</p>
         </div>
         <textarea
           value={draft}
@@ -292,6 +300,12 @@ function ContextBanner() {
       To verify after publishing, open the Penny bubble on{" "}
       <a href="https://founderfirst.one" target="_blank" rel="noreferrer">founderfirst.one</a>{" "}
       and ask it a question that tests the rule you changed.
+      <br />
+      <span style={{ display: "inline-block", marginTop: 6 }}>
+        <strong style={{ color: "var(--text)" }}>Edit here, not in the repo.</strong>{" "}
+        <code>VOICE.md</code> in the repo is the historical seed only — once v1 is saved,
+        every change must be made on this screen. File edits won't reach the bots.
+      </span>
     </div>
   );
 }

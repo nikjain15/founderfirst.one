@@ -49,7 +49,7 @@ export function ContentVoice() {
           // sees the canonical guide rendered immediately, ready to save as v1.
           setSelectedId(null);
           setDraft(VOICE_MD);
-          setNotes("Seeded from VOICE.md");
+          setNotes("Initial draft");
           setEditing(false);
         }
       }
@@ -93,7 +93,7 @@ export function ContentVoice() {
     if (dirty && !window.confirm("Discard your unsaved changes?")) return;
     if (selected) setDraft(selected.body);
     else setDraft(VOICE_MD);
-    setNotes(selected ? "" : "Seeded from VOICE.md");
+    setNotes(selected ? "" : "Initial draft");
     setEditing(false);
   }
 
@@ -214,7 +214,7 @@ export function ContentVoice() {
             </div>
             <div className="voice-header-sub">
               {noVersionsYet ? (
-                <>Seeded from <code>VOICE.md</code>. Review, optionally edit, then save as v1.</>
+                <>Starter draft loaded. Review, optionally edit, then save as version 1.</>
               ) : (
                 <>
                   {selected?.is_live && <span className="badge badge-live">● Live on every surface</span>}
@@ -408,12 +408,11 @@ function upgradeRenderedHtml(html: string): string {
 function FootnoteHint() {
   return (
     <div className="voice-footnote">
-      <strong>How this works.</strong> The live version is prepended to every Penny system
-      prompt — site bubble, support bot, in-product Penny. Edits go live within ~60 seconds
-      of clicking <em>Set live</em>, no redeploy. <code>VOICE.md</code> in the repo is a
-      historical seed only; once v1 is saved, every change must happen here.{" "}
+      <strong>How this works.</strong> The live version is used by every Penny surface —
+      site bubble, support bot, in-product Penny. Edits go live within ~60 seconds of
+      clicking <em>Set live</em>; no redeploy. After publishing,{" "}
       <a href="https://founderfirst.one" target="_blank" rel="noreferrer">
-        Open Penny bubble to verify →
+        open the Penny bubble to verify →
       </a>
     </div>
   );

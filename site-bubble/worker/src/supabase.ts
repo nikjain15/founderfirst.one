@@ -89,6 +89,35 @@ export class Supabase {
   }
 
   /**
+   * Generic RPC caller for the Discord-link endpoints.
+   *   - mint_discord_link_token
+   *   - confirm_discord_link
+   *   - get_user_context_for_discord
+   *   - attach_discord_channel
+   *   - revoke_discord_link
+   *
+   * Returns the parsed JSON body. Throws on non-2xx. The Worker uses the
+   * service key here because (a) these RPCs are SECURITY DEFINER and (b)
+   * the Worker is server-side, not exposed to the browser.
+   */
+  async rpc<T = unknown>(name: string, params: Record<string, unknown>): Promise<T> {
+    const res = await fetch(`${this.url}/rest/v1/rpc/${name}`, {
+      method: "POST",
+      headers: {
+        apikey: this.serviceKey,
+        Authorization: `Bearer ${this.serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`rpc ${name} failed (${res.status}): ${body.slice(0, 300)}`);
+    }
+    return (await res.json()) as T;
+  }
+
+  /**
    * Fetch the currently live voice guide via the get_live_voice() RPC.
    * Returns null when nothing is published yet — caller skips the voice
    * preface in that case. Throws on transport errors.

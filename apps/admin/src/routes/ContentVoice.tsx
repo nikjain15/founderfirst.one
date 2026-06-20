@@ -71,7 +71,6 @@ export function ContentVoice() {
   );
 
   const dirty = selected ? draft !== selected.body : draft.trim().length > 0 && draft !== VOICE_MD;
-  const live = useMemo(() => rows.find((r) => r.is_live) ?? null, [rows]);
   const rendered = useMemo(() => marked.parse(draft || "_(empty)_") as string, [draft]);
 
   function pickVersion(r: VoiceRow) {

@@ -1130,6 +1130,89 @@ a:hover { opacity: 0.7; }
 .prompt-editor input[type="text"] {
   max-width: 100%;
   box-sizing: border-box;
+  border-radius: 8px;          /* override any inherited pill radius */
+  background: var(--surface, #fff);
+}
+
+/* ---- Voice guide — rendered markdown typography ----------------------- */
+.voice-rendered {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text, #111);
+}
+.voice-rendered h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border, #e5e5e5);
+}
+.voice-rendered h2 {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 28px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border, #e5e5e5);
+}
+.voice-rendered h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 20px 0 8px;
+  color: var(--text, #111);
+}
+.voice-rendered p          { margin: 0 0 12px; }
+.voice-rendered strong     { font-weight: 700; color: var(--text, #111); }
+.voice-rendered em         { font-style: italic; }
+.voice-rendered ul,
+.voice-rendered ol         { margin: 0 0 14px; padding-left: 22px; }
+.voice-rendered li         { margin-bottom: 6px; }
+.voice-rendered li > p     { margin: 0; }
+.voice-rendered code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12.5px;
+  background: var(--surface-2, #f4f4f4);
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+.voice-rendered pre {
+  background: var(--surface-2, #f4f4f4);
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  margin: 0 0 14px;
+}
+.voice-rendered pre code   { background: transparent; padding: 0; }
+.voice-rendered blockquote {
+  border-left: 3px solid var(--accent, #000);
+  margin: 0 0 14px;
+  padding: 4px 14px;
+  color: var(--muted, #555);
+  background: var(--surface-2, #fafafa);
+  border-radius: 0 6px 6px 0;
+}
+.voice-rendered hr {
+  border: 0;
+  border-top: 1px solid var(--border, #e5e5e5);
+  margin: 24px 0;
+}
+.voice-rendered a          { color: var(--accent, #0066cc); text-decoration: underline; }
+.voice-rendered table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 16px;
+  font-size: 13px;
+}
+.voice-rendered th,
+.voice-rendered td {
+  border: 1px solid var(--border, #e5e5e5);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.voice-rendered th {
+  background: var(--surface-2, #fafafa);
+  font-weight: 700;
 }
 .prompt-editor-grid {
   display: grid;

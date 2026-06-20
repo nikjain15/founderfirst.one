@@ -191,63 +191,42 @@ export function ContentVoice() {
 
       {/* Right: viewer / editor */}
       <section style={noVersionsYet ? { gridColumn: "1 / -1" } : undefined}>
-        <ContextBanner />
-
         {error && (
-          <div className="empty" style={{ color: "var(--error)", borderColor: "var(--error-bg)", marginBottom: 12 }}>
-            <IconAlert size={18} /> {error}
+          <div className="alert alert-error" style={{ marginBottom: 12 }}>
+            <IconAlert size={16} /> <span>{error}</span>
           </div>
         )}
         {flash && (
-          <div className="empty" style={{ color: "var(--success, #0a7c2f)", borderColor: "var(--success-bg, #d6f0db)", marginBottom: 12 }}>
-            <IconCheck size={18} /> {flash}
+          <div className="alert alert-success" style={{ marginBottom: 12 }}>
+            <IconCheck size={16} /> <span>{flash}</span>
           </div>
         )}
 
-        {noVersionsYet && (
-          <div className="empty" style={{ marginBottom: 12 }}>
-            <p className="empty-title">Welcome — let's seed your first version.</p>
-            <p>
-              The voice guide below is the canonical <code>VOICE.md</code> from the repo.
-              Review it, click <strong>Edit</strong> if you want to tweak anything,
-              then click <strong>Save as version 1</strong>. After that, click <strong>Set live</strong>{" "}
-              and every Penny surface will use it within a minute.
-            </p>
-          </div>
-        )}
-
-        {/* Header row: version label + action buttons */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 8,
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 12,
-            padding: "8px 0",
-            borderBottom: "1px solid var(--border)",
-          }}
-        >
-          <div style={{ fontSize: 13, color: "var(--muted)" }}>
-            {selected ? (
-              <>
-                Viewing <strong>Version {selected.version}</strong>
-                {selected.is_live && <span style={{ marginLeft: 8, color: "var(--success, #0a7c2f)", fontWeight: 700 }}>● LIVE</span>}
-                {dirty && <span style={{ marginLeft: 8, color: "var(--warning, #b8860b)", fontWeight: 700 }}>● Unsaved changes</span>}
-                {selected.created_by_email && (
-                  <span style={{ marginLeft: 8 }}> · saved by {selected.created_by_email}</span>
-                )}
-              </>
-            ) : (
-              <>
-                <strong>Draft</strong> (not saved yet)
-                {dirty && <span style={{ marginLeft: 8, color: "var(--warning, #b8860b)", fontWeight: 700 }}>● Unsaved changes</span>}
-              </>
-            )}
+        {/* Header row: title + status + action buttons */}
+        <div className="voice-header">
+          <div className="voice-header-meta">
+            <div className="voice-header-title">
+              {noVersionsYet
+                ? "Draft — not saved yet"
+                : `Version ${selected?.version ?? "?"}`}
+            </div>
+            <div className="voice-header-sub">
+              {noVersionsYet ? (
+                <>Seeded from <code>VOICE.md</code>. Review, optionally edit, then save as v1.</>
+              ) : (
+                <>
+                  {selected?.is_live && <span className="badge badge-live">● Live on every surface</span>}
+                  {!selected?.is_live && <span className="badge badge-draft">Draft — not live</span>}
+                  {dirty && <span className="badge badge-warn">● Unsaved changes</span>}
+                  {selected?.created_by_email && (
+                    <span className="voice-header-author">saved by {selected.created_by_email}</span>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div className="voice-header-actions">
             {!editing && (
               <button className="btn" onClick={startEditing}>
                 Edit
@@ -264,7 +243,7 @@ export function ContentVoice() {
                   disabled={!draft.trim() || saving || !dirty}
                   title={!dirty ? "No changes to save" : ""}
                 >
-                  {saving ? "Saving…" : "Save as new version"}
+                  {saving ? "Saving…" : noVersionsYet ? "Save as version 1" : "Save as new version"}
                 </button>
               </>
             )}
@@ -282,7 +261,10 @@ export function ContentVoice() {
 
         {/* Body: rendered view OR editor + live preview */}
         {!editing ? (
-          <RenderedBody html={rendered} />
+          <>
+            <RenderedBody html={rendered} />
+            <FootnoteHint />
+          </>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             <div>
@@ -366,33 +348,16 @@ function RenderedBody({ html }: { html: string }) {
   );
 }
 
-function ContextBanner() {
+function FootnoteHint() {
   return (
-    <div
-      style={{
-        border: "1px solid var(--border)",
-        background: "var(--surface-2, #fafafa)",
-        borderRadius: 8,
-        padding: "12px 14px",
-        marginBottom: 16,
-        fontSize: 13,
-        lineHeight: 1.6,
-        color: "var(--muted)",
-      }}
-    >
-      <div>
-        <strong style={{ color: "var(--text)" }}>One voice, every surface.</strong> The live
-        version is prepended to every Penny system prompt at runtime — site bubble, support
-        bot, in-product Penny. Edits go live within ~60 seconds of clicking <em>Set live</em>,
-        with no redeploy. To verify after publishing, open the Penny bubble on{" "}
-        <a href="https://founderfirst.one" target="_blank" rel="noreferrer">founderfirst.one</a>{" "}
-        and ask it a question that tests the rule you changed.
-      </div>
-      <div style={{ marginTop: 8 }}>
-        <strong style={{ color: "var(--text)" }}>Edit here, not in the repo.</strong>{" "}
-        <code>VOICE.md</code> in the repo is the historical seed only — once version 1 is
-        saved, every change must be made on this screen. File edits won't reach the bots.
-      </div>
+    <div className="voice-footnote">
+      <strong>How this works.</strong> The live version is prepended to every Penny system
+      prompt — site bubble, support bot, in-product Penny. Edits go live within ~60 seconds
+      of clicking <em>Set live</em>, no redeploy. <code>VOICE.md</code> in the repo is a
+      historical seed only; once v1 is saved, every change must happen here.{" "}
+      <a href="https://founderfirst.one" target="_blank" rel="noreferrer">
+        Open Penny bubble to verify →
+      </a>
     </div>
   );
 }

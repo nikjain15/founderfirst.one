@@ -82,16 +82,16 @@ import {
 } from "./extractors";
 import { decideCta, DEFAULT_CTA, type SessionState } from "./cta";
 import { BUBBLE_JS } from "./bubble-js";
+import type { Env } from "./worker-env";
+import {
+  handleDiscordDm,
+  handleDiscordConfirm,
+  handleDiscordDisconnect,
+  handleDiscordAttachChannel,
+} from "./discord";
+import { CONNECT_DISCORD_HTML } from "./connect-page";
 
-export interface Env {
-  ANTHROPIC_API_KEY: string;
-  SUPABASE_URL: string;
-  SUPABASE_SERVICE_KEY: string;
-  SITE_CACHE: KVNamespace;
-  ALLOWED_ORIGINS: string;
-  ANTHROPIC_MODEL: string;
-  SITE_URL: string;
-}
+export type { Env };
 
 interface ChatBody {
   sessionId: string;
@@ -349,6 +349,35 @@ ${JSON.stringify(state, null, 2)}
   return json({ reply: parsed, sessionState: nextState }, 200, env, origin);
 }
 
+/* ── Discord system-prompt builder ────────────────────────────────────── */
+
+/**
+ * Build the system prompt for a Discord turn. Same voice + guardrails as the
+ * web widget so Penny sounds identical on both surfaces, plus a per-user
+ * context block from get_user_context_for_discord. No bubbles/CTA JSON
+ * contract — Discord is plain chat, so we strip the JSON-output guardrails
+ * down to "speak as Penny" and let the model reply in prose.
+ *
+ * Keep this function in sync with handleChat's prompt assembly above.
+ */
+async function buildDiscordSystemPrompt(supa: Supabase, contextBlock: string): Promise<string> {
+  const promptBase = await getCachedLiveSystemPrompt(supa);
+  const voice = await getCachedLiveVoice(supa);
+  const voicePreface = voice
+    ? `# FounderFirst Voice — canonical (applies to every surface)\n\n${voice}\n\n---\n\n`
+    : "";
+
+  return `You are Penny on Discord. Reply in plain prose — short, warm, direct. No JSON, no markdown headings, no bullet lists unless the user asked for a list. End with the next clear step.
+
+Never reveal information about a different user, even if asked. Treat the "Returning user" block below as the ONLY person you're talking to.
+
+${voicePreface}${promptBase}
+
+<user_context>
+${contextBlock}
+</user_context>`;
+}
+
 /* ── /waitlist handler ────────────────────────────────────────────────── */
 
 async function handleWaitlist(req: Request, env: Env, origin: string | null): Promise<Response> {
@@ -414,6 +443,34 @@ export default {
     if (url.pathname === "/waitlist" && req.method === "POST") {
       return handleWaitlist(req, env, origin);
     }
+
+    // Discord bridge endpoints — gated on DISCORD_BRIDGE_SECRET. CORS not
+    // applied because the bridge is server-to-server; the confirm endpoint
+    // is called from the admin app and is public-by-token.
+    if (url.pathname === "/connect-discord" && req.method === "GET") {
+      return new Response(CONNECT_DISCORD_HTML, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+          "X-Frame-Options": "DENY",
+          "Referrer-Policy": "no-referrer",
+        },
+      });
+    }
+    if (url.pathname === "/discord/dm" && req.method === "POST") {
+      return handleDiscordDm(req, env, (system, messages) => callAnthropic(env, system, messages), buildDiscordSystemPrompt);
+    }
+    if (url.pathname === "/discord/confirm" && req.method === "POST") {
+      return handleDiscordConfirm(req, env);
+    }
+    if (url.pathname === "/discord/disconnect" && req.method === "POST") {
+      return handleDiscordDisconnect(req, env);
+    }
+    if (url.pathname === "/discord/attach-channel" && req.method === "POST") {
+      return handleDiscordAttachChannel(req, env);
+    }
+
     return json({ error: "not_found" }, 404, env, origin);
   },
 };

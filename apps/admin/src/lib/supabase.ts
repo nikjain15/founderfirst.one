@@ -68,6 +68,40 @@ export async function removeAdmin(email: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+export interface DiscordLinkRow {
+  id: string;
+  email_normalized: string;
+  discord_user_id: string | null;
+  discord_username: string | null;
+  discord_channel_id: string | null;
+  initiated_from: "discord" | "web";
+  status: "pending" | "confirmed" | "revoked";
+  scopes: string[];
+  created_at: string;
+  confirmed_at: string | null;
+  revoked_at: string | null;
+}
+
+export async function listDiscordLinks(search?: string): Promise<DiscordLinkRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("admin_list_discord_links", {
+    p_limit: 200,
+    p_search: search?.trim() || null,
+  });
+  if (error) throw new Error(`listDiscordLinks: ${error.message}`);
+  return (data as DiscordLinkRow[]) ?? [];
+}
+
+export async function revokeDiscordLink(opts: { discord_user_id?: string | null; email?: string | null }): Promise<number> {
+  const db = getClient();
+  const { data, error } = await db.rpc("revoke_discord_link", {
+    p_discord_user_id: opts.discord_user_id ?? null,
+    p_email: opts.email ?? null,
+  });
+  if (error) throw new Error(`revokeDiscordLink: ${error.message}`);
+  return (data as number) ?? 0;
+}
+
 // ---- Types matching the RPC return shapes ----------------------------------
 
 export interface TicketRow {

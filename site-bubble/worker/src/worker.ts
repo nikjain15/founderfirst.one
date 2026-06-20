@@ -33,6 +33,7 @@ import { PROMPT_GUARDRAILS } from "./prompt-guardrails";
  */
 const PROMPT_TTL_MS = 60_000;
 let promptCache: { body: string; fetchedAt: number } | null = null;
+let voiceCache: { body: string | null; fetchedAt: number } | null = null;
 
 async function getCachedLiveSystemPrompt(supa: Supabase): Promise<string> {
   const now = Date.now();
@@ -48,6 +49,29 @@ async function getCachedLiveSystemPrompt(supa: Supabase): Promise<string> {
     // Don't poison the cache on failure — fall back, retry next request.
     console.error("getLivePrompt failed, using baked-in prompt:", e);
     return SYSTEM_PROMPT_BASE;
+  }
+}
+
+/**
+ * Live voice guide (VOICE.md), edited via /admin/content#voice and prepended
+ * to every Penny system prompt so tone changes propagate to every surface
+ * without a redeploy. Returns null if nothing is published yet — in that case
+ * we skip the preface and the bot-specific prompt's baked-in voice rules
+ * stand alone. Cached ~60s, same as the prompt.
+ */
+async function getCachedLiveVoice(supa: Supabase): Promise<string | null> {
+  const now = Date.now();
+  if (voiceCache && now - voiceCache.fetchedAt < PROMPT_TTL_MS) {
+    return voiceCache.body;
+  }
+  try {
+    const live = await supa.getLiveVoice();
+    const body = live?.body ?? null;
+    voiceCache = { body, fetchedAt: now };
+    return body;
+  } catch (e) {
+    console.error("getLiveVoice failed, skipping voice preface:", e);
+    return null;
   }
 }
 import {
@@ -258,9 +282,13 @@ async function handleChat(req: Request, env: Env, origin: string | null): Promis
   //   <session_state>   = runtime-tracked flags for the CTA decision tree.
   const site = await getSiteContent(env);
   const promptBase = await getCachedLiveSystemPrompt(supa);
+  const voice = await getCachedLiveVoice(supa);
+  const voicePreface = voice
+    ? `# FounderFirst Voice — canonical (applies to every surface)\n\n${voice}\n\n---\n\n`
+    : "";
   const system = `${PROMPT_GUARDRAILS}
 
-${promptBase}
+${voicePreface}${promptBase}
 
 <site_content>
 ${site}

@@ -87,4 +87,27 @@ export class Supabase {
     const rows = (await res.json()) as Array<{ id: string; version: number; body: string; updated_at: string }>;
     return rows[0] ?? null;
   }
+
+  /**
+   * Fetch the currently live voice guide via the get_live_voice() RPC.
+   * Returns null when nothing is published yet — caller skips the voice
+   * preface in that case. Throws on transport errors.
+   */
+  async getLiveVoice(): Promise<{ id: string; version: number; body: string; updated_at: string } | null> {
+    const res = await fetch(`${this.url}/rest/v1/rpc/get_live_voice`, {
+      method: "POST",
+      headers: {
+        apikey: this.serviceKey,
+        Authorization: `Bearer ${this.serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`get_live_voice failed (${res.status}): ${body}`);
+    }
+    const rows = (await res.json()) as Array<{ id: string; version: number; body: string; updated_at: string }>;
+    return rows[0] ?? null;
+  }
 }

@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { ContentPrompt } from "./ContentPrompt";
+import { ContentVoice } from "./ContentVoice";
 
-type Tab = "prompt" | "kb";
+type Tab = "prompt" | "voice" | "kb";
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "prompt", label: "Prompt" },
+  { id: "voice",  label: "Voice" },
   { id: "kb",     label: "Knowledge base" },
 ];
 
@@ -23,7 +25,7 @@ export function ContentHome() {
     <div>
       <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · content</div>
       <h1 className="page-title">Penny's brain.</h1>
-      <p className="page-sub">Edit the system prompt and manage the knowledge base Penny reads from.</p>
+      <p className="page-sub">Edit the system prompt, the voice guide shared across every surface, and manage the knowledge base Penny reads from.</p>
 
       <div className="tabs" role="tablist">
         {TABS.map((t) => (
@@ -41,6 +43,7 @@ export function ContentHome() {
 
       <div className="tab-panel">
         {tab === "prompt" && <ContentPrompt />}
+        {tab === "voice"  && <ContentVoice />}
         {tab === "kb"     && <KbComingSoon />}
       </div>
     </div>

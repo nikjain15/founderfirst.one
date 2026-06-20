@@ -431,3 +431,58 @@ export async function setLivePrompt(id: string): Promise<void> {
   const { error } = await db.rpc("set_live_prompt", { p_id: id });
   if (error) throw new Error(`set_live_prompt: ${error.message}`);
 }
+
+// ---- Voice guide (shared across all surfaces) ------------------------------
+//
+// One canonical voice/tone guide (VOICE.md) prepended to every bot's system
+// prompt. Same versioning model as penny_prompts.
+
+export interface VoiceRow {
+  id: string;
+  version: number;
+  body: string;
+  notes: string | null;
+  is_live: boolean;
+  created_at: string;
+  created_by: string | null;
+  created_by_email: string | null;
+}
+
+export interface LiveVoiceRow {
+  id: string;
+  version: number;
+  body: string;
+  updated_at: string;
+}
+
+export async function listVoice(): Promise<VoiceRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_voice");
+  if (error) throw new Error(`list_voice: ${error.message}`);
+  return ((data as VoiceRow[]) ?? []).map((r) => ({ ...r, version: Number(r.version) }));
+}
+
+export async function getLiveVoice(): Promise<LiveVoiceRow | null> {
+  const db = getClient();
+  const { data, error } = await db.rpc("get_live_voice");
+  if (error) throw new Error(`get_live_voice: ${error.message}`);
+  const rows = (data as LiveVoiceRow[]) ?? [];
+  if (!rows.length) return null;
+  return { ...rows[0], version: Number(rows[0].version) };
+}
+
+export async function createVoiceVersion(body: string, notes?: string): Promise<string> {
+  const db = getClient();
+  const { data, error } = await db.rpc("create_voice_version", {
+    p_body: body,
+    p_notes: notes ?? null,
+  });
+  if (error) throw new Error(`create_voice_version: ${error.message}`);
+  return data as string;
+}
+
+export async function setLiveVoice(id: string): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("set_live_voice", { p_id: id });
+  if (error) throw new Error(`set_live_voice: ${error.message}`);
+}

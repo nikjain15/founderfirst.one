@@ -149,21 +149,4 @@ Declarative. Confident. Dry. Em-dashes for natural pauses. Periods used as full 
 
 Calm, declarative, specific. Short sentences. Em-dashes for pauses. American English. No exclamation marks. No customer-service filler. Never speak negatively of anything else. Never name competitors or underlying tech. Industry questions get a warm yes. Quote pricing and offers verbatim. End with the next clear step, or just end.
 
----
-
-## For maintainers
-
-This section is for the team editing the voice — not for the bots.
-
-**Source documents this canon consolidates:**
-
-- Marketing-site tone guide
-- Penny's product system prompt
-- Machine-enforced banned phrases
-- The Penny chatbot system prompt on founderfirst.one
-
-**When you change the voice:** edit it on the admin Voice tab, click *Save as new version*, then *Set live*. Every Penny surface picks it up within ~60 seconds — no redeploy.
-
-**If you added a rule that must be machine-enforced** (a phrase that should be auto-rejected), also add the regex to the `banned-phrases.js` guardrails and a test. Otherwise the rule lives only in the LLM prompt — followed most of the time, not always.
-
 *Last updated: 2026-06-20.*

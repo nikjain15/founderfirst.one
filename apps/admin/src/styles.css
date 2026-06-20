@@ -1141,20 +1141,25 @@ a:hover { opacity: 0.7; }
 }
 
 /* ---- Voice guide — header, badges, alerts, footnote ----------------- */
+/* All voice styles use design-system tokens only.
+   Source of truth: packages/design-system/tokens.css. */
+
+/* ---- Header bar above the rendered guide ---------------------------- */
 .voice-header {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--gap-card);
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 18px;
-  padding-bottom: 14px;
+  margin-bottom: var(--gap-card);
+  padding-bottom: var(--gap-card);
   border-bottom: 1px solid var(--line);
 }
-.voice-header-meta { min-width: 0; }
+.voice-header-meta  { min-width: 0; }
 .voice-header-title {
-  font-size: 18px;
-  font-weight: var(--fw-semibold, 600);
+  font-size: var(--fs-screen-title);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-tight);
   color: var(--ink);
   margin: 0 0 4px;
 }
@@ -1163,125 +1168,246 @@ a:hover { opacity: 0.7; }
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  font-size: 13px;
+  font-size: var(--fs-data-row);
   color: var(--ink-3);
 }
 .voice-header-author { color: var(--ink-4); }
 .voice-header-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
+/* ---- Status badges (Live / Draft / Unsaved) ------------------------- */
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 9px;
+  padding: 3px 10px;
   border-radius: var(--r-pill);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: var(--fs-eyebrow);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-chip);
+  text-transform: uppercase;
 }
-.badge-live { background: #e8f5ec; color: #0a7c2f; }
-.badge-draft { background: var(--ink-7, #f0f0f0); color: var(--ink-3); }
-.badge-warn { background: #fdf3d8; color: #8a6500; }
+.badge-live  { background: var(--income-bg); color: var(--income); }
+.badge-draft { background: var(--line-2);    color: var(--ink-3); }
+.badge-warn  { background: var(--amber-bg);  color: var(--amber); }
 
+/* ---- Inline alerts -------------------------------------------------- */
 .alert {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 10px 14px;
-  border-radius: var(--r-card, 10px);
-  font-size: 13px;
+  padding: 12px 14px;
+  border-radius: var(--r-card);
+  font-size: var(--fs-data-row);
   line-height: 1.5;
 }
-.alert-error   { background: #fdecec; color: #8a1c1c; }
-.alert-success { background: #e8f5ec; color: #0a7c2f; }
+.alert-error   { background: var(--error-bg);  color: var(--error); }
+.alert-success { background: var(--income-bg); color: var(--income); }
 
+/* ---- Footnote under the guide --------------------------------------- */
 .voice-footnote {
-  margin-top: 28px;
-  padding-top: 14px;
+  margin-top: var(--gap-section);
+  padding-top: var(--gap-card);
   border-top: 1px solid var(--line);
   font-size: 12.5px;
   line-height: 1.6;
   color: var(--ink-4);
 }
 .voice-footnote strong { color: var(--ink-2); }
-.voice-footnote a { color: var(--ink); text-decoration: underline; }
+.voice-footnote a      { color: var(--ink); text-decoration: underline; }
 
-/* ---- Voice — visual upgrades on top of rendered markdown -------------- */
-
-/* The one-line test → big callout */
-.voice-rendered blockquote.voice-callout {
-  background: var(--ink-7, #f4f4f4);
-  border-left: 4px solid var(--ink);
-  border-radius: 10px;
-  padding: 16px 20px;
-  margin: 18px 0 22px;
-  font-size: 15px;
+/* ===== Rendered markdown — base typography ========================== */
+.voice-rendered {
+  font-size: var(--fs-body);
+  line-height: 1.65;
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+.voice-rendered h1 {
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight);
+  margin: 0 0 var(--gap-card);
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--line);
   color: var(--ink);
 }
-.voice-rendered blockquote.voice-callout strong { display: block; margin-bottom: 4px; font-size: 13px; color: var(--ink-2); letter-spacing: 0.04em; text-transform: uppercase; }
+.voice-rendered h2 {
+  font-size: var(--fs-screen-title);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-tight);
+  margin: var(--gap-section) 0 var(--gap-card);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+.voice-rendered h3 {
+  font-size: var(--fs-data-row);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 20px 0 8px;
+}
+.voice-rendered p       { margin: 0 0 var(--gap-card); }
+.voice-rendered strong  { font-weight: var(--fw-semibold); color: var(--ink); }
+.voice-rendered em      { font-style: italic; color: var(--ink-2); }
+.voice-rendered ul,
+.voice-rendered ol      { margin: 0 0 var(--gap-card); padding-left: 22px; }
+.voice-rendered li      { margin-bottom: 6px; }
+.voice-rendered li > p  { margin: 0; }
+.voice-rendered hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: var(--gap-section) 0;
+}
+.voice-rendered a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--ink-4);
+  text-underline-offset: 2px;
+}
+.voice-rendered a:hover { text-decoration-color: var(--ink); }
+.voice-rendered code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.88em;
+  background: var(--line-2);
+  padding: 2px 6px;
+  border-radius: 6px;
+  color: var(--ink-2);
+}
+.voice-rendered pre {
+  background: var(--line-2);
+  padding: var(--gap-card);
+  border-radius: var(--r-card);
+  overflow-x: auto;
+  margin: 0 0 var(--gap-card);
+}
+.voice-rendered pre code { background: transparent; padding: 0; font-size: 12.5px; }
+.voice-rendered blockquote {
+  border-left: 3px solid var(--ink-4);
+  margin: 0 0 var(--gap-card);
+  padding: 4px 16px;
+  color: var(--ink-2);
+}
+.voice-rendered table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0 0 var(--gap-card);
+  font-size: var(--fs-data-row);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  overflow: hidden;
+}
+.voice-rendered th,
+.voice-rendered td {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 14px;
+  text-align: left;
+  vertical-align: top;
+}
+.voice-rendered tr:last-child td { border-bottom: 0; }
+.voice-rendered th {
+  background: var(--paper);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-eyebrow);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ===== Visual upgrades on top of the rendered markdown ============== */
+
+/* The one-line test → emphasis callout (uses --paper + accent rail) */
+.voice-rendered blockquote.voice-callout {
+  background: var(--paper);
+  border-left: 4px solid var(--ink);
+  border-radius: var(--r-card);
+  padding: var(--gap-card) 20px;
+  margin: var(--gap-card) 0 var(--gap-section);
+  font-size: var(--fs-body);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
+}
+.voice-rendered blockquote.voice-callout strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--fs-eyebrow);
+  color: var(--ink-3);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+}
 .voice-rendered blockquote.voice-callout em { font-style: italic; color: var(--ink); }
 
-/* "Instead of this | Say this" → side-by-side card-pair table */
-.voice-rendered table.voice-saythis-table { border: 0; }
+/* "Instead of this | Say this" → side-by-side error/income cards */
+.voice-rendered table.voice-saythis-table {
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+  margin-bottom: var(--gap-section);
+}
 .voice-rendered table.voice-saythis-table thead { display: none; }
 .voice-rendered table.voice-saythis-table tr {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   gap: 0;
   align-items: stretch;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   border: 0;
 }
 .voice-rendered table.voice-saythis-table tr::before {
   content: "→";
   align-self: center;
   color: var(--ink-4);
-  font-size: 16px;
-  padding: 0 10px;
+  font-size: 18px;
+  padding: 0 12px;
   grid-column: 2;
   grid-row: 1;
 }
 .voice-rendered table.voice-saythis-table td {
   border: 1px solid var(--line);
-  padding: 10px 14px;
-  background: var(--white, #fff);
-  font-size: 13.5px;
-  line-height: 1.45;
+  padding: 12px 16px;
+  font-size: var(--fs-data-row);
+  line-height: 1.5;
+  border-bottom: 1px solid var(--line);
 }
 .voice-rendered table.voice-saythis-table td:first-child {
-  background: #fdecec;
-  border-color: #f5c5c5;
-  color: #8a1c1c;
+  background: var(--error-bg);
+  border-color: var(--error-bg);
+  color: var(--error);
   text-decoration: line-through;
-  text-decoration-color: rgba(138,28,28,0.35);
-  border-radius: 8px 0 0 8px;
+  text-decoration-color: rgba(178, 41, 30, 0.35);
+  border-radius: var(--r-card) 0 0 var(--r-card);
   grid-column: 1;
   grid-row: 1;
 }
 .voice-rendered table.voice-saythis-table td:last-child {
-  background: #e8f5ec;
-  border-color: #b6dec3;
-  color: #0a5d22;
-  font-weight: 500;
-  border-radius: 0 8px 8px 0;
+  background: var(--income-bg);
+  border-color: var(--income-bg);
+  color: var(--income);
+  font-weight: var(--fw-medium);
+  border-radius: 0 var(--r-card) var(--r-card) 0;
   grid-column: 3;
   grid-row: 1;
 }
 @media (max-width: 640px) {
-  .voice-rendered table.voice-saythis-table tr {
-    grid-template-columns: 1fr;
-  }
+  .voice-rendered table.voice-saythis-table tr { grid-template-columns: 1fr; }
   .voice-rendered table.voice-saythis-table tr::before {
-    grid-column: 1; grid-row: 2; padding: 4px 0; transform: rotate(90deg);
+    grid-column: 1; grid-row: 2; padding: 6px 0; transform: rotate(90deg);
   }
-  .voice-rendered table.voice-saythis-table td:first-child  { grid-column: 1; grid-row: 1; border-radius: 8px 8px 0 0; }
-  .voice-rendered table.voice-saythis-table td:last-child   { grid-column: 1; grid-row: 3; border-radius: 0 0 8px 8px; }
+  .voice-rendered table.voice-saythis-table td:first-child {
+    grid-column: 1; grid-row: 1; border-radius: var(--r-card) var(--r-card) 0 0;
+  }
+  .voice-rendered table.voice-saythis-table td:last-child {
+    grid-column: 1; grid-row: 3; border-radius: 0 0 var(--r-card) var(--r-card);
+  }
 }
 
-/* Banned-phrase + emoji lists → chip rows */
+/* Banned phrases + emoji lists → chip rows */
 .voice-rendered ul.voice-chips {
   list-style: none;
   padding: 0;
-  margin: 12px 0 22px;
+  margin: var(--gap-card) 0 var(--gap-section);
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -1296,15 +1422,13 @@ a:hover { opacity: 0.7; }
   margin: 0;
 }
 .voice-rendered ul.voice-chips-red li {
-  background: #fdecec;
-  color: #8a1c1c;
-  border: 1px solid #f5c5c5;
+  background: var(--error-bg);
+  color: var(--error);
 }
 .voice-rendered ul.voice-chips-green li {
-  background: #e8f5ec;
-  color: #0a5d22;
-  border: 1px solid #b6dec3;
-  font-weight: 500;
+  background: var(--income-bg);
+  color: var(--income);
+  font-weight: var(--fw-medium);
 }
 .voice-rendered ul.voice-chips li code,
 .voice-rendered ul.voice-chips li strong {
@@ -1312,87 +1436,6 @@ a:hover { opacity: 0.7; }
   padding: 0;
   font-weight: inherit;
   color: inherit;
-}
-
-/* ---- Voice guide — rendered markdown typography ----------------------- */
-.voice-rendered {
-  font-size: 14px;
-  line-height: 1.65;
-  color: var(--ink);
-}
-.voice-rendered h1 {
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0 0 12px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--line);
-}
-.voice-rendered h2 {
-  font-size: 17px;
-  font-weight: 700;
-  margin: 28px 0 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--line);
-}
-.voice-rendered h3 {
-  font-size: 14px;
-  font-weight: 700;
-  margin: 20px 0 8px;
-  color: var(--ink);
-}
-.voice-rendered p          { margin: 0 0 12px; }
-.voice-rendered strong     { font-weight: 700; color: var(--ink); }
-.voice-rendered em         { font-style: italic; }
-.voice-rendered ul,
-.voice-rendered ol         { margin: 0 0 14px; padding-left: 22px; }
-.voice-rendered li         { margin-bottom: 6px; }
-.voice-rendered li > p     { margin: 0; }
-.voice-rendered code {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 12.5px;
-  background: var(--ink-7, #f4f4f4);
-  padding: 2px 5px;
-  border-radius: 4px;
-}
-.voice-rendered pre {
-  background: var(--ink-7, #f4f4f4);
-  padding: 12px;
-  border-radius: 6px;
-  overflow-x: auto;
-  font-size: 12.5px;
-  margin: 0 0 14px;
-}
-.voice-rendered pre code   { background: transparent; padding: 0; }
-.voice-rendered blockquote {
-  border-left: 3px solid var(--accent, #000);
-  margin: 0 0 14px;
-  padding: 4px 14px;
-  color: var(--muted, #555);
-  background: var(--surface-2, #fafafa);
-  border-radius: 0 6px 6px 0;
-}
-.voice-rendered hr {
-  border: 0;
-  border-top: 1px solid var(--line);
-  margin: 24px 0;
-}
-.voice-rendered a          { color: var(--accent, #0066cc); text-decoration: underline; }
-.voice-rendered table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 0 0 16px;
-  font-size: 13px;
-}
-.voice-rendered th,
-.voice-rendered td {
-  border: 1px solid var(--line);
-  padding: 8px 10px;
-  text-align: left;
-  vertical-align: top;
-}
-.voice-rendered th {
-  background: var(--surface-2, #fafafa);
-  font-weight: 700;
 }
 .prompt-editor-grid {
   display: grid;

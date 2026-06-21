@@ -1,0 +1,220 @@
+/* ---- Inbox -------------------------------------------------------------- */
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.toolbar-spacer { flex: 1 1 auto; }
+.topic-select {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  padding: 7px 28px 7px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--ink-2);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a5a5a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+.topic-select:hover { border-color: var(--ink-3); }
+
+.topic-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
+
+.topic-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 8px;
+}
+.topic-edit > span {
+  color: var(--ink-4);
+  font-weight: var(--fw-medium);
+}
+.topic-edit select {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--ink-2);
+  cursor: pointer;
+  padding: 0 16px 0 2px;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238a8a8a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 2px center;
+}
+.chip {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  padding: 7px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--white);
+  cursor: pointer;
+  color: var(--ink-2);
+  transition: background var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+}
+.chip:hover { border-color: var(--ink-3); }
+.chip.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--white);
+}
+
+.ticket-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.ticket-list li + li .ticket-row { border-top: 1px solid var(--line); }
+
+.ticket-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+@media (min-width: 641px) {
+  .ticket-row { grid-template-columns: 64px 1fr auto; gap: 16px; padding: 16px 18px; }
+}
+@media (max-width: 480px) {
+  .ticket-row {
+    grid-template-columns: 56px 1fr;
+    grid-template-areas: "pri subj" "pri meta" "status status";
+    row-gap: 4px;
+  }
+  .ticket-row > .priority-pill { grid-area: pri; align-self: start; }
+  .ticket-row .ticket-subject { grid-area: subj; }
+  .ticket-row .ticket-meta    { grid-area: meta; }
+  .ticket-row > .ticket-status { grid-area: status; padding-top: 6px; }
+}
+.ticket-row:hover { background: var(--line-2); opacity: 1; }
+
+.priority-pill {
+  font-size: var(--fs-tiny);
+  font-weight: var(--fw-bold);
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  text-align: center;
+  letter-spacing: var(--ls-chip);
+  text-transform: uppercase;
+}
+.priority-pill.p1 { background: var(--error-bg); color: var(--error); }
+.priority-pill.p2 { background: var(--paper); color: var(--ink-2); border: 1px solid var(--line); }
+.priority-pill.p3 { background: var(--white); color: var(--ink-3); border: 1px solid var(--line); }
+
+.ticket-subject {
+  font-weight: var(--fw-semibold);
+  margin: 0 0 3px;
+  color: var(--ink);
+  font-size: 15px;
+  letter-spacing: var(--ls-normal);
+}
+.ticket-meta {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ticket-meta .sep { color: var(--ink-4); }
+.ticket-meta .channel-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-2);
+}
+
+.ticket-status {
+  font-size: var(--fs-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-chip);
+  color: var(--ink-3);
+  font-weight: var(--fw-semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* SLA chip — fresh / aging / stale.
+   Compact pill with a colored dot. Used in inbox rows and ticket header. */
+.sla-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-eyebrow);
+  font-weight: var(--fw-semibold);
+  padding: 3px 9px 3px 8px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--ink-2);
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.sla-pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-4);
+  flex-shrink: 0;
+}
+.sla-pill.fresh::before { background: var(--income); }
+.sla-pill.aging::before { background: var(--amber); }
+.sla-pill.stale::before { background: var(--error); }
+.sla-pill.stale {
+  background: var(--error-bg);
+  border-color: var(--error-bg);
+  color: var(--error);
+}
+
+.empty {
+  padding: 64px 16px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 15px;
+  background: var(--white);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-card);
+}
+.empty .empty-title {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+

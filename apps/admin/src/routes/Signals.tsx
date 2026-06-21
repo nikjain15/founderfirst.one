@@ -474,23 +474,34 @@ function ScoringTab() {
   }
 
   return (
-    <div className="sig-grid-2">
+    <div>
+      <div className="sig-explain">
+        <strong>How a post becomes a lead.</strong> Every post we bring in gets two scores —{" "}
+        <strong>relevance</strong> (is it about the kind of pain in your examples?) and{" "}
+        <strong>intent</strong> (how urgently does this person need help right now?). A post turns
+        into a Lead only when <em>both</em> clear the bars you set here.
+      </div>
+
+      <div className="sig-grid-2">
       <section>
-        <h2 className="sig-h2">Scoring rules</h2>
-        <p className="page-sub">A post becomes a lead when it clears these bars. Changes apply to new posts within ~1 minute.</p>
+        <h2 className="sig-h2">When does a post become a lead?</h2>
+        <p className="page-sub">Drag to make leads stricter (fewer, stronger) or looser (more, but noisier). Saves instantly — applies to new posts within ~1 minute.</p>
         {cfg && (
           <>
-            <SliderRow label="Minimum intent" hint="how strong the buying signal must be" suffix="/100"
+            <SliderRow label="How urgent must their need be?" hint="Only promote people whose buying signal is at least this strong. Higher = fewer, stronger leads." suffix="/100"
               value={cfg.intent_threshold} onCommit={(v) => save("intent_threshold", v)} />
-            <SliderRow label="Minimum relevance" hint="how close to your relevance examples" suffix="%"
+            <SliderRow label="How closely must it match your examples?" hint="How similar a post must be to the examples on the right to count as on-topic. Higher = stricter, cleaner leads." suffix="%"
               value={Math.round(cfg.relevance_threshold * 100)} onCommit={(v) => save("relevance_threshold", v / 100)} />
-            <SliderRow label="Discard floor" hint="below this and no keyword → archived before the AI" suffix="%"
-              value={Math.round(cfg.relevance_floor * 100)} onCommit={(v) => save("relevance_floor", v / 100)} />
+            <details className="sig-advanced">
+              <summary>Advanced</summary>
+              <SliderRow label="Ignore posts below" hint="Posts this far below your match level are skipped before the AI reads them, to save cost. Most people never change this." suffix="%"
+                value={Math.round(cfg.relevance_floor * 100)} onCommit={(v) => save("relevance_floor", v / 100)} />
+            </details>
           </>
         )}
 
-        <h2 className="sig-h2" style={{ marginTop: 24 }}>Keep-list keywords</h2>
-        <p className="page-sub">Posts containing any of these phrases are always kept for the AI to score — a shortcut past the relevance bar.</p>
+        <h2 className="sig-h2" style={{ marginTop: 24 }}>Always-score these phrases</h2>
+        <p className="page-sub">If a post contains one of these exact phrases, it skips the match check and always gets scored — so you never miss wording you care about.</p>
         <div className="toolbar">
           <input className="sig-input" value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. behind on my books" />
           <button className="btn" onClick={addKeyword}>Add</button>
@@ -499,8 +510,8 @@ function ScoringTab() {
       </section>
 
       <section>
-        <h2 className="sig-h2">Relevance examples</h2>
-        <p className="page-sub">Reference posts the brain scores relevance against. Add a few real examples of your ideal customer's pain.</p>
+        <h2 className="sig-h2">What a great post looks like</h2>
+        <p className="page-sub">Paste real posts from your ideal customers. The AI measures how similar each new post is to these — that's the “relevance” score above. The more varied real examples you add, the smarter the matching.</p>
         <div className="field">
           <textarea value={icp} onChange={(e) => setIcp(e.target.value)} placeholder="Paste an example post that captures the pain…" />
         </div>
@@ -523,6 +534,7 @@ function ScoringTab() {
           ))}
         </ul>
       </section>
+      </div>
 
       {note && <p className="sig-note">{note}</p>}
     </div>

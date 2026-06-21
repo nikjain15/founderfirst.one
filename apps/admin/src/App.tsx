@@ -13,7 +13,6 @@ import { Users } from "./routes/Users";
 import { Audit } from "./routes/Audit";
 import { Admins } from "./routes/Admins";
 import { ContentHome } from "./routes/ContentHome";
-import { DiscordLinks } from "./routes/DiscordLinks";
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -122,7 +121,6 @@ export function App() {
                 <Link to="/analytics" className={location.pathname.startsWith("/analytics") ? "active" : ""}>Analytics</Link>
                 <Link to="/content" className={location.pathname.startsWith("/content") ? "active" : ""}>Content</Link>
                 <Link to="/audit" className={location.pathname.startsWith("/audit") ? "active" : ""}>Audit</Link>
-                <Link to="/discord" className={location.pathname.startsWith("/discord") ? "active" : ""}>Discord</Link>
                 <Link to="/admins" className={location.pathname.startsWith("/admins") ? "active" : ""}>Admins</Link>
               </div>
             )}
@@ -186,7 +184,7 @@ export function App() {
           />
           <Route
             path="/discord"
-            element={signedIn ? <DiscordLinks /> : <Navigate to="/login" replace state={{ from: location }} />}
+            element={<Navigate to="/users#discord" replace />}
           />
           <Route
             path="/admins"

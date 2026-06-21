@@ -7,7 +7,9 @@ import {
 } from "../lib/supabase";
 import { IconAlert, IconCheck } from "../lib/icons";
 
-export function DiscordLinks() {
+interface DiscordLinksProps { embedded?: boolean }
+
+export function DiscordLinks({ embedded = false }: DiscordLinksProps = {}) {
   const [rows, setRows] = useState<DiscordLinkRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -54,12 +56,16 @@ export function DiscordLinks() {
 
   return (
     <div>
-      <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · channels</div>
-      <h1 className="page-title">Connected Discord users.</h1>
-      <p className="page-sub">
-        Each row is a person who's linked their Discord to their FounderFirst email.
-        Revoke to make the bot forget them on the next message.
-      </p>
+      {!embedded && (
+        <>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · channels</div>
+          <h1 className="page-title">Connected Discord users.</h1>
+          <p className="page-sub">
+            Each row is a person who's linked their Discord to their FounderFirst email.
+            Revoke to make the bot forget them on the next message.
+          </p>
+        </>
+      )}
 
       <form onSubmit={onSearch} className="toolbar" style={{ gap: 8 }}>
         <div className="field" style={{ flex: "1 1 260px", margin: 0 }}>

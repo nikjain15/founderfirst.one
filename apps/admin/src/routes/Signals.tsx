@@ -124,13 +124,15 @@ const AD_PLATFORMS = [
   { id: "youtube",  label: "YouTube" },
 ];
 const CADENCES = [
+  { m: 15,   label: "15m" },
+  { m: 30,   label: "30m" },
+  { m: 60,   label: "1h" },
+  { m: 180,  label: "3h" },
   { m: 360,  label: "6h" },
   { m: 720,  label: "12h" },
   { m: 1440, label: "24h" },
 ];
 const platLabel = (id: string) => AD_PLATFORMS.find((p) => p.id === id)?.label ?? id;
-const cadLabel = (m: number | null) =>
-  CADENCES.find((c) => c.m === m)?.label ?? (m ? `${Math.round(m / 60)}h` : "—");
 
 function SourcesTab() {
   const qc = useQueryClient();
@@ -158,6 +160,10 @@ function SourcesTab() {
     try { await deleteSigSource(id); refresh(); }
     catch (e) { setNote((e as Error).message); }
   }
+  async function changeCadence(s: SigSourceRow, m: number) {
+    try { await upsertSigSource({ id: s.id, platform: s.platform, query: s.query, captured_via: s.captured_via, enabled: s.enabled, cadence_minutes: m }); refresh(); }
+    catch (e) { setNote((e as Error).message); }
+  }
 
   return (
     <div>
@@ -176,7 +182,12 @@ function SourcesTab() {
                 <tr key={s.id}>
                   <td>{platLabel(s.platform)}</td>
                   <td><span className="sig-strong">{s.query}</span></td>
-                  <td>{cadLabel(s.cadence_minutes)}</td>
+                  <td>
+                    <select className="sig-select-inline" value={s.cadence_minutes ?? 360}
+                            onChange={(e) => changeCadence(s, Number(e.target.value))} aria-label="poll frequency">
+                      {CADENCES.map((c) => <option key={c.m} value={c.m}>{c.label}</option>)}
+                    </select>
+                  </td>
                   <td><button className={`chip ${s.enabled ? "active" : ""}`} onClick={() => toggle(s)}>{s.enabled ? "Active" : "Off"}</button></td>
                   <td>{counts[s.id] ?? 0}</td>
                   <td className="sig-sub">{fmt(s.last_polled_at)}</td>

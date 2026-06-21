@@ -1,61 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listWaitlist, type WaitlistRow } from "../lib/supabase";
 import { IconAlert } from "../lib/icons";
-import { DiscordLinks } from "./DiscordLinks";
 
-type Tab = "web" | "discord";
 type SortKey = "signed_up_at" | "email" | "source";
 
-export function Users() {
-  const [tab, setTab] = useState<Tab>(() => {
-    if (typeof window === "undefined") return "web";
-    const hash = window.location.hash.replace(/^#/, "");
-    return hash === "discord" ? "discord" : "web";
-  });
-
-  useEffect(() => {
-    const next = `#${tab}`;
-    if (window.location.hash !== next) {
-      window.history.replaceState(null, "", `${window.location.pathname}${next}`);
-    }
-  }, [tab]);
-
-  return (
-    <div>
-      <div className="eyebrow" style={{ marginBottom: 10 }}>Users</div>
-      <h1 className="page-title">Everyone connected to FounderFirst.</h1>
-      <p className="page-sub">
-        People who've signed up on the website, or linked their Discord. One place per channel.
-      </p>
-
-      <div className="tabs" role="tablist" style={{ marginTop: 18, marginBottom: 18 }}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "web"}
-          className={`tab ${tab === "web" ? "active" : ""}`}
-          onClick={() => setTab("web")}
-        >
-          Web signups
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "discord"}
-          className={`tab ${tab === "discord" ? "active" : ""}`}
-          onClick={() => setTab("discord")}
-        >
-          Discord
-        </button>
-      </div>
-
-      {tab === "web" ? <WebSignups /> : <DiscordLinks embedded />}
-    </div>
-  );
-}
-
-function WebSignups() {
+// Web-signups table. The Web/Discord/Signals tab shell now lives in AudienceHome.
+export function WebSignups() {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("signed_up_at");
   const [selected, setSelected] = useState<WaitlistRow | null>(null);

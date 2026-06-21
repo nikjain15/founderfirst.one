@@ -38,7 +38,7 @@ export function Inbox() {
           <KpiTile label="Stale"         value={stats.stale_count} tone={stats.stale_count > 0 ? "warn" : undefined} />
           <KpiTile label="Avg first reply" value={formatMins(stats.avg_first_response_minutes_7d)} sub="7d" />
           <KpiTile label="Resolved"      value={stats.resolved_7d} sub="7d" />
-          <Link to="/analytics" className="kpi-more">More →</Link>
+          <Link to="/analytics#support" className="kpi-more">More →</Link>
         </div>
       )}
 

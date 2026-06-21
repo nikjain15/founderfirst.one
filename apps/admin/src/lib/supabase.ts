@@ -574,8 +574,45 @@ export interface SigSourceRow {
   captured_via: string;
   enabled: boolean;
   cadence_minutes: number | null;
+  last_polled_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export async function upsertSigSource(s: {
+  id?: string;
+  platform: string;
+  query: string | null;
+  captured_via?: string;
+  enabled?: boolean;
+  cadence_minutes?: number | null;
+}): Promise<string> {
+  const db = getClient();
+  const { data, error } = await db.rpc("upsert_sig_source", {
+    p_platform: s.platform,
+    p_query: s.query,
+    p_captured_via: s.captured_via ?? "api_direct",
+    p_enabled: s.enabled ?? true,
+    p_cadence_minutes: s.cadence_minutes ?? null,
+    p_id: s.id ?? null,
+  });
+  if (error) throw new Error(`upsert_sig_source: ${error.message}`);
+  return data as string;
+}
+
+export async function deleteSigSource(id: string): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("delete_sig_source", { p_id: id });
+  if (error) throw new Error(`delete_sig_source: ${error.message}`);
+}
+
+export async function listSigSourceCounts(): Promise<Record<string, number>> {
+  const db = getClient();
+  const { data, error } = await db.rpc("sig_source_counts");
+  if (error) throw new Error(`sig_source_counts: ${error.message}`);
+  const m: Record<string, number> = {};
+  for (const r of (data as Array<{ source_id: string; n: number }>) ?? []) m[r.source_id] = Number(r.n);
+  return m;
 }
 
 export const SIG_STAGES: SigLeadRow["stage"][] = [

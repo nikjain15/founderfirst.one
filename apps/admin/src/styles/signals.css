@@ -49,6 +49,15 @@
 .sig-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .sig-form { max-width: 560px; }
 
+/* Inline "add post" panel inside the Posts tab */
+.sig-add-panel {
+  background: var(--white);
+  border: 0.5px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+
 /* ICP examples list */
 .sig-icp-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .sig-icp-item {

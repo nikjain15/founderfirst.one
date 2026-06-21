@@ -1,9 +1,20 @@
 # Discord bridge — deploy + publish
 
-The bridge is a thin Python relay between Discord's gateway WebSocket
-and the Cloudflare Worker. ~250 lines, no opinions about voice or
-context. See `../../apps/admin/support-management/DISCORD-BRIDGE-SPEC.md`
-for the why; this README is just the how.
+The bridge is a thin relay between Discord's gateway WebSocket and the
+Cloudflare Worker. No opinions about voice or context. See
+`../../apps/admin/support-management/DISCORD-BRIDGE-SPEC.md` for the why;
+this README is just the how.
+
+## Two implementations (mid-migration)
+
+| File | Runtime | Status |
+|---|---|---|
+| `bridge.py` + `Dockerfile` | Python / discord.py | **live** (default in `fly.toml`) |
+| `bridge.ts` + `Dockerfile.node` | TypeScript / discord.js | new port, not yet live |
+
+The two are behaviourally identical. The TypeScript port exists so the whole
+backend is one language (TS, matching the Worker + admin). **Cut over with the
+parallel-run steps at the bottom — do not just delete `bridge.py`.**
 
 ## What you'll need
 
@@ -87,3 +98,35 @@ docker rm   dify dify-worker dify-sandbox ...
 
 You can then shrink the Lightsail VM to the cheapest tier — the bridge
 is tiny — or move it to Fly.io's free tier with the same Dockerfile.
+
+## Cutting over from Python to TypeScript (safe, reversible)
+
+The Discord gateway only lets **one** connection per bot token at a time, so
+you can't run both bots against the same token simultaneously — the cutover is
+a fast swap, not a true parallel run. De-risk it by validating the TS image
+first, then swapping with the Python image one command away as rollback.
+
+1. **Validate the TS build locally** (no live connection):
+   ```
+   cd scripts/discord-bridge
+   npm install
+   npm run typecheck        # must pass
+   docker build -f Dockerfile.node -t ff-bridge-ts .   # must build
+   ```
+2. **(Optional) Dry-run with a second test bot token** in a test server to see
+   it log in, reply, create a channel, and handle `/disconnect`. This is the
+   only way to exercise it without touching the live token.
+3. **Swap on the host** during a quiet moment:
+   ```
+   # point fly.toml (or the VM build) at the Node image
+   #   build = { dockerfile = "Dockerfile.node" }
+   fly deploy            # or: docker build -f Dockerfile.node ... && docker run ...
+   ```
+   Stopping the Python container frees the token; the TS one connects within
+   seconds. Watch `logged in as ...` in the logs.
+4. **Smoke test** (same checklist as above): DM the bot, confirm reply,
+   per-user channel creation, `/disconnect`, and the admin Discord tab.
+5. **Rollback** if anything is off: repoint to the Python `Dockerfile` and
+   redeploy. Nothing in the Worker or DB changes, so rollback is clean.
+6. **After a week clean**, delete `bridge.py`, `Dockerfile`, `requirements.txt`
+   and rename `Dockerfile.node` → `Dockerfile`.

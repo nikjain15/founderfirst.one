@@ -6,7 +6,7 @@
  * .data-table lists, and the .drawer-overlay / .drawer detail (same as Users /
  * Audit). All data via the admin-gated sig_* RPCs. See SIGNALS_SOLUTION.md.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   listSigItems,
@@ -25,6 +25,8 @@ import {
   upsertSigSource,
   deleteSigSource,
   listSigSourceCounts,
+  listSigSettings,
+  setSigSetting,
   SIG_STAGES,
   type SigItemRow,
   type SigLeadRow,
@@ -36,12 +38,12 @@ import { IconCheck, IconClose, IconExternalLink } from "../lib/icons";
 
 // Pipeline order — mirrors the flow (where posts come from → the feed → the
 // people we act on → what we look for). Lands on Leads (the daily workspace).
-type Tab = "sources" | "posts" | "leads" | "keywords";
+type Tab = "sources" | "posts" | "leads" | "scoring";
 const TABS: Array<{ id: Tab; label: string }> = [
-  { id: "sources",  label: "Sources" },
-  { id: "posts",    label: "Posts" },
-  { id: "leads",    label: "Leads" },
-  { id: "keywords", label: "Keywords" },
+  { id: "sources", label: "Sources" },
+  { id: "posts",   label: "Posts" },
+  { id: "leads",   label: "Leads" },
+  { id: "scoring", label: "Scoring" },
 ];
 
 export function Signals({ embedded = false }: { embedded?: boolean } = {}) {
@@ -92,7 +94,7 @@ export function Signals({ embedded = false }: { embedded?: boolean } = {}) {
         {tab === "sources"  && <SourcesTab />}
         {tab === "posts"    && <PostsTab />}
         {tab === "leads"    && <LeadsTab />}
-        {tab === "keywords" && <KeywordsTab />}
+        {tab === "scoring"  && <ScoringTab />}
       </div>
     </div>
   );
@@ -421,26 +423,48 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
 
 /* ---- Keywords -------------------------------------------------------------- */
 
-function KeywordsTab() {
+function SliderRow({ label, hint, value, suffix, onCommit }:
+  { label: string; hint: string; value: number; suffix: string; onCommit: (v: number) => void }) {
+  const [v, setV] = useState(value);
+  useEffect(() => setV(value), [value]);
+  return (
+    <div className="sig-slider">
+      <div className="sig-slider-head">
+        <span className="sig-label">{label}</span>
+        <span className="sig-slider-val">{v}{suffix}</span>
+      </div>
+      <input type="range" min={0} max={100} step={1} value={v}
+        onChange={(e) => setV(Number(e.target.value))}
+        onMouseUp={(e) => onCommit(Number((e.target as HTMLInputElement).value))}
+        onTouchEnd={(e) => onCommit(Number((e.target as HTMLInputElement).value))} />
+      <span className="sig-slider-hint">{hint}</span>
+    </div>
+  );
+}
+
+function ScoringTab() {
   const qc = useQueryClient();
-  const { data = [], isPending } = useQuery({ queryKey: ["sig-keywords"], queryFn: listSigKeywords });
+  const { data: cfg } = useQuery({ queryKey: ["sig-settings"], queryFn: listSigSettings });
+  const { data = [] } = useQuery({ queryKey: ["sig-keywords"], queryFn: listSigKeywords });
   const { data: examples = [] } = useQuery({ queryKey: ["sig-icp"], queryFn: listSigIcpExamples });
   const [term, setTerm] = useState("");
-  const [kind, setKind] = useState<"pain" | "competitor">("pain");
   const [icp, setIcp] = useState("");
   const [note, setNote] = useState("");
 
   const pain = data.filter((k: SigKeywordRow) => k.kind === "pain");
-  const comp = data.filter((k: SigKeywordRow) => k.kind === "competitor");
 
+  async function save(key: "intent_threshold" | "relevance_threshold" | "relevance_floor", value: number) {
+    try { await setSigSetting(key, value); qc.invalidateQueries({ queryKey: ["sig-settings"] }); }
+    catch (e) { setNote((e as Error).message); }
+  }
   async function addKeyword() {
     if (!term.trim()) return;
-    try { await upsertSigKeyword({ term: term.trim(), kind }); setTerm(""); setNote("Added."); qc.invalidateQueries({ queryKey: ["sig-keywords"] }); }
+    try { await upsertSigKeyword({ term: term.trim(), kind: "pain" }); setTerm(""); setNote("Added."); qc.invalidateQueries({ queryKey: ["sig-keywords"] }); }
     catch (e) { setNote((e as Error).message); }
   }
   async function addExample() {
     if (!icp.trim()) return;
-    try { await addSigIcpExample(icp.trim()); setIcp(""); setNote("ICP example added — the worker will embed it."); qc.invalidateQueries({ queryKey: ["sig-icp"] }); }
+    try { await addSigIcpExample(icp.trim()); setIcp(""); setNote("Relevance example added — the worker will embed it."); qc.invalidateQueries({ queryKey: ["sig-icp"] }); }
     catch (e) { setNote((e as Error).message); }
   }
   async function removeExample(id: string) {
@@ -451,28 +475,30 @@ function KeywordsTab() {
   return (
     <div className="sig-grid-2">
       <section>
-        <h2 className="sig-h2">Keywords</h2>
-        <p className="page-sub">Pain phrases drive the prefilter; competitor names get flagged on each lead.</p>
-        <div className="toolbar">
-          <input className="sig-input" value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. behind on my books" />
-          <select className="sig-select sig-select-inline" value={kind} onChange={(e) => setKind(e.target.value as any)}>
-            <option value="pain">pain</option>
-            <option value="competitor">competitor</option>
-          </select>
-          <button className="btn" onClick={addKeyword}>Add</button>
-        </div>
-        {isPending ? <div className="empty">Loading…</div> : (
+        <h2 className="sig-h2">Scoring rules</h2>
+        <p className="page-sub">A post becomes a lead when it clears these bars. Changes apply to new posts within ~1 minute.</p>
+        {cfg && (
           <>
-            <span className="sig-label">pain phrases</span>
-            <div className="sig-chips">{pain.map((k) => <span key={k.id} className="topic-tag">{k.term}</span>)}</div>
-            <span className="sig-label" style={{ marginTop: 14, display: "block" }}>competitors</span>
-            <div className="sig-chips">{comp.map((k) => <span key={k.id} className="topic-tag">{k.term}</span>)}</div>
+            <SliderRow label="Minimum intent" hint="how strong the buying signal must be" suffix="/100"
+              value={cfg.intent_threshold} onCommit={(v) => save("intent_threshold", v)} />
+            <SliderRow label="Minimum relevance" hint="how close to your relevance examples" suffix="%"
+              value={Math.round(cfg.relevance_threshold * 100)} onCommit={(v) => save("relevance_threshold", v / 100)} />
+            <SliderRow label="Discard floor" hint="below this and no keyword → archived before the AI" suffix="%"
+              value={Math.round(cfg.relevance_floor * 100)} onCommit={(v) => save("relevance_floor", v / 100)} />
           </>
         )}
+
+        <h2 className="sig-h2" style={{ marginTop: 24 }}>Keep-list keywords</h2>
+        <p className="page-sub">Posts containing any of these phrases are always kept for the AI to score — a shortcut past the relevance bar.</p>
+        <div className="toolbar">
+          <input className="sig-input" value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. behind on my books" />
+          <button className="btn" onClick={addKeyword}>Add</button>
+        </div>
+        <div className="sig-chips">{pain.map((k) => <span key={k.id} className="topic-tag">{k.term}</span>)}</div>
       </section>
 
       <section>
-        <h2 className="sig-h2">ICP pain examples</h2>
+        <h2 className="sig-h2">Relevance examples</h2>
         <p className="page-sub">Reference posts the brain scores relevance against. Add a few real examples of your ideal customer's pain.</p>
         <div className="field">
           <textarea value={icp} onChange={(e) => setIcp(e.target.value)} placeholder="Paste an example post that captures the pain…" />

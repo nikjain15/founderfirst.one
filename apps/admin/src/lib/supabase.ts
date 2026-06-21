@@ -749,3 +749,30 @@ export async function deleteSigIcpExample(id: string): Promise<void> {
   const { error } = await db.rpc("delete_sig_icp_example", { p_id: id });
   if (error) throw new Error(`delete_sig_icp_example: ${error.message}`);
 }
+
+export interface SigScoringConfig {
+  intent_threshold: number;     // 0–100
+  relevance_threshold: number;  // 0–1
+  relevance_floor: number;      // 0–1
+}
+
+const SCORING_DEFAULTS: SigScoringConfig = {
+  intent_threshold: 55, relevance_threshold: 0.55, relevance_floor: 0.3,
+};
+
+export async function listSigSettings(): Promise<SigScoringConfig> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_sig_settings");
+  if (error) throw new Error(`list_sig_settings: ${error.message}`);
+  const cfg = { ...SCORING_DEFAULTS };
+  for (const row of (data as Array<{ key: string; value: number }>) ?? []) {
+    if (row.key in cfg) (cfg as any)[row.key] = Number(row.value);
+  }
+  return cfg;
+}
+
+export async function setSigSetting(key: keyof SigScoringConfig, value: number): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("set_sig_setting", { p_key: key, p_value: value });
+  if (error) throw new Error(`set_sig_setting: ${error.message}`);
+}

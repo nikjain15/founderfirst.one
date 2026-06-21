@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   getWaitlistDaily,
   getWaitlistSources,
@@ -11,25 +11,15 @@ import { HBarBreakdown } from "../lib/charts";
 import { IconAlert } from "../lib/icons";
 
 export function AnalyticsWaitlist() {
-  const [daily, setDaily] = useState<WaitlistDailyRow[]>([]);
-  const [sources, setSources] = useState<WaitlistSourceRow[]>([]);
-  const [leaders, setLeaders] = useState<WaitlistLeaderRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const dailyQ = useQuery({ queryKey: ["waitlistDaily", 30], queryFn: () => getWaitlistDaily(30) });
+  const sourcesQ = useQuery({ queryKey: ["waitlistSources"], queryFn: getWaitlistSources });
+  const leadersQ = useQuery({ queryKey: ["waitlistLeaderboard", 10], queryFn: () => getWaitlistLeaderboard(10) });
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    Promise.all([
-      getWaitlistDaily(30),
-      getWaitlistSources(),
-      getWaitlistLeaderboard(10),
-    ])
-      .then(([d, s, l]) => { if (!cancelled) { setDaily(d); setSources(s); setLeaders(l); } })
-      .catch((e: Error) => { if (!cancelled) setError(e.message); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
+  const loading = dailyQ.isPending || sourcesQ.isPending || leadersQ.isPending;
+  const error = dailyQ.error || sourcesQ.error || leadersQ.error;
+  const daily: WaitlistDailyRow[] = dailyQ.data ?? [];
+  const sources: WaitlistSourceRow[] = sourcesQ.data ?? [];
+  const leaders: WaitlistLeaderRow[] = leadersQ.data ?? [];
 
   const total = sources.reduce((s, r) => s + r.signups, 0);
   const last7 = daily.slice(-7).reduce((s, r) => s + r.signups, 0);
@@ -42,7 +32,7 @@ export function AnalyticsWaitlist() {
       <div className="empty" style={{ color: "var(--error)", borderColor: "var(--error-bg)" }}>
         <IconAlert size={18} />
         <p className="empty-title" style={{ marginTop: 10 }}>Couldn't load waitlist analytics.</p>
-        {error}
+        {error.message}
       </div>
     );
   }

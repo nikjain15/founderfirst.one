@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   listPrompts,
   createPromptVersion,
@@ -34,48 +35,40 @@ const LOCKED_GUARDRAILS_PREVIEW = `# Penny — locked runtime contract
  * primary. There's no separate "edit mode" — it's all just text.
  */
 export function ContentPrompt() {
-  const [rows, setRows] = useState<PromptRow[]>([]);
+  const qc = useQueryClient();
+
+  // Selection / draft are real UI state. selectedId starts null and is seeded
+  // from the live (or first) row once the query resolves — see seededId below.
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
 
-  async function refresh(preserveSelection = false) {
-    setError(null);
-    try {
-      const fresh = await listPrompts();
-      setRows(fresh);
-      if (!preserveSelection || !selectedId) {
-        const live = fresh.find((r) => r.is_live) ?? fresh[0] ?? null;
-        if (live) {
-          setSelectedId(live.id);
-          setDraft(live.body);
-          setNotes("");
-        } else {
-          setSelectedId(null);
-          setDraft("");
-          setNotes("");
-        }
-      }
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Version list — cached. The query owns rows + load/error state.
+  const {
+    data: rows = [],
+    isPending: loading,
+    error: queryError,
+  } = useQuery({
+    queryKey: ["prompts"],
+    queryFn: listPrompts,
+  });
 
-  useEffect(() => {
-    void refresh(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+  // Default selection: pick live (or newest) the first time rows arrive and we
+  // haven't selected anything yet. Mirrors the old refresh(false) seeding.
+  const seededId = selectedId ?? (rows.find((r) => r.is_live) ?? rows[0])?.id ?? null;
   const selected = useMemo(
-    () => rows.find((r) => r.id === selectedId) ?? null,
-    [rows, selectedId],
+    () => rows.find((r) => r.id === seededId) ?? null,
+    [rows, seededId],
   );
+
+  // Sync draft to the seeded selection until the user picks/edits. We only
+  // overwrite the draft when it's empty (initial mount) to avoid clobbering text.
+  if (selectedId === null && selected && draft === "") {
+    setSelectedId(selected.id);
+    setDraft(selected.body);
+  }
 
   const dirty = selected ? draft !== selected.body : draft.trim().length > 0;
   const live = useMemo(() => rows.find((r) => r.is_live) ?? null, [rows]);
@@ -87,25 +80,38 @@ export function ContentPrompt() {
     setNotes("");
   }
 
-  async function handleSave() {
-    if (!draft.trim()) return;
-    setSaving(true);
-    setError(null);
-    setFlash(null);
-    try {
-      const newId = await createPromptVersion(draft, notes.trim() || undefined);
-      await refresh(false);
+  // Create a new version — invalidate ["prompts"], then select the new row.
+  const saveMut = useMutation({
+    mutationFn: () => createPromptVersion(draft, notes.trim() || undefined),
+    onSuccess: async (newId) => {
+      await qc.invalidateQueries({ queryKey: ["prompts"] });
       setSelectedId(newId);
       setNotes("");
       setFlash("Saved as new version. Click 'Set live' to publish.");
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setSaving(false);
-    }
+    },
+    onError: (e) => setError((e as Error).message),
+  });
+
+  // Flip the live flag — invalidate ["prompts"] and ["livePrompt"]; keep selection.
+  const setLiveMut = useMutation({
+    mutationFn: (id: string) => setLivePrompt(id),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["prompts"] });
+      void qc.invalidateQueries({ queryKey: ["livePrompt"] });
+      if (selected) setFlash(`Version ${selected.version} is now live.`);
+    },
+    onError: (e) => setError((e as Error).message),
+  });
+  const saving = saveMut.isPending || setLiveMut.isPending;
+
+  function handleSave() {
+    if (!draft.trim()) return;
+    setError(null);
+    setFlash(null);
+    saveMut.mutate();
   }
 
-  async function handleSetLive() {
+  function handleSetLive() {
     if (!selected) return;
     if (selected.is_live) return;
     if (dirty) {
@@ -113,23 +119,17 @@ export function ContentPrompt() {
       return;
     }
     if (!window.confirm(`Set version ${selected.version} live? Penny will use it on the next request.`)) return;
-    setSaving(true);
     setError(null);
-    try {
-      await setLivePrompt(selected.id);
-      await refresh(true);
-      setFlash(`Version ${selected.version} is now live.`);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setSaving(false);
-    }
+    setLiveMut.mutate(selected.id);
   }
 
   if (loading) return <div className="empty">Loading…</div>;
 
+  // A read error (query) or a write error (mutation) render in the same banner.
+  const displayError = error ?? (queryError ? (queryError as Error).message : null);
+
   // First-run empty state.
-  if (rows.length === 0 && !error) {
+  if (rows.length === 0 && !displayError) {
     return (
       <div className="prompt-editor">
         <div className="empty" style={{ marginBottom: 16 }}>
@@ -210,9 +210,9 @@ export function ContentPrompt() {
       {/* Right: editor */}
       <section>
         <LockedGuardrailsNotice />
-        {error && (
+        {displayError && (
           <div className="empty" style={{ color: "var(--error)", borderColor: "var(--error-bg)", marginBottom: 12 }}>
-            <IconAlert size={18} /> {error}
+            <IconAlert size={18} /> {displayError}
           </div>
         )}
         {flash && (

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   getAnalytics,
   listRecentFeedback,
@@ -10,20 +10,19 @@ import { DualBarChart, HBarBreakdown, zipOpensResolves } from "../lib/charts";
 import { IconAlert } from "../lib/icons";
 
 export function AnalyticsSupport() {
-  const [data, setData] = useState<AnalyticsSnapshot | null>(null);
-  const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Headline snapshot — surfaces errors below.
+  const {
+    data,
+    isPending: loading,
+    error,
+  } = useQuery({ queryKey: ["analytics"], queryFn: getAnalytics });
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    Promise.all([getAnalytics(), listRecentFeedback(20).catch(() => [] as FeedbackRow[])])
-      .then(([d, f]) => { if (!cancelled) { setData(d); setFeedback(f); } })
-      .catch((e: Error) => { if (!cancelled) setError(e.message); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
+  // Recent ratings — failure is swallowed (falls back to []) so a broken
+  // feedback query doesn't take the whole panel down.
+  const { data: feedback = [] } = useQuery({
+    queryKey: ["recentFeedback", 20],
+    queryFn: () => listRecentFeedback(20).catch(() => [] as FeedbackRow[]),
+  });
 
   return (
     <div>
@@ -36,7 +35,7 @@ export function AnalyticsSupport() {
         <div className="empty" style={{ color: "var(--error)", borderColor: "var(--error-bg)" }}>
           <IconAlert size={18} />
           <p className="empty-title" style={{ marginTop: 10 }}>Couldn't load analytics.</p>
-          {error}
+          {error.message}
         </div>
       )}
 

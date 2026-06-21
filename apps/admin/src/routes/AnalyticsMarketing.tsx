@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { ga, type GaOverview, type GaTrafficRow, type GaPageRow, type GaSourceRow } from "../lib/supabase";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { ga, type GaTrafficRow } from "../lib/supabase";
 import { HBarBreakdown } from "../lib/charts";
 import { IconAlert } from "../lib/icons";
 
@@ -11,36 +12,21 @@ const RANGES: Array<{ label: string; days: number }> = [
 
 export function AnalyticsMarketing() {
   const [rangeIdx, setRangeIdx] = useState(1);
-  const [overview, setOverview] = useState<GaOverview | null>(null);
-  const [traffic,  setTraffic]  = useState<GaTrafficRow[]>([]);
-  const [pages,    setPages]    = useState<GaPageRow[]>([]);
-  const [sources,  setSources]  = useState<GaSourceRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const days = RANGES[rangeIdx].days;
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    Promise.all([
-      ga.overview(days),
-      ga.traffic(days),
-      ga.topPages(days, 10),
-      ga.sources(days, 10),
-    ])
-      .then(([o, t, p, s]) => {
-        if (cancelled) return;
-        setOverview(o);
-        setTraffic(t.rows);
-        setPages(p.rows);
-        setSources(s.rows);
-      })
-      .catch((e: Error) => { if (!cancelled) setError(e.message); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [days]);
+  // GA4 reads, all keyed on the active range so they refetch when it changes.
+  const overviewQ = useQuery({ queryKey: ["ga.overview", days], queryFn: () => ga.overview(days) });
+  const trafficQ  = useQuery({ queryKey: ["ga.traffic", days],  queryFn: () => ga.traffic(days) });
+  const pagesQ    = useQuery({ queryKey: ["ga.topPages", days], queryFn: () => ga.topPages(days, 10) });
+  const sourcesQ  = useQuery({ queryKey: ["ga.sources", days],  queryFn: () => ga.sources(days, 10) });
+
+  const loading = overviewQ.isPending || trafficQ.isPending || pagesQ.isPending || sourcesQ.isPending;
+  const error = overviewQ.error || trafficQ.error || pagesQ.error || sourcesQ.error;
+  const overview = overviewQ.data;
+  const traffic = trafficQ.data?.rows ?? [];
+  const pages = pagesQ.data?.rows ?? [];
+  const sources = sourcesQ.data?.rows ?? [];
 
   if (loading) return <div className="empty">Loading from Google Analytics…</div>;
   if (error) {
@@ -48,7 +34,7 @@ export function AnalyticsMarketing() {
       <div className="empty" style={{ color: "var(--error)", borderColor: "var(--error-bg)" }}>
         <IconAlert size={18} />
         <p className="empty-title" style={{ marginTop: 10 }}>Couldn't reach GA4.</p>
-        {error}
+        {error.message}
         <p style={{ marginTop: 10, fontSize: 12 }}>
           Check: (1) <code>ga-proxy</code> edge function deployed; (2) <code>GA4_PROPERTY_ID</code> + <code>GCP_SA_JSON</code> secrets set;
           (3) service account has Viewer role on the GA4 property.

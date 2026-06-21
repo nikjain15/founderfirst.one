@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ContentPrompt } from "./ContentPrompt";
 import { ContentVoice } from "./ContentVoice";
 import {
@@ -89,44 +90,44 @@ type ActivityItem = {
 const SEEN_KEY = "ff.admin.brain.lastSeenAt";
 
 function ActivityStrip({ onJumpTab }: { onJumpTab: (t: Tab) => void }) {
-  const [myEmail, setMyEmail] = useState<string | null>(null);
-  const [items, setItems] = useState<ActivityItem[] | null>(null);
   const [lastSeenAt, setLastSeenAt] = useState<string>(() => {
     if (typeof window === "undefined") return "";
     return window.localStorage.getItem(SEEN_KEY) ?? "";
   });
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const me = (await getClient().auth.getUser()).data.user?.email?.toLowerCase() ?? null;
-        const [prompts, voice] = await Promise.all([listPrompts(), listVoice()]);
-        if (cancelled) return;
-        setMyEmail(me);
-        const merged: ActivityItem[] = [
-          ...prompts.slice(0, 8).map((r: PromptRow) => ({
-            kind: "prompt" as const,
-            version: r.version,
-            author: r.created_by_email,
-            whenISO: r.created_at,
-            isLive: r.is_live,
-          })),
-          ...voice.slice(0, 8).map((r: VoiceRow) => ({
-            kind: "voice" as const,
-            version: r.version,
-            author: r.created_by_email,
-            whenISO: r.created_at,
-            isLive: r.is_live,
-          })),
-        ].sort((a, b) => (a.whenISO < b.whenISO ? 1 : -1));
-        setItems(merged.slice(0, 5));
-      } catch {
-        setItems([]);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  // Who am I — used to dim my own changes in the "since you last looked" count.
+  const { data: myEmail = null } = useQuery({
+    queryKey: ["myEmail"],
+    queryFn: async () =>
+      (await getClient().auth.getUser()).data.user?.email?.toLowerCase() ?? null,
+  });
+
+  // Reuse the ["prompts"] / ["voice"] caches so the strip refreshes the instant
+  // ContentPrompt / ContentVoice publish a new version.
+  const { data: prompts = [], isPending: promptsPending } = useQuery({ queryKey: ["prompts"], queryFn: listPrompts });
+  const { data: voice = [], isPending: voicePending } = useQuery({ queryKey: ["voice"], queryFn: listVoice });
+  const loading = promptsPending || voicePending;
+
+  // Merge both feeds into one chronological list, newest first, capped at 5.
+  const items = useMemo<ActivityItem[] | null>(() => {
+    if (loading) return null;
+    return [
+      ...prompts.slice(0, 8).map((r: PromptRow) => ({
+        kind: "prompt" as const,
+        version: r.version,
+        author: r.created_by_email,
+        whenISO: r.created_at,
+        isLive: r.is_live,
+      })),
+      ...voice.slice(0, 8).map((r: VoiceRow) => ({
+        kind: "voice" as const,
+        version: r.version,
+        author: r.created_by_email,
+        whenISO: r.created_at,
+        isLive: r.is_live,
+      })),
+    ].sort((a, b) => (a.whenISO < b.whenISO ? 1 : -1)).slice(0, 5);
+  }, [prompts, voice, loading]);
 
   const unseenFromOthers = useMemo(() => {
     if (!items) return [];

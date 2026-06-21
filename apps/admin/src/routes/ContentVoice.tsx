@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { marked } from "marked";
 import {
   listVoice,
@@ -22,53 +23,49 @@ marked.setOptions({ gfm: true, breaks: false });
  * underneath the textarea so the author sees the final shape as they type.
  */
 export function ContentVoice() {
-  const [rows, setRows] = useState<VoiceRow[]>([]);
+  const qc = useQueryClient();
+
+  // Selection / draft / editing are real UI state. selectedId seeds from the
+  // live (or newest) row once the query resolves; see seededId below.
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [editing, setEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
+  // Tracks whether the initial draft seed has run, so re-renders don't clobber
+  // the textarea once the user (or a mutation) has set its contents.
+  const [seeded, setSeeded] = useState(false);
 
-  async function refresh(preserveSelection = false) {
-    setError(null);
-    try {
-      const fresh = await listVoice();
-      setRows(fresh);
-      if (!preserveSelection || !selectedId) {
-        const live = fresh.find((r) => r.is_live) ?? fresh[0] ?? null;
-        if (live) {
-          setSelectedId(live.id);
-          setDraft(live.body);
-          setNotes("");
-          setEditing(false);
-        } else {
-          // First run — pre-load the repo's VOICE.md as a seed so the admin
-          // sees the canonical guide rendered immediately, ready to save as v1.
-          setSelectedId(null);
-          setDraft(VOICE_MD);
-          setNotes("Initial draft");
-          setEditing(false);
-        }
-      }
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
+  // Version history — cached. The query owns rows + load/error state.
+  const {
+    data: rows = [],
+    isPending: loading,
+    error: queryError,
+  } = useQuery({
+    queryKey: ["voice"],
+    queryFn: listVoice,
+  });
+
+  const seededId = selectedId ?? (rows.find((r) => r.is_live) ?? rows[0])?.id ?? null;
+  const selected = useMemo(
+    () => rows.find((r) => r.id === seededId) ?? null,
+    [rows, seededId],
+  );
+
+  // One-time draft seed mirroring the old refresh(false): live/newest body if a
+  // version exists, otherwise the repo's VOICE.md as a starter draft.
+  if (!seeded && !loading) {
+    setSeeded(true);
+    if (selected) {
+      setSelectedId(selected.id);
+      setDraft(selected.body);
+      setNotes("");
+    } else {
+      setDraft(VOICE_MD);
+      setNotes("Initial draft");
     }
   }
-
-  useEffect(() => {
-    void refresh(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const selected = useMemo(
-    () => rows.find((r) => r.id === selectedId) ?? null,
-    [rows, selectedId],
-  );
 
   const dirty = selected ? draft !== selected.body : draft.trim().length > 0 && draft !== VOICE_MD;
   const rendered = useMemo(() => {
@@ -97,26 +94,40 @@ export function ContentVoice() {
     setEditing(false);
   }
 
-  async function handleSave() {
-    if (!draft.trim()) return;
-    setSaving(true);
-    setError(null);
-    setFlash(null);
-    try {
-      const newId = await createVoiceVersion(draft, notes.trim() || undefined);
-      await refresh(false);
+  // Create a new version — invalidate ["voice"], then select the new row and
+  // drop out of edit mode. The newly-saved body is its own canonical text.
+  const saveMut = useMutation({
+    mutationFn: () => createVoiceVersion(draft, notes.trim() || undefined),
+    onSuccess: async (newId) => {
+      await qc.invalidateQueries({ queryKey: ["voice"] });
       setSelectedId(newId);
       setNotes("");
       setEditing(false);
       setFlash("Saved as a new version. Click 'Set this version live' to publish it to every Penny surface.");
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setSaving(false);
-    }
+    },
+    onError: (e) => setError((e as Error).message),
+  });
+
+  // Flip the live flag — invalidate ["voice"] and ["liveVoice"]; keep selection.
+  const setLiveMut = useMutation({
+    mutationFn: (id: string) => setLiveVoice(id),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["voice"] });
+      void qc.invalidateQueries({ queryKey: ["liveVoice"] });
+      if (selected) setFlash(`Voice v${selected.version} is now live. Open the Penny bubble on founderfirst.one to verify within a minute.`);
+    },
+    onError: (e) => setError((e as Error).message),
+  });
+  const saving = saveMut.isPending || setLiveMut.isPending;
+
+  function handleSave() {
+    if (!draft.trim()) return;
+    setError(null);
+    setFlash(null);
+    saveMut.mutate();
   }
 
-  async function handleSetLive() {
+  function handleSetLive() {
     if (!selected) return;
     if (selected.is_live) return;
     if (dirty) {
@@ -124,20 +135,14 @@ export function ContentVoice() {
       return;
     }
     if (!window.confirm(`Set Voice v${selected.version} live? Every Penny surface will pick it up within ~60 seconds.`)) return;
-    setSaving(true);
     setError(null);
-    try {
-      await setLiveVoice(selected.id);
-      await refresh(true);
-      setFlash(`Voice v${selected.version} is now live. Open the Penny bubble on founderfirst.one to verify within a minute.`);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setSaving(false);
-    }
+    setLiveMut.mutate(selected.id);
   }
 
   if (loading) return <div className="empty">Loading…</div>;
+
+  // Read error (query) and write errors (mutations) render in the same banner.
+  const displayError = error ?? (queryError ? (queryError as Error).message : null);
 
   const noVersionsYet = rows.length === 0;
 
@@ -193,9 +198,9 @@ export function ContentVoice() {
 
       {/* Right: viewer / editor */}
       <section style={noVersionsYet ? { gridColumn: "1 / -1" } : undefined}>
-        {error && (
+        {displayError && (
           <div className="alert alert-error" style={{ marginBottom: 12 }}>
-            <IconAlert size={16} /> <span>{error}</span>
+            <IconAlert size={16} /> <span>{displayError}</span>
           </div>
         )}
         {flash && (

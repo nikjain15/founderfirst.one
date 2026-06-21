@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getTicket, replyToTicket, getFeedbackForTicket, setTicketTopic, logAudit, type TicketDetail as TD, type TicketFeedback } from "../lib/supabase";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { getTicket, replyToTicket, getFeedbackForTicket, setTicketTopic, logAudit, type TicketFeedback } from "../lib/supabase";
 import { IconArrowLeft, IconSend, IconAlert, channelIcon } from "../lib/icons";
 import { slaForTicket, slaLabel } from "../lib/sla";
 import { TOPICS } from "../lib/topics";
@@ -8,70 +9,78 @@ import { TOPICS } from "../lib/topics";
 export function TicketDetail() {
   const { ticketId = "" } = useParams();
   const navigate = useNavigate();
-  const [data, setData] = useState<TD | null>(null);
-  const [feedback, setFeedback] = useState<TicketFeedback | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
+
+  // Ticket thread + feedback — cached per ticketId; feedback failure is swallowed
+  // (resolves to null) so a missing feedback row doesn't take the thread down.
+  const {
+    data,
+    isPending: loading,
+    error: queryError,
+  } = useQuery({
+    queryKey: ["ticket", ticketId],
+    queryFn: () => getTicket(ticketId),
+  });
+  const { data: feedback = null } = useQuery({
+    queryKey: ["ticketFeedback", ticketId],
+    queryFn: () => getFeedbackForTicket(ticketId).catch(() => null as TicketFeedback | null),
+  });
 
   const [reply, setReply] = useState("");
   const [resolve, setResolve] = useState(true);
-  const [sending, setSending] = useState(false);
 
-  async function refresh() {
-    setLoading(true);
-    try {
-      const [d, f] = await Promise.all([
-        getTicket(ticketId),
-        getFeedbackForTicket(ticketId).catch(() => null),
-      ]);
-      setData(d);
-      setFeedback(f);
-      setError(null);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Write errors (reply / set-topic) surface here; read errors come from the query.
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    void refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ticketId]);
-
-  async function onSend() {
-    if (!reply.trim()) return;
-    setSending(true);
-    try {
-      const body = reply.trim();
-      await replyToTicket(ticketId, body, resolve);
+  // Reply — on resolve we leave the page, otherwise we invalidate so the new
+  // admin message lands in the thread.
+  const replyMut = useMutation({
+    mutationFn: (vars: { body: string; resolve: boolean }) =>
+      replyToTicket(ticketId, vars.body, vars.resolve),
+    onSuccess: (_res, vars) => {
       void logAudit("ticket.reply", "ticket", ticketId, {
-        body,
-        resolved: resolve,
+        body: vars.body,
+        resolved: vars.resolve,
         ticket_subject: data?.ticket.subject ?? null,
         contact_email:  data?.ticket.contact_email ?? null,
         channel:        data?.ticket.channel ?? null,
       });
       setReply("");
-      if (resolve) {
+      if (vars.resolve) {
         navigate("/support");
       } else {
-        await refresh();
+        void qc.invalidateQueries({ queryKey: ["ticket", ticketId] });
       }
-    } catch (e) {
+    },
+    onError: (e) => setError((e as Error).message),
+  });
+  const sending = replyMut.isPending;
+
+  // Topic change — optimistic via setQueryData; on failure we revert by refetching.
+  const topicMut = useMutation({
+    mutationFn: (vars: { next: string | null }) => setTicketTopic(ticketId, vars.next),
+    onSuccess: (_res, vars) => {
+      void logAudit("ticket.topic_set", "ticket", ticketId, { from: data?.ticket.topic ?? null, to: vars.next });
+    },
+    onError: (e) => {
       setError((e as Error).message);
-    } finally {
-      setSending(false);
-    }
+      void qc.invalidateQueries({ queryKey: ["ticket", ticketId] });
+    },
+  });
+
+  function onSend() {
+    if (!reply.trim()) return;
+    setError(null);
+    replyMut.mutate({ body: reply.trim(), resolve });
   }
 
   if (loading) return <div className="empty">Loading…</div>;
-  if (error) {
+  if (queryError || error) {
     return (
       <div className="empty" style={{ color: "var(--error)", borderColor: "var(--error-bg)" }}>
         <IconAlert size={18} />
         <p className="empty-title" style={{ marginTop: 10 }}>Something broke.</p>
-        {error}
+        {error ?? (queryError as Error).message}
       </div>
     );
   }
@@ -103,16 +112,14 @@ export function TicketDetail() {
               <span>topic:</span>
               <select
                 value={ticket.topic ?? ""}
-                onChange={async (e) => {
+                onChange={(e) => {
                   const next = e.target.value || null;
-                  // Optimistic update so the dropdown reflects the change immediately.
-                  setData((d) => d ? { ...d, ticket: { ...d.ticket, topic: next } } : d);
-                  const prev = ticket.topic ?? null;
-                  try {
-                    await setTicketTopic(ticket.id, next);
-                    void logAudit("ticket.topic_set", "ticket", ticket.id, { from: prev, to: next });
-                  }
-                  catch (err) { setError((err as Error).message); await refresh(); }
+                  setError(null);
+                  // Optimistic update so the dropdown reflects the change immediately;
+                  // the mutation reverts via invalidate on failure.
+                  qc.setQueryData(["ticket", ticketId], (d: typeof data) =>
+                    d ? { ...d, ticket: { ...d.ticket, topic: next } } : d);
+                  topicMut.mutate({ next });
                 }}
               >
                 <option value="">untagged</option>

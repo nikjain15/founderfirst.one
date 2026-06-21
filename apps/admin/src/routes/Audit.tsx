@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { listAudit, getAuditFacets, type AuditRow } from "../lib/supabase";
 import { IconAlert } from "../lib/icons";
 
@@ -10,21 +11,10 @@ const SINCE_OPTIONS: Array<{ label: string; hours: number | null }> = [
 ];
 
 export function Audit() {
-  const [rows, setRows] = useState<AuditRow[]>([]);
-  const [actions, setActions] = useState<string[]>([]);
-  const [actors, setActors] = useState<string[]>([]);
   const [actionFilter, setActionFilter] = useState<string>("");
   const [actorFilter, setActorFilter]   = useState<string>("");
   const [sinceIdx, setSinceIdx]         = useState<number>(1); // 7 days default
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<AuditRow | null>(null);
-
-  useEffect(() => {
-    getAuditFacets()
-      .then((f) => { setActions(f.actions); setActors(f.actors); })
-      .catch(() => {});
-  }, [rows.length]);
 
   const sinceIso = useMemo(() => {
     const opt = SINCE_OPTIONS[sinceIdx];
@@ -32,21 +22,30 @@ export function Audit() {
     return new Date(Date.now() - opt.hours * 3600 * 1000).toISOString();
   }, [sinceIdx]);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    listAudit({
+  // Audit rows — cached per filter set; refetches automatically on change.
+  const {
+    data: rows = [],
+    isPending: loading,
+    error,
+  } = useQuery({
+    queryKey: ["audit", actionFilter, actorFilter, sinceIso],
+    queryFn: () => listAudit({
       action: actionFilter || undefined,
       actor:  actorFilter  || undefined,
       since:  sinceIso,
       limit:  500,
-    })
-      .then((r) => { if (!cancelled) setRows(r); })
-      .catch((e: Error) => { if (!cancelled) setError(e.message); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [actionFilter, actorFilter, sinceIso]);
+    }),
+  });
+
+  // Filter facets — best-effort; a failure here is swallowed so the dropdowns
+  // just stay empty rather than taking the page down. Re-keyed on row count so
+  // the lists pick up any newly-seen actions/actors after a refetch.
+  const { data: facets } = useQuery({
+    queryKey: ["auditFacets", rows.length],
+    queryFn: () => getAuditFacets().catch(() => ({ actions: [], actors: [] })),
+  });
+  const actions = facets?.actions ?? [];
+  const actors  = facets?.actors  ?? [];
 
   return (
     <div>
@@ -76,7 +75,7 @@ export function Audit() {
         <div className="empty" style={{ color: "var(--error)", borderColor: "var(--error-bg)" }}>
           <IconAlert size={18} />
           <p className="empty-title" style={{ marginTop: 10 }}>Couldn't load audit log.</p>
-          {error}
+          {error.message}
           <p style={{ marginTop: 10, fontSize: 12 }}>
             Did you run <code>SCHEMA-009-admin-audit.sql</code> in Supabase?
           </p>

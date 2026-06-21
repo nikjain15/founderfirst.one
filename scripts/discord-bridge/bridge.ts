@@ -1,5 +1,5 @@
 /**
- * FounderFirst Discord bridge — the dumb relay (TypeScript port of bridge.py).
+ * FounderFirst Discord bridge — the dumb relay.
  *
  * The bridge has zero opinions about voice, prompts, retrieval, or who a user is.
  * All of that lives in the Cloudflare Worker (site-bubble/worker). This file just:

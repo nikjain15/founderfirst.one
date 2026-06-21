@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FounderFirst Signals — Capture",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Capture a post from a closed community into FounderFirst Signals. Internal tool.",
   "permissions": ["storage", "activeTab", "scripting", "contextMenus"],
   "host_permissions": [

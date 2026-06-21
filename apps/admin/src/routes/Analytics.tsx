@@ -98,7 +98,7 @@ export function AnalyticsSupport() {
               <div className="card">
                 <div className="card-eyebrow">CSAT score</div>
                 {data.csat_7d.count === 0 ? (
-                  <p style={{ margin: 0, color: "var(--ink-3)", fontSize: 14, lineHeight: 1.55 }}>
+                  <p style={{ margin: 0, color: "var(--ink-3)", fontSize: "var(--fs-data-row)", lineHeight: 1.55 }}>
                     No ratings yet. Wire Penny + the bridge to call <code>submit_feedback</code> after each resolution.
                   </p>
                 ) : (
@@ -107,7 +107,7 @@ export function AnalyticsSupport() {
                       <div className={`kpi-value num csat-${csatTone(data.csat_7d.score_pct)}`}>
                         {data.csat_7d.score_pct}%
                       </div>
-                      <div className="num" style={{ color: "var(--ink-3)", fontSize: 13 }}>
+                      <div className="num" style={{ color: "var(--ink-3)", fontSize: "var(--fs-data-row)" }}>
                         {data.csat_7d.up} 👍 · {data.csat_7d.down} 👎 · {data.csat_7d.count} total
                       </div>
                     </div>
@@ -232,7 +232,7 @@ function StyleReference() {
             <div className="palette-swatches">
               <span className="sla-pill fresh">fresh</span>
               <div className="feedback-strip up" style={{ marginBottom: 0, padding: "8px 12px" }}>
-                <span className="feedback-rating" style={{ fontSize: 14 }}>👍</span>
+                <span className="feedback-rating" style={{ fontSize: "var(--fs-data-row)" }}>👍</span>
                 <span className="feedback-strip-label">User rated helpful</span>
               </div>
               <Swatch token="--income"    label="income" />
@@ -257,7 +257,7 @@ function StyleReference() {
               <span className="sla-pill stale">stale</span>
               <span className="priority-pill p1">P1</span>
               <div className="feedback-strip down" style={{ marginBottom: 0, padding: "8px 12px" }}>
-                <span className="feedback-rating" style={{ fontSize: 14 }}>👎</span>
+                <span className="feedback-rating" style={{ fontSize: "var(--fs-data-row)" }}>👎</span>
                 <span className="feedback-strip-label">User rated unhelpful</span>
               </div>
               <Swatch token="--error"    label="error" />

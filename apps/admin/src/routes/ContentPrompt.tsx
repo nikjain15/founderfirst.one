@@ -141,7 +141,7 @@ export function ContentPrompt() {
           onChange={(e) => setDraft(e.target.value)}
           rows={20}
           placeholder="# Penny — Site Bubble System Prompt&#10;&#10;You are Penny, an AI bookkeeper for…"
-          style={{ width: "100%", fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 13, lineHeight: 1.5 }}
+          style={{ width: "100%", fontFamily: "var(--font-mono)", fontSize: "var(--fs-data-row)", lineHeight: 1.5 }}
         />
         <input
           type="text"
@@ -176,27 +176,27 @@ export function ContentPrompt() {
                     width: "100%",
                     textAlign: "left",
                     padding: "8px 10px",
-                    border: "1px solid var(--border)",
-                    borderColor: isSel ? "var(--accent)" : "var(--border)",
-                    background: isSel ? "var(--surface-2, #f6f6f6)" : "transparent",
+                    border: "1px solid var(--line)",
+                    borderColor: isSel ? "var(--ink)" : "var(--line)",
+                    background: isSel ? "var(--paper)" : "transparent",
                     borderRadius: 6,
                     cursor: "pointer",
-                    fontSize: 13,
+                    fontSize: "var(--fs-data-row)",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <strong>v{r.version}</strong>
                     {r.is_live && (
-                      <span style={{ fontSize: 10, fontWeight: 600, color: "var(--success, #0a7c2f)" }}>
+                      <span style={{ fontSize: "var(--fs-tiny)", fontWeight: "var(--fw-semibold)", color: "var(--income)" }}>
                         ● LIVE
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+                  <div style={{ fontSize: "var(--fs-eyebrow)", color: "var(--ink-3)", marginTop: 2 }}>
                     {new Date(r.created_at).toLocaleString()}
                   </div>
                   {r.notes && (
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2, fontStyle: "italic" }}>
+                    <div style={{ fontSize: "var(--fs-eyebrow)", color: "var(--ink-3)", marginTop: 2, fontStyle: "italic" }}>
                       {r.notes.length > 60 ? r.notes.slice(0, 60) + "…" : r.notes}
                     </div>
                   )}
@@ -216,23 +216,23 @@ export function ContentPrompt() {
           </div>
         )}
         {flash && (
-          <div className="empty" style={{ color: "var(--success, #0a7c2f)", borderColor: "var(--success-bg, #d6f0db)", marginBottom: 12 }}>
+          <div className="empty" style={{ color: "var(--income)", borderColor: "var(--income-bg)", marginBottom: 12 }}>
             <IconCheck size={18} /> {flash}
           </div>
         )}
 
         {selected && (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <div style={{ fontSize: 13, color: "var(--muted)" }}>
+            <div style={{ fontSize: "var(--fs-data-row)", color: "var(--ink-3)" }}>
               Editing <strong>v{selected.version}</strong>
-              {selected.is_live && <span style={{ marginLeft: 8, color: "var(--success, #0a7c2f)" }}>● LIVE</span>}
-              {dirty && <span style={{ marginLeft: 8, color: "var(--warning, #b8860b)" }}>● Unsaved changes</span>}
+              {selected.is_live && <span style={{ marginLeft: 8, color: "var(--income)" }}>● LIVE</span>}
+              {dirty && <span style={{ marginLeft: 8, color: "var(--amber)" }}>● Unsaved changes</span>}
               {selected.created_by_email && (
                 <span style={{ marginLeft: 8 }}> · by {selected.created_by_email}</span>
               )}
             </div>
             {live && selected.id !== live.id && (
-              <span style={{ fontSize: 11, color: "var(--muted)" }}>
+              <span style={{ fontSize: "var(--fs-eyebrow)", color: "var(--ink-3)" }}>
                 Live is v{live.version}
               </span>
             )}
@@ -245,11 +245,11 @@ export function ContentPrompt() {
           rows={24}
           style={{
             width: "100%",
-            fontFamily: "var(--font-mono, ui-monospace, monospace)",
-            fontSize: 13,
+            fontFamily: "var(--font-mono)",
+            fontSize: "var(--fs-data-row)",
             lineHeight: 1.55,
             padding: 12,
-            border: "1px solid var(--border)",
+            border: "1px solid var(--line)",
             borderRadius: 6,
             resize: "vertical",
           }}
@@ -260,7 +260,7 @@ export function ContentPrompt() {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Notes (optional) — what changed in this version?"
-          style={{ width: "100%", marginTop: 8, padding: 8, border: "1px solid var(--border)", borderRadius: 6 }}
+          style={{ width: "100%", marginTop: 8, padding: 8, border: "1px solid var(--line)", borderRadius: 6 }}
         />
 
         <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center" }}>
@@ -280,7 +280,7 @@ export function ContentPrompt() {
           >
             {selected?.is_live ? "Currently live" : "Set this version live"}
           </button>
-          <div style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted)" }}>
+          <div style={{ marginLeft: "auto", fontSize: "var(--fs-eyebrow)", color: "var(--ink-3)" }}>
             {draft.length.toLocaleString()} chars · ~{Math.ceil(draft.length / 4).toLocaleString()} tokens
           </div>
         </div>
@@ -294,12 +294,12 @@ function LockedGuardrailsNotice() {
   return (
     <div
       style={{
-        border: "1px solid var(--border)",
-        background: "var(--surface-2, #fafafa)",
+        border: "1px solid var(--line)",
+        background: "var(--paper)",
         borderRadius: 6,
         padding: "8px 12px",
         marginBottom: 12,
-        fontSize: 12,
+        fontSize: "var(--fs-eyebrow)",
       }}
     >
       <button
@@ -312,8 +312,8 @@ function LockedGuardrailsNotice() {
           display: "flex",
           alignItems: "center",
           gap: 6,
-          color: "var(--muted)",
-          fontSize: 12,
+          color: "var(--ink-3)",
+          fontSize: "var(--fs-eyebrow)",
         }}
       >
         <span style={{ transform: open ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s" }}>
@@ -326,13 +326,13 @@ function LockedGuardrailsNotice() {
           style={{
             margin: "8px 0 0 0",
             padding: 10,
-            background: "var(--surface, #fff)",
-            border: "1px solid var(--border)",
+            background: "var(--white)",
+            border: "1px solid var(--line)",
             borderRadius: 4,
-            fontSize: 11,
+            fontSize: "var(--fs-eyebrow)",
             lineHeight: 1.5,
             whiteSpace: "pre-wrap",
-            color: "var(--muted)",
+            color: "var(--ink-3)",
           }}
         >
 {LOCKED_GUARDRAILS_PREVIEW}

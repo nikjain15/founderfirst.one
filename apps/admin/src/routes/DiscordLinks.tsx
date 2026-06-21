@@ -132,14 +132,14 @@ export function DiscordLinks({ embedded = false }: DiscordLinksProps = {}) {
                 <td>
                   {r.discord_username ?? <span className="muted">unknown</span>}
                   {r.discord_user_id && (
-                    <div style={{ fontSize: 11, color: "var(--ink-muted, #6b6657)" }}>
+                    <div style={{ fontSize: "var(--fs-eyebrow)", color: "var(--ink-3)" }}>
                       id: {r.discord_user_id}
                     </div>
                   )}
                 </td>
                 <td>
                   <span className={`chip chip-${r.status}`}>{r.status}</span>
-                  <div style={{ fontSize: 11, color: "var(--ink-muted, #6b6657)", marginTop: 2 }}>
+                  <div style={{ fontSize: "var(--fs-eyebrow)", color: "var(--ink-3)", marginTop: 2 }}>
                     from {r.initiated_from}
                   </div>
                 </td>

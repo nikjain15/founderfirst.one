@@ -43,7 +43,7 @@ export function AnalyticsProduct() {
         <IconAlert size={18} />
         <p className="empty-title" style={{ marginTop: 10 }}>Couldn't load product funnel.</p>
         {error.message}
-        <p style={{ marginTop: 10, fontSize: 12 }}>
+        <p style={{ marginTop: 10, fontSize: "var(--fs-eyebrow)" }}>
           Did you run <code>SCHEMA-010-events.sql</code> and <code>SCHEMA-011-funnel.sql</code>?
         </p>
       </div>
@@ -70,7 +70,7 @@ export function AnalyticsProduct() {
           </button>
         ))}
         <div className="toolbar-spacer" />
-        <span style={{ fontSize: 13, color: "var(--ink-3)" }}>
+        <span style={{ fontSize: "var(--fs-data-row)", color: "var(--ink-3)" }}>
           {totalEvents.toLocaleString()} events · {identifiedPct}% identified
         </span>
       </div>

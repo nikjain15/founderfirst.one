@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState, type ReactElement } from "react";
+import { Suspense, lazy, useEffect, useRef, useState, type ReactElement } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 
@@ -32,8 +32,28 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [denied, setDenied] = useState(false);
   const location = useLocation();
+  const settingsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setNavOpen(false); setSettingsOpen(false); }, [location.pathname]);
+
+  // Dismiss the settings dropdown on outside-click or Escape.
+  useEffect(() => {
+    if (!settingsOpen) return;
+    function onPointer(e: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setSettingsOpen(false);
+    }
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [settingsOpen]);
 
   useEffect(() => {
     if (!hasSupabase) {
@@ -136,7 +156,7 @@ export function App() {
             )}
             {signedIn ? (
               <>
-                <div className={`settings-menu ${settingsOpen ? "is-open" : ""}`}>
+                <div ref={settingsRef} className={`settings-menu ${settingsOpen ? "is-open" : ""}`}>
                   <button
                     type="button"
                     className={`settings-trigger ${location.pathname.startsWith("/audit") || location.pathname.startsWith("/admins") ? "active" : ""}`}

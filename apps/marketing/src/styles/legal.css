@@ -1,0 +1,73 @@
+/* Long-form legal pages (privacy policy, terms). Plain, readable prose. */
+
+.legal {
+  padding: 64px 0 96px;
+}
+
+.legal .wrap {
+  max-width: 760px;
+}
+
+.legal-header {
+  margin-bottom: 40px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.legal-header h1 {
+  margin: 12px 0 8px;
+}
+
+.legal-meta {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.legal-body h2 {
+  margin: 40px 0 12px;
+  font-size: 22px;
+}
+
+.legal-body h3 {
+  margin: 28px 0 8px;
+  font-size: 17px;
+}
+
+.legal-body p,
+.legal-body li {
+  font-size: 16px;
+  line-height: 1.7;
+  color: rgba(0, 0, 0, 0.78);
+}
+
+.legal-body ul {
+  margin: 12px 0 12px 22px;
+  padding: 0;
+}
+
+.legal-body li {
+  margin-bottom: 8px;
+}
+
+.legal-body a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.legal-body code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.legal-note {
+  margin-top: 40px;
+  padding: 16px 18px;
+  background: rgba(0, 0, 0, 0.04);
+  border-left: 3px solid rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.65);
+}

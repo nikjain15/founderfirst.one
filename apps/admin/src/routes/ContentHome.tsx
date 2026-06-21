@@ -1,6 +1,13 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ContentPrompt } from "./ContentPrompt";
 import { ContentVoice } from "./ContentVoice";
+import {
+  getClient,
+  listPrompts,
+  listVoice,
+  type PromptRow,
+  type VoiceRow,
+} from "../lib/supabase";
 
 type Tab = "prompt" | "voice" | "kb";
 
@@ -26,6 +33,8 @@ export function ContentHome() {
       <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · content</div>
       <h1 className="page-title">Penny's brain.</h1>
       <p className="page-sub">Edit the system prompt, the voice guide shared across every surface, and manage the knowledge base Penny reads from.</p>
+
+      <ActivityStrip onJumpTab={setTabAndHash} />
 
       <div className="tabs" role="tablist">
         {TABS.map((t) => (
@@ -57,4 +66,172 @@ function KbComingSoon() {
       <p>Once enabled, Penny will retrieve top-matching snippets per user message using vector search.</p>
     </div>
   );
+}
+
+/* ---------------------------------------------------------------- *
+ * Activity strip
+ *
+ * Merges recent rows from penny_prompts + penny_voice into one
+ * chronological feed so an admin sees what changed across Penny's
+ * brain since they last looked. "Unseen" is tracked per-admin in
+ * localStorage by max-timestamp — each visit marks everything-as-read.
+ * No new backend infra — pure read of data we already have.
+ * ---------------------------------------------------------------- */
+
+type ActivityItem = {
+  kind: "prompt" | "voice";
+  version: number;
+  author: string | null;
+  whenISO: string;
+  isLive: boolean;
+};
+
+const SEEN_KEY = "ff.admin.brain.lastSeenAt";
+
+function ActivityStrip({ onJumpTab }: { onJumpTab: (t: Tab) => void }) {
+  const [myEmail, setMyEmail] = useState<string | null>(null);
+  const [items, setItems] = useState<ActivityItem[] | null>(null);
+  const [lastSeenAt, setLastSeenAt] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(SEEN_KEY) ?? "";
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const me = (await getClient().auth.getUser()).data.user?.email?.toLowerCase() ?? null;
+        const [prompts, voice] = await Promise.all([listPrompts(), listVoice()]);
+        if (cancelled) return;
+        setMyEmail(me);
+        const merged: ActivityItem[] = [
+          ...prompts.slice(0, 8).map((r: PromptRow) => ({
+            kind: "prompt" as const,
+            version: r.version,
+            author: r.created_by_email,
+            whenISO: r.created_at,
+            isLive: r.is_live,
+          })),
+          ...voice.slice(0, 8).map((r: VoiceRow) => ({
+            kind: "voice" as const,
+            version: r.version,
+            author: r.created_by_email,
+            whenISO: r.created_at,
+            isLive: r.is_live,
+          })),
+        ].sort((a, b) => (a.whenISO < b.whenISO ? 1 : -1));
+        setItems(merged.slice(0, 5));
+      } catch {
+        setItems([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const unseenFromOthers = useMemo(() => {
+    if (!items) return [];
+    return items.filter((it) => {
+      const fromOther = !!it.author && (!myEmail || it.author.toLowerCase() !== myEmail);
+      const isNew = !lastSeenAt || it.whenISO > lastSeenAt;
+      return fromOther && isNew;
+    });
+  }, [items, lastSeenAt, myEmail]);
+
+  function markAllSeen() {
+    if (!items?.length) return;
+    const latest = items[0].whenISO;
+    window.localStorage.setItem(SEEN_KEY, latest);
+    setLastSeenAt(latest);
+  }
+
+  if (!items || items.length === 0) return null;
+
+  const headline = unseenFromOthers[0] ?? items[0];
+  const unseenCount = unseenFromOthers.length;
+  const showAsNew = unseenCount > 0;
+
+  return (
+    <div className={`brain-activity ${showAsNew ? "is-new" : ""}`}>
+      <div className="brain-activity-headline">
+        <span className={`brain-activity-dot ${showAsNew ? "is-new" : ""}`} aria-hidden />
+        <span className="brain-activity-text">
+          {showAsNew ? (
+            <>
+              <strong>{unseenCount === 1 ? "1 change" : `${unseenCount} changes`} since you last looked.</strong>{" "}
+              Latest: <strong>{kindLabel(headline.kind)} v{headline.version}</strong>
+              {headline.author ? <> by <strong>{headline.author}</strong></> : null}{" "}
+              {fmtRelative(headline.whenISO)}
+              {headline.isLive ? <> · <span className="badge badge-live" style={{ marginLeft: 4 }}>Live</span></> : null}
+            </>
+          ) : (
+            <>
+              No new activity. Latest: <strong>{kindLabel(headline.kind)} v{headline.version}</strong>
+              {headline.author ? <> by <strong>{headline.author}</strong></> : null}{" "}
+              {fmtRelative(headline.whenISO)}
+            </>
+          )}
+        </span>
+        <div className="brain-activity-actions">
+          <button
+            className="btn-link"
+            onClick={() => onJumpTab(headline.kind === "voice" ? "voice" : "prompt")}
+          >
+            Review →
+          </button>
+          {showAsNew && (
+            <button className="btn-link btn-link-muted" onClick={markAllSeen}>
+              Mark seen
+            </button>
+          )}
+        </div>
+      </div>
+      {items.length > 1 && (
+        <details className="brain-activity-more">
+          <summary>See {items.length - 1} more</summary>
+          <ul>
+            {items.slice(1).map((it, i) => {
+              const fromOther = !!it.author && (!myEmail || it.author.toLowerCase() !== myEmail);
+              const isNew = !lastSeenAt || it.whenISO > lastSeenAt;
+              const isUnseen = fromOther && isNew;
+              return (
+                <li key={i}>
+                  {isUnseen && <span className="brain-activity-dot is-new" aria-hidden />}
+                  <span>
+                    <strong>{kindLabel(it.kind)} v{it.version}</strong>
+                    {it.author ? <> by {it.author}</> : null}{" "}
+                    {fmtRelative(it.whenISO)}
+                    {it.isLive && <> · <span style={{ color: "var(--income)" }}>live</span></>}
+                  </span>
+                  <button
+                    className="btn-link"
+                    onClick={() => onJumpTab(it.kind === "voice" ? "voice" : "prompt")}
+                  >
+                    Open
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
+
+function kindLabel(k: "prompt" | "voice") {
+  return k === "voice" ? "Voice" : "Prompt";
+}
+
+function fmtRelative(iso: string): string {
+  const then = new Date(iso).getTime();
+  const now = Date.now();
+  const diffSec = Math.max(0, Math.round((now - then) / 1000));
+  if (diffSec < 60) return "just now";
+  const mins = Math.round(diffSec / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.round(hrs / 24);
+  if (days < 14) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString();
 }

@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   listDiscordLinks,
   revokeDiscordLink,
@@ -10,33 +11,27 @@ import { IconAlert, IconCheck } from "../lib/icons";
 interface DiscordLinksProps { embedded?: boolean }
 
 export function DiscordLinks({ embedded = false }: DiscordLinksProps = {}) {
-  const [rows, setRows] = useState<DiscordLinkRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");      // live input text
+  const [query, setQuery] = useState<string>(""); // committed search that drives the fetch
   const [status, setStatus] = useState<{ kind: "idle" | "ok" | "err"; msg?: string }>({ kind: "idle" });
 
-  async function refresh(q?: string) {
-    setLoading(true);
-    try {
-      setRows(await listDiscordLinks(q));
-    } catch (err) {
-      setStatus({ kind: "err", msg: (err as Error).message });
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Discord links — cached per committed search; refetches automatically on change.
+  const { data: rows = [], isPending: loading, error } = useQuery({
+    queryKey: ["discordLinks", query],
+    queryFn: () => listDiscordLinks(query || undefined),
+  });
 
-  useEffect(() => { void refresh(); }, []);
+  // Surface fetch failures through the same status banner the actions use.
+  const fetchError = error ? (error as Error).message : null;
 
   function onSearch(e: FormEvent) {
     e.preventDefault();
-    void refresh(search);
+    setQuery(search);
   }
 
-  async function onRevoke(row: DiscordLinkRow) {
-    const who = row.discord_username || row.discord_user_id || row.email_normalized;
-    if (!confirm(`Disconnect ${who} from FounderFirst? The bot will lose access on the next message.`)) return;
-    try {
+  const revoke = useMutation({
+    mutationFn: async (row: DiscordLinkRow) => {
       const n = await revokeDiscordLink({
         discord_user_id: row.discord_user_id,
         email: row.discord_user_id ? null : row.email_normalized,
@@ -45,11 +40,21 @@ export function DiscordLinks({ embedded = false }: DiscordLinksProps = {}) {
         email: row.email_normalized,
         discord_user_id: row.discord_user_id,
       });
+      return n;
+    },
+    onSuccess: (n) => {
       setStatus({ kind: "ok", msg: `Revoked ${n} link${n === 1 ? "" : "s"}.` });
-      await refresh(search);
-    } catch (err) {
+      qc.invalidateQueries({ queryKey: ["discordLinks"] });
+    },
+    onError: (err) => {
       setStatus({ kind: "err", msg: (err as Error).message });
-    }
+    },
+  });
+
+  function onRevoke(row: DiscordLinkRow) {
+    const who = row.discord_username || row.discord_user_id || row.email_normalized;
+    if (!confirm(`Disconnect ${who} from FounderFirst? The bot will lose access on the next message.`)) return;
+    revoke.mutate(row);
   }
 
   const confirmedCount = rows.filter((r) => r.status === "confirmed").length;
@@ -80,11 +85,18 @@ export function DiscordLinks({ embedded = false }: DiscordLinksProps = {}) {
         </div>
         <button className="btn" type="submit">Search</button>
         {search && (
-          <button type="button" className="btn btn-ghost" onClick={() => { setSearch(""); void refresh(); }}>
+          <button type="button" className="btn btn-ghost" onClick={() => { setSearch(""); setQuery(""); }}>
             Clear
           </button>
         )}
       </form>
+
+      {fetchError && (
+        <div className="login-status err" style={{ marginTop: 12 }}>
+          <IconAlert size={14} />
+          {fetchError}
+        </div>
+      )}
 
       {status.msg && (
         <div className={`login-status ${status.kind === "err" ? "err" : "ok"}`} style={{ marginTop: 12 }}>
@@ -135,7 +147,7 @@ export function DiscordLinks({ embedded = false }: DiscordLinksProps = {}) {
                 <td>{r.confirmed_at ? new Date(r.confirmed_at).toLocaleDateString() : "—"}</td>
                 <td className="row-actions">
                   {r.status === "confirmed" && (
-                    <button type="button" className="link-danger" onClick={() => onRevoke(r)}>
+                    <button type="button" className="link-danger" onClick={() => onRevoke(r)} disabled={revoke.isPending}>
                       Revoke
                     </button>
                   )}

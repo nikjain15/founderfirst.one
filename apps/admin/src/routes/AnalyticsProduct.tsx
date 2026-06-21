@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   getFunnel,
   getEventsDaily,
@@ -23,23 +24,17 @@ const RANGES: Array<{ label: string; days: number }> = [
 
 export function AnalyticsProduct() {
   const [rangeIdx, setRangeIdx] = useState(1);
-  const [funnel, setFunnel] = useState<FunnelStageRow[]>([]);
-  const [events, setEvents] = useState<EventsDailyRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const days = RANGES[rangeIdx].days;
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    Promise.all([getFunnel(days), getEventsDaily(days)])
-      .then(([f, e]) => { if (!cancelled) { setFunnel(f); setEvents(e); } })
-      .catch((e: Error) => { if (!cancelled) setError(e.message); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [days]);
+  // Both reads keyed on the active range so they refetch when it changes.
+  const funnelQ = useQuery({ queryKey: ["funnel", days], queryFn: () => getFunnel(days) });
+  const eventsQ = useQuery({ queryKey: ["eventsDaily", days], queryFn: () => getEventsDaily(days) });
+
+  const loading = funnelQ.isPending || eventsQ.isPending;
+  const error = funnelQ.error || eventsQ.error;
+  const funnel: FunnelStageRow[] = funnelQ.data ?? [];
+  const events: EventsDailyRow[] = eventsQ.data ?? [];
 
   if (loading) return <div className="empty">Loading…</div>;
   if (error) {
@@ -47,7 +42,7 @@ export function AnalyticsProduct() {
       <div className="empty" style={{ color: "var(--error)", borderColor: "var(--error-bg)" }}>
         <IconAlert size={18} />
         <p className="empty-title" style={{ marginTop: 10 }}>Couldn't load product funnel.</p>
-        {error}
+        {error.message}
         <p style={{ marginTop: 10, fontSize: 12 }}>
           Did you run <code>SCHEMA-010-events.sql</code> and <code>SCHEMA-011-funnel.sql</code>?
         </p>

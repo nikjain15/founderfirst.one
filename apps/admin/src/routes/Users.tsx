@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { listWaitlist, type WaitlistRow } from "../lib/supabase";
 import { IconAlert } from "../lib/icons";
 import { DiscordLinks } from "./DiscordLinks";
@@ -55,23 +56,19 @@ export function Users() {
 }
 
 function WebSignups() {
-  const [rows, setRows] = useState<WaitlistRow[]>([]);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("signed_up_at");
   const [selected, setSelected] = useState<WaitlistRow | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    listWaitlist(search)
-      .then((r) => { if (!cancelled) setRows(r); })
-      .catch((e: Error) => { if (!cancelled) setError(e.message); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [search]);
+  // Waitlist rows — cached per search term; refetches automatically on change.
+  const {
+    data: rows = [],
+    isPending: loading,
+    error,
+  } = useQuery({
+    queryKey: ["waitlist", search],
+    queryFn: () => listWaitlist(search),
+  });
 
   const HIDDEN = new Set(["id", "slug_seed", "updated_at"]);
   const PINNED: string[] = ["email", "source", "referred_by", "slug", "signed_up_at"];
@@ -148,7 +145,7 @@ function WebSignups() {
         <div className="empty" style={{ color: "var(--error)", borderColor: "var(--error-bg)" }}>
           <IconAlert size={18} />
           <p className="empty-title" style={{ marginTop: 10 }}>Couldn't load waitlist.</p>
-          {error}
+          {error.message}
           <p style={{ marginTop: 10, fontSize: 12 }}>
             Did you run <code>SCHEMA-008-admin-waitlist.sql</code> in Supabase?
           </p>

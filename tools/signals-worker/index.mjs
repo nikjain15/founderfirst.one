@@ -44,6 +44,23 @@ const toVector = (arr) => `[${arr.join(",")}]`;
 
 let cachedVoice = null;
 let cachedKeywords = null;
+let cachedSettings = null;
+
+// Scoring thresholds, editable from the admin Scoring tab (sig_settings).
+// Falls back to the .env values if the table/row is missing.
+async function getSettings() {
+  if (cachedSettings) return cachedSettings;
+  const s = {
+    relevance_threshold: REL_THRESHOLD,
+    relevance_floor:     REL_FLOOR,
+    intent_threshold:    INTENT_THRESHOLD,
+  };
+  const { data, error } = await db.from("sig_settings").select("key,value");
+  if (error) { console.warn("settings unavailable, using env defaults:", error.message); }
+  else for (const r of data ?? []) if (r.key in s) s[r.key] = Number(r.value);
+  cachedSettings = s;
+  return cachedSettings;
+}
 
 async function getVoice() {
   if (cachedVoice !== null) return cachedVoice;
@@ -79,7 +96,7 @@ async function embedPendingExamples() {
   }
 }
 
-async function processItem(item, painKeywords) {
+async function processItem(item, painKeywords, settings) {
   const text = [item.title, item.body].filter(Boolean).join("\n\n");
   const lower = text.toLowerCase();
   const keywordHit = painKeywords.some((kw) => lower.includes(kw));
@@ -96,7 +113,7 @@ async function processItem(item, painKeywords) {
   }
 
   // 2. Cheap prefilter: clearly off-topic AND no keyword -> archive without LLM.
-  if (!keywordHit && relevance != null && relevance < REL_FLOOR) {
+  if (!keywordHit && relevance != null && relevance < settings.relevance_floor) {
     await submit(item.id, relevance, 0, [], null, false);
     console.log(`archived ${item.id} (prefilter, rel=${relevance?.toFixed(2)})`);
     return;
@@ -116,8 +133,8 @@ async function processItem(item, painKeywords) {
   // threshold — but if we have no ICP examples yet (relevance null), let the
   // LLM intent score decide on its own (the scoring prompt is domain-specific,
   // so off-topic posts score low anyway).
-  const relOk = keywordHit || (relevance == null ? true : relevance >= REL_THRESHOLD);
-  const promote = relOk && scored.intent >= INTENT_THRESHOLD;
+  const relOk = keywordHit || (relevance == null ? true : relevance >= settings.relevance_threshold);
+  const promote = relOk && scored.intent >= settings.intent_threshold;
 
   const leadId = await submit(item.id, relevance ?? 0, scored.intent, scored.pain_tags, scored.competitor, promote);
   console.log(`scored ${item.id}: intent=${scored.intent} rel=${relevance?.toFixed?.(2) ?? "n/a"} promote=${promote}`);
@@ -188,6 +205,7 @@ async function cycle() {
   await pollApiDirect();
   await embedPendingExamples();
   const painKeywords = await getPainKeywords();
+  const settings = await getSettings();
 
   const { data: items, error } = await db.rpc("sig_claim_pending", { p_limit: BATCH });
   if (error) { console.warn("claim failed:", error.message); return 0; }
@@ -195,7 +213,7 @@ async function cycle() {
 
   console.log(`claimed ${items.length} item(s)`);
   for (const item of items) {
-    try { await processItem(item, painKeywords); }
+    try { await processItem(item, painKeywords, settings); }
     catch (e) { console.warn(`process ${item.id} crashed:`, e.message); }
   }
   return items.length;
@@ -210,7 +228,7 @@ async function main() {
     try {
       const n = await cycle();
       // Refresh caches occasionally so keyword/voice edits propagate.
-      if (n === 0) { cachedKeywords = null; cachedVoice = null; }
+      if (n === 0) { cachedKeywords = null; cachedVoice = null; cachedSettings = null; }
     } catch (e) { console.error("cycle error:", e.message); }
     await sleep(POLL_SECONDS * 1000);
   }

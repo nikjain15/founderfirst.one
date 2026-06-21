@@ -19,7 +19,7 @@
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
-  font-size: 14px;
+  font-size: var(--fs-data-row);
 }
 .tab:hover { color: var(--ink-2); }
 .tab:focus { outline: none; }
@@ -31,7 +31,45 @@
 .tab.active {
   color: var(--ink);
   border-bottom-color: var(--ink);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
+}
+
+/* Segmented secondary nav — used when a section's sub-views are nested one
+   level below the primary .tabs (e.g. Signals inside Audience). The pill/inset
+   treatment reads as clearly subordinate so two control rows never look like
+   two competing tab strips. */
+.subnav {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  margin: 4px 0 22px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+}
+.subnav button {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--fs-data-row);
+  font-weight: var(--fw-medium);
+  color: var(--ink-3);
+  padding: 7px 16px;
+  min-height: var(--tap-min);
+  border-radius: var(--r-pill);
+  transition: color var(--dur-fast) var(--ease-out),
+              background var(--dur-fast) var(--ease-out);
+}
+.subnav button:hover { color: var(--ink-2); }
+.subnav button:focus { outline: none; }
+.subnav button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.subnav button.active {
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
 }
 
 .section-title {
@@ -42,7 +80,7 @@
 }
 .section-sub {
   color: var(--ink-3);
-  font-size: 13px;
+  font-size: var(--fs-data-row);
   margin: 0 0 12px;
 }
 
@@ -63,7 +101,7 @@
   max-width: 100%;
   box-sizing: border-box;
   border-radius: 8px;          /* override any inherited pill radius */
-  background: var(--surface, #fff);
+  background: var(--white);
 }
 
 /* ---- Voice guide — header, badges, alerts, footnote ----------------- */
@@ -371,7 +409,7 @@
   border-color: var(--error-bg);
   color: var(--error);
   text-decoration: line-through;
-  text-decoration-color: rgba(178, 41, 30, 0.35);
+  text-decoration-color: color-mix(in srgb, var(--error) 35%, transparent);
   border-radius: var(--r-card) 0 0 var(--r-card);
   grid-column: 1;
   grid-row: 1;

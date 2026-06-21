@@ -36,6 +36,7 @@
   /* -- Typography ----------------------------------------------------- */
   --font-sans:  'Inter', -apple-system, 'SF Pro Text', 'Segoe UI', Helvetica, Arial, sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;   /* avatar mark only */
+  --font-mono:  ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;   /* code, payloads, ids */
   --sans:       var(--font-sans);   /* back-compat alias */
 
   --fs-h1:           clamp(36px, 5.5vw, 64px);

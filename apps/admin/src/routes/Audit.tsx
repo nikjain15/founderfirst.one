@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listAudit, getAuditFacets, type AuditRow } from "../lib/supabase";
-import { IconAlert } from "../lib/icons";
+import { IconAlert, IconClose } from "../lib/icons";
 
 const SINCE_OPTIONS: Array<{ label: string; hours: number | null }> = [
   { label: "Last 24h",   hours: 24 },
@@ -66,7 +66,7 @@ export function Audit() {
           {SINCE_OPTIONS.map((o, i) => <option key={o.label} value={i}>{o.label}</option>)}
         </select>
         <div className="toolbar-spacer" />
-        <span style={{ fontSize: 13, color: "var(--ink-3)" }}>{rows.length} {rows.length === 1 ? "row" : "rows"}</span>
+        <span style={{ fontSize: "var(--fs-data-row)", color: "var(--ink-3)" }}>{rows.length} {rows.length === 1 ? "row" : "rows"}</span>
       </div>
 
       {loading && <div className="empty">Loading…</div>}
@@ -76,7 +76,7 @@ export function Audit() {
           <IconAlert size={18} />
           <p className="empty-title" style={{ marginTop: 10 }}>Couldn't load audit log.</p>
           {error.message}
-          <p style={{ marginTop: 10, fontSize: 12 }}>
+          <p style={{ marginTop: 10, fontSize: "var(--fs-eyebrow)" }}>
             Did you run <code>SCHEMA-009-admin-audit.sql</code> in Supabase?
           </p>
         </div>
@@ -106,7 +106,7 @@ export function Audit() {
                 <tr key={r.id} onClick={() => setSelected(r)} className="row-clickable">
                   <td>{new Date(r.created_at).toLocaleString()}</td>
                   <td>{r.actor_email}</td>
-                  <td><code style={{ fontSize: 12 }}>{r.action}</code></td>
+                  <td><code style={{ fontSize: "var(--fs-eyebrow)" }}>{r.action}</code></td>
                   <td style={{ color: "var(--ink-3)" }}>{r.target_type ? `${r.target_type}:${shortId(r.target_id)}` : "—"}</td>
                   <td>{summarize(r)}</td>
                 </tr>
@@ -121,15 +121,15 @@ export function Audit() {
           <aside className="drawer" onClick={(e) => e.stopPropagation()}>
             <header className="drawer-head">
               <h2>{selected.action}</h2>
-              <button onClick={() => setSelected(null)} aria-label="Close">✕</button>
+              <button onClick={() => setSelected(null)} aria-label="Close"><IconClose size={16} /></button>
             </header>
             <dl className="drawer-list">
               <div><dt>when</dt><dd>{new Date(selected.created_at).toLocaleString()}</dd></div>
               <div><dt>actor</dt><dd>{selected.actor_email}</dd></div>
               <div><dt>target</dt><dd>{selected.target_type ? `${selected.target_type} · ${selected.target_id ?? "—"}` : "—"}</dd></div>
             </dl>
-            <h3 style={{ margin: "20px 0 8px", fontSize: 13, color: "var(--ink-3)", textTransform: "lowercase" }}>payload</h3>
-            <pre style={{ background: "var(--paper)", padding: 12, borderRadius: 8, fontSize: 12, overflow: "auto", border: "1px solid var(--line)" }}>
+            <h3 style={{ margin: "20px 0 8px", fontSize: "var(--fs-data-row)", color: "var(--ink-3)", textTransform: "lowercase" }}>payload</h3>
+            <pre style={{ background: "var(--paper)", padding: 12, borderRadius: 8, fontSize: "var(--fs-eyebrow)", overflow: "auto", border: "1px solid var(--line)" }}>
               {JSON.stringify(selected.payload, null, 2)}
             </pre>
           </aside>

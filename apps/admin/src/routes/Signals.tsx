@@ -27,6 +27,7 @@ import {
   type SigKeywordRow,
   type SigIcpExampleRow,
 } from "../lib/supabase";
+import { IconCheck, IconClose, IconExternalLink } from "../lib/icons";
 
 type Tab = "posts" | "leads" | "keywords" | "capture";
 const TABS: Array<{ id: Tab; label: string }> = [
@@ -63,18 +64,21 @@ export function Signals({ embedded = false }: { embedded?: boolean } = {}) {
         </>
       )}
 
-      <div className="tabs" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            role="tab"
-            aria-selected={tab === t.id}
-            className={`tab ${tab === t.id ? "active" : ""}`}
-            onClick={() => go(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className={embedded ? "subnav" : "tabs"} role="tablist">
+        {TABS.map((t) => {
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={active}
+              className={embedded ? (active ? "active" : "") : `tab ${active ? "active" : ""}`}
+              onClick={() => go(t.id)}
+            >
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="tab-panel">
@@ -149,7 +153,7 @@ function PostsTab() {
                 <tr key={it.id}>
                   <td title={it.body ?? ""}>
                     <span className="sig-strong">{it.title || (it.body ?? "").slice(0, 70) || "—"}</span>
-                    <span className="sig-sub">{it.author_handle || "unknown"}{it.external_url ? <> · <a href={it.external_url} target="_blank" rel="noreferrer">source ↗</a></> : null}</span>
+                    <span className="sig-sub">{it.author_handle || "unknown"}{it.external_url ? <> · <a href={it.external_url} target="_blank" rel="noreferrer">source <IconExternalLink size={12} /></a></> : null}</span>
                   </td>
                   <td>{it.platform}</td>
                   <td>{it.intent ?? "—"}</td>
@@ -206,7 +210,7 @@ function LeadsTab() {
                   <td>{l.platform}</td>
                   <td>{l.intent ?? "—"}</td>
                   <td><Badge value={l.stage} map={STAGE_BADGE} /></td>
-                  <td>{l.has_draft ? "✓" : "—"}</td>
+                  <td>{l.has_draft ? <IconCheck size={14} /> : "—"}</td>
                   <td className="sig-sub">{fmt(l.created_at)}</td>
                 </tr>
               ))}
@@ -248,7 +252,7 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
       <aside className="drawer" onClick={(e) => e.stopPropagation()}>
         <header className="drawer-head">
           <h2>Lead</h2>
-          <button onClick={onClose} aria-label="Close">✕</button>
+          <button onClick={onClose} aria-label="Close"><IconClose size={16} /></button>
         </header>
 
         {isPending || !lead ? (
@@ -261,7 +265,7 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
               <div><dt>intent</dt><dd>{score?.intent ?? "—"}</dd></div>
               <div><dt>competitor</dt><dd>{score?.competitor || "—"}</dd></div>
               <div><dt>pain</dt><dd>{(score?.pain_tags ?? []).join(", ") || "—"}</dd></div>
-              {item?.external_url && <div><dt>source</dt><dd><a href={item.external_url} target="_blank" rel="noreferrer">open original ↗</a></dd></div>}
+              {item?.external_url && <div><dt>source</dt><dd><a href={item.external_url} target="_blank" rel="noreferrer">open original <IconExternalLink size={12} /></a></dd></div>}
             </dl>
 
             <div className="sig-post">

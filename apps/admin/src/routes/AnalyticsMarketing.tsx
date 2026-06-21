@@ -35,7 +35,7 @@ export function AnalyticsMarketing() {
         <IconAlert size={18} />
         <p className="empty-title" style={{ marginTop: 10 }}>Couldn't reach GA4.</p>
         {error.message}
-        <p style={{ marginTop: 10, fontSize: 12 }}>
+        <p style={{ marginTop: 10, fontSize: "var(--fs-eyebrow)" }}>
           Check: (1) <code>ga-proxy</code> edge function deployed; (2) <code>GA4_PROPERTY_ID</code> + <code>GCP_SA_JSON</code> secrets set;
           (3) service account has Viewer role on the GA4 property.
         </p>
@@ -57,7 +57,7 @@ export function AnalyticsMarketing() {
           </button>
         ))}
         <div className="toolbar-spacer" />
-        <span style={{ fontSize: 13, color: "var(--ink-3)" }}>via Google Analytics 4</span>
+        <span style={{ fontSize: "var(--fs-data-row)", color: "var(--ink-3)" }}>via Google Analytics 4</span>
       </div>
 
       {overview && (

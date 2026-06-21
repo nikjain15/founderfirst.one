@@ -164,27 +164,27 @@ export function ContentVoice() {
                       width: "100%",
                       textAlign: "left",
                       padding: "10px 12px",
-                      border: "1px solid var(--border)",
-                      borderColor: isSel ? "var(--accent, #000)" : "var(--border)",
-                      background: isSel ? "var(--surface-2, #f6f6f6)" : "transparent",
+                      border: "1px solid var(--line)",
+                      borderColor: isSel ? "var(--ink)" : "var(--line)",
+                      background: isSel ? "var(--paper)" : "transparent",
                       borderRadius: 8,
                       cursor: "pointer",
-                      fontSize: 13,
+                      fontSize: "var(--fs-data-row)",
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <strong>Version {r.version}</strong>
                       {r.is_live && (
-                        <span style={{ fontSize: 10, fontWeight: 700, color: "var(--success, #0a7c2f)" }}>
+                        <span style={{ fontSize: "var(--fs-tiny)", fontWeight: "var(--fw-bold)", color: "var(--income)" }}>
                           ● LIVE
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 3 }}>
+                    <div style={{ fontSize: "var(--fs-eyebrow)", color: "var(--ink-3)", marginTop: 3 }}>
                       {new Date(r.created_at).toLocaleString()}
                     </div>
                     {r.notes && (
-                      <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 3, fontStyle: "italic" }}>
+                      <div style={{ fontSize: "var(--fs-eyebrow)", color: "var(--ink-3)", marginTop: 3, fontStyle: "italic" }}>
                         {r.notes.length > 60 ? r.notes.slice(0, 60) + "…" : r.notes}
                       </div>
                     )}
@@ -275,7 +275,7 @@ export function ContentVoice() {
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 4 }}>
+              <label style={{ display: "block", fontSize: "var(--fs-eyebrow)", fontWeight: "var(--fw-semibold)", color: "var(--ink-3)", marginBottom: 4 }}>
                 Markdown source
               </label>
               <textarea
@@ -284,28 +284,28 @@ export function ContentVoice() {
                 rows={20}
                 style={{
                   width: "100%",
-                  fontFamily: "var(--font-mono, ui-monospace, monospace)",
-                  fontSize: 13,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--fs-data-row)",
                   lineHeight: 1.55,
                   padding: 12,
-                  border: "1px solid var(--border)",
+                  border: "1px solid var(--line)",
                   borderRadius: 8,
                   resize: "vertical",
                   boxSizing: "border-box",
-                  background: "var(--surface, #fff)",
+                  background: "var(--white)",
                 }}
               />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 4 }}>
+              <label style={{ display: "block", fontSize: "var(--fs-eyebrow)", fontWeight: "var(--fw-semibold)", color: "var(--ink-3)", marginBottom: 4 }}>
                 Live preview
               </label>
               <div
                 style={{
-                  border: "1px solid var(--border)",
+                  border: "1px solid var(--line)",
                   borderRadius: 8,
                   padding: 16,
-                  background: "var(--surface, #fff)",
+                  background: "var(--white)",
                   maxHeight: 400,
                   overflowY: "auto",
                 }}
@@ -314,7 +314,7 @@ export function ContentVoice() {
               </div>
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 4 }}>
+              <label style={{ display: "block", fontSize: "var(--fs-eyebrow)", fontWeight: "var(--fw-semibold)", color: "var(--ink-3)", marginBottom: 4 }}>
                 What changed in this version? (optional)
               </label>
               <input
@@ -325,14 +325,14 @@ export function ContentVoice() {
                 style={{
                   width: "100%",
                   padding: 10,
-                  border: "1px solid var(--border)",
+                  border: "1px solid var(--line)",
                   borderRadius: 8,
                   boxSizing: "border-box",
-                  fontSize: 13,
+                  fontSize: "var(--fs-data-row)",
                 }}
               />
             </div>
-            <div style={{ fontSize: 11, color: "var(--muted)", textAlign: "right" }}>
+            <div style={{ fontSize: "var(--fs-eyebrow)", color: "var(--ink-3)", textAlign: "right" }}>
               {draft.length.toLocaleString()} characters · ~{Math.ceil(draft.length / 4).toLocaleString()} tokens
             </div>
           </div>

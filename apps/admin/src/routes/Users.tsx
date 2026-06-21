@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listWaitlist, type WaitlistRow } from "../lib/supabase";
-import { IconAlert } from "../lib/icons";
+import { IconAlert, IconClose } from "../lib/icons";
 
 type SortKey = "signed_up_at" | "email" | "source";
 
@@ -86,7 +86,7 @@ export function WebSignups() {
           <option value="source">Source A→Z</option>
         </select>
         <div className="toolbar-spacer" />
-        <span style={{ fontSize: 13, color: "var(--ink-3)" }}>{sorted.length} {sorted.length === 1 ? "row" : "rows"}</span>
+        <span style={{ fontSize: "var(--fs-data-row)", color: "var(--ink-3)" }}>{sorted.length} {sorted.length === 1 ? "row" : "rows"}</span>
         <button type="button" onClick={exportCsv} disabled={sorted.length === 0}>Export CSV</button>
       </div>
 
@@ -97,7 +97,7 @@ export function WebSignups() {
           <IconAlert size={18} />
           <p className="empty-title" style={{ marginTop: 10 }}>Couldn't load waitlist.</p>
           {error.message}
-          <p style={{ marginTop: 10, fontSize: 12 }}>
+          <p style={{ marginTop: 10, fontSize: "var(--fs-eyebrow)" }}>
             Did you run <code>SCHEMA-008-admin-waitlist.sql</code> in Supabase?
           </p>
         </div>
@@ -134,7 +134,7 @@ export function WebSignups() {
           <aside className="drawer" onClick={(e) => e.stopPropagation()}>
             <header className="drawer-head">
               <h2>{String(selected.row_data.email ?? "(no email)")}</h2>
-              <button onClick={() => setSelected(null)} aria-label="Close">✕</button>
+              <button onClick={() => setSelected(null)} aria-label="Close"><IconClose size={16} /></button>
             </header>
             <dl className="drawer-list">
               {Object.entries(selected.row_data).map(([k, v]) => (

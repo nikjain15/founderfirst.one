@@ -19,6 +19,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { embed, score, draft, brainConfig } from "./brain.mjs";
+import { searchApiDirect } from "./providers/apidirect.mjs";
 
 const env = (k, d) => process.env[k] ?? d;
 
@@ -152,7 +153,39 @@ async function submit(itemId, relevance, intent, painTags, competitor, promote) 
   return data; // lead_id when promoted, else null
 }
 
+// Automated collection: poll each due API Direct source, ingest results as
+// pending (dedup on URL via sig_ingest_item). Skipped entirely if no key set.
+async function pollApiDirect() {
+  if (!process.env.API_DIRECT_KEY) return;
+  const { data: sources, error } = await db.rpc("sig_due_sources");
+  if (error) { console.warn("due_sources failed:", error.message); return; }
+  if (!sources?.length) return;
+
+  for (const s of sources) {
+    try {
+      const items = await searchApiDirect(s.platform, s.query, { page: 1, sortBy: "relevance" });
+      let ingested = 0;
+      for (const it of items) {
+        const { data: id, error: e } = await db.rpc("sig_ingest_item", {
+          p_platform: it.platform, p_external_url: it.external_url,
+          p_author_handle: it.author_handle, p_author_url: it.author_url,
+          p_title: it.title, p_body: it.body, p_posted_at: it.posted_at,
+          p_captured_via: "api_direct", p_raw: it.raw, p_source_id: s.id,
+        });
+        if (!e && id) ingested++;
+      }
+      console.log(`polled ${s.platform} "${s.query}": ${items.length} fetched`);
+    } catch (e) {
+      console.warn(`poll source ${s.id} (${s.platform}) failed:`, e.message);
+    }
+    // Mark polled regardless, so a flaky source respects its cadence and
+    // doesn't get hammered every 60s cycle.
+    await db.rpc("sig_mark_source_polled", { p_id: s.id });
+  }
+}
+
 async function cycle() {
+  await pollApiDirect();
   await embedPendingExamples();
   const painKeywords = await getPainKeywords();
 

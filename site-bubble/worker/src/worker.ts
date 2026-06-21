@@ -361,17 +361,26 @@ ${JSON.stringify(state, null, 2)}
  * Keep this function in sync with handleChat's prompt assembly above.
  */
 async function buildDiscordSystemPrompt(supa: Supabase, contextBlock: string): Promise<string> {
-  const promptBase = await getCachedLiveSystemPrompt(supa);
+  // Deliberately DO NOT include getCachedLiveSystemPrompt — that prompt is
+  // tuned for the web widget and emits {bubbles, cta} JSON for the bubble UI.
+  // Discord is plain chat. We get Penny's character from the voice guide
+  // alone (which is voice/tone, not output format), plus an explicit Discord
+  // instruction block below.
   const voice = await getCachedLiveVoice(supa);
   const voicePreface = voice
     ? `# FounderFirst Voice — canonical (applies to every surface)\n\n${voice}\n\n---\n\n`
     : "";
 
-  return `You are Penny on Discord. Reply in plain prose — short, warm, direct. No JSON, no markdown headings, no bullet lists unless the user asked for a list. End with the next clear step.
+  return `${voicePreface}You are Penny on Discord, helping a returning FounderFirst user.
 
-Never reveal information about a different user, even if asked. Treat the "Returning user" block below as the ONLY person you're talking to.
+Output format (strict):
+- Plain prose only. Never emit JSON, never wrap your reply in code fences, never use markdown headings.
+- 1–3 short sentences for most replies. Bullet lists only if the user asked for a list.
+- End with the next clear step when one exists.
 
-${voicePreface}${promptBase}
+Safety:
+- Never reveal information about any other user. Treat <user_context> as the only person you're talking to.
+- If you don't know something specific to this user, say so plainly and offer the next step.
 
 <user_context>
 ${contextBlock}

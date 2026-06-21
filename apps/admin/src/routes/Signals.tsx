@@ -1,12 +1,16 @@
 /**
  * Signals — social listening + outreach.
  *
- * Tabs (plain admin nouns, like Content): Posts · Leads · Keywords · Capture.
+ * The four views form a pipeline and are rendered AS one (a .sig-pipeline nav):
+ * Sources → Feed → ⚙ Scoring → Leads. Sources bring posts in, the Feed scores
+ * them, Scoring is the filter you tune, and the strong ones land in Leads (the
+ * daily workspace we default to). Jargon in table headers (intent / pain /
+ * stage / status) carries a hover hint via <Th hint>.
  * Built on the existing admin patterns: .toolbar + .chip filters, .table-wrap /
  * .data-table lists, and the .drawer-overlay / .drawer detail (same as Users /
  * Audit). All data via the admin-gated sig_* RPCs. See SIGNALS_SOLUTION.md.
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   listSigItems,
@@ -34,25 +38,29 @@ import {
   type SigIcpExampleRow,
   type SigSourceRow,
 } from "../lib/supabase";
-import { IconCheck, IconClose, IconExternalLink } from "../lib/icons";
+import { IconCheck, IconClose, IconExternalLink, IconSettings } from "../lib/icons";
 
-// Pipeline order — mirrors the flow (where posts come from → the feed → the
-// people we act on → what we look for). Lands on Leads (the daily workspace).
-type Tab = "sources" | "feed" | "leads" | "scoring";
-const TABS: Array<{ id: Tab; label: string }> = [
-  { id: "sources", label: "Sources" },
-  { id: "feed",    label: "Feed" },
-  { id: "leads",   label: "Leads" },
-  { id: "scoring", label: "Scoring" },
+// The four views aren't peers — they're a pipeline. We render them AS the
+// pipeline (Sources → Feed → ⚙ Scoring → Leads) so the nav itself teaches the
+// flow: posts come in, get scored through the filter you tune, and the strong
+// ones land in Leads — the daily workspace we default to.
+type Tab = "sources" | "feed" | "scoring" | "leads";
+type Stage = { id: Tab; label: string; role: string; gate?: boolean };
+const STAGES: Stage[] = [
+  { id: "sources", label: "Sources", role: "where posts come from" },
+  { id: "feed",    label: "Feed",    role: "every post, scored" },
+  { id: "scoring", label: "Scoring", role: "tune the filter", gate: true },
+  { id: "leads",   label: "Leads",   role: "your daily workspace" },
 ];
 
 export function Signals({ embedded = false }: { embedded?: boolean } = {}) {
   // When embedded under Audience, sub-tab state lives in memory (no hash) so it
-  // doesn't fight the parent hub's #web / #discord / #signals hash.
+  // doesn't fight the parent hub's #web / #discord / #signals hash. Either way
+  // we land on Leads — the job — not the raw Feed.
   const [tab, setTab] = useState<Tab>(() => {
-    if (embedded) return "feed";
+    if (embedded) return "leads";
     const h = (typeof window !== "undefined" ? window.location.hash.slice(1) : "") as Tab;
-    return TABS.some((t) => t.id === h) ? h : "leads";
+    return STAGES.some((t) => t.id === h) ? h : "leads";
   });
   function go(t: Tab) {
     setTab(t);
@@ -65,30 +73,32 @@ export function Signals({ embedded = false }: { embedded?: boolean } = {}) {
         <>
           <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · signals</div>
           <h1 className="page-title">Signals.</h1>
-          <p className="page-sub">
-            Posts voicing bookkeeping pain, scored for intent and turned into human-approved
-            outreach. <strong>Sources</strong> bring posts in → the <strong>Feed</strong> scores them →
-            high-intent ones become <strong>Leads</strong> with a draft to review.
-          </p>
+          <p className="page-sub">Find people voicing bookkeeping pain and turn the strongest into human-approved outreach.</p>
         </>
       )}
 
-      <div className={embedded ? "subnav" : "tabs"} role="tablist">
-        {TABS.map((t) => {
-          const active = tab === t.id;
+      <nav className="sig-pipeline" role="tablist" aria-label="Signals pipeline">
+        {STAGES.map((s, i) => {
+          const active = tab === s.id;
           return (
-            <button
-              key={t.id}
-              role="tab"
-              aria-selected={active}
-              className={embedded ? (active ? "active" : "") : `tab ${active ? "active" : ""}`}
-              onClick={() => go(t.id)}
-            >
-              {t.label}
-            </button>
+            <Fragment key={s.id}>
+              {i > 0 && <span className="sig-pipe-arrow" aria-hidden="true">→</span>}
+              <button
+                role="tab"
+                aria-selected={active}
+                className={`sig-pipe-node ${active ? "active" : ""} ${s.gate ? "is-gate" : ""}`}
+                onClick={() => go(s.id)}
+              >
+                <span className="sig-pipe-label">
+                  {s.gate && <IconSettings size={13} />}
+                  {s.label}
+                </span>
+                <span className="sig-pipe-role">{s.role}</span>
+              </button>
+            </Fragment>
           );
         })}
-      </div>
+      </nav>
 
       <div className="tab-panel">
         {tab === "sources"  && <SourcesTab />}
@@ -113,6 +123,23 @@ const STATUS_BADGE: Record<string, string> = {
 
 function Badge({ value, map }: { value: string; map: Record<string, string> }) {
   return <span className={`badge ${map[value] ?? "badge-draft"}`}>{value}</span>;
+}
+
+// Plain-English hints for the domain jargon, reused by table headers and the
+// lead drawer so the wording stays in one place.
+const TERM_HINT: Record<string, string> = {
+  intent: "How urgently this person needs help right now (0–100). Higher = stronger buying signal.",
+  pain: "The bookkeeping pain themes we detected in the post.",
+  status: "Where the post sits in the pipeline: pending → scored → promoted (became a lead) or archived.",
+  stage: "Where the lead sits in your outreach: new → reviewing → drafted → sent → replied → won (or dead).",
+  relevance: "How closely the post matches your Scoring examples.",
+  competitor: "The accounting tool the post mentions, if any.",
+};
+
+// A <th> whose label carries a hover hint (dotted underline = “hover me”).
+function Th({ children, hint }: { children: string; hint?: string }) {
+  const tip = hint ?? TERM_HINT[children];
+  return <th>{tip ? <span className="sig-help" title={tip}>{children}</span> : children}</th>;
 }
 
 function fmt(iso: string | null): string {
@@ -180,10 +207,8 @@ function SourcesTab() {
 
   return (
     <div>
-      <p className="page-sub">Where posts come from. Everything here flows into the <strong>Feed</strong>, gets scored, and high-intent posts become <strong>Leads</strong> with a draft.</p>
-
       <h2 className="sig-h2">Automated</h2>
-      <p className="page-sub">We poll each search on its schedule and pull matching posts automatically. Change how often with “every”, or toggle a source off to pause it.</p>
+      <p className="page-sub">We poll each search on its schedule and pull matching posts in. Change how often with “every”, or toggle a source off to pause it.</p>
 
       {isPending ? <div className="empty">Loading…</div> : polled.length === 0 ? (
         <div className="empty"><p className="empty-title">No automated sources yet.</p><p>Add one below to start pulling posts.</p></div>
@@ -228,7 +253,7 @@ function SourcesTab() {
       {note && <p className="sig-note sig-note-err">{note}</p>}
 
       <h2 className="sig-h2" style={{ marginTop: 28 }}>Manual</h2>
-      <p className="page-sub">Add a specific post yourself — paste a link or text below for a one-off find, or use the Facebook browser extension to capture from closed groups the poller can’t reach. Either way it enters the same pipeline and gets scored.</p>
+      <p className="page-sub">Add a post yourself — paste a link or text for a one-off, or use the Facebook extension for closed groups the poller can’t reach. It enters the same pipeline.</p>
       <CaptureTab />
     </div>
   );
@@ -247,7 +272,7 @@ function FeedTab() {
 
   return (
     <div>
-      <p className="page-sub">Every post we’ve brought in, scored for intent. High scorers become Leads automatically. Add posts under <strong>Sources → Manual</strong>.</p>
+      <p className="page-sub">Every post we’ve brought in, scored for intent. High scorers become Leads automatically.</p>
       <div className="toolbar">
         {STATUS_FILTERS.map((s) => (
           <button key={s} className={`chip ${status === s ? "active" : ""}`} onClick={() => setStatus(s)}>
@@ -265,7 +290,7 @@ function FeedTab() {
         <div className="table-wrap">
           <table className="data-table">
             <thead>
-              <tr><th>post</th><th>platform</th><th>intent</th><th>pain</th><th>status</th><th>when</th></tr>
+              <tr><th>post</th><th>platform</th><Th>intent</Th><Th>pain</Th><Th>status</Th><th>when</th></tr>
             </thead>
             <tbody>
               {data.map((it: SigItemRow) => (
@@ -301,6 +326,7 @@ function LeadsTab() {
 
   return (
     <div>
+      <p className="page-sub">High-intent posts land here with a draft ready to review. Open one to edit and send.</p>
       <div className="toolbar">
         <button className={`chip ${stage === "all" ? "active" : ""}`} onClick={() => setStage("all")}>all</button>
         {SIG_STAGES.map((s) => (
@@ -317,7 +343,7 @@ function LeadsTab() {
         <div className="table-wrap">
           <table className="data-table">
             <thead>
-              <tr><th>lead</th><th>platform</th><th>intent</th><th>stage</th><th>draft</th><th>when</th></tr>
+              <tr><th>lead</th><th>platform</th><Th>intent</Th><Th>stage</Th><th>draft</th><th>when</th></tr>
             </thead>
             <tbody>
               {data.map((l: SigLeadRow) => (
@@ -381,9 +407,9 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
             <dl className="drawer-list">
               <div><dt>author</dt><dd>{item?.author_handle || "unknown"}</dd></div>
               <div><dt>platform</dt><dd>{item?.platform}</dd></div>
-              <div><dt>intent</dt><dd>{score?.intent ?? "—"}</dd></div>
-              <div><dt>competitor</dt><dd>{score?.competitor || "—"}</dd></div>
-              <div><dt>pain</dt><dd>{(score?.pain_tags ?? []).join(", ") || "—"}</dd></div>
+              <div><dt><span className="sig-help" title={TERM_HINT.intent}>intent</span></dt><dd>{score?.intent ?? "—"}</dd></div>
+              <div><dt><span className="sig-help" title={TERM_HINT.competitor}>competitor</span></dt><dd>{score?.competitor || "—"}</dd></div>
+              <div><dt><span className="sig-help" title={TERM_HINT.pain}>pain</span></dt><dd>{(score?.pain_tags ?? []).join(", ") || "—"}</dd></div>
               {item?.external_url && <div><dt>source</dt><dd><a href={item.external_url} target="_blank" rel="noreferrer">open original <IconExternalLink size={12} /></a></dd></div>}
             </dl>
 
@@ -475,66 +501,75 @@ function ScoringTab() {
 
   return (
     <div>
-      <div className="sig-explain">
-        <strong>How a post becomes a lead.</strong> Every post we bring in gets two scores —{" "}
-        <strong>relevance</strong> (is it about the kind of pain in your examples?) and{" "}
-        <strong>intent</strong> (how urgently does this person need help right now?). A post turns
-        into a Lead only when <em>both</em> clear the bars you set here.
-      </div>
+      <p className="page-sub" style={{ maxWidth: 720 }}>
+        This is the filter between <strong>Feed</strong> and <strong>Leads</strong>. A post becomes a
+        lead only when it both <strong>matches your examples</strong> (relevance) and shows a
+        <strong> strong enough need</strong> (intent). Set it up top-to-bottom:
+      </p>
 
-      <div className="sig-grid-2">
-      <section>
-        <h2 className="sig-h2">When does a post become a lead?</h2>
-        <p className="page-sub">Drag to make leads stricter (fewer, stronger) or looser (more, but noisier). Saves instantly — applies to new posts within ~1 minute.</p>
-        {cfg && (
-          <>
-            <SliderRow label="How urgent must their need be?" hint="Only promote people whose buying signal is at least this strong. Higher = fewer, stronger leads." suffix="/100"
-              value={cfg.intent_threshold} onCommit={(v) => save("intent_threshold", v)} />
-            <SliderRow label="How closely must it match your examples?" hint="How similar a post must be to the examples on the right to count as on-topic. Higher = stricter, cleaner leads." suffix="%"
-              value={Math.round(cfg.relevance_threshold * 100)} onCommit={(v) => save("relevance_threshold", v / 100)} />
-            <details className="sig-advanced">
-              <summary>Advanced</summary>
-              <SliderRow label="Ignore posts below" hint="Posts this far below your match level are skipped before the AI reads them, to save cost. Most people never change this." suffix="%"
-                value={Math.round(cfg.relevance_floor * 100)} onCommit={(v) => save("relevance_floor", v / 100)} />
-            </details>
-          </>
-        )}
+      <ol className="sig-steps">
+        <li className="sig-step">
+          <div className="sig-step-no" aria-hidden="true">1</div>
+          <div className="sig-step-body">
+            <h2 className="sig-h2">Teach it what a good post looks like</h2>
+            <p className="page-sub">Paste real posts from your ideal customers. The AI scores how similar each new post is to these — that’s “relevance”. More varied examples = smarter matching.</p>
+            <div className="field" style={{ maxWidth: 560 }}>
+              <textarea value={icp} onChange={(e) => setIcp(e.target.value)} placeholder="Paste an example post that captures the pain…" />
+            </div>
+            <button className="btn" onClick={addExample}>Add example</button>
+            <span className="sig-label" style={{ marginTop: 16, display: "block" }}>
+              {examples.length} example{examples.length === 1 ? "" : "s"}
+            </span>
+            <ul className="sig-icp-list">
+              {examples.map((ex: SigIcpExampleRow) => (
+                <li key={ex.id} className="sig-icp-item">
+                  <p>{ex.body}</p>
+                  <div className="sig-icp-meta">
+                    <span className={`badge ${ex.has_embedding ? "badge-live" : "badge-warn"}`}>
+                      {ex.has_embedding ? "embedded" : "embedding…"}
+                    </span>
+                    <button className="btn-link" onClick={() => removeExample(ex.id)}>Remove</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </li>
 
-        <h2 className="sig-h2" style={{ marginTop: 24 }}>Always-score these phrases</h2>
-        <p className="page-sub">If a post contains one of these exact phrases, it skips the match check and always gets scored — so you never miss wording you care about.</p>
-        <div className="toolbar">
-          <input className="sig-input" value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. behind on my books" />
-          <button className="btn" onClick={addKeyword}>Add</button>
-        </div>
-        <div className="sig-chips">{pain.map((k) => <span key={k.id} className="topic-tag">{k.term}</span>)}</div>
-      </section>
+        <li className="sig-step">
+          <div className="sig-step-no" aria-hidden="true">2</div>
+          <div className="sig-step-body">
+            <h2 className="sig-h2">Set the bars that make a lead</h2>
+            <p className="page-sub">Drag to make leads stricter (fewer, stronger) or looser (more, noisier). Saves instantly — applies to new posts within ~1 minute.</p>
+            {cfg && (
+              <>
+                <SliderRow label="How urgent must their need be?" hint="Only promote people whose buying signal is at least this strong. Higher = fewer, stronger leads." suffix="/100"
+                  value={cfg.intent_threshold} onCommit={(v) => save("intent_threshold", v)} />
+                <SliderRow label="How closely must it match your examples?" hint="How similar a post must be to your Step 1 examples to count as on-topic. Higher = stricter, cleaner leads." suffix="%"
+                  value={Math.round(cfg.relevance_threshold * 100)} onCommit={(v) => save("relevance_threshold", v / 100)} />
+                <details className="sig-advanced">
+                  <summary>Advanced</summary>
+                  <SliderRow label="Ignore posts below" hint="Posts this far below your match level are skipped before the AI reads them, to save cost. Most people never change this." suffix="%"
+                    value={Math.round(cfg.relevance_floor * 100)} onCommit={(v) => save("relevance_floor", v / 100)} />
+                </details>
+              </>
+            )}
+          </div>
+        </li>
 
-      <section>
-        <h2 className="sig-h2">What a great post looks like</h2>
-        <p className="page-sub">Paste real posts from your ideal customers. The AI measures how similar each new post is to these — that's the “relevance” score above. The more varied real examples you add, the smarter the matching.</p>
-        <div className="field">
-          <textarea value={icp} onChange={(e) => setIcp(e.target.value)} placeholder="Paste an example post that captures the pain…" />
-        </div>
-        <button className="btn" onClick={addExample}>Add example</button>
-
-        <span className="sig-label" style={{ marginTop: 16, display: "block" }}>
-          {examples.length} example{examples.length === 1 ? "" : "s"}
-        </span>
-        <ul className="sig-icp-list">
-          {examples.map((ex: SigIcpExampleRow) => (
-            <li key={ex.id} className="sig-icp-item">
-              <p>{ex.body}</p>
-              <div className="sig-icp-meta">
-                <span className={`badge ${ex.has_embedding ? "badge-live" : "badge-warn"}`}>
-                  {ex.has_embedding ? "embedded" : "embedding…"}
-                </span>
-                <button className="btn-link" onClick={() => removeExample(ex.id)}>Remove</button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
-      </div>
+        <li className="sig-step">
+          <div className="sig-step-no" aria-hidden="true">3</div>
+          <div className="sig-step-body">
+            <h2 className="sig-h2">Always-score certain phrases <span className="sig-step-opt">optional</span></h2>
+            <p className="page-sub">If a post contains one of these exact phrases, it skips the match check and always gets scored — so you never miss wording you care about.</p>
+            <div className="toolbar">
+              <input className="sig-input" value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. behind on my books" />
+              <button className="btn" onClick={addKeyword}>Add</button>
+            </div>
+            <div className="sig-chips">{pain.map((k) => <span key={k.id} className="topic-tag">{k.term}</span>)}</div>
+          </div>
+        </li>
+      </ol>
 
       {note && <p className="sig-note">{note}</p>}
     </div>

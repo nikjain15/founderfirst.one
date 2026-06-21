@@ -12,6 +12,7 @@ export default defineConfig({
       input: {
         index:     resolve(__dirname, "index.html"),
         confirmed: resolve(__dirname, "confirmed/index.html"),
+        "extension-privacy": resolve(__dirname, "extension-privacy/index.html"),
       },
     },
   },

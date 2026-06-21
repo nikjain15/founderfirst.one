@@ -10,12 +10,13 @@ import {
   type VoiceRow,
 } from "../lib/supabase";
 
-type Tab = "prompt" | "voice" | "kb";
+// "kb" (knowledge base) is intentionally omitted from the nav until the
+// Phase 2 vector-search feature ships — the panel was a dead placeholder.
+type Tab = "prompt" | "voice";
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "prompt", label: "Prompt" },
   { id: "voice",  label: "Voice" },
-  { id: "kb",     label: "Knowledge base" },
 ];
 
 export function ContentHome() {
@@ -33,7 +34,7 @@ export function ContentHome() {
     <div>
       <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · content</div>
       <h1 className="page-title">Penny's brain.</h1>
-      <p className="page-sub">Edit the system prompt, the voice guide shared across every surface, and manage the knowledge base Penny reads from.</p>
+      <p className="page-sub">Edit the system prompt and the voice guide shared across every surface.</p>
 
       <ActivityStrip onJumpTab={setTabAndHash} />
 
@@ -54,17 +55,7 @@ export function ContentHome() {
       <div className="tab-panel">
         {tab === "prompt" && <ContentPrompt />}
         {tab === "voice"  && <ContentVoice />}
-        {tab === "kb"     && <KbComingSoon />}
       </div>
-    </div>
-  );
-}
-
-function KbComingSoon() {
-  return (
-    <div className="empty">
-      <p className="empty-title">Knowledge base — coming in Phase 2.</p>
-      <p>Once enabled, Penny will retrieve top-matching snippets per user message using vector search.</p>
     </div>
   );
 }

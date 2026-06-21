@@ -122,6 +122,71 @@ a:hover { opacity: 0.7; }
 }
 .admin-nav .nav-meta button:hover { color: var(--ink); background: var(--line-2); }
 
+/* Settings dropdown — Admins + Audit live here, off the primary nav. */
+.admin-nav .settings-menu { position: relative; display: inline-flex; }
+.admin-nav .settings-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  border-radius: var(--r-pill);
+  color: var(--ink-3);
+  cursor: pointer;
+  min-height: var(--tap-min);
+  transition: color var(--dur-fast) var(--ease-out),
+              background var(--dur-fast) var(--ease-out);
+}
+.admin-nav .settings-trigger:hover,
+.admin-nav .settings-trigger.active { color: var(--ink); background: var(--line-2); }
+.admin-nav .settings-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+  z-index: 50;
+}
+.admin-nav .settings-menu.is-open .settings-dropdown { display: flex; }
+.admin-nav .settings-email {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--ink-4);
+  word-break: break-all;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+}
+.admin-nav .settings-dropdown a,
+.admin-nav .settings-dropdown button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-2);
+  background: transparent;
+  border: 0;
+  padding: 8px 10px;
+  border-radius: var(--r-card);
+  cursor: pointer;
+  min-height: var(--tap-min);
+}
+.admin-nav .settings-dropdown a:hover,
+.admin-nav .settings-dropdown button:hover { background: var(--line-2); color: var(--ink); }
+.admin-nav .settings-dropdown a.active { color: var(--ink); font-weight: var(--fw-medium); }
+
 /* Hamburger toggle — only visible on narrow screens. */
 .admin-nav .nav-toggle {
   display: none;
@@ -185,6 +250,27 @@ a:hover { opacity: 0.7; }
     padding: 10px 14px;
     min-height: var(--tap-min);
     border: 1px solid var(--line);
+  }
+  /* In the collapsed panel the settings menu reads as an inline section,
+     not a floating popover. */
+  .admin-nav .settings-menu { display: block; width: 100%; }
+  .admin-nav .settings-trigger { display: none; }
+  .admin-nav .settings-dropdown {
+    display: flex;
+    position: static;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    border-radius: 0;
+    background: transparent;
+  }
+  .admin-nav .settings-dropdown a,
+  .admin-nav .settings-dropdown button {
+    padding: 12px 4px;
+    border-radius: 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 15px;
   }
 }
 

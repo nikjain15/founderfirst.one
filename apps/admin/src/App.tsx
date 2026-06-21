@@ -4,7 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 
 import { getClient, isAdmin, logAudit } from "./lib/supabase";
 import { hasSupabase } from "./lib/env";
-import { IconLogOut, IconMenu, IconClose } from "./lib/icons";
+import { IconLogOut, IconMenu, IconClose, IconSettings, IconChevronDown } from "./lib/icons";
 import { Login } from "./routes/Login";
 
 // Authenticated routes are code-split: each loads on demand so the initial
@@ -14,11 +14,10 @@ const named = <K extends string>(p: Promise<Record<K, React.ComponentType<any>>>
 const Inbox         = lazy(() => named(import("./routes/Inbox"), "Inbox"));
 const TicketDetail  = lazy(() => named(import("./routes/TicketDetail"), "TicketDetail"));
 const AnalyticsHome = lazy(() => named(import("./routes/AnalyticsHome"), "AnalyticsHome"));
-const Users         = lazy(() => named(import("./routes/Users"), "Users"));
+const AudienceHome  = lazy(() => named(import("./routes/AudienceHome"), "AudienceHome"));
 const Audit         = lazy(() => named(import("./routes/Audit"), "Audit"));
 const Admins        = lazy(() => named(import("./routes/Admins"), "Admins"));
 const ContentHome   = lazy(() => named(import("./routes/ContentHome"), "ContentHome"));
-const Signals       = lazy(() => named(import("./routes/Signals"), "Signals"));
 
 /** Gate a route behind sign-in; bounce to /login (remembering where we came from). */
 function RequireAuth({ signedIn, children }: { signedIn: boolean; children: ReactElement }) {
@@ -30,10 +29,11 @@ export function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [navOpen, setNavOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [denied, setDenied] = useState(false);
   const location = useLocation();
 
-  useEffect(() => { setNavOpen(false); }, [location.pathname]);
+  useEffect(() => { setNavOpen(false); setSettingsOpen(false); }, [location.pathname]);
 
   useEffect(() => {
     if (!hasSupabase) {
@@ -129,21 +129,35 @@ export function App() {
             {signedIn && (
               <div className="nav-links">
                 <Link to="/support" className={location.pathname.startsWith("/support") ? "active" : ""}>Support</Link>
-                <Link to="/users" className={location.pathname.startsWith("/users") ? "active" : ""}>Users</Link>
+                <Link to="/audience" className={location.pathname.startsWith("/audience") ? "active" : ""}>Audience</Link>
                 <Link to="/analytics" className={location.pathname.startsWith("/analytics") ? "active" : ""}>Analytics</Link>
-                <Link to="/content" className={location.pathname.startsWith("/content") ? "active" : ""}>Content</Link>
-                <Link to="/signals" className={location.pathname.startsWith("/signals") ? "active" : ""}>Signals</Link>
-                <Link to="/audit" className={location.pathname.startsWith("/audit") ? "active" : ""}>Audit</Link>
-                <Link to="/admins" className={location.pathname.startsWith("/admins") ? "active" : ""}>Admins</Link>
+                <Link to="/content" className={location.pathname.startsWith("/content") ? "active" : ""}>Penny</Link>
               </div>
             )}
             {signedIn ? (
               <>
-                <span className="nav-email">{session?.user.email}</span>
-                <button onClick={() => getClient().auth.signOut()} aria-label="Sign out">
-                  <IconLogOut size={14} />
-                  Sign out
-                </button>
+                <div className={`settings-menu ${settingsOpen ? "is-open" : ""}`}>
+                  <button
+                    type="button"
+                    className={`settings-trigger ${location.pathname.startsWith("/audit") || location.pathname.startsWith("/admins") ? "active" : ""}`}
+                    aria-haspopup="menu"
+                    aria-expanded={settingsOpen}
+                    aria-label="Settings"
+                    onClick={() => setSettingsOpen((v) => !v)}
+                  >
+                    <IconSettings size={15} />
+                    <IconChevronDown size={13} />
+                  </button>
+                  <div className="settings-dropdown" role="menu">
+                    <span className="settings-email">{session?.user.email}</span>
+                    <Link to="/admins" role="menuitem" className={location.pathname.startsWith("/admins") ? "active" : ""}>Admins</Link>
+                    <Link to="/audit" role="menuitem" className={location.pathname.startsWith("/audit") ? "active" : ""}>Audit log</Link>
+                    <button type="button" role="menuitem" onClick={() => getClient().auth.signOut()}>
+                      <IconLogOut size={14} />
+                      Sign out
+                    </button>
+                  </div>
+                </div>
               </>
             ) : (
               <Link to="/login">Sign in</Link>
@@ -174,12 +188,14 @@ export function App() {
             />
             <Route path="/support" element={<RequireAuth signedIn={signedIn}><Inbox /></RequireAuth>} />
             <Route path="/support/:ticketId" element={<RequireAuth signedIn={signedIn}><TicketDetail /></RequireAuth>} />
-            <Route path="/users" element={<RequireAuth signedIn={signedIn}><Users /></RequireAuth>} />
+            <Route path="/audience" element={<RequireAuth signedIn={signedIn}><AudienceHome /></RequireAuth>} />
             <Route path="/analytics" element={<RequireAuth signedIn={signedIn}><AnalyticsHome /></RequireAuth>} />
             <Route path="/content" element={<RequireAuth signedIn={signedIn}><ContentHome /></RequireAuth>} />
-            <Route path="/signals" element={<RequireAuth signedIn={signedIn}><Signals /></RequireAuth>} />
             <Route path="/audit" element={<RequireAuth signedIn={signedIn}><Audit /></RequireAuth>} />
-            <Route path="/discord" element={<Navigate to="/users#discord" replace />} />
+            {/* Back-compat redirects — old top-level tabs now live under Audience. */}
+            <Route path="/users" element={<Navigate to="/audience#web" replace />} />
+            <Route path="/signals" element={<Navigate to="/audience#signals" replace />} />
+            <Route path="/discord" element={<Navigate to="/audience#discord" replace />} />
             <Route
               path="/admins"
               element={<RequireAuth signedIn={signedIn}><Admins currentEmail={session?.user.email ?? ""} /></RequireAuth>}

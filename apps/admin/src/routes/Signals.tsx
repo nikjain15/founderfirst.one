@@ -36,25 +36,32 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "capture",  label: "Capture" },
 ];
 
-export function Signals() {
+export function Signals({ embedded = false }: { embedded?: boolean } = {}) {
+  // When embedded under Audience, sub-tab state lives in memory (no hash) so it
+  // doesn't fight the parent hub's #web / #discord / #signals hash.
   const [tab, setTab] = useState<Tab>(() => {
+    if (embedded) return "posts";
     const h = (typeof window !== "undefined" ? window.location.hash.slice(1) : "") as Tab;
     return TABS.some((t) => t.id === h) ? h : "posts";
   });
   function go(t: Tab) {
     setTab(t);
-    if (typeof window !== "undefined") window.location.hash = t;
+    if (!embedded && typeof window !== "undefined") window.location.hash = t;
   }
 
   return (
     <div>
-      <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · signals</div>
-      <h1 className="page-title">Signals.</h1>
-      <p className="page-sub">
-        Posts voicing bookkeeping pain, scored for intent and turned into human-approved
-        outreach. Capture from closed communities with the browser extension, or paste a
-        link in Capture.
-      </p>
+      {!embedded && (
+        <>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · signals</div>
+          <h1 className="page-title">Signals.</h1>
+          <p className="page-sub">
+            Posts voicing bookkeeping pain, scored for intent and turned into human-approved
+            outreach. Capture from closed communities with the browser extension, or paste a
+            link in Capture.
+          </p>
+        </>
+      )}
 
       <div className="tabs" role="tablist">
         {TABS.map((t) => (

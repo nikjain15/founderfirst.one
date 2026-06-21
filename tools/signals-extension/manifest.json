@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "FounderFirst Signals — Capture",
+  "version": "0.1.0",
+  "description": "Capture a post from a closed community into FounderFirst Signals. Internal tool.",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": [
+    "https://www.facebook.com/*",
+    "https://*.supabase.co/*"
+  ],
+  "background": { "service_worker": "background.js" },
+  "options_page": "options.html",
+  "action": { "default_title": "FounderFirst Signals — open Options to configure" },
+  "content_scripts": [
+    {
+      "matches": ["https://www.facebook.com/groups/*"],
+      "js": ["content-facebook.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

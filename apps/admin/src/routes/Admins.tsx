@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listAdmins, inviteAdmin, removeAdmin, type AdminRow } from "../lib/supabase";
-import { SUPER_ADMIN_EMAIL } from "../lib/env";
 import { IconAlert, IconCheck } from "../lib/icons";
 
 interface Props {
@@ -8,48 +8,48 @@ interface Props {
 }
 
 export function Admins({ currentEmail }: Props) {
-  const isSuper = currentEmail.toLowerCase() === SUPER_ADMIN_EMAIL;
-  const [rows, setRows] = useState<AdminRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const qc = useQueryClient();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<{ kind: "idle" | "ok" | "err"; msg?: string }>({ kind: "idle" });
 
-  async function refresh() {
-    setLoading(true);
-    try {
-      setRows(await listAdmins());
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { data: rows = [], isPending: loading } = useQuery({
+    queryKey: ["admins"],
+    queryFn: listAdmins,
+  });
 
-  useEffect(() => { void refresh(); }, []);
+  // Super status is data now (is_super flag), not a hardcoded email.
+  const isSuper = rows.some(
+    (r) => r.email.toLowerCase() === currentEmail.toLowerCase() && r.is_super,
+  );
 
-  async function onInvite(e: FormEvent) {
+  // Audit rows for both writes are produced by the admins_audit DB trigger.
+  const inviteMut = useMutation({
+    mutationFn: (target: string) => inviteAdmin(target),
+    onSuccess: (_d, target) => {
+      setEmail("");
+      setStatus({ kind: "ok", msg: `Added ${target}.` });
+      void qc.invalidateQueries({ queryKey: ["admins"] });
+    },
+    onError: (err) => setStatus({ kind: "err", msg: (err as Error).message }),
+  });
+
+  const removeMut = useMutation({
+    mutationFn: (target: string) => removeAdmin(target),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["admins"] }),
+    onError: (err) => setStatus({ kind: "err", msg: (err as Error).message }),
+  });
+
+  function onInvite(e: FormEvent) {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return;
-    try {
-      // Audit row is written automatically by the admins_audit DB trigger.
-      await inviteAdmin(trimmed);
-      setEmail("");
-      setStatus({ kind: "ok", msg: `Added ${trimmed}.` });
-      await refresh();
-    } catch (err) {
-      setStatus({ kind: "err", msg: (err as Error).message });
-    }
+    inviteMut.mutate(trimmed);
   }
 
-  async function onRemove(target: string) {
-    if (target === SUPER_ADMIN_EMAIL) return;
-    if (!confirm(`Remove ${target} from admins?`)) return;
-    try {
-      // Audit row is written automatically by the admins_audit DB trigger.
-      await removeAdmin(target);
-      await refresh();
-    } catch (err) {
-      setStatus({ kind: "err", msg: (err as Error).message });
-    }
+  function onRemove(row: AdminRow) {
+    if (row.is_super) return;
+    if (!confirm(`Remove ${row.email} from admins?`)) return;
+    removeMut.mutate(row.email);
   }
 
   return (
@@ -101,14 +101,14 @@ export function Admins({ currentEmail }: Props) {
               <tr key={r.email}>
                 <td>
                   <span className="admin-email">{r.email}</span>
-                  {r.email === SUPER_ADMIN_EMAIL && <span className="chip chip-super">super</span>}
+                  {r.is_super && <span className="chip chip-super">super</span>}
                 </td>
                 <td>{r.added_by ?? "—"}</td>
                 <td>{new Date(r.added_at).toLocaleDateString()}</td>
                 {isSuper && (
                   <td className="row-actions">
-                    {r.email !== SUPER_ADMIN_EMAIL && (
-                      <button type="button" className="link-danger" onClick={() => onRemove(r.email)}>
+                    {!r.is_super && (
+                      <button type="button" className="link-danger" onClick={() => onRemove(r)}>
                         Remove
                       </button>
                     )}

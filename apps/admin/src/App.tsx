@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState, type ReactElement } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 
@@ -6,13 +6,24 @@ import { getClient, isAdmin, logAudit } from "./lib/supabase";
 import { hasSupabase } from "./lib/env";
 import { IconLogOut, IconMenu, IconClose } from "./lib/icons";
 import { Login } from "./routes/Login";
-import { Inbox } from "./routes/Inbox";
-import { TicketDetail } from "./routes/TicketDetail";
-import { AnalyticsHome } from "./routes/AnalyticsHome";
-import { Users } from "./routes/Users";
-import { Audit } from "./routes/Audit";
-import { Admins } from "./routes/Admins";
-import { ContentHome } from "./routes/ContentHome";
+
+// Authenticated routes are code-split: each loads on demand so the initial
+// bundle stays small. Login stays eager — it's the unauthenticated entry point.
+const named = <K extends string>(p: Promise<Record<K, React.ComponentType<any>>>, key: K) =>
+  p.then((m) => ({ default: m[key] }));
+const Inbox         = lazy(() => named(import("./routes/Inbox"), "Inbox"));
+const TicketDetail  = lazy(() => named(import("./routes/TicketDetail"), "TicketDetail"));
+const AnalyticsHome = lazy(() => named(import("./routes/AnalyticsHome"), "AnalyticsHome"));
+const Users         = lazy(() => named(import("./routes/Users"), "Users"));
+const Audit         = lazy(() => named(import("./routes/Audit"), "Audit"));
+const Admins        = lazy(() => named(import("./routes/Admins"), "Admins"));
+const ContentHome   = lazy(() => named(import("./routes/ContentHome"), "ContentHome"));
+
+/** Gate a route behind sign-in; bounce to /login (remembering where we came from). */
+function RequireAuth({ signedIn, children }: { signedIn: boolean; children: ReactElement }) {
+  const location = useLocation();
+  return signedIn ? children : <Navigate to="/login" replace state={{ from: location }} />;
+}
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -140,57 +151,38 @@ export function App() {
       </nav>
 
       <main className="admin-main">
-        <Routes>
-          <Route path="/" element={<Navigate to="/support" replace />} />
-          <Route
-            path="/login"
-            element={signedIn ? <Navigate to="/support" replace /> : (
-              denied ? (
-                <div className="login-wrap">
-                  <div className="login-card">
-                    <span className="ff-mark ff-mark-md">FF</span>
-                    <div className="eyebrow">Admin · access</div>
-                    <h1>Not authorized.</h1>
-                    <p className="sub">Your email isn't on the admin list. Contact the super admin to request access.</p>
-                    <button className="btn" onClick={() => setDenied(false)}>Try a different email</button>
+        <Suspense fallback={<div className="empty">Loading…</div>}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/support" replace />} />
+            <Route
+              path="/login"
+              element={signedIn ? <Navigate to="/support" replace /> : (
+                denied ? (
+                  <div className="login-wrap">
+                    <div className="login-card">
+                      <span className="ff-mark ff-mark-md">FF</span>
+                      <div className="eyebrow">Admin · access</div>
+                      <h1>Not authorized.</h1>
+                      <p className="sub">Your email isn't on the admin list. Contact the super admin to request access.</p>
+                      <button className="btn" onClick={() => setDenied(false)}>Try a different email</button>
+                    </div>
                   </div>
-                </div>
-              ) : <Login />
-            )}
-          />
-          <Route
-            path="/support"
-            element={signedIn ? <Inbox /> : <Navigate to="/login" replace state={{ from: location }} />}
-          />
-          <Route
-            path="/support/:ticketId"
-            element={signedIn ? <TicketDetail /> : <Navigate to="/login" replace state={{ from: location }} />}
-          />
-          <Route
-            path="/users"
-            element={signedIn ? <Users /> : <Navigate to="/login" replace state={{ from: location }} />}
-          />
-          <Route
-            path="/analytics"
-            element={signedIn ? <AnalyticsHome /> : <Navigate to="/login" replace state={{ from: location }} />}
-          />
-          <Route
-            path="/content"
-            element={signedIn ? <ContentHome /> : <Navigate to="/login" replace state={{ from: location }} />}
-          />
-          <Route
-            path="/audit"
-            element={signedIn ? <Audit /> : <Navigate to="/login" replace state={{ from: location }} />}
-          />
-          <Route
-            path="/discord"
-            element={<Navigate to="/users#discord" replace />}
-          />
-          <Route
-            path="/admins"
-            element={signedIn ? <Admins currentEmail={session?.user.email ?? ""} /> : <Navigate to="/login" replace state={{ from: location }} />}
-          />
-        </Routes>
+                ) : <Login />
+              )}
+            />
+            <Route path="/support" element={<RequireAuth signedIn={signedIn}><Inbox /></RequireAuth>} />
+            <Route path="/support/:ticketId" element={<RequireAuth signedIn={signedIn}><TicketDetail /></RequireAuth>} />
+            <Route path="/users" element={<RequireAuth signedIn={signedIn}><Users /></RequireAuth>} />
+            <Route path="/analytics" element={<RequireAuth signedIn={signedIn}><AnalyticsHome /></RequireAuth>} />
+            <Route path="/content" element={<RequireAuth signedIn={signedIn}><ContentHome /></RequireAuth>} />
+            <Route path="/audit" element={<RequireAuth signedIn={signedIn}><Audit /></RequireAuth>} />
+            <Route path="/discord" element={<Navigate to="/users#discord" replace />} />
+            <Route
+              path="/admins"
+              element={<RequireAuth signedIn={signedIn}><Admins currentEmail={session?.user.email ?? ""} /></RequireAuth>}
+            />
+          </Routes>
+        </Suspense>
       </main>
     </div>
   );

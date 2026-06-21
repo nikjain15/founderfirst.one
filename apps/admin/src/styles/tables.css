@@ -1,0 +1,103 @@
+/* ---- Data table (Users, Audit) ----------------------------------------- */
+.table-wrap {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md, 8px);
+  overflow: auto;
+  background: var(--white);
+  margin-top: 16px;
+  /* Fade edges signal more content; preserves horizontal scroll affordance. */
+  background-image:
+    linear-gradient(to right, var(--white), var(--white)),
+    linear-gradient(to right, var(--white), var(--white)),
+    linear-gradient(to right, rgba(0,0,0,0.08), rgba(0,0,0,0)),
+    linear-gradient(to left, rgba(0,0,0,0.08), rgba(0,0,0,0));
+  background-position: left center, right center, left center, right center;
+  background-repeat: no-repeat;
+  background-size: 20px 100%, 20px 100%, 12px 100%, 12px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.data-table th {
+  background: var(--paper);
+  color: var(--ink-3);
+  font-weight: 500;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+  font-size: 11px;
+  position: sticky;
+  top: 0;
+}
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table .row-clickable { cursor: pointer; }
+.data-table .row-clickable:hover { background: var(--paper); }
+
+/* ---- Drawer ------------------------------------------------------------- */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.32);
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+}
+.drawer {
+  width: min(480px, 100%);
+  height: 100%;
+  background: var(--white);
+  border-left: 1px solid var(--line);
+  overflow: auto;
+  padding: 20px 24px;
+  animation: drawer-in 160ms ease-out;
+}
+@keyframes drawer-in { from { transform: translateX(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+.drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.drawer-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+}
+.drawer-head button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--ink-3);
+}
+.drawer-list { margin: 0; }
+.drawer-list > div {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.drawer-list dt {
+  color: var(--ink-3);
+  text-transform: lowercase;
+}
+.drawer-list dd {
+  margin: 0;
+  color: var(--ink-2);
+  word-break: break-word;
+}
+

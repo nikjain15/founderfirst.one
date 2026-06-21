@@ -148,12 +148,58 @@ export async function handleDiscordDm(
 
   // Step 2b — linked. Build a context block for the system prompt.
   const contextBlock = buildContextBlock(ctx);
-  const system = await buildSystemPrompt(supa, contextBlock);
 
-  const raw = await callClaude(system, [
-    { role: "user", content: body.message },
-  ]);
+  // Short-term memory: a rolling summary of older turns (folded into the
+  // cached system prefix) plus the last few verbatim turns replayed as
+  // messages. This gives Penny the whole conversation without resending it
+  // all every turn — per-reply token cost stays flat as the chat grows.
+  const mem = await supa
+    .rpc<DmMemory>("discord_dm_load", { p_discord_user_id: body.discord_user_id, p_limit: KEEP_TURNS })
+    .catch(() => ({ summary: "", turns: [] }) as DmMemory);
+
+  const summaryBlock = mem.summary?.trim()
+    ? `\n\n# Earlier in this conversation (summary)\n${mem.summary.trim()}`
+    : "";
+  const system = await buildSystemPrompt(supa, contextBlock + summaryBlock);
+
+  const history = (mem.turns ?? []).map((t) => ({
+    role: t.author === "user" ? "user" : "assistant",
+    content: t.body,
+  }));
+  // The API requires the first message to be the user's — drop any leading
+  // assistant turn left at the window boundary after a fold.
+  while (history.length && history[0].role !== "user") history.shift();
+
+  const raw = await callClaude(system, [...history, { role: "user", content: body.message }]);
   const reply = coerceToProse(raw);
+
+  // Persist this exchange and fold older turns into the summary once the
+  // verbatim window overflows. Best-effort: a memory hiccup must never break
+  // the user-facing reply.
+  try {
+    const total = await supa.rpc<number>("discord_dm_append", {
+      p_discord_user_id: body.discord_user_id,
+      p_user_msg: body.message,
+      p_bot_msg: reply,
+    });
+    if (total > FOLD_AT) {
+      const all = await supa.rpc<DmMemory>("discord_dm_load", {
+        p_discord_user_id: body.discord_user_id,
+        p_limit: total,
+      });
+      const toFold = (all.turns ?? []).slice(0, Math.max(0, (all.turns?.length ?? 0) - KEEP_TURNS));
+      if (toFold.length) {
+        const newSummary = await summarizeConversation(callClaude, all.summary ?? "", toFold);
+        await supa.rpc("discord_dm_set_summary", {
+          p_discord_user_id: body.discord_user_id,
+          p_summary: newSummary,
+          p_keep: KEEP_TURNS,
+        });
+      }
+    }
+  } catch {
+    // Swallow — memory persistence is non-critical to the reply.
+  }
 
   return jsonResp({
     kind: "reply",
@@ -161,6 +207,40 @@ export async function handleDiscordDm(
     discord_channel_id: ctx.discord_channel_id,
     email: ctx.email,
   });
+}
+
+/* ── Conversation memory ────────────────────────────────────────────────── */
+
+interface DmTurn { author: "user" | "bot"; body: string }
+interface DmMemory { summary: string; turns: DmTurn[] }
+
+/** Verbatim turns kept in the live window; older turns live in the summary. */
+const KEEP_TURNS = 10;
+/** Fold older turns into the rolling summary once the window exceeds this. */
+const FOLD_AT = 24;
+
+/**
+ * Compress older turns into a durable summary, merged with the prior summary.
+ * Reuses the same Claude call the reply path uses (Haiku) — runs only when the
+ * window overflows (~once every several exchanges), so it's off the hot path.
+ */
+async function summarizeConversation(
+  callClaude: (system: string, messages: object[]) => Promise<string>,
+  prevSummary: string,
+  turns: DmTurn[],
+): Promise<string> {
+  const transcript = turns
+    .map((t) => `${t.author === "user" ? "User" : "Penny"}: ${t.body}`)
+    .join("\n");
+  const system =
+    "You maintain durable memory of a support chat. Output 3–6 terse bullet points " +
+    "capturing only what matters for future replies: the user's goal, account/order " +
+    "details they shared, what was already tried, unresolved issues, and decisions made. " +
+    "No preamble, no pleasantries. Merge the new messages into the existing summary and " +
+    "drop nothing still relevant.";
+  const user = `Existing summary:\n${prevSummary || "(none)"}\n\nNew messages to fold in:\n${transcript}`;
+  const out = await callClaude(system, [{ role: "user", content: user }]);
+  return out.trim().slice(0, 4000);
 }
 
 /**
@@ -246,6 +326,12 @@ export async function handleDiscordDisconnect(req: Request, env: Env): Promise<R
     p_discord_user_id: body.discord_user_id ?? null,
     p_email: body.email ?? null,
   });
+  // Privacy: drop the user's stored conversation memory on disconnect.
+  if (body.discord_user_id) {
+    await supa
+      .rpc("discord_dm_purge", { p_discord_user_id: body.discord_user_id })
+      .catch(() => {});
+  }
   return jsonResp({ ok: true, revoked: count });
 }
 

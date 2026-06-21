@@ -29,3 +29,7 @@ apps/*/.vitepress/cache/
 packages/*/dist/
 # Final assembled deploy artifact — produced by `pnpm build`.
 /dist/
+
+# Database backups / dumps — contain real emails + auth rows, never commit.
+_backups/
+supabase/.temp/

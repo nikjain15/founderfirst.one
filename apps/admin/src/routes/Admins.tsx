@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { listAdmins, inviteAdmin, removeAdmin, logAudit, type AdminRow } from "../lib/supabase";
+import { listAdmins, inviteAdmin, removeAdmin, type AdminRow } from "../lib/supabase";
 import { SUPER_ADMIN_EMAIL } from "../lib/env";
 import { IconAlert, IconCheck } from "../lib/icons";
 
@@ -30,8 +30,8 @@ export function Admins({ currentEmail }: Props) {
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return;
     try {
+      // Audit row is written automatically by the admins_audit DB trigger.
       await inviteAdmin(trimmed);
-      await logAudit("admin.invite", "admin", trimmed, {});
       setEmail("");
       setStatus({ kind: "ok", msg: `Added ${trimmed}.` });
       await refresh();
@@ -44,8 +44,8 @@ export function Admins({ currentEmail }: Props) {
     if (target === SUPER_ADMIN_EMAIL) return;
     if (!confirm(`Remove ${target} from admins?`)) return;
     try {
+      // Audit row is written automatically by the admins_audit DB trigger.
       await removeAdmin(target);
-      await logAudit("admin.remove", "admin", target, {});
       await refresh();
     } catch (err) {
       setStatus({ kind: "err", msg: (err as Error).message });

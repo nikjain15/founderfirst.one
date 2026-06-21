@@ -9,6 +9,9 @@
 
 .sig-h2 { font-size: var(--fs-h3); font-weight: var(--fw-semibold); letter-spacing: var(--ls-tight); margin: 0 0 4px; }
 
+/* Jargon term with a hover hint — dotted underline signals "hover me". */
+.sig-help { border-bottom: 1px dotted var(--ink-3); cursor: help; }
+
 .sig-label {
   display: block;
   font-size: var(--fs-eyebrow);
@@ -41,11 +44,6 @@
 .sig-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 
 /* ---- Keywords + Capture ---- */
-.sig-grid-2 {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-  gap: var(--gap-section);
-}
 .sig-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .sig-form { max-width: 560px; }
 
@@ -115,3 +113,108 @@
 .sig-input:focus, .sig-select:focus { outline: none; border-color: var(--ink); }
 .sig-select { width: 100%; cursor: pointer; }
 .sig-select-inline { width: auto; }
+
+/* ---- Pipeline nav — the four views rendered AS the flow they form.
+ * Replaces the old flat sub-tab strip: Sources → Feed → ⚙ Scoring → Leads,
+ * so the nav itself teaches what happens to a post. */
+.sig-pipeline {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  margin: 4px 0 22px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.sig-pipeline::-webkit-scrollbar { display: none; }
+
+.sig-pipe-arrow {
+  align-self: center;
+  flex: 0 0 auto;
+  color: var(--ink-3);
+  font-size: 14px;
+  user-select: none;
+}
+
+.sig-pipe-node {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 8px 14px;
+  min-height: var(--tap-min);
+  cursor: pointer;
+  font: inherit;
+  transition: border-color var(--dur-fast) var(--ease-out),
+              background var(--dur-fast) var(--ease-out);
+}
+.sig-pipe-node:hover { border-color: var(--ink-3); }
+.sig-pipe-node:focus { outline: none; }
+.sig-pipe-node:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.sig-pipe-node.active {
+  background: var(--white);
+  border-color: var(--ink);
+  box-shadow: var(--shadow-card);
+}
+/* The gate reads as a control, not a data view — dashed until selected. */
+.sig-pipe-node.is-gate { border-style: dashed; }
+.sig-pipe-node.is-gate.active { border-style: solid; }
+
+.sig-pipe-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-data-row);
+  font-weight: var(--fw-medium);
+  color: var(--ink-3);
+}
+.sig-pipe-node.active .sig-pipe-label { color: var(--ink); }
+.sig-pipe-role {
+  font-size: var(--fs-tiny);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  /* Keep the flow readable but compact: hide role captions, keep arrows. */
+  .sig-pipe-role { display: none; }
+  .sig-pipe-node { padding: 8px 12px; }
+}
+
+/* ---- Scoring as numbered steps (replaces the two dense columns) ---- */
+.sig-steps { list-style: none; margin: 0; padding: 0; }
+.sig-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  padding: 0 0 22px;
+}
+.sig-step:not(:last-child) { border-bottom: 1px solid var(--line); margin-bottom: 22px; }
+.sig-step-no {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--white);
+  font-size: var(--fs-tiny);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+.sig-step-body { min-width: 0; }
+.sig-step-body > .field textarea,
+.sig-step-body > .field { max-width: 560px; }
+.sig-step-opt {
+  font-size: var(--fs-tiny);
+  font-weight: var(--fw-regular);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-eyebrow);
+  color: var(--ink-3);
+  margin-left: 6px;
+}

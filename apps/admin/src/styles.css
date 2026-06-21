@@ -11,3 +11,4 @@
 @import "./styles/tables.css";     /* data table (Users, Audit), drawer */
 @import "./styles/content.css";    /* analytics tabs, prompt/voice editor, rendered markdown */
 @import "./styles/misc.css";       /* sparkline, funnel, admins page */
+@import "./styles/signals.css";    /* social listening + outreach: board, drawer, capture */

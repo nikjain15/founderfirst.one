@@ -1,0 +1,23 @@
+# systemd unit for the Signals worker. Install on the VM:
+#   sudo cp signals-worker.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now signals-worker
+# Adjust User and WorkingDirectory to match where you cloned the repo.
+
+[Unit]
+Description=FounderFirst Signals pull-worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=signals
+WorkingDirectory=/home/signals/signals-worker
+EnvironmentFile=/home/signals/signals-worker/.env
+ExecStart=/usr/bin/node index.mjs
+Restart=always
+RestartSec=10
+# Ollama runs locally; give it time on boot.
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target

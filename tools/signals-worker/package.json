@@ -1,0 +1,15 @@
+{
+  "name": "signals-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "FounderFirst Signals VM pull-worker: scores pending posts with local Ollama, drafts promoted leads. See SIGNALS_SOLUTION.md.",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node index.mjs",
+    "once": "node index.mjs --once"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

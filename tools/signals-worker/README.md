@@ -1,0 +1,54 @@
+# Signals worker (the "brain")
+
+Always-on pull-worker for FounderFirst Signals. It pulls pending posts from
+Supabase, scores them locally with Ollama, and drafts promoted leads with the
+managed model. No inbound ports — it only makes outbound calls. Part of the
+Signals system — see `SIGNALS_SOLUTION.md`.
+
+## What it does each cycle
+
+1. Embeds any new ICP reference examples (`nomic-embed-text`).
+2. Claims a batch of `pending` items (atomic — flips them to `scoring`).
+3. Per item: keyword prefilter → embed + relevance (cosine vs ICP set) → LLM
+   intent score (`gemma2:2b`) → promote or archive.
+4. Promoted leads get a brand-voice outreach draft (Anthropic, using the live
+   `VOICE.md` via `get_live_voice`).
+
+## Setup on the VM (Lima, aarch64, 4 GiB, CPU-only)
+
+```bash
+# 1. Install Ollama + pull the models (small, CPU-friendly)
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull gemma2:2b          # ~1.6 GB — scoring
+ollama pull nomic-embed-text   # ~0.3 GB — embeddings
+
+# 2. Get this folder onto the VM, install deps
+cd signals-worker
+npm install
+
+# 3. Configure
+cp .env.example .env           # fill SUPABASE_SERVICE_ROLE_KEY + ANTHROPIC_API_KEY
+
+# 4. Run once to test, then as a service
+npm run once                   # single cycle, prints what it scored
+sudo cp signals-worker.service /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now signals-worker
+journalctl -u signals-worker -f
+```
+
+> 4 GiB is tight: `gemma2:2b` + `nomic-embed-text` + Node fit, but don't run a
+> larger score model without bumping the VM. To choose the score model, run the
+> eval described in `SIGNALS_SOLUTION.md` §8 and set `OLLAMA_SCORE_MODEL`.
+
+## Tuning
+
+All thresholds are env vars (`.env`): `REL_THRESHOLD`, `INTENT_THRESHOLD`,
+`REL_FLOOR`, `BATCH`, `POLL_INTERVAL_SECONDS`. Raise thresholds for precision,
+lower for volume. Keyword and voice edits in the admin are picked up within a
+few idle cycles (caches clear when a cycle finds no work).
+
+## Swapping models
+
+Drafting provider/model and Ollama models are all env-driven (`brain.mjs` is the
+only file that talks to a model). Bump the VM to 8 GiB and you can move drafting
+local too — change the draft path in `brain.mjs`; nothing else changes.

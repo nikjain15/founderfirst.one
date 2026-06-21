@@ -18,6 +18,7 @@ const Users         = lazy(() => named(import("./routes/Users"), "Users"));
 const Audit         = lazy(() => named(import("./routes/Audit"), "Audit"));
 const Admins        = lazy(() => named(import("./routes/Admins"), "Admins"));
 const ContentHome   = lazy(() => named(import("./routes/ContentHome"), "ContentHome"));
+const Signals       = lazy(() => named(import("./routes/Signals"), "Signals"));
 
 /** Gate a route behind sign-in; bounce to /login (remembering where we came from). */
 function RequireAuth({ signedIn, children }: { signedIn: boolean; children: ReactElement }) {
@@ -131,6 +132,7 @@ export function App() {
                 <Link to="/users" className={location.pathname.startsWith("/users") ? "active" : ""}>Users</Link>
                 <Link to="/analytics" className={location.pathname.startsWith("/analytics") ? "active" : ""}>Analytics</Link>
                 <Link to="/content" className={location.pathname.startsWith("/content") ? "active" : ""}>Content</Link>
+                <Link to="/signals" className={location.pathname.startsWith("/signals") ? "active" : ""}>Signals</Link>
                 <Link to="/audit" className={location.pathname.startsWith("/audit") ? "active" : ""}>Audit</Link>
                 <Link to="/admins" className={location.pathname.startsWith("/admins") ? "active" : ""}>Admins</Link>
               </div>
@@ -175,6 +177,7 @@ export function App() {
             <Route path="/users" element={<RequireAuth signedIn={signedIn}><Users /></RequireAuth>} />
             <Route path="/analytics" element={<RequireAuth signedIn={signedIn}><AnalyticsHome /></RequireAuth>} />
             <Route path="/content" element={<RequireAuth signedIn={signedIn}><ContentHome /></RequireAuth>} />
+            <Route path="/signals" element={<RequireAuth signedIn={signedIn}><Signals /></RequireAuth>} />
             <Route path="/audit" element={<RequireAuth signedIn={signedIn}><Audit /></RequireAuth>} />
             <Route path="/discord" element={<Navigate to="/users#discord" replace />} />
             <Route

@@ -692,3 +692,23 @@ export async function listSigSources(): Promise<SigSourceRow[]> {
   if (error) throw new Error(`list_sig_sources: ${error.message}`);
   return (data as SigSourceRow[]) ?? [];
 }
+
+export interface SigIcpExampleRow {
+  id: string;
+  body: string;
+  has_embedding: boolean;
+  created_at: string;
+}
+
+export async function listSigIcpExamples(): Promise<SigIcpExampleRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_sig_icp_examples");
+  if (error) throw new Error(`list_sig_icp_examples: ${error.message}`);
+  return (data as SigIcpExampleRow[]) ?? [];
+}
+
+export async function deleteSigIcpExample(id: string): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("delete_sig_icp_example", { p_id: id });
+  if (error) throw new Error(`delete_sig_icp_example: ${error.message}`);
+}

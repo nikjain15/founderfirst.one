@@ -19,10 +19,13 @@ import {
   listSigKeywords,
   upsertSigKeyword,
   addSigIcpExample,
+  listSigIcpExamples,
+  deleteSigIcpExample,
   SIG_STAGES,
   type SigItemRow,
   type SigLeadRow,
   type SigKeywordRow,
+  type SigIcpExampleRow,
 } from "../lib/supabase";
 
 type Tab = "posts" | "leads" | "keywords" | "capture";
@@ -294,6 +297,7 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
 function KeywordsTab() {
   const qc = useQueryClient();
   const { data = [], isPending } = useQuery({ queryKey: ["sig-keywords"], queryFn: listSigKeywords });
+  const { data: examples = [] } = useQuery({ queryKey: ["sig-icp"], queryFn: listSigIcpExamples });
   const [term, setTerm] = useState("");
   const [kind, setKind] = useState<"pain" | "competitor">("pain");
   const [icp, setIcp] = useState("");
@@ -309,7 +313,11 @@ function KeywordsTab() {
   }
   async function addExample() {
     if (!icp.trim()) return;
-    try { await addSigIcpExample(icp.trim()); setIcp(""); setNote("ICP example added — the worker will embed it."); }
+    try { await addSigIcpExample(icp.trim()); setIcp(""); setNote("ICP example added — the worker will embed it."); qc.invalidateQueries({ queryKey: ["sig-icp"] }); }
+    catch (e) { setNote((e as Error).message); }
+  }
+  async function removeExample(id: string) {
+    try { await deleteSigIcpExample(id); qc.invalidateQueries({ queryKey: ["sig-icp"] }); }
     catch (e) { setNote((e as Error).message); }
   }
 
@@ -343,6 +351,23 @@ function KeywordsTab() {
           <textarea value={icp} onChange={(e) => setIcp(e.target.value)} placeholder="Paste an example post that captures the pain…" />
         </div>
         <button className="btn" onClick={addExample}>Add example</button>
+
+        <span className="sig-label" style={{ marginTop: 16, display: "block" }}>
+          {examples.length} example{examples.length === 1 ? "" : "s"}
+        </span>
+        <ul className="sig-icp-list">
+          {examples.map((ex: SigIcpExampleRow) => (
+            <li key={ex.id} className="sig-icp-item">
+              <p>{ex.body}</p>
+              <div className="sig-icp-meta">
+                <span className={`badge ${ex.has_embedding ? "badge-live" : "badge-warn"}`}>
+                  {ex.has_embedding ? "embedded" : "embedding…"}
+                </span>
+                <button className="btn-link" onClick={() => removeExample(ex.id)}>Remove</button>
+              </div>
+            </li>
+          ))}
+        </ul>
       </section>
 
       {note && <p className="sig-note">{note}</p>}

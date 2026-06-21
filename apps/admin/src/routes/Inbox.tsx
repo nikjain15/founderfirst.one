@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { listTickets, getAnalytics, type TicketRow, type AnalyticsSnapshot } from "../lib/supabase";
+import { useQuery } from "@tanstack/react-query";
+import { listTickets, getAnalytics, type TicketRow } from "../lib/supabase";
 import { channelIcon, IconAlert } from "../lib/icons";
 import { bySlaUrgency, slaForTicket, slaLabel } from "../lib/sla";
 import { TOPICS } from "../lib/topics";
@@ -8,41 +9,22 @@ import { TOPICS } from "../lib/topics";
 type StatusFilter = TicketRow["status"] | "all";
 
 export function Inbox() {
-  const [tickets, setTickets] = useState<TicketRow[]>([]);
   const [filter, setFilter] = useState<StatusFilter>("open");
   const [topicFilter, setTopicFilter] = useState<string>("all");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<AnalyticsSnapshot | null>(null);
 
-  // KPI strip — fetched once. Failures here are silent so a broken RPC
-  // doesn't take the inbox down with it.
-  useEffect(() => {
-    let cancelled = false;
-    getAnalytics()
-      .then((s) => { if (!cancelled) setStats(s); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
+  // KPI strip — cached; a failure here is swallowed (stats stays undefined) so a
+  // broken analytics RPC doesn't take the inbox down with it.
+  const { data: stats } = useQuery({ queryKey: ["analytics"], queryFn: getAnalytics });
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    listTickets(filter === "all" ? undefined : filter)
-      .then((rows) => {
-        if (!cancelled) setTickets(rows);
-      })
-      .catch((e: Error) => {
-        if (!cancelled) setError(e.message);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [filter]);
+  // Ticket list — cached per status filter; refetches automatically on change.
+  const {
+    data: tickets = [],
+    isPending: loading,
+    error,
+  } = useQuery({
+    queryKey: ["tickets", filter],
+    queryFn: () => listTickets(filter === "all" ? undefined : filter),
+  });
 
   return (
     <div>
@@ -89,7 +71,7 @@ export function Inbox() {
         <div className="empty" style={{ color: "var(--error)", borderColor: "var(--error-bg)" }}>
           <IconAlert size={18} />
           <p className="empty-title" style={{ marginTop: 10 }}>Something broke.</p>
-          {error}
+          {error.message}
         </div>
       )}
 

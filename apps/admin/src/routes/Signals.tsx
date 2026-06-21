@@ -21,25 +21,32 @@ import {
   addSigIcpExample,
   listSigIcpExamples,
   deleteSigIcpExample,
+  listSigSources,
+  upsertSigSource,
+  deleteSigSource,
+  listSigSourceCounts,
   SIG_STAGES,
   type SigItemRow,
   type SigLeadRow,
   type SigKeywordRow,
   type SigIcpExampleRow,
+  type SigSourceRow,
 } from "../lib/supabase";
 
-type Tab = "posts" | "leads" | "keywords" | "capture";
+// Pipeline order — mirrors the flow (where posts come from → the feed → the
+// people we act on → what we look for). Lands on Leads (the daily workspace).
+type Tab = "sources" | "posts" | "leads" | "keywords";
 const TABS: Array<{ id: Tab; label: string }> = [
+  { id: "sources",  label: "Sources" },
   { id: "posts",    label: "Posts" },
   { id: "leads",    label: "Leads" },
   { id: "keywords", label: "Keywords" },
-  { id: "capture",  label: "Capture" },
 ];
 
 export function Signals() {
   const [tab, setTab] = useState<Tab>(() => {
     const h = (typeof window !== "undefined" ? window.location.hash.slice(1) : "") as Tab;
-    return TABS.some((t) => t.id === h) ? h : "posts";
+    return TABS.some((t) => t.id === h) ? h : "leads";
   });
   function go(t: Tab) {
     setTab(t);
@@ -52,8 +59,8 @@ export function Signals() {
       <h1 className="page-title">Signals.</h1>
       <p className="page-sub">
         Posts voicing bookkeeping pain, scored for intent and turned into human-approved
-        outreach. Capture from closed communities with the browser extension, or paste a
-        link in Capture.
+        outreach. <strong>Sources</strong> pull posts → <strong>Posts</strong> are scored →
+        high-intent ones become <strong>Leads</strong> with a draft to review.
       </p>
 
       <div className="tabs" role="tablist">
@@ -71,10 +78,10 @@ export function Signals() {
       </div>
 
       <div className="tab-panel">
+        {tab === "sources"  && <SourcesTab />}
         {tab === "posts"    && <PostsTab />}
         {tab === "leads"    && <LeadsTab />}
         {tab === "keywords" && <KeywordsTab />}
-        {tab === "capture"  && <CaptureTab />}
       </div>
     </div>
   );
@@ -105,12 +112,104 @@ function fmt(iso: string | null): string {
   return new Date(iso).toLocaleDateString();
 }
 
+/* ---- Sources --------------------------------------------------------------- */
+
+// Platforms API Direct can pull (all share one response shape — see
+// tools/signals-worker/providers/apidirect.mjs).
+const AD_PLATFORMS = [
+  { id: "reddit",   label: "Reddit" },
+  { id: "twitter",  label: "X / Twitter" },
+  { id: "linkedin", label: "LinkedIn" },
+  { id: "facebook", label: "Facebook" },
+  { id: "youtube",  label: "YouTube" },
+];
+const CADENCES = [
+  { m: 360,  label: "6h" },
+  { m: 720,  label: "12h" },
+  { m: 1440, label: "24h" },
+];
+const platLabel = (id: string) => AD_PLATFORMS.find((p) => p.id === id)?.label ?? id;
+const cadLabel = (m: number | null) =>
+  CADENCES.find((c) => c.m === m)?.label ?? (m ? `${Math.round(m / 60)}h` : "—");
+
+function SourcesTab() {
+  const qc = useQueryClient();
+  const { data: sources = [], isPending } = useQuery({ queryKey: ["sig-sources"], queryFn: listSigSources });
+  const { data: counts = {} } = useQuery({ queryKey: ["sig-source-counts"], queryFn: listSigSourceCounts });
+  const [platform, setPlatform] = useState("reddit");
+  const [query, setQuery] = useState("");
+  const [cadence, setCadence] = useState(360);
+  const [note, setNote] = useState("");
+
+  const polled = sources.filter((s: SigSourceRow) => s.captured_via === "api_direct");
+
+  function refresh() { qc.invalidateQueries({ queryKey: ["sig-sources"] }); }
+
+  async function add() {
+    if (!query.trim()) { setNote("Enter a search query."); return; }
+    try { await upsertSigSource({ platform, query: query.trim(), captured_via: "api_direct", enabled: true, cadence_minutes: cadence }); setQuery(""); setNote(""); refresh(); }
+    catch (e) { setNote((e as Error).message); }
+  }
+  async function toggle(s: SigSourceRow) {
+    try { await upsertSigSource({ id: s.id, platform: s.platform, query: s.query, captured_via: s.captured_via, enabled: !s.enabled, cadence_minutes: s.cadence_minutes }); refresh(); }
+    catch (e) { setNote((e as Error).message); }
+  }
+  async function remove(id: string) {
+    try { await deleteSigSource(id); refresh(); }
+    catch (e) { setNote((e as Error).message); }
+  }
+
+  return (
+    <div>
+      <p className="page-sub">Where we pull posts from — each source is a platform + search query the worker polls on its cadence. Toggle off to pause a source; results flow into Posts and get scored.</p>
+
+      {isPending ? <div className="empty">Loading…</div> : polled.length === 0 ? (
+        <div className="empty"><p className="empty-title">No automated sources yet.</p><p>Add one below to start pulling posts.</p></div>
+      ) : (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr><th>platform</th><th>query</th><th>every</th><th>status</th><th>found</th><th>last poll</th><th></th></tr>
+            </thead>
+            <tbody>
+              {polled.map((s: SigSourceRow) => (
+                <tr key={s.id}>
+                  <td>{platLabel(s.platform)}</td>
+                  <td><span className="sig-strong">{s.query}</span></td>
+                  <td>{cadLabel(s.cadence_minutes)}</td>
+                  <td><button className={`chip ${s.enabled ? "active" : ""}`} onClick={() => toggle(s)}>{s.enabled ? "Active" : "Off"}</button></td>
+                  <td>{counts[s.id] ?? 0}</td>
+                  <td className="sig-sub">{fmt(s.last_polled_at)}</td>
+                  <td><button className="btn-link" onClick={() => remove(s.id)}>Remove</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="toolbar" style={{ marginTop: 12 }}>
+        <select className="sig-select" value={platform} onChange={(e) => setPlatform(e.target.value)} aria-label="platform">
+          {AD_PLATFORMS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+        </select>
+        <input className="sig-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="search query, e.g. hate quickbooks" style={{ flex: 1, minWidth: 180 }} />
+        <select className="sig-select sig-select-inline" value={cadence} onChange={(e) => setCadence(Number(e.target.value))} aria-label="cadence">
+          {CADENCES.map((c) => <option key={c.m} value={c.m}>{c.label}</option>)}
+        </select>
+        <button className="btn" onClick={add}>Add source</button>
+      </div>
+      {note && <p className="sig-note sig-note-err">{note}</p>}
+    </div>
+  );
+}
+
 /* ---- Posts ----------------------------------------------------------------- */
 
 const STATUS_FILTERS = ["all", "pending", "scored", "promoted", "archived"] as const;
 
 function PostsTab() {
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>("all");
+  const [showAdd, setShowAdd] = useState(false);
   const { data = [], isPending, error } = useQuery({
     queryKey: ["sig-items", status],
     queryFn: () => listSigItems({ status: status === "all" ? null : status }),
@@ -124,7 +223,13 @@ function PostsTab() {
             {s}
           </button>
         ))}
+        <span className="toolbar-spacer" />
+        <button className={`chip ${showAdd ? "active" : ""}`} onClick={() => setShowAdd((v) => !v)}>
+          {showAdd ? "Close" : "+ Add post"}
+        </button>
       </div>
+
+      {showAdd && <div className="sig-add-panel"><CaptureTab /></div>}
 
       {error && <p className="sig-note sig-note-err">{(error as Error).message}</p>}
       {isPending ? (

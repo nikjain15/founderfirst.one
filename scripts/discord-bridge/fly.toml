@@ -1,0 +1,32 @@
+# Fly.io config for the Discord bridge.
+#
+# The bridge is a long-running WebSocket client to Discord's gateway —
+# it does NOT serve HTTP. So there's no [http_service] block. Fly just
+# keeps one VM alive; if it crashes, Fly restarts it.
+#
+# Deploy:
+#   fly launch --copy-config --no-deploy   # first time only, creates app
+#   fly secrets set BRIDGE_SECRET=... DISCORD_BOT_TOKEN=... DISCORD_GUILD_ID=... DISCORD_USER_CHANNEL_PARENT_ID=...
+#   fly deploy
+#
+# Update later:
+#   fly deploy
+
+app = "founderfirst-discord-bridge"
+primary_region = "iad"   # us-east-1; pick a region close to you
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  WORKER_BASE_URL = "https://bubble.founderfirst.one"
+  ADMIN_POLL_INTERVAL_SECONDS = "15"
+
+# One VM, always on. The bridge is cheap — 256MB is plenty.
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  cpus = 1
+
+# No public ports — the bridge only makes outbound connections (to Discord
+# gateway and to the Worker). Fly doesn't need to route any inbound traffic.

@@ -30,6 +30,7 @@ export interface AdminRow {
   email: string;
   added_at: string;
   added_by: string | null;
+  is_super: boolean;
 }
 
 export async function isAdmin(email: string): Promise<boolean> {
@@ -47,7 +48,7 @@ export async function listAdmins(): Promise<AdminRow[]> {
   const db = getClient();
   const { data, error } = await db
     .from("admins")
-    .select("email, added_at, added_by")
+    .select("email, added_at, added_by, is_super")
     .order("added_at", { ascending: true });
   if (error) throw new Error(`listAdmins: ${error.message}`);
   return (data as AdminRow[]) ?? [];

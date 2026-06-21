@@ -38,10 +38,10 @@ import { IconCheck, IconClose, IconExternalLink } from "../lib/icons";
 
 // Pipeline order — mirrors the flow (where posts come from → the feed → the
 // people we act on → what we look for). Lands on Leads (the daily workspace).
-type Tab = "sources" | "posts" | "leads" | "scoring";
+type Tab = "sources" | "feed" | "leads" | "scoring";
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "sources", label: "Sources" },
-  { id: "posts",   label: "Posts" },
+  { id: "feed",    label: "Feed" },
   { id: "leads",   label: "Leads" },
   { id: "scoring", label: "Scoring" },
 ];
@@ -50,7 +50,7 @@ export function Signals({ embedded = false }: { embedded?: boolean } = {}) {
   // When embedded under Audience, sub-tab state lives in memory (no hash) so it
   // doesn't fight the parent hub's #web / #discord / #signals hash.
   const [tab, setTab] = useState<Tab>(() => {
-    if (embedded) return "posts";
+    if (embedded) return "feed";
     const h = (typeof window !== "undefined" ? window.location.hash.slice(1) : "") as Tab;
     return TABS.some((t) => t.id === h) ? h : "leads";
   });
@@ -67,7 +67,7 @@ export function Signals({ embedded = false }: { embedded?: boolean } = {}) {
           <h1 className="page-title">Signals.</h1>
           <p className="page-sub">
             Posts voicing bookkeeping pain, scored for intent and turned into human-approved
-            outreach. <strong>Sources</strong> pull posts → <strong>Posts</strong> are scored →
+            outreach. <strong>Sources</strong> bring posts in → the <strong>Feed</strong> scores them →
             high-intent ones become <strong>Leads</strong> with a draft to review.
           </p>
         </>
@@ -92,7 +92,7 @@ export function Signals({ embedded = false }: { embedded?: boolean } = {}) {
 
       <div className="tab-panel">
         {tab === "sources"  && <SourcesTab />}
-        {tab === "posts"    && <PostsTab />}
+        {tab === "feed"     && <FeedTab />}
         {tab === "leads"    && <LeadsTab />}
         {tab === "scoring"  && <ScoringTab />}
       </div>
@@ -180,7 +180,10 @@ function SourcesTab() {
 
   return (
     <div>
-      <p className="page-sub">Where we pull posts from — each source is a platform + search query the worker polls on its cadence. Toggle off to pause a source; results flow into Posts and get scored.</p>
+      <p className="page-sub">Where posts come from. Everything here flows into the <strong>Feed</strong>, gets scored, and high-intent posts become <strong>Leads</strong> with a draft.</p>
+
+      <h2 className="sig-h2">Automated</h2>
+      <p className="page-sub">We poll each search on its schedule and pull matching posts automatically. Change how often with “every”, or toggle a source off to pause it.</p>
 
       {isPending ? <div className="empty">Loading…</div> : polled.length === 0 ? (
         <div className="empty"><p className="empty-title">No automated sources yet.</p><p>Add one below to start pulling posts.</p></div>
@@ -223,17 +226,20 @@ function SourcesTab() {
         <button className="btn" onClick={add}>Add source</button>
       </div>
       {note && <p className="sig-note sig-note-err">{note}</p>}
+
+      <h2 className="sig-h2" style={{ marginTop: 28 }}>Manual</h2>
+      <p className="page-sub">Add a specific post yourself — paste a link or text below for a one-off find, or use the Facebook browser extension to capture from closed groups the poller can’t reach. Either way it enters the same pipeline and gets scored.</p>
+      <CaptureTab />
     </div>
   );
 }
 
-/* ---- Posts ----------------------------------------------------------------- */
+/* ---- Feed ------------------------------------------------------------------ */
 
 const STATUS_FILTERS = ["all", "pending", "scored", "promoted", "archived"] as const;
 
-function PostsTab() {
+function FeedTab() {
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>("all");
-  const [showAdd, setShowAdd] = useState(false);
   const { data = [], isPending, error } = useQuery({
     queryKey: ["sig-items", status],
     queryFn: () => listSigItems({ status: status === "all" ? null : status }),
@@ -241,25 +247,20 @@ function PostsTab() {
 
   return (
     <div>
+      <p className="page-sub">Every post we’ve brought in, scored for intent. High scorers become Leads automatically. Add posts under <strong>Sources → Manual</strong>.</p>
       <div className="toolbar">
         {STATUS_FILTERS.map((s) => (
           <button key={s} className={`chip ${status === s ? "active" : ""}`} onClick={() => setStatus(s)}>
             {s}
           </button>
         ))}
-        <span className="toolbar-spacer" />
-        <button className={`chip ${showAdd ? "active" : ""}`} onClick={() => setShowAdd((v) => !v)}>
-          {showAdd ? "Close" : "+ Add post"}
-        </button>
       </div>
-
-      {showAdd && <div className="sig-add-panel"><CaptureTab /></div>}
 
       {error && <p className="sig-note sig-note-err">{(error as Error).message}</p>}
       {isPending ? (
         <div className="empty">Loading…</div>
       ) : data.length === 0 ? (
-        <div className="empty"><p className="empty-title">No posts yet.</p><p>Capture one from a group, or paste a link in Capture.</p></div>
+        <div className="empty"><p className="empty-title">No posts yet.</p><p>Add a source or paste a post under Sources.</p></div>
       ) : (
         <div className="table-wrap">
           <table className="data-table">
@@ -545,7 +546,7 @@ function CaptureTab() {
     try {
       await quickAddSigItem({ platform, url: url.trim() || null, title: title.trim() || null, body: body.trim() || null });
       setUrl(""); setTitle(""); setBody("");
-      setNote("Added — it'll be scored on the next worker run. See it under Posts.");
+      setNote("Added — it'll be scored on the next worker run. See it in the Feed.");
       qc.invalidateQueries({ queryKey: ["sig-items"] });
     } catch (e) { setNote((e as Error).message); }
     finally { setBusy(false); }
@@ -553,7 +554,6 @@ function CaptureTab() {
 
   return (
     <div className="sig-form">
-      <p className="page-sub">Paste a public post to push it into the pipeline — no extension needed. Use this for one-off finds.</p>
       <div className="field">
         <label htmlFor="cap-platform">platform</label>
         <input id="cap-platform" value={platform} onChange={(e) => setPlatform(e.target.value)} placeholder="reddit / hackernews / linkedin / x" />

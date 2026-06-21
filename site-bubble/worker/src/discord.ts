@@ -150,9 +150,10 @@ export async function handleDiscordDm(
   const contextBlock = buildContextBlock(ctx);
   const system = await buildSystemPrompt(supa, contextBlock);
 
-  const reply = await callClaude(system, [
+  const raw = await callClaude(system, [
     { role: "user", content: body.message },
   ]);
+  const reply = coerceToProse(raw);
 
   return jsonResp({
     kind: "reply",
@@ -160,6 +161,31 @@ export async function handleDiscordDm(
     discord_channel_id: ctx.discord_channel_id,
     email: ctx.email,
   });
+}
+
+/**
+ * Defensive: if the model returns the web-widget JSON contract anyway, pull
+ * the prose out. Joins bubble headlines into a single paragraph and appends
+ * the CTA label/url when present. Returns the input unchanged if it doesn't
+ * look like our JSON shape.
+ */
+function coerceToProse(raw: string): string {
+  const trimmed = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "").trim();
+  if (!trimmed.startsWith("{")) return raw;
+  try {
+    const obj = JSON.parse(trimmed) as {
+      bubbles?: Array<{ headline?: string }>;
+      cta?: { label?: string; url?: string } | null;
+    };
+    const parts: string[] = [];
+    for (const b of obj.bubbles ?? []) {
+      if (typeof b?.headline === "string" && b.headline.trim()) parts.push(b.headline.trim());
+    }
+    if (obj.cta?.label && obj.cta?.url) parts.push(`${obj.cta.label}: ${obj.cta.url}`);
+    return parts.length ? parts.join("\n\n") : raw;
+  } catch {
+    return raw;
+  }
 }
 
 /* ── /discord/confirm ───────────────────────────────────────────────────── */

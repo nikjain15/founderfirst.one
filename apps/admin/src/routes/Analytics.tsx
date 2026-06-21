@@ -154,30 +154,6 @@ export function AnalyticsSupport() {
               </div>
             </div>
           </section>
-
-          {/* Style reference — sample of every semantic accent so we can
-              verify the palette is wired without waiting on real data. */}
-          <StyleReference />
-
-          {/* Deflection placeholder — wired when Dify logs all conversations */}
-          <section className="analytics-section">
-            <div className="section-head">
-              <div className="eyebrow">Coming soon</div>
-              <h2 className="section-title">Deflection rate.</h2>
-            </div>
-            <div className="card placeholder-card">
-              <p>
-                We can't measure this yet — Penny only writes to Supabase when she
-                escalates. To compute "% of conversations she handled alone" we need
-                Dify to log every conversation (not just the ones that turn into
-                tickets). That's a small change to the Dify workflow: add an HTTP
-                node on the resolution path that pings <code>log_conversation</code>.
-              </p>
-              <p style={{ marginTop: 8, color: "var(--ink-3)" }}>
-                Once that's in place, this card lights up.
-              </p>
-            </div>
-          </section>
         </>
       )}
     </div>
@@ -191,102 +167,6 @@ function KPI({ label, value, sub, tone }: { label: string; value: string | numbe
       <div className="kpi-label">{label}</div>
       <div className="kpi-value num">{value}</div>
       {sub && <div className="kpi-sub">{sub}</div>}
-    </div>
-  );
-}
-
-/**
- * StyleReference — one swatch + live component per semantic accent. Used to
- * verify the palette is wired and to remind us *when* each accent is allowed
- * (DS-General §1.2: meaning only, never decoration). Safe to leave on the
- * page — it's tiny and only admins ever see it.
- */
-function StyleReference() {
-  return (
-    <section className="analytics-section">
-      <div className="section-head">
-        <div className="eyebrow">Reference</div>
-        <h2 className="section-title">Color palette in use.</h2>
-      </div>
-      <div className="card">
-        <div className="card-eyebrow">Semantic accents — meaning, never decoration</div>
-        <div className="palette-grid">
-          {/* Ink scale */}
-          <div className="palette-row">
-            <span className="palette-label">Ink scale</span>
-            <div className="palette-swatches">
-              <Swatch token="--ink"    label="ink" />
-              <Swatch token="--ink-2"  label="ink-2" />
-              <Swatch token="--ink-3"  label="ink-3" />
-              <Swatch token="--ink-4"  label="ink-4" />
-              <Swatch token="--line"   label="line" />
-              <Swatch token="--line-2" label="line-2" />
-              <Swatch token="--paper"  label="paper" />
-              <Swatch token="--white"  label="white" bordered />
-            </div>
-          </div>
-
-          {/* Income (success) */}
-          <div className="palette-row">
-            <span className="palette-label">Income · success / fresh</span>
-            <div className="palette-swatches">
-              <span className="sla-pill fresh">fresh</span>
-              <div className="feedback-strip up" style={{ marginBottom: 0, padding: "8px 12px" }}>
-                <span className="feedback-rating" style={{ fontSize: "var(--fs-data-row)" }}>👍</span>
-                <span className="feedback-strip-label">User rated helpful</span>
-              </div>
-              <Swatch token="--income"    label="income" />
-              <Swatch token="--income-bg" label="income-bg" bordered />
-            </div>
-          </div>
-
-          {/* Amber (warning) */}
-          <div className="palette-row">
-            <span className="palette-label">Amber · warning / aging</span>
-            <div className="palette-swatches">
-              <span className="sla-pill aging">aging</span>
-              <Swatch token="--amber"    label="amber" />
-              <Swatch token="--amber-bg" label="amber-bg" bordered />
-            </div>
-          </div>
-
-          {/* Error (destructive) */}
-          <div className="palette-row">
-            <span className="palette-label">Error · stale / destructive</span>
-            <div className="palette-swatches">
-              <span className="sla-pill stale">stale</span>
-              <span className="priority-pill p1">P1</span>
-              <div className="feedback-strip down" style={{ marginBottom: 0, padding: "8px 12px" }}>
-                <span className="feedback-rating" style={{ fontSize: "var(--fs-data-row)" }}>👎</span>
-                <span className="feedback-strip-label">User rated unhelpful</span>
-              </div>
-              <Swatch token="--error"    label="error" />
-              <Swatch token="--error-bg" label="error-bg" bordered />
-            </div>
-          </div>
-
-          {/* Sage (active nav) — reserved */}
-          <div className="palette-row">
-            <span className="palette-label">Sage · active nav only</span>
-            <div className="palette-swatches">
-              <Swatch token="--sage" label="sage" />
-              <span className="palette-note">Reserved for an active tab/nav icon. Not in use yet.</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Swatch({ token, label, bordered }: { token: string; label: string; bordered?: boolean }) {
-  return (
-    <div className="swatch" title={token}>
-      <span
-        className="swatch-chip"
-        style={{ background: `var(${token})`, border: bordered ? "1px solid var(--line)" : "none" }}
-      />
-      <span className="swatch-label">{label}</span>
     </div>
   );
 }

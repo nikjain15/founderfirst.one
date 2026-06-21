@@ -75,21 +75,28 @@ a:hover { opacity: 0.7; }
 .admin-nav .brand:hover { opacity: 1; }
 
 .admin-nav .nav-meta {
+  flex: 1;
   display: inline-flex;
   align-items: center;
   gap: 18px;
   font-size: 13px;
   color: var(--ink-3);
 }
+/* Links fill the space between the brand and the settings gear and center
+   themselves, so the bar reads balanced instead of clustered top-right. The
+   gap scales with viewport width so wider screens spread further. */
 .admin-nav .nav-links {
+  flex: 1;
   display: inline-flex;
   align-items: center;
-  gap: 14px;
+  justify-content: center;
+  gap: clamp(20px, 4vw, 56px);
 }
 .admin-nav .nav-links a {
   text-decoration: none;
   color: var(--ink-3);
   font-weight: var(--fw-medium);
+  font-size: 15px;
   padding: 6px 2px;
   border-bottom: 1.5px solid transparent;
   transition: color var(--dur-fast) var(--ease-out),
@@ -146,7 +153,6 @@ a:hover { opacity: 0.7; }
   top: calc(100% + 8px);
   right: 0;
   min-width: 200px;
-  display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 8px;
@@ -225,8 +231,10 @@ a:hover { opacity: 0.7; }
   .admin-nav { position: relative; }
   .admin-nav.signed-in.is-open .nav-meta { display: flex; }
   .admin-nav .nav-links {
+    flex: none;
     flex-direction: column;
     align-items: stretch;
+    justify-content: flex-start;
     gap: 0;
     width: 100%;
   }

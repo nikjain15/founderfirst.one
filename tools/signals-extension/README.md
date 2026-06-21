@@ -12,8 +12,12 @@ a Facebook group; clicking it sends the post into FounderFirst Signals via the
 3. Click the extension → **Options** (or right-click → Options). Set:
    - **Intake endpoint** — defaults to the prod function URL; change only for local testing.
    - **Intake secret** — the `LISTENING_INTAKE_SECRET` value (ask the team).
-4. Open a Facebook group. Each post gets a **→ Signals** button (top-right).
-   Click it to capture; the button shows ✓ Captured on success.
+4. Capture a post, either way:
+   - **Right-click (reliable):** select the post's text → right-click → **Capture
+     to FounderFirst Signals**. The toolbar icon flashes **OK** on success.
+   - **Per-post button (best-effort):** on a Facebook group, posts may show a
+     **→ Signals** pill (top-right). Facebook re-renders aggressively and can
+     strip it, so prefer right-click.
 
 ## How it works
 

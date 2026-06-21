@@ -7,8 +7,7 @@ app = 'founderfirst-discord-bridge'
 primary_region = 'iad'
 
 [build]
-  # TypeScript bridge (discord.js). Rollback: change back to 'Dockerfile' (Python) + redeploy.
-  dockerfile = 'Dockerfile.node'
+  dockerfile = 'Dockerfile'
 
 [env]
   ADMIN_POLL_INTERVAL_SECONDS = '15'

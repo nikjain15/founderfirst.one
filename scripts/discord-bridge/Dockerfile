@@ -1,12 +1,11 @@
-FROM python:3.12-slim
+# Discord bridge image — discord.js + tsx (TypeScript).
+FROM node:22-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY package.json ./
+RUN npm install --no-audit --no-fund
 
-COPY bridge.py .
+COPY bridge.ts tsconfig.json ./
 
-# Bridge is a long-running gateway client; restart on failure.
-ENV PYTHONUNBUFFERED=1
-CMD ["python", "bridge.py"]
+CMD ["npx", "tsx", "bridge.ts"]

@@ -326,10 +326,12 @@ export async function handleDiscordDisconnect(req: Request, env: Env): Promise<R
     p_discord_user_id: body.discord_user_id ?? null,
     p_email: body.email ?? null,
   });
-  // Privacy: drop the user's stored conversation memory on disconnect.
+  // Fresh start on disconnect: archive the user's turns (history is retained
+  // as a backend record) and drop the live summary cache. True erasure is a
+  // separate path (discord_dm_erase) for right-to-be-forgotten requests.
   if (body.discord_user_id) {
     await supa
-      .rpc("discord_dm_purge", { p_discord_user_id: body.discord_user_id })
+      .rpc("discord_dm_disconnect", { p_discord_user_id: body.discord_user_id })
       .catch(() => {});
   }
   return jsonResp({ ok: true, revoked: count });

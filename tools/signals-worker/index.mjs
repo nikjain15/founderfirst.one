@@ -111,7 +111,11 @@ async function processItem(item, painKeywords) {
     return;
   }
 
-  const relOk = relevance == null ? keywordHit : relevance >= REL_THRESHOLD;
+  // A keyword hit always clears relevance. Otherwise require the relevance
+  // threshold — but if we have no ICP examples yet (relevance null), let the
+  // LLM intent score decide on its own (the scoring prompt is domain-specific,
+  // so off-topic posts score low anyway).
+  const relOk = keywordHit || (relevance == null ? true : relevance >= REL_THRESHOLD);
   const promote = relOk && scored.intent >= INTENT_THRESHOLD;
 
   const leadId = await submit(item.id, relevance ?? 0, scored.intent, scored.pain_tags, scored.competitor, promote);

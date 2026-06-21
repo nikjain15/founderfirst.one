@@ -2,11 +2,11 @@
  * Signals — social listening + outreach.
  *
  * Tabs (plain admin nouns, like Content): Posts · Leads · Keywords · Capture.
- * All data comes from the admin-gated sig_* RPCs in lib/supabase.ts. Lead detail
- * opens from the Leads board (like TicketDetail opens from Inbox). See
- * SIGNALS_SOLUTION.md.
+ * Built on the existing admin patterns: .toolbar + .chip filters, .table-wrap /
+ * .data-table lists, and the .drawer-overlay / .drawer detail (same as Users /
+ * Audit). All data via the admin-gated sig_* RPCs. See SIGNALS_SOLUTION.md.
  */
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   listSigItems,
@@ -48,9 +48,9 @@ export function Signals() {
       <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · signals</div>
       <h1 className="page-title">Signals.</h1>
       <p className="page-sub">
-        Posts we've caught voicing bookkeeping pain, scored for intent, and turned into
-        human-approved outreach. Capture from closed communities with the browser extension,
-        or paste a link below.
+        Posts voicing bookkeeping pain, scored for intent and turned into human-approved
+        outreach. Capture from closed communities with the browser extension, or paste a
+        link in Capture.
       </p>
 
       <div className="tabs" role="tablist">
@@ -77,6 +77,31 @@ export function Signals() {
   );
 }
 
+/* ---- shared bits ----------------------------------------------------------- */
+
+const STAGE_BADGE: Record<string, string> = {
+  new: "badge-draft", reviewing: "badge-draft", drafted: "badge-warn",
+  sent: "badge-live", replied: "badge-live", won: "badge-live", dead: "badge-draft",
+};
+const STATUS_BADGE: Record<string, string> = {
+  promoted: "badge-live", archived: "badge-draft", pending: "badge-warn",
+  scoring: "badge-warn", scored: "badge-draft",
+};
+
+function Badge({ value, map }: { value: string; map: Record<string, string> }) {
+  return <span className={`badge ${map[value] ?? "badge-draft"}`}>{value}</span>;
+}
+
+function fmt(iso: string | null): string {
+  if (!iso) return "—";
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
 /* ---- Posts ----------------------------------------------------------------- */
 
 const STATUS_FILTERS = ["all", "pending", "scored", "promoted", "archived"] as const;
@@ -90,43 +115,37 @@ function PostsTab() {
 
   return (
     <div>
-      <div className="sig-filterbar">
+      <div className="toolbar">
         {STATUS_FILTERS.map((s) => (
-          <button
-            key={s}
-            className={`chip ${status === s ? "is-on" : ""}`}
-            onClick={() => setStatus(s)}
-          >
+          <button key={s} className={`chip ${status === s ? "active" : ""}`} onClick={() => setStatus(s)}>
             {s}
           </button>
         ))}
       </div>
 
-      {error && <p className="sig-err">{(error as Error).message}</p>}
+      {error && <p className="sig-note sig-note-err">{(error as Error).message}</p>}
       {isPending ? (
         <div className="empty">Loading…</div>
       ) : data.length === 0 ? (
-        <div className="empty"><p className="empty-title">No posts yet.</p><p>Capture one from a group or paste a link in Capture.</p></div>
+        <div className="empty"><p className="empty-title">No posts yet.</p><p>Capture one from a group, or paste a link in Capture.</p></div>
       ) : (
         <div className="table-wrap">
           <table className="data-table">
             <thead>
-              <tr>
-                <th>Post</th><th>Platform</th><th>Intent</th><th>Pain</th><th>Status</th><th>When</th>
-              </tr>
+              <tr><th>post</th><th>platform</th><th>intent</th><th>pain</th><th>status</th><th>when</th></tr>
             </thead>
             <tbody>
               {data.map((it: SigItemRow) => (
                 <tr key={it.id}>
-                  <td>
-                    <div className="sig-cell-title">{it.title || (it.body ?? "").slice(0, 80) || "—"}</div>
-                    <div className="sig-cell-sub">{it.author_handle || "unknown"}{it.external_url ? <> · <a href={it.external_url} target="_blank" rel="noreferrer">source ↗</a></> : null}</div>
+                  <td title={it.body ?? ""}>
+                    <span className="sig-strong">{it.title || (it.body ?? "").slice(0, 70) || "—"}</span>
+                    <span className="sig-sub">{it.author_handle || "unknown"}{it.external_url ? <> · <a href={it.external_url} target="_blank" rel="noreferrer">source ↗</a></> : null}</span>
                   </td>
                   <td>{it.platform}</td>
                   <td>{it.intent ?? "—"}</td>
                   <td>{(it.pain_tags ?? []).slice(0, 2).join(", ") || "—"}</td>
-                  <td><StatusBadge status={it.status} /></td>
-                  <td className="sig-cell-sub">{fmt(it.captured_at)}</td>
+                  <td><Badge value={it.status} map={STATUS_BADGE} /></td>
+                  <td className="sig-sub">{fmt(it.captured_at)}</td>
                 </tr>
               ))}
             </tbody>
@@ -137,49 +156,61 @@ function PostsTab() {
   );
 }
 
-/* ---- Leads (board) --------------------------------------------------------- */
+/* ---- Leads (table + drawer) ------------------------------------------------ */
 
 function LeadsTab() {
-  const { data = [], isPending, error } = useQuery({ queryKey: ["sig-leads"], queryFn: () => listSigLeads() });
+  const [stage, setStage] = useState<string>("all");
+  const { data = [], isPending, error } = useQuery({
+    queryKey: ["sig-leads", stage],
+    queryFn: () => listSigLeads(stage === "all" ? null : stage),
+  });
   const [openLead, setOpenLead] = useState<string | null>(null);
-
-  const byStage = useMemo(() => {
-    const m = new Map<string, SigLeadRow[]>();
-    SIG_STAGES.forEach((s) => m.set(s, []));
-    data.forEach((l: SigLeadRow) => m.get(l.stage)?.push(l));
-    return m;
-  }, [data]);
-
-  if (error) return <p className="sig-err">{(error as Error).message}</p>;
-  if (isPending) return <div className="empty">Loading…</div>;
-  if (data.length === 0) return <div className="empty"><p className="empty-title">No leads yet.</p><p>High-intent posts get promoted here automatically.</p></div>;
 
   return (
     <div>
-      <div className="sig-board">
-        {SIG_STAGES.map((stage) => (
-          <div className="sig-col" key={stage}>
-            <div className="sig-col-head">{stage} <span className="sig-col-count">{byStage.get(stage)?.length ?? 0}</span></div>
-            {(byStage.get(stage) ?? []).map((l) => (
-              <button key={l.id} className="sig-card" onClick={() => setOpenLead(l.id)}>
-                <div className="sig-card-title">{l.title || l.author_handle || "Lead"}</div>
-                <div className="sig-card-meta">
-                  {l.platform}{l.intent != null ? ` · intent ${l.intent}` : ""}
-                  {l.competitor ? ` · ${l.competitor}` : ""}
-                </div>
-                {l.has_draft && <span className="badge badge-draft">draft</span>}
-              </button>
-            ))}
-          </div>
+      <div className="toolbar">
+        <button className={`chip ${stage === "all" ? "active" : ""}`} onClick={() => setStage("all")}>all</button>
+        {SIG_STAGES.map((s) => (
+          <button key={s} className={`chip ${stage === s ? "active" : ""}`} onClick={() => setStage(s)}>{s}</button>
         ))}
       </div>
 
-      {openLead && <LeadDetail leadId={openLead} onClose={() => setOpenLead(null)} />}
+      {error && <p className="sig-note sig-note-err">{(error as Error).message}</p>}
+      {isPending ? (
+        <div className="empty">Loading…</div>
+      ) : data.length === 0 ? (
+        <div className="empty"><p className="empty-title">No leads yet.</p><p>High-intent posts get promoted here automatically.</p></div>
+      ) : (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr><th>lead</th><th>platform</th><th>intent</th><th>stage</th><th>draft</th><th>when</th></tr>
+            </thead>
+            <tbody>
+              {data.map((l: SigLeadRow) => (
+                <tr key={l.id} className="row-clickable" onClick={() => setOpenLead(l.id)}>
+                  <td>
+                    <span className="sig-strong">{l.title || l.author_handle || "Lead"}</span>
+                    <span className="sig-sub">{l.author_handle || "unknown"}{l.competitor ? ` · ${l.competitor}` : ""}</span>
+                  </td>
+                  <td>{l.platform}</td>
+                  <td>{l.intent ?? "—"}</td>
+                  <td><Badge value={l.stage} map={STAGE_BADGE} /></td>
+                  <td>{l.has_draft ? "✓" : "—"}</td>
+                  <td className="sig-sub">{fmt(l.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {openLead && <LeadDrawer leadId={openLead} onClose={() => setOpenLead(null)} />}
     </div>
   );
 }
 
-function LeadDetail({ leadId, onClose }: { leadId: string; onClose: () => void }) {
+function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }) {
   const qc = useQueryClient();
   const { data, isPending } = useQuery({ queryKey: ["sig-lead", leadId], queryFn: () => getSigLead(leadId) });
   const [draft, setDraft] = useState<string | null>(null);
@@ -195,7 +226,6 @@ function LeadDetail({ leadId, onClose }: { leadId: string; onClose: () => void }
     qc.invalidateQueries({ queryKey: ["sig-lead", leadId] });
     qc.invalidateQueries({ queryKey: ["sig-leads"] });
   }
-
   async function withBusy(fn: () => Promise<void>, ok: string) {
     setBusy(true); setNote("");
     try { await fn(); setNote(ok); refresh(); }
@@ -204,68 +234,57 @@ function LeadDetail({ leadId, onClose }: { leadId: string; onClose: () => void }
   }
 
   return (
-    <div className="sig-drawer" role="dialog" aria-label="Lead detail">
-      <div className="sig-drawer-head">
-        <strong>Lead</strong>
-        <button className="btn-link" onClick={onClose}>Close ✕</button>
-      </div>
+    <div className="drawer-overlay" onClick={onClose}>
+      <aside className="drawer" onClick={(e) => e.stopPropagation()}>
+        <header className="drawer-head">
+          <h2>Lead</h2>
+          <button onClick={onClose} aria-label="Close">✕</button>
+        </header>
 
-      {isPending || !lead ? (
-        <div className="empty">Loading…</div>
-      ) : (
-        <>
-          <div className="sig-meta-grid">
-            <span>Author</span><span>{item?.author_handle || "unknown"}</span>
-            <span>Platform</span><span>{item?.platform}</span>
-            <span>Intent</span><span>{score?.intent ?? "—"} {score?.competitor ? `· ${score.competitor}` : ""}</span>
-            <span>Stage</span>
-            <span>
-              <select
-                value={lead.stage}
-                disabled={busy}
-                onChange={(e) => withBusy(() => updateSigLeadStage(leadId, e.target.value), "Stage updated")}
-              >
-                {SIG_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </span>
-          </div>
+        {isPending || !lead ? (
+          <div className="empty">Loading…</div>
+        ) : (
+          <>
+            <dl className="drawer-list">
+              <div><dt>author</dt><dd>{item?.author_handle || "unknown"}</dd></div>
+              <div><dt>platform</dt><dd>{item?.platform}</dd></div>
+              <div><dt>intent</dt><dd>{score?.intent ?? "—"}</dd></div>
+              <div><dt>competitor</dt><dd>{score?.competitor || "—"}</dd></div>
+              <div><dt>pain</dt><dd>{(score?.pain_tags ?? []).join(", ") || "—"}</dd></div>
+              {item?.external_url && <div><dt>source</dt><dd><a href={item.external_url} target="_blank" rel="noreferrer">open original ↗</a></dd></div>}
+            </dl>
 
-          <div className="sig-post">
-            <div className="sig-post-label">Original post</div>
-            <p>{item?.body || item?.title || "—"}</p>
-            {item?.external_url && <a href={item.external_url} target="_blank" rel="noreferrer">Open original ↗</a>}
-          </div>
+            <div className="sig-post">
+              <span className="sig-label">original post</span>
+              <p>{item?.body || item?.title || "—"}</p>
+            </div>
 
-          <div className="field">
-            <label htmlFor="sig-draft">Outreach draft</label>
-            <textarea
-              id="sig-draft"
-              value={draftValue}
-              placeholder="The worker drafts this for promoted leads. Edit before sending."
-              onChange={(e) => setDraft(e.target.value)}
-            />
-          </div>
+            <label className="sig-label" htmlFor="sig-stage">stage</label>
+            <select
+              id="sig-stage" className="sig-select" value={lead.stage} disabled={busy}
+              onChange={(e) => withBusy(() => updateSigLeadStage(leadId, e.target.value), "Stage updated")}
+            >
+              {SIG_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
 
-          <div className="sig-actions">
-            <button
-              className="btn"
-              disabled={busy || !draftValue.trim()}
-              onClick={() => withBusy(() => saveSigLeadDraft(leadId, draftValue), "Draft saved")}
-            >Save draft</button>
-            <button
-              className="btn btn-ghost"
-              disabled={!draftValue.trim()}
-              onClick={() => { navigator.clipboard?.writeText(draftValue); setNote("Copied — reply on the platform, then mark sent."); }}
-            >Copy</button>
-            <button
-              className="btn btn-ghost"
-              disabled={busy}
-              onClick={() => withBusy(() => markSigLeadSent(leadId, "on_platform"), "Marked sent")}
-            >Mark sent</button>
-          </div>
-          {note && <p className="sig-note">{note}</p>}
-        </>
-      )}
+            <div className="field" style={{ marginTop: 16 }}>
+              <label htmlFor="sig-draft">outreach draft</label>
+              <textarea
+                id="sig-draft" value={draftValue}
+                placeholder="The worker drafts this for promoted leads. Edit before sending."
+                onChange={(e) => setDraft(e.target.value)}
+              />
+            </div>
+
+            <div className="sig-actions">
+              <button className="btn" disabled={busy || !draftValue.trim()} onClick={() => withBusy(() => saveSigLeadDraft(leadId, draftValue), "Draft saved")}>Save draft</button>
+              <button className="btn btn-ghost" disabled={!draftValue.trim()} onClick={() => { navigator.clipboard?.writeText(draftValue); setNote("Copied — reply on the platform, then mark sent."); }}>Copy</button>
+              <button className="btn btn-ghost" disabled={busy} onClick={() => withBusy(() => markSigLeadSent(leadId, "on_platform"), "Marked sent")}>Mark sent</button>
+            </div>
+            {note && <p className="sig-note">{note}</p>}
+          </>
+        )}
+      </aside>
     </div>
   );
 }
@@ -295,12 +314,13 @@ function KeywordsTab() {
   }
 
   return (
-    <div className="sig-cols-2">
-      <div>
+    <div className="sig-grid-2">
+      <section>
         <h2 className="sig-h2">Keywords</h2>
-        <div className="sig-inline-form">
-          <input value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. behind on my books" />
-          <select value={kind} onChange={(e) => setKind(e.target.value as any)}>
+        <p className="page-sub">Pain phrases drive the prefilter; competitor names get flagged on each lead.</p>
+        <div className="toolbar">
+          <input className="sig-input" value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. behind on my books" />
+          <select className="sig-select sig-select-inline" value={kind} onChange={(e) => setKind(e.target.value as any)}>
             <option value="pain">pain</option>
             <option value="competitor">competitor</option>
           </select>
@@ -308,24 +328,22 @@ function KeywordsTab() {
         </div>
         {isPending ? <div className="empty">Loading…</div> : (
           <>
-            <div className="sig-kw-group"><span className="sig-kw-label">Pain phrases</span>
-              <div className="sig-chips">{pain.map((k) => <span key={k.id} className="chip">{k.term}</span>)}</div>
-            </div>
-            <div className="sig-kw-group"><span className="sig-kw-label">Competitors</span>
-              <div className="sig-chips">{comp.map((k) => <span key={k.id} className="chip">{k.term}</span>)}</div>
-            </div>
+            <span className="sig-label">pain phrases</span>
+            <div className="sig-chips">{pain.map((k) => <span key={k.id} className="topic-tag">{k.term}</span>)}</div>
+            <span className="sig-label" style={{ marginTop: 14, display: "block" }}>competitors</span>
+            <div className="sig-chips">{comp.map((k) => <span key={k.id} className="topic-tag">{k.term}</span>)}</div>
           </>
         )}
-      </div>
+      </section>
 
-      <div>
+      <section>
         <h2 className="sig-h2">ICP pain examples</h2>
         <p className="page-sub">Reference posts the brain scores relevance against. Add a few real examples of your ideal customer's pain.</p>
         <div className="field">
           <textarea value={icp} onChange={(e) => setIcp(e.target.value)} placeholder="Paste an example post that captures the pain…" />
         </div>
         <button className="btn" onClick={addExample}>Add example</button>
-      </div>
+      </section>
 
       {note && <p className="sig-note">{note}</p>}
     </div>
@@ -356,43 +374,26 @@ function CaptureTab() {
   }
 
   return (
-    <div className="sig-capture">
+    <div className="sig-form">
       <p className="page-sub">Paste a public post to push it into the pipeline — no extension needed. Use this for one-off finds.</p>
       <div className="field">
-        <label htmlFor="cap-platform">Platform</label>
+        <label htmlFor="cap-platform">platform</label>
         <input id="cap-platform" value={platform} onChange={(e) => setPlatform(e.target.value)} placeholder="reddit / hackernews / linkedin / x" />
       </div>
       <div className="field">
-        <label htmlFor="cap-url">URL (optional)</label>
+        <label htmlFor="cap-url">url (optional)</label>
         <input id="cap-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" />
       </div>
       <div className="field">
-        <label htmlFor="cap-title">Title (optional)</label>
+        <label htmlFor="cap-title">title (optional)</label>
         <input id="cap-title" value={title} onChange={(e) => setTitle(e.target.value)} />
       </div>
       <div className="field">
-        <label htmlFor="cap-body">Post text</label>
+        <label htmlFor="cap-body">post text</label>
         <textarea id="cap-body" value={body} onChange={(e) => setBody(e.target.value)} placeholder="Paste the post body…" />
       </div>
       <button className="btn" disabled={busy} onClick={submit}>{busy ? "Adding…" : "Add to pipeline"}</button>
       {note && <p className="sig-note">{note}</p>}
     </div>
   );
-}
-
-/* ---- bits ------------------------------------------------------------------ */
-
-function StatusBadge({ status }: { status: SigItemRow["status"] }) {
-  const cls = status === "promoted" ? "badge-live" : status === "archived" ? "badge-draft" : "badge-warn";
-  return <span className={`badge ${cls}`}>{status}</span>;
-}
-
-function fmt(iso: string): string {
-  const then = new Date(iso).getTime();
-  const mins = Math.round((Date.now() - then) / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return new Date(iso).toLocaleDateString();
 }

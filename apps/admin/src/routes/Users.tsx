@@ -1,10 +1,60 @@
 import { useEffect, useMemo, useState } from "react";
 import { listWaitlist, type WaitlistRow } from "../lib/supabase";
 import { IconAlert } from "../lib/icons";
+import { DiscordLinks } from "./DiscordLinks";
 
+type Tab = "web" | "discord";
 type SortKey = "signed_up_at" | "email" | "source";
 
 export function Users() {
+  const [tab, setTab] = useState<Tab>(() => {
+    if (typeof window === "undefined") return "web";
+    const hash = window.location.hash.replace(/^#/, "");
+    return hash === "discord" ? "discord" : "web";
+  });
+
+  useEffect(() => {
+    const next = `#${tab}`;
+    if (window.location.hash !== next) {
+      window.history.replaceState(null, "", `${window.location.pathname}${next}`);
+    }
+  }, [tab]);
+
+  return (
+    <div>
+      <div className="eyebrow" style={{ marginBottom: 10 }}>Users</div>
+      <h1 className="page-title">Everyone connected to FounderFirst.</h1>
+      <p className="page-sub">
+        People who've signed up on the website, or linked their Discord. One place per channel.
+      </p>
+
+      <div className="tabs" role="tablist" style={{ marginTop: 18, marginBottom: 18 }}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "web"}
+          className={`tab ${tab === "web" ? "active" : ""}`}
+          onClick={() => setTab("web")}
+        >
+          Web signups
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "discord"}
+          className={`tab ${tab === "discord" ? "active" : ""}`}
+          onClick={() => setTab("discord")}
+        >
+          Discord
+        </button>
+      </div>
+
+      {tab === "web" ? <WebSignups /> : <DiscordLinks embedded />}
+    </div>
+  );
+}
+
+function WebSignups() {
   const [rows, setRows] = useState<WaitlistRow[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -23,8 +73,6 @@ export function Users() {
     return () => { cancelled = true; };
   }, [search]);
 
-  // Discover columns from the first row. Pin a known order; fall back to keys
-  // we find. Hides internal columns we don't want shown by default.
   const HIDDEN = new Set(["id", "slug_seed", "updated_at"]);
   const PINNED: string[] = ["email", "source", "referred_by", "slug", "signed_up_at"];
   const columns = useMemo(() => {
@@ -70,10 +118,6 @@ export function Users() {
 
   return (
     <div>
-      <div className="eyebrow" style={{ marginBottom: 10 }}>Users · waitlist</div>
-      <h1 className="page-title">Everyone who's raised their hand.</h1>
-      <p className="page-sub">Waitlist signups from founderfirst.one. Click a row for full detail.</p>
-
       <div className="toolbar">
         <input
           type="search"

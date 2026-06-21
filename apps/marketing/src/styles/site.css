@@ -364,6 +364,8 @@ section.bg-white + section.bg-white { border-top: 1px solid var(--line); }
 .footer-logo { display: flex; align-items: center; gap: 9px; font-weight: var(--fw-semibold); color: var(--ink-2); font-size: 13px; }
 .footer-links { display: flex; gap: 24px; font-size: 13px; color: var(--ink-4); }
 .footer-links a:hover { color: var(--ink); }
+.footer-link-discord { display: inline-flex; align-items: center; gap: 6px; }
+.footer-link-discord svg { display: block; }
 .footer-copy { font-size: 12px; color: var(--ink-4); }
 
 /* ══════════════════════════════════════════

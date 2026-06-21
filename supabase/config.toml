@@ -5,3 +5,9 @@ verify_jwt = true
 
 [functions.notify-content-change]
 verify_jwt = false
+
+[functions.listening-intake]
+verify_jwt = false
+
+[functions.listening-digest]
+verify_jwt = false

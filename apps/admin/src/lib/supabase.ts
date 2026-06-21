@@ -521,3 +521,174 @@ export async function setLiveVoice(id: string): Promise<void> {
   const { error } = await db.rpc("set_live_voice", { p_id: id });
   if (error) throw new Error(`set_live_voice: ${error.message}`);
 }
+
+// ---- Signals (social listening + outreach) ---------------------------------
+// All RPCs are admin-gated server-side (is_admin) and audited via
+// log_admin_action. Mirrors the ticket wrappers above. See SIGNALS_SOLUTION.md.
+
+export interface SigItemRow {
+  id: string;
+  platform: string;
+  external_url: string | null;
+  author_handle: string | null;
+  title: string | null;
+  body: string | null;
+  posted_at: string | null;
+  captured_via: string;
+  status: "pending" | "scoring" | "scored" | "archived" | "promoted";
+  captured_at: string;
+  relevance: number | null;
+  intent: number | null;
+  pain_tags: string[] | null;
+  competitor: string | null;
+}
+
+export interface SigLeadRow {
+  id: string;
+  item_id: string;
+  stage: "new" | "reviewing" | "drafted" | "sent" | "replied" | "won" | "dead";
+  channel: "on_platform" | "email";
+  platform: string;
+  author_handle: string | null;
+  external_url: string | null;
+  title: string | null;
+  intent: number | null;
+  competitor: string | null;
+  has_draft: boolean;
+  sent_at: string | null;
+  created_at: string;
+}
+
+export interface SigKeywordRow {
+  id: string;
+  term: string;
+  kind: "pain" | "competitor";
+  enabled: boolean;
+  created_at: string;
+}
+
+export interface SigSourceRow {
+  id: string;
+  platform: string;
+  query: string | null;
+  captured_via: string;
+  enabled: boolean;
+  cadence_minutes: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const SIG_STAGES: SigLeadRow["stage"][] = [
+  "new", "reviewing", "drafted", "sent", "replied", "won", "dead",
+];
+
+export async function listSigItems(opts: {
+  status?: string | null;
+  platform?: string | null;
+  minIntent?: number | null;
+  limit?: number;
+} = {}): Promise<SigItemRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_sig_items", {
+    p_status: opts.status ?? null,
+    p_platform: opts.platform ?? null,
+    p_min_intent: opts.minIntent ?? null,
+    p_limit: opts.limit ?? 200,
+  });
+  if (error) throw new Error(`list_sig_items: ${error.message}`);
+  return (data as SigItemRow[]) ?? [];
+}
+
+export async function listSigLeads(stage?: string | null): Promise<SigLeadRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_sig_leads", {
+    p_stage: stage ?? null,
+    p_limit: 200,
+  });
+  if (error) throw new Error(`list_sig_leads: ${error.message}`);
+  return (data as SigLeadRow[]) ?? [];
+}
+
+export async function getSigLead(leadId: string): Promise<any> {
+  const db = getClient();
+  const { data, error } = await db.rpc("get_sig_lead", { p_lead_id: leadId });
+  if (error) throw new Error(`get_sig_lead: ${error.message}`);
+  return data;
+}
+
+export async function updateSigLeadStage(leadId: string, stage: string): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("update_sig_lead_stage", { p_lead_id: leadId, p_stage: stage });
+  if (error) throw new Error(`update_sig_lead_stage: ${error.message}`);
+}
+
+export async function saveSigLeadDraft(leadId: string, draft: string): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("save_sig_lead_draft", { p_lead_id: leadId, p_draft: draft });
+  if (error) throw new Error(`save_sig_lead_draft: ${error.message}`);
+}
+
+export async function markSigLeadSent(leadId: string, channel = "on_platform"): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("mark_sig_lead_sent", { p_lead_id: leadId, p_channel: channel });
+  if (error) throw new Error(`mark_sig_lead_sent: ${error.message}`);
+}
+
+export async function quickAddSigItem(input: {
+  platform: string;
+  url?: string | null;
+  title?: string | null;
+  body?: string | null;
+  authorHandle?: string | null;
+  authorUrl?: string | null;
+}): Promise<string> {
+  const db = getClient();
+  const { data, error } = await db.rpc("sig_quick_add_item", {
+    p_platform: input.platform,
+    p_external_url: input.url ?? null,
+    p_title: input.title ?? null,
+    p_body: input.body ?? null,
+    p_author_handle: input.authorHandle ?? null,
+    p_author_url: input.authorUrl ?? null,
+  });
+  if (error) throw new Error(`sig_quick_add_item: ${error.message}`);
+  return data as string;
+}
+
+export async function listSigKeywords(): Promise<SigKeywordRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_sig_keywords");
+  if (error) throw new Error(`list_sig_keywords: ${error.message}`);
+  return (data as SigKeywordRow[]) ?? [];
+}
+
+export async function upsertSigKeyword(input: {
+  term: string;
+  kind: "pain" | "competitor";
+  enabled?: boolean;
+  id?: string | null;
+}): Promise<string> {
+  const db = getClient();
+  const { data, error } = await db.rpc("upsert_sig_keyword", {
+    p_term: input.term,
+    p_kind: input.kind,
+    p_enabled: input.enabled ?? true,
+    p_id: input.id ?? null,
+  });
+  if (error) throw new Error(`upsert_sig_keyword: ${error.message}`);
+  return data as string;
+}
+
+export async function addSigIcpExample(body: string): Promise<string> {
+  const db = getClient();
+  const { data, error } = await db.rpc("add_sig_icp_example", { p_body: body });
+  if (error) throw new Error(`add_sig_icp_example: ${error.message}`);
+  return data as string;
+}
+
+export async function listSigSources(): Promise<SigSourceRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_sig_sources");
+  if (error) throw new Error(`list_sig_sources: ${error.message}`);
+  return (data as SigSourceRow[]) ?? [];
+}

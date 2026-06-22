@@ -117,6 +117,58 @@ export async function deleteChangelogEntry(id: string): Promise<void> {
   void logAudit("changelog.delete", "changelog_entry", id, {});
 }
 
+export interface DigestPreview {
+  entryCount: number;
+  recipientCount: number;
+  subject: string;
+  html: string;
+  text: string;
+}
+
+/** Render this week's digest exactly as recipients would see it — sends nothing. */
+export async function previewWeeklyDigest(): Promise<DigestPreview> {
+  const db = getClient();
+  const { data, error } = await db.functions.invoke("changelog-digest", {
+    body: { mode: "preview" },
+  });
+  if (error) throw new Error(`previewWeeklyDigest: ${error.message}`);
+  return data as DigestPreview;
+}
+
+/** Send this week's digest to all admins. Only an admin (the caller) can do this. */
+export async function sendWeeklyDigest(): Promise<{ sent: number; entryCount: number }> {
+  const db = getClient();
+  const { data, error } = await db.functions.invoke("changelog-digest", {
+    body: { mode: "send" },
+  });
+  if (error) throw new Error(`sendWeeklyDigest: ${error.message}`);
+  void logAudit("changelog.send_digest", "changelog", null, {
+    sent: data?.sent ?? 0,
+    entries: data?.entryCount ?? 0,
+  });
+  return { sent: data?.sent ?? 0, entryCount: data?.entryCount ?? 0 };
+}
+
+export interface DigestSend {
+  sent_at: string;
+  sent_by: string | null;
+  entry_count: number;
+  recipients: number;
+}
+
+/** The most recent digest send, for the "last sent" indicator. */
+export async function lastDigestSend(): Promise<DigestSend | null> {
+  const db = getClient();
+  const { data, error } = await db
+    .from("changelog_sends")
+    .select("sent_at, sent_by, entry_count, recipients")
+    .order("sent_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`lastDigestSend: ${error.message}`);
+  return (data as DigestSend) ?? null;
+}
+
 export interface DiscordLinkRow {
   id: string;
   email_normalized: string;

@@ -5,12 +5,12 @@
  * Sources → Feed → ⚙ Scoring → Leads. Sources bring posts in, the Feed scores
  * them, Scoring is the filter you tune, and the strong ones land in Leads (the
  * daily workspace we default to). Jargon in table headers (intent / pain /
- * stage / status) carries a hover hint via <Th hint>.
+ * stage / status) carries a hover hint, and columns sort on click via <SortTh>.
  * Built on the existing admin patterns: .toolbar + .chip filters, .table-wrap /
  * .data-table lists, and the .drawer-overlay / .drawer detail (same as Users /
  * Audit). All data via the admin-gated sig_* RPCs. See SIGNALS_SOLUTION.md.
  */
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   listSigItems,
@@ -136,12 +136,6 @@ const TERM_HINT: Record<string, string> = {
   competitor: "The accounting tool the post mentions, if any.",
 };
 
-// A <th> whose label carries a hover hint (dotted underline = “hover me”).
-function Th({ children, hint }: { children: string; hint?: string }) {
-  const tip = hint ?? TERM_HINT[children];
-  return <th>{tip ? <span className="sig-help" title={tip}>{children}</span> : children}</th>;
-}
-
 function fmt(iso: string | null): string {
   if (!iso) return "—";
   const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -150,6 +144,54 @@ function fmt(iso: string | null): string {
   const hrs = Math.round(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return new Date(iso).toLocaleDateString();
+}
+
+/* ---- Sorting --------------------------------------------------------------- */
+// Click a column header to sort; click again to flip, a third time to clear.
+// Sorting is client-side over the already-fetched rows. Empty values sort last.
+
+type SortDir = "asc" | "desc";
+interface SortState { key: string; dir: SortDir; }
+type Accessors<T> = Record<string, (r: T) => string | number | null | undefined>;
+
+function useTableSort<T>(rows: T[], accessors: Accessors<T>, initial: SortState | null = null) {
+  const [sort, setSort] = useState<SortState | null>(initial);
+  const sorted = useMemo(() => {
+    const acc = sort && accessors[sort.key];
+    if (!sort || !acc) return rows;
+    const dir = sort.dir === "asc" ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const va = acc(a), vb = acc(b);
+      const ea = va === null || va === undefined || va === "";
+      const eb = vb === null || vb === undefined || vb === "";
+      if (ea && eb) return 0;
+      if (ea) return 1;            // empties always last, regardless of direction
+      if (eb) return -1;
+      return (va! < vb! ? -1 : va! > vb! ? 1 : 0) * dir;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, sort]);
+  function toggle(key: string) {
+    setSort((s) => (s?.key === key ? (s.dir === "asc" ? { key, dir: "desc" } : null) : { key, dir: "asc" }));
+  }
+  return { sorted, sort, toggle };
+}
+
+/** A sortable column header. `label` doubles as the sort key unless `sortKey` is set. */
+function SortTh({ label, sortKey, sort, toggle, hint }: {
+  label: string; sortKey?: string; sort: SortState | null; toggle: (k: string) => void; hint?: string;
+}) {
+  const key = sortKey ?? label;
+  const active = sort?.key === key;
+  const tip = hint ?? TERM_HINT[label];
+  return (
+    <th>
+      <button type="button" className={`sig-sort ${active ? "is-active" : ""}`} onClick={() => toggle(key)} title={tip}>
+        {label}
+        <span className="sig-sort-arrow" aria-hidden="true">{active ? (sort!.dir === "asc" ? "↑" : "↓") : ""}</span>
+      </button>
+    </th>
+  );
 }
 
 /* ---- Sources --------------------------------------------------------------- */
@@ -184,6 +226,14 @@ function SourcesTab() {
   const [note, setNote] = useState("");
 
   const polled = sources.filter((s: SigSourceRow) => s.captured_via === "api_direct");
+  const { sorted, sort, toggle: sortBy } = useTableSort<SigSourceRow>(polled, {
+    platform:    (r) => platLabel(r.platform),
+    query:       (r) => (r.query || "").toLowerCase(),
+    every:       (r) => r.cadence_minutes ?? 360,
+    status:      (r) => (r.enabled ? 1 : 0),
+    found:       (r) => counts[r.id] ?? 0,
+    "last poll": (r) => r.last_polled_at,
+  });
 
   function refresh() { qc.invalidateQueries({ queryKey: ["sig-sources"] }); }
 
@@ -216,10 +266,18 @@ function SourcesTab() {
         <div className="table-wrap">
           <table className="data-table">
             <thead>
-              <tr><th>platform</th><th>query</th><th>every</th><th>status</th><th>found</th><th>last poll</th><th></th></tr>
+              <tr>
+                <SortTh label="platform" sort={sort} toggle={sortBy} />
+                <SortTh label="query" sort={sort} toggle={sortBy} />
+                <SortTh label="every" sort={sort} toggle={sortBy} hint="How often we poll this source." />
+                <SortTh label="status" sort={sort} toggle={sortBy} hint="Whether this source is actively polling." />
+                <SortTh label="found" sort={sort} toggle={sortBy} hint="Posts captured from this source." />
+                <SortTh label="last poll" sort={sort} toggle={sortBy} hint="When we last checked this source." />
+                <th></th>
+              </tr>
             </thead>
             <tbody>
-              {polled.map((s: SigSourceRow) => (
+              {sorted.map((s: SigSourceRow) => (
                 <tr key={s.id}>
                   <td>{platLabel(s.platform)}</td>
                   <td><span className="sig-strong">{s.query}</span></td>
@@ -267,9 +325,27 @@ const STATUS_FILTERS = ["all", "pending", "promoted", "archived"] as const;
 
 function FeedTab() {
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>("all");
+  const [platform, setPlatform] = useState("all");
   const { data = [], isPending, error } = useQuery({
     queryKey: ["sig-items", status],
     queryFn: () => listSigItems({ status: status === "all" ? null : status }),
+  });
+
+  const platforms = useMemo(
+    () => Array.from(new Set(data.map((d: SigItemRow) => d.platform).filter(Boolean))).sort(),
+    [data],
+  );
+  const filtered = useMemo(
+    () => (platform === "all" ? data : data.filter((d: SigItemRow) => d.platform === platform)),
+    [data, platform],
+  );
+  const { sorted, sort, toggle } = useTableSort<SigItemRow>(filtered, {
+    post:     (r) => (r.title || r.body || "").toLowerCase(),
+    platform: (r) => r.platform,
+    intent:   (r) => r.intent ?? null,
+    pain:     (r) => (r.pain_tags ?? []).join(", "),
+    status:   (r) => r.status,
+    when:     (r) => r.captured_at,
   });
 
   return (
@@ -281,6 +357,10 @@ function FeedTab() {
             {s}
           </button>
         ))}
+        <select className="sig-select" value={platform} onChange={(e) => setPlatform(e.target.value)} aria-label="Filter by platform">
+          <option value="all">all platforms</option>
+          {platforms.map((p) => <option key={p} value={p}>{p}</option>)}
+        </select>
       </div>
 
       {error && <p className="sig-note sig-note-err">{(error as Error).message}</p>}
@@ -292,10 +372,19 @@ function FeedTab() {
         <div className="table-wrap">
           <table className="data-table">
             <thead>
-              <tr><th>post</th><th>platform</th><Th>intent</Th><Th>pain</Th><Th>status</Th><th>when</th></tr>
+              <tr>
+                <SortTh label="post" sort={sort} toggle={toggle} />
+                <SortTh label="platform" sort={sort} toggle={toggle} />
+                <SortTh label="intent" sort={sort} toggle={toggle} />
+                <SortTh label="pain" sort={sort} toggle={toggle} />
+                <SortTh label="status" sort={sort} toggle={toggle} />
+                <SortTh label="when" sortKey="when" sort={sort} toggle={toggle} hint="When the post was captured." />
+              </tr>
             </thead>
             <tbody>
-              {data.map((it: SigItemRow) => (
+              {sorted.length === 0 ? (
+                <tr><td colSpan={6} className="sig-sub">No posts match this filter.</td></tr>
+              ) : sorted.map((it: SigItemRow) => (
                 <tr key={it.id}>
                   <td title={it.body ?? ""}>
                     <span className="sig-strong">{it.title || (it.body ?? "").slice(0, 70) || "—"}</span>
@@ -320,11 +409,29 @@ function FeedTab() {
 
 function LeadsTab() {
   const [stage, setStage] = useState<string>("all");
+  const [platform, setPlatform] = useState("all");
   const { data = [], isPending, error } = useQuery({
     queryKey: ["sig-leads", stage],
     queryFn: () => listSigLeads(stage === "all" ? null : stage),
   });
   const [openLead, setOpenLead] = useState<string | null>(null);
+
+  const platforms = useMemo(
+    () => Array.from(new Set(data.map((d: SigLeadRow) => d.platform).filter(Boolean))).sort(),
+    [data],
+  );
+  const filtered = useMemo(
+    () => (platform === "all" ? data : data.filter((d: SigLeadRow) => d.platform === platform)),
+    [data, platform],
+  );
+  const { sorted, sort, toggle } = useTableSort<SigLeadRow>(filtered, {
+    lead:     (r) => (r.title || r.author_handle || "").toLowerCase(),
+    platform: (r) => r.platform,
+    intent:   (r) => r.intent ?? null,
+    stage:    (r) => r.stage,
+    draft:    (r) => (r.has_draft ? 1 : 0),
+    when:     (r) => r.created_at,
+  });
 
   return (
     <div>
@@ -334,6 +441,10 @@ function LeadsTab() {
         {SIG_STAGES.map((s) => (
           <button key={s} className={`chip ${stage === s ? "active" : ""}`} onClick={() => setStage(s)}>{s}</button>
         ))}
+        <select className="sig-select" value={platform} onChange={(e) => setPlatform(e.target.value)} aria-label="Filter by platform">
+          <option value="all">all platforms</option>
+          {platforms.map((p) => <option key={p} value={p}>{p}</option>)}
+        </select>
       </div>
 
       {error && <p className="sig-note sig-note-err">{(error as Error).message}</p>}
@@ -345,10 +456,19 @@ function LeadsTab() {
         <div className="table-wrap">
           <table className="data-table">
             <thead>
-              <tr><th>lead</th><th>platform</th><Th>intent</Th><Th>stage</Th><th>draft</th><th>when</th></tr>
+              <tr>
+                <SortTh label="lead" sort={sort} toggle={toggle} />
+                <SortTh label="platform" sort={sort} toggle={toggle} />
+                <SortTh label="intent" sort={sort} toggle={toggle} />
+                <SortTh label="stage" sort={sort} toggle={toggle} />
+                <SortTh label="draft" sort={sort} toggle={toggle} hint="Whether an outreach draft is ready." />
+                <SortTh label="when" sort={sort} toggle={toggle} hint="When the lead was created." />
+              </tr>
             </thead>
             <tbody>
-              {data.map((l: SigLeadRow) => (
+              {sorted.length === 0 ? (
+                <tr><td colSpan={6} className="sig-sub">No leads match this filter.</td></tr>
+              ) : sorted.map((l: SigLeadRow) => (
                 <tr key={l.id} className="row-clickable" onClick={() => setOpenLead(l.id)}>
                   <td>
                     <span className="sig-strong">{l.title || l.author_handle || "Lead"}</span>

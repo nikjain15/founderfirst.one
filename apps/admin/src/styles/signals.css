@@ -12,6 +12,24 @@
 /* Jargon term with a hover hint — dotted underline signals "hover me". */
 .sig-help { border-bottom: 1px dotted var(--ink-3); cursor: help; }
 
+/* Sortable column header — a button that looks like the header label. */
+.sig-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.sig-sort:hover { color: var(--ink); }
+.sig-sort.is-active { color: var(--ink); font-weight: var(--fw-semibold); }
+.sig-sort-arrow { font-size: 0.85em; line-height: 1; min-width: 0.6em; }
+
 .sig-label {
   display: block;
   font-size: var(--fs-eyebrow);

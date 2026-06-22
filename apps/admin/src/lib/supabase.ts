@@ -69,6 +69,54 @@ export async function removeAdmin(email: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+// ---- Changelog ("What's new") ----------------------------------------------
+
+export type ChangelogKind = "new" | "improved" | "fixed";
+
+export interface ChangelogEntry {
+  id: string;
+  kind: ChangelogKind;
+  title: string;
+  body: string;
+  created_at: string;
+  created_by: string | null;
+}
+
+export async function listChangelog(): Promise<ChangelogEntry[]> {
+  const db = getClient();
+  const { data, error } = await db
+    .from("changelog_entries")
+    .select("id, kind, title, body, created_at, created_by")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`listChangelog: ${error.message}`);
+  return (data as ChangelogEntry[]) ?? [];
+}
+
+export async function addChangelogEntry(
+  entry: { kind: ChangelogKind; title: string; body: string },
+): Promise<ChangelogEntry> {
+  const db = getClient();
+  // created_by defaults to auth.email() in the DB; no need to pass it.
+  const { data, error } = await db
+    .from("changelog_entries")
+    .insert({ kind: entry.kind, title: entry.title.trim(), body: entry.body.trim() })
+    .select("id, kind, title, body, created_at, created_by")
+    .single();
+  if (error) throw new Error(error.message);
+  void logAudit("changelog.add", "changelog_entry", data.id, {
+    kind: entry.kind,
+    title: entry.title.trim(),
+  });
+  return data as ChangelogEntry;
+}
+
+export async function deleteChangelogEntry(id: string): Promise<void> {
+  const db = getClient();
+  const { error } = await db.from("changelog_entries").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  void logAudit("changelog.delete", "changelog_entry", id, {});
+}
+
 export interface DiscordLinkRow {
   id: string;
   email_normalized: string;

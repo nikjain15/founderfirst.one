@@ -1,0 +1,226 @@
+/*
+ * How it works — in-app guide page.
+ * Fluid layout, token-driven. No hardcoded widths in horizontal layouts.
+ */
+
+.docs {
+  max-width: 72ch;
+}
+
+/* ---- Contents rail ------------------------------------------------------ */
+
+.docs-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: var(--gap-section, 40px);
+}
+.docs-toc-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--white);
+  color: var(--ink-2);
+  font-size: var(--fs-data-row);
+  font-weight: var(--fw-medium);
+  text-decoration: none;
+  transition: border-color var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+.docs-toc-link:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+/* ---- Sections ----------------------------------------------------------- */
+
+.docs-section {
+  padding: clamp(20px, 3vw, 28px);
+  margin-bottom: 20px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card-emph, var(--r-card));
+  box-shadow: var(--shadow-card);
+  scroll-margin-top: 24px;
+}
+.docs-section-head {
+  margin-bottom: 18px;
+}
+.docs-section-title {
+  font-size: var(--fs-h3, 20px);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight);
+  line-height: 1.2;
+  color: var(--ink);
+  margin: 6px 0 6px;
+}
+.docs-section-lede {
+  color: var(--ink-3);
+  font-size: var(--fs-data-row);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ---- Feature list ------------------------------------------------------- */
+
+.docs-features {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+.docs-feature {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.4fr) 1fr;
+  gap: 6px 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.docs-feature dt {
+  font-weight: var(--fw-semibold);
+  color: var(--ink);
+  font-size: var(--fs-data-row);
+}
+.docs-feature dd {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--fs-data-row);
+  line-height: 1.55;
+}
+
+/* Stack the term over its description on narrow viewports. */
+@media (max-width: 640px) {
+  .docs-feature {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+/* ---- What's new (changelog) --------------------------------------------- */
+
+.whatsnew-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.whatsnew-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.whatsnew-seen {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--income);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-data-row);
+}
+.whatsnew-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--income);
+}
+
+/* Composer */
+.whatsnew-composer {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  margin-bottom: 18px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+}
+.whatsnew-composer-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.whatsnew-title-input,
+.whatsnew-body-input {
+  font-family: inherit;
+  font-size: 16px;            /* DS: ≥16px prevents iOS zoom */
+  color: var(--ink);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+.whatsnew-title-input { flex: 1 1 240px; min-height: var(--tap-min); }
+.whatsnew-body-input { resize: vertical; line-height: 1.55; }
+.whatsnew-title-input:focus,
+.whatsnew-body-input:focus { border-color: var(--ink); }
+.whatsnew-composer-actions { display: flex; justify-content: flex-end; }
+.whatsnew-err { margin: 0; color: var(--error); font-size: var(--fs-data-row); }
+
+/* Timeline */
+.whatsnew-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.whatsnew-item {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.whatsnew-item.is-new {
+  margin: 0 -12px;
+  padding: 14px 12px 0;
+  border-top-color: transparent;
+  background: var(--income-bg);
+  border-radius: var(--r-card);
+}
+.whatsnew-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+.whatsnew-kind {
+  flex: 0 0 auto;
+  font-size: var(--fs-eyebrow);
+  letter-spacing: var(--ls-chip);
+  text-transform: uppercase;
+  font-weight: var(--fw-bold);
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  border: 1px solid currentColor;
+}
+.whatsnew-kind.kind-new { color: var(--income); }
+.whatsnew-kind.kind-improved { color: var(--amber); }
+.whatsnew-kind.kind-fixed { color: var(--ink-3); }
+.whatsnew-item-title {
+  font-weight: var(--fw-semibold);
+  color: var(--ink);
+  font-size: var(--fs-data-row);
+}
+.whatsnew-item-meta {
+  color: var(--ink-4);
+  font-size: var(--fs-eyebrow);
+}
+.whatsnew-del {
+  margin-left: auto;
+  font-size: var(--fs-eyebrow);
+}
+.whatsnew-item-body {
+  margin: 6px 0 0;
+  color: var(--ink-2);
+  font-size: var(--fs-data-row);
+  line-height: 1.55;
+}
+.whatsnew-item-by {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--ink-4);
+  font-size: var(--fs-eyebrow);
+}

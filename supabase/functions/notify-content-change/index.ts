@@ -22,6 +22,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { BRAND, emailShell, escapeHtml } from "../_shared/email.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin":  "*",
@@ -83,27 +84,18 @@ Deno.serve(async (req) => {
   const author    = body.author_email ?? "Someone";
   const subject   = `Penny's brain updated — ${kindLabel} v${body.version} is live`;
   const noteHtml  = body.notes
-    ? `<p style="margin:16px 0 0;color:#5a5a5a;font-size:13px;font-style:italic;">"${escapeHtml(body.notes)}"</p>`
+    ? `<p style="margin:16px 0 0;color:${BRAND.ink3};font-size:13px;font-style:italic;">"${escapeHtml(body.notes)}"</p>`
     : "";
 
-  const html = `<!doctype html>
-<html><body style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#0a0a0a;background:#f6f6f4;margin:0;padding:24px;">
-  <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e8e8e5;border-radius:12px;padding:24px;">
-    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5a5a5a;margin-bottom:8px;">Penny's brain</div>
-    <h1 style="font-size:18px;margin:0 0 12px;color:#0a0a0a;">${kindLabel} v${body.version} is live.</h1>
-    <p style="margin:0;color:#2a2a2a;font-size:14px;line-height:1.5;">
-      <strong>${escapeHtml(author)}</strong> published a new version of the ${kindLabel.toLowerCase()}.
-      It's now active on every Penny surface — site bubble, support bot, in-product Penny.
-    </p>
-    ${noteHtml}
-    <p style="margin:24px 0 0;">
-      <a href="${reviewUrl}" style="display:inline-block;background:#0a0a0a;color:#fff;text-decoration:none;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:600;">Review the change →</a>
-    </p>
-    <p style="margin:24px 0 0;color:#8a8a8a;font-size:12px;line-height:1.5;">
-      You're receiving this because you're an admin on FounderFirst. If you published this change yourself, you won't see this email.
-    </p>
-  </div>
-</body></html>`;
+  const html = emailShell({
+    eyebrow: "Penny's brain",
+    title: `${kindLabel} v${body.version} is live.`,
+    body: `<p style="margin:0;color:${BRAND.ink2};font-size:14px;line-height:1.5;">` +
+      `<strong>${escapeHtml(author)}</strong> published a new version of the ${kindLabel.toLowerCase()}. ` +
+      `It's now active on every Penny surface — site bubble, support bot, in-product Penny.</p>${noteHtml}`,
+    cta: { label: "Review the change →", href: reviewUrl },
+    footer: "You're receiving this because you're an admin on FounderFirst. If you published this change yourself, you won't see this email.",
+  });
 
   const text = `${kindLabel} v${body.version} is live on Penny's brain.\n\n${author} just published it. It's now active on every Penny surface.\n${body.notes ? `\n"${body.notes}"\n` : ""}\nReview: ${reviewUrl}\n`;
 
@@ -142,11 +134,3 @@ Deno.serve(async (req) => {
   }
   return json({ ok: true, sent: recipients.length });
 });
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}

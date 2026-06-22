@@ -19,6 +19,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { BRAND, emailShell, escapeHtml } from "../_shared/email.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin":  "*",
@@ -31,10 +32,6 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 type Lead = {
@@ -74,45 +71,41 @@ Deno.serve(async (req) => {
   if (!recipients.length) return json({ ok: true, sent: 0, reason: "no_recipients" });
 
   const adminUrl = Deno.env.get("ADMIN_URL") ?? "https://founderfirst.one/admin";
-  const leadsUrl = `${adminUrl}/signals#leads`;
+  // Signals is a sub-tab under Audience; deep-link via the hash. The old
+  // /signals#leads path redirects but loses the fragment, so link directly.
+  const leadsUrl = `${adminUrl}/audience#signals`;
 
   const leadRows = leads.slice(0, 15).map((l) => {
     const who = escapeHtml(l.author || "unknown");
     const what = escapeHtml(l.title || "—");
-    const link = l.url ? ` · <a href="${escapeHtml(l.url)}">source ↗</a>` : "";
+    const link = l.url ? ` · <a href="${escapeHtml(l.url)}" style="color:${BRAND.ink};text-decoration:underline;">source ↗</a>` : "";
     const tag = l.competitor ? ` · ${escapeHtml(l.competitor)}` : "";
     return `<tr>
-      <td style="padding:8px 0;border-bottom:1px solid #eee;font-size:14px;">
-        <strong>${who}</strong> <span style="color:#888;">(${escapeHtml(l.platform)}${tag})</span><br/>
-        <span style="color:#444;">${what}</span>${link}
+      <td style="padding:10px 0;border-bottom:1px solid ${BRAND.line};font-size:14px;color:${BRAND.ink2};">
+        <strong style="color:${BRAND.ink};">${who}</strong> <span style="color:${BRAND.ink4};">(${escapeHtml(l.platform)}${tag})</span><br/>
+        <span style="color:${BRAND.ink2};">${what}</span>${link}
       </td>
-      <td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;font-size:14px;white-space:nowrap;">
-        intent <strong>${l.intent ?? "—"}</strong>
+      <td style="padding:10px 0;border-bottom:1px solid ${BRAND.line};text-align:right;font-size:14px;white-space:nowrap;color:${BRAND.ink3};">
+        intent <strong style="color:${BRAND.ink};">${l.intent ?? "—"}</strong>
       </td>
     </tr>`;
   }).join("");
 
   const compLine = competitors.length
-    ? `<p style="margin:16px 0 0;color:#444;font-size:13px;">Competitor mentions (24h): ${
-        competitors.map((c) => `<strong>${escapeHtml(c.name)}</strong> ${c.count}`).join(" · ")
+    ? `<p style="margin:16px 0 0;color:${BRAND.ink3};font-size:13px;">Competitor mentions (24h): ${
+        competitors.map((c) => `<strong style="color:${BRAND.ink};">${escapeHtml(c.name)}</strong> ${c.count}`).join(" · ")
       }</p>`
     : "";
 
   const subject = `Signals — ${leads.length} new lead${leads.length === 1 ? "" : "s"} today`;
 
-  const html = `<!doctype html>
-<html><body style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#0a0a0a;background:#f6f6f4;margin:0;padding:24px;">
-  <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e8e8e5;border-radius:12px;padding:24px;">
-    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5a5a5a;margin-bottom:8px;">FounderFirst · Signals</div>
-    <h1 style="font-size:18px;margin:0 0 4px;">${leads.length} new lead${leads.length === 1 ? "" : "s"} in the last 24h.</h1>
-    <p style="margin:0 0 16px;color:#5a5a5a;font-size:13px;">Highest-intent first. Review, approve a draft, and reach out.</p>
-    <table style="width:100%;border-collapse:collapse;">${leadRows}</table>
-    ${compLine}
-    <p style="margin:24px 0 0;">
-      <a href="${leadsUrl}" style="display:inline-block;background:#0a0a0a;color:#fff;text-decoration:none;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:600;">Open Signals →</a>
-    </p>
-  </div>
-</body></html>`;
+  const html = emailShell({
+    eyebrow: "FounderFirst · Signals",
+    title: `${leads.length} new lead${leads.length === 1 ? "" : "s"} in the last 24h.`,
+    intro: "Highest-intent first. Review, approve a draft, and reach out.",
+    body: `<table style="width:100%;border-collapse:collapse;">${leadRows}</table>${compLine}`,
+    cta: { label: "Open Signals →", href: leadsUrl },
+  });
 
   const text = `Signals — ${leads.length} new lead(s) in the last 24h.\n\n` +
     leads.slice(0, 15).map((l) => `• ${l.author || "unknown"} (${l.platform}${l.competitor ? ", " + l.competitor : ""}) — intent ${l.intent ?? "—"}\n  ${l.title || ""}${l.url ? "\n  " + l.url : ""}`).join("\n") +

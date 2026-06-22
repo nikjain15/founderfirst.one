@@ -90,6 +90,7 @@ Deno.serve(async (req) => {
   const html = emailShell({
     eyebrow: "Penny's brain",
     title: `${kindLabel} v${body.version} is live.`,
+    preheader: `${author} just changed how Penny responds across every surface.`,
     body: `<p style="margin:0;color:${BRAND.ink2};font-size:14px;line-height:1.5;">` +
       `<strong>${escapeHtml(author)}</strong> published a new version of the ${kindLabel.toLowerCase()}. ` +
       `It's now active on every Penny surface — site bubble, support bot, in-product Penny.</p>${noteHtml}`,

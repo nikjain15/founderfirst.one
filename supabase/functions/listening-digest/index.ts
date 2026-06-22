@@ -99,10 +99,14 @@ Deno.serve(async (req) => {
 
   const subject = `Signals — ${leads.length} new lead${leads.length === 1 ? "" : "s"} today`;
 
+  const topIntent = leads[0]?.intent ?? null;
   const html = emailShell({
     eyebrow: "FounderFirst · Signals",
     title: `${leads.length} new lead${leads.length === 1 ? "" : "s"} in the last 24h.`,
     intro: "Highest-intent first. Review, approve a draft, and reach out.",
+    preheader: topIntent != null
+      ? `Top lead scores ${topIntent}/100 intent — review and reach out before it cools.`
+      : "Fresh high-intent leads are waiting for a reply.",
     body: `<table style="width:100%;border-collapse:collapse;">${leadRows}</table>${compLine}`,
     cta: { label: "Open Signals →", href: leadsUrl },
   });

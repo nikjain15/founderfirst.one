@@ -59,10 +59,14 @@ function renderDigest(entries: Entry[], whatsNewUrl: string) {
   }).join("");
 
   const subject = `What's new at FounderFirst this week`;
+  const topShipped = entries[0]?.title ? escapeHtml(entries[0].title) : "";
   const html = emailShell({
     eyebrow: "FounderFirst · What's new",
     title: "Here's what we shipped this week.",
     intro: "Newest first.",
+    preheader: topShipped
+      ? `Including: ${topShipped} — and ${Math.max(entries.length - 1, 0)} more update${entries.length === 2 ? "" : "s"}.`
+      : "Everything we shipped this week, newest first.",
     body: `<table style="width:100%;border-collapse:collapse;">${rows}</table>`,
     cta: { label: "See it in the admin →", href: whatsNewUrl },
     footer: "You're getting this because you're a FounderFirst admin. It goes out weekly when an admin sends it.",
@@ -80,6 +84,7 @@ function renderReminder(count: number, whatsNewUrl: string) {
     eyebrow: "FounderFirst · What's new",
     title: "This week's digest is ready to review.",
     intro: `There ${count === 1 ? "is" : "are"} <strong>${count}</strong> update${count === 1 ? "" : "s"} from this week. Take a look, then send it to the team when you're happy.`,
+    preheader: `${count} update${count === 1 ? "" : "s"} ready to review before they go to the team.`,
     cta: { label: "Review &amp; send →", href: whatsNewUrl },
   });
   const text = `This week's digest is ready to review.\n\n` +

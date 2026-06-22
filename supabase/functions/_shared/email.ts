@@ -54,6 +54,13 @@ export interface EmailShellOptions {
   cta?: { label: string; href: string };
   /** Optional muted footer line (safe HTML). */
   footer?: string;
+  /**
+   * Inbox preview text — the snippet shown after the subject in most clients.
+   * The single biggest open-rate lever after the subject line. Keep it ~40-90
+   * chars, complement the subject (don't repeat it), and front-load value.
+   * Plain text only; rendered hidden so it never shows inside the email.
+   */
+  preheader?: string;
 }
 
 /**
@@ -71,6 +78,11 @@ export function emailShell(opts: EmailShellOptions): string {
   const footer = opts.footer
     ? `<p style="margin:24px 0 0;color:${BRAND.ink4};font-size:12px;line-height:1.5;">${opts.footer}</p>`
     : "";
+  // Hidden inbox-preview snippet. The trailing zero-width chars stop the client
+  // from leaking the email body into the preview after the preheader ends.
+  const preheader = opts.preheader
+    ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:${BRAND.paper};opacity:0;">${escapeHtml(opts.preheader)}${"&#847;&zwnj;&nbsp;".repeat(40)}</div>`
+    : "";
 
   return `<!doctype html>
 <html>
@@ -82,6 +94,7 @@ export function emailShell(opts: EmailShellOptions): string {
   <!--<![endif]-->
 </head>
 <body style="font-family:${BRAND.font};color:${BRAND.ink};background:${BRAND.paper};margin:0;padding:24px;-webkit-font-smoothing:antialiased;">
+  ${preheader}
   <div style="max-width:560px;margin:0 auto;background:${BRAND.white};border:1px solid ${BRAND.line};border-radius:12px;padding:28px;">
     <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:${BRAND.ink3};font-weight:600;margin-bottom:10px;">${opts.eyebrow}</div>
     <h1 style="font-size:21px;line-height:1.25;letter-spacing:-0.022em;font-weight:700;color:${BRAND.ink};margin:0 0 6px;">${opts.title}</h1>

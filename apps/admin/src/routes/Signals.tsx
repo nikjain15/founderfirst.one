@@ -130,7 +130,7 @@ function Badge({ value, map }: { value: string; map: Record<string, string> }) {
 const TERM_HINT: Record<string, string> = {
   intent: "How urgently this person needs help right now (0–100). Higher = stronger buying signal.",
   pain: "The bookkeeping pain themes we detected in the post.",
-  status: "Where the post sits in the pipeline: pending → scored → promoted (became a lead) or archived.",
+  status: "Where the post sits in the pipeline: pending (awaiting scoring) → promoted (cleared the intent bar, became a lead) or archived (scored below the bar).",
   stage: "Where the lead sits in your outreach: new → reviewing → drafted → sent → replied → won (or dead).",
   relevance: "How closely the post matches your Scoring examples.",
   competitor: "The accounting tool the post mentions, if any.",
@@ -261,7 +261,9 @@ function SourcesTab() {
 
 /* ---- Feed ------------------------------------------------------------------ */
 
-const STATUS_FILTERS = ["all", "pending", "scored", "promoted", "archived"] as const;
+// "scored" is omitted on purpose: the worker never rests a post there — it goes
+// pending → promoted or archived. A "scored" chip would always be empty.
+const STATUS_FILTERS = ["all", "pending", "promoted", "archived"] as const;
 
 function FeedTab() {
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>("all");

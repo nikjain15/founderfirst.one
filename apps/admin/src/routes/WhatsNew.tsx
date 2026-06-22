@@ -10,8 +10,12 @@ import {
   listChangelog,
   addChangelogEntry,
   deleteChangelogEntry,
+  previewWeeklyDigest,
+  sendWeeklyDigest,
+  lastDigestSend,
   type ChangelogEntry,
   type ChangelogKind,
+  type DigestPreview,
 } from "../lib/supabase";
 
 const SEEN_KEY = "ff.admin.changelog.lastSeenAt";
@@ -80,6 +84,40 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
     addMut.mutate();
   }
 
+  // ---- Weekly digest: review then send --------------------------------------
+  const sevenDaysAgo = useMemo(() => Date.now() - 7 * 86_400_000, []);
+  const thisWeekCount = useMemo(
+    () => entries.filter((e) => new Date(e.created_at).getTime() >= sevenDaysAgo).length,
+    [entries, sevenDaysAgo],
+  );
+
+  const { data: lastSend } = useQuery({ queryKey: ["changelog-last-send"], queryFn: lastDigestSend });
+
+  const [preview, setPreview] = useState<DigestPreview | null>(null);
+  const [digestMsg, setDigestMsg] = useState<string | null>(null);
+
+  const previewMut = useMutation({
+    mutationFn: previewWeeklyDigest,
+    onSuccess: (d) => { setPreview(d); setDigestMsg(null); },
+    onError: (e) => setDigestMsg((e as Error).message),
+  });
+
+  const sendMut = useMutation({
+    mutationFn: sendWeeklyDigest,
+    onSuccess: (r) => {
+      setPreview(null);
+      setDigestMsg(`Sent to ${r.sent} admin${r.sent === 1 ? "" : "s"}.`);
+      void qc.invalidateQueries({ queryKey: ["changelog-last-send"] });
+    },
+    onError: (e) => setDigestMsg((e as Error).message),
+  });
+
+  function onSendDigest() {
+    if (!preview) return;
+    if (!confirm(`Send this week's digest to ${preview.recipientCount} admin(s)?`)) return;
+    sendMut.mutate();
+  }
+
   function onDelete(entry: ChangelogEntry) {
     if (!confirm(`Remove “${entry.title}” from What's new?`)) return;
     delMut.mutate(entry.id);
@@ -106,6 +144,54 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
           </button>
         </div>
       </div>
+
+      <div className="whatsnew-digest">
+        <div className="whatsnew-digest-info">
+          <strong>Weekly digest</strong>
+          <span className="whatsnew-digest-sub">
+            {thisWeekCount} update{thisWeekCount === 1 ? "" : "s"} from the last 7 days · sends to all admins, only when you click send.
+          </span>
+          {lastSend && (
+            <span className="whatsnew-digest-last">
+              Last sent {relDate(lastSend.sent_at)}
+              {lastSend.sent_by ? ` by ${lastSend.sent_by}` : ""} to {lastSend.recipients} admin{lastSend.recipients === 1 ? "" : "s"}.
+            </span>
+          )}
+        </div>
+        {!preview && (
+          <button
+            type="button"
+            className="btn"
+            onClick={() => previewMut.mutate()}
+            disabled={previewMut.isPending || thisWeekCount === 0}
+            title={thisWeekCount === 0 ? "Nothing shipped in the last 7 days" : ""}
+          >
+            {previewMut.isPending ? "Loading…" : "Review & send →"}
+          </button>
+        )}
+      </div>
+
+      {preview && (
+        <div className="whatsnew-preview">
+          <div className="whatsnew-preview-head">
+            <div>
+              <strong>Preview</strong>
+              <span className="whatsnew-digest-sub">
+                Subject: “{preview.subject}” · goes to {preview.recipientCount} admin{preview.recipientCount === 1 ? "" : "s"}
+              </span>
+            </div>
+            <button type="button" className="btn-link" onClick={() => setPreview(null)}>Cancel</button>
+          </div>
+          <iframe className="whatsnew-preview-frame" title="Digest preview" srcDoc={preview.html} />
+          <div className="whatsnew-preview-actions">
+            <button type="button" className="btn" onClick={onSendDigest} disabled={sendMut.isPending}>
+              {sendMut.isPending ? "Sending…" : `Send to ${preview.recipientCount} admin${preview.recipientCount === 1 ? "" : "s"}`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {digestMsg && <p className="whatsnew-digest-msg">{digestMsg}</p>}
 
       {open && (
         <form className="whatsnew-composer" onSubmit={onAdd}>

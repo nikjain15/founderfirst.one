@@ -78,7 +78,7 @@ export function DiscordLinks({ embedded = false }: DiscordLinksProps = {}) {
           <input
             id="discord-search"
             type="search"
-            placeholder="riddhi@gmail.com"
+            placeholder="name@example.com, username, or Discord id"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

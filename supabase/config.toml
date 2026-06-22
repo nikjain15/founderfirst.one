@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.listening-digest]
 verify_jwt = false
+
+[functions.changelog-digest]
+verify_jwt = false

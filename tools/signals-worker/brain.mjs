@@ -122,6 +122,29 @@ ${post.slice(0, 4000)}`;
   return text;
 }
 
+// ---- Generic completion (managed — Anthropic) -----------------------------
+// Used by the daily sourcing optimizer to generate candidate queries.
+export async function generate(system, user, { maxTokens = 700 } = {}) {
+  if (!cfg.anthropicKey) throw new Error("generate: ANTHROPIC_API_KEY not set");
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": cfg.anthropicKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: cfg.draftModel,
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: "user", content: user }],
+    }),
+  });
+  if (!res.ok) throw new Error(`generate: anthropic ${res.status} ${await res.text()}`);
+  const data = await res.json();
+  return (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+}
+
 export const brainConfig = cfg;
 
 function clampInt(v, lo, hi) {

@@ -103,6 +103,18 @@ Deno.serve(async (req) => {
   const plural = n === 1 ? "" : "s";
   const topIntent = topIntentVal || "—"; // we only reach here on a hot lead or floor
 
+  // The daily sourcing optimizer saves its run as a "Brain" report. Fold its
+  // headline learnings into the digest so admins see market pain + tuning
+  // suggestions without opening the Scoring tab. Additive — never blocks a send.
+  // deno-lint-ignore no-explicit-any
+  const { data: optRow } = await supa.from("sig_settings").select("value").eq("key", "optimizer_last_run").maybeSingle();
+  // deno-lint-ignore no-explicit-any
+  const opt: any = optRow?.value ?? null;
+  const optThemes = (opt?.pain_themes ?? []).slice(0, 5) as Array<{ tag: string; count: number }>;
+  const optSuggest = (opt?.threshold_suggestions ?? []) as string[];
+  const optProposed = (opt?.proposed ?? []) as Array<{ query: string }>;
+  const hasOpt = !!opt && (optThemes.length > 0 || optSuggest.length > 0 || optProposed.length > 0);
+
   // Dynamic body block — built with the resolved brand so colors track email_brand.
   const buildBody = (brand: typeof BRAND) => {
     const leadRows = leads.slice(0, 15).map((l) => {
@@ -125,12 +137,28 @@ Deno.serve(async (req) => {
           competitors.map((c) => `<strong style="color:${brand.ink};">${escapeHtml(c.name)}</strong> ${c.count}`).join(" · ")
         }</p>`
       : "";
-    return `<table style="width:100%;border-collapse:collapse;">${leadRows}</table>${compLine}`;
+
+    // Optimizer "Brain" section — pain themes, proposals to review, tuning tips.
+    const optBlock = !hasOpt ? "" : `
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid ${brand.line};">
+        <p style="margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:${brand.ink4};">Sourcing optimizer · last run</p>
+        ${optThemes.length ? `<p style="margin:0 0 8px;font-size:14px;color:${brand.ink2};">Top pain this week: ${optThemes.map((t) => `<strong style="color:${brand.ink};">${escapeHtml(t.tag)}</strong> ${t.count}`).join(" · ")}</p>` : ""}
+        ${optProposed.length ? `<p style="margin:0 0 8px;font-size:14px;color:${brand.ink2};">${optProposed.length} new quer${optProposed.length === 1 ? "y" : "ies"} proposed — review &amp; enable in the Sources tab.</p>` : ""}
+        ${optSuggest.length ? `<ul style="margin:8px 0 0;padding-left:18px;color:${brand.ink3};font-size:13px;">${optSuggest.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ul>` : ""}
+      </div>`;
+
+    return `<table style="width:100%;border-collapse:collapse;">${leadRows}</table>${compLine}${optBlock}`;
   };
 
   const buildText = () => `${n} new lead${plural}, highest-intent first.\n\n` +
     leads.slice(0, 15).map((l) => `• ${l.author || "unknown"} (${l.platform}${l.competitor ? ", " + l.competitor : ""}) — intent ${l.intent ?? "—"}\n  ${l.title || ""}${l.url ? "\n  " + l.url : ""}`).join("\n") +
     (competitors.length ? `\n\nCompetitor mentions: ${competitors.map((c) => `${c.name} ${c.count}`).join(", ")}` : "") +
+    (hasOpt
+      ? `\n\nSourcing optimizer (last run):` +
+        (optThemes.length ? `\n  Top pain: ${optThemes.map((t) => `${t.tag} ${t.count}`).join(", ")}` : "") +
+        (optProposed.length ? `\n  ${optProposed.length} new quer${optProposed.length === 1 ? "y" : "ies"} proposed — review in Sources.` : "") +
+        (optSuggest.length ? `\n  ${optSuggest.join("\n  ")}` : "")
+      : "") +
     `\n\nOpen Signals: ${leadsUrl}\n`;
 
   const result = await sendEmail({

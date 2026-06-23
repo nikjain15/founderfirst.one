@@ -99,6 +99,23 @@
   margin-top: 6px;
 }
 .sig-history-item { border-left: 2px solid var(--line); padding-left: 10px; }
+
+/* ---- Analytics → Signals: trend bars + voice-of-market cards ---- */
+.sig-trend { display: flex; flex-direction: column; gap: 8px; }
+.sig-trend-row { display: grid; grid-template-columns: minmax(90px, 1fr) 2fr auto auto; align-items: center; gap: 10px; }
+.sig-trend-label { font-size: 13px; color: var(--ink-2); text-transform: capitalize; }
+.sig-trend-track { height: 8px; background: var(--paper); border-radius: 999px; overflow: hidden; }
+.sig-trend-track > span { display: block; height: 100%; background: var(--ink); border-radius: 999px; }
+.sig-trend-val { font-size: 13px; color: var(--ink); min-width: 28px; text-align: right; }
+.sig-trend-delta { font-size: 12px; color: var(--ink-3); min-width: 44px; text-align: right; }
+.sig-trend-delta.up { color: var(--income); }
+.sig-trend-delta.down { color: var(--error); }
+
+.sig-voice { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.sig-voice-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-card); padding: 12px 14px; }
+.sig-voice-text { margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.sig-voice-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-3); }
+.sig-voice-meta a { white-space: nowrap; }
 .sig-history-meta { font-size: 12px; color: var(--ink-3); margin-bottom: 2px; }
 .sig-history-body { font-size: 13px; color: var(--ink-2); line-height: 1.5; white-space: pre-wrap; }
 

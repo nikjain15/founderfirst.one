@@ -47,16 +47,18 @@ Judge how strongly the AUTHOR personally needs a bookkeeping/accounting solution
   "role": <"needs_help" | "offering_services" | "hiring" | "other">
 }
 ROLE — read carefully:
-- "needs_help": the author is a BUSINESS OWNER / founder / freelancer / solopreneur who needs bookkeeping or accounting done for THEIR OWN business.
-- "offering_services": the author sells bookkeeping/accounting services.
-- "hiring": the author is recruiting or posting a job.
-- "other": anything else — INCLUDING a bookkeeper / accountant / CPA / tax pro discussing their own practice, pricing, software, or their CLIENTS. These are industry peers, NOT our customers, even if they describe a "catch-up" or a messy client — they are not "needs_help".
+- "needs_help": the author is a BUSINESS OWNER / founder / freelancer / solopreneur who needs bookkeeping or accounting for THEIR OWN business — INCLUDING looking for, seeking, wanting to hire, or asking for recommendations for a bookkeeper or bookkeeping service. A buyer searching for a provider is needs_help.
+- "offering_services": the author SELLS bookkeeping/accounting services (promoting their own firm, rates, or an ad).
+- "hiring": ONLY a formal EMPLOYMENT job posting for a W-2/payroll employee (salary, benefits, "join our team"). "Looking for a bookkeeper" by an owner is NOT hiring — it's needs_help.
+- "other": anything else — INCLUDING a bookkeeper / accountant / CPA / tax pro discussing their own practice, pricing, software, or their CLIENTS. These are industry peers, NOT our customers, even if they describe a "catch-up" or a messy client.
 
 Examples:
-- "I got a 3-year catch-up opportunity and put together a flat-rate proposal for a law firm with a trust account..." => role "other" (the author is the bookkeeper pricing client work), intent 0.
-- "How do you fellow bookkeepers onboard a messy client?" => role "other", intent 0.
-- "I run a law firm and our books are 3 years behind — I need someone to clean them up before taxes." => role "needs_help", high intent.
-- "QuickBooks keeps crashing and I can't reconcile my own small business — is there a better option?" => role "needs_help".
+- "I got a 3-year catch-up opportunity and put together a flat-rate proposal for a law firm..." => role "other" (the author is the bookkeeper pricing client work), intent 0.
+- "Attention business owners: our firm offers affordable bookkeeping, DM for rates." => role "offering_services", intent 0.
+- "Looking for a bookkeeper for my small business — any recommendations?" => role "needs_help", high intent.
+- "Seeking bookkeeper recommendations in the Bay Area for my LLC." => role "needs_help".
+- "We're hiring a full-time staff bookkeeper, $65k + benefits, join our team." => role "hiring", intent 0.
+- "QuickBooks keeps crashing and I can't reconcile my own small business — better option?" => role "needs_help".
 
 Score intent HIGH only when role is "needs_help" with genuine, current pain or an active search for help. Score 0 for every other role, and for news, ads, or generic chat. Do not add any text outside the JSON.`;
 

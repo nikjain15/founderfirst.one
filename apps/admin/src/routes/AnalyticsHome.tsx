@@ -3,14 +3,16 @@ import { AnalyticsSupport } from "./Analytics";
 import { AnalyticsWaitlist } from "./AnalyticsWaitlist";
 import { AnalyticsProduct } from "./AnalyticsProduct";
 import { AnalyticsMarketing } from "./AnalyticsMarketing";
+import { AnalyticsSignals } from "./AnalyticsSignals";
 
-type Tab = "waitlist" | "product" | "marketing" | "support";
+type Tab = "waitlist" | "product" | "marketing" | "support" | "signals";
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "waitlist",  label: "Waitlist"  },
   { id: "product",   label: "Product"   },
   { id: "marketing", label: "Marketing" },
   { id: "support",   label: "Support"   },
+  { id: "signals",   label: "Signals"   },
 ];
 
 export function AnalyticsHome() {
@@ -49,6 +51,7 @@ export function AnalyticsHome() {
         {tab === "product"   && <AnalyticsProduct />}
         {tab === "marketing" && <AnalyticsMarketing />}
         {tab === "support"   && <AnalyticsSupport />}
+        {tab === "signals"   && <AnalyticsSignals />}
       </div>
     </div>
   );

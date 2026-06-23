@@ -1061,6 +1061,48 @@ export async function saveSigLeadCard(input: {
   if (error) throw new Error(`save_sig_lead_card: ${error.message}`);
 }
 
+// ---- Signals analytics (Analytics → Signals) -------------------------------
+
+export interface SigPipeline {
+  funnel: { ingested: number; scored: number; promoted: number; sent: number; replied: number; won: number };
+  prev_promoted: number;
+  needs_action: number;
+  avg_days_to_send: number | null;
+}
+
+export async function getSigAnalyticsPipeline(days: number): Promise<SigPipeline> {
+  const db = getClient();
+  const { data, error } = await db.rpc("sig_analytics_pipeline", { p_days: days });
+  if (error) throw new Error(`sig_analytics_pipeline: ${error.message}`);
+  return data as SigPipeline;
+}
+
+export interface SigThemeExample {
+  title: string | null;
+  snippet: string;
+  url: string | null;
+  platform: string;
+  ts: string;
+  pains: string[] | null;
+  competitor: string | null;
+}
+
+export interface SigThemes {
+  pains: Array<{ tag: string; count: number; prev: number }>;
+  competitors: Array<{ name: string; count: number; prev: number }>;
+  platforms: Array<{ platform: string; count: number }>;
+  buckets: Array<{ bucket: string; count: number }>;
+  examples: SigThemeExample[];
+  total_posts: number;
+}
+
+export async function getSigAnalyticsThemes(days: number, gran: string): Promise<SigThemes> {
+  const db = getClient();
+  const { data, error } = await db.rpc("sig_analytics_themes", { p_days: days, p_gran: gran });
+  if (error) throw new Error(`sig_analytics_themes: ${error.message}`);
+  return data as SigThemes;
+}
+
 export async function quickAddSigItem(input: {
   platform: string;
   url?: string | null;

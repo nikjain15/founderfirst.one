@@ -1008,26 +1008,28 @@ export async function markSigLeadSent(leadId: string, channel = "on_platform"): 
   if (error) throw new Error(`mark_sig_lead_sent: ${error.message}`);
 }
 
-export async function saveSigLeadNotes(
-  leadId: string,
-  notes: string,
-  contactName: string,
-  contactCompany: string,
-  status: string | null,
-  contactEmail: string,
-  contactDetails: string,
-): Promise<void> {
+export async function saveSigLeadCard(input: {
+  leadId: string;
+  stage: string;
+  draft: string;
+  contactName: string;
+  contactCompany: string;
+  contactEmail: string;
+  contactDetails: string;
+  notes: string;
+}): Promise<void> {
   const db = getClient();
-  const { error } = await db.rpc("save_sig_lead_notes", {
-    p_lead_id: leadId,
-    p_notes: notes,
-    p_contact_name: contactName || null,
-    p_contact_company: contactCompany || null,
-    p_status: status || null,
-    p_contact_email: contactEmail || null,
-    p_contact_details: contactDetails || null,
+  const { error } = await db.rpc("save_sig_lead_card", {
+    p_lead_id: input.leadId,
+    p_stage: input.stage,
+    p_draft: input.draft || null,
+    p_contact_name: input.contactName || null,
+    p_contact_company: input.contactCompany || null,
+    p_contact_email: input.contactEmail || null,
+    p_contact_details: input.contactDetails || null,
+    p_notes: input.notes || null,
   });
-  if (error) throw new Error(`save_sig_lead_notes: ${error.message}`);
+  if (error) throw new Error(`save_sig_lead_card: ${error.message}`);
 }
 
 export async function quickAddSigItem(input: {

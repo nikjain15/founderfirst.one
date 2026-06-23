@@ -16,10 +16,7 @@ import {
   listSigItems,
   listSigLeads,
   getSigLead,
-  updateSigLeadStage,
-  saveSigLeadDraft,
-  saveSigLeadNotes,
-  markSigLeadSent,
+  saveSigLeadCard,
   quickAddSigItem,
   listSigKeywords,
   upsertSigKeyword,
@@ -137,16 +134,6 @@ const TERM_HINT: Record<string, string> = {
   relevance: "How closely the post matches your Scoring examples.",
   competitor: "The accounting tool the post mentions, if any.",
 };
-
-// Whether the targeted company has engaged / resolved the original poster's
-// issue — distinct from `stage`, which tracks *our* outreach pipeline.
-const SIG_NOTE_STATUSES: { v: string; label: string }[] = [
-  { v: "awaiting", label: "awaiting reply" },
-  { v: "not_contacted", label: "not contacted" },
-  { v: "replied", label: "replied" },
-  { v: "resolved", label: "resolved" },
-  { v: "no_response", label: "no response" },
-];
 
 function fmt(iso: string | null): string {
   if (!iso) return "—";
@@ -565,7 +552,7 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
   const [contactCompany, setContactCompany] = useState<string | null>(null);
   const [contactEmail, setContactEmail] = useState<string | null>(null);
   const [contactDetails, setContactDetails] = useState<string | null>(null);
-  const [noteStatus, setNoteStatus] = useState<string | null>(null);
+  const [stage, setStage] = useState<string | null>(null);
 
   const lead = data?.lead;
   const item = data?.item;
@@ -576,8 +563,23 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
   const contactCompanyValue = contactCompany ?? lead?.contact_company ?? "";
   const contactEmailValue = contactEmail ?? lead?.contact_email ?? "";
   const contactDetailsValue = contactDetails ?? lead?.contact_details ?? "";
-  const noteStatusValue = noteStatus ?? lead?.note_status ?? "";
-  const noteHistory: any[] = (data?.events ?? []).filter((e: any) => e.kind === "note_saved");
+  const stageValue = stage ?? lead?.stage ?? "new";
+  const noteHistory: any[] = (data?.events ?? []).filter(
+    (e: any) => e.kind === "card_saved" || e.kind === "note_saved",
+  );
+
+  function saveCard(toStage?: string) {
+    const next = toStage ?? stageValue;
+    return withBusy(
+      () => saveSigLeadCard({
+        leadId, stage: next, draft: draftValue,
+        contactName: contactNameValue, contactCompany: contactCompanyValue,
+        contactEmail: contactEmailValue, contactDetails: contactDetailsValue,
+        notes: notesValue,
+      }),
+      toStage === "sent" ? "Marked sent" : "Saved",
+    );
+  }
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["sig-lead", leadId] });
@@ -619,31 +621,16 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
               <p>{item?.body || item?.title || "—"}</p>
             </div>
 
-            <label className="sig-label" htmlFor="sig-stage">stage</label>
-            <select
-              id="sig-stage" className="sig-select" value={lead.stage} disabled={busy}
-              onChange={(e) => withBusy(() => updateSigLeadStage(leadId, e.target.value), "Stage updated")}
-            >
-              {SIG_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-
-            <div className="field" style={{ marginTop: 16 }}>
-              <label htmlFor="sig-draft">outreach draft</label>
-              <textarea
-                id="sig-draft" value={draftValue}
-                placeholder="The worker drafts this for promoted leads. Edit before sending."
-                onChange={(e) => setDraft(e.target.value)}
-              />
-            </div>
-
-            <div className="sig-actions">
-              <button className="btn" disabled={busy || !draftValue.trim()} onClick={() => withBusy(() => saveSigLeadDraft(leadId, draftValue), "Draft saved")}>Save draft</button>
-              <button className="btn btn-ghost" disabled={!draftValue.trim()} onClick={() => { navigator.clipboard?.writeText(draftValue); setNote("Copied — reply on the platform, then mark sent."); }}>Copy</button>
-              <button className="btn btn-ghost" disabled={busy} onClick={() => withBusy(() => markSigLeadSent(leadId, "on_platform"), "Marked sent")}>Mark sent</button>
-            </div>
-
             <div className="sig-notes">
               <span className="sig-label">notes &amp; tracking</span>
+
+              <div className="field">
+                <label htmlFor="sig-stage">stage</label>
+                <select id="sig-stage" className="sig-select" value={stageValue} onChange={(e) => setStage(e.target.value)}>
+                  {SIG_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+
               <div className="sig-notes-grid">
                 <div className="field">
                   <label htmlFor="sig-contact">contact</label>
@@ -662,12 +649,14 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
                 <label htmlFor="sig-contact-details">other contact</label>
                 <input id="sig-contact-details" value={contactDetailsValue} placeholder="phone, LinkedIn, handle…" onChange={(e) => setContactDetails(e.target.value)} />
               </div>
+
               <div className="field">
-                <label htmlFor="sig-status">status</label>
-                <select id="sig-status" className="sig-select" value={noteStatusValue} onChange={(e) => setNoteStatus(e.target.value)}>
-                  <option value="">—</option>
-                  {SIG_NOTE_STATUSES.map((s) => <option key={s.v} value={s.v}>{s.label}</option>)}
-                </select>
+                <label htmlFor="sig-draft">outreach draft</label>
+                <textarea
+                  id="sig-draft" value={draftValue}
+                  placeholder="The worker drafts this for promoted leads. Edit before sending."
+                  onChange={(e) => setDraft(e.target.value)}
+                />
               </div>
               <div className="field">
                 <label htmlFor="sig-notes">notes</label>
@@ -677,8 +666,11 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
                   onChange={(e) => setNotes(e.target.value)}
                 />
               </div>
+
               <div className="sig-actions">
-                <button className="btn" disabled={busy} onClick={() => withBusy(() => saveSigLeadNotes(leadId, notesValue, contactNameValue, contactCompanyValue, noteStatusValue || null, contactEmailValue, contactDetailsValue), "Notes saved")}>Save notes</button>
+                <button className="btn" disabled={busy} onClick={() => saveCard()}>Save</button>
+                <button className="btn btn-ghost" disabled={!draftValue.trim()} onClick={() => { navigator.clipboard?.writeText(draftValue); setNote("Copied — reply on the platform, then mark sent."); }}>Copy draft</button>
+                <button className="btn btn-ghost" disabled={busy} onClick={() => saveCard("sent")}>Mark sent</button>
               </div>
 
               {noteHistory.length > 0 && (
@@ -689,7 +681,7 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
                       <div className="sig-history-item" key={e.id}>
                         <div className="sig-history-meta">
                           {(e.actor_email || "unknown").split("@")[0]} · {leadAge(e.created_at)}
-                          {e.detail?.status ? ` · ${e.detail.status}` : ""}
+                          {e.detail?.stage ? ` · ${e.detail.stage}` : ""}
                         </div>
                         {e.detail?.notes && <div className="sig-history-body">{e.detail.notes}</div>}
                       </div>

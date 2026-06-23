@@ -14,3 +14,15 @@ verify_jwt = false
 
 [functions.changelog-digest]
 verify_jwt = false
+
+[functions.resend-webhook]
+verify_jwt = false
+
+[functions.email-preview]
+verify_jwt = false
+
+[functions.email-dispatch]
+verify_jwt = false
+
+[functions.email-test]
+verify_jwt = false

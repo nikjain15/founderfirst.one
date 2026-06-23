@@ -457,6 +457,26 @@ function leadAge(postedAt?: string | null): string {
   return days >= 30 ? `${base} ⚠ stale` : base;
 }
 
+// Pre-fill contact fields from the post so the user confirms instead of typing
+// (same spirit as the auto-drafted outreach). Pure extraction — no LLM; only
+// fills a field when nothing's been saved yet, and the user can always edit.
+const PUBLIC_EMAIL_HOST = /^(gmail|outlook|hotmail|yahoo|ymail|proton|protonmail|icloud|aol|live|me|msn)\./i;
+function deriveContact(item: any): { name: string; email: string; company: string; details: string } {
+  const text = `${item?.title ?? ""}\n${item?.body ?? ""}`;
+  const email = text.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/)?.[0] ?? "";
+  const domain = email.split("@")[1] ?? "";
+  const company = domain && !PUBLIC_EMAIL_HOST.test(domain) ? domain.split(".")[0] : "";
+  const links = text.match(/https?:\/\/[^\s)]+/g) ?? [];
+  const social = links.find((u) => /linkedin\.com|calendly\.com|twitter\.com|x\.com|github\.com/i.test(u)) ?? "";
+  const phone = text.match(/\+?\d[\d\s().-]{8,}\d/)?.[0]?.trim() ?? "";
+  return {
+    name: item?.author_handle ?? "",
+    email,
+    company,
+    details: item?.author_url || social || phone || "",
+  };
+}
+
 function LeadsTab() {
   const [stage, setStage] = useState<string>("all");
   const [platform, setPlatform] = useState("all");
@@ -559,10 +579,11 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
   const score = data?.score;
   const draftValue = draft ?? lead?.draft ?? "";
   const notesValue = notes ?? lead?.notes ?? "";
-  const contactNameValue = contactName ?? lead?.contact_name ?? "";
-  const contactCompanyValue = contactCompany ?? lead?.contact_company ?? "";
-  const contactEmailValue = contactEmail ?? lead?.contact_email ?? "";
-  const contactDetailsValue = contactDetails ?? lead?.contact_details ?? "";
+  const suggested = useMemo(() => deriveContact(item), [item]);
+  const contactNameValue = contactName ?? lead?.contact_name ?? suggested.name;
+  const contactCompanyValue = contactCompany ?? lead?.contact_company ?? suggested.company;
+  const contactEmailValue = contactEmail ?? lead?.contact_email ?? suggested.email;
+  const contactDetailsValue = contactDetails ?? lead?.contact_details ?? suggested.details;
   const stageValue = stage ?? lead?.stage ?? "new";
   const noteHistory: any[] = (data?.events ?? []).filter(
     (e: any) => e.kind === "card_saved" || e.kind === "note_saved",

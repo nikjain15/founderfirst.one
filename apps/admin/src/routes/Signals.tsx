@@ -31,6 +31,7 @@ import {
   listSigSourceCounts,
   listSigSettings,
   setSigSetting,
+  getOptimizerReport,
   SIG_STAGES,
   type SigItemRow,
   type SigLeadRow,
@@ -591,6 +592,76 @@ function SliderRow({ label, hint, value, suffix, onCommit }:
   );
 }
 
+/* Daily optimizer report — what the self-improving loop learned + proposals. */
+function OptimizerPanel() {
+  const qc = useQueryClient();
+  const { data: report } = useQuery({ queryKey: ["sig-optimizer"], queryFn: getOptimizerReport });
+  const { data: sources = [] } = useQuery({ queryKey: ["sig-sources"], queryFn: listSigSources });
+  const [note, setNote] = useState("");
+  if (!report) return null;
+
+  const srcByQuery = new Map((sources as SigSourceRow[]).map((s) => [s.query, s]));
+  const pending = report.proposed.filter((p) => {
+    const s = srcByQuery.get(p.query);
+    return s && !s.enabled; // only proposals not yet enabled/dismissed
+  });
+
+  async function approve(query: string) {
+    const s = srcByQuery.get(query);
+    if (!s) return;
+    try {
+      await upsertSigSource({ id: s.id, platform: s.platform, query: s.query, captured_via: "api_direct", enabled: true, cadence_minutes: s.cadence_minutes ?? 360 });
+      setNote(`Enabled “${query}”.`); qc.invalidateQueries({ queryKey: ["sig-sources"] });
+    } catch (e) { setNote((e as Error).message); }
+  }
+  async function dismiss(query: string) {
+    const s = srcByQuery.get(query);
+    if (!s) return;
+    try { await deleteSigSource(s.id); setNote(`Dismissed “${query}”.`); qc.invalidateQueries({ queryKey: ["sig-sources"] }); }
+    catch (e) { setNote((e as Error).message); }
+  }
+
+  return (
+    <section className="sig-optimizer">
+      <h2 className="sig-h2">What the daily optimizer learned</h2>
+      <p className="page-sub" style={{ margin: "2px 0 0" }}>
+        {report.summary} <span className="sig-label">· last run {new Date(report.ran_at).toLocaleString()}</span>
+      </p>
+
+      {report.threshold_suggestions.length > 0 && report.threshold_suggestions.map((t, i) => (
+        <p key={i} className="sig-note">💡 {t}</p>
+      ))}
+
+      {report.pain_themes.length > 0 && (
+        <>
+          <span className="sig-label" style={{ marginTop: 14, display: "block" }}>Top pain themes (US, needs-help)</span>
+          <div className="sig-chips">
+            {report.pain_themes.map((t) => <span key={t.tag} className="topic-tag">{t.tag} · {t.count}</span>)}
+          </div>
+        </>
+      )}
+
+      {pending.length > 0 && (
+        <>
+          <span className="sig-label" style={{ marginTop: 16, display: "block" }}>Proposed new queries — validated, review &amp; enable</span>
+          <ul className="sig-icp-list">
+            {pending.map((p) => (
+              <li key={p.query} className="sig-icp-item">
+                <p>{p.platform} · {p.query} <span className="badge badge-live">{Math.round(p.hit_rate * 100)}% on-topic</span></p>
+                <div className="sig-icp-meta">
+                  <button className="btn" onClick={() => approve(p.query)}>Enable</button>
+                  <button className="btn-link" onClick={() => dismiss(p.query)}>Dismiss</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {note && <p className="sig-note">{note}</p>}
+    </section>
+  );
+}
+
 function ScoringTab() {
   const qc = useQueryClient();
   const { data: cfg } = useQuery({ queryKey: ["sig-settings"], queryFn: listSigSettings });
@@ -623,6 +694,7 @@ function ScoringTab() {
 
   return (
     <div>
+      <OptimizerPanel />
       <p className="page-sub" style={{ maxWidth: 720 }}>
         This is the filter between <strong>Feed</strong> and <strong>Leads</strong>. A post becomes a
         lead only when it both <strong>matches your examples</strong> (relevance) and shows a

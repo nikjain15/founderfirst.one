@@ -169,6 +169,209 @@ export async function lastDigestSend(): Promise<DigestSend | null> {
   return (data as DigestSend) ?? null;
 }
 
+// ---- Email control (brand + templates + activity) --------------------------
+// Brand colors + per-email copy are admin-editable rows; the edge functions read
+// them at send time. Activity is the unified send log + open/click rates.
+
+export interface EmailBrand {
+  sender_name: string;
+  ink: string; ink2: string; ink3: string; ink4: string;
+  line: string; paper: string; white: string;
+  income: string; amber: string; error: string;
+  updated_at?: string;
+}
+
+export interface EmailTemplate {
+  email_key: string;
+  label: string;
+  eyebrow: string;
+  subject: string;
+  preheader: string;
+  heading: string;
+  intro: string;
+  cta_label: string;
+  footer: string;
+  body?: string;
+  is_custom?: boolean;
+  updated_at?: string;
+}
+
+export interface EmailSchedule {
+  id: string;
+  email_key: string;
+  frequency: "once" | "daily" | "weekly";
+  send_hour: number;
+  send_dow: number | null;
+  run_at: string | null;
+  audience_kind: "admins" | "list";
+  audience_list: string[];
+  cta_href: string;
+  enabled: boolean;
+  last_run_at: string | null;
+}
+
+export interface EmailSettings {
+  signals_intent_min: number;
+  signals_floor_days: number;
+}
+
+export async function getEmailBrand(): Promise<EmailBrand> {
+  const db = getClient();
+  const { data, error } = await db.from("email_brand").select("*").eq("id", true).maybeSingle();
+  if (error) throw new Error(`getEmailBrand: ${error.message}`);
+  return data as EmailBrand;
+}
+
+export async function saveEmailBrand(patch: Partial<EmailBrand>): Promise<void> {
+  const db = getClient();
+  const me = (await db.auth.getUser()).data.user?.email ?? null;
+  const { error } = await db.from("email_brand")
+    .update({ ...patch, updated_by: me, updated_at: new Date().toISOString() })
+    .eq("id", true);
+  if (error) throw new Error(error.message);
+  void logAudit("email.brand.update", "email_brand", null, {});
+}
+
+export async function listEmailTemplates(): Promise<EmailTemplate[]> {
+  const db = getClient();
+  const { data, error } = await db.from("email_templates")
+    .select("*").order("label", { ascending: true });
+  if (error) throw new Error(`listEmailTemplates: ${error.message}`);
+  return (data as EmailTemplate[]) ?? [];
+}
+
+export async function saveEmailTemplate(key: string, patch: Partial<EmailTemplate>): Promise<void> {
+  const db = getClient();
+  const me = (await db.auth.getUser()).data.user?.email ?? null;
+  const { error } = await db.from("email_templates")
+    .update({ ...patch, updated_by: me, updated_at: new Date().toISOString() })
+    .eq("email_key", key);
+  if (error) throw new Error(error.message);
+  void logAudit("email.template.update", "email_template", key, {});
+}
+
+export async function getEmailSettings(): Promise<EmailSettings> {
+  const db = getClient();
+  const { data, error } = await db.from("email_settings").select("*").eq("id", true).maybeSingle();
+  if (error) throw new Error(`getEmailSettings: ${error.message}`);
+  return data as EmailSettings;
+}
+
+export async function saveEmailSettings(patch: Partial<EmailSettings>): Promise<void> {
+  const db = getClient();
+  const me = (await db.auth.getUser()).data.user?.email ?? null;
+  const { error } = await db.from("email_settings")
+    .update({ ...patch, updated_by: me, updated_at: new Date().toISOString() })
+    .eq("id", true);
+  if (error) throw new Error(error.message);
+  void logAudit("email.settings.update", "email_settings", null, {});
+}
+
+/** Render a draft template (unsaved) with sample data — for the live preview. */
+export async function previewEmailTemplate(
+  key: string, template: Partial<EmailTemplate>, brand: Partial<EmailBrand>,
+): Promise<{ subject: string; html: string }> {
+  const db = getClient();
+  const { data, error } = await db.functions.invoke("email-preview", {
+    body: { key, template, brand },
+  });
+  if (error) throw new Error(`previewEmailTemplate: ${error.message}`);
+  return data as { subject: string; html: string };
+}
+
+export interface EmailActivityRow {
+  id: string;
+  email_key: string;
+  subject: string;
+  recipient_count: number;
+  trigger: "cron" | "admin" | "db_trigger" | "test";
+  status: "sent" | "failed" | "skipped";
+  created_at: string;
+  delivered: boolean;
+  opened: boolean;
+  clicked: boolean;
+}
+
+export interface EmailActivity {
+  since_days: number;
+  sends: EmailActivityRow[];
+  totals: { sent: number; failed: number; opened: number; clicked: number };
+}
+
+export async function getEmailActivity(days = 30): Promise<EmailActivity> {
+  const db = getClient();
+  const { data, error } = await db.rpc("email_activity", { p_days: days });
+  if (error) throw new Error(`email_activity: ${error.message}`);
+  return data as EmailActivity;
+}
+
+// ---- Custom scheduled emails -----------------------------------------------
+
+/** Create a new custom email template (admin-composed body). Returns its key. */
+export async function createCustomEmail(
+  fields: { label: string } & Partial<EmailTemplate>,
+): Promise<string> {
+  const db = getClient();
+  const me = (await db.auth.getUser()).data.user?.email ?? null;
+  // Stable, collision-resistant key from the label + a random suffix.
+  const slug = fields.label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 32) || "email";
+  const key = `custom_${slug}_${Math.random().toString(36).slice(2, 7)}`;
+  const { error } = await db.from("email_templates").insert({
+    email_key: key, is_custom: true, label: fields.label,
+    eyebrow: fields.eyebrow ?? "FounderFirst",
+    subject: fields.subject ?? "", preheader: fields.preheader ?? "",
+    heading: fields.heading ?? "", intro: fields.intro ?? "",
+    cta_label: fields.cta_label ?? "", footer: fields.footer ?? "",
+    body: fields.body ?? "", updated_by: me,
+  });
+  if (error) throw new Error(error.message);
+  void logAudit("email.custom.create", "email_template", key, { label: fields.label });
+  return key;
+}
+
+export async function deleteCustomEmail(key: string): Promise<void> {
+  const db = getClient();
+  const { error } = await db.from("email_templates").delete().eq("email_key", key);
+  if (error) throw new Error(error.message);
+  void logAudit("email.custom.delete", "email_template", key, {});
+}
+
+export async function listEmailSchedules(): Promise<EmailSchedule[]> {
+  const db = getClient();
+  const { data, error } = await db.from("email_schedules")
+    .select("*").order("created_at", { ascending: false });
+  if (error) throw new Error(`listEmailSchedules: ${error.message}`);
+  return (data as EmailSchedule[]) ?? [];
+}
+
+export async function upsertEmailSchedule(s: Partial<EmailSchedule> & { email_key: string }): Promise<void> {
+  const db = getClient();
+  const me = (await db.auth.getUser()).data.user?.email ?? null;
+  const row = { ...s, created_by: me, updated_at: new Date().toISOString() };
+  const { error } = s.id
+    ? await db.from("email_schedules").update(row).eq("id", s.id)
+    : await db.from("email_schedules").insert(row);
+  if (error) throw new Error(error.message);
+  void logAudit("email.schedule.save", "email_schedule", s.id ?? s.email_key, {});
+}
+
+export async function deleteEmailSchedule(id: string): Promise<void> {
+  const db = getClient();
+  const { error } = await db.from("email_schedules").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  void logAudit("email.schedule.delete", "email_schedule", id, {});
+}
+
+/** Send a single test of an email (built-in or custom). Defaults to your inbox. */
+export async function sendTestEmail(key: string, to?: string, ctaHref?: string): Promise<{ sent: number }> {
+  const db = getClient();
+  const { data, error } = await db.functions.invoke("email-test", {
+    body: { key, to, cta_href: ctaHref },
+  });
+  if (error) throw new Error(`sendTestEmail: ${error.message}`);
+  return data as { sent: number };
+}
+
 export interface DiscordLinkRow {
   id: string;
   email_normalized: string;

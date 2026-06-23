@@ -19,6 +19,7 @@ const Audit         = lazy(() => named(import("./routes/Audit"), "Audit"));
 const Admins        = lazy(() => named(import("./routes/Admins"), "Admins"));
 const ContentHome   = lazy(() => named(import("./routes/ContentHome"), "ContentHome"));
 const HowItWorks    = lazy(() => named(import("./routes/HowItWorks"), "HowItWorks"));
+const EmailHub      = lazy(() => named(import("./routes/EmailHub"), "EmailHub"));
 
 /** Gate a route behind sign-in; bounce to /login (remembering where we came from). */
 function RequireAuth({ signedIn, children }: { signedIn: boolean; children: ReactElement }) {
@@ -160,7 +161,7 @@ export function App() {
                 <div ref={settingsRef} className={`settings-menu ${settingsOpen ? "is-open" : ""}`}>
                   <button
                     type="button"
-                    className={`settings-trigger ${location.pathname.startsWith("/audit") || location.pathname.startsWith("/admins") || location.pathname.startsWith("/how-it-works") ? "active" : ""}`}
+                    className={`settings-trigger ${location.pathname.startsWith("/audit") || location.pathname.startsWith("/admins") || location.pathname.startsWith("/how-it-works") || location.pathname.startsWith("/emails") ? "active" : ""}`}
                     aria-haspopup="menu"
                     aria-expanded={settingsOpen}
                     aria-label="Settings"
@@ -174,6 +175,7 @@ export function App() {
                     <Link to="/admins" role="menuitem" className={location.pathname.startsWith("/admins") ? "active" : ""}>Admins</Link>
                     <Link to="/audit" role="menuitem" className={location.pathname.startsWith("/audit") ? "active" : ""}>Audit log</Link>
                     <Link to="/how-it-works" role="menuitem" className={location.pathname.startsWith("/how-it-works") ? "active" : ""}>How it works</Link>
+                    <Link to="/emails" role="menuitem" className={location.pathname.startsWith("/emails") ? "active" : ""}>Emails</Link>
                     <button type="button" role="menuitem" onClick={() => getClient().auth.signOut()}>
                       <IconLogOut size={14} />
                       Sign out
@@ -215,6 +217,7 @@ export function App() {
             <Route path="/content" element={<RequireAuth signedIn={signedIn}><ContentHome /></RequireAuth>} />
             <Route path="/audit" element={<RequireAuth signedIn={signedIn}><Audit /></RequireAuth>} />
             <Route path="/how-it-works" element={<RequireAuth signedIn={signedIn}><HowItWorks currentEmail={session?.user.email ?? ""} /></RequireAuth>} />
+            <Route path="/emails" element={<RequireAuth signedIn={signedIn}><EmailHub /></RequireAuth>} />
             {/* Back-compat redirects — old top-level tabs now live under Audience. */}
             <Route path="/users" element={<Navigate to="/audience#web" replace />} />
             <Route path="/signals" element={<Navigate to="/audience#signals" replace />} />

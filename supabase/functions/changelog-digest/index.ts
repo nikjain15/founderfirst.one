@@ -21,7 +21,8 @@
 
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { BRAND, emailShell, escapeHtml } from "../_shared/email.ts";
+import { BRAND, escapeHtml } from "../_shared/email.ts";
+import { renderEmail, sendEmail } from "../_shared/send.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin":  "*",
@@ -42,71 +43,41 @@ type Entry = {
 };
 
 const KIND_LABEL: Record<string, string> = { new: "New", improved: "Improved", fixed: "Fixed" };
-const KIND_COLOR: Record<string, string> = { new: BRAND.income, improved: BRAND.amber, fixed: BRAND.ink3 };
+const KIND_COLOR_KEY: Record<string, "income" | "amber" | "ink3"> = { new: "income", improved: "amber", fixed: "ink3" };
 
-function renderDigest(entries: Entry[], whatsNewUrl: string) {
-  const rows = entries.slice(0, 25).map((e) => {
+const word = (n: number, base: string) => `${base}${n === 1 ? "" : "s"}`;
+
+/** Dynamic body for the digest — built with the resolved brand so colors track email_brand. */
+function digestBody(entries: Entry[]) {
+  return (brand: typeof BRAND) => entries.slice(0, 25).map((e) => {
     const label = KIND_LABEL[e.kind] ?? e.kind;
-    const color = KIND_COLOR[e.kind] ?? BRAND.ink3;
+    const color = brand[KIND_COLOR_KEY[e.kind] ?? "ink3"];
     const title = escapeHtml(e.title || "—");
-    const body = e.body ? `<br/><span style="color:${BRAND.ink2};">${escapeHtml(e.body)}</span>` : "";
+    const body = e.body ? `<br/><span style="color:${brand.ink2};">${escapeHtml(e.body)}</span>` : "";
     return `<tr>
-      <td style="padding:10px 0;border-bottom:1px solid ${BRAND.line};font-size:14px;color:${BRAND.ink2};vertical-align:top;">
+      <td style="padding:10px 0;border-bottom:1px solid ${brand.line};font-size:14px;color:${brand.ink2};vertical-align:top;">
         <span style="display:inline-block;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:${color};border:1px solid ${color}33;border-radius:999px;padding:2px 8px;margin-right:8px;">${escapeHtml(label)}</span>
-        <strong style="color:${BRAND.ink};">${title}</strong>${body}
+        <strong style="color:${brand.ink};">${title}</strong>${body}
       </td>
     </tr>`;
   }).join("");
-
-  const subject = `What's new at FounderFirst this week`;
-  const topShipped = entries[0]?.title ? escapeHtml(entries[0].title) : "";
-  const html = emailShell({
-    eyebrow: "FounderFirst · What's new",
-    title: "Here's what we shipped this week.",
-    intro: "Newest first.",
-    preheader: topShipped
-      ? `Including: ${topShipped} — and ${Math.max(entries.length - 1, 0)} more update${entries.length === 2 ? "" : "s"}.`
-      : "Everything we shipped this week, newest first.",
-    body: `<table style="width:100%;border-collapse:collapse;">${rows}</table>`,
-    cta: { label: "See it in the admin →", href: whatsNewUrl },
-    footer: "You're getting this because you're a FounderFirst admin. It goes out weekly when an admin sends it.",
-  });
-  const text = `What's new at FounderFirst this week\n\n` +
-    `Here's what we shipped this week. Newest first.\n\n` +
-    entries.slice(0, 25).map((e) => `• [${KIND_LABEL[e.kind] ?? e.kind}] ${e.title}${e.body ? "\n  " + e.body : ""}`).join("\n") +
-    `\n\nSee it in the admin: ${whatsNewUrl}\n`;
-  return { subject, html, text };
 }
 
-function renderReminder(count: number, whatsNewUrl: string) {
-  const subject = `Your weekly What's-new digest is ready to review`;
-  const html = emailShell({
-    eyebrow: "FounderFirst · What's new",
-    title: "This week's digest is ready to review.",
-    intro: `There ${count === 1 ? "is" : "are"} <strong>${count}</strong> update${count === 1 ? "" : "s"} from this week. Take a look, then send it to the team when you're happy.`,
-    preheader: `${count} update${count === 1 ? "" : "s"} ready to review before they go to the team.`,
-    cta: { label: "Review &amp; send →", href: whatsNewUrl },
-  });
-  const text = `This week's digest is ready to review.\n\n` +
-    `There ${count === 1 ? "is" : "are"} ${count} update(s) from this week. Review and send when you're ready:\n${whatsNewUrl}\n`;
-  return { subject, html, text };
+function digestVars(entries: Entry[]) {
+  const n = entries.length;
+  // topShipped goes into the (hidden) preheader, which emailShell escapes — pass raw.
+  return { n, thingword: word(n, "thing"), topShipped: entries[0]?.title ?? "" };
 }
 
-async function sendResend(to: string[], subject: string, html: string, text: string): Promise<Response | null> {
-  const resendKey = Deno.env.get("RESEND_API_KEY");
-  const from = Deno.env.get("NOTIFY_FROM") ?? "FounderFirst <onboarding@resend.dev>";
-  if (!resendKey) return json({ error: "resend_key_missing" }, 500);
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to, subject, html, text }),
-  });
-  if (!res.ok) {
-    const detail = await res.json().catch(() => ({}));
-    return json({ ok: false, error: "send_failed", detail }, 502);
-  }
-  return null; // success
-}
+const digestText = (entries: Entry[], whatsNewUrl: string) => () =>
+  `${entries.length} ${word(entries.length, "thing")} shipped this week.\n\n` +
+  `New, Improved, and Fixed — newest first.\n\n` +
+  entries.slice(0, 25).map((e) => `• [${KIND_LABEL[e.kind] ?? e.kind}] ${e.title}${e.body ? "\n  " + e.body : ""}`).join("\n") +
+  `\n\nSee it in the admin: ${whatsNewUrl}\n`;
+
+const nudgeText = (count: number, whatsNewUrl: string) => () =>
+  `This week's digest is ready to review.\n\n` +
+  `There ${count === 1 ? "is" : "are"} ${count} update(s) from this week. Review and send when you're ready:\n${whatsNewUrl}\n`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
@@ -163,7 +134,10 @@ Deno.serve(async (req) => {
 
   // ---- Preview (no send) ----------------------------------------------------
   if (mode === "preview") {
-    const { subject, html, text } = renderDigest(entries, whatsNewUrl);
+    const { subject, html, text } = await renderEmail({
+      supa: service, key: "changelog_digest", vars: digestVars(entries),
+      ctaHref: whatsNewUrl, buildBody: digestBody(entries), buildText: digestText(entries, whatsNewUrl),
+    });
     return json({
       ok: true,
       entryCount: entries.length,
@@ -178,20 +152,27 @@ Deno.serve(async (req) => {
 
   // ---- Reminder (cron) ------------------------------------------------------
   if (mode === "remind") {
-    const { subject, html, text } = renderReminder(entries.length, whatsNewUrl);
-    const fail = await sendResend(recipients, subject, html, text);
-    if (fail) return fail;
-    return json({ ok: true, sent: recipients.length, mode: "remind" });
+    const count = entries.length;
+    const result = await sendEmail({
+      supa: service, key: "changelog_nudge", to: recipients, trigger: "cron",
+      vars: { count, updateword: word(count, "update"), thingword: word(count, "thing") },
+      ctaHref: whatsNewUrl, buildText: nudgeText(count, whatsNewUrl),
+    });
+    if (!result.ok && result.sent === 0) return json({ ok: false, error: "send_failed", detail: result.detail }, 502);
+    return json({ ok: true, sent: result.sent, mode: "remind" });
   }
 
   // ---- Send (admin-approved) ------------------------------------------------
-  const { subject, html, text } = renderDigest(entries, whatsNewUrl);
-  const fail = await sendResend(recipients, subject, html, text);
-  if (fail) return fail;
+  const result = await sendEmail({
+    supa: service, key: "changelog_digest", to: recipients, trigger: "admin",
+    vars: digestVars(entries), ctaHref: whatsNewUrl,
+    buildBody: digestBody(entries), buildText: digestText(entries, whatsNewUrl),
+  });
+  if (!result.ok && result.sent === 0) return json({ ok: false, error: "send_failed", detail: result.detail }, 502);
   await service.from("changelog_sends").insert({
     sent_by: actorEmail,
     entry_count: entries.length,
     recipients: recipients.length,
   });
-  return json({ ok: true, sent: recipients.length, mode: "send", entryCount: entries.length });
+  return json({ ok: true, sent: result.sent, mode: "send", entryCount: entries.length });
 });

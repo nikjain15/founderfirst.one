@@ -76,7 +76,7 @@
   .sig-notes-grid { grid-template-columns: 1fr; }
 }
 /* Notes textarea is a quick scratchpad — shorter than the outreach draft. */
-.sig-notes #sig-notes { min-height: 88px; }
+.sig-notes .field textarea { min-height: 88px; }
 
 .sig-history { margin-top: 14px; }
 .sig-history > summary {

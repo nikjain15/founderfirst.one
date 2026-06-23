@@ -44,22 +44,35 @@ const toVector = (arr) => `[${arr.join(",")}]`;
 
 let cachedVoice = null;
 let cachedKeywords = null;
+let cachedExcludes = null;
 let cachedSettings = null;
 
-// Scoring thresholds, editable from the admin Scoring tab (sig_settings).
-// Falls back to the .env values if the table/row is missing.
+// Scoring thresholds + geo mode, editable from the admin Scoring tab
+// (sig_settings). Falls back to the .env values if the table/row is missing.
 async function getSettings() {
   if (cachedSettings) return cachedSettings;
   const s = {
     relevance_threshold: REL_THRESHOLD,
     relevance_floor:     REL_FLOOR,
     intent_threshold:    INTENT_THRESHOLD,
+    geo_mode:            "hard_us",   // 'hard_us' | 'us_preferred' | 'off'
   };
+  const numeric = new Set(["relevance_threshold", "relevance_floor", "intent_threshold"]);
   const { data, error } = await db.from("sig_settings").select("key,value");
   if (error) { console.warn("settings unavailable, using env defaults:", error.message); }
-  else for (const r of data ?? []) if (r.key in s) s[r.key] = Number(r.value);
+  else for (const r of data ?? []) {
+    if (!(r.key in s)) continue;
+    s[r.key] = numeric.has(r.key) ? Number(r.value) : r.value;
+  }
   cachedSettings = s;
   return cachedSettings;
+}
+
+// hard_us: geo must be 'us'. us_preferred: anything not clearly non-US. off: any.
+function geoPasses(geo, mode) {
+  if (mode === "off") return true;
+  if (mode === "us_preferred") return geo !== "non_us";
+  return geo === "us"; // hard_us (default)
 }
 
 async function getVoice() {
@@ -81,6 +94,18 @@ async function getPainKeywords() {
   return cachedKeywords;
 }
 
+// Negative/exclude terms — recruiter, agency, job-board, promo spam. An item
+// matching one is archived before any embedding or LLM call (cheapest kill).
+async function getExcludeKeywords() {
+  if (cachedExcludes) return cachedExcludes;
+  const { data, error } = await db.from("sig_keywords").select("term,kind,enabled");
+  if (error) { console.warn("exclude keywords unavailable:", error.message); return []; }
+  cachedExcludes = (data ?? [])
+    .filter((k) => k.enabled && k.kind === "exclude")
+    .map((k) => k.term.toLowerCase());
+  return cachedExcludes;
+}
+
 async function embedPendingExamples() {
   const { data, error } = await db.rpc("sig_unembedded_examples", { p_limit: 100 });
   if (error) { console.warn("examples fetch failed:", error.message); return; }
@@ -96,10 +121,18 @@ async function embedPendingExamples() {
   }
 }
 
-async function processItem(item, painKeywords, settings) {
+async function processItem(item, painKeywords, excludeKeywords, settings) {
   const text = [item.title, item.body].filter(Boolean).join("\n\n");
   const lower = text.toLowerCase();
   const keywordHit = painKeywords.some((kw) => lower.includes(kw));
+
+  // 0. Negative prefilter: recruiter/agency/job/promo spam never enters scoring.
+  const excludeHit = excludeKeywords.find((kw) => lower.includes(kw));
+  if (excludeHit) {
+    await submit(item.id, null, 0, [], null, false, "unknown", "other");
+    console.log(`archived ${item.id} (exclude="${excludeHit}")`);
+    return;
+  }
 
   // 1. Embedding + relevance vs ICP reference set.
   let relevance = null;
@@ -114,18 +147,18 @@ async function processItem(item, painKeywords, settings) {
 
   // 2. Cheap prefilter: clearly off-topic AND no keyword -> archive without LLM.
   if (!keywordHit && relevance != null && relevance < settings.relevance_floor) {
-    await submit(item.id, relevance, 0, [], null, false);
+    await submit(item.id, relevance, 0, [], null, false, "unknown", "other");
     console.log(`archived ${item.id} (prefilter, rel=${relevance?.toFixed(2)})`);
     return;
   }
 
-  // 3. LLM intent score.
+  // 3. LLM intent score (also returns geo + role, both free on the local model).
   let scored;
   try { scored = await score(item); }
   catch (e) {
     console.warn(`score failed for ${item.id}:`, e.message);
     // Leave it scored-but-unpromoted so a later run can retry via re-claim if desired.
-    await submit(item.id, relevance ?? 0, 0, [], null, false);
+    await submit(item.id, relevance ?? 0, 0, [], null, false, "unknown", "other");
     return;
   }
 
@@ -133,11 +166,21 @@ async function processItem(item, painKeywords, settings) {
   // threshold — but if we have no ICP examples yet (relevance null), let the
   // LLM intent score decide on its own (the scoring prompt is domain-specific,
   // so off-topic posts score low anyway).
-  const relOk = keywordHit || (relevance == null ? true : relevance >= settings.relevance_threshold);
-  const promote = relOk && scored.intent >= settings.intent_threshold;
+  const relOk  = keywordHit || (relevance == null ? true : relevance >= settings.relevance_threshold);
+  const roleOk = scored.role === "needs_help";          // not a seller / recruiter
+  const geoOk  = geoPasses(scored.geo, settings.geo_mode);
+  const promote = relOk && roleOk && geoOk && scored.intent >= settings.intent_threshold;
 
-  const leadId = await submit(item.id, relevance ?? 0, scored.intent, scored.pain_tags, scored.competitor, promote);
-  console.log(`scored ${item.id}: intent=${scored.intent} rel=${relevance?.toFixed?.(2) ?? "n/a"} promote=${promote}`);
+  const leadId = await submit(
+    item.id, relevance ?? 0, scored.intent, scored.pain_tags, scored.competitor,
+    promote, scored.geo, scored.role,
+  );
+  console.log(
+    `scored ${item.id}: intent=${scored.intent} rel=${relevance?.toFixed?.(2) ?? "n/a"} ` +
+    `geo=${scored.geo} role=${scored.role} promote=${promote}` +
+    (!promote && roleOk && relOk && scored.intent >= settings.intent_threshold && !geoOk
+      ? ` (dropped: geo gate ${settings.geo_mode})` : ""),
+  );
 
   // 4. Draft promoted leads in brand voice (managed model).
   if (promote && leadId) {
@@ -156,7 +199,7 @@ async function processItem(item, painKeywords, settings) {
   }
 }
 
-async function submit(itemId, relevance, intent, painTags, competitor, promote) {
+async function submit(itemId, relevance, intent, painTags, competitor, promote, geo = null, role = null) {
   const { data, error } = await db.rpc("sig_submit_score", {
     p_item_id: itemId,
     p_relevance: relevance,
@@ -165,6 +208,8 @@ async function submit(itemId, relevance, intent, painTags, competitor, promote) 
     p_competitor: competitor,
     p_model: brainConfig.scoreModel,
     p_promote: promote,
+    p_geo: geo,
+    p_role: role,
   });
   if (error) { console.warn(`submit_score failed for ${itemId}:`, error.message); return null; }
   return data; // lead_id when promoted, else null
@@ -205,6 +250,7 @@ async function cycle() {
   await pollApiDirect();
   await embedPendingExamples();
   const painKeywords = await getPainKeywords();
+  const excludeKeywords = await getExcludeKeywords();
   const settings = await getSettings();
 
   const { data: items, error } = await db.rpc("sig_claim_pending", { p_limit: BATCH });
@@ -213,7 +259,7 @@ async function cycle() {
 
   console.log(`claimed ${items.length} item(s)`);
   for (const item of items) {
-    try { await processItem(item, painKeywords, settings); }
+    try { await processItem(item, painKeywords, excludeKeywords, settings); }
     catch (e) { console.warn(`process ${item.id} crashed:`, e.message); }
   }
   return items.length;
@@ -228,7 +274,7 @@ async function main() {
     try {
       const n = await cycle();
       // Refresh caches occasionally so keyword/voice edits propagate.
-      if (n === 0) { cachedKeywords = null; cachedVoice = null; cachedSettings = null; }
+      if (n === 0) { cachedKeywords = null; cachedExcludes = null; cachedVoice = null; cachedSettings = null; }
     } catch (e) { console.error("cycle error:", e.message); }
     await sleep(POLL_SECONDS * 1000);
   }

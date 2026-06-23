@@ -32,11 +32,13 @@ type TabId = (typeof TABS)[number]["id"];
 
 export function EmailHub() {
   const [tab, setTab] = useState<TabId>("templates");
-  // When "Edit copy →" is clicked on the Scheduled tab, jump to Templates with
-  // that email preselected.
+  // Cross-tab hand-offs: Scheduled → Templates ("Edit copy"), and
+  // Templates → Scheduled ("Schedule…" / "Edit when it sends").
   const [focusKey, setFocusKey] = useState<string | null>(null);
+  const [scheduleKey, setScheduleKey] = useState<string | null>(null);
 
   function editCopy(key: string) { setFocusKey(key); setTab("templates"); }
+  function scheduleEmail(key: string) { setScheduleKey(key); setTab("scheduled"); }
 
   return (
     <div>
@@ -61,8 +63,8 @@ export function EmailHub() {
       </div>
 
       <div className="tab-panel">
-        {tab === "templates" && <TemplatesView focusKey={focusKey} onFocusHandled={() => setFocusKey(null)} />}
-        {tab === "scheduled" && <ScheduledView onEditCopy={editCopy} />}
+        {tab === "templates" && <TemplatesView focusKey={focusKey} onFocusHandled={() => setFocusKey(null)} onSchedule={scheduleEmail} />}
+        {tab === "scheduled" && <ScheduledView onEditCopy={editCopy} focusScheduleKey={scheduleKey} onScheduleHandled={() => setScheduleKey(null)} />}
         {tab === "activity" && <ActivityView />}
       </div>
     </div>
@@ -73,15 +75,38 @@ export function EmailHub() {
  * Templates: brand + cadence + per-email copy, with live preview
  * ------------------------------------------------------------------ */
 
-const COPY_FIELDS: Array<{ key: keyof EmailTemplate; label: string; area?: boolean; hint?: string }> = [
-  { key: "subject",   label: "Subject",   hint: "≤45 chars, value- or number-led. {tokens} fill at send." },
-  { key: "preheader", label: "Preheader", hint: "40–90 chars that extend the subject, not repeat it." },
-  { key: "eyebrow",   label: "Eyebrow",   hint: "Small uppercase context line above the heading." },
-  { key: "heading",   label: "Heading",   hint: "One sentence that pays off the subject." },
-  { key: "intro",     label: "Intro",     area: true, hint: "One line of setup. Leave blank to omit." },
-  { key: "cta_label", label: "Button",    hint: "Verb + payoff, e.g. “Open Signals”." },
-  { key: "footer",    label: "Footer",    area: true, hint: "Why they got it + how to stop. Muted." },
+type CopyField = { key: keyof EmailTemplate; label: string; area?: boolean; hint?: string };
+
+// Plain-language fields grouped the way a non-technical user reads an email:
+// what shows in the inbox, then what's inside. Jargon (preheader/eyebrow) is gone.
+const INBOX_FIELDS: CopyField[] = [
+  { key: "subject",   label: "Subject line", hint: "The bold line in their inbox. Keep it short." },
+  { key: "preheader", label: "Preview text", hint: "Gray text shown after the subject — add detail, don't repeat it." },
 ];
+const BODY_FIELDS: CopyField[] = [
+  { key: "eyebrow",   label: "Tag",      hint: "Small label above the headline." },
+  { key: "heading",   label: "Headline", hint: "The big first line inside the email." },
+  { key: "cta_label", label: "Button",   hint: "What the button says. Leave blank for no button." },
+];
+// Shown only for custom emails — built-ins build their body in code.
+const CUSTOM_BODY_FIELD: CopyField = { key: "body", label: "Message", area: true, hint: "The main text. Blank line = new paragraph." };
+// Tucked behind "More options" so the form stays short.
+const MORE_FIELDS: CopyField[] = [
+  { key: "intro",  label: "Opening line", area: true, hint: "One sentence of intro. Optional." },
+  { key: "footer", label: "Fine print",   area: true, hint: "Small footer — why they got it." },
+];
+
+// New custom emails start from this on-brand starter the user edits down.
+const STARTER: Record<string, string> = {
+  eyebrow: "FounderFirst",
+  subject: "A quick update from FounderFirst",
+  preheader: "Here's what's new — and what it means for you.",
+  heading: "Something worth a minute of your time.",
+  intro: "",
+  body: "Hi there,\n\nWrite your message here. Keep it short and useful — one idea per paragraph.\n\n— The FounderFirst team",
+  cta_label: "Take a look",
+  footer: "You're getting this because you're a FounderFirst admin.",
+};
 
 const BRAND_COLORS: Array<{ key: keyof EmailBrand; label: string }> = [
   { key: "ink",   label: "Ink" },
@@ -96,51 +121,105 @@ const BRAND_COLORS: Array<{ key: keyof EmailBrand; label: string }> = [
   { key: "error", label: "Error" },
 ];
 
-export function TemplatesView({ focusKey, onFocusHandled }: { focusKey: string | null; onFocusHandled: () => void }) {
+type NewDraft = { label: string } & Record<string, string>;
+const BLANK_NEW: NewDraft = { label: "", ...STARTER };
+
+export function TemplatesView(
+  { focusKey, onFocusHandled, onSchedule }:
+  { focusKey: string | null; onFocusHandled: () => void; onSchedule: (key: string) => void },
+) {
   const qc = useQueryClient();
   const { data: templates = [], isPending: tLoading } = useQuery({ queryKey: ["email-templates"], queryFn: listEmailTemplates });
   const { data: brand, isPending: bLoading } = useQuery({ queryKey: ["email-brand"], queryFn: getEmailBrand });
+  const { data: schedules = [] } = useQuery({ queryKey: ["email-schedules"], queryFn: listEmailSchedules });
 
   const [key, setKey] = useState<string>("");
   const [draft, setDraft] = useState<EmailTemplate | null>(null);
+  const [creating, setCreating] = useState<NewDraft | null>(null);
+  const [showMore, setShowMore] = useState(false);
   const [brandDraft, setBrandDraft] = useState<EmailBrand | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Honor a "Edit copy →" hand-off from the Scheduled tab.
-  useEffect(() => { if (focusKey) { setKey(focusKey); onFocusHandled(); } }, [focusKey]); // eslint-disable-line
+  useEffect(() => { if (focusKey) { setCreating(null); setKey(focusKey); onFocusHandled(); } }, [focusKey]); // eslint-disable-line
 
   // Seed selection + drafts once data arrives.
   const selected = useMemo(() => templates.find((t) => t.email_key === key) ?? templates[0], [templates, key]);
   useEffect(() => { if (selected && (!draft || draft.email_key !== selected.email_key)) setDraft({ ...selected }); }, [selected]); // eslint-disable-line
   useEffect(() => { if (brand && !brandDraft) setBrandDraft({ ...brand }); }, [brand]); // eslint-disable-line
 
+  // The active copy being edited — a new draft if creating, else the selected template.
+  const active: Record<string, any> | null = creating ?? draft;
+  const isCustom = creating != null || !!draft?.is_custom;
+
   // ---- Live preview (debounced) --------------------------------------------
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const [previewSubject, setPreviewSubject] = useState<string>("");
   const [previewing, setPreviewing] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const frameRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
-    if (!draft || !brandDraft) return;
+    if (!active || !brandDraft) return;
     if (timer.current) clearTimeout(timer.current);
     setPreviewing(true);
+    const previewKey = creating ? "custom_preview" : (draft?.email_key ?? "custom_preview");
     timer.current = setTimeout(async () => {
       try {
-        const r = await previewEmailTemplate(draft.email_key, draft, brandDraft);
+        const r = await previewEmailTemplate(previewKey, active as Partial<EmailTemplate>, brandDraft);
         setPreviewHtml(r.html); setPreviewSubject(r.subject);
       } catch (e) { setError((e as Error).message); }
       finally { setPreviewing(false); }
     }, 450);
     return () => { if (timer.current) clearTimeout(timer.current); };
-  }, [draft, brandDraft]);
+  }, [active, brandDraft]); // eslint-disable-line
+
+  // Size the preview iframe to its content so there's no empty grey void.
+  function fitFrame() {
+    const f = frameRef.current;
+    try {
+      const h = f?.contentDocument?.body?.scrollHeight;
+      if (f && h) f.style.height = `${Math.max(h + 8, 320)}px`;
+    } catch { /* cross-origin srcdoc is same-origin; ignore if not ready */ }
+  }
+  useEffect(() => { const t = setTimeout(fitFrame, 60); return () => clearTimeout(t); }, [previewHtml]);
+
+  const setField = (k: string, v: string) =>
+    creating ? setCreating({ ...creating, [k]: v }) : setDraft({ ...(draft as EmailTemplate), [k]: v });
 
   const dirty = !!(draft && selected && JSON.stringify(draft) !== JSON.stringify(selected));
   const brandDirty = !!(brandDraft && brand && JSON.stringify(brandDraft) !== JSON.stringify(brand));
 
   const saveCopy = useMutation({
     mutationFn: () => saveEmailTemplate(draft!.email_key, draft!),
-    onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["email-templates"] }); setFlash("Copy saved."); setError(null); },
+    onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["email-templates"] }); setFlash("Saved."); setError(null); },
+    onError: (e) => setError((e as Error).message),
+  });
+  const createMut = useMutation({
+    mutationFn: async () => {
+      const c = creating!;
+      if (!c.label.trim()) throw new Error("Give the email a name first.");
+      if (!c.subject.trim() || !c.heading.trim()) throw new Error("A subject line and headline are required.");
+      return createCustomEmail({
+        label: c.label.trim(), eyebrow: c.eyebrow, subject: c.subject, preheader: c.preheader,
+        heading: c.heading, intro: c.intro, body: c.body, cta_label: c.cta_label, footer: c.footer,
+      });
+    },
+    onSuccess: async (newKey) => {
+      await qc.invalidateQueries({ queryKey: ["email-templates"] });
+      setCreating(null); setKey(newKey); setFlash("Email created — it's now in every tab."); setError(null);
+    },
+    onError: (e) => setError((e as Error).message),
+  });
+  const testMut = useMutation({
+    mutationFn: (k: string) => sendTestEmail(k),
+    onSuccess: () => { setFlash("Test sent to your inbox."); setError(null); },
+    onError: (e) => setError((e as Error).message),
+  });
+  const delMut = useMutation({
+    mutationFn: (k: string) => deleteCustomEmail(k), // FK cascade removes any schedule too
+    onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["email-templates"] }); await qc.invalidateQueries({ queryKey: ["email-schedules"] }); setKey(""); setFlash("Email deleted."); setError(null); },
     onError: (e) => setError((e as Error).message),
   });
   const saveBrand = useMutation({
@@ -149,65 +228,126 @@ export function TemplatesView({ focusKey, onFocusHandled }: { focusKey: string |
     onError: (e) => setError((e as Error).message),
   });
 
-  function resetCopy() {
-    if (selected) setDraft({ ...selected });
+  function startNew() { setError(null); setFlash(null); setShowMore(false); setCreating({ ...BLANK_NEW }); }
+  function resetCopy() { if (selected) setDraft({ ...selected }); }
+  function onDelete(t: EmailTemplate) {
+    if (!confirm(`Delete “${t.label}”? Its schedule (if any) goes too. This can't be undone.`)) return;
+    delMut.mutate(t.email_key);
   }
 
   if (tLoading || bLoading) return <div className="empty">Loading…</div>;
-  if (!draft || !brandDraft) return <div className="empty">Loading…</div>;
+  if (!active || !brandDraft) return <div className="empty">Loading…</div>;
+
+  const renderField = (f: CopyField) => (
+    <label key={String(f.key)} className="field">
+      <span>{f.label} {f.hint && <em className="email-hint">{f.hint}</em>}</span>
+      {f.area
+        ? <textarea rows={f.key === "body" ? 5 : 2} value={String(active[f.key as string] ?? "")} onChange={(e) => setField(f.key as string, e.target.value)} />
+        : <input value={String(active[f.key as string] ?? "")} onChange={(e) => setField(f.key as string, e.target.value)} />}
+    </label>
+  );
+  const bodyFields = isCustom ? [...BODY_FIELDS.slice(0, 2), CUSTOM_BODY_FIELD, BODY_FIELDS[2]] : BODY_FIELDS;
+  const headingLabel = creating ? "Name your email and write it" : `Edit ${draft?.label ?? ""}`;
+  // Launch label depends on how this email sends.
+  const draftSched = schedules.find((s) => s.email_key === draft?.email_key);
+  const scheduleLabel = draft?.is_custom ? "Schedule…"
+    : draftSched?.kind === "event" ? "Manage in Scheduled →"
+    : "Edit when it sends →";
 
   return (
     <div className="email-editor">
       {error && <div className="alert alert-error">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
 
-      {/* Step 1 — pick which email to edit */}
+      {/* Step 1 — pick which email, or start a new one */}
       <div className="email-step">
         <span className="email-step-n">1</span>
-        <span className="email-step-label">Pick an email to edit its words. <span className="email-sub">When each one sends lives in the Scheduled tab.</span></span>
+        <span className="email-step-label">Pick an email — or start a new one. <span className="email-sub">When each one sends lives in the Scheduled tab.</span></span>
       </div>
       <div className="email-picker">
         {templates.map((t) => (
-          <button key={t.email_key} className={`subnav-item ${t.email_key === draft.email_key ? "active" : ""}`}
-            onClick={() => setKey(t.email_key)}>
-            {t.label}
+          <button key={t.email_key} className={`subnav-item ${!creating && t.email_key === draft?.email_key ? "active" : ""}`}
+            onClick={() => { setCreating(null); setKey(t.email_key); }}>
+            {t.label}{t.is_custom && <span className="email-pill-tag">custom</span>}
           </button>
         ))}
+        <button className={`subnav-item email-new-pill ${creating ? "active" : ""}`} onClick={startNew}>+ New email</button>
       </div>
 
       {/* Step 2 — edit copy + live preview */}
       <div className="email-step">
         <span className="email-step-n">2</span>
-        <span className="email-step-label">Edit <strong>{draft.label}</strong> — the preview updates as you type.</span>
+        <span className="email-step-label">{headingLabel} — the preview updates as you type.</span>
       </div>
       <div className="email-cols">
         <div className="email-form">
-          {COPY_FIELDS.map((f) => (
-            <label key={String(f.key)} className="field">
-              <span>{f.label} {f.hint && <em className="email-hint">{f.hint}</em>}</span>
-              {f.area
-                ? <textarea rows={2} value={String(draft[f.key] ?? "")} onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })} />
-                : <input value={String(draft[f.key] ?? "")} onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })} />}
+          {creating && (
+            <label className="field">
+              <span>Name <em className="email-hint">just for you — won't appear in the email</em></span>
+              <input value={creating.label} placeholder="e.g. March product update" onChange={(e) => setField("label", e.target.value)} />
             </label>
-          ))}
-          <div className="email-actions">
-            <button className="btn" disabled={!dirty || saveCopy.isPending} onClick={() => saveCopy.mutate()}>
-              {saveCopy.isPending ? "Saving…" : "Save copy"}
-            </button>
-            <button className="btn-link" disabled={!dirty} onClick={resetCopy}>Discard changes</button>
+          )}
+
+          <div className="email-group">
+            <div className="email-group-label">How it looks in the inbox</div>
+            {INBOX_FIELDS.map(renderField)}
           </div>
-          <p className="email-help">
-            Tokens like <code>{"{n}"}</code>, <code>{"{topIntent}"}</code>, <code>{"{author}"}</code> are filled with real values
-            when the email sends. The frame (layout, buttons, dark-mode handling) is fixed in code so emails stay deliverable.
-          </p>
+
+          <div className="email-group">
+            <div className="email-group-label">Inside the email</div>
+            {bodyFields.map(renderField)}
+          </div>
+
+          <button type="button" className="email-more-toggle" onClick={() => setShowMore((v) => !v)}>
+            {showMore ? "− Fewer options" : "+ More options"} <span className="email-sub">opening line, fine print</span>
+          </button>
+          {showMore && <div className="email-group">{MORE_FIELDS.map(renderField)}</div>}
+
+          <div className="email-autofill">
+            <span className="email-autofill-mark">✦</span>
+            <span>Words in <code>{"{ }"}</code> fill in automatically when the email sends — <code>{"{author}"}</code> becomes the person's name. Leave them as-is.</span>
+          </div>
+
+          {creating ? (
+            <div className="email-actions">
+              <button className="btn" disabled={createMut.isPending} onClick={() => createMut.mutate()}>
+                {createMut.isPending ? "Creating…" : "Create email"}
+              </button>
+              <button className="btn-link" onClick={() => setCreating(null)}>Cancel</button>
+            </div>
+          ) : (
+            <>
+              <div className="email-actions">
+                <button className="btn" disabled={!dirty || saveCopy.isPending} onClick={() => saveCopy.mutate()}>
+                  {saveCopy.isPending ? "Saving…" : "Save"}
+                </button>
+                <button className="btn-link" disabled={!dirty} onClick={resetCopy}>Discard changes</button>
+              </div>
+              <div className="email-launch">
+                <span className="email-launch-label">Launch</span>
+                <button className="btn-link" disabled={testMut.isPending || dirty} title={dirty ? "Save first" : ""} onClick={() => draft && testMut.mutate(draft.email_key)}>Send test to me</button>
+                <button className="btn-link" onClick={() => draft && onSchedule(draft.email_key)}>{scheduleLabel}</button>
+                {draft?.is_custom && <button className="btn-link link-danger" onClick={() => draft && onDelete(draft)}>Delete</button>}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="email-preview-pane">
           <div className="email-preview-head">
             <strong>Preview</strong>
-            <span className="email-sub">{previewing ? "rendering…" : `Subject: “${previewSubject}”`}</span>
+            <span className="email-sub">{previewing ? "rendering…" : "how it arrives"}</span>
           </div>
-          <iframe className="email-preview-frame" title="Email preview" srcDoc={previewHtml} />
+          <div className="email-inbox-card">
+            <div className="email-inbox-row">
+              <span className="email-inbox-avatar">FF</span>
+              <span className="email-inbox-meta">
+                <span className="email-inbox-subject">{previewSubject || (active.subject as string) || "Subject line"}</span>
+                <span className="email-inbox-preview">{brandDraft.sender_name || "FounderFirst"} · {(active.preheader as string) || "Preview text shows here"}</span>
+              </span>
+            </div>
+            <iframe ref={frameRef} className="email-preview-frame" title="Email preview" srcDoc={previewHtml} onLoad={fitFrame} />
+          </div>
         </div>
       </div>
 
@@ -277,7 +417,10 @@ interface CadenceState {
   signals?: { intent_min: number; floor_days: number };
 }
 
-export function ScheduledView({ onEditCopy }: { onEditCopy: (key: string) => void }) {
+export function ScheduledView(
+  { onEditCopy, focusScheduleKey, onScheduleHandled }:
+  { onEditCopy: (key: string) => void; focusScheduleKey: string | null; onScheduleHandled: () => void },
+) {
   const qc = useQueryClient();
   const { data: templates = [] } = useQuery({ queryKey: ["email-templates"], queryFn: listEmailTemplates });
   const { data: schedules = [], isPending } = useQuery({ queryKey: ["email-schedules"], queryFn: listEmailSchedules });
@@ -332,6 +475,31 @@ export function ScheduledView({ onEditCopy }: { onEditCopy: (key: string) => voi
         : undefined,
     });
   }
+  // Open the schedule composer for a custom email coming from the Templates tab —
+  // prefilled from its template + any existing schedule (else sensible defaults).
+  function openScheduleForKey(k: string) {
+    const t = customByKey.get(k); if (!t) return;
+    const s = schedules.find((x) => x.email_key === k);
+    setCadence(null); setEditKey(k); setFlash(null); setError(null);
+    setComposer({
+      label: t.label, eyebrow: t.eyebrow, subject: t.subject, preheader: t.preheader,
+      heading: t.heading, body: t.body ?? "", cta_label: t.cta_label, cta_href: s?.cta_href ?? "", footer: t.footer,
+      frequency: s?.frequency ?? "weekly", send_hour: s?.send_hour ?? 13, send_dow: s?.send_dow ?? 1,
+      run_at: s?.run_at ? s.run_at.slice(0, 16) : "", audience_kind: s?.audience_kind ?? "admins",
+      audience_list: (s?.audience_list ?? []).join(", "), enabled: s?.enabled ?? true,
+    });
+  }
+
+  // Hand-off from Templates: open the right editor for the requested email.
+  //  • built-in recurring → cadence editor   • custom → schedule composer
+  //  • built-in event (Penny's brain, digest) → just land on the list (toggle there)
+  useEffect(() => {
+    if (!focusScheduleKey || !templates.length) return;
+    const s = schedules.find((x) => x.email_key === focusScheduleKey);
+    if (s?.is_builtin) { if (s.kind === "schedule") openCadence(s); }
+    else openScheduleForKey(focusScheduleKey);
+    onScheduleHandled();
+  }, [focusScheduleKey, templates, schedules]); // eslint-disable-line
 
   // ---- Live preview ---------------------------------------------------------
   const [previewHtml, setPreviewHtml] = useState("");

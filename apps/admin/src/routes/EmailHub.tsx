@@ -1,10 +1,14 @@
 /**
  * Settings → Emails — one hub for everything about transactional email.
  *
- *  • Templates: edit the brand (colors + sender), per-email copy (subject,
- *    preheader, heading, intro, CTA, footer), and the Signals cadence — all with
- *    a live preview that renders the real shell. The shell markup stays in code;
- *    only this data is editable, so deliverability can't be edited away.
+ *  • Templates: pick an email, edit its copy (subject, preheader, heading, intro,
+ *    CTA, footer) with a live preview of the real shell. Brand colours + sender
+ *    live in a collapsed "Advanced" section. The shell markup stays in code; only
+ *    this data is editable, so deliverability can't be edited away.
+ *  • Scheduled: every recurring + event email in one list. Recurring ones
+ *    (Signals digest, What's-new nudge, custom emails) have an editable cadence;
+ *    event ones (Penny's brain, What's-new digest) are toggle-only. Timing is one
+ *    source of truth — email_schedules rows dispatched by email-dispatch.
  *  • Activity: the unified send log + delivery/open/click rates.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -16,7 +20,7 @@ import {
   previewEmailTemplate, getEmailActivity,
   createCustomEmail, deleteCustomEmail,
   listEmailSchedules, upsertEmailSchedule, deleteEmailSchedule, sendTestEmail,
-  type EmailBrand, type EmailTemplate, type EmailSettings, type EmailSchedule,
+  type EmailBrand, type EmailTemplate, type EmailSchedule,
 } from "../lib/supabase";
 
 const TABS = [
@@ -28,12 +32,18 @@ type TabId = (typeof TABS)[number]["id"];
 
 export function EmailHub() {
   const [tab, setTab] = useState<TabId>("templates");
+  // When "Edit copy →" is clicked on the Scheduled tab, jump to Templates with
+  // that email preselected.
+  const [focusKey, setFocusKey] = useState<string | null>(null);
+
+  function editCopy(key: string) { setFocusKey(key); setTab("templates"); }
+
   return (
     <div>
       <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · settings</div>
       <h1 className="page-title">Emails.</h1>
       <p className="page-sub">
-        Edit the brand, the copy, and the cadence of every email Penny sends — then watch who opens them.
+        Three tabs: <strong>Templates</strong> for what each email says, <strong>Scheduled</strong> for when it sends, and <strong>Activity</strong> for who opened it.
       </p>
 
       <div className="tabs" role="tablist">
@@ -51,8 +61,8 @@ export function EmailHub() {
       </div>
 
       <div className="tab-panel">
-        {tab === "templates" && <TemplatesView />}
-        {tab === "scheduled" && <ScheduledView />}
+        {tab === "templates" && <TemplatesView focusKey={focusKey} onFocusHandled={() => setFocusKey(null)} />}
+        {tab === "scheduled" && <ScheduledView onEditCopy={editCopy} />}
         {tab === "activity" && <ActivityView />}
       </div>
     </div>
@@ -86,24 +96,24 @@ const BRAND_COLORS: Array<{ key: keyof EmailBrand; label: string }> = [
   { key: "error", label: "Error" },
 ];
 
-export function TemplatesView() {
+export function TemplatesView({ focusKey, onFocusHandled }: { focusKey: string | null; onFocusHandled: () => void }) {
   const qc = useQueryClient();
   const { data: templates = [], isPending: tLoading } = useQuery({ queryKey: ["email-templates"], queryFn: listEmailTemplates });
   const { data: brand, isPending: bLoading } = useQuery({ queryKey: ["email-brand"], queryFn: getEmailBrand });
-  const { data: settings, isPending: sLoading } = useQuery({ queryKey: ["email-settings"], queryFn: getEmailSettings });
 
   const [key, setKey] = useState<string>("");
   const [draft, setDraft] = useState<EmailTemplate | null>(null);
   const [brandDraft, setBrandDraft] = useState<EmailBrand | null>(null);
-  const [settingsDraft, setSettingsDraft] = useState<EmailSettings | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Honor a "Edit copy →" hand-off from the Scheduled tab.
+  useEffect(() => { if (focusKey) { setKey(focusKey); onFocusHandled(); } }, [focusKey]); // eslint-disable-line
 
   // Seed selection + drafts once data arrives.
   const selected = useMemo(() => templates.find((t) => t.email_key === key) ?? templates[0], [templates, key]);
   useEffect(() => { if (selected && (!draft || draft.email_key !== selected.email_key)) setDraft({ ...selected }); }, [selected]); // eslint-disable-line
   useEffect(() => { if (brand && !brandDraft) setBrandDraft({ ...brand }); }, [brand]); // eslint-disable-line
-  useEffect(() => { if (settings && !settingsDraft) setSettingsDraft({ ...settings }); }, [settings]); // eslint-disable-line
 
   // ---- Live preview (debounced) --------------------------------------------
   const [previewHtml, setPreviewHtml] = useState<string>("");
@@ -127,7 +137,6 @@ export function TemplatesView() {
 
   const dirty = !!(draft && selected && JSON.stringify(draft) !== JSON.stringify(selected));
   const brandDirty = !!(brandDraft && brand && JSON.stringify(brandDraft) !== JSON.stringify(brand));
-  const settingsDirty = !!(settingsDraft && settings && JSON.stringify(settingsDraft) !== JSON.stringify(settings));
 
   const saveCopy = useMutation({
     mutationFn: () => saveEmailTemplate(draft!.email_key, draft!),
@@ -139,65 +148,24 @@ export function TemplatesView() {
     onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["email-brand"] }); setFlash("Brand saved — applies to every email."); setError(null); },
     onError: (e) => setError((e as Error).message),
   });
-  const saveSettings = useMutation({
-    mutationFn: () => saveEmailSettings(settingsDraft!),
-    onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["email-settings"] }); setFlash("Cadence saved."); setError(null); },
-    onError: (e) => setError((e as Error).message),
-  });
 
   function resetCopy() {
     if (selected) setDraft({ ...selected });
   }
 
-  if (tLoading || bLoading || sLoading) return <div className="empty">Loading…</div>;
-  if (!draft || !brandDraft || !settingsDraft) return <div className="empty">Loading…</div>;
+  if (tLoading || bLoading) return <div className="empty">Loading…</div>;
+  if (!draft || !brandDraft) return <div className="empty">Loading…</div>;
 
   return (
     <div className="email-editor">
       {error && <div className="alert alert-error">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
 
-      {/* Brand + cadence — global, affect every email */}
-      <details className="email-card">
-        <summary><strong>Brand &amp; cadence</strong><span className="email-sub"> — colors and the Signals threshold, shared by all emails</span></summary>
-        <div className="email-brand-grid">
-          <label className="field email-sender">
-            <span>Sender name</span>
-            <input value={brandDraft.sender_name} onChange={(e) => setBrandDraft({ ...brandDraft, sender_name: e.target.value })} />
-          </label>
-          {BRAND_COLORS.map((c) => (
-            <label key={c.key} className="email-color">
-              <span>{c.label}</span>
-              <span className="email-color-row">
-                <input type="color" value={String(brandDraft[c.key])} onChange={(e) => setBrandDraft({ ...brandDraft, [c.key]: e.target.value })} />
-                <input className="email-hex" value={String(brandDraft[c.key])} onChange={(e) => setBrandDraft({ ...brandDraft, [c.key]: e.target.value })} />
-              </span>
-            </label>
-          ))}
-        </div>
-        <div className="email-cadence">
-          <label className="field">
-            <span>Signals: minimum intent to send (0–100)</span>
-            <input type="number" min={0} max={100} value={settingsDraft.signals_intent_min}
-              onChange={(e) => setSettingsDraft({ ...settingsDraft, signals_intent_min: Number(e.target.value) })} />
-          </label>
-          <label className="field">
-            <span>Signals: send-anyway floor (days)</span>
-            <input type="number" min={1} max={60} value={settingsDraft.signals_floor_days}
-              onChange={(e) => setSettingsDraft({ ...settingsDraft, signals_floor_days: Number(e.target.value) })} />
-          </label>
-        </div>
-        <div className="email-actions">
-          <button className="btn" disabled={!brandDirty || saveBrand.isPending} onClick={() => saveBrand.mutate()}>
-            {saveBrand.isPending ? "Saving…" : "Save brand"}
-          </button>
-          <button className="btn" disabled={!settingsDirty || saveSettings.isPending} onClick={() => saveSettings.mutate()}>
-            {saveSettings.isPending ? "Saving…" : "Save cadence"}
-          </button>
-        </div>
-      </details>
-
-      {/* Per-email copy + live preview */}
+      {/* Step 1 — pick which email to edit */}
+      <div className="email-step">
+        <span className="email-step-n">1</span>
+        <span className="email-step-label">Pick an email to edit its words. <span className="email-sub">When each one sends lives in the Scheduled tab.</span></span>
+      </div>
       <div className="email-picker">
         {templates.map((t) => (
           <button key={t.email_key} className={`subnav-item ${t.email_key === draft.email_key ? "active" : ""}`}
@@ -207,6 +175,11 @@ export function TemplatesView() {
         ))}
       </div>
 
+      {/* Step 2 — edit copy + live preview */}
+      <div className="email-step">
+        <span className="email-step-n">2</span>
+        <span className="email-step-label">Edit <strong>{draft.label}</strong> — the preview updates as you type.</span>
+      </div>
       <div className="email-cols">
         <div className="email-form">
           {COPY_FIELDS.map((f) => (
@@ -237,6 +210,31 @@ export function TemplatesView() {
           <iframe className="email-preview-frame" title="Email preview" srcDoc={previewHtml} />
         </div>
       </div>
+
+      {/* Advanced — brand colours + sender, collapsed by default */}
+      <details className="email-card email-advanced">
+        <summary><strong>Advanced — brand colours &amp; sender</strong><span className="email-sub"> — applies to every email; most teams never touch this</span></summary>
+        <div className="email-brand-grid">
+          <label className="field email-sender">
+            <span>Sender name</span>
+            <input value={brandDraft.sender_name} onChange={(e) => setBrandDraft({ ...brandDraft, sender_name: e.target.value })} />
+          </label>
+          {BRAND_COLORS.map((c) => (
+            <label key={c.key} className="email-color">
+              <span>{c.label}</span>
+              <span className="email-color-row">
+                <input type="color" value={String(brandDraft[c.key])} onChange={(e) => setBrandDraft({ ...brandDraft, [c.key]: e.target.value })} />
+                <input className="email-hex" value={String(brandDraft[c.key])} onChange={(e) => setBrandDraft({ ...brandDraft, [c.key]: e.target.value })} />
+              </span>
+            </label>
+          ))}
+        </div>
+        <div className="email-actions">
+          <button className="btn" disabled={!brandDirty || saveBrand.isPending} onClick={() => saveBrand.mutate()}>
+            {saveBrand.isPending ? "Saving…" : "Save brand"}
+          </button>
+        </div>
+      </details>
     </div>
   );
 }
@@ -271,27 +269,49 @@ function scheduleSummary(s: EmailSchedule): string {
   return `Weekly · ${DOW[s.send_dow ?? 1]} ${String(s.send_hour).padStart(2, "0")}:00 UTC`;
 }
 
-export function ScheduledView() {
+interface CadenceState {
+  email_key: string; label: string;
+  frequency: EmailSchedule["frequency"]; send_hour: number; send_dow: number;
+  enabled: boolean;
+  // Signals-only knobs (live in email_settings, shown on the Signals card).
+  signals?: { intent_min: number; floor_days: number };
+}
+
+export function ScheduledView({ onEditCopy }: { onEditCopy: (key: string) => void }) {
   const qc = useQueryClient();
   const { data: templates = [] } = useQuery({ queryKey: ["email-templates"], queryFn: listEmailTemplates });
   const { data: schedules = [], isPending } = useQuery({ queryKey: ["email-schedules"], queryFn: listEmailSchedules });
   const { data: brand } = useQuery({ queryKey: ["email-brand"], queryFn: getEmailBrand });
+  const { data: settings } = useQuery({ queryKey: ["email-settings"], queryFn: getEmailSettings });
 
   const customByKey = useMemo(() => {
     const m = new Map<string, EmailTemplate>();
     for (const t of templates) if (t.is_custom) m.set(t.email_key, t);
     return m;
   }, [templates]);
+  const labelByKey = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const t of templates) m.set(t.email_key, t.label);
+    return m;
+  }, [templates]);
+
+  // Built-ins first, then custom; each group keeps insertion order.
+  const recurring = useMemo(
+    () => schedules.filter((s) => s.kind === "schedule").sort((a, b) => Number(b.is_builtin) - Number(a.is_builtin)),
+    [schedules]);
+  const events = useMemo(() => schedules.filter((s) => s.kind === "event"), [schedules]);
 
   const [composer, setComposer] = useState<ComposerState | null>(null);
   const [editKey, setEditKey] = useState<string | null>(null);
+  const [cadence, setCadence] = useState<CadenceState | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function openNew() { setEditKey(null); setComposer({ ...BLANK }); setFlash(null); setError(null); }
+  function openNew() { setCadence(null); setEditKey(null); setComposer({ ...BLANK }); setFlash(null); setError(null); }
   function openEdit(s: EmailSchedule) {
     const t = customByKey.get(s.email_key);
     if (!t) return;
+    setCadence(null);
     setEditKey(s.email_key);
     setComposer({
       label: t.label, eyebrow: t.eyebrow, subject: t.subject, preheader: t.preheader,
@@ -301,6 +321,16 @@ export function ScheduledView() {
       audience_list: (s.audience_list ?? []).join(", "), enabled: s.enabled,
     });
     setFlash(null); setError(null);
+  }
+  function openCadence(s: EmailSchedule) {
+    setComposer(null); setEditKey(null); setFlash(null); setError(null);
+    setCadence({
+      email_key: s.email_key, label: labelByKey.get(s.email_key) ?? s.email_key,
+      frequency: s.frequency, send_hour: s.send_hour, send_dow: s.send_dow ?? 1, enabled: s.enabled,
+      signals: s.email_key === "signals_digest"
+        ? { intent_min: settings?.signals_intent_min ?? 70, floor_days: settings?.signals_floor_days ?? 7 }
+        : undefined,
+    });
   }
 
   // ---- Live preview ---------------------------------------------------------
@@ -379,6 +409,29 @@ export function ScheduledView() {
     onError: (e) => setError((e as Error).message),
   });
 
+  // Save cadence for a built-in recurring email (frequency/hour/day + enabled);
+  // for Signals also persist the intent/floor knobs in email_settings.
+  const cadenceMut = useMutation({
+    mutationFn: async () => {
+      const k = cadence!;
+      const existing = schedules.find((s) => s.email_key === k.email_key);
+      await upsertEmailSchedule({
+        id: existing?.id, email_key: k.email_key, frequency: k.frequency,
+        send_hour: k.send_hour, send_dow: k.frequency === "weekly" ? k.send_dow : null,
+        enabled: k.enabled,
+      });
+      if (k.signals) {
+        await saveEmailSettings({ signals_intent_min: k.signals.intent_min, signals_floor_days: k.signals.floor_days });
+      }
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["email-schedules"] });
+      await qc.invalidateQueries({ queryKey: ["email-settings"] });
+      setCadence(null); setFlash("Cadence saved.");
+    },
+    onError: (e) => setError((e as Error).message),
+  });
+
   function onDelete(s: EmailSchedule) {
     const t = customByKey.get(s.email_key);
     if (!confirm(`Delete “${t?.label ?? s.email_key}” and its schedule? This can't be undone.`)) return;
@@ -386,46 +439,135 @@ export function ScheduledView() {
   }
 
   const c = composer;
+  const listMode = !composer && !cadence;
   return (
     <div className="email-scheduled">
       {error && <div className="alert alert-error">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
 
-      {!c && (
+      {listMode && (
         <>
-          <div className="email-actions" style={{ marginBottom: 16 }}>
-            <button className="btn" onClick={openNew}>+ New scheduled email</button>
-          </div>
-          {isPending ? <div className="empty">Loading…</div>
-            : schedules.length === 0 ? (
-              <div className="empty">
-                <p className="empty-title">No scheduled emails yet.</p>
-                Compose a custom email and set it on a daily, weekly, or one-time schedule.
-              </div>
-            ) : (
-              <div className="email-sched-list">
-                {schedules.map((s) => {
-                  const t = customByKey.get(s.email_key);
-                  return (
-                    <div key={s.id} className="email-sched-card">
-                      <div className="email-sched-main">
-                        <strong>{t?.label ?? s.email_key}</strong>
-                        <span className="email-sub">{scheduleSummary(s)} · {s.audience_kind === "admins" ? "all admins" : `${s.audience_list.length} recipient${s.audience_list.length === 1 ? "" : "s"}`}</span>
-                        {s.last_run_at && <span className="email-sched-last">Last sent {relTime(s.last_run_at)}</span>}
+          <p className="email-help" style={{ marginTop: 0 }}>
+            Every email that sends on its own. <strong>Recurring</strong> ones go out on a schedule you set here; <strong>event-based</strong> ones fire when something happens. Edit what any of them <em>say</em> in the Templates tab.
+          </p>
+
+          {isPending ? <div className="empty">Loading…</div> : (
+            <>
+              <div className="email-sched-group">
+                <div className="email-sched-grouphead">
+                  <h3 className="email-form-title" style={{ margin: 0 }}>Recurring</h3>
+                  <button className="btn" onClick={openNew}>+ New scheduled email</button>
+                </div>
+                {recurring.length === 0 ? (
+                  <div className="empty"><p className="empty-title">No recurring emails.</p>Add one with “New scheduled email”.</div>
+                ) : (
+                  <div className="email-sched-list">
+                    {recurring.map((s) => (
+                      <div key={s.id} className="email-sched-card">
+                        <div className="email-sched-main">
+                          <strong>{labelByKey.get(s.email_key) ?? s.email_key}</strong>
+                          <span className="email-sub">{scheduleSummary(s)} · {s.audience_kind === "admins" ? "all admins" : `${s.audience_list.length} recipient${s.audience_list.length === 1 ? "" : "s"}`}</span>
+                          {s.last_run_at && <span className="email-sched-last">Last sent {relTime(s.last_run_at)}</span>}
+                        </div>
+                        <div className="email-sched-controls">
+                          <span className={`email-badge ${s.enabled ? "email-badge-open" : "email-badge-muted"}`}>{s.enabled ? "on" : "off"}</span>
+                          <button className="btn-link" onClick={() => testMut.mutate(s.email_key)} disabled={testMut.isPending}>Send test</button>
+                          <button className="btn-link" onClick={() => toggleMut.mutate(s)}>{s.enabled ? "Pause" : "Resume"}</button>
+                          {s.is_builtin ? (
+                            <>
+                              <button className="btn-link" onClick={() => openCadence(s)}>Edit cadence</button>
+                              <button className="btn-link" onClick={() => onEditCopy(s.email_key)}>Edit copy →</button>
+                            </>
+                          ) : (
+                            <>
+                              <button className="btn-link" onClick={() => openEdit(s)}>Edit</button>
+                              <button className="btn-link link-danger" onClick={() => onDelete(s)}>Delete</button>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <div className="email-sched-controls">
-                        <span className={`email-badge ${s.enabled ? "email-badge-open" : "email-badge-muted"}`}>{s.enabled ? "on" : "off"}</span>
-                        <button className="btn-link" onClick={() => testMut.mutate(s.email_key)} disabled={testMut.isPending}>Send test</button>
-                        <button className="btn-link" onClick={() => toggleMut.mutate(s)}>{s.enabled ? "Pause" : "Resume"}</button>
-                        <button className="btn-link" onClick={() => openEdit(s)}>Edit</button>
-                        <button className="btn-link link-danger" onClick={() => onDelete(s)}>Delete</button>
-                      </div>
-                    </div>
-                  );
-                })}
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+
+              {events.length > 0 && (
+                <div className="email-sched-group">
+                  <h3 className="email-form-title">Event-based</h3>
+                  <p className="email-help" style={{ marginTop: 0 }}>
+                    These fire automatically when something happens — there's no frequency to set, just an on/off switch.
+                  </p>
+                  <div className="email-sched-list">
+                    {events.map((s) => (
+                      <div key={s.id} className="email-sched-card">
+                        <div className="email-sched-main">
+                          <strong>{labelByKey.get(s.email_key) ?? s.email_key}</strong>
+                          <span className="email-sub">{s.trigger_label ?? "Event"} · all admins</span>
+                          {s.last_run_at && <span className="email-sched-last">Last sent {relTime(s.last_run_at)}</span>}
+                        </div>
+                        <div className="email-sched-controls">
+                          <span className={`email-badge ${s.enabled ? "email-badge-open" : "email-badge-muted"}`}>{s.enabled ? "on" : "off"}</span>
+                          <button className="btn-link" onClick={() => testMut.mutate(s.email_key)} disabled={testMut.isPending}>Send test</button>
+                          <button className="btn-link" onClick={() => toggleMut.mutate(s)}>{s.enabled ? "Turn off" : "Turn on"}</button>
+                          <button className="btn-link" onClick={() => onEditCopy(s.email_key)}>Edit copy →</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </>
+      )}
+
+      {cadence && (
+        <div className="email-form email-cadence-edit">
+          <h3 className="email-form-title" style={{ marginTop: 0 }}>Cadence — {cadence.label}</h3>
+          <p className="email-help" style={{ marginTop: 0 }}>
+            This email's content is assembled automatically when it sends. Set how often it goes out here; edit its words in the Templates tab.
+          </p>
+          <div className="email-cadence">
+            <label className="field"><span>Frequency</span>
+              <select className="topic-select" value={cadence.frequency}
+                onChange={(e) => setCadence({ ...cadence, frequency: e.target.value as EmailSchedule["frequency"] })}>
+                <option value="daily">Daily</option><option value="weekly">Weekly</option>
+              </select></label>
+            <label className="field"><span>Hour (UTC)</span>
+              <input type="number" min={0} max={23} value={cadence.send_hour}
+                onChange={(e) => setCadence({ ...cadence, send_hour: Number(e.target.value) })} /></label>
+            {cadence.frequency === "weekly" && (
+              <label className="field"><span>Day</span>
+                <select className="topic-select" value={cadence.send_dow}
+                  onChange={(e) => setCadence({ ...cadence, send_dow: Number(e.target.value) })}>
+                  {DOW.map((d, i) => <option key={d} value={i}>{d}</option>)}
+                </select></label>
+            )}
+          </div>
+          {cadence.signals && (
+            <>
+              <h3 className="email-form-title">Only send when it's worth an inbox</h3>
+              <div className="email-cadence">
+                <label className="field"><span>Minimum intent to send (0–100) <em className="email-hint">skip the daily send unless a lead clears this</em></span>
+                  <input type="number" min={0} max={100} value={cadence.signals.intent_min}
+                    onChange={(e) => setCadence({ ...cadence, signals: { ...cadence.signals!, intent_min: Number(e.target.value) } })} /></label>
+                <label className="field"><span>Send-anyway floor (days) <em className="email-hint">send regardless after this many quiet days</em></span>
+                  <input type="number" min={1} max={60} value={cadence.signals.floor_days}
+                    onChange={(e) => setCadence({ ...cadence, signals: { ...cadence.signals!, floor_days: Number(e.target.value) } })} /></label>
+              </div>
+            </>
+          )}
+          <label className="email-check">
+            <input type="checkbox" checked={cadence.enabled} onChange={(e) => setCadence({ ...cadence, enabled: e.target.checked })} />
+            <span>Enabled (will send on schedule)</span>
+          </label>
+          <div className="email-actions">
+            <button className="btn" disabled={cadenceMut.isPending} onClick={() => cadenceMut.mutate()}>
+              {cadenceMut.isPending ? "Saving…" : "Save cadence"}
+            </button>
+            <button className="btn-link" onClick={() => setCadence(null)}>Cancel</button>
+          </div>
+        </div>
       )}
 
       {c && (

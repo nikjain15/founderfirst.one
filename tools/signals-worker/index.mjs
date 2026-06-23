@@ -20,6 +20,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { embed, score, draft, brainConfig } from "./brain.mjs";
 import { searchApiDirect } from "./providers/apidirect.mjs";
+import { maybeRunOptimizer, runOptimizer } from "./optimizer.mjs";
 
 const env = (k, d) => process.env[k] ?? d;
 
@@ -272,15 +273,23 @@ async function cycle() {
 }
 
 async function main() {
-  const once = process.argv.includes("--once");
   console.log(`signals-worker starting (score=${brainConfig.scoreModel}, embed=${brainConfig.embedModel}, draft=${brainConfig.draftModel})`);
-  if (once) { const n = await cycle(); console.log(`done, processed ${n}`); return; }
+
+  // Force a single optimizer run and exit (for testing / manual trigger).
+  if (process.argv.includes("--optimize")) {
+    const r = await runOptimizer(db, await getSettings());
+    console.log("optimizer report:", JSON.stringify(r, null, 2));
+    return;
+  }
+  if (process.argv.includes("--once")) { const n = await cycle(); console.log(`done, processed ${n}`); return; }
 
   for (;;) {
     try {
       const n = await cycle();
       // Refresh caches occasionally so keyword/voice edits propagate.
       if (n === 0) { cachedKeywords = null; cachedExcludes = null; cachedVoice = null; cachedSettings = null; }
+      // Daily self-improvement pass (self-gated to once / 24h).
+      await maybeRunOptimizer(db, await getSettings());
     } catch (e) { console.error("cycle error:", e.message); }
     await sleep(POLL_SECONDS * 1000);
   }

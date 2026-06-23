@@ -344,6 +344,28 @@ export async function getEmailActivity(days = 30): Promise<EmailActivity> {
   return data as EmailActivity;
 }
 
+/** Draft email copy from a short brief, using the local Ollama model on the
+ *  Signals host (via the admin-gated email-compose function). Preview, then accept. */
+export interface ComposedEmail {
+  subject: string; preheader: string; eyebrow: string;
+  heading: string; intro: string; body: string; cta_label: string; footer: string;
+}
+export async function composeEmail(brief: string): Promise<ComposedEmail> {
+  const db = getClient();
+  const { data, error } = await db.functions.invoke("email-compose", { body: { brief } });
+  if (error) {
+    // The function returns a structured {error, detail} body on 4xx/5xx.
+    let detail = error.message;
+    try {
+      const ctx = (error as any).context;
+      if (ctx && typeof ctx.json === "function") { const b = await ctx.json(); detail = b?.detail ?? b?.error ?? detail; }
+    } catch { /* fall back to error.message */ }
+    throw new Error(detail);
+  }
+  if (!data?.draft) throw new Error("Drafting returned nothing.");
+  return data.draft as ComposedEmail;
+}
+
 // ---- Custom scheduled emails -----------------------------------------------
 
 /** Create a new custom email template (admin-composed body). Returns its key. */

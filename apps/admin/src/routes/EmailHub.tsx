@@ -18,7 +18,7 @@ import {
   listEmailTemplates, saveEmailTemplate,
   getEmailSettings, saveEmailSettings,
   previewEmailTemplate, getEmailActivity,
-  createCustomEmail, deleteCustomEmail,
+  createCustomEmail, deleteCustomEmail, composeEmail,
   listEmailSchedules, upsertEmailSchedule, deleteEmailSchedule, sendTestEmail,
   type EmailBrand, type EmailTemplate, type EmailSchedule,
 } from "../lib/supabase";
@@ -136,6 +136,8 @@ export function TemplatesView(
   const [key, setKey] = useState<string>("");
   const [draft, setDraft] = useState<EmailTemplate | null>(null);
   const [creating, setCreating] = useState<NewDraft | null>(null);
+  const [aiBrief, setAiBrief] = useState("");
+  const [aiDraft, setAiDraft] = useState<Record<string, any> | null>(null);
   const [showMore, setShowMore] = useState(false);
   const [brandDraft, setBrandDraft] = useState<EmailBrand | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
@@ -152,6 +154,8 @@ export function TemplatesView(
   // The active copy being edited — a new draft if creating, else the selected template.
   const active: Record<string, any> | null = creating ?? draft;
   const isCustom = creating != null || !!draft?.is_custom;
+  // While an AI draft is pending acceptance, the preview shows it (not the form).
+  const previewSource: Record<string, any> | null = (creating && aiDraft) ? aiDraft : active;
 
   // ---- Live preview (debounced) --------------------------------------------
   const [previewHtml, setPreviewHtml] = useState<string>("");
@@ -161,19 +165,19 @@ export function TemplatesView(
   const frameRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
-    if (!active || !brandDraft) return;
+    if (!previewSource || !brandDraft) return;
     if (timer.current) clearTimeout(timer.current);
     setPreviewing(true);
     const previewKey = creating ? "custom_preview" : (draft?.email_key ?? "custom_preview");
     timer.current = setTimeout(async () => {
       try {
-        const r = await previewEmailTemplate(previewKey, active as Partial<EmailTemplate>, brandDraft);
+        const r = await previewEmailTemplate(previewKey, previewSource as Partial<EmailTemplate>, brandDraft);
         setPreviewHtml(r.html); setPreviewSubject(r.subject);
       } catch (e) { setError((e as Error).message); }
       finally { setPreviewing(false); }
     }, 450);
     return () => { if (timer.current) clearTimeout(timer.current); };
-  }, [active, brandDraft]); // eslint-disable-line
+  }, [previewSource, brandDraft]); // eslint-disable-line
 
   // Size the preview iframe to its content so there's no empty grey void.
   function fitFrame() {
@@ -228,7 +232,18 @@ export function TemplatesView(
     onError: (e) => setError((e as Error).message),
   });
 
-  function startNew() { setError(null); setFlash(null); setShowMore(false); setCreating({ ...BLANK_NEW }); }
+  const composeMut = useMutation({
+    mutationFn: (brief: string) => composeEmail(brief),
+    onSuccess: (d) => { setAiDraft(d); setError(null); },
+    onError: (e) => setError((e as Error).message),
+  });
+  function acceptAi() {
+    if (!creating || !aiDraft) return;
+    setCreating({ ...creating, ...aiDraft, label: creating.label });
+    setAiDraft(null); setFlash("Draft applied — tweak anything, then create.");
+  }
+
+  function startNew() { setError(null); setFlash(null); setShowMore(false); setAiBrief(""); setAiDraft(null); setCreating({ ...BLANK_NEW }); }
   function resetCopy() { if (selected) setDraft({ ...selected }); }
   function onDelete(t: EmailTemplate) {
     if (!confirm(`Delete “${t.label}”? Its schedule (if any) goes too. This can't be undone.`)) return;
@@ -281,6 +296,23 @@ export function TemplatesView(
       </div>
       <div className="email-cols">
         <div className="email-form">
+          {creating && (
+            <div className="email-ai">
+              <div className="email-ai-head"><span className="email-autofill-mark">✦</span> Draft with AI <span className="email-sub">describe it; your local model writes a first draft you can edit</span></div>
+              <textarea rows={3} className="email-ai-brief" value={aiBrief}
+                placeholder="Who is it for and what should it say? e.g. “Tell existing customers we now auto-import bank transactions — saves about 2 hours a month.”"
+                onChange={(e) => setAiBrief(e.target.value)} />
+              <div className="email-actions">
+                <button className="btn" disabled={composeMut.isPending || aiBrief.trim().length < 3} onClick={() => composeMut.mutate(aiBrief)}>
+                  {composeMut.isPending ? "Drafting…" : aiDraft ? "Regenerate" : "Draft with AI"}
+                </button>
+                {aiDraft && <button className="btn" onClick={acceptAi}>Use this draft</button>}
+                {aiDraft && <button className="btn-link" onClick={() => setAiDraft(null)}>Discard draft</button>}
+              </div>
+              {aiDraft && <p className="email-help" style={{ marginTop: 0 }}>The preview on the right is the AI draft. “Use this draft” fills the fields below — then tweak and create.</p>}
+            </div>
+          )}
+
           {creating && (
             <label className="field">
               <span>Name <em className="email-hint">just for you — won't appear in the email</em></span>
@@ -336,7 +368,7 @@ export function TemplatesView(
         <div className="email-preview-pane">
           <div className="email-preview-head">
             <strong>Preview</strong>
-            <span className="email-sub">{previewing ? "rendering…" : "how it arrives"}</span>
+            <span className="email-sub">{previewing ? "rendering…" : (creating && aiDraft) ? "AI draft — not saved yet" : "how it arrives"}</span>
           </div>
           <div className="email-inbox-card">
             <div className="email-inbox-row">

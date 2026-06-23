@@ -876,6 +876,8 @@ export interface SigItemRow {
   intent: number | null;
   pain_tags: string[] | null;
   competitor: string | null;
+  geo: string | null;   // 'us' | 'non_us' | 'unknown' — present once list_sig_items returns it
+  role: string | null;  // 'needs_help' | 'offering_services' | 'hiring' | 'other'
 }
 
 export interface SigLeadRow {

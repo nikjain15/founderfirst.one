@@ -1,16 +1,13 @@
 /**
  * Signals capture — background service worker.
  *
- * Capture paths (both POST to listening-intake with the shared secret from
- * Options, never exposed to the page):
- *
- *   1. Right-click "Capture to FounderFirst Signals" on selected text — the
- *      reliable path, works on ANY site. On click we inject a small extractor
- *      into the active tab (via activeTab + scripting) that walks up from the
- *      selection to the post container and pulls the author + permalink per
- *      platform (Reddit / LinkedIn / Facebook / X), with a generic fallback.
- *   2. The content-script "→ Signals" button (message "signals:capture") —
- *      best-effort; Facebook re-renders and strips it.
+ * One capture path: right-click "Capture to FounderFirst Signals" on selected
+ * text. Works on ANY site. On click we inject a small extractor into the active
+ * tab (via activeTab + scripting) that walks up from the selection to the post
+ * container and pulls the author + permalink per platform (Reddit / LinkedIn /
+ * Facebook / X), with a generic fallback. The captured payload is POSTed to
+ * listening-intake with the shared secret from Options (never exposed to the
+ * page).
  */
 
 const DEFAULT_ENDPOINT =
@@ -132,10 +129,4 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     raw: { via: "context_menu", page: info.pageUrl || tab?.url || null, title: extracted.title || null },
   });
   flashBadge(r.ok);
-});
-
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg?.type !== "signals:capture") return false;
-  postCapture(msg.payload).then(sendResponse);
-  return true;
 });

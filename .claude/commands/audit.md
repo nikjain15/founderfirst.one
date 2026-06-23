@@ -32,36 +32,65 @@ Fan out: run PARALLEL subagents (one per surface, or per dimension) to collect
 findings, then **verify each finding by opening the file** before reporting it —
 never assert from a single grep (LEARNINGS: "verify claims against real data").
 
-1. **IA / UX coherence** — nav depth, duplicated destinations, dead/stub tabs,
-   orphan routes, confusing labels. Target: ≤4 primary admin tabs + a Settings
-   menu (see the admin-IA memory).
-2. **Design-system adherence** — NO inline hex/`rgba()`, NO magic px font-sizes,
-   NO CSS vars that don't resolve in `tokens.css`, icons via shared components
-   not emoji/glyphs. Grep `style={{`, `#[0-9a-fA-F]{3,6}`, `rgba(`,
-   `fontSize: ?[0-9]`, and every `var(--…)`; cross-check against tokens.css.
-3. **Responsive** — at each width on the ladder
-   (320·360·375·414·480·540·640·768·834·1024·1280·1440·1920),
-   `document.documentElement.scrollWidth > innerWidth` must be **false**. No
-   hardcoded px widths in horizontal layouts; tables inside `.table-wrap`; tap
-   targets ≥44px; inputs ≥16px font-size.
-4. **Accessibility** — roles/aria, `label`↔input, `:focus-visible`, keyboard
-   operability (dropdowns/drawers close on Esc + outside-click), contrast, alt text.
-5. **Security** — RLS on every table; SECURITY DEFINER functions scoped; the
-   `service_role` key NEVER in a browser bundle; edge-function auth (JWT vs cron
-   secret) actually enforced in code; no secrets committed; auth redirect
-   allow-list correct.
-6. **Data integrity / one source of truth** — duplicated stores that can drift;
-   `supabase/migrations/` as the only schema source; no hand-edited squashed dumps.
-7. **Copy / docs / self-description drift** — UI copy, READMEs, prompts that name
-   tools we no longer use (e.g. Dify) or contradict current behaviour
-   (LEARNINGS Rule 7: a capability change isn't done until the system's
+1. **IA / UX coherence** (`ia_ux`) — nav depth, duplicated destinations,
+   dead/stub tabs, orphan routes, confusing labels. Target: ≤4 primary admin
+   tabs + a Settings menu (see the admin-IA memory).
+2. **Design-system adherence** (`design_system`) — NO inline hex/`rgba()`, NO
+   magic px font-sizes, NO CSS vars that don't resolve in `tokens.css`, icons via
+   shared components not emoji/glyphs. Grep `style={{`, `#[0-9a-fA-F]{3,6}`,
+   `rgba(`, `fontSize: ?[0-9]`, and every `var(--…)`; cross-check tokens.css.
+3. **Responsive** (`responsive`) — **REAL BROWSER CHECK**: serve the app and at
+   each width on the ladder (320·360·375·414·480·540·640·768·834·1024·1280·1440·
+   1920) assert `document.documentElement.scrollWidth > innerWidth` is **false**.
+   Plus: no hardcoded px widths in horizontal layouts; tables inside
+   `.table-wrap`; tap targets ≥44px; inputs ≥16px.
+4. **Accessibility** (`accessibility`) — **REAL BROWSER CHECK**: run an axe scan
+   on key pages and a keyboard pass (Tab order, focus-visible, Esc/outside-click
+   on dropdowns + drawers). Plus roles/aria, `label`↔input, contrast, alt text.
+5. **Security** (`security`) — RLS on every table; SECURITY DEFINER functions
+   scoped with `search_path`; the `service_role` key NEVER in a browser bundle
+   (grep `dist/`); edge-function auth (JWT vs cron secret) actually enforced in
+   code; no secrets committed; auth redirect allow-list correct. **Any finding
+   here is P0 or P1, never P2.**
+6. **Data integrity / one source of truth** (`data_integrity`) — duplicated
+   stores that can drift; `supabase/migrations/` as the only schema source; no
+   hand-edited squashed dumps.
+7. **Copy / docs / self-description drift** (`copy_docs`) — UI copy, READMEs,
+   prompts that name tools we no longer use (e.g. Dify) or contradict current
+   behaviour (Rule 7: a capability change isn't done until the system's
    self-description matches it).
-8. **Dead code & placeholders** — unused exports, "coming soon" stubs shipped to
-   prod, real TODO/FIXME, commented-out blocks.
-9. **Performance** — bundle bloat, unoptimised images, N+1 / unindexed queries,
-   render waterfalls, missing memoisation on hot paths.
-10. **Tests / verification gaps** — critical paths with no coverage; flows only
-    checkable by hand.
+8. **Dead code & placeholders** (`dead_code`) — unused exports, "coming soon"
+   stubs shipped to prod, real TODO/FIXME, commented-out blocks.
+9. **Performance** (`performance`) — **REAL BROWSER CHECK**: Lighthouse Core Web
+   Vitals (LCP/INP/CLS) on the marketing home and 2–3 key admin pages (use the
+   `web-perf` skill). Plus bundle bloat, unoptimised images, N+1 / unindexed
+   queries, render waterfalls, missing memoisation.
+10. **Tests / verification gaps** (`tests`) — critical paths with no coverage;
+    flows only checkable by hand.
+11. **Reliability / error-handling** (`reliability`) — every fetch/RPC has
+    loading + empty + error states; no unhandled promise rejections; graceful
+    degradation (a failed secondary call must not take a page down — see the
+    inbox swallowing a broken analytics RPC); idempotent writes; React error
+    boundaries on routes. **Silent failures are P0/P1, never P2.**
+12. **Privacy / compliance** (`privacy`) — data retention disclosed in the
+    privacy policy; real erasure paths exist (Discord DMs, waitlist); no PII
+    over-collection or PII written to logs; consent captured before storing
+    personal data (LEARNINGS Rule 8). **P0/P1, never P2.**
+13. **Observability** (`observability`) — can prod breakage be SEEN? Error
+    reporting wired (PostHog/console), worker/Fly logs reachable
+    (`wrangler tail`, `flyctl logs`), admin actions audit-logged, health checks,
+    alerts on the critical path.
+14. **SEO / discoverability** (`seo`) — marketing + blog: title/description/OG
+    tags, sitemap, robots.txt, canonical URLs, structured data, semantic HTML,
+    image alt text. (Admin is noindex — exclude it here.)
+
+**Real browser checks:** for dimensions 3, 4, 9 you MUST drive an actual browser,
+not just reason about CSS. Use the preview/dev-server + resize tools for the
+responsive width ladder, an axe scan + keyboard walk for accessibility, and the
+`web-perf` skill (Lighthouse) for performance. If the run environment has no
+browser (e.g. a headless cloud routine without one), fall back to static
+reasoning for those three and SAY SO in the report and the dimension note —
+don't silently score them as if they were measured.
 
 ## 3. Output — a prioritised report
 A 5-line executive summary first: counts by severity, the top 3 to fix now, and
@@ -72,14 +101,20 @@ any NEW systemic pattern. Then findings grouped by surface, each with:
   recurring), and the concrete fix + the token/pattern to use instead.
 
 ## 4. Score every dimension — feeds the /quality dashboard
-Give each of the ten dimensions a **0–100 score** using this fixed formula so
-runs are comparable over time:
+Give each of the **fourteen** dimensions a **0–100 score** using this fixed
+formula so runs are comparable over time:
 
     score = max(0, 100 − 25·P0 − 8·P1 − 2·P2)   (that dimension's finding counts)
 
-Overall = round(mean of the ten dimension scores). Use these exact dimension
-keys: `ia_ux`, `design_system`, `responsive`, `accessibility`, `security`,
-`data_integrity`, `copy_docs`, `dead_code`, `performance`, `tests`.
+Overall = round(mean of the fourteen dimension scores). Use these exact keys:
+`ia_ux`, `design_system`, `responsive`, `accessibility`, `security`,
+`data_integrity`, `copy_docs`, `dead_code`, `performance`, `tests`,
+`reliability`, `privacy`, `observability`, `seo`.
+
+The weighting is enforced through **severity discipline, not a weighted mean**:
+issues in `security`, `privacy`, `data_integrity`, and `reliability` (silent
+failures) are classified P0 or P1 — never P2 — so the trust/reliability cluster
+moves the score hardest. Equal-weight the mean otherwise.
 
 Record the run into the `audit_runs` Supabase table (powers `/quality` —
 `apps/admin/src/routes/Quality.tsx`). Insert one row:

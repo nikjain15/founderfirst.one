@@ -12,17 +12,23 @@ import { IconAlert, IconExternalLink } from "../lib/icons";
 
 // The ten dimensions /audit scores, in display order. Keys must match what the
 // audit agent writes into audit_runs.dimensions.
+// Trust/reliability cluster first — these move the score hardest (their findings
+// are always P0/P1). Keys must match what the audit writes to audit_runs.dimensions.
 const DIMENSIONS: Array<{ key: string; label: string }> = [
-  { key: "ia_ux",          label: "IA / UX" },
-  { key: "design_system",  label: "Design system" },
+  { key: "security",       label: "Security" },
+  { key: "privacy",        label: "Privacy" },
+  { key: "reliability",    label: "Reliability" },
+  { key: "data_integrity", label: "Data integrity" },
+  { key: "performance",    label: "Performance" },
   { key: "responsive",     label: "Responsive" },
   { key: "accessibility",  label: "Accessibility" },
-  { key: "security",       label: "Security" },
-  { key: "data_integrity", label: "Data integrity" },
+  { key: "design_system",  label: "Design system" },
+  { key: "ia_ux",          label: "IA / UX" },
+  { key: "observability",  label: "Observability" },
+  { key: "tests",          label: "Tests" },
   { key: "copy_docs",      label: "Copy / docs" },
   { key: "dead_code",      label: "Dead code" },
-  { key: "performance",    label: "Performance" },
-  { key: "tests",          label: "Tests" },
+  { key: "seo",            label: "SEO" },
 ];
 
 export function Quality() {

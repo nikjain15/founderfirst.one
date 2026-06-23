@@ -44,9 +44,21 @@ Judge how strongly the AUTHOR personally needs a bookkeeping/accounting solution
   "pain_tags": [<short snake_case tags of the specific pain, e.g. "catch_up_bookkeeping", "hates_quickbooks", "year_end_scramble">],
   "competitor": <name of any accounting tool/bookkeeper they mention, or null>,
   "geo": <"us" | "non_us" | "unknown" — infer from currency ("$", USD), US tax terms (IRS, 1099, W-2, W-9, Schedule C, EIN, sales tax, S-corp, LLC), or US state/city names => "us"; "£"/"€"/"₹", HMRC, GST, VAT, BAS, ABN, non-US locations, or non-English text => "non_us"; no signal => "unknown">,
-  "role": <"needs_help" | "offering_services" | "hiring" | "other" — is the author ASKING for bookkeeping/accounting help, SELLING such services, RECRUITING / posting a job, or none of these?>
+  "role": <"needs_help" | "offering_services" | "hiring" | "other">
 }
-Score intent HIGH only when role is "needs_help" with genuine, current pain or an active search for help. Score 0 when role is "offering_services" or "hiring", or for news, ads, or generic chat. Do not add any text outside the JSON.`;
+ROLE — read carefully:
+- "needs_help": the author is a BUSINESS OWNER / founder / freelancer / solopreneur who needs bookkeeping or accounting done for THEIR OWN business.
+- "offering_services": the author sells bookkeeping/accounting services.
+- "hiring": the author is recruiting or posting a job.
+- "other": anything else — INCLUDING a bookkeeper / accountant / CPA / tax pro discussing their own practice, pricing, software, or their CLIENTS. These are industry peers, NOT our customers, even if they describe a "catch-up" or a messy client — they are not "needs_help".
+
+Examples:
+- "I got a 3-year catch-up opportunity and put together a flat-rate proposal for a law firm with a trust account..." => role "other" (the author is the bookkeeper pricing client work), intent 0.
+- "How do you fellow bookkeepers onboard a messy client?" => role "other", intent 0.
+- "I run a law firm and our books are 3 years behind — I need someone to clean them up before taxes." => role "needs_help", high intent.
+- "QuickBooks keeps crashing and I can't reconcile my own small business — is there a better option?" => role "needs_help".
+
+Score intent HIGH only when role is "needs_help" with genuine, current pain or an active search for help. Score 0 for every other role, and for news, ads, or generic chat. Do not add any text outside the JSON.`;
 
 export async function score(item) {
   const content = [item.title, item.body].filter(Boolean).join("\n\n").slice(0, 6000);
@@ -89,10 +101,17 @@ export async function draft({ post, painTags, competitor, channel }, voiceBody) 
   if (!cfg.anthropicKey) throw new Error("draft: ANTHROPIC_API_KEY not set");
 
   const channelRule = channel === "email"
-    ? "This is a cold email. Open with their specific problem; keep it under 90 words; one clear, low-pressure next step."
-    : "This is a reply in a public/community thread. Be genuinely helpful about THEIR problem first; no hard pitch; mention we can help only if it fits naturally. Under 80 words.";
+    ? "This is a cold email. Open on THEIR specific situation; give one genuinely useful pointer; under 90 words; end with one low-pressure next step."
+    : "This is a reply in a public/community thread. Lead with real help on THEIR exact problem. Mention FounderFirst in at most ONE sentence, only if it fits naturally — otherwise not at all. Under 80 words.";
 
-  const system = `${voiceBody ? `Brand voice guide:\n${voiceBody}\n\n` : ""}You draft short, problem-driven outreach for FounderFirst, a bookkeeping/accounting service. Never hard-sell. Write only the message body — no subject line, no preamble, no quotes.`;
+  const system = `${voiceBody ? `Brand voice guide:\n${voiceBody}\n\n` : ""}You draft short, problem-driven outreach for FounderFirst, a bookkeeping/accounting service for US founders, freelancers, and small businesses.
+
+Rules:
+- Reference a SPECIFIC detail from their post so it's obviously not a template.
+- Open with a concrete, useful insight about their exact problem — never flattery, never "congrats" or "sounds like you've built something real".
+- Never hard-sell. No "we help businesses like yours", no feature lists.
+- Don't claim to be a fellow founder or invent facts about them.
+- Plain, human, specific. Write ONLY the message body — no subject, preamble, or quotes.`;
 
   const user = `Draft an outreach message for this person.
 Channel rule: ${channelRule}

@@ -33,8 +33,9 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
 const REL_THRESHOLD    = Number(env("REL_THRESHOLD", "0.55"));   // promote floor: relevance
 const REL_FLOOR        = Number(env("REL_FLOOR", "0.30"));       // below this + no keyword -> archive pre-LLM
 const INTENT_THRESHOLD = Number(env("INTENT_THRESHOLD", "55"));  // promote floor: intent
-const BATCH            = Number(env("BATCH", "10"));
+const BATCH            = Number(env("BATCH", "20"));            // items scored per cycle
 const POLL_SECONDS     = Number(env("POLL_INTERVAL_SECONDS", "60"));
+const PAGES_PER_POLL   = Number(env("PAGES_PER_POLL", "2"));    // result pages fetched per source poll
 
 const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
@@ -225,18 +226,23 @@ async function pollApiDirect() {
 
   for (const s of sources) {
     try {
-      const items = await searchApiDirect(s.platform, s.query, { page: 1, sortBy: "relevance" });
-      let ingested = 0;
-      for (const it of items) {
-        const { data: id, error: e } = await db.rpc("sig_ingest_item", {
-          p_platform: it.platform, p_external_url: it.external_url,
-          p_author_handle: it.author_handle, p_author_url: it.author_url,
-          p_title: it.title, p_body: it.body, p_posted_at: it.posted_at,
-          p_captured_via: "api_direct", p_raw: it.raw, p_source_id: s.id,
-        });
-        if (!e && id) ingested++;
+      let fetched = 0, ingested = 0;
+      // Fetch a few pages per poll for more volume; "recent" surfaces fresh pain.
+      for (let page = 1; page <= Math.max(1, PAGES_PER_POLL); page++) {
+        const items = await searchApiDirect(s.platform, s.query, { page, sortBy: "recent" });
+        if (!items.length) break;   // no more results
+        fetched += items.length;
+        for (const it of items) {
+          const { data: id, error: e } = await db.rpc("sig_ingest_item", {
+            p_platform: it.platform, p_external_url: it.external_url,
+            p_author_handle: it.author_handle, p_author_url: it.author_url,
+            p_title: it.title, p_body: it.body, p_posted_at: it.posted_at,
+            p_captured_via: "api_direct", p_raw: it.raw, p_source_id: s.id,
+          });
+          if (!e && id) ingested++;
+        }
       }
-      console.log(`polled ${s.platform} "${s.query}": ${items.length} fetched`);
+      console.log(`polled ${s.platform} "${s.query}": ${fetched} fetched, ${ingested} new`);
     } catch (e) {
       console.warn(`poll source ${s.id} (${s.platform}) failed:`, e.message);
     }

@@ -36,15 +36,17 @@ export async function embed(text) {
 
 // ---- Intent scoring (Ollama, strict JSON) ----------------------------------
 
-const SCORE_SYSTEM = `You score social-media posts for a bookkeeping/accounting service that helps founders, solopreneurs, freelancers, and small-business owners.
+const SCORE_SYSTEM = `You score social-media posts for a US-based bookkeeping/accounting service that helps founders, solopreneurs, freelancers, and small-business owners.
 
-Given a post, judge how strongly the author needs a bookkeeping/accounting solution RIGHT NOW. Reply ONLY with JSON:
+Judge how strongly the AUTHOR personally needs a bookkeeping/accounting solution RIGHT NOW. Reply ONLY with JSON:
 {
-  "intent": <integer 0-100, how strong and immediate the buying need is>,
+  "intent": <integer 0-100, strength and immediacy of the author's own buying need>,
   "pain_tags": [<short snake_case tags of the specific pain, e.g. "catch_up_bookkeeping", "hates_quickbooks", "year_end_scramble">],
-  "competitor": <name of any accounting tool/bookkeeper they mention, or null>
+  "competitor": <name of any accounting tool/bookkeeper they mention, or null>,
+  "geo": <"us" | "non_us" | "unknown" — infer from currency ("$", USD), US tax terms (IRS, 1099, W-2, W-9, Schedule C, EIN, sales tax, S-corp, LLC), or US state/city names => "us"; "£"/"€"/"₹", HMRC, GST, VAT, BAS, ABN, non-US locations, or non-English text => "non_us"; no signal => "unknown">,
+  "role": <"needs_help" | "offering_services" | "hiring" | "other" — is the author ASKING for bookkeeping/accounting help, SELLING such services, RECRUITING / posting a job, or none of these?>
 }
-Score high only for genuine, current pain or active search for help. Score low for generic chat, news, or someone offering services. Do not add any text outside the JSON.`;
+Score intent HIGH only when role is "needs_help" with genuine, current pain or an active search for help. Score 0 when role is "offering_services" or "hiring", or for news, ads, or generic chat. Do not add any text outside the JSON.`;
 
 export async function score(item) {
   const content = [item.title, item.body].filter(Boolean).join("\n\n").slice(0, 6000);
@@ -75,7 +77,10 @@ export async function score(item) {
   const competitor = typeof parsed.competitor === "string" && parsed.competitor.trim()
     ? parsed.competitor.trim().slice(0, 80)
     : null;
-  return { intent, pain_tags, competitor };
+  const geo = ["us", "non_us", "unknown"].includes(parsed.geo) ? parsed.geo : "unknown";
+  const role = ["needs_help", "offering_services", "hiring", "other"].includes(parsed.role)
+    ? parsed.role : "other";
+  return { intent, pain_tags, competitor, geo, role };
 }
 
 // ---- Outreach drafting (managed — Anthropic) -------------------------------
@@ -115,6 +120,29 @@ ${post.slice(0, 4000)}`;
   const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
   if (!text) throw new Error("draft: empty response");
   return text;
+}
+
+// ---- Generic completion (managed — Anthropic) -----------------------------
+// Used by the daily sourcing optimizer to generate candidate queries.
+export async function generate(system, user, { maxTokens = 700 } = {}) {
+  if (!cfg.anthropicKey) throw new Error("generate: ANTHROPIC_API_KEY not set");
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": cfg.anthropicKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: cfg.draftModel,
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: "user", content: user }],
+    }),
+  });
+  if (!res.ok) throw new Error(`generate: anthropic ${res.status} ${await res.text()}`);
+  const data = await res.json();
+  return (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
 }
 
 export const brainConfig = cfg;

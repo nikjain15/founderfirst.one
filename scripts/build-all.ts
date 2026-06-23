@@ -99,24 +99,31 @@ function main(): void {
   const adminOut = resolve(DIST, "admin");
   copyDir(ADMIN_DIST, adminOut);
   // SPA fallback: GH Pages only honors a root /404.html, not per-directory,
-  // so duplicate admin's index.html to the static react-router routes. This
-  // ensures magic-link landings on /admin/support and refreshes on /admin/login
-  // boot the SPA. Dynamic routes (/admin/support/:ticketId) are reachable via
-  // in-app navigation; deep-reloading one falls back to /admin/ — acceptable.
-  mkdirSync(resolve(adminOut, "login"), { recursive: true });
-  cpSync(resolve(adminOut, "index.html"), resolve(adminOut, "login/index.html"));
-  mkdirSync(resolve(adminOut, "support"), { recursive: true });
-  cpSync(resolve(adminOut, "index.html"), resolve(adminOut, "support/index.html"));
-  mkdirSync(resolve(adminOut, "analytics"), { recursive: true });
-  cpSync(resolve(adminOut, "index.html"), resolve(adminOut, "analytics/index.html"));
-  mkdirSync(resolve(adminOut, "users"), { recursive: true });
-  cpSync(resolve(adminOut, "index.html"), resolve(adminOut, "users/index.html"));
-  mkdirSync(resolve(adminOut, "audit"), { recursive: true });
-  cpSync(resolve(adminOut, "index.html"), resolve(adminOut, "audit/index.html"));
-  mkdirSync(resolve(adminOut, "admins"), { recursive: true });
-  cpSync(resolve(adminOut, "index.html"), resolve(adminOut, "admins/index.html"));
-  mkdirSync(resolve(adminOut, "content"), { recursive: true });
-  cpSync(resolve(adminOut, "index.html"), resolve(adminOut, "content/index.html"));
+  // so duplicate admin's index.html to each static react-router route. This
+  // ensures magic-link landings and hard refreshes boot the SPA instead of
+  // hitting GH Pages' 404. MUST stay in sync with the top-level <Route path>
+  // entries in apps/admin/src/App.tsx — any route reachable by URL needs an
+  // entry here, including ones that only redirect (users/signals/discord).
+  // Dynamic routes (/admin/support/:ticketId) fall back to /admin/ — acceptable.
+  const ADMIN_ROUTES = [
+    "login",
+    "support",
+    "audience",
+    "analytics",
+    "content",
+    "audit",
+    "how-it-works",
+    "quality",
+    "emails",
+    "users",
+    "signals",
+    "discord",
+    "admins",
+  ];
+  for (const route of ADMIN_ROUTES) {
+    mkdirSync(resolve(adminOut, route), { recursive: true });
+    cpSync(resolve(adminOut, "index.html"), resolve(adminOut, route, "index.html"));
+  }
 
   step("Copying penny demo → dist/penny/demo/");
   const demoOut = resolve(DIST, "penny/demo");

@@ -408,6 +408,25 @@ function FeedTab() {
 
 /* ---- Leads (table + drawer) ------------------------------------------------ */
 
+// Friendly "fit" summary — every lead should be US + needs-help; flag any that
+// slipped through (e.g. an industry peer scored offering_services).
+function leadFit(role?: string, geo?: string): string {
+  const ok = role === "needs_help" && geo === "us";
+  const geoLabel = geo === "us" ? "US" : geo === "non_us" ? "non-US" : "geo?";
+  const roleLabel = role === "needs_help" ? "needs help" : role === "offering_services" ? "sells services" : role === "hiring" ? "hiring" : "other";
+  return `${ok ? "✓" : "⚠"} ${geoLabel} · ${roleLabel}`;
+}
+
+// Post age — outreach on a stale thread is wasted; flag anything over 30 days.
+function leadAge(postedAt?: string | null): string {
+  if (!postedAt) return "unknown";
+  const days = Math.floor((Date.now() - new Date(postedAt).getTime()) / 86400000);
+  if (days < 0) return "just now";
+  if (days === 0) return "today";
+  const base = days === 1 ? "1 day ago" : `${days} days ago`;
+  return days >= 30 ? `${base} ⚠ stale` : base;
+}
+
 function LeadsTab() {
   const [stage, setStage] = useState<string>("all");
   const [platform, setPlatform] = useState("all");
@@ -531,6 +550,9 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
               <div><dt>author</dt><dd>{item?.author_handle || "unknown"}</dd></div>
               <div><dt>platform</dt><dd>{item?.platform}</dd></div>
               <div><dt><span className="sig-help" title={TERM_HINT.intent}>intent</span></dt><dd>{score?.intent ?? "—"}</dd></div>
+              <div><dt>fit</dt><dd>{leadFit(score?.role, score?.geo)}</dd></div>
+              <div><dt><span className="sig-help" title={TERM_HINT.relevance}>match</span></dt><dd>{score?.relevance != null ? `${Math.round(score.relevance * 100)}%` : "—"}</dd></div>
+              <div><dt>posted</dt><dd>{leadAge(item?.posted_at)}</dd></div>
               <div><dt><span className="sig-help" title={TERM_HINT.competitor}>competitor</span></dt><dd>{score?.competitor || "—"}</dd></div>
               <div><dt><span className="sig-help" title={TERM_HINT.pain}>pain</span></dt><dd>{(score?.pain_tags ?? []).join(", ") || "—"}</dd></div>
               {item?.external_url && <div><dt>source</dt><dd><a href={item.external_url} target="_blank" rel="noreferrer">open original <IconExternalLink size={12} /></a></dd></div>}

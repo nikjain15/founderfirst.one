@@ -116,6 +116,16 @@
 .sig-icp-item p { margin: 0 0 8px; color: var(--ink-2); font-size: 13px; line-height: 1.5; }
 .sig-icp-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
+/* Daily optimizer report (Scoring tab) */
+.sig-optimizer {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 16px 18px;
+  margin-bottom: 24px;
+}
+.sig-optimizer .sig-chips { margin-top: 6px; }
+
 /* Inputs/selects — match .field, ≥16px font to stop iOS zoom (RESPONSIVE.md). */
 .sig-input, .sig-select {
   font-family: inherit;

@@ -71,7 +71,24 @@ any NEW systemic pattern. Then findings grouped by surface, each with:
 - `file:line`, the offending snippet, why it matters (cite a LEARNINGS rule # if
   recurring), and the concrete fix + the token/pattern to use instead.
 
-## 4. Persist the learnings — the reason we do this regularly
+## 4. Score every dimension — feeds the /quality dashboard
+Give each of the ten dimensions a **0–100 score** using this fixed formula so
+runs are comparable over time:
+
+    score = max(0, 100 − 25·P0 − 8·P1 − 2·P2)   (that dimension's finding counts)
+
+Overall = round(mean of the ten dimension scores). Use these exact dimension
+keys: `ia_ux`, `design_system`, `responsive`, `accessibility`, `security`,
+`data_integrity`, `copy_docs`, `dead_code`, `performance`, `tests`.
+
+Record the run into the `audit_runs` Supabase table (powers `/quality` —
+`apps/admin/src/routes/Quality.tsx`). Insert one row:
+`{ commit_sha, overall, dimensions: { <key>: {score,p0,p1,p2}, … }, totals: {p0,p1,p2}, summary, pr_url }`.
+Use the `service_role` key (server-side only, never a browser bundle) or an
+admin session — RLS allows admin inserts. If credentials aren't available in the
+run, skip this insert and note it in the report rather than failing the audit.
+
+## 5. Persist the learnings — the reason we do this regularly
 Append to `LEARNINGS.md` under the `## Audit log` section (newest first):
 - `### YYYY-MM-DD audit — <short-commit>` followed by the exec summary and a
   one-line entry per P0/P1, marking each **fixed** or **deferred**.
@@ -79,7 +96,7 @@ Append to `LEARNINGS.md` under the `## Audit log` section (newest first):
   numbered Rule in the list above — that is how we stop repeating it.
 Keep it terse: this file is read at the start of every risky task.
 
-## 5. Guardrails for the audit itself
+## 6. Guardrails for the audit itself
 - **Read-only by default.** Do NOT fix-and-commit during the audit unless the
   user explicitly says so — propose fixes, get a go, then implement in a
   worktree (one task per worktree).

@@ -563,6 +563,8 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
   const [notes, setNotes] = useState<string | null>(null);
   const [contactName, setContactName] = useState<string | null>(null);
   const [contactCompany, setContactCompany] = useState<string | null>(null);
+  const [contactEmail, setContactEmail] = useState<string | null>(null);
+  const [contactDetails, setContactDetails] = useState<string | null>(null);
   const [noteStatus, setNoteStatus] = useState<string | null>(null);
 
   const lead = data?.lead;
@@ -572,6 +574,8 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
   const notesValue = notes ?? lead?.notes ?? "";
   const contactNameValue = contactName ?? lead?.contact_name ?? "";
   const contactCompanyValue = contactCompany ?? lead?.contact_company ?? "";
+  const contactEmailValue = contactEmail ?? lead?.contact_email ?? "";
+  const contactDetailsValue = contactDetails ?? lead?.contact_details ?? "";
   const noteStatusValue = noteStatus ?? lead?.note_status ?? "";
   const noteHistory: any[] = (data?.events ?? []).filter((e: any) => e.kind === "note_saved");
 
@@ -651,6 +655,14 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
                 </div>
               </div>
               <div className="field">
+                <label htmlFor="sig-email">email</label>
+                <input id="sig-email" type="email" value={contactEmailValue} placeholder="name@company.com" onChange={(e) => setContactEmail(e.target.value)} />
+              </div>
+              <div className="field">
+                <label htmlFor="sig-contact-details">other contact</label>
+                <input id="sig-contact-details" value={contactDetailsValue} placeholder="phone, LinkedIn, handle…" onChange={(e) => setContactDetails(e.target.value)} />
+              </div>
+              <div className="field">
                 <label htmlFor="sig-status">status</label>
                 <select id="sig-status" className="sig-select" value={noteStatusValue} onChange={(e) => setNoteStatus(e.target.value)}>
                   <option value="">—</option>
@@ -666,7 +678,7 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
                 />
               </div>
               <div className="sig-actions">
-                <button className="btn" disabled={busy} onClick={() => withBusy(() => saveSigLeadNotes(leadId, notesValue, contactNameValue, contactCompanyValue, noteStatusValue || null), "Notes saved")}>Save notes</button>
+                <button className="btn" disabled={busy} onClick={() => withBusy(() => saveSigLeadNotes(leadId, notesValue, contactNameValue, contactCompanyValue, noteStatusValue || null, contactEmailValue, contactDetailsValue), "Notes saved")}>Save notes</button>
               </div>
 
               {noteHistory.length > 0 && (

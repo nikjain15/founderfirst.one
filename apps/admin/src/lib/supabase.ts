@@ -1014,6 +1014,8 @@ export async function saveSigLeadNotes(
   contactName: string,
   contactCompany: string,
   status: string | null,
+  contactEmail: string,
+  contactDetails: string,
 ): Promise<void> {
   const db = getClient();
   const { error } = await db.rpc("save_sig_lead_notes", {
@@ -1022,6 +1024,8 @@ export async function saveSigLeadNotes(
     p_contact_name: contactName || null,
     p_contact_company: contactCompany || null,
     p_status: status || null,
+    p_contact_email: contactEmail || null,
+    p_contact_details: contactDetails || null,
   });
   if (error) throw new Error(`save_sig_lead_notes: ${error.message}`);
 }

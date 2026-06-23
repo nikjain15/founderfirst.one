@@ -68,6 +68,11 @@ Deno.serve(async (req) => {
     { auth: { persistSession: false } },
   );
 
+  // Respect the Scheduled-tab toggle: if penny_brain is disabled, send nothing.
+  const { data: sched } = await supa
+    .from("email_schedules").select("enabled").eq("email_key", "penny_brain").eq("is_builtin", true).maybeSingle();
+  if (sched && sched.enabled === false) return json({ ok: true, sent: 0, reason: "disabled" });
+
   const { data: admins, error } = await supa.from("admins").select("email");
   if (error) return json({ error: "admin_lookup_failed", detail: error.message }, 500);
 

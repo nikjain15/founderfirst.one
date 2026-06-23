@@ -52,6 +52,23 @@
 
 .email-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 8px; }
 
+/* ---- Step markers (Templates: 1 · pick → 2 · edit) ---- */
+.email-step { display: flex; align-items: baseline; gap: 10px; margin: 0 0 12px; }
+.email-step:not(:first-child) { margin-top: 26px; }
+.email-step-n {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  inline-size: 22px; block-size: 22px;
+  border-radius: var(--r-pill, 999px);
+  background: var(--ink); color: var(--white);
+  font-size: 12px; font-weight: var(--fw-semibold);
+  transform: translateY(2px);
+}
+.email-step-label { font-size: 15px; color: var(--ink); }
+
+/* Advanced (brand) section sits below the editor, visually quieter. */
+.email-advanced { margin-top: 26px; }
+
 /* ---- Per-email picker ---- */
 .email-picker { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
 .email-picker button {
@@ -95,6 +112,13 @@
 .email-form-title { font-size: 15px; font-weight: var(--fw-semibold); color: var(--ink); margin: 18px 0 10px; }
 .email-check { display: flex; align-items: center; gap: 8px; margin: 6px 0 4px; font-size: 14px; color: var(--ink-2); }
 .email-check input { inline-size: 18px; block-size: 18px; }
+
+.email-sched-group { margin-bottom: 26px; }
+.email-sched-grouphead {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 10px;
+}
+.email-cadence-edit { max-width: 640px; }
 
 .email-sched-list { display: flex; flex-direction: column; gap: 10px; }
 .email-sched-card {

@@ -52,3 +52,55 @@ few idle cycles (caches clear when a cycle finds no work).
 Drafting provider/model and Ollama models are all env-driven (`brain.mjs` is the
 only file that talks to a model). Bump the VM to 8 GiB and you can move drafting
 local too — change the draft path in `brain.mjs`; nothing else changes.
+
+## AI email drafting (compose-server)
+
+Powers the **Draft with AI** button in the admin (Settings → Emails → + New
+email). The admin can't reach Ollama directly, so the path is:
+
+```
+admin (browser, signed-in)
+  → email-compose Supabase function (verifies you're an admin)
+  → compose-server.mjs on this host, over a Cloudflare Tunnel (shared secret)
+  → local Ollama (qwen2.5) → JSON email fields
+```
+
+`compose-server.mjs` is a tiny localhost HTTP service (no deps). It reuses the
+same Ollama as the scorer. One-time setup on the host:
+
+1. **Pick a shared secret** and add it to `~/.config/founderfirst/secrets.env`:
+   ```
+   COMPOSE_SECRET=<a long random string>
+   # optional: COMPOSE_PORT=8787  OLLAMA_COMPOSE_MODEL=qwen2.5:7b-instruct-q4_K_M
+   ```
+
+2. **Run the service** (it reads the secrets file itself):
+   ```
+   node compose-server.mjs            # foreground test — visit /health
+   # or install the launchd agent:
+   cp one.founderfirst.compose-server.plist ~/Library/LaunchAgents/
+   launchctl load -w ~/Library/LaunchAgents/one.founderfirst.compose-server.plist
+   ```
+
+3. **Expose it with a Cloudflare Tunnel** (stable hostname, e.g.
+   `compose.founderfirst.one`) pointing at `http://localhost:8787`:
+   ```
+   cloudflared tunnel create ff-compose
+   # route a hostname to it, then in the tunnel config:
+   #   ingress:
+   #     - hostname: compose.founderfirst.one
+   #       service: http://localhost:8787
+   #     - service: http_status:404
+   cloudflared tunnel run ff-compose
+   ```
+
+4. **Tell Supabase where it is** (the function holds the secret, never the
+   browser):
+   ```
+   supabase secrets set COMPOSE_ENDPOINT_URL=https://compose.founderfirst.one
+   supabase secrets set COMPOSE_SECRET=<the same long random string>
+   ```
+
+Until those two Supabase secrets are set, the **Draft with AI** button returns a
+friendly "isn't set up yet" message; everything else in the editor works. Test
+end to end with `curl https://compose.founderfirst.one/health`.

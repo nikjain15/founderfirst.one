@@ -19,6 +19,8 @@
 
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { BRAND, escapeHtml } from "../_shared/email.ts";
+import { sendEmail } from "../_shared/send.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin":  "*",
@@ -31,10 +33,6 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 type Lead = {
@@ -57,16 +55,39 @@ Deno.serve(async (req) => {
     { auth: { persistSession: false } },
   );
 
-  const { data: digest, error } = await supa.rpc("sig_digest", { p_hours: 24 });
+  // ---- Smarter cadence ------------------------------------------------------
+  // The cron fires daily, but we only send when it's worth an inbox. Anchor the
+  // lookback to the last actual send so sub-threshold leads accumulate instead of
+  // dropping out of a fixed 24h window. Send when a lead clears the intent bar,
+  // OR on a weekly floor (≥7 days quiet) so nothing rots.
+  // Cadence knobs are admin-editable (email_settings); fall back to env/defaults.
+  const { data: settings } = await supa.from("email_settings").select("*").eq("id", true).maybeSingle();
+  const INTENT_MIN  = Number(settings?.signals_intent_min ?? Deno.env.get("SIGNALS_DIGEST_INTENT_MIN") ?? 70);
+  const FLOOR_HOURS = Number(settings?.signals_floor_days ?? 7) * 24;
+
+  const { data: windowHours } = await supa.rpc("sig_digest_window_hours", { p_cap: FLOOR_HOURS });
+  const hours = Number(windowHours ?? 24);
+
+  const { data: digest, error } = await supa.rpc("sig_digest", { p_hours: hours });
   if (error) return json({ error: "digest_failed", detail: error.message }, 500);
 
   const leads: Lead[] = digest?.leads ?? [];
   const competitors: Array<{ name: string; count: number }> = digest?.competitors ?? [];
 
-  // Nothing new — don't send an empty email.
+  // Nothing accumulated — don't send an empty email.
   if (leads.length === 0 && competitors.length === 0) {
     return json({ ok: true, sent: 0, reason: "nothing_new" });
   }
+
+  // Decide whether today earns a send. A hot lead always does; otherwise we only
+  // send once the weekly floor is reached, letting quiet days stay silent.
+  const topIntentVal = leads[0]?.intent ?? 0;
+  const hasHotLead   = topIntentVal >= INTENT_MIN;
+  const hitFloor     = hours >= FLOOR_HOURS;
+  if (!hasHotLead && !hitFloor) {
+    return json({ ok: true, sent: 0, reason: "below_intent_threshold", topIntent: topIntentVal, windowHours: hours });
+  }
+  const sendReason = hasHotLead ? "hot_lead" : "weekly_floor";
 
   const { data: admins, error: aErr } = await supa.from("admins").select("email");
   if (aErr) return json({ error: "admin_lookup_failed", detail: aErr.message }, 500);
@@ -74,62 +95,55 @@ Deno.serve(async (req) => {
   if (!recipients.length) return json({ ok: true, sent: 0, reason: "no_recipients" });
 
   const adminUrl = Deno.env.get("ADMIN_URL") ?? "https://founderfirst.one/admin";
-  const leadsUrl = `${adminUrl}/signals#leads`;
+  // Signals is a sub-tab under Audience; deep-link via the hash. The old
+  // /signals#leads path redirects but loses the fragment, so link directly.
+  const leadsUrl = `${adminUrl}/audience#signals`;
 
-  const leadRows = leads.slice(0, 15).map((l) => {
-    const who = escapeHtml(l.author || "unknown");
-    const what = escapeHtml(l.title || "—");
-    const link = l.url ? ` · <a href="${escapeHtml(l.url)}">source ↗</a>` : "";
-    const tag = l.competitor ? ` · ${escapeHtml(l.competitor)}` : "";
-    return `<tr>
-      <td style="padding:8px 0;border-bottom:1px solid #eee;font-size:14px;">
-        <strong>${who}</strong> <span style="color:#888;">(${escapeHtml(l.platform)}${tag})</span><br/>
-        <span style="color:#444;">${what}</span>${link}
-      </td>
-      <td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;font-size:14px;white-space:nowrap;">
-        intent <strong>${l.intent ?? "—"}</strong>
-      </td>
-    </tr>`;
-  }).join("");
+  const n = leads.length;
+  const plural = n === 1 ? "" : "s";
+  const topIntent = topIntentVal || "—"; // we only reach here on a hot lead or floor
 
-  const compLine = competitors.length
-    ? `<p style="margin:16px 0 0;color:#444;font-size:13px;">Competitor mentions (24h): ${
-        competitors.map((c) => `<strong>${escapeHtml(c.name)}</strong> ${c.count}`).join(" · ")
-      }</p>`
-    : "";
+  // Dynamic body block — built with the resolved brand so colors track email_brand.
+  const buildBody = (brand: typeof BRAND) => {
+    const leadRows = leads.slice(0, 15).map((l) => {
+      const who = escapeHtml(l.author || "unknown");
+      const what = escapeHtml(l.title || "—");
+      const link = l.url ? ` · <a href="${escapeHtml(l.url)}" style="color:${brand.ink};text-decoration:underline;">source ↗</a>` : "";
+      const tag = l.competitor ? ` · ${escapeHtml(l.competitor)}` : "";
+      return `<tr>
+        <td style="padding:10px 0;border-bottom:1px solid ${brand.line};font-size:14px;color:${brand.ink2};">
+          <strong style="color:${brand.ink};">${who}</strong> <span style="color:${brand.ink4};">(${escapeHtml(l.platform)}${tag})</span><br/>
+          <span style="color:${brand.ink2};">${what}</span>${link}
+        </td>
+        <td style="padding:10px 0;border-bottom:1px solid ${brand.line};text-align:right;font-size:14px;white-space:nowrap;color:${brand.ink3};">
+          intent <strong style="color:${brand.ink};">${l.intent ?? "—"}</strong>
+        </td>
+      </tr>`;
+    }).join("");
+    const compLine = competitors.length
+      ? `<p style="margin:16px 0 0;color:${brand.ink3};font-size:13px;">Competitor mentions: ${
+          competitors.map((c) => `<strong style="color:${brand.ink};">${escapeHtml(c.name)}</strong> ${c.count}`).join(" · ")
+        }</p>`
+      : "";
+    return `<table style="width:100%;border-collapse:collapse;">${leadRows}</table>${compLine}`;
+  };
 
-  const subject = `Signals — ${leads.length} new lead${leads.length === 1 ? "" : "s"} today`;
-
-  const html = `<!doctype html>
-<html><body style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#0a0a0a;background:#f6f6f4;margin:0;padding:24px;">
-  <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e8e8e5;border-radius:12px;padding:24px;">
-    <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5a5a5a;margin-bottom:8px;">FounderFirst · Signals</div>
-    <h1 style="font-size:18px;margin:0 0 4px;">${leads.length} new lead${leads.length === 1 ? "" : "s"} in the last 24h.</h1>
-    <p style="margin:0 0 16px;color:#5a5a5a;font-size:13px;">Highest-intent first. Review, approve a draft, and reach out.</p>
-    <table style="width:100%;border-collapse:collapse;">${leadRows}</table>
-    ${compLine}
-    <p style="margin:24px 0 0;">
-      <a href="${leadsUrl}" style="display:inline-block;background:#0a0a0a;color:#fff;text-decoration:none;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:600;">Open Signals →</a>
-    </p>
-  </div>
-</body></html>`;
-
-  const text = `Signals — ${leads.length} new lead(s) in the last 24h.\n\n` +
+  const buildText = () => `${n} new lead${plural}, highest-intent first.\n\n` +
     leads.slice(0, 15).map((l) => `• ${l.author || "unknown"} (${l.platform}${l.competitor ? ", " + l.competitor : ""}) — intent ${l.intent ?? "—"}\n  ${l.title || ""}${l.url ? "\n  " + l.url : ""}`).join("\n") +
     (competitors.length ? `\n\nCompetitor mentions: ${competitors.map((c) => `${c.name} ${c.count}`).join(", ")}` : "") +
     `\n\nOpen Signals: ${leadsUrl}\n`;
 
-  const resendKey = Deno.env.get("RESEND_API_KEY");
-  const from = Deno.env.get("NOTIFY_FROM") ?? "FounderFirst <onboarding@resend.dev>";
-  if (!resendKey) return json({ error: "resend_key_missing" }, 500);
-
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to: recipients, subject, html, text }),
+  const result = await sendEmail({
+    supa, key: "signals_digest", to: recipients, trigger: "cron",
+    vars: { n, leadword: `lead${plural}`, topIntent },
+    ctaHref: leadsUrl, buildBody, buildText,
   });
-  const respBody = await res.json().catch(() => ({}));
-  if (!res.ok) return json({ ok: false, error: "send_failed", detail: respBody }, 502);
+  if (!result.ok && result.sent === 0) {
+    return json({ ok: false, error: "send_failed", detail: result.detail }, 502);
+  }
 
-  return json({ ok: true, sent: recipients.length, leads: leads.length });
+  // Record the send so the next run's lookback window resets to here.
+  await supa.from("sig_digest_sends").insert({ lead_count: n, reason: sendReason });
+
+  return json({ ok: true, sent: result.sent, leads: n, reason: sendReason, windowHours: hours });
 });

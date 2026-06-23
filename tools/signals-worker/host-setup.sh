@@ -65,7 +65,7 @@ cat > "$PLIST" <<EOF
 <plist version="1.0"><dict>
   <key>Label</key><string>$LABEL</string>
   <key>ProgramArguments</key>
-  <array><string>$NODE_BIN</string><string>$WORKER_DIR/index.mjs</string></array>
+  <array><string>$NODE_BIN</string><string>--env-file=$WORKER_DIR/.env</string><string>$WORKER_DIR/index.mjs</string></array>
   <key>WorkingDirectory</key><string>$WORKER_DIR</string>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>

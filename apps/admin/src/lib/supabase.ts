@@ -69,6 +69,38 @@ export async function removeAdmin(email: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+// ---- Quality audit runs (the /quality dashboard) ---------------------------
+
+export interface AuditDimensionScore {
+  score: number; // 0–100
+  p0: number;
+  p1: number;
+  p2: number;
+}
+
+export interface AuditRunRow {
+  id: string;
+  run_at: string;
+  commit_sha: string | null;
+  overall: number; // 0–100
+  dimensions: Record<string, AuditDimensionScore>;
+  totals: { p0?: number; p1?: number; p2?: number };
+  summary: string;
+  pr_url: string | null;
+}
+
+// Newest first. The dashboard takes the head as "current" and the tail for trend.
+export async function listAuditRuns(limit = 26): Promise<AuditRunRow[]> {
+  const db = getClient();
+  const { data, error } = await db
+    .from("audit_runs")
+    .select("id, run_at, commit_sha, overall, dimensions, totals, summary, pr_url")
+    .order("run_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`listAuditRuns: ${error.message}`);
+  return (data as AuditRunRow[]) ?? [];
+}
+
 // ---- Changelog ("What's new") ----------------------------------------------
 
 export type ChangelogKind = "new" | "improved" | "fixed";

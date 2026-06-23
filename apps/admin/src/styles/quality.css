@@ -1,0 +1,133 @@
+/* Quality dashboard — overall score, per-dimension cards, sparklines.
+   Scores are traffic-lit: good ≥80 (income), warn ≥50 (amber), bad <50 (error). */
+
+.score-good { color: var(--income); }
+.score-warn { color: var(--amber); }
+.score-bad  { color: var(--error); }
+.score-none { color: var(--ink-4); }
+
+/* --- Headline ------------------------------------------------------------- */
+.quality-headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(16px, 4vw, 40px);
+}
+.quality-overall {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+  padding: 18px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card-emph);
+  background: var(--white);
+}
+.quality-overall-num {
+  font-size: var(--fs-card-value);
+  font-weight: var(--fw-bold);
+  line-height: 1;
+}
+.quality-overall-label {
+  margin-top: 6px;
+  font-size: var(--fs-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+.quality-headline-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quality-meta-row {
+  font-size: var(--fs-data-row);
+  color: var(--ink-3);
+}
+.quality-summary {
+  margin-top: 16px;
+  font-size: var(--fs-data-row);
+  color: var(--ink-2);
+  line-height: 1.55;
+  max-width: 70ch;
+}
+
+/* --- Severity pills ------------------------------------------------------- */
+.quality-sev { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.quality-sev-pill {
+  font-size: var(--fs-eyebrow);
+  font-weight: var(--fw-semibold);
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  color: var(--ink-3);
+}
+.quality-sev-pill.p0 { color: var(--error);  border-color: var(--error-bg); background: var(--error-bg); }
+.quality-sev-pill.p1 { color: var(--amber);  border-color: var(--amber-bg); background: var(--amber-bg); }
+.quality-sev-pill.p2 { color: var(--ink-3); }
+
+/* --- Delta ---------------------------------------------------------------- */
+.quality-delta {
+  font-size: var(--fs-data-row);
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+}
+.quality-delta.up   { color: var(--income); }
+.quality-delta.down { color: var(--error); }
+.quality-delta.flat { color: var(--ink-4); }
+
+/* --- Per-dimension grid --------------------------------------------------- */
+.quality-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
+}
+.quality-card {
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--white);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quality-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.quality-card-label {
+  font-size: var(--fs-data-row);
+  font-weight: var(--fw-medium);
+  color: var(--ink-2);
+}
+.quality-score {
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+.quality-spark {
+  width: 100%;
+  height: 28px;
+  display: block;
+}
+.quality-spark-empty {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  font-size: var(--fs-eyebrow);
+  color: var(--ink-4);
+}
+.quality-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.quality-card-counts {
+  font-size: var(--fs-eyebrow);
+  color: var(--ink-3);
+}
+.quality-card-counts.muted { color: var(--ink-4); }

@@ -14,7 +14,7 @@ set -euo pipefail
 
 WORKER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VAULT="${FF_VAULT:-$HOME/.config/founderfirst/secrets.env}"
-LABEL="com.founderfirst.signals-worker"
+LABEL="one.founderfirst.signals-worker"   # matches the canonical install at ~/signals-worker
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 LOG_DIR="$HOME/Library/Logs/founderfirst"
 NODE_BIN="$(command -v node)"

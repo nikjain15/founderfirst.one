@@ -10,6 +10,9 @@ catch regressions early and **stop repeating mistakes**. Optional scope filter:
 
 ## 0. Ground yourself first — mandatory
 Read, in order, before judging anything:
+- `AUDIT.md` — **the authoritative rubric**: the concrete sub-attribute checklist
+  for all 14 dimensions, stack-specific. Section 2 below is the summary; AUDIT.md
+  is what you actually check against.
 - `CLAUDE.md` — guardrails, responsive standard, the "Don't" list
 - `LEARNINGS.md` — every rule here is a past mistake. If the audit re-finds a
   known issue, cite the rule number; a recurrence means the rule isn't landing.
@@ -28,6 +31,8 @@ Then note the current state: `git log --oneline -1` and `git log --oneline -20`
 - **tools/** — Signals worker and scripts
 
 ## 2. Dimensions — apply each to every relevant surface
+The list below is the summary; the full sub-attribute checklist per dimension
+lives in **`AUDIT.md`** — check against it, not just these one-liners.
 Fan out: run PARALLEL subagents (one per surface, or per dimension) to collect
 findings, then **verify each finding by opening the file** before reporting it —
 never assert from a single grep (LEARNINGS: "verify claims against real data").

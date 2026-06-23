@@ -99,8 +99,12 @@ export async function score(item) {
   const cleanStr = (v, max) =>
     typeof v === "string" && v.trim() && v.trim().toLowerCase() !== "null"
       ? v.trim().slice(0, max) : null;
-  const contact_name = cleanStr(parsed.contact_name, 120);
-  const contact_company = cleanStr(parsed.contact_company, 120);
+  // Reject generic descriptions ("a marketing agency", "an appraisal company")
+  // and lowercase noise — a real name/company is a proper noun with a capital.
+  const isGeneric = (v) => /^(a|an|the|some|my|their|our)\s/i.test(v) || !/[A-Z]/.test(v);
+  const proper = (v, max) => { const s = cleanStr(v, max); return s && !isGeneric(s) ? s : null; };
+  const contact_name = proper(parsed.contact_name, 120);
+  const contact_company = proper(parsed.contact_company, 120);
   return { intent, pain_tags, competitor, geo, role, contact_name, contact_company };
 }
 

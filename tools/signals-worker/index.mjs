@@ -175,7 +175,7 @@ async function processItem(item, painKeywords, excludeKeywords, settings) {
 
   const leadId = await submit(
     item.id, relevance ?? 0, scored.intent, scored.pain_tags, scored.competitor,
-    promote, scored.geo, scored.role,
+    promote, scored.geo, scored.role, scored.contact_name, scored.contact_company,
   );
   console.log(
     `scored ${item.id}: intent=${scored.intent} rel=${relevance?.toFixed?.(2) ?? "n/a"} ` +
@@ -201,7 +201,7 @@ async function processItem(item, painKeywords, excludeKeywords, settings) {
   }
 }
 
-async function submit(itemId, relevance, intent, painTags, competitor, promote, geo = null, role = null) {
+async function submit(itemId, relevance, intent, painTags, competitor, promote, geo = null, role = null, contactName = null, contactCompany = null) {
   const { data, error } = await db.rpc("sig_submit_score", {
     p_item_id: itemId,
     p_relevance: relevance,
@@ -212,6 +212,8 @@ async function submit(itemId, relevance, intent, painTags, competitor, promote, 
     p_promote: promote,
     p_geo: geo,
     p_role: role,
+    p_contact_name: contactName,
+    p_contact_company: contactCompany,
   });
   if (error) { console.warn(`submit_score failed for ${itemId}:`, error.message); return null; }
   return data; // lead_id when promoted, else null

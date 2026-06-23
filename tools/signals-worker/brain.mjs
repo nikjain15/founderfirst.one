@@ -44,7 +44,9 @@ Judge how strongly the AUTHOR personally needs a bookkeeping/accounting solution
   "pain_tags": [<short snake_case tags of the specific pain, e.g. "catch_up_bookkeeping", "hates_quickbooks", "year_end_scramble">],
   "competitor": <name of any accounting tool/bookkeeper they mention, or null>,
   "geo": <"us" | "non_us" | "unknown" — infer from currency ("$", USD), US tax terms (IRS, 1099, W-2, W-9, Schedule C, EIN, sales tax, S-corp, LLC), or US state/city names => "us"; "£"/"€"/"₹", HMRC, GST, VAT, BAS, ABN, non-US locations, or non-English text => "non_us"; no signal => "unknown">,
-  "role": <"needs_help" | "offering_services" | "hiring" | "other">
+  "role": <"needs_help" | "offering_services" | "hiring" | "other">,
+  "contact_name": <the author's real personal name if stated or strongly implied (a sign-off like "- Sam", "I'm Maria here", or a handle that clearly reads as a real name like "John Carter"), else null. Do NOT invent a name from a generic username you can't read as one>,
+  "contact_company": <the name of the author's OWN business/company if stated or reasonably implied (e.g. "running my shop Brightline Co", "at my agency Foo"), else null. This is THEIR company — never the accounting tool/competitor they mention>
 }
 ROLE — read carefully:
 - "needs_help": the author is a BUSINESS OWNER / founder / freelancer / solopreneur who needs bookkeeping or accounting for THEIR OWN business — INCLUDING looking for, seeking, wanting to hire, or asking for recommendations for a bookkeeper or bookkeeping service. A buyer searching for a provider is needs_help.
@@ -94,7 +96,12 @@ export async function score(item) {
   const geo = ["us", "non_us", "unknown"].includes(parsed.geo) ? parsed.geo : "unknown";
   const role = ["needs_help", "offering_services", "hiring", "other"].includes(parsed.role)
     ? parsed.role : "other";
-  return { intent, pain_tags, competitor, geo, role };
+  const cleanStr = (v, max) =>
+    typeof v === "string" && v.trim() && v.trim().toLowerCase() !== "null"
+      ? v.trim().slice(0, max) : null;
+  const contact_name = cleanStr(parsed.contact_name, 120);
+  const contact_company = cleanStr(parsed.contact_company, 120);
+  return { intent, pain_tags, competitor, geo, role, contact_name, contact_company };
 }
 
 // ---- Outreach drafting (managed — Anthropic) -------------------------------

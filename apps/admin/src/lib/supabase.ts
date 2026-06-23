@@ -1008,6 +1008,24 @@ export async function markSigLeadSent(leadId: string, channel = "on_platform"): 
   if (error) throw new Error(`mark_sig_lead_sent: ${error.message}`);
 }
 
+export async function saveSigLeadNotes(
+  leadId: string,
+  notes: string,
+  contactName: string,
+  contactCompany: string,
+  status: string | null,
+): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("save_sig_lead_notes", {
+    p_lead_id: leadId,
+    p_notes: notes,
+    p_contact_name: contactName || null,
+    p_contact_company: contactCompany || null,
+    p_status: status || null,
+  });
+  if (error) throw new Error(`save_sig_lead_notes: ${error.message}`);
+}
+
 export async function quickAddSigItem(input: {
   platform: string;
   url?: string | null;

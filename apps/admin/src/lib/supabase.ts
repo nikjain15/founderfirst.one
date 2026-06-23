@@ -69,6 +69,38 @@ export async function removeAdmin(email: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+// ---- Quality audit runs (the /quality dashboard) ---------------------------
+
+export interface AuditDimensionScore {
+  score: number; // 0–100
+  p0: number;
+  p1: number;
+  p2: number;
+}
+
+export interface AuditRunRow {
+  id: string;
+  run_at: string;
+  commit_sha: string | null;
+  overall: number; // 0–100
+  dimensions: Record<string, AuditDimensionScore>;
+  totals: { p0?: number; p1?: number; p2?: number };
+  summary: string;
+  pr_url: string | null;
+}
+
+// Newest first. The dashboard takes the head as "current" and the tail for trend.
+export async function listAuditRuns(limit = 26): Promise<AuditRunRow[]> {
+  const db = getClient();
+  const { data, error } = await db
+    .from("audit_runs")
+    .select("id, run_at, commit_sha, overall, dimensions, totals, summary, pr_url")
+    .order("run_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`listAuditRuns: ${error.message}`);
+  return (data as AuditRunRow[]) ?? [];
+}
+
 // ---- Changelog ("What's new") ----------------------------------------------
 
 export type ChangelogKind = "new" | "improved" | "fixed";
@@ -1078,4 +1110,25 @@ export async function setSigSetting(key: keyof SigScoringConfig, value: number):
   const db = getClient();
   const { error } = await db.rpc("set_sig_setting", { p_key: key, p_value: value });
   if (error) throw new Error(`set_sig_setting: ${error.message}`);
+}
+
+// The daily sourcing optimizer writes its run report to sig_settings under
+// 'optimizer_last_run' (a JSON blob). This reads it for the Scoring tab.
+export interface SigOptimizerReport {
+  ran_at: string;
+  summary: string;
+  items_analyzed: number;
+  disabled: Array<{ platform: string; query: string; yield: number; n: number }>;
+  proposed: Array<{ platform: string; query: string; hit_rate: number }>;
+  pain_themes: Array<{ tag: string; count: number }>;
+  threshold_suggestions: string[];
+  leaderboard: Array<{ platform: string; query: string; yield: number; n: number; promoted: number; us_rate: number; needs_rate: number }>;
+}
+
+export async function getOptimizerReport(): Promise<SigOptimizerReport | null> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_sig_settings");
+  if (error) throw new Error(`list_sig_settings: ${error.message}`);
+  const row = ((data as Array<{ key: string; value: unknown }>) ?? []).find((r) => r.key === "optimizer_last_run");
+  return row ? (row.value as SigOptimizerReport) : null;
 }

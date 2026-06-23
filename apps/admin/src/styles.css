@@ -13,4 +13,5 @@
 @import "./styles/misc.css";       /* sparkline, funnel, admins page */
 @import "./styles/signals.css";    /* social listening + outreach: board, drawer, capture */
 @import "./styles/docs.css";       /* how-it-works in-app guide */
+@import "./styles/quality.css";    /* quality dashboard: scores, dimension cards, sparklines */
 @import "./styles/emails.css";     /* Settings → Emails: template editor + activity */

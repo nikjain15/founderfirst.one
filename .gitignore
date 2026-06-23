@@ -1,7 +1,15 @@
 .DS_Store
 *.swp
 *~
+
+# Secrets — never commit. (.env.example templates are allowed.)
 .env
+*.env
+!*.env.example
+.secrets/
+secrets.env
+*.key
+*.pem
 
 # Cloudflare CLI cache
 .wrangler/

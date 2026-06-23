@@ -18,6 +18,7 @@ import {
   getSigLead,
   updateSigLeadStage,
   saveSigLeadDraft,
+  saveSigLeadNotes,
   markSigLeadSent,
   quickAddSigItem,
   listSigKeywords,
@@ -136,6 +137,16 @@ const TERM_HINT: Record<string, string> = {
   relevance: "How closely the post matches your Scoring examples.",
   competitor: "The accounting tool the post mentions, if any.",
 };
+
+// Whether the targeted company has engaged / resolved the original poster's
+// issue — distinct from `stage`, which tracks *our* outreach pipeline.
+const SIG_NOTE_STATUSES: { v: string; label: string }[] = [
+  { v: "awaiting", label: "awaiting reply" },
+  { v: "not_contacted", label: "not contacted" },
+  { v: "replied", label: "replied" },
+  { v: "resolved", label: "resolved" },
+  { v: "no_response", label: "no response" },
+];
 
 function fmt(iso: string | null): string {
   if (!iso) return "—";
@@ -538,7 +549,7 @@ function LeadsTab() {
         </div>
       )}
 
-      {openLead && <LeadDrawer leadId={openLead} onClose={() => setOpenLead(null)} />}
+      {openLead && <LeadDrawer key={openLead} leadId={openLead} onClose={() => setOpenLead(null)} />}
     </div>
   );
 }
@@ -549,11 +560,20 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
   const [draft, setDraft] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+  const [notes, setNotes] = useState<string | null>(null);
+  const [contactName, setContactName] = useState<string | null>(null);
+  const [contactCompany, setContactCompany] = useState<string | null>(null);
+  const [noteStatus, setNoteStatus] = useState<string | null>(null);
 
   const lead = data?.lead;
   const item = data?.item;
   const score = data?.score;
   const draftValue = draft ?? lead?.draft ?? "";
+  const notesValue = notes ?? lead?.notes ?? "";
+  const contactNameValue = contactName ?? lead?.contact_name ?? "";
+  const contactCompanyValue = contactCompany ?? lead?.contact_company ?? "";
+  const noteStatusValue = noteStatus ?? lead?.note_status ?? "";
+  const noteHistory: any[] = (data?.events ?? []).filter((e: any) => e.kind === "note_saved");
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["sig-lead", leadId] });
@@ -617,6 +637,56 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
               <button className="btn btn-ghost" disabled={!draftValue.trim()} onClick={() => { navigator.clipboard?.writeText(draftValue); setNote("Copied — reply on the platform, then mark sent."); }}>Copy</button>
               <button className="btn btn-ghost" disabled={busy} onClick={() => withBusy(() => markSigLeadSent(leadId, "on_platform"), "Marked sent")}>Mark sent</button>
             </div>
+
+            <div className="sig-notes">
+              <span className="sig-label">notes &amp; tracking</span>
+              <div className="sig-notes-grid">
+                <div className="field">
+                  <label htmlFor="sig-contact">contact</label>
+                  <input id="sig-contact" value={contactNameValue} placeholder="name" onChange={(e) => setContactName(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label htmlFor="sig-company">company</label>
+                  <input id="sig-company" value={contactCompanyValue} placeholder="company" onChange={(e) => setContactCompany(e.target.value)} />
+                </div>
+              </div>
+              <div className="field">
+                <label htmlFor="sig-status">status</label>
+                <select id="sig-status" className="sig-select" value={noteStatusValue} onChange={(e) => setNoteStatus(e.target.value)}>
+                  <option value="">—</option>
+                  {SIG_NOTE_STATUSES.map((s) => <option key={s.v} value={s.v}>{s.label}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="sig-notes">notes</label>
+                <textarea
+                  id="sig-notes" value={notesValue}
+                  placeholder="Who they are, how the company replied, whether it's resolved, comments from others…"
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+              <div className="sig-actions">
+                <button className="btn" disabled={busy} onClick={() => withBusy(() => saveSigLeadNotes(leadId, notesValue, contactNameValue, contactCompanyValue, noteStatusValue || null), "Notes saved")}>Save notes</button>
+              </div>
+
+              {noteHistory.length > 0 && (
+                <details className="sig-history">
+                  <summary>History ({noteHistory.length})</summary>
+                  <div className="sig-history-list">
+                    {noteHistory.map((e) => (
+                      <div className="sig-history-item" key={e.id}>
+                        <div className="sig-history-meta">
+                          {(e.actor_email || "unknown").split("@")[0]} · {leadAge(e.created_at)}
+                          {e.detail?.status ? ` · ${e.detail.status}` : ""}
+                        </div>
+                        {e.detail?.notes && <div className="sig-history-body">{e.detail.notes}</div>}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+
             {note && <p className="sig-note">{note}</p>}
           </>
         )}

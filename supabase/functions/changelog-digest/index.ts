@@ -163,6 +163,13 @@ Deno.serve(async (req) => {
   }
 
   // ---- Send (admin-approved) ------------------------------------------------
+  // Respect the Scheduled-tab toggle: a disabled digest can't be sent.
+  const { data: digestSched } = await service
+    .from("email_schedules").select("enabled").eq("email_key", "changelog_digest").eq("is_builtin", true).maybeSingle();
+  if (digestSched && digestSched.enabled === false) {
+    return json({ ok: false, sent: 0, error: "disabled", reason: "digest_disabled" }, 409);
+  }
+
   const result = await sendEmail({
     supa: service, key: "changelog_digest", to: recipients, trigger: "admin",
     vars: digestVars(entries), ctaHref: whatsNewUrl,

@@ -240,6 +240,13 @@ export interface EmailSchedule {
   cta_href: string;
   enabled: boolean;
   last_run_at: string | null;
+  // Built-in classification (see 20260623280000_email_schedules_builtin.sql).
+  is_builtin: boolean;
+  kind: "schedule" | "event";
+  dispatch: "generic" | "invoke" | "event";
+  invoke_fn: string | null;
+  invoke_mode: string | null;
+  trigger_label: string | null;
 }
 
 export interface EmailSettings {

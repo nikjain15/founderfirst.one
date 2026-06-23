@@ -327,6 +327,9 @@ const STATUS_FILTERS = ["all", "pending", "promoted", "archived"] as const;
 function FeedTab() {
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>("all");
   const [platform, setPlatform] = useState("all");
+  const [geo, setGeo] = useState("all");
+  const [role, setRole] = useState("all");
+  const [fresh, setFresh] = useState("all"); // all | 7 | 30 (days)
   const { data = [], isPending, error } = useQuery({
     queryKey: ["sig-items", status],
     queryFn: () => listSigItems({ status: status === "all" ? null : status }),
@@ -336,10 +339,17 @@ function FeedTab() {
     () => Array.from(new Set(data.map((d: SigItemRow) => d.platform).filter(Boolean))).sort(),
     [data],
   );
-  const filtered = useMemo(
-    () => (platform === "all" ? data : data.filter((d: SigItemRow) => d.platform === platform)),
-    [data, platform],
-  );
+  const hasGeo = useMemo(() => data.some((d: SigItemRow) => d.geo), [data]);
+  const filtered = useMemo(() => {
+    const days = fresh === "all" ? null : Number(fresh);
+    const cutoff = days ? Date.now() - days * 86400000 : null;
+    return data.filter((d: SigItemRow) =>
+      (platform === "all" || d.platform === platform) &&
+      (geo === "all" || d.geo === geo) &&
+      (role === "all" || d.role === role) &&
+      (!cutoff || (d.posted_at && new Date(d.posted_at).getTime() >= cutoff)),
+    );
+  }, [data, platform, geo, role, fresh]);
   const { sorted, sort, toggle } = useTableSort<SigItemRow>(filtered, {
     post:     (r) => (r.title || r.body || "").toLowerCase(),
     platform: (r) => r.platform,
@@ -361,6 +371,28 @@ function FeedTab() {
         <select className="sig-select" value={platform} onChange={(e) => setPlatform(e.target.value)} aria-label="Filter by platform">
           <option value="all">all platforms</option>
           {platforms.map((p) => <option key={p} value={p}>{p}</option>)}
+        </select>
+        {hasGeo && (
+          <>
+            <select className="sig-select" value={geo} onChange={(e) => setGeo(e.target.value)} aria-label="Filter by geography">
+              <option value="all">any geo</option>
+              <option value="us">US</option>
+              <option value="non_us">non-US</option>
+              <option value="unknown">unknown</option>
+            </select>
+            <select className="sig-select" value={role} onChange={(e) => setRole(e.target.value)} aria-label="Filter by role">
+              <option value="all">any role</option>
+              <option value="needs_help">needs help</option>
+              <option value="offering_services">sells services</option>
+              <option value="hiring">hiring</option>
+              <option value="other">other</option>
+            </select>
+          </>
+        )}
+        <select className="sig-select" value={fresh} onChange={(e) => setFresh(e.target.value)} aria-label="Filter by post age">
+          <option value="all">any age</option>
+          <option value="7">posted ≤ 7 days</option>
+          <option value="30">posted ≤ 30 days</option>
         </select>
       </div>
 

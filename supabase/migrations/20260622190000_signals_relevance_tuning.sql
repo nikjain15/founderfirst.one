@@ -56,7 +56,9 @@ insert into sig_sources (platform, query, captured_via, enabled, cadence_minutes
 on conflict do nothing;
 
 -- 2. More ICP reference examples (varied, US-flavored first-person pain).
-insert into sig_icp_examples (body) values
+-- Insert only bodies not already present (idempotent — no unique index on body).
+insert into sig_icp_examples (body)
+select v.body from (values
   ('I''m 9 months behind on my bookkeeping and tax season is coming. I have a shoebox of receipts and a Stripe account and no idea where to start.'),
   ('It''s almost year-end and my books are a disaster. My CPA needs clean financials and I''m panicking about getting everything categorized in time.'),
   ('QuickBooks is driving me insane. Every month I spend hours trying to reconcile and it still doesn''t match my bank. There has to be a better way for a small business.'),
@@ -73,4 +75,5 @@ insert into sig_icp_examples (body) values
   ('I run a small cafe with a lot of cash and card sales. Reconciling the POS with my bank every month is a mess and I''m always behind.'),
   ('I''ve been doing my own books in spreadsheets for two years and it''s gotten out of control. I want to hand this off before it bites me at tax time.'),
   ('My bookkeeping is a complete nightmare — uncategorized transactions going back months and no idea what I actually owe in taxes. I need help digging out.')
-on conflict do nothing;
+) as v(body)
+where not exists (select 1 from sig_icp_examples e where e.body = v.body);

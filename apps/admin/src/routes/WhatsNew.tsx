@@ -207,6 +207,7 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
             <input
               className="whatsnew-title-input"
               placeholder="What changed? e.g. Added the How-it-works guide"
+              aria-label="What changed"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
@@ -214,6 +215,7 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
           <textarea
             className="whatsnew-body-input"
             placeholder="Optional detail — what it does and who it helps."
+            aria-label="Update detail"
             rows={3}
             value={body}
             onChange={(e) => setBody(e.target.value)}

@@ -301,7 +301,7 @@ function SourcesTab() {
         <select className="sig-select" value={platform} onChange={(e) => setPlatform(e.target.value)} aria-label="platform">
           {AD_PLATFORMS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
         </select>
-        <input className="sig-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="search query, e.g. hate quickbooks" style={{ flex: 1, minWidth: 180 }} />
+        <input className="sig-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="search query, e.g. hate quickbooks" aria-label="search query" style={{ flex: 1, minWidth: 180 }} />
         <select className="sig-select sig-select-inline" value={cadence} onChange={(e) => setCadence(Number(e.target.value))} aria-label="cadence">
           {CADENCES.map((c) => <option key={c.m} value={c.m}>{c.label}</option>)}
         </select>
@@ -732,7 +732,7 @@ function SliderRow({ label, hint, value, suffix, onCommit }:
         <span className="sig-label">{label}</span>
         <span className="sig-slider-val">{v}{suffix}</span>
       </div>
-      <input type="range" min={0} max={100} step={1} value={v}
+      <input type="range" min={0} max={100} step={1} value={v} aria-label={label}
         onChange={(e) => setV(Number(e.target.value))}
         onMouseUp={(e) => onCommit(Number((e.target as HTMLInputElement).value))}
         onTouchEnd={(e) => onCommit(Number((e.target as HTMLInputElement).value))} />
@@ -857,7 +857,7 @@ function ScoringTab() {
             <h2 className="sig-h2">Teach it what a good post looks like</h2>
             <p className="page-sub">Paste real posts from your ideal customers. The AI scores how similar each new post is to these — that’s “relevance”. More varied examples = smarter matching.</p>
             <div className="field" style={{ maxWidth: 560 }}>
-              <textarea value={icp} onChange={(e) => setIcp(e.target.value)} placeholder="Paste an example post that captures the pain…" />
+              <textarea value={icp} onChange={(e) => setIcp(e.target.value)} placeholder="Paste an example post that captures the pain…" aria-label="Example post" />
             </div>
             <button className="btn" onClick={addExample}>Add example</button>
             <span className="sig-label" style={{ marginTop: 16, display: "block" }}>
@@ -906,7 +906,7 @@ function ScoringTab() {
             <h2 className="sig-h2">Always-score certain phrases <span className="sig-step-opt">optional</span></h2>
             <p className="page-sub">If a post contains one of these exact phrases, it skips the match check and always gets scored — so you never miss wording you care about.</p>
             <div className="toolbar">
-              <input className="sig-input" value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. behind on my books" />
+              <input className="sig-input" value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. behind on my books" aria-label="Always-score phrase" />
               <button className="btn" onClick={addKeyword}>Add</button>
             </div>
             <div className="sig-chips">{pain.map((k) => <span key={k.id} className="topic-tag">{k.term}</span>)}</div>

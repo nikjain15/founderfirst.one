@@ -70,6 +70,7 @@ export function WebSignups() {
         <input
           type="search"
           placeholder="Search email…"
+          aria-label="Search waitlist by email"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="topic-select"

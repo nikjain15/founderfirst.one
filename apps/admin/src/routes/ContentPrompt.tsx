@@ -140,6 +140,7 @@ export function ContentPrompt() {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           rows={20}
+          aria-label="System prompt"
           placeholder="# Penny — Site Bubble System Prompt&#10;&#10;You are Penny, an AI bookkeeper for…"
           style={{ width: "100%", fontFamily: "var(--font-mono)", fontSize: "var(--fs-data-row)", lineHeight: 1.5 }}
         />
@@ -148,6 +149,7 @@ export function ContentPrompt() {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Notes (optional) — what changed in this version?"
+          aria-label="Version notes"
           style={{ width: "100%", marginTop: 8 }}
         />
         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
@@ -243,6 +245,7 @@ export function ContentPrompt() {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           rows={24}
+          aria-label="System prompt"
           style={{
             width: "100%",
             fontFamily: "var(--font-mono)",
@@ -260,6 +263,7 @@ export function ContentPrompt() {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Notes (optional) — what changed in this version?"
+          aria-label="Version notes"
           style={{ width: "100%", marginTop: 8, padding: 8, border: "1px solid var(--line)", borderRadius: 6 }}
         />
 

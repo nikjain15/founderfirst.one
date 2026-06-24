@@ -113,5 +113,8 @@ Deno.serve(async (req) => {
     cta_label: fillPlain(tpl.cta_label ?? "", vars),
     footer:    fillPlain(tpl.footer ?? "", vars),
   };
-  return json({ subject: rendered.subject, preheader: filled.preheader, filled, html: rendered.html });
+  // The token→sample-value map lets the editor render {tokens} as inline chips.
+  const tokenValues: Record<string, string> = {};
+  for (const [k, v] of Object.entries(vars)) tokenValues[k] = String(v);
+  return json({ subject: rendered.subject, preheader: filled.preheader, filled, vars: tokenValues, html: rendered.html });
 });

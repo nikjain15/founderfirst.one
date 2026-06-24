@@ -1,11 +1,31 @@
 # admin-hardening — SUMMARY (runs 2026-06-24)
 
 Autonomous overnight hardening of `apps/admin`. Branch `admin-hardening` (worktree).
-Base: `main`. Across runs: **10 safe fixes** committed + 1 cross-cutting audit + a
+Base: `main`. Across runs: **12 safe fixes** committed + 2 cross-cutting audits + a
 full CSS responsive sweep. No prod deploys, no migrations, no main commits. Build is
 green at every commit.
 
-**Run 6 (latest):** two app-shell hardening fixes — both small, verified, behavior-
+**Run 7 (latest):** an error-handling audit across every route + two correctness fixes.
+Surveyed each route's `useQuery` for the *misleading-empty-on-failure* pattern — a failed
+fetch leaves `data=[]`/`isPending=false`, so the component renders its success "empty state",
+indistinguishable from a genuinely-empty result. **Exactly two routes had it; both fixed.**
+Everything else already renders an explicit `error` branch, or *deliberately* swallows errors
+in best-effort decorative widgets (Inbox KPI strip, Audit facets, ContentHome brain-activity
+strip — left as-is). Signals (16 queries, unsaved-edit drawer) degrades per-section and was
+not touched.
+(1) **admins** (`Admins.tsx`) — the strongest fix. A failed `listAdmins()` rendered
+*"No admins yet."* (looks like a real empty allow-list) **and** — because `isSuper` is derived
+from `rows` — silently hid the invite form too, stranding a super-admin with no error and no
+recovery on a security-sensitive page. Gated the table on `!error` and added the standard
+`.empty` + `--error`/`IconAlert` error block (the pattern already in Inbox/Audit/Analytics).
+Commit `57eb889`.
+(2) **what's new** (`WhatsNew.tsx`) — same class, lower severity: a failed `listChangelog()`
+showed *"No updates yet. Post the first one…"*. Added a token-colored `.docs-section-lede`
+error branch matching the file's local convention. Commit `20d8561`.
+Both are pure additive branches — happy path unchanged, existing tokens/classes, no new deps,
+tsc+build green at each commit. Authed pages → not runtime-clicked (same basis as prior runs).
+
+**Run 6:** two app-shell hardening fixes — both small, verified, behavior-
 preserving on the happy path.
 (1) **Route-level error boundary** (resilience). All 10 admin routes are `lazy()`-loaded
 inside `<Suspense>` with **no** error boundary → a failed code-split chunk load (the
@@ -73,6 +93,8 @@ design decision, not a safe autonomous fix).
 
 | Route | Dimension | Change | Verified | Commit |
 |---|---|---|---|---|
+| admins (Admins.tsx) | Code quality (correctness) | A failed `listAdmins()` left `rows=[]`/`isPending=false` → table rendered "No admins yet." (indistinguishable from a real empty allow-list); worse, `isSuper` is derived from `rows`, so the same failure silently hid the invite form too — a super-admin stranded with no error/recovery on a security-sensitive page. Gated the table on `!error` + added the standard `.empty`/`--error`/`IconAlert` error block (pattern from Inbox/Audit/Analytics; `IconAlert` already imported). Pure additive branch, happy path unchanged, no new dep. | tsc+build green; error markup copied verbatim from the verified Audit error block; happy-path render structurally identical. Authed → not runtime-clicked. | `57eb889` |
+| what's new (WhatsNew.tsx) | Code quality | Same misleading-empty-on-failure pattern (lower severity): a failed `listChangelog()` showed "No updates yet. Post the first one…". Added a token-colored `.docs-section-lede` `error` branch matching the file's local convention, before the empty check. Happy path byte-identical; existing class + `--error` token, no new dep. | tsc+build green; markup matches existing convention (no happy-path visual delta). Authed → not runtime-clicked. | `20d8561` |
 | app shell (App.tsx + new lib/ErrorBoundary.tsx) | Code quality (resilience) | 10 `lazy()` routes sat in `<Suspense>` with **no error boundary** → a failed chunk load (stale tab post-redeploy) or render throw blanked the whole app. Added `RouteErrorBoundary` around `<Suspense>` inside `<main>` (nav stays usable); friendly message + Reload reusing `.empty`/`.btn` (no new CSS / inline styles / hex); `resetKey={pathname}` clears the error on nav. Happy path = transparent passthrough. | tsc+build green; **isolated unit test of authored logic** (compiled real component; SSR-rendered both render() branches; exercised getDerivedStateFromError + componentDidUpdate) — **9/9 PASS**. Catch-on-throw = React's contract (legacy SSR rethrows; jsdom not added → no lockfile change). Authed → not runtime-clicked. | `b58a22c` |
 | app shell (App.tsx) | Code quality (a11y) | Primary `<nav className="admin-nav">` was an unnamed landmark while HowItWorks/Signals render a second labeled `<nav>` on-page → ambiguous "navigation" in a landmark list (WCAG 2.4.1 / ARIA11). Added `aria-label="Primary"`. Pure attribute add. | tsc+build green; markup-only, no visual delta. Authed → not runtime-clicked. | `2974c72` |
 | users / whatsnew / content:prompt / content:voice / signals (5 routes) | Code quality (a11y) | Accessible-name pass over all form controls. 13 inputs/textareas + one `type=range` slider had no programmatic accessible name (placeholder-only, or a visible-but-unassociated `<label>`/`<span>` in ContentVoice & the Signals `SliderRow`) → AT announced an unnamed field (WCAG 4.1.2 + 3.3.2). Added `aria-label` to each. Already-labeled controls (Login/Admins/DiscordLinks/TicketDetail `htmlFor`; filter/sort selects' `aria-label`; Signals drawer+capture `htmlFor`) left unchanged. Pure attribute additions — placeholders kept, no visual/layout/behavior delta. | tsc+build green; markup-only ARIA so no visual delta is possible (same verification basis as the prior ARIA commits `f44181f`/`e69b36b`). Authed → not runtime-clicked. | `d70fcb7` |

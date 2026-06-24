@@ -42,8 +42,11 @@ export function ContentHome() {
         {TABS.map((t) => (
           <button
             key={t.id}
+            type="button"
+            id={`tab-${t.id}`}
             role="tab"
             aria-selected={tab === t.id}
+            aria-controls="content-tabpanel"
             className={`tab ${tab === t.id ? "active" : ""}`}
             onClick={() => setTabAndHash(t.id)}
           >
@@ -52,7 +55,7 @@ export function ContentHome() {
         ))}
       </div>
 
-      <div className="tab-panel">
+      <div className="tab-panel" role="tabpanel" id="content-tabpanel" aria-labelledby={`tab-${tab}`}>
         {tab === "prompt" && <ContentPrompt />}
         {tab === "voice"  && <ContentVoice />}
       </div>

@@ -45,8 +45,10 @@ export function AudienceHome() {
           <button
             key={t.id}
             type="button"
+            id={`tab-${t.id}`}
             role="tab"
             aria-selected={tab === t.id}
+            aria-controls="audience-tabpanel"
             className={`tab ${tab === t.id ? "active" : ""}`}
             onClick={() => setTabAndHash(t.id)}
           >
@@ -55,7 +57,7 @@ export function AudienceHome() {
         ))}
       </div>
 
-      <div className="tab-panel">
+      <div className="tab-panel" role="tabpanel" id="audience-tabpanel" aria-labelledby={`tab-${tab}`}>
         {tab === "web"     && <WebSignups />}
         {tab === "discord" && <DiscordLinks embedded />}
         {tab === "signals" && <Signals embedded />}

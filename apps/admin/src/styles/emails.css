@@ -134,6 +134,25 @@
 /* The human result of a templated field, e.g. "Shows as: Voice guide v4 is live". */
 .email-showsas { margin-top: 5px; font-size: 12px; color: var(--ink-3); }
 .email-showsas strong { color: var(--ink); font-weight: var(--fw-medium); }
+
+/* Chip input — renders {tokens} as inline pills so copy reads like clean text. */
+.token-input {
+  background: var(--paper); border: 1px solid transparent; border-radius: var(--r-card);
+  padding: 11px 14px; min-height: var(--tap-min, 44px); box-sizing: border-box;
+  font: inherit; font-size: 16px; color: var(--ink); line-height: 1.45;
+  white-space: pre-wrap; word-break: break-word; cursor: text;
+  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.token-input:focus { background: var(--white); border-color: var(--ink-4); outline: none; }
+.token-input:empty::before { content: attr(data-placeholder); color: var(--ink-4); }
+.token-chip {
+  display: inline-block; vertical-align: baseline;
+  background: var(--income-bg); color: var(--ink-2);
+  border: 1px solid color-mix(in srgb, var(--income) 35%, transparent);
+  border-radius: 6px; padding: 0 6px; margin: 0 1px;
+  font-size: 13px; font-weight: var(--fw-medium); white-space: nowrap;
+  user-select: none;
+}
 .email-more-toggle {
   display: inline-flex; gap: 6px; align-items: baseline;
   background: none; border: none; cursor: pointer; padding: 4px 0; margin-bottom: 10px;

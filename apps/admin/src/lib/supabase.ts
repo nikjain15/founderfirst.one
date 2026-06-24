@@ -315,13 +315,13 @@ export interface EmailPreviewFilled {
  *  editor can show the human version of templated copy. */
 export async function previewEmailTemplate(
   key: string, template: Partial<EmailTemplate>, brand: Partial<EmailBrand>,
-): Promise<{ subject: string; preheader: string; filled: EmailPreviewFilled; html: string }> {
+): Promise<{ subject: string; preheader: string; filled: EmailPreviewFilled; vars: Record<string, string>; html: string }> {
   const db = getClient();
   const { data, error } = await db.functions.invoke("email-preview", {
     body: { key, template, brand },
   });
   if (error) throw new Error(`previewEmailTemplate: ${error.message}`);
-  return data as { subject: string; preheader: string; filled: EmailPreviewFilled; html: string };
+  return data as { subject: string; preheader: string; filled: EmailPreviewFilled; vars: Record<string, string>; html: string };
 }
 
 export interface EmailActivityRow {

@@ -10,8 +10,9 @@
 .toolbar-spacer { flex: 1 1 auto; }
 .topic-select {
   font-family: inherit;
-  font-size: 13px;
+  font-size: max(16px, var(--fs-data-row));   /* ≥16px prevents iOS zoom (search inputs use this class) */
   font-weight: var(--fw-medium);
+  min-height: var(--tap-min);                 /* ≥44px touch target */
   padding: 7px 28px 7px 14px;
   border-radius: var(--r-pill);
   border: 1px solid var(--line);

@@ -286,7 +286,7 @@ export function ContentVoice() {
                 style={{
                   width: "100%",
                   fontFamily: "var(--font-mono)",
-                  fontSize: "var(--fs-data-row)",
+                  fontSize: "max(16px, var(--fs-data-row))",
                   lineHeight: 1.55,
                   padding: 12,
                   border: "1px solid var(--line)",
@@ -330,7 +330,7 @@ export function ContentVoice() {
                   border: "1px solid var(--line)",
                   borderRadius: 8,
                   boxSizing: "border-box",
-                  fontSize: "var(--fs-data-row)",
+                  fontSize: "max(16px, var(--fs-data-row))",
                 }}
               />
             </div>

@@ -1,10 +1,23 @@
 # admin-hardening — SUMMARY (runs 2026-06-24)
 
 Autonomous overnight hardening of `apps/admin`. Branch `admin-hardening` (worktree).
-Base: `main`. Across runs: **3 safe fixes** committed + 1 cross-cutting audit. No prod
-deploys, no migrations, no main commits. Build is green at every commit.
+Base: `main`. Across runs: **5 safe fixes** committed + 1 cross-cutting audit + a
+full CSS responsive sweep. No prod deploys, no migrations, no main commits. Build is
+green at every commit.
 
-**Run 2 (latest):** 1 fix — drawer close-button tap target (a11y/responsive),
+**Run 3 (latest):** 2 fixes + completed the CSS responsive sweep.
+(1) `.drawer-list` label column was a fixed `140px 1fr` grid (RESPONSIVE.md rule 2) —
+made it `minmax(88px,140px) 1fr` and stack @≤480 so long emails/URLs get full width
+on phones. Render-harness verified @320/640 against built CSS. Shared CSS → all three
+detail drawers. (2) Gave those drawers `role="dialog"` + `aria-labelledby` (pure ARIA,
+no behavior change) so screen readers announce a named dialog. Reviewed all 12 admin
+stylesheets: the drawer-list grid was the **only** genuine responsive offender — the
+rest is already fluid/token-driven; marked those routes Resp=done via CSS review.
+Logged one new deferred item: extract a shared `<Drawer>` for full modal a11y
+(focus-trap/aria-modal/Escape) — Escape-to-close is unsafe in the Signals drawer
+(unsaved edits), so it needs a dirty-state guard (a product decision).
+
+**Run 2:** 1 fix — drawer close-button tap target (a11y/responsive),
 shared CSS so it lands on all three detail drawers (Users / Signals / Audit).
 Render-harness verified at 320px against the real built CSS. Also corrected an
 overstated claim from run 1 (admin CSS is NOT fully font-size-tokenized — that's a
@@ -16,6 +29,8 @@ design decision, not a safe autonomous fix).
 
 | Route | Dimension | Change | Verified | Commit |
 |---|---|---|---|---|
+| users / signals / audit (shared `.drawer-list` CSS) | Responsiveness | Detail-drawer label column was a fixed `grid-template-columns: 140px 1fr` (RESPONSIVE.md rule 2). On a full-width drawer @320 the value column was squeezed to ~120px, cramping long emails/URLs/ids. → `minmax(88px,140px) 1fr` (caps at 140px on wide drawers, unchanged; shrinks gracefully when tight) + stack to one column @≤480. Shared CSS → all three drawers. | tsc+build green **and** render harness w/ built CSS — @320 row stacks (value = full **271px**, `documentElement.scrollWidth==innerWidth`, close btn 44×44, screenshot), @640 two-col `140px 279px` (wide layout preserved). | `41c8917` |
+| users / signals / audit (3 routes) | Responsiveness (a11y) | Detail drawers rendered as a bare `<aside>` — no role, no accessible name. Added `role="dialog"` + `aria-labelledby` (h2 `id="drawer-title"`). Pure ARIA: no layout/focus/JS change; one drawer mounts at a time so the shared id is DOM-unique. Deliberately skipped `aria-modal`/Escape/focus-trap (see Morning review). | tsc+build green. ARIA-only, no runtime click needed; authed page not clicked. | `f44181f` |
 | users / signals / audit (shared `.drawer-head` CSS) | Responsiveness (a11y) | Detail-drawer close button was a 16px SVG icon in a borderless button with **no box** → ~16px tap target (RESPONSIVE.md rule 4). Replaced the dead `font-size:18px` (vestige of the old text "×") with the standard 44×44 inline-flex icon-button box used by `.nav-toggle`; negative margins keep the icon optically aligned to the drawer edge so the header doesn't grow taller. Mouse behavior + the existing `aria-label="Close"` unchanged. | tsc+build green **and** render harness (built `index-*.css` + representative drawer markup) @320: close button computed = **44×44**, `documentElement.scrollWidth==innerWidth` (no overflow), screenshot confirms × aligned to drawer edge and the value column wraps a long URL. | `233f379` |
 | content: prompt | Responsiveness + Design | `.prompt-editor` notes `input[type=text]` had no font set → fell to UA default (~13px, non-Inter): iOS auto-zoom + typography drift. Added `font-family:inherit; font-size:16px`. Textareas keep their inline mono overrides, so only the notes inputs change. | tsc+build green **and** runtime render-harness (built CSS + representative markup): input computed = **16px Inter**; width-ladder @320 `documentElement.scrollWidth == innerWidth` (no overflow); wide table scrolls inside `.table-wrap`; screenshot @375 clean. | `91da8af` |
 | what's new | Security | `<iframe srcDoc={preview.html}>` rendered admin-controlled email HTML with **no sandbox** → any script in that HTML executes in the admin origin. Added `sandbox=""`. Scripts + same-origin blocked; HTML/CSS/images still render; the Send action lives outside the frame so nothing is lost. | tsc+build green. CSS review (email previews are static; no JS/forms/same-origin needed). Not runtime-clicked (authed page, no Supabase login this run). | `2678b61` |
@@ -44,6 +59,12 @@ additions. Two behavior deltas worth a glance:
   check at desktop width too if you want, but the box is centered and the icon is unchanged.
 
 **Needs a human decision (see PROGRESS.md → "Needs human review"):**
+0. **Extract a shared `<Drawer>` component** — the drawer shell is copy-pasted in Users / Signals /
+   Audit (learning #6, will drift). A shared component would let `aria-modal`, focus-trap, and
+   Escape-to-close be added once. Not done autonomously: it's a 4-file refactor on un-clickable
+   authed pages, **and** Escape-to-close would silently discard the Signals lead drawer's unsaved
+   edits — that needs a dirty-state guard (product decision). Run 3 shipped the safe subset
+   (`role="dialog"` + `aria-labelledby`).
 1. **Clickable data-table rows aren't keyboard-operable** (Users.tsx, Audit.tsx) — `<tr onClick>`
    with no `tabIndex`/`onKeyDown`. Every clean fix has a downside (mass tab stops vs. broken row
    semantics); needs a design choice (real `<button>` in a cell, or a "view" action column).
@@ -63,5 +84,5 @@ additions. Two behavior deltas worth a glance:
 git -C .claude/worktrees/admin-hardening log --oneline main..admin-hardening
 git diff main...admin-hardening -- apps/admin
 ```
-Three functional commits (`91da8af`, `2678b61`, `233f379`) + PROGRESS/SUMMARY doc commits.
-Re-run `pnpm -C apps/admin exec tsc --noEmit && pnpm -C apps/admin build` to confirm green.
+Five functional commits (`91da8af`, `2678b61`, `233f379`, `41c8917`, `f44181f`) + PROGRESS/SUMMARY
+doc commits. Re-run `pnpm -C apps/admin exec tsc --noEmit && pnpm -C apps/admin build` to confirm green.

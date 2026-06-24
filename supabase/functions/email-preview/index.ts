@@ -12,7 +12,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { BRAND, type Brand, escapeHtml, resolveBrand } from "../_shared/email.ts";
-import { FALLBACK, renderFromTemplate, type TemplateRow } from "../_shared/send.ts";
+import { FALLBACK, fillPlain, renderFromTemplate, type TemplateRow } from "../_shared/send.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -100,5 +100,18 @@ Deno.serve(async (req) => {
     // Built-ins get sample rows; custom emails fall through to their body field.
     buildBody: isBuiltin ? (b) => sampleBody(key, b) ?? "" : undefined,
   });
-  return json({ subject: rendered.subject, html: rendered.html });
+
+  // Every field with tokens filled in, so the editor can show the human version
+  // ("shows as: Voice guide v4 is live") and a consistent inbox preview.
+  const vars = SAMPLE_VARS[key] ?? {};
+  const filled = {
+    subject:   fillPlain(tpl.subject ?? "", vars),
+    preheader: fillPlain(tpl.preheader ?? "", vars),
+    eyebrow:   fillPlain(tpl.eyebrow ?? "", vars),
+    heading:   fillPlain(tpl.heading ?? "", vars),
+    intro:     fillPlain(tpl.intro ?? "", vars),
+    cta_label: fillPlain(tpl.cta_label ?? "", vars),
+    footer:    fillPlain(tpl.footer ?? "", vars),
+  };
+  return json({ subject: rendered.subject, preheader: filled.preheader, filled, html: rendered.html });
 });

@@ -131,6 +131,9 @@
 }
 .email-group .field input:focus,
 .email-group .field textarea:focus { background: var(--white); border-color: var(--ink-4); outline: none; }
+/* The human result of a templated field, e.g. "Shows as: Voice guide v4 is live". */
+.email-showsas { margin-top: 5px; font-size: 12px; color: var(--ink-3); }
+.email-showsas strong { color: var(--ink); font-weight: var(--fw-medium); }
 .email-more-toggle {
   display: inline-flex; gap: 6px; align-items: baseline;
   background: none; border: none; cursor: pointer; padding: 4px 0; margin-bottom: 10px;

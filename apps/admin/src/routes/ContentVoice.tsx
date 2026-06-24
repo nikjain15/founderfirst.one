@@ -376,6 +376,22 @@ function upgradeRenderedHtml(html: string): string {
   const root = doc.body.firstElementChild;
   if (!root) return html;
 
+  // 0. Sanitise. This HTML is admin-authored markdown, but it reaches the DOM
+  // via dangerouslySetInnerHTML, so strip the vectors that execute when set
+  // that way: script-capable elements, on* handlers, and javascript: URLs.
+  // (No DOMPurify in this app; the inert DOMParser doc lets us do it inline.)
+  root.querySelectorAll("script, style, iframe, object, embed, link, meta, base, form").forEach((el) => el.remove());
+  root.querySelectorAll("*").forEach((el) => {
+    for (const attr of Array.from(el.attributes)) {
+      const name = attr.name.toLowerCase();
+      const value = attr.value.replace(/\s+/g, "").toLowerCase();
+      if (name.startsWith("on")) el.removeAttribute(attr.name);
+      else if ((name === "href" || name === "src" || name === "xlink:href") && value.startsWith("javascript:")) {
+        el.removeAttribute(attr.name);
+      }
+    }
+  });
+
   // 1. One-line test callout
   root.querySelectorAll("blockquote").forEach((bq) => {
     const opener = bq.querySelector("strong")?.textContent ?? "";

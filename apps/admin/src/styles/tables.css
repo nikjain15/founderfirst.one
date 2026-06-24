@@ -76,9 +76,17 @@
   font-weight: 500;
 }
 .drawer-head button {
+  /* 44×44 tap target (RESPONSIVE.md rule 4); negative margin keeps the icon
+     optically aligned to the drawer edge without enlarging the header. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  margin: -10px -10px -10px 0;
   background: none;
   border: none;
-  font-size: 18px;
   cursor: pointer;
   color: var(--ink-3);
 }

@@ -49,6 +49,13 @@
   --fs-tiny:         10px;
   --fs-data-row:     clamp(13px, 1.4vw, 14px);
 
+  /* App/UI type scale — for admin controls & dense surfaces (the display
+     sizes above are marketing-shaped). Reach for these before any raw px. */
+  --fs-ui:     15px;                          /* default control / body text in the app UI */
+  --fs-label:  13px;                          /* secondary labels, dense table text */
+  --fs-kpi:    clamp(20px, 2.4vw, 24px);      /* KPI tile values */
+  --fs-input:  max(16px, var(--fs-data-row)); /* form controls — ≥16px stops iOS focus-zoom (RESPONSIVE.md rule 5) */
+
   --ls-tight:    -0.028em;
   --ls-tighter:  -0.022em;
   --ls-normal:    0;
@@ -70,11 +77,25 @@
   --r-bubble-user: 14px 14px 4px 14px;
 
   /* -- Spacing -------------------------------------------------------- */
-  --pad-screen:  20px;
-  --pad-card:    16px 20px;
-  --gap-thread:  12px;
-  --gap-card:    12px;
-  --gap-section: 24px;
+  /* 4px-baseline numeric scale — the primitive for all spacing. Use these
+     (or the role aliases below) instead of inventing px. */
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Role aliases — derived from the scale (values unchanged). */
+  --pad-screen:  var(--space-5);
+  --pad-card:    var(--space-4) var(--space-5);
+  --gap-thread:  var(--space-3);
+  --gap-card:    var(--space-3);
+  --gap-section: var(--space-6);
 
   /* -- Layout --------------------------------------------------------- */
   --page-max:    1080px;
@@ -91,6 +112,19 @@
   /* Soft "floating card" elevation — borderless white cards on a paper canvas. */
   --shadow-float:     0 1px 3px rgba(10, 10, 10, 0.05), 0 10px 30px rgba(10, 10, 10, 0.05);
   --shadow-float-lg:  0 1px 3px rgba(10, 10, 10, 0.05), 0 18px 44px rgba(10, 10, 10, 0.08);
+
+  /* -- Structure: borders, layering, focus ---------------------------- */
+  --bw-hair:   1px;     /* default hairline border */
+  --bw:        1.5px;   /* emphasised / interactive border */
+
+  /* Z-index scale — keep stacking deliberate, not ad-hoc. */
+  --z-sticky:  40;          /* sticky headers / nav */
+  --z-drawer:  50;          /* detail drawers, modals */
+  --z-toast:   60;          /* transient toasts */
+  --z-max:     2147483647;  /* Shadow-DOM widget launcher (must beat host page) */
+
+  /* Keyboard focus ring — apply on :focus-visible for a consistent halo. */
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--sage) 40%, transparent);
 
   /* -- Motion --------------------------------------------------------- */
   --ease-out:  cubic-bezier(0.2, 0.8, 0.2, 1);

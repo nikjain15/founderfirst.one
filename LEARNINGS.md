@@ -96,6 +96,40 @@ product decision with legal weight. Keep records via archive, but (a) keep a rea
 erasure path, and (b) disclose retention in the privacy policy. Don't assert
 GDPR/CCPA compliance in code comments — flag for legal review.
 
+## 9. On UI feedback, verify what's actually live before re-tweaking.
+
+**What happened:** A user repeatedly said "still same" after Templates-editor
+restyles. Several of those were *already deployed* — the change was live but too
+subtle to read, or the browser/CDN was serving a stale bundle. Time was burned
+re-editing things that were already shipped.
+
+**Rules:**
+- When a visual change "doesn't show", **fetch the deployed asset and grep it**
+  (`curl <site>/admin/ → find the hashed .css → curl it → grep the rule`) before
+  assuming it didn't land. Confirm live ≠ confirm intended.
+- The admin is auth-walled, so you can't screenshot it yourself. **Verify CSS
+  against the *real* stylesheet** in a static harness served locally
+  (`python -m http.server`, screenshot via preview tools) — not against an
+  idealized hand-built mockup. A mockup approximates; only the real components +
+  real rendered email reflect what the user sees.
+- Subtle elevation (4%-opacity shadows) reads as "no change" on a near-white
+  page. If the user asks for a *visible* difference, make it unmistakable
+  (borderless float on a contrasting canvas) and verify the contrast.
+
+## 10. Interactive OAuth can't be completed from the automated shell.
+
+**What happened:** `cloudflared tunnel login` (browser cert-callback) failed
+twice when launched from the detached Bash tool ("Failed to write the
+certificate"), but worked instantly when the **user** ran it in their own
+Terminal. Edge connectivity was fine — only the localhost callback needs a real
+interactive session.
+
+**Rule:** for any tool that needs a human browser-auth step (OAuth/SSO,
+`cloudflared tunnel login`, device-code flows), hand the **single** interactive
+command to the user and **script everything before and after it** (create,
+route, config, launchd, verify). Don't loop retrying the login from automation.
+Also: `timeout` is not installed on macOS — don't rely on it in host scripts.
+
 ---
 
 *Add a numbered rule above when a mistake teaches a lesson worth not repeating.*

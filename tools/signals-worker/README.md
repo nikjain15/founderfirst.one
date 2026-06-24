@@ -55,6 +55,16 @@ local too — change the draft path in `brain.mjs`; nothing else changes.
 
 ## AI email drafting (compose-server)
 
+> **Status: LIVE (set up 24 Jun 2026).** `COMPOSE_SECRET` is in
+> `~/.config/founderfirst/secrets.env` + Supabase; `compose-server` runs under
+> launchd `one.founderfirst.compose-server` (127.0.0.1:8787); the named tunnel
+> `ff-compose` (`one.founderfirst.compose-tunnel`, KeepAlive) serves
+> `https://compose.founderfirst.one`; `COMPOSE_ENDPOINT_URL` is set in Supabase.
+> The button works whenever this Mac is awake. The steps below are the original
+> one-time setup, kept for reference / rebuilds.
+> Gotcha: `cloudflared tunnel login` must be run **interactively by a human** —
+> its localhost cert-callback fails from an automated/detached shell.
+
 Powers the **Draft with AI** button in the admin (Settings → Emails → + New
 email). The admin can't reach Ollama directly, so the path is:
 

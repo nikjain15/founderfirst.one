@@ -35,7 +35,7 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
   const qc = useQueryClient();
   const me = currentEmail.toLowerCase();
 
-  const { data: entries = [], isPending } = useQuery({
+  const { data: entries = [], isPending, error } = useQuery({
     queryKey: ["changelog"],
     queryFn: listChangelog,
   });
@@ -231,6 +231,10 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
 
       {isPending ? (
         <p className="docs-section-lede">Loading…</p>
+      ) : error ? (
+        <p className="docs-section-lede" style={{ color: "var(--error)" }}>
+          Couldn't load updates. {error.message}
+        </p>
       ) : entries.length === 0 ? (
         <p className="docs-section-lede">No updates yet. Post the first one with “+ Add update”.</p>
       ) : (

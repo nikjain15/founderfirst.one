@@ -131,7 +131,7 @@ export function App() {
 
   return (
     <div className="admin-shell">
-      <nav className={`admin-nav ${signedIn ? "signed-in" : ""} ${navOpen ? "is-open" : ""}`}>
+      <nav className={`admin-nav ${signedIn ? "signed-in" : ""} ${navOpen ? "is-open" : ""}`} aria-label="Primary">
         <div className="wrap nav-inner">
           <Link to="/support" className="brand">
             <span className="ff-mark ff-mark-md">FF</span>

@@ -12,7 +12,7 @@ export function Admins({ currentEmail }: Props) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<{ kind: "idle" | "ok" | "err"; msg?: string }>({ kind: "idle" });
 
-  const { data: rows = [], isPending: loading } = useQuery({
+  const { data: rows = [], isPending: loading, error } = useQuery({
     queryKey: ["admins"],
     queryFn: listAdmins,
   });
@@ -82,6 +82,13 @@ export function Admins({ currentEmail }: Props) {
         </div>
       )}
 
+      {error ? (
+        <div className="empty" style={{ color: "var(--error)", borderColor: "var(--error-bg)" }}>
+          <IconAlert size={18} />
+          <p className="empty-title" style={{ marginTop: 10 }}>Couldn't load admins.</p>
+          {error.message}
+        </div>
+      ) : (
       <div className="table-wrap">
         <table className="data-table">
           <thead>
@@ -119,6 +126,7 @@ export function Admins({ currentEmail }: Props) {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }

@@ -1395,6 +1395,10 @@ export type Database = {
           actors: string[]
         }[]
       }
+      admin_discord_erase: {
+        Args: { p_discord_user_id?: string; p_email?: string }
+        Returns: Json
+      }
       admin_events_daily: {
         Args: { p_since?: string }
         Returns: {
@@ -1547,10 +1551,7 @@ export type Database = {
         Args: { p_discord_user_id: string }
         Returns: undefined
       }
-      discord_dm_erase: {
-        Args: { p_discord_user_id: string }
-        Returns: undefined
-      }
+      discord_dm_erase: { Args: { p_discord_user_id: string }; Returns: Json }
       discord_dm_load: {
         Args: { p_discord_user_id: string; p_limit?: number }
         Returns: Json

@@ -486,6 +486,21 @@ export async function revokeDiscordLink(opts: { discord_user_id?: string | null;
   return (data as number) ?? 0;
 }
 
+/** Counts of rows removed by a full Discord erasure. */
+export interface DiscordEraseResult { discord_user_id: string | null; messages: number; memory: number; links: number }
+
+/** Right-to-erasure: hard-delete a user's Discord DMs, memory, and link row(s).
+ *  Admin-gated server-side (admin_discord_erase). Irreversible — not /disconnect. */
+export async function adminDiscordErase(opts: { discord_user_id?: string | null; email?: string | null }): Promise<DiscordEraseResult> {
+  const db = getClient();
+  const { data, error } = await db.rpc("admin_discord_erase", {
+    p_discord_user_id: opts.discord_user_id ?? null,
+    p_email: opts.email ?? null,
+  });
+  if (error) throw new Error(`adminDiscordErase: ${error.message}`);
+  return data as unknown as DiscordEraseResult;
+}
+
 // ---- Types matching the RPC return shapes ----------------------------------
 
 export interface TicketRow {

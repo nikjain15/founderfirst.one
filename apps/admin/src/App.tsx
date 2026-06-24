@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { getClient, isAdmin, logAudit } from "./lib/supabase";
 import { hasSupabase } from "./lib/env";
 import { IconLogOut, IconMenu, IconClose, IconSettings, IconChevronDown } from "./lib/icons";
+import { RouteErrorBoundary } from "./lib/ErrorBoundary";
 import { Login } from "./routes/Login";
 
 // Authenticated routes are code-split: each loads on demand so the initial
@@ -193,6 +194,7 @@ export function App() {
       </nav>
 
       <main className="admin-main">
+        <RouteErrorBoundary resetKey={location.pathname}>
         <Suspense fallback={<div className="empty">Loading…</div>}>
           <Routes>
             <Route path="/" element={<Navigate to="/support" replace />} />
@@ -231,6 +233,7 @@ export function App() {
             />
           </Routes>
         </Suspense>
+        </RouteErrorBoundary>
       </main>
     </div>
   );

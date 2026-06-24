@@ -131,9 +131,9 @@ export function WebSignups() {
 
       {selected && (
         <div className="drawer-overlay" onClick={() => setSelected(null)}>
-          <aside className="drawer" onClick={(e) => e.stopPropagation()}>
+          <aside className="drawer" role="dialog" aria-labelledby="drawer-title" onClick={(e) => e.stopPropagation()}>
             <header className="drawer-head">
-              <h2>{String(selected.row_data.email ?? "(no email)")}</h2>
+              <h2 id="drawer-title">{String(selected.row_data.email ?? "(no email)")}</h2>
               <button onClick={() => setSelected(null)} aria-label="Close"><IconClose size={16} /></button>
             </header>
             <dl className="drawer-list">

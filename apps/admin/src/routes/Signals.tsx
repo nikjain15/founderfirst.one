@@ -615,9 +615,9 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
 
   return (
     <div className="drawer-overlay" onClick={onClose}>
-      <aside className="drawer" onClick={(e) => e.stopPropagation()}>
+      <aside className="drawer" role="dialog" aria-labelledby="drawer-title" onClick={(e) => e.stopPropagation()}>
         <header className="drawer-head">
-          <h2>Lead</h2>
+          <h2 id="drawer-title">Lead</h2>
           <button onClick={onClose} aria-label="Close"><IconClose size={16} /></button>
         </header>
 

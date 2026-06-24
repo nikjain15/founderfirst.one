@@ -142,7 +142,7 @@ export function ContentPrompt() {
           rows={20}
           aria-label="System prompt"
           placeholder="# Penny — Site Bubble System Prompt&#10;&#10;You are Penny, an AI bookkeeper for…"
-          style={{ width: "100%", fontFamily: "var(--font-mono)", fontSize: "var(--fs-data-row)", lineHeight: 1.5 }}
+          style={{ width: "100%", fontFamily: "var(--font-mono)", fontSize: "max(16px, var(--fs-data-row))", lineHeight: 1.5 }}
         />
         <input
           type="text"
@@ -249,7 +249,7 @@ export function ContentPrompt() {
           style={{
             width: "100%",
             fontFamily: "var(--font-mono)",
-            fontSize: "var(--fs-data-row)",
+            fontSize: "max(16px, var(--fs-data-row))",
             lineHeight: 1.55,
             padding: 12,
             border: "1px solid var(--line)",

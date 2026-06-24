@@ -93,11 +93,19 @@
 .drawer-list { margin: 0; }
 .drawer-list > div {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  /* Label column shrinks toward 88px on narrow drawers so the value keeps room
+     (RESPONSIVE.md rule 2 — no fixed px in horizontal layouts); caps at 140px
+     on wide drawers, unchanged from before. */
+  grid-template-columns: minmax(88px, 140px) 1fr;
   gap: 12px;
   padding: 8px 0;
   border-bottom: 1px solid var(--line);
   font-size: var(--fs-data-row);
+}
+/* On small phones the drawer is full-width; stack label over value so long
+   emails / URLs / ids get the full content width instead of a ~120px column. */
+@media (max-width: 480px) {
+  .drawer-list > div { grid-template-columns: 1fr; gap: 2px; }
 }
 .drawer-list dt {
   color: var(--ink-3);

@@ -1,11 +1,27 @@
 # admin-hardening — SUMMARY (runs 2026-06-24)
 
 Autonomous overnight hardening of `apps/admin`. Branch `admin-hardening` (worktree).
-Base: `main`. Across runs: **8 safe fixes** committed + 1 cross-cutting audit + a
+Base: `main`. Across runs: **10 safe fixes** committed + 1 cross-cutting audit + a
 full CSS responsive sweep. No prod deploys, no migrations, no main commits. Build is
 green at every commit.
 
-**Run 5 (latest):** completed a forms accessible-name pass (Quality/a11y). Audited
+**Run 6 (latest):** two app-shell hardening fixes — both small, verified, behavior-
+preserving on the happy path.
+(1) **Route-level error boundary** (resilience). All 10 admin routes are `lazy()`-loaded
+inside `<Suspense>` with **no** error boundary → a failed code-split chunk load (the
+classic stale-tab-after-redeploy 404) or any render-time throw blanked the entire app to
+a white screen. Added `RouteErrorBoundary` (new `src/lib/ErrorBoundary.tsx`) wrapping the
+`<Suspense>` inside `<main>` so the nav/shell stay usable; on error it shows a friendly
+message + Reload button reusing the token-driven `.empty`/`.btn` classes (no new CSS),
+and `resetKey={pathname}` clears the error on navigation. Happy path is a transparent
+passthrough. Verified with an isolated 9-assertion unit test of the authored logic
+(compiled the real component, exercised every branch) — all pass. Commit `b58a22c`.
+(2) **Primary nav accessible name** (a11y). The shell `<nav>` was an unnamed landmark
+while HowItWorks/Signals render a second labeled `<nav>` on the same page → ambiguous
+"navigation" in a screen-reader landmark list (WCAG 2.4.1 / ARIA11). Added
+`aria-label="Primary"`. Commit `2974c72`.
+
+**Run 5:** completed a forms accessible-name pass (Quality/a11y). Audited
 **every** form control in the admin and found 13 that had only a `placeholder` — or,
 in ContentVoice/SliderRow, a *visually* present but programmatically *unassociated*
 `<label>`/`<span>` — so assistive tech announced an unnamed field (WCAG 4.1.2 +
@@ -57,6 +73,8 @@ design decision, not a safe autonomous fix).
 
 | Route | Dimension | Change | Verified | Commit |
 |---|---|---|---|---|
+| app shell (App.tsx + new lib/ErrorBoundary.tsx) | Code quality (resilience) | 10 `lazy()` routes sat in `<Suspense>` with **no error boundary** → a failed chunk load (stale tab post-redeploy) or render throw blanked the whole app. Added `RouteErrorBoundary` around `<Suspense>` inside `<main>` (nav stays usable); friendly message + Reload reusing `.empty`/`.btn` (no new CSS / inline styles / hex); `resetKey={pathname}` clears the error on nav. Happy path = transparent passthrough. | tsc+build green; **isolated unit test of authored logic** (compiled real component; SSR-rendered both render() branches; exercised getDerivedStateFromError + componentDidUpdate) — **9/9 PASS**. Catch-on-throw = React's contract (legacy SSR rethrows; jsdom not added → no lockfile change). Authed → not runtime-clicked. | `b58a22c` |
+| app shell (App.tsx) | Code quality (a11y) | Primary `<nav className="admin-nav">` was an unnamed landmark while HowItWorks/Signals render a second labeled `<nav>` on-page → ambiguous "navigation" in a landmark list (WCAG 2.4.1 / ARIA11). Added `aria-label="Primary"`. Pure attribute add. | tsc+build green; markup-only, no visual delta. Authed → not runtime-clicked. | `2974c72` |
 | users / whatsnew / content:prompt / content:voice / signals (5 routes) | Code quality (a11y) | Accessible-name pass over all form controls. 13 inputs/textareas + one `type=range` slider had no programmatic accessible name (placeholder-only, or a visible-but-unassociated `<label>`/`<span>` in ContentVoice & the Signals `SliderRow`) → AT announced an unnamed field (WCAG 4.1.2 + 3.3.2). Added `aria-label` to each. Already-labeled controls (Login/Admins/DiscordLinks/TicketDetail `htmlFor`; filter/sort selects' `aria-label`; Signals drawer+capture `htmlFor`) left unchanged. Pure attribute additions — placeholders kept, no visual/layout/behavior delta. | tsc+build green; markup-only ARIA so no visual delta is possible (same verification basis as the prior ARIA commits `f44181f`/`e69b36b`). Authed → not runtime-clicked. | `d70fcb7` |
 | analytics / content / audience / emails (4 tab containers) | Code quality (a11y) | Tab bars declared `role=tablist`+`role=tab`+`aria-selected` but tabs had no `aria-controls` and the panel below was a bare `<div>` → AT announced a `tab` with no linked `tabpanel`. Added `id`+`aria-controls` on each tab → a stable `role=tabpanel` (`<route>-tabpanel`) with `aria-labelledby={`tab-${activeTab}`}`; added missing `type=button` on Analytics/Content/EmailHub tab buttons. Pure semantic markup — no class/style/layout/behavior change. Did NOT add roving-tabindex + arrow-key nav (a keyboard-model change → deferred). | tsc+build green at each commit; markup-only so no visual delta is possible. Authed → not runtime-clicked. | `e69b36b`, `ddd31b1` |
 | audience / discord / admins (3 routes) | Responsiveness | Audited the last three `todo` routes; all already fluid + token-driven (`.table-wrap` tables, `flex-wrap` toolbars, `flex:1 1 260px` fields, `.tabs` scroll-x + 44px `.tab`, `.admins-invite` stacks @≤640). No code change — marked Resp=done (Admins also Design=done; classes fully token-driven). | CSS review (misc.css/inbox.css/tables.css/content.css). Authed → not runtime-clicked. | — |
@@ -80,8 +98,14 @@ design decision, not a safe autonomous fix).
 
 ## Morning review — risky diffs / human decisions
 
-**Risky diffs:** none. All three functional commits are small, behavior-preserving CSS/attribute
-additions. Two behavior deltas worth a glance:
+**Risky diffs:** none. All functional commits are small and behavior-preserving on the happy
+path. Behavior deltas worth a glance:
+- **Error boundary (run 6)** changes only the *failure* behavior: a render throw / failed chunk
+  load now shows a "Something went wrong + Reload" card instead of a blank screen. The happy path
+  is a transparent passthrough (unit-verified: `render()` returns children verbatim with no error).
+  It wraps `<Suspense>` from the outside (the recommended ordering — it does not interfere with
+  Suspense's loading fallback). If you want belt-and-suspenders confidence, log in and force a
+  chunk 404 (DevTools → block `*ContentHome*.js`, navigate to Penny) to see the fallback live.
 - `sandbox=""` on the digest preview (run 1) also blocks in-frame link click-through and form
   submission — intended for a static email *preview*, but confirm no one relied on clicking
   links inside the preview.
@@ -124,6 +148,6 @@ additions. Two behavior deltas worth a glance:
 git -C .claude/worktrees/admin-hardening log --oneline main..admin-hardening
 git diff main...admin-hardening -- apps/admin
 ```
-Eight functional commits (`91da8af`, `2678b61`, `233f379`, `41c8917`, `f44181f`, `e69b36b`, `ddd31b1`, `d70fcb7`)
+Ten functional commits (`91da8af`, `2678b61`, `233f379`, `41c8917`, `f44181f`, `e69b36b`, `ddd31b1`, `d70fcb7`, `2974c72`, `b58a22c`)
 + PROGRESS/SUMMARY doc commits. Re-run `pnpm -C apps/admin exec tsc --noEmit && pnpm -C apps/admin build`
 to confirm green.

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listWaitlist, type WaitlistRow } from "../lib/supabase";
 import { IconAlert, IconClose } from "../lib/icons";
@@ -10,6 +10,14 @@ export function WebSignups() {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("signed_up_at");
   const [selected, setSelected] = useState<WaitlistRow | null>(null);
+
+  // Close the detail drawer on Escape (mirrors the settings-menu pattern in App).
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSelected(null); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [selected]);
 
   // Waitlist rows — cached per search term; refetches automatically on change.
   const {
@@ -119,7 +127,14 @@ export function WebSignups() {
             </thead>
             <tbody>
               {sorted.map((r, i) => (
-                <tr key={i} onClick={() => setSelected(r)} className="row-clickable">
+                <tr
+                  key={i}
+                  onClick={() => setSelected(r)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelected(r); } }}
+                  tabIndex={0}
+                  aria-label="View details"
+                  className="row-clickable"
+                >
                   {columns.map((c) => (
                     <td key={c}>{formatCell(r.row_data[c], c)}</td>
                   ))}

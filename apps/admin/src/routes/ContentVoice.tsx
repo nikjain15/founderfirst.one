@@ -282,6 +282,7 @@ export function ContentVoice() {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 rows={20}
+                aria-label="Markdown source"
                 style={{
                   width: "100%",
                   fontFamily: "var(--font-mono)",
@@ -322,6 +323,7 @@ export function ContentVoice() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="e.g. Softened the off-topic templates; added new banned phrase"
+                aria-label="What changed in this version?"
                 style={{
                   width: "100%",
                   padding: 10,

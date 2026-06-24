@@ -118,9 +118,9 @@ export function Audit() {
 
       {selected && (
         <div className="drawer-overlay" onClick={() => setSelected(null)}>
-          <aside className="drawer" onClick={(e) => e.stopPropagation()}>
+          <aside className="drawer" role="dialog" aria-labelledby="drawer-title" onClick={(e) => e.stopPropagation()}>
             <header className="drawer-head">
-              <h2>{selected.action}</h2>
+              <h2 id="drawer-title">{selected.action}</h2>
               <button onClick={() => setSelected(null)} aria-label="Close"><IconClose size={16} /></button>
             </header>
             <dl className="drawer-list">

@@ -36,8 +36,11 @@ export function AnalyticsHome() {
         {TABS.map((t) => (
           <button
             key={t.id}
+            type="button"
+            id={`tab-${t.id}`}
             role="tab"
             aria-selected={tab === t.id}
+            aria-controls="analytics-tabpanel"
             className={`tab ${tab === t.id ? "active" : ""}`}
             onClick={() => setTabAndHash(t.id)}
           >
@@ -46,7 +49,7 @@ export function AnalyticsHome() {
         ))}
       </div>
 
-      <div className="tab-panel">
+      <div className="tab-panel" role="tabpanel" id="analytics-tabpanel" aria-labelledby={`tab-${tab}`}>
         {tab === "waitlist"  && <AnalyticsWaitlist />}
         {tab === "product"   && <AnalyticsProduct />}
         {tab === "marketing" && <AnalyticsMarketing />}

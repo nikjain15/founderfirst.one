@@ -13,13 +13,13 @@
 .tab {
   background: none;
   border: none;
-  padding: 10px 14px;
+  padding: 11px 18px;
   font: inherit;
   color: var(--ink-3);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
-  font-size: var(--fs-data-row);
+  font-size: var(--fs-body);
 }
 .tab:hover { color: var(--ink-2); }
 .tab:focus { outline: none; }

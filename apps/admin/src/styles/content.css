@@ -102,6 +102,8 @@
   box-sizing: border-box;
   border-radius: 8px;          /* override any inherited pill radius */
   background: var(--white);
+  font-family: inherit;        /* inherit Inter, not the UA default */
+  font-size: 16px;             /* DS: ≥16px prevents iOS zoom on focus */
 }
 
 /* ---- Voice guide — header, badges, alerts, footnote ----------------- */

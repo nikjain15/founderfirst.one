@@ -53,6 +53,8 @@
   border: 0;
   background: transparent;
   font: inherit;
+  /* >=16px stops iOS auto-zoom on focus (RESPONSIVE.md rule 5). */
+  font-size: max(16px, var(--fs-data-row));
   color: var(--ink-2);
   cursor: pointer;
   padding: 0 16px 0 2px;

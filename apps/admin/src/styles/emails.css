@@ -108,25 +108,25 @@
   .email-preview-frame { height: 460px; }
 }
 
-/* ---- Grouped copy fields ---- */
+/* ---- Grouped copy fields: borderless white cards that float on the paper canvas ---- */
 .email-group {
-  border: 1px solid var(--line); border-radius: var(--r-card-emph, 12px);
-  background: var(--white); padding: 16px 18px; margin-bottom: 14px;
-  box-shadow: var(--shadow-card);
+  border: none; border-radius: var(--r-card-emph, 16px);
+  background: var(--white); padding: 20px 22px; margin-bottom: 16px;
+  box-shadow: var(--shadow-float);
 }
 .email-group-label {
   font-size: 11px; font-weight: var(--fw-semibold);
   text-transform: uppercase; letter-spacing: var(--ls-eyebrow); color: var(--ink-4);
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
-/* Fields inside a group: roomier, with a faint fill so each one reads as a field. */
-.email-group .field { margin-bottom: 14px; }
+/* Fields inside a group: roomy, filled inputs (no border) so each reads as a field. */
+.email-group .field { margin-bottom: 16px; }
 .email-group .field:last-child { margin-bottom: 0; }
-.email-group .field > span { font-weight: var(--fw-medium); color: var(--ink); margin-bottom: 5px; }
+.email-group .field > span { font-weight: var(--fw-medium); color: var(--ink); margin-bottom: 6px; }
 .email-group .field input,
 .email-group .field textarea {
-  background: var(--paper); border: 1px solid var(--line);
-  border-radius: var(--r-card); padding: 10px 12px;
+  background: var(--paper); border: 1px solid transparent;
+  border-radius: var(--r-card); padding: 12px 14px;
   transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 .email-group .field input:focus,
@@ -181,9 +181,9 @@
 
 /* ---- Inbox-style preview ---- */
 .email-inbox-card {
-  border: 1px solid var(--line); border-radius: var(--r-card-emph, 12px);
+  border: none; border-radius: var(--r-card-emph, 16px);
   background: var(--white); overflow: hidden;
-  box-shadow: var(--shadow-card-hero);
+  box-shadow: var(--shadow-float-lg);
 }
 .email-inbox-row { display: flex; gap: 11px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line-2, var(--line)); }
 .email-inbox-avatar {

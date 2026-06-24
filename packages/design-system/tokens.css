@@ -88,6 +88,9 @@
   --shadow-phone:     0 8px 32px rgba(10, 10, 10, 0.12);
   --shadow-card:      0 1px 2px rgba(10, 10, 10, 0.04);
   --shadow-card-hero: 0 4px 16px rgba(10, 10, 10, 0.09), 0 1px 3px rgba(10, 10, 10, 0.05);
+  /* Soft "floating card" elevation — borderless white cards on a paper canvas. */
+  --shadow-float:     0 1px 3px rgba(10, 10, 10, 0.05), 0 10px 30px rgba(10, 10, 10, 0.05);
+  --shadow-float-lg:  0 1px 3px rgba(10, 10, 10, 0.05), 0 18px 44px rgba(10, 10, 10, 0.08);
 
   /* -- Motion --------------------------------------------------------- */
   --ease-out:  cubic-bezier(0.2, 0.8, 0.2, 1);

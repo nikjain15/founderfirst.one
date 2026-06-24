@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listAudit, getAuditFacets, type AuditRow } from "../lib/supabase";
 import { IconAlert, IconClose } from "../lib/icons";
@@ -15,6 +15,14 @@ export function Audit() {
   const [actorFilter, setActorFilter]   = useState<string>("");
   const [sinceIdx, setSinceIdx]         = useState<number>(1); // 7 days default
   const [selected, setSelected] = useState<AuditRow | null>(null);
+
+  // Close the detail drawer on Escape (mirrors the settings-menu pattern in App).
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSelected(null); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [selected]);
 
   const sinceIso = useMemo(() => {
     const opt = SINCE_OPTIONS[sinceIdx];
@@ -103,7 +111,14 @@ export function Audit() {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} onClick={() => setSelected(r)} className="row-clickable">
+                <tr
+                  key={r.id}
+                  onClick={() => setSelected(r)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelected(r); } }}
+                  tabIndex={0}
+                  aria-label="View audit event details"
+                  className="row-clickable"
+                >
                   <td>{new Date(r.created_at).toLocaleString()}</td>
                   <td>{r.actor_email}</td>
                   <td><code style={{ fontSize: "var(--fs-eyebrow)" }}>{r.action}</code></td>

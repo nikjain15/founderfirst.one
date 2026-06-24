@@ -3,6 +3,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   listDiscordLinks,
   revokeDiscordLink,
+  adminDiscordErase,
   logAudit,
   type DiscordLinkRow,
 } from "../lib/supabase";
@@ -55,6 +56,40 @@ export function DiscordLinks({ embedded = false }: DiscordLinksProps = {}) {
     const who = row.discord_username || row.discord_user_id || row.email_normalized;
     if (!confirm(`Disconnect ${who} from FounderFirst? The bot will lose access on the next message.`)) return;
     revoke.mutate(row);
+  }
+
+  // Right-to-erasure: irreversible hard delete of all of a user's Discord data.
+  const erase = useMutation({
+    mutationFn: async (row: DiscordLinkRow) => {
+      const res = await adminDiscordErase({
+        discord_user_id: row.discord_user_id,
+        email: row.discord_user_id ? null : row.email_normalized,
+      });
+      await logAudit("discord_link.erase", "discord_link", row.id, {
+        email: row.email_normalized,
+        discord_user_id: row.discord_user_id,
+        deleted: res,
+      });
+      return res;
+    },
+    onSuccess: (res) => {
+      setStatus({
+        kind: "ok",
+        msg: `Erased: ${res.messages} message${res.messages === 1 ? "" : "s"}, ${res.memory} summary, ${res.links} link${res.links === 1 ? "" : "s"}.`,
+      });
+      qc.invalidateQueries({ queryKey: ["discordLinks"] });
+    },
+    onError: (err) => setStatus({ kind: "err", msg: (err as Error).message }),
+  });
+
+  function onErase(row: DiscordLinkRow) {
+    const who = row.discord_username || row.discord_user_id || row.email_normalized;
+    if (!confirm(
+      `Permanently erase ALL Discord data for ${who}?\n\n` +
+      `This hard-deletes their full DM transcript, conversation memory, and link ` +
+      `record. It cannot be undone — use only for a genuine "delete my data" request.`,
+    )) return;
+    erase.mutate(row);
   }
 
   const confirmedCount = rows.filter((r) => r.status === "confirmed").length;
@@ -151,6 +186,15 @@ export function DiscordLinks({ embedded = false }: DiscordLinksProps = {}) {
                       Revoke
                     </button>
                   )}
+                  <button
+                    type="button"
+                    className="link-danger"
+                    onClick={() => onErase(r)}
+                    disabled={erase.isPending}
+                    title="Permanently delete all of this user's Discord data (GDPR right-to-erasure)"
+                  >
+                    Erase
+                  </button>
                 </td>
               </tr>
             ))}

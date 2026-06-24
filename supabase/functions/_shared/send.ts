@@ -102,7 +102,7 @@ export const FALLBACK: Record<string, TemplateRow> = {
 
 /** Substitute {key} with the raw value (no escaping). For plain headers:
  *  subject, preheader (emailShell escapes it), cta_label (emailButton escapes it). */
-function fillPlain(tpl: string, vars: Vars): string {
+export function fillPlain(tpl: string, vars: Vars): string {
   return tpl.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
 }
 

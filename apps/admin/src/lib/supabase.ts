@@ -306,16 +306,22 @@ export async function saveEmailSettings(patch: Partial<EmailSettings>): Promise<
   void logAudit("email.settings.update", "email_settings", null, {});
 }
 
-/** Render a draft template (unsaved) with sample data — for the live preview. */
+export interface EmailPreviewFilled {
+  subject: string; preheader: string; eyebrow: string; heading: string;
+  intro: string; cta_label: string; footer: string;
+}
+/** Render a draft template (unsaved) with sample data — for the live preview.
+ *  Returns the token-filled subject + preheader + every filled field, so the
+ *  editor can show the human version of templated copy. */
 export async function previewEmailTemplate(
   key: string, template: Partial<EmailTemplate>, brand: Partial<EmailBrand>,
-): Promise<{ subject: string; html: string }> {
+): Promise<{ subject: string; preheader: string; filled: EmailPreviewFilled; html: string }> {
   const db = getClient();
   const { data, error } = await db.functions.invoke("email-preview", {
     body: { key, template, brand },
   });
   if (error) throw new Error(`previewEmailTemplate: ${error.message}`);
-  return data as { subject: string; html: string };
+  return data as { subject: string; preheader: string; filled: EmailPreviewFilled; html: string };
 }
 
 export interface EmailActivityRow {

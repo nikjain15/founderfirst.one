@@ -160,6 +160,8 @@ export function TemplatesView(
   // ---- Live preview (debounced) --------------------------------------------
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const [previewSubject, setPreviewSubject] = useState<string>("");
+  const [previewPreheader, setPreviewPreheader] = useState<string>("");
+  const [filled, setFilled] = useState<Record<string, string>>({});
   const [previewing, setPreviewing] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const frameRef = useRef<HTMLIFrameElement | null>(null);
@@ -173,6 +175,7 @@ export function TemplatesView(
       try {
         const r = await previewEmailTemplate(previewKey, previewSource as Partial<EmailTemplate>, brandDraft);
         setPreviewHtml(r.html); setPreviewSubject(r.subject);
+        setPreviewPreheader(r.preheader ?? ""); setFilled((r.filled as unknown as Record<string, string>) ?? {});
       } catch (e) { setError((e as Error).message); }
       finally { setPreviewing(false); }
     }, 450);
@@ -253,14 +256,21 @@ export function TemplatesView(
   if (tLoading || bLoading) return <div className="empty">Loading…</div>;
   if (!active || !brandDraft) return <div className="empty">Loading…</div>;
 
-  const renderField = (f: CopyField) => (
-    <label key={String(f.key)} className="field">
-      <span>{f.label} {f.hint && <em className="email-hint">{f.hint}</em>}</span>
-      {f.area
-        ? <textarea rows={f.key === "body" ? 5 : 2} value={String(active[f.key as string] ?? "")} onChange={(e) => setField(f.key as string, e.target.value)} />
-        : <input value={String(active[f.key as string] ?? "")} onChange={(e) => setField(f.key as string, e.target.value)} />}
-    </label>
-  );
+  const renderField = (f: CopyField) => {
+    const raw = String(active[f.key as string] ?? "");
+    const human = filled[f.key as string];
+    // When the copy contains {tokens}, show the real human result beneath it.
+    const showsAs = /\{[a-z_]+\}/i.test(raw) && human && human !== raw ? human : null;
+    return (
+      <label key={String(f.key)} className="field">
+        <span>{f.label} {f.hint && <em className="email-hint">{f.hint}</em>}</span>
+        {f.area
+          ? <textarea rows={f.key === "body" ? 5 : 2} value={raw} onChange={(e) => setField(f.key as string, e.target.value)} />
+          : <input value={raw} onChange={(e) => setField(f.key as string, e.target.value)} />}
+        {showsAs && <span className="email-showsas">Shows as: <strong>{showsAs}</strong></span>}
+      </label>
+    );
+  };
   const bodyFields = isCustom ? [...BODY_FIELDS.slice(0, 2), CUSTOM_BODY_FIELD, BODY_FIELDS[2]] : BODY_FIELDS;
   const headingLabel = creating ? "Name your email and write it" : `Edit ${draft?.label ?? ""}`;
   // Launch label depends on how this email sends.
@@ -375,7 +385,7 @@ export function TemplatesView(
               <span className="email-inbox-avatar">FF</span>
               <span className="email-inbox-meta">
                 <span className="email-inbox-subject">{previewSubject || (active.subject as string) || "Subject line"}</span>
-                <span className="email-inbox-preview">{brandDraft.sender_name || "FounderFirst"} · {(active.preheader as string) || "Preview text shows here"}</span>
+                <span className="email-inbox-preview">{brandDraft.sender_name || "FounderFirst"} · {previewPreheader || (active.preheader as string) || "Preview text shows here"}</span>
               </span>
             </div>
             <iframe ref={frameRef} className="email-preview-frame" title="Email preview" srcDoc={previewHtml} onLoad={fitFrame} />

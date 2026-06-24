@@ -182,7 +182,7 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
             </div>
             <button type="button" className="btn-link" onClick={() => setPreview(null)}>Cancel</button>
           </div>
-          <iframe className="whatsnew-preview-frame" title="Digest preview" srcDoc={preview.html} />
+          <iframe className="whatsnew-preview-frame" title="Digest preview" sandbox="" srcDoc={preview.html} />
           <div className="whatsnew-preview-actions">
             <button type="button" className="btn" onClick={onSendDigest} disabled={sendMut.isPending}>
               {sendMut.isPending ? "Sending…" : `Send to ${preview.recipientCount} admin${preview.recipientCount === 1 ? "" : "s"}`}

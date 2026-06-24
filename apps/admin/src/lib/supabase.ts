@@ -7,7 +7,20 @@
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, hasSupabase } from "./env";
+import type { Database } from "./database.types";
 
+/** Row type for any public table, e.g. Row<"admins">. Generated from the live
+ *  schema by `supabase gen types` — see database.types.ts. Prefer this over
+ *  hand-written interfaces so the compiler catches schema drift. */
+export type Row<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Row"];
+
+// NOTE: the client is intentionally left untyped for now. Flipping it to
+// SupabaseClient<Database> surfaces ~30 pre-existing mismatches (RPC return
+// casts + null-vs-undefined in hand-written interfaces) AND a real drift bug
+// (the audit_runs migration never applied to prod — duplicate timestamp).
+// Adopt <Database> table-by-table once those are resolved. Until then, opt in
+// per-file with the Row<> helper above.
 let client: SupabaseClient | null = null;
 
 export function getClient(): SupabaseClient {

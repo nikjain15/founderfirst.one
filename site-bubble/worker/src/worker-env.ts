@@ -16,5 +16,13 @@ export interface Env {
   // Used to build the /connect-discord magic link we send to users. Optional —
   // defaults to bubble.founderfirst.one to match the wrangler custom domain.
   BUBBLE_PUBLIC_URL?: string;
+
+  // Workers AI binding — powers /compose (email "Draft with AI"), replacing the
+  // local Ollama compose-server. Configured as [ai] in wrangler.toml.
+  AI: Ai;
+
+  // Shared secret between the email-compose Supabase fn and the /compose route.
+  // Set via `wrangler secret put COMPOSE_SECRET`; must match the Supabase secret.
+  COMPOSE_SECRET?: string;
 }
 

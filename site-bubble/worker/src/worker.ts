@@ -90,6 +90,7 @@ import {
   handleDiscordErase,
   handleDiscordAttachChannel,
 } from "./discord";
+import { handleEmailCompose } from "./compose";
 import { CONNECT_DISCORD_HTML } from "./connect-page";
 
 export type { Env };
@@ -491,6 +492,9 @@ export default {
     }
     if (url.pathname === "/discord/erase" && req.method === "POST") {
       return handleDiscordErase(req, env);
+    }
+    if (url.pathname === "/compose" && req.method === "POST") {
+      return handleEmailCompose(req, env);
     }
     if (url.pathname === "/discord/attach-channel" && req.method === "POST") {
       return handleDiscordAttachChannel(req, env);

@@ -187,6 +187,10 @@ client.once(Events.ClientReady, async (c) => {
             name: "disconnect",
             description: "Disconnect Penny from your FounderFirst account",
           },
+          {
+            name: "forgetme",
+            description: "Permanently delete all your Penny data (cannot be undone)",
+          },
         ],
       },
     );
@@ -242,13 +246,15 @@ client.on(Events.MessageCreate, async (msg: Message) => {
 // ---------------------------------------------------------------------------
 
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
-  if (!interaction.isChatInputCommand() || interaction.commandName !== "disconnect") {
-    return;
-  }
+  if (!interaction.isChatInputCommand()) return;
+  const cmd = interaction.commandName;
+  if (cmd !== "disconnect" && cmd !== "forgetme") return;
+
+  const endpoint = cmd === "forgetme" ? "/discord/erase" : "/discord/disconnect";
   try {
-    await workerPost("/discord/disconnect", { discord_user_id: interaction.user.id });
+    await workerPost(endpoint, { discord_user_id: interaction.user.id });
   } catch (e) {
-    log.error(`worker /discord/disconnect failed for ${interaction.user.id}`, e);
+    log.error(`worker ${endpoint} failed for ${interaction.user.id}`, e);
     await interaction.reply({
       content: "Couldn't reach the server — try again in a minute.",
       ephemeral: true,
@@ -257,8 +263,12 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
   }
   await interaction.reply({
     content:
-      "Done — I've forgotten your FounderFirst account. " +
-      "Send me a message anytime to reconnect.",
+      cmd === "forgetme"
+        ? "Done — I've permanently deleted all your data: our message history, " +
+          "my memory of you, and your account link. This can't be undone. " +
+          "Message me anytime to start fresh."
+        : "Done — I've forgotten your FounderFirst account. " +
+          "Send me a message anytime to reconnect.",
     ephemeral: true,
   });
 });

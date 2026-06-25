@@ -27,26 +27,27 @@ export default function TryPenny({ ownerSub, cpaSub }: { ownerSub: string; cpaSu
       {view === "owner" ? (
         <div className="phone">
           <div className="notch" />
-          <div className="screen"><Demo which="the business-owner demo" /></div>
+          <div className="screen"><Demo src="/penny/demo/businessowner/" which="the business-owner demo" /></div>
         </div>
       ) : (
         <div className="browser">
           <div className="bar"><span/><span/><span/><em>penny.app/cpa</em></div>
-          <div className="screen"><Demo which="the CPA demo" /></div>
+          <div className="screen"><Demo src="/penny/demo/cpa/" which="the CPA demo" /></div>
         </div>
       )}
     </div>
   );
 }
 
-// On-brand placeholder. The live Penny demo embeds here once the demo sub-app is
-// ported into apps/web (it lives under /penny/demo/* on the legacy site).
-function Demo({ which }: { which: string }) {
+// In production the live Penny demo (deployed at /penny/demo/*) embeds here. In
+// dev that path 404s, so show an on-brand placeholder instead.
+function Demo({ src, which, title }: { src: string; which: string; title?: string }) {
+  if (import.meta.env.PROD) return <iframe src={src} title={title ?? which} loading="lazy" />;
   return (
     <div className="tp-ph">
       <span className="p-badge">P</span>
       <strong>Hi, I'm Penny.</strong>
-      <p>{which} drops in here once it's wired into the new site.</p>
+      <p>{which} embeds here in production (/penny/demo/).</p>
     </div>
   );
 }

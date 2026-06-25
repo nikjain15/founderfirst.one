@@ -130,6 +130,56 @@ command to the user and **script everything before and after it** (create,
 route, config, launchd, verify). Don't loop retrying the login from automation.
 Also: `timeout` is not installed on macOS — don't rely on it in host scripts.
 
+## 11. Generate types from the LIVE schema — they catch drift `tsc` can't.
+
+**What happened:** Two migrations were given the same timestamp
+(`20260623150000`). Supabase tracks migrations by version, so it saw the version
+as already applied and **silently skipped the second file** — `audit_runs` was
+never created in prod, and the admin Quality dashboard read a table that didn't
+exist. Nothing local revealed it; `tsc` was green against 47 hand-written row
+interfaces. Running `supabase gen types` against the live DB and typing the
+client surfaced it instantly (the table was missing from the generated schema).
+
+**Rules:**
+- **Never reuse a migration timestamp.** Duplicates collide on the version key
+  and one file silently never runs. `supabase migration list` shows the
+  collision as one applied + one perpetually pending.
+- Keep `database.types.ts` generated from the live schema as the typed source of
+  truth; hand-written row types drift without warning.
+- An out-of-order pending migration (timestamp before the last applied one)
+  needs `supabase db push --include-all`.
+
+## 12. A scary-looking metric isn't a bug until you verify it against the data.
+
+**What happened:** `support_tickets` showed ~1M sequential scans and got flagged
+as a "missing index." But the table already had the right indexes — the scans
+were Postgres correctly choosing a seq scan on an **empty (0-row) table**. Adding
+an index would have done nothing.
+
+**Rule:** before "fixing" a perf signal, confirm the cause against reality (row
+counts, existing indexes, the query plan) — this applies to your own diagnoses,
+not just scripts you didn't write (rule 4). Empty/tiny tables seq-scan by design
+and switch to index scans once they grow.
+
+## 13. A dev machine running local Ollama is production infra — a single point of failure.
+
+**What happened:** "Draft with AI" and the signals scorer depended on Ollama on a
+developer's Mac (via a Cloudflare Tunnel) — they only worked while that laptop
+was awake, and the master secret vault lived only there.
+
+**Rules:**
+- Don't put a runtime the product depends on on a personal machine. Move LLM
+  calls to a managed free tier — **Cloudflare Workers AI** (free daily
+  allocation) replaced the Mac compose-server with no per-call cost.
+- Workers AI gotchas: models get **deprecated** (pin a current one, e.g.
+  `@cf/meta/llama-3.3-70b-instruct-fp8-fast`); `env.AI.run` returns a string for
+  some models and an object for others; models emit **raw control chars** inside
+  JSON strings — use `response_format: { type: "json_object" }` *and* a
+  control-char repair pass before `JSON.parse`.
+- When you can't take a local DB backup (no Docker/`pg_dump`/`psql` in the
+  shell), say so — don't pretend one exists. Only proceed with a drop when the
+  data is provably redundant and the live source is intact.
+
 ---
 
 *Add a numbered rule above when a mistake teaches a lesson worth not repeating.*

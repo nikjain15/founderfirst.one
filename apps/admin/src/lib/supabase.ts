@@ -927,7 +927,6 @@ export async function setLiveVoice(id: string): Promise<void> {
 // See migration 20260624110000_content_model.sql + @ff/content for the schema.
 
 export interface PageSummaryRow { slug: string; surface: string; version: number; is_live: boolean; updated_at: string; }
-export interface EmailSummaryRow { event: string; version: number; is_live: boolean; updated_at: string; }
 export interface ContentVersionRow {
   id: string;
   version: number;
@@ -972,35 +971,6 @@ export async function setLivePage(id: string): Promise<void> {
   const db = getClient();
   const { error } = await db.rpc("set_live_page", { p_id: id });
   if (error) throw new Error(`set_live_page: ${error.message}`);
-}
-
-export async function listContentEmails(): Promise<EmailSummaryRow[]> {
-  const db = getClient();
-  const { data, error } = await db.rpc("list_content_emails");
-  if (error) throw new Error(`list_content_emails: ${error.message}`);
-  return ((data as EmailSummaryRow[]) ?? []).map((r) => ({ ...r, version: Number(r.version) }));
-}
-
-export async function listEmailVersions(event: string): Promise<ContentVersionRow[]> {
-  const db = getClient();
-  const { data, error } = await db.rpc("list_email_versions", { p_event: event });
-  if (error) throw new Error(`list_email_versions: ${error.message}`);
-  return ((data as ContentVersionRow[]) ?? []).map((r) => ({ ...r, version: Number(r.version) }));
-}
-
-export async function createEmailVersion(event: string, payload: unknown, notes?: string): Promise<string> {
-  const db = getClient();
-  const { data, error } = await db.rpc("create_email_version", {
-    p_event: event, p_payload: payload, p_notes: notes ?? null,
-  });
-  if (error) throw new Error(`create_email_version: ${error.message}`);
-  return data as string;
-}
-
-export async function setLiveEmail(id: string): Promise<void> {
-  const db = getClient();
-  const { error } = await db.rpc("set_live_email", { p_id: id });
-  if (error) throw new Error(`set_live_email: ${error.message}`);
 }
 
 // ---- Signals (social listening + outreach) ---------------------------------

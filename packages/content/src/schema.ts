@@ -15,7 +15,7 @@
 import { z } from "zod";
 
 /* ── Surfaces a piece of content can belong to ───────────────────────── */
-export const Surface = z.enum(["marketing", "blog", "product", "email"]);
+export const Surface = z.enum(["marketing", "blog", "product"]);
 export type Surface = z.infer<typeof Surface>;
 
 /* ── SEO + GEO metadata (generated into <head>, JSON-LD, llms.txt) ────── */
@@ -117,25 +117,14 @@ export type Page = z.infer<typeof Page>;
 export const FaqEntry = z.object({ question: z.string(), answer: z.string() });
 export type FaqEntry = z.infer<typeof FaqEntry>;
 
-/* ── Triggered email template (emails = another content surface) ─────────
-   Event-driven: app fires `event`, dispatch renders the active version. */
-export const EmailTemplate = z.object({
-  id: z.string().uuid().optional(),
-  /** Semantic trigger, e.g. user.signed_up, referral.unlocked, invoice.late. */
-  event: z.string(),
-  subject: z.string(),
-  preheader: z.string(),
-  headline: z.string(),
-  body: z.string(),
-  ctaLabel: z.string().optional(),
-  ctaUrl: z.string().optional(),
-});
-export type EmailTemplate = z.infer<typeof EmailTemplate>;
+/* Email copy is NOT modelled here — it lives in the existing `email_templates`
+   table (single source of truth, edited in admin EmailHub). Modelling it here
+   too would duplicate the concept. See GAME_PLAN §6. */
 
 /* ── Versioning envelope — wraps ANY of the above content kinds ───────────
    Mirrors prompt/voice: every edit is a version; one is active/live; the
    activity feed is the audit trail surfaced in admin. */
-export const ContentKind = z.enum(["page", "faq", "email"]);
+export const ContentKind = z.enum(["page", "faq"]);
 export const Version = z.object({
   id: z.string().uuid(),
   kind: ContentKind,

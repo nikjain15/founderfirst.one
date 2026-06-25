@@ -132,6 +132,9 @@ importers:
       astro:
         specifier: ^4.16.18
         version: 4.16.19(@types/node@25.6.0)(rollup@4.60.2)(typescript@5.9.3)
+      posthog-js:
+        specifier: ^1.150.0
+        version: 1.372.5
       react:
         specifier: ^18.3.1
         version: 18.3.1

@@ -1,7 +1,7 @@
--- Local-only seed: the homepage as the first content_pages row (v1, live).
--- Run AFTER `supabase db reset`/`start`. Not part of the prod migration path.
--- Payload is a full @ff/content Page document.
-
+-- Seed the homepage content_pages row (idempotent — one row per slug).
+-- Runs as superuser via db push (RLS is using(false) for normal roles).
+do $seed$ begin
+  if not exists (select 1 from content_pages where slug = '/') then
 insert into content_pages (slug, surface, payload, notes, is_live)
 values (
   '/', 'marketing',
@@ -111,3 +111,5 @@ values (
   'Seeded homepage v1 (local demo)',
   true
 );
+  end if;
+end $seed$;

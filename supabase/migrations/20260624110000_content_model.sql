@@ -2,23 +2,21 @@
 -- FounderFirst — Content model (unified architecture, Phase 1)
 -- =============================================================================
 --
--- Single source of truth for editable site/product/email copy. Two versioned
--- stores, both mirroring the penny_voice / penny_prompts pattern exactly
--- (auto-incrementing version, one-live partial index, RLS locked to
--- security-definer RPCs gated by is_admin(), audit via log_admin_action,
--- publish → notify/rebuild via pg_net):
+-- Single source of truth for editable PAGE copy. Mirrors the penny_voice /
+-- penny_prompts pattern exactly (auto-incrementing version, one-live partial
+-- index, RLS locked to security-definer RPCs gated by is_admin(), audit via
+-- log_admin_action, publish → notify/rebuild via pg_net):
 --
---   content_pages   — one versioned JSONB document per page slug. Payload is the
---                     full Page doc { seo, sections } validated by @ff/content
---                     (Zod) in the app BEFORE insert. Read by Astro at build +
---                     live render; edited + published from /admin.
---   content_emails  — one versioned template per semantic event
---                     (user.signed_up, referral.unlocked, invoice.late, …).
---                     Read by the email-dispatch fn; edited + published in admin.
---                     Emails are just another content surface.
+--   content_pages — one versioned JSONB document per page slug. Payload is the
+--                   full Page doc { seo, sections } validated by @ff/content
+--                   (Zod) in the app BEFORE insert. Read by Astro at build +
+--                   live render; edited + published from /admin.
 --
 -- FAQ entries are embedded inside a page's payload (a `faq` section) so the whole
 -- page versions atomically and JSON-LD / llms.txt generate from one document.
+--
+-- Emails are deliberately NOT here: email copy already has a single source of
+-- truth in `email_templates` (edited in admin EmailHub). See GAME_PLAN §6.
 --
 -- NOTE: review before `supabase db push`. Check `supabase migration list` first —
 -- this only deploys when intended (LEARNINGS.md rule 3).
@@ -64,42 +62,12 @@ drop policy if exists content_pages_no_direct on content_pages;
 create policy content_pages_no_direct on content_pages
   for all using (false) with check (false);
 
--- ───────────────────────────── content_emails ───────────────────────────────
-create table if not exists content_emails (
-  id          uuid        primary key default gen_random_uuid(),
-  event       text        not null,                      -- semantic trigger key
-  version     int         not null,
-  payload     jsonb       not null,                      -- EmailTemplate doc
-  notes       text,
-  is_live     boolean     not null default false,
-  created_at  timestamptz not null default now(),
-  created_by  uuid        references auth.users(id) on delete set null
-);
-
-create unique index if not exists content_emails_one_live
-  on content_emails (event) where is_live = true;
-create index if not exists content_emails_event_idx on content_emails (event);
-
-create or replace function content_emails_set_version()
-returns trigger language plpgsql as $$
-begin
-  if new.version is null then
-    select coalesce(max(version), 0) + 1 into new.version
-    from content_emails where event = new.event;
-  end if;
-  return new;
-end;
-$$;
-
-drop trigger if exists content_emails_version_trg on content_emails;
-create trigger content_emails_version_trg
-  before insert on content_emails
-  for each row execute function content_emails_set_version();
-
-alter table content_emails enable row level security;
-drop policy if exists content_emails_no_direct on content_emails;
-create policy content_emails_no_direct on content_emails
-  for all using (false) with check (false);
+-- NOTE: emails are NOT modelled here. Email copy already has a single source of
+-- truth in `email_templates` (keyed by email_key, edited in admin EmailHub) with
+-- timing in `email_schedules` and rendering in the email-dispatch fn. Adding a
+-- content_emails table would create a second source of truth for the same
+-- concept. Triggered emails are unified by registering each as an
+-- email_templates row + email_schedules kind='event' — see GAME_PLAN §6.
 
 -- =============================================================================
 -- RPCs — pages
@@ -186,88 +154,6 @@ begin
 end;
 $$;
 grant execute on function set_live_page(uuid) to authenticated;
-
--- =============================================================================
--- RPCs — emails
--- =============================================================================
-
--- Active template for a semantic event. Used by email-dispatch (service role).
-create or replace function get_active_email(p_event text)
-returns table (id uuid, event text, version int, payload jsonb, updated_at timestamptz)
-language sql security definer set search_path = public as $$
-  select id, event, version, payload, created_at
-  from content_emails
-  where event = p_event and is_live = true
-  limit 1;
-$$;
--- Least privilege: only the email-dispatch fn (service role) reads templates.
-grant execute on function get_active_email(text) to service_role;
-
-create or replace function list_content_emails()
-returns table (event text, version int, is_live boolean, updated_at timestamptz)
-language plpgsql security definer set search_path = public as $$
-begin
-  if not is_admin() then raise exception 'list_content_emails: admin access required'; end if;
-  return query
-    select distinct on (e.event) e.event, e.version, e.is_live, e.created_at
-    from content_emails e
-    order by e.event, e.is_live desc, e.version desc;
-end;
-$$;
-grant execute on function list_content_emails() to authenticated;
-
-create or replace function list_email_versions(p_event text)
-returns table (id uuid, version int, payload jsonb, notes text, is_live boolean,
-               created_at timestamptz, created_by uuid, created_by_email text)
-language plpgsql security definer set search_path = public as $$
-begin
-  if not is_admin() then raise exception 'list_email_versions: admin access required'; end if;
-  return query
-    select e.id, e.version, e.payload, e.notes, e.is_live, e.created_at, e.created_by,
-           (select email from auth.users u where u.id = e.created_by)::text
-    from content_emails e
-    where e.event = p_event
-    order by e.version desc;
-end;
-$$;
-grant execute on function list_email_versions(text) to authenticated;
-
-create or replace function create_email_version(
-  p_event text, p_payload jsonb, p_notes text default null
-)
-returns uuid language plpgsql security definer set search_path = public as $$
-declare new_id uuid;
-begin
-  if not is_admin() then raise exception 'create_email_version: admin access required'; end if;
-  if p_payload is null then raise exception 'create_email_version: payload required'; end if;
-
-  insert into content_emails (event, payload, notes, created_by, is_live)
-  values (p_event, p_payload, p_notes, auth.uid(), false)
-  returning id into new_id;
-
-  perform log_admin_action('content_email_draft', 'content_email', p_event,
-    jsonb_build_object('version_id', new_id));
-  return new_id;
-end;
-$$;
-grant execute on function create_email_version(text, jsonb, text) to authenticated;
-
-create or replace function set_live_email(p_id uuid)
-returns void language plpgsql security definer set search_path = public as $$
-declare v_event text;
-begin
-  if not is_admin() then raise exception 'set_live_email: admin access required'; end if;
-  select event into v_event from content_emails where id = p_id;
-  if v_event is null then raise exception 'set_live_email: version not found'; end if;
-
-  update content_emails set is_live = false where event = v_event and is_live = true and id <> p_id;
-  update content_emails set is_live = true  where id = p_id;
-
-  perform log_admin_action('content_email_publish', 'content_email', v_event,
-    jsonb_build_object('version_id', p_id));
-end;
-$$;
-grant execute on function set_live_email(uuid) to authenticated;
 
 -- =============================================================================
 -- Publish → rebuild notify (mirrors migration 014 notify_publish). On a page

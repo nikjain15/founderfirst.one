@@ -6,4 +6,5 @@ export default defineConfig({
   site: "https://founderfirst.one",
   integrations: [react()],
   server: { port: 5178 },
+  devToolbar: { enabled: false },
 });

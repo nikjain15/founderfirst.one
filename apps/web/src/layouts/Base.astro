@@ -32,6 +32,15 @@ const jsonLd = buildJsonLd(page, site);
       .wrap { width: 100%; max-width: var(--page-max); margin-inline: auto; padding-inline: var(--page-pad-x); }
       section { padding-block: var(--section-y); }
       a { color: inherit; text-decoration: none; }
+
+      /* Signup form (shared by the hero + CTA islands) */
+      .signup { display: flex; gap: var(--space-2); border: var(--bw) solid var(--ink); border-radius: var(--r-pill); padding: var(--space-1); width: 100%; max-width: 460px; margin: 0 auto var(--space-3); background: var(--white); }
+      .signup input { flex: 1; border: 0; outline: 0; background: transparent; padding: 0 var(--space-4); font-size: max(16px, var(--fs-data-row)); color: var(--ink); min-width: 0; }
+      .signup button { flex-shrink: 0; background: var(--brand); color: var(--white); border-radius: var(--r-pill); padding: 0 var(--space-5); min-height: var(--tap-min); font-weight: var(--fw-medium); white-space: nowrap; }
+      .signup button:hover { background: var(--brand-hover); }
+      .signup button:disabled { opacity: 0.6; cursor: default; }
+      .signup-done { text-align: center; color: var(--brand); font-weight: var(--fw-medium); max-width: 460px; margin: 0 auto var(--space-3); }
+      .signup-err { display: block; width: 100%; color: var(--error); font-size: var(--fs-eyebrow); padding: var(--space-1) var(--space-4); }
     </style>
   </head>
   <body>

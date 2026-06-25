@@ -1,5 +1,6 @@
 ---
 import type { Section } from "@ff/content";
+import SignupForm from "./SignupForm.tsx";
 interface Props { section: Section }
 const { section } = Astro.props;
 const d: any = section.data;
@@ -9,10 +10,7 @@ const d: any = section.data;
     <div class="wrap hero-inner">
       <h1>{d.headline}</h1>
       <p class="hero-sub">{d.sub}</p>
-      <form class="signup" data-signup-form="hero">
-        <input type="email" name="email" placeholder="you@yourbusiness.com" aria-label="Email" required />
-        <button type="submit">{d.ctaLabel} →</button>
-      </form>
+      <SignupForm client:load source="hero" ctaLabel={d.ctaLabel} />
       <p class="muted">Join 100+ founders already on the waitlist.</p>
     </div>
     {d.image && (
@@ -91,10 +89,7 @@ const d: any = section.data;
     <div class="wrap center cta">
       <h2>{d.headline}</h2>
       <p class="muted">{d.sub}</p>
-      <form class="signup centered" data-signup-form="waitlist">
-        <input type="email" name="email" placeholder="you@yourbusiness.com" aria-label="Email" required />
-        <button type="submit">{d.ctaLabel} →</button>
-      </form>
+      <SignupForm client:load source="waitlist" ctaLabel={d.ctaLabel} />
       <p class="muted small">{d.note}</p>
     </div>
   </section>
@@ -126,12 +121,6 @@ const d: any = section.data;
 
   .hero-inner { text-align: center; padding-block: clamp(48px,8vw,96px) var(--space-8); max-width: 860px; }
   .hero-sub { font-size: var(--fs-body); color: var(--ink-3); margin-bottom: var(--space-6); }
-  .signup { display: flex; gap: var(--space-2); border: var(--bw) solid var(--ink); border-radius: var(--r-pill); padding: var(--space-1); max-width: 460px; margin: 0 auto var(--space-3); background: var(--white); }
-  .signup.centered { margin: var(--space-5) auto var(--space-3); }
-  .signup input { flex: 1; border: 0; outline: 0; background: transparent; padding: 0 var(--space-4); font-size: max(16px, var(--fs-data-row)); color: var(--ink); min-width: 0; }
-  .signup button { flex-shrink: 0; background: var(--brand); color: var(--white); border-radius: var(--r-pill); padding: 0 var(--space-5); min-height: var(--tap-min); font-weight: var(--fw-medium); white-space: nowrap; }
-  .signup button:hover { background: var(--brand-hover); }
-
   .hero-photo { position: relative; border-radius: var(--r-card-emph); overflow: hidden; box-shadow: var(--shadow-float-lg); }
   .hero-photo img { width: 100%; height: clamp(20rem, 40vw, 34rem); object-fit: cover; display: block; }
   .float-card { position: absolute; background: var(--white); border-radius: var(--r-card); padding: var(--space-4); box-shadow: var(--shadow-float); }

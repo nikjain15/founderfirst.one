@@ -20,7 +20,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22  # wrangler 4.95+ requires Node >= 22
 
       # site-bubble is its own workspace (not in the root pnpm workspace), so
       # install its deps here before the widget build the deploy script runs.

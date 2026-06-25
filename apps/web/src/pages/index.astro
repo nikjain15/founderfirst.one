@@ -1,0 +1,16 @@
+---
+import Base from "../layouts/Base.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import Section from "../components/Section.astro";
+import { getHomepage } from "../lib/content";
+
+// Resolve homepage content at build time (published row → seed fallback).
+const page = await getHomepage();
+const sections = [...page.sections].sort((a, b) => a.position - b.position);
+---
+<Base page={page}>
+  <Nav />
+  {sections.map((section) => <Section section={section} />)}
+  <Footer />
+</Base>

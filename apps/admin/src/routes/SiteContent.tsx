@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Page } from "@ff/content";
+import { Page, emptyPage, emptySection, SECTION_TYPES } from "@ff/content";
 import {
   listContentPages,
   listPageVersions,
@@ -30,6 +30,19 @@ export function SiteContent() {
 
   const activeSlug = slug ?? pages[0]?.slug ?? null;
 
+  const newPage = useMutation({
+    mutationFn: (s: string) => createPageVersion(s, "marketing", emptyPage(s)),
+    onSuccess: async (_id, s) => { await qc.invalidateQueries({ queryKey: ["content-pages"] }); setSlug(s); },
+  });
+
+  function addPage() {
+    const raw = window.prompt("New page path (e.g. /pricing):", "/");
+    if (!raw) return;
+    const s = raw.trim().startsWith("/") ? raw.trim() : `/${raw.trim()}`;
+    if (pages.some((p) => p.slug === s)) { window.alert(`A page already exists at ${s}.`); return; }
+    newPage.mutate(s);
+  }
+
   return (
     <div>
       <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · site content</div>
@@ -48,7 +61,7 @@ export function SiteContent() {
           seeded, pages appear here to edit.</span>
         </div>
       ) : (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "16px 0" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "16px 0", alignItems: "center" }}>
           {pages.map((p) => (
             <button
               key={p.slug}
@@ -58,7 +71,15 @@ export function SiteContent() {
               {p.slug} {p.is_live ? "● live" : ""}
             </button>
           ))}
+          <button className="btn-link" onClick={addPage} disabled={newPage.isPending}>
+            {newPage.isPending ? "Creating…" : "+ New page"}
+          </button>
         </div>
+      )}
+      {pages.length === 0 && (
+        <button className="btn" style={{ marginTop: 16 }} onClick={addPage} disabled={newPage.isPending}>
+          {newPage.isPending ? "Creating…" : "+ New page"}
+        </button>
       )}
 
       {activeSlug && <PageEditor key={activeSlug} slug={activeSlug} onChanged={() => qc.invalidateQueries({ queryKey: ["content-pages"] })} />}
@@ -75,6 +96,7 @@ function PageEditor({ slug, onChanged }: { slug: string; onChanged: () => void }
   const [seeded, setSeeded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
+  const [addType, setAddType] = useState<(typeof SECTION_TYPES)[number]>("features");
 
   const { data: rows = [], isPending } = useQuery({
     queryKey: ["page-versions", slug],
@@ -189,6 +211,21 @@ function PageEditor({ slug, onChanged }: { slug: string; onChanged: () => void }
           editing
             ? <FieldEditor value={draft} onChange={setDraft} />
             : <PagePreview payload={draft} />
+        )}
+
+        {editing && draft != null && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
+            <span style={{ fontSize: "var(--fs-eyebrow)", color: "var(--ink-3)" }}>Add section:</span>
+            <select value={addType} onChange={(e) => setAddType(e.target.value as typeof addType)}
+              style={{ padding: 8, border: "1px solid var(--line)", borderRadius: 8, fontSize: "max(16px, var(--fs-data-row))" }}>
+              {SECTION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <button className="btn" onClick={() => {
+              const d = draft as { sections: Array<{ position: number }> };
+              const pos = d.sections.length ? Math.max(...d.sections.map((s) => s.position)) + 1 : 0;
+              setDraft({ ...d, sections: [...d.sections, emptySection(addType, pos)] });
+            }}>+ Add</button>
+          </div>
         )}
 
         {editing && (

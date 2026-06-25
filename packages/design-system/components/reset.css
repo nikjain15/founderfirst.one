@@ -3,6 +3,10 @@
    app reset diverges and native UA styles (e.g. a button's `2px outset` border)
    leak through inconsistently. Import this early, before app styles. */
 
+/* border-box everywhere so width:100% + padding never overflows (prevents the
+   horizontal-scroll failures the responsive gate checks for). */
+*, *::before, *::after { box-sizing: border-box; }
+
 button,
 input,
 select,

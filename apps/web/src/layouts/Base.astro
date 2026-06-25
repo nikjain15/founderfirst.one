@@ -4,6 +4,7 @@ import "@ff/design-system/components/reset.css";
 import "@ff/design-system/components/typography.css";
 import type { Page } from "@ff/content";
 import { buildJsonLd } from "../lib/seo";
+import ConsentBanner from "../components/ConsentBanner.tsx";
 
 interface Props { page: Page }
 const { page } = Astro.props;
@@ -27,6 +28,8 @@ const jsonLd = buildJsonLd(page, site);
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <script type="application/ld+json" set:html={jsonLd} is:inline />
+    <!-- Penny chat bubble — Shadow-DOM widget, see site-bubble/README.md -->
+    <script defer src="https://bubble.founderfirst.one/bubble.js" is:inline></script>
     <style is:global>
       body { background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
       .wrap { width: 100%; max-width: var(--page-max); margin-inline: auto; padding-inline: var(--page-pad-x); }
@@ -61,9 +64,18 @@ const jsonLd = buildJsonLd(page, site);
       .tp-ph { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); padding: var(--space-6); text-align: center; }
       .tp-ph .p-badge { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: var(--white); font-family: var(--font-display); }
       .tp-ph p { font-size: var(--fs-data-row); color: var(--ink-3); }
+
+      /* Cookie consent — sits above the Penny launcher (RESPONSIVE.md rule 6) */
+      .consent { position: fixed; bottom: 92px; right: var(--space-4); width: calc(100% - var(--space-8)); max-width: 360px; background: var(--white); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--shadow-float-lg); padding: var(--space-4); z-index: var(--z-toast); }
+      .consent p { font-size: var(--fs-data-row); color: var(--ink-2); line-height: 1.5; margin-bottom: var(--space-3); }
+      .consent-actions { display: flex; gap: var(--space-2); justify-content: flex-end; }
+      .consent button { padding: var(--space-2) var(--space-4); border-radius: var(--r-pill); font-size: var(--fs-eyebrow); min-height: var(--tap-min); }
+      .consent .ghost { background: transparent; color: var(--ink-3); }
+      .consent .solid { background: var(--ink); color: var(--white); }
     </style>
   </head>
   <body>
     <slot />
+    <ConsentBanner client:idle />
   </body>
 </html>

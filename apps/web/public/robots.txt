@@ -2,4 +2,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://founderfirst.one/sitemap-index.xml
+Sitemap: https://founderfirst.one/sitemap.xml

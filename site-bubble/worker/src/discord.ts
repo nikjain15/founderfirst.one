@@ -337,6 +337,28 @@ export async function handleDiscordDisconnect(req: Request, env: Env): Promise<R
   return jsonResp({ ok: true, revoked: count });
 }
 
+/* ── /discord/erase ─────────────────────────────────────────────────────── */
+
+export async function handleDiscordErase(req: Request, env: Env): Promise<Response> {
+  // Self-service right-to-erasure (the /forgetme command). Unlike /disconnect
+  // (which soft-archives and retains history), this HARD-deletes the user's DM
+  // transcript, conversation memory, and account-link row. Irreversible.
+  if (!authOk(req, env)) return jsonResp({ error: "unauthorized" }, 401);
+  let body: { discord_user_id?: string };
+  try {
+    body = (await req.json()) as typeof body;
+  } catch {
+    return jsonResp({ error: "invalid_json" }, 400);
+  }
+  if (!body.discord_user_id) return jsonResp({ error: "missing_fields" }, 400);
+
+  const supa = new Supabase(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
+  const deleted = await supa.rpc("discord_dm_erase", {
+    p_discord_user_id: body.discord_user_id,
+  });
+  return jsonResp({ ok: true, deleted });
+}
+
 /* ── /discord/attach-channel ────────────────────────────────────────────── */
 
 export async function handleDiscordAttachChannel(req: Request, env: Env): Promise<Response> {

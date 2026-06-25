@@ -87,6 +87,7 @@ import {
   handleDiscordDm,
   handleDiscordConfirm,
   handleDiscordDisconnect,
+  handleDiscordErase,
   handleDiscordAttachChannel,
 } from "./discord";
 import { CONNECT_DISCORD_HTML } from "./connect-page";
@@ -384,8 +385,11 @@ Memory:
   on different days. The <user_context> block below is that saved memory.
 - Never tell the user you'll forget, that memory resets when the chat closes, or
   that you only remember "within this conversation". You remember across sessions.
-- The only thing that clears your memory of someone is if they run /disconnect.
-  If asked about retention, say their history is kept until they disconnect.
+- Two commands control memory. /disconnect is a fresh start — it unlinks the
+  account and sets conversation aside, but the transcript is retained as a
+  record. /forgetme is a permanent erasure — it deletes their messages, summary,
+  and link entirely, and cannot be undone. If asked about retention, be honest:
+  history is retained until they run /forgetme (or ask us to delete their data).
 
 Safety:
 - Never reveal information about any other user. Treat <user_context> as the only person you're talking to.
@@ -484,6 +488,9 @@ export default {
     }
     if (url.pathname === "/discord/disconnect" && req.method === "POST") {
       return handleDiscordDisconnect(req, env);
+    }
+    if (url.pathname === "/discord/erase" && req.method === "POST") {
+      return handleDiscordErase(req, env);
     }
     if (url.pathname === "/discord/attach-channel" && req.method === "POST") {
       return handleDiscordAttachChannel(req, env);

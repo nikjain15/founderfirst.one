@@ -1,6 +1,7 @@
 ---
 import type { Section } from "@ff/content";
 import SignupForm from "./SignupForm.tsx";
+import TryPenny from "./TryPenny.tsx";
 interface Props { section: Section }
 const { section } = Astro.props;
 const d: any = section.data;
@@ -91,6 +92,16 @@ const d: any = section.data;
       <p class="muted">{d.sub}</p>
       <SignupForm client:load source="waitlist" ctaLabel={d.ctaLabel} />
       <p class="muted small">{d.note}</p>
+    </div>
+  </section>
+)}
+
+{section.type === "tryPenny" && (
+  <section id="how">
+    <div class="wrap center">
+      <div class="eyebrow">{d.eyebrow}</div>
+      <h2>{d.headline}</h2>
+      <TryPenny client:visible ownerSub={d.ownerSub} cpaSub={d.cpaSub} />
     </div>
   </section>
 )}

@@ -49,8 +49,18 @@ export const homeSeed: Page = {
       },
     },
     {
-      type: "comparison",
+      type: "tryPenny",
       position: 2,
+      data: {
+        eyebrow: "Try Penny",
+        headline: "See Penny work — for real, right now.",
+        ownerSub: "Connect an account and Penny starts watching. She categorizes every transaction and shows you a card. You confirm with a tap — she remembers it next time.",
+        cpaSub: "Keep QuickBooks or Xero — nothing to migrate. Penny does the data entry your client always forgets and queues it for you. You review, approve, and export in your usual format.",
+      },
+    },
+    {
+      type: "comparison",
+      position: 3,
       data: {
         scatterLabel: "Today · scattered",
         scatter: [
@@ -74,7 +84,7 @@ export const homeSeed: Page = {
     },
     {
       type: "steps",
-      position: 3,
+      position: 4,
       data: {
         headline: "Want Penny watching your books?",
         sub: "Drop your email — we'll save your spot and cover your first 3 months of bookkeeping.",
@@ -87,7 +97,7 @@ export const homeSeed: Page = {
     },
     {
       type: "cta",
-      position: 4,
+      position: 5,
       data: {
         headline: "Want to try Penny?",
         sub: "Drop your email and we'll save your spot.",
@@ -97,7 +107,7 @@ export const homeSeed: Page = {
     },
     {
       type: "faq",
-      position: 5,
+      position: 6,
       data: {
         headline: "Questions founders ask",
         entries: [

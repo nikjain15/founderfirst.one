@@ -8,15 +8,17 @@
   justify-content: center;
   gap: 6px;
   padding: 12px 22px;
+  border: 0;
   border-radius: var(--r-pill);
-  background: var(--ink);
+  background: var(--brand);
   color: var(--white);
   font-weight: var(--fw-medium);
   font-size: 14px;
   white-space: nowrap;
-  transition: opacity 0.15s;
+  cursor: pointer;
+  transition: background 0.15s;
 }
-.btn:hover { opacity: 0.82; }
+.btn:hover { background: var(--brand-hover); }
 
 .btn-ghost       { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
 .btn-white       { background: var(--white); color: var(--ink); }
@@ -27,7 +29,7 @@
 .btn:focus-visible,
 a:focus-visible,
 button:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--brand);
   outline-offset: 3px;
   border-radius: var(--r-pill);
 }

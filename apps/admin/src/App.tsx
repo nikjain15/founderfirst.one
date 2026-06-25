@@ -3,6 +3,7 @@ import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 
 import { getClient, isAdmin, logAudit } from "./lib/supabase";
+import { CONTENT_MOCK } from "./lib/contentMock";
 import { hasSupabase } from "./lib/env";
 import { IconLogOut, IconMenu, IconClose, IconSettings, IconChevronDown } from "./lib/icons";
 import { RouteErrorBoundary } from "./lib/ErrorBoundary";
@@ -22,6 +23,7 @@ const ContentHome   = lazy(() => named(import("./routes/ContentHome"), "ContentH
 const HowItWorks    = lazy(() => named(import("./routes/HowItWorks"), "HowItWorks"));
 const Quality       = lazy(() => named(import("./routes/Quality"), "Quality"));
 const EmailHub      = lazy(() => named(import("./routes/EmailHub"), "EmailHub"));
+const SiteContent   = lazy(() => named(import("./routes/SiteContent"), "SiteContent"));
 
 /** Gate a route behind sign-in; bounce to /login (remembering where we came from). */
 function RequireAuth({ signedIn, children }: { signedIn: boolean; children: ReactElement }) {
@@ -128,7 +130,9 @@ export function App() {
     );
   }
 
-  const signedIn = !!session;
+  // CONTENT_MOCK is dev-only (false in prod builds), so this bypass can never
+  // weaken production auth — it only lets the local mock demo render.
+  const signedIn = !!session || CONTENT_MOCK;
 
   return (
     <div className="admin-shell">
@@ -163,7 +167,7 @@ export function App() {
                 <div ref={settingsRef} className={`settings-menu ${settingsOpen ? "is-open" : ""}`}>
                   <button
                     type="button"
-                    className={`settings-trigger ${location.pathname.startsWith("/audit") || location.pathname.startsWith("/admins") || location.pathname.startsWith("/how-it-works") || location.pathname.startsWith("/quality") || location.pathname.startsWith("/emails") ? "active" : ""}`}
+                    className={`settings-trigger ${location.pathname.startsWith("/audit") || location.pathname.startsWith("/admins") || location.pathname.startsWith("/how-it-works") || location.pathname.startsWith("/quality") || location.pathname.startsWith("/emails") || location.pathname.startsWith("/site-content") ? "active" : ""}`}
                     aria-haspopup="menu"
                     aria-expanded={settingsOpen}
                     aria-label="Settings"
@@ -179,6 +183,7 @@ export function App() {
                     <Link to="/audit" role="menuitem" className={location.pathname.startsWith("/audit") ? "active" : ""}>Audit log</Link>
                     <Link to="/how-it-works" role="menuitem" className={location.pathname.startsWith("/how-it-works") ? "active" : ""}>How it works</Link>
                     <Link to="/emails" role="menuitem" className={location.pathname.startsWith("/emails") ? "active" : ""}>Emails</Link>
+                    <Link to="/site-content" role="menuitem" className={location.pathname.startsWith("/site-content") ? "active" : ""}>Site content</Link>
                     <button type="button" role="menuitem" onClick={() => getClient().auth.signOut()}>
                       <IconLogOut size={14} />
                       Sign out
@@ -223,6 +228,7 @@ export function App() {
             <Route path="/how-it-works" element={<RequireAuth signedIn={signedIn}><HowItWorks currentEmail={session?.user.email ?? ""} /></RequireAuth>} />
             <Route path="/quality" element={<RequireAuth signedIn={signedIn}><Quality /></RequireAuth>} />
             <Route path="/emails" element={<RequireAuth signedIn={signedIn}><EmailHub /></RequireAuth>} />
+            <Route path="/site-content" element={<RequireAuth signedIn={signedIn}><SiteContent /></RequireAuth>} />
             {/* Back-compat redirects — old top-level tabs now live under Audience. */}
             <Route path="/users" element={<Navigate to="/audience#web" replace />} />
             <Route path="/signals" element={<Navigate to="/audience#signals" replace />} />

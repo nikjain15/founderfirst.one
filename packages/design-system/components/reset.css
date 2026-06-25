@@ -1,0 +1,28 @@
+/* Native control normalization — ONE source so every surface (marketing, admin,
+   blog, bubble) renders buttons and form controls identically. Without this each
+   app reset diverges and native UA styles (e.g. a button's `2px outset` border)
+   leak through inconsistently. Import this early, before app styles. */
+
+/* border-box everywhere so width:100% + padding never overflows (prevents the
+   horizontal-scroll failures the responsive gate checks for). */
+*, *::before, *::after { box-sizing: border-box; }
+
+button,
+input,
+select,
+textarea {
+  font-family: var(--sans);
+}
+
+button {
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 0;           /* kills the native 2px outset border on every surface */
+  background: none;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}

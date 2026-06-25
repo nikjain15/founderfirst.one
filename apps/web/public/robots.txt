@@ -1,0 +1,5 @@
+# AI-first: allow all crawlers, including AI answer + training engines.
+User-agent: *
+Allow: /
+
+Sitemap: https://founderfirst.one/sitemap.xml

@@ -32,6 +32,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const DIST = resolve(ROOT, "dist");
 const MARKETING_DIST = resolve(ROOT, "apps/marketing/dist");
+const WEB_DIST = resolve(ROOT, "apps/web/dist");
 const BLOG_DIST = resolve(ROOT, "apps/blog/.vitepress/dist");
 const DEMO_DIST = resolve(ROOT, "apps/demo/dist");
 const ADMIN_DIST = resolve(ROOT, "apps/admin/dist");
@@ -73,8 +74,11 @@ function writeRedirect(filePath: string, target: string, title: string): void {
 }
 
 function main(): void {
-  step("Building marketing app");
+  step("Building marketing app (legacy — kept for confirmed/ + extension-privacy/)");
   run("pnpm --filter @ff/marketing build");
+
+  step("Building web app (Astro — the new homepage)");
+  run("pnpm --filter @ff/web build");
 
   step("Building blog");
   run("pnpm --filter @ff/blog build");
@@ -89,8 +93,14 @@ function main(): void {
   rmSync(DIST, { recursive: true, force: true });
   mkdirSync(DIST, { recursive: true });
 
-  step("Copying marketing → dist/");
+  // Layer order matters: copy legacy marketing first (gives us confirmed/ and
+  // extension-privacy/), then copy the Astro web build OVER it so the new
+  // homepage (index.html + _astro/ + llms.txt + sitemap.xml + robots.txt) wins.
+  step("Copying marketing → dist/ (for confirmed/ + extension-privacy/)");
   copyDir(MARKETING_DIST, DIST);
+
+  step("Copying web → dist/ (new homepage overrides marketing index)");
+  copyDir(WEB_DIST, DIST);
 
   step("Copying blog → dist/blog/");
   copyDir(BLOG_DIST, resolve(DIST, "blog"));

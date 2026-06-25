@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import "@ff/design-system/tokens.css";
+import "@ff/design-system/components/reset.css";
 import "@ff/design-system/components/typography.css";
 import "@ff/design-system/components/ff-mark.css";
 import "@ff/design-system/components/p-mark.css";

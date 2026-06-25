@@ -1,0 +1,27 @@
+{
+  "name": "@ff/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "FounderFirst marketing — Astro + React islands, rendered from the @ff/content single source of truth. Phase 2 of the unified architecture; will replace apps/marketing.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/react": "^3.6.2",
+    "@ff/content": "workspace:*",
+    "@ff/design-system": "workspace:*",
+    "@ff/ui": "workspace:*",
+    "@supabase/supabase-js": "^2.45.0",
+    "astro": "^4.16.18",
+    "posthog-js": "^1.150.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0"
+  }
+}

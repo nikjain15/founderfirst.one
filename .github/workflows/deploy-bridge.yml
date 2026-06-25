@@ -1,0 +1,27 @@
+name: Deploy Discord Bridge
+
+# Auto-deploys the Fly.io Discord bridge (the gateway relay → Worker) whenever
+# its code changes on main. Mirrors the manual `flyctl deploy` from a laptop.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/discord-bridge/**'
+      - '.github/workflows/deploy-bridge.yml'
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # --remote-only builds on Fly's builders (no Docker needed in CI).
+      - name: Deploy to Fly
+        working-directory: scripts/discord-bridge
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl deploy --remote-only

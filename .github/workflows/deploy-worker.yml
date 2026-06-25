@@ -1,0 +1,38 @@
+name: Deploy Penny Worker
+
+# Auto-deploys the Cloudflare Worker (Penny web + Discord brain, email AI
+# /compose) whenever its code changes on main. Mirrors the manual
+# `npm run deploy` we used to run by hand from a laptop.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site-bubble/**'
+      - '.github/workflows/deploy-worker.yml'
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # site-bubble is its own workspace (not in the root pnpm workspace), so
+      # install its deps here before the widget build the deploy script runs.
+      - name: Install site-bubble deps
+        working-directory: site-bubble
+        run: npm install
+
+      # `npm run deploy` builds the Preact widget, syncs assets, then
+      # `wrangler deploy`. Wrangler reads the token + account from the env.
+      - name: Build widget + deploy worker
+        working-directory: site-bubble/worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: '430f00d6622c766342f89a4e6a2261f6'
+        run: npm run deploy

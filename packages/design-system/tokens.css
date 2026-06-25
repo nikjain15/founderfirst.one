@@ -1,7 +1,7 @@
-/* FounderFirst design tokens — single source of truth.
-   Mirrors DesignSystem_General.md. Consumed by apps/marketing, apps/blog,
-   apps/admin, and the Penny demo. Do NOT redeclare these values in app
-   stylesheets. Extend this file if something is missing. */
+/* FounderFirst design tokens — single source of truth for the brand.
+   Brand overview + rules: see README.md in this package. Consumed by apps/web,
+   apps/marketing, apps/blog, apps/admin, and the Penny bubble. Do NOT redeclare
+   these values in app stylesheets. Extend this file if something is missing. */
 
 :root {
   /* -- Brand (canonical — drives every surface) ----------------------- */

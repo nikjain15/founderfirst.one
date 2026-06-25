@@ -20,7 +20,7 @@ body {
 }
 img, svg { display: block; max-width: 100%; }
 a { color: inherit; text-decoration: none; }
-button { font-family: var(--sans); cursor: pointer; border: 0; background: none; }
+/* button reset now lives in @ff/design-system/components/reset.css (single source) */
 
 .visually-hidden {
   position: absolute !important;

@@ -30,7 +30,7 @@
   margin: 4px;
   padding: 10px 18px;
   border-radius: var(--r-pill);
-  background: var(--ink);
+  background: var(--brand);
   color: var(--white);
   font-size: 13px;
   font-weight: var(--fw-medium);
@@ -47,7 +47,7 @@
 }
 .waitlist-form.on-dark input[type="email"] { color: var(--white); background: transparent; }
 .waitlist-form.on-dark input::placeholder  { color: rgba(255, 255, 255, 0.55); }
-.waitlist-form.on-dark button[type="submit"] { background: var(--white); color: var(--ink); }
+.waitlist-form.on-dark button[type="submit"] { background: var(--brand); color: var(--white); }
 
 /* Focus rings (paired with button/link rings in button.css) */
 .waitlist-form:focus-within          { box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.18); }

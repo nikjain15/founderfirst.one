@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ff/content": "workspace:*",
     "@ff/design-system": "workspace:*",
     "@supabase/supabase-js": "^2.45.0",
     "@tanstack/react-query": "^5.101.0",

@@ -4,19 +4,29 @@
    stylesheets. Extend this file if something is missing. */
 
 :root {
+  /* -- Brand (canonical — drives every surface) ----------------------- */
+  /* FounderFirst brand: warm cream field · forest-green accent · navy-slate
+     ink · Fraunces display. Change these → all surfaces follow. */
+  --brand:        #2f7d52;   /* forest green — primary CTA / accent */
+  --brand-hover:  #276b46;
+  --brand-soft:   #c8e6d0;   /* soft-green fills, accent strips */
+  --brand-tint:   #eaf4ee;   /* faint green wash */
+
   /* -- Color: ink scale + surfaces ------------------------------------ */
-  --ink:        #0a0a0a;
-  --ink-2:      #2a2a2a;
-  --ink-3:      #5a5a5a;
-  --ink-4:      #8a8a8a;
-  --line:       #e8e8e5;
-  --line-2:     #f0f0ed;
-  --paper:      #f6f6f4;
-  --white:      #ffffff;
-  --dark:       #0a0a0a;
+  /* Neutrals carry the new brand: navy-slate ink on a cream paper field.
+     Spacing / radii / density tokens are unchanged — admin stays compact. */
+  --ink:        #28323f;   /* navy-slate (was near-black) */
+  --ink-2:      #3d4651;
+  --ink-3:      #67707b;
+  --ink-4:      #97a0aa;
+  --line:       #e6e0d3;   /* warm border */
+  --line-2:     #efebe0;
+  --paper:      #f4f1e9;   /* cream — the primary field */
+  --white:      #ffffff;   /* white cards sit on the cream */
+  --dark:       #28323f;   /* inverse sections = navy, not black */
 
   /* -- Semantic accents (meaning only) -------------------------------- */
-  --sage:       #2B7A78;   /* active nav/tab only */
+  --sage:       var(--brand);   /* active nav/tab → brand green */
   --income:     #1A9E6A;   /* success, positive, up, fresh, resolved */
   --income-bg:  #f0faf5;
   --amber:      #C97D1A;   /* warning, aging, needs-attention */
@@ -34,7 +44,8 @@
   --cat-office:      #2B7A78;  --cat-office-bg:   #f6f6f4;
 
   /* -- Typography ----------------------------------------------------- */
-  --font-sans:  'Inter', -apple-system, 'SF Pro Text', 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font-sans:    'Inter', -apple-system, 'SF Pro Text', 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;   /* headings h1–h3 (brand display) */
   --font-serif: Georgia, 'Times New Roman', serif;   /* avatar mark only */
   --font-mono:  ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;   /* code, payloads, ids */
   --sans:       var(--font-sans);   /* back-compat alias */

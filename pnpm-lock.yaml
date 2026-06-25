@@ -17,6 +17,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@ff/content':
+        specifier: workspace:*
+        version: link:../../packages/content
       '@ff/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
@@ -109,7 +112,35 @@ importers:
         specifier: ^5.2.0
         version: 5.4.21(@types/node@25.6.0)
 
+  packages/content:
+    dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.45.0
+        version: 2.105.1
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+
   packages/design-system: {}
+
+  packages/ui:
+    dependencies:
+      '@ff/design-system':
+        specifier: workspace:*
+        version: link:../design-system
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.3.3
+        version: 18.3.29
+      '@types/react-dom':
+        specifier: ^18.3.0
+        version: 18.3.7(@types/react@18.3.29)
 
 packages:
 
@@ -1623,6 +1654,9 @@ packages:
 
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
+
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -3168,5 +3202,7 @@ snapshots:
   ws@8.20.0: {}
 
   yallist@3.1.1: {}
+
+  zod@3.25.76: {}
 
   zwitch@2.0.4: {}

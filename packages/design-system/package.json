@@ -11,6 +11,7 @@
   ],
   "exports": {
     "./tokens.css": "./tokens.css",
+    "./components/reset.css": "./components/reset.css",
     "./components/typography.css": "./components/typography.css",
     "./components/ff-mark.css": "./components/ff-mark.css",
     "./components/p-mark.css": "./components/p-mark.css",

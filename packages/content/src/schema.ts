@@ -97,8 +97,19 @@ export const FaqSection = z.object({
   }),
 });
 
+export const TryPennySection = z.object({
+  ...baseSection,
+  type: z.literal("tryPenny"),
+  data: z.object({
+    eyebrow: z.string(),
+    headline: z.string(),
+    ownerSub: z.string(),  // copy shown for the business-owner view
+    cpaSub: z.string(),    // copy shown for the CPA view
+  }),
+});
+
 export const Section = z.discriminatedUnion("type", [
-  HeroSection, FeaturesSection, ComparisonSection, StepsSection, CtaSection, FaqSection,
+  HeroSection, FeaturesSection, ComparisonSection, StepsSection, CtaSection, FaqSection, TryPennySection,
 ]);
 export type Section = z.infer<typeof Section>;
 

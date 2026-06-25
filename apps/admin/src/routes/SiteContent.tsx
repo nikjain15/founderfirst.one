@@ -209,23 +209,8 @@ function PageEditor({ slug, onChanged }: { slug: string; onChanged: () => void }
 
         {draft != null && (
           editing
-            ? <FieldEditor value={draft} onChange={setDraft} />
+            ? <SectionsEditor draft={draft} onChange={setDraft} addType={addType} setAddType={setAddType} />
             : <PagePreview payload={draft} />
-        )}
-
-        {editing && draft != null && (
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
-            <span style={{ fontSize: "var(--fs-eyebrow)", color: "var(--ink-3)" }}>Add section:</span>
-            <select value={addType} onChange={(e) => setAddType(e.target.value as typeof addType)}
-              style={{ padding: 8, border: "1px solid var(--line)", borderRadius: 8, fontSize: "max(16px, var(--fs-data-row))" }}>
-              {SECTION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <button className="btn" onClick={() => {
-              const d = draft as { sections: Array<{ position: number }> };
-              const pos = d.sections.length ? Math.max(...d.sections.map((s) => s.position)) + 1 : 0;
-              setDraft({ ...d, sections: [...d.sections, emptySection(addType, pos)] });
-            }}>+ Add</button>
-          </div>
         )}
 
         {editing && (
@@ -248,6 +233,59 @@ function PagePreview({ payload }: { payload: unknown }) {
       <div style={{ marginBottom: 8 }}><strong>SEO title:</strong> {p.seo?.title ?? "—"}</div>
       <div><strong>Sections:</strong> {(p.sections ?? []).map((s) => s.type).join(" · ") || "—"}</div>
       <p style={{ marginTop: 10, color: "var(--ink-3)" }}>Click ‘Edit’ to change any field.</p>
+    </div>
+  );
+}
+
+/* ── Section-aware editor: SEO + per-section cards with reorder/delete ────── */
+type PageDraft = { slug: string; surface: string; seo: unknown; sections: Array<{ type: string; position: number; data: unknown }> };
+
+function SectionsEditor({ draft, onChange, addType, setAddType }: {
+  draft: unknown;
+  onChange: (v: unknown) => void;
+  addType: (typeof SECTION_TYPES)[number];
+  setAddType: (t: (typeof SECTION_TYPES)[number]) => void;
+}) {
+  const page = draft as PageDraft;
+  // Persist sections, renumbering position to match array order (index.astro sorts by position).
+  const commit = (sections: PageDraft["sections"]) =>
+    onChange({ ...page, sections: sections.map((s, k) => ({ ...s, position: k })) });
+
+  const move = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= page.sections.length) return;
+    const next = [...page.sections];
+    [next[i], next[j]] = [next[j], next[i]];
+    commit(next);
+  };
+
+  return (
+    <div style={{ display: "grid", gap: 16 }}>
+      <FieldEditor label="seo" value={page.seo} onChange={(seo) => onChange({ ...page, seo })} />
+
+      {page.sections.map((s, i) => (
+        <div key={i} style={{ border: "1px solid var(--line)", borderRadius: 10, padding: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <strong style={{ textTransform: "capitalize" }}>{s.type}</strong>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button className="btn-link" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up" title="Move up">↑</button>
+              <button className="btn-link" onClick={() => move(i, 1)} disabled={i === page.sections.length - 1} aria-label="Move down" title="Move down">↓</button>
+              <button className="btn-link" style={{ color: "var(--error)" }} aria-label="Delete section"
+                onClick={() => { if (window.confirm(`Delete the "${s.type}" section?`)) commit(page.sections.filter((_, k) => k !== i)); }}>Delete</button>
+            </div>
+          </div>
+          <FieldEditor value={s.data} onChange={(data) => onChange({ ...page, sections: page.sections.map((x, k) => (k === i ? { ...x, data } : x)) })} />
+        </div>
+      ))}
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center", paddingTop: 8, borderTop: "1px solid var(--line)" }}>
+        <span style={{ fontSize: "var(--fs-eyebrow)", color: "var(--ink-3)" }}>Add section:</span>
+        <select value={addType} onChange={(e) => setAddType(e.target.value as typeof addType)}
+          style={{ padding: 8, border: "1px solid var(--line)", borderRadius: 8, fontSize: "max(16px, var(--fs-data-row))" }}>
+          {SECTION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <button className="btn" onClick={() => commit([...page.sections, emptySection(addType, page.sections.length) as PageDraft["sections"][number]])}>+ Add</button>
+      </div>
     </div>
   );
 }

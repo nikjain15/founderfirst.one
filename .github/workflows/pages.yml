@@ -59,6 +59,11 @@ jobs:
           VITE_POSTHOG_HOST:      ${{ vars.VITE_POSTHOG_HOST }}
           VITE_GA_ID:             ${{ vars.VITE_GA_ID }}
           VITE_ADMIN_EMAIL:       ${{ vars.VITE_ADMIN_EMAIL }}
+          # apps/web (Astro) reads PUBLIC_* — same values, Astro's client prefix.
+          PUBLIC_SUPABASE_URL:      ${{ vars.VITE_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          PUBLIC_POSTHOG_KEY:       ${{ secrets.VITE_POSTHOG_KEY }}
+          PUBLIC_POSTHOG_HOST:      ${{ vars.VITE_POSTHOG_HOST }}
         run: pnpm build
 
       - uses: actions/configure-pages@v5

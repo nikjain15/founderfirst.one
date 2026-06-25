@@ -1,0 +1,81 @@
+---
+import "@ff/design-system/tokens.css";
+import "@ff/design-system/components/reset.css";
+import "@ff/design-system/components/typography.css";
+import type { Page } from "@ff/content";
+import { buildJsonLd } from "../lib/seo";
+import ConsentBanner from "../components/ConsentBanner.tsx";
+
+interface Props { page: Page }
+const { page } = Astro.props;
+const site = "https://founderfirst.one";
+const jsonLd = buildJsonLd(page, site);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={page.seo.description} />
+    <link rel="canonical" href={page.seo.canonical ?? site + page.slug} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={page.seo.title} />
+    <meta property="og:description" content={page.seo.description} />
+    <meta property="og:url" content={site + page.slug} />
+    {page.seo.ogImage && <meta property="og:image" content={page.seo.ogImage} />}
+    <title>{page.seo.title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script type="application/ld+json" set:html={jsonLd} is:inline />
+    <!-- Penny chat bubble — Shadow-DOM widget, see site-bubble/README.md -->
+    <script defer src="https://bubble.founderfirst.one/bubble.js" is:inline></script>
+    <style is:global>
+      body { background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+      .wrap { width: 100%; max-width: var(--page-max); margin-inline: auto; padding-inline: var(--page-pad-x); }
+      section { padding-block: var(--section-y); }
+      a { color: inherit; text-decoration: none; }
+
+      /* Signup form (shared by the hero + CTA islands) */
+      .signup { display: flex; gap: var(--space-2); border: var(--bw) solid var(--ink); border-radius: var(--r-pill); padding: var(--space-1); width: 100%; max-width: 460px; margin: 0 auto var(--space-3); background: var(--white); }
+      .signup input { flex: 1; border: 0; outline: 0; background: transparent; padding: 0 var(--space-4); font-size: max(16px, var(--fs-data-row)); color: var(--ink); min-width: 0; }
+      .signup button { flex-shrink: 0; background: var(--brand); color: var(--white); border-radius: var(--r-pill); padding: 0 var(--space-5); min-height: var(--tap-min); font-weight: var(--fw-medium); white-space: nowrap; }
+      .signup button:hover { background: var(--brand-hover); }
+      .signup button:disabled { opacity: 0.6; cursor: default; }
+      .signup-done { text-align: center; color: var(--brand); font-weight: var(--fw-medium); max-width: 460px; margin: 0 auto var(--space-3); }
+      .signup-err { display: block; width: 100%; color: var(--error); font-size: var(--fs-eyebrow); padding: var(--space-1) var(--space-4); }
+
+      /* Try Penny island (global — Astro scoped styles don't reach island DOM) */
+      .tp { margin-top: var(--space-6); display: flex; flex-direction: column; align-items: center; }
+      .tp-sub { max-width: 560px; color: var(--ink-3); font-size: var(--fs-data-row); margin-bottom: var(--space-5); }
+      .tp-toggle { display: inline-flex; gap: var(--space-1); background: var(--white); border: 1px solid var(--line); border-radius: var(--r-pill); padding: var(--space-1); margin-bottom: var(--space-8); }
+      .tp-pill { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border-radius: var(--r-pill); font-size: var(--fs-data-row); color: var(--ink-3); min-height: var(--tap-min); }
+      .tp-pill.on { background: var(--ink); color: var(--white); }
+      .tp-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--brand); }
+      .phone { width: 320px; max-width: 100%; background: var(--ink); border-radius: 36px; padding: 12px; box-shadow: var(--shadow-phone); position: relative; }
+      .phone .notch { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: 90px; height: 18px; background: var(--ink); border-radius: 0 0 12px 12px; z-index: 2; }
+      .phone .screen { background: var(--white); border-radius: 26px; overflow: hidden; height: 560px; }
+      .browser { width: 100%; max-width: 760px; background: var(--white); border: 1px solid var(--line); border-radius: var(--r-card-emph); overflow: hidden; box-shadow: var(--shadow-float); }
+      .browser .bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--line); }
+      .browser .bar span { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+      .browser .bar em { margin-left: var(--space-3); font-style: normal; font-size: var(--fs-tiny); color: var(--ink-4); }
+      .browser .screen { height: 460px; }
+      .tp .screen iframe { width: 100%; height: 100%; border: 0; }
+      .tp-ph { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); padding: var(--space-6); text-align: center; }
+      .tp-ph .p-badge { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: var(--white); font-family: var(--font-display); }
+      .tp-ph p { font-size: var(--fs-data-row); color: var(--ink-3); }
+
+      /* Cookie consent — sits above the Penny launcher (RESPONSIVE.md rule 6) */
+      .consent { position: fixed; bottom: 92px; right: var(--space-4); width: calc(100% - var(--space-8)); max-width: 360px; background: var(--white); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--shadow-float-lg); padding: var(--space-4); z-index: var(--z-toast); }
+      .consent p { font-size: var(--fs-data-row); color: var(--ink-2); line-height: 1.5; margin-bottom: var(--space-3); }
+      .consent-actions { display: flex; gap: var(--space-2); justify-content: flex-end; }
+      .consent button { padding: var(--space-2) var(--space-4); border-radius: var(--r-pill); font-size: var(--fs-eyebrow); min-height: var(--tap-min); }
+      .consent .ghost { background: transparent; color: var(--ink-3); }
+      .consent .solid { background: var(--ink); color: var(--white); }
+    </style>
+  </head>
+  <body>
+    <slot />
+    <ConsentBanner client:idle />
+  </body>
+</html>

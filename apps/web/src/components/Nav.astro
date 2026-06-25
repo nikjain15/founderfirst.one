@@ -1,0 +1,21 @@
+---
+---
+<nav class="site-nav">
+  <div class="wrap nav-inner">
+    <a href="/" class="logo"><span class="ff">FF</span> FounderFirst</a>
+    <div class="links">
+      <a href="#how">How Penny works</a>
+      <a href="#waitlist" class="cta">Claim 3 months free</a>
+    </div>
+  </div>
+</nav>
+<style>
+  .site-nav { position: sticky; top: 0; z-index: var(--z-sticky); background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; padding-block: var(--space-4); }
+  .logo { display: flex; align-items: center; gap: var(--space-2); font-weight: var(--fw-bold); }
+  .ff { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; background: var(--ink); color: var(--white); font-size: var(--fs-tiny); font-weight: var(--fw-bold); }
+  .links { display: flex; align-items: center; gap: var(--space-6); font-size: var(--fs-data-row); color: var(--ink-2); }
+  .links .cta { background: var(--brand); color: var(--white); padding: var(--space-2) var(--space-4); border-radius: var(--r-pill); font-weight: var(--fw-medium); }
+  .links .cta:hover { background: var(--brand-hover); }
+  @media (max-width: 540px) { .links a:not(.cta) { display: none; } }
+</style>

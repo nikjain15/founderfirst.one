@@ -1,0 +1,176 @@
+---
+import type { Section } from "@ff/content";
+import SignupForm from "./SignupForm.tsx";
+import TryPenny from "./TryPenny.tsx";
+interface Props { section: Section }
+const { section } = Astro.props;
+const d: any = section.data;
+---
+{section.type === "hero" && (
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <h1>{d.headline}</h1>
+      <p class="hero-sub">{d.sub}</p>
+      <SignupForm client:load source="hero" ctaLabel={d.ctaLabel} />
+      <p class="muted">Join 100+ founders already on the waitlist.</p>
+    </div>
+    {d.image && (
+      <div class="wrap hero-photo-wrap">
+        <div class="hero-photo">
+          <img src={d.image} alt="A small-business owner checking her books on her phone in her shop" />
+          <div class="float-card today">
+            <div class="eyebrow">Today · sorted by Penny</div>
+            {d.cards?.map((c: any) => (
+              <div class="txn"><div><strong>{c.label}</strong><span>{c.sub}</span></div><div class="val">{c.value}</div></div>
+            ))}
+          </div>
+          <div class="float-card profit">
+            <div class="eyebrow inv">Real profit · this month</div>
+            <div class="profit-amt">$8,420</div>
+            <div class="eyebrow inv">Revenue $14,200 · Costs $5,780</div>
+          </div>
+        </div>
+      </div>
+    )}
+  </section>
+)}
+
+{section.type === "features" && (
+  <section class="dark">
+    <div class="wrap">
+      <h2 class="center">{d.headline}</h2>
+      <div class="grid-3">
+        {d.items.map((i: any) => (
+          <div class="feat"><div class="feat-t">{i.title}</div><p>{i.body}</p></div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+{section.type === "comparison" && (
+  <section>
+    <div class="wrap compare">
+      <div class="panel">
+        <div class="eyebrow">{d.scatterLabel}</div>
+        <div class="scatter">
+          {d.scatter.map((s: any) => (<div class="chip"><span>{s.source}</span><strong>{s.value}</strong></div>))}
+        </div>
+      </div>
+      <div class="arrow"><span class="p-mark">P</span></div>
+      <div class="panel emph">
+        <div class="eyebrow">{d.unifiedLabel}</div>
+        <div class="eyebrow">{d.profitLabel}</div>
+        <div class="profit-amt dark-text">{d.profitValue}</div>
+        <div class="eyebrow">{d.profitMeta}</div>
+        <div class="rows">
+          {d.rows.map((r: any) => (<div class="row"><span>{r.label}</span><strong>{r.value}</strong></div>))}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+
+{section.type === "steps" && (
+  <section class="dark">
+    <div class="wrap">
+      <h2 class="center">{d.headline}</h2>
+      <p class="center muted-light">{d.sub}</p>
+      <div class="grid-3">
+        {d.steps.map((s: any) => (
+          <div class="step"><div class="step-num">{s.num}</div><div class="feat-t">{s.title}</div><p>{s.body}</p></div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+{section.type === "cta" && (
+  <section>
+    <div class="wrap center cta">
+      <h2>{d.headline}</h2>
+      <p class="muted">{d.sub}</p>
+      <SignupForm client:load source="waitlist" ctaLabel={d.ctaLabel} />
+      <p class="muted small">{d.note}</p>
+    </div>
+  </section>
+)}
+
+{section.type === "tryPenny" && (
+  <section id="how">
+    <div class="wrap center">
+      <div class="eyebrow">{d.eyebrow}</div>
+      <h2>{d.headline}</h2>
+      <TryPenny client:visible ownerSub={d.ownerSub} cpaSub={d.cpaSub} />
+    </div>
+  </section>
+)}
+
+{section.type === "faq" && (
+  <section>
+    <div class="wrap faq">
+      <h2 class="center">{d.headline}</h2>
+      <div class="faq-list">
+        {d.entries.map((e: any) => (
+          <details><summary>{e.question}</summary><p>{e.answer}</p></details>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  h1 { font-size: var(--fs-h1); margin-bottom: var(--space-4); }
+  h2 { font-size: var(--fs-h2); margin-bottom: var(--space-4); }
+  .center { text-align: center; }
+  .muted { color: var(--ink-3); }
+  .small { font-size: var(--fs-eyebrow); }
+  .eyebrow { font-size: var(--fs-eyebrow); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--ink-4); font-weight: var(--fw-semibold); }
+  .dark { background: var(--dark); color: var(--white); }
+  .dark .muted-light, .dark p { color: rgba(255,255,255,0.7); }
+  .dark .feat-t, .dark h2 { color: var(--white); }
+
+  .hero-inner { text-align: center; padding-block: clamp(48px,8vw,96px) var(--space-8); max-width: 860px; }
+  .hero-sub { font-size: var(--fs-body); color: var(--ink-3); margin-bottom: var(--space-6); }
+  .hero-photo { position: relative; border-radius: var(--r-card-emph); overflow: hidden; box-shadow: var(--shadow-float-lg); }
+  .hero-photo img { width: 100%; height: clamp(20rem, 40vw, 34rem); object-fit: cover; display: block; }
+  .float-card { position: absolute; background: var(--white); border-radius: var(--r-card); padding: var(--space-4); box-shadow: var(--shadow-float); }
+  .float-card.today { top: var(--space-6); left: var(--space-6); min-width: 240px; }
+  .float-card.profit { top: var(--space-6); right: var(--space-6); background: var(--dark); color: var(--white); }
+  .float-card.profit .eyebrow.inv { color: rgba(255,255,255,0.6); }
+  .txn { display: flex; justify-content: space-between; align-items: center; padding-block: var(--space-2); border-top: 1px solid var(--line-2); }
+  .txn:first-of-type { border-top: 0; }
+  .txn span { display: block; font-size: var(--fs-tiny); color: var(--ink-4); }
+  .txn .val { font-variant-numeric: tabular-nums; font-weight: var(--fw-semibold); }
+  .profit-amt { font-size: var(--fs-card-value); font-weight: var(--fw-bold); letter-spacing: -0.02em; line-height: 1.1; }
+  .profit-amt.dark-text { color: var(--ink); }
+
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-8); margin-top: var(--space-8); }
+  .feat-t, .step .feat-t { font-family: var(--font-display); font-size: var(--fs-h3); margin-bottom: var(--space-2); }
+  .feat p, .step p { font-size: var(--fs-data-row); line-height: 1.6; }
+  .step-num { font-family: var(--font-display); font-size: var(--fs-h3); color: var(--brand); margin-bottom: var(--space-2); }
+
+  .compare { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--space-6); align-items: center; }
+  .panel { border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-6); background: var(--white); }
+  .panel.emph { border-color: var(--ink); }
+  .scatter { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); margin-top: var(--space-4); }
+  .chip { background: var(--paper); border-radius: var(--r-card); padding: var(--space-3); }
+  .chip span { display: block; font-size: var(--fs-tiny); color: var(--ink-4); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); }
+  .arrow .p-mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--brand); color: var(--white); font-family: var(--font-display); }
+  .rows { margin-top: var(--space-4); }
+  .row { display: flex; justify-content: space-between; padding-block: var(--space-2); border-top: 1px solid var(--line-2); font-size: var(--fs-data-row); }
+
+  .step-num { }
+  .faq { max-width: 720px; }
+  .faq-list { margin-top: var(--space-6); }
+  details { border-top: 1px solid var(--line); padding-block: var(--space-4); }
+  summary { font-weight: var(--fw-semibold); cursor: pointer; font-size: var(--fs-body); }
+  details p { margin-top: var(--space-2); color: var(--ink-3); line-height: 1.6; }
+
+  @media (max-width: 768px) {
+    .compare { grid-template-columns: 1fr; }
+    .arrow { transform: rotate(90deg); justify-self: center; }
+    .float-card.today { position: static; margin: var(--space-4); min-width: 0; }
+    .float-card.profit { position: static; margin: var(--space-4); }
+  }
+</style>

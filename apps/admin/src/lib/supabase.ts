@@ -8,6 +8,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, hasSupabase } from "./env";
 import type { Database } from "./database.types";
+import { CONTENT_MOCK, mockContent } from "./contentMock"; // dev-only Site-content mock
 
 /** Row type for any public table, e.g. Row<"admins">. Generated from the live
  *  schema by `supabase gen types` — see database.types.ts. Prefer this over
@@ -918,6 +919,58 @@ export async function setLiveVoice(id: string): Promise<void> {
   const db = getClient();
   const { error } = await db.rpc("set_live_voice", { p_id: id });
   if (error) throw new Error(`set_live_voice: ${error.message}`);
+}
+
+// ---- Site content (unified content model — Phase 1) ------------------------
+// Versioned page + email content, same model as penny_voice. RPCs are
+// admin-gated server-side (is_admin) and audited via log_admin_action.
+// See migration 20260624110000_content_model.sql + @ff/content for the schema.
+
+export interface PageSummaryRow { slug: string; surface: string; version: number; is_live: boolean; updated_at: string; }
+export interface ContentVersionRow {
+  id: string;
+  version: number;
+  payload: unknown;
+  notes: string | null;
+  is_live: boolean;
+  created_at: string;
+  created_by: string | null;
+  created_by_email: string | null;
+}
+
+export async function listContentPages(): Promise<PageSummaryRow[]> {
+  if (CONTENT_MOCK) return mockContent.listContentPages();
+  const db = getClient();
+  const { data, error } = await db.rpc("list_content_pages");
+  if (error) throw new Error(`list_content_pages: ${error.message}`);
+  return ((data as PageSummaryRow[]) ?? []).map((r) => ({ ...r, version: Number(r.version) }));
+}
+
+export async function listPageVersions(slug: string): Promise<ContentVersionRow[]> {
+  if (CONTENT_MOCK) return mockContent.listPageVersions();
+  const db = getClient();
+  const { data, error } = await db.rpc("list_page_versions", { p_slug: slug });
+  if (error) throw new Error(`list_page_versions: ${error.message}`);
+  return ((data as ContentVersionRow[]) ?? []).map((r) => ({ ...r, version: Number(r.version) }));
+}
+
+export async function createPageVersion(
+  slug: string, surface: string, payload: unknown, notes?: string,
+): Promise<string> {
+  if (CONTENT_MOCK) return mockContent.createPageVersion(slug, surface, payload, notes);
+  const db = getClient();
+  const { data, error } = await db.rpc("create_page_version", {
+    p_slug: slug, p_surface: surface, p_payload: payload, p_notes: notes ?? null,
+  });
+  if (error) throw new Error(`create_page_version: ${error.message}`);
+  return data as string;
+}
+
+export async function setLivePage(id: string): Promise<void> {
+  if (CONTENT_MOCK) return mockContent.setLivePage(id);
+  const db = getClient();
+  const { error } = await db.rpc("set_live_page", { p_id: id });
+  if (error) throw new Error(`set_live_page: ${error.message}`);
 }
 
 // ---- Signals (social listening + outreach) ---------------------------------

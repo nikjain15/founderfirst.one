@@ -17,10 +17,16 @@ custom_domain = true
 binding = "SITE_CACHE"
 id = "0ae05a489e5e435e80256b637bdc607e"
 
+# Workers AI — powers /compose (email "Draft with AI"), replacing the local
+# Ollama compose-server on the Mac. Free-tier daily allocation.
+[ai]
+binding = "AI"
+
 # Secrets (set via `wrangler secret put NAME`):
 #   ANTHROPIC_API_KEY
 #   SUPABASE_URL
 #   SUPABASE_SERVICE_KEY
+#   COMPOSE_SECRET        (shared with the email-compose Supabase fn)
 
 [vars]
 ALLOWED_ORIGINS = "https://founderfirst.one,https://www.founderfirst.one,http://localhost:4000,http://127.0.0.1:4000"

@@ -83,6 +83,13 @@ const jsonLd = buildJsonLd(page, site);
       .tp-ph .p-badge { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: var(--white); font-family: var(--font-display); }
       .tp-ph p { font-size: var(--fs-data-row); color: var(--ink-3); }
 
+      /* "Open full demo" launch CTA under the device frame */
+      .tp-cta { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); margin-top: var(--space-6); }
+      .tp-launch { display: inline-flex; align-items: center; gap: var(--space-2); background: var(--brand); color: var(--white); padding: 0 var(--space-6); min-height: var(--tap-min); border-radius: var(--r-pill); font-weight: var(--fw-medium); }
+      .tp-launch:hover { background: var(--brand-hover); }
+      .tp-cta-note { font-size: var(--fs-eyebrow); color: var(--ink-4); }
+      .dark .tp-cta-note { color: rgba(255,255,255,0.55); }
+
       /* Try Penny dev mocks — phone (owner) + browser (CPA). Real demo embeds in prod. */
       .tp-mock { height: 100%; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); background: var(--paper); }
       .tp-mock .p-badge { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--brand); color: var(--white); font-family: var(--font-display); font-size: var(--fs-data-row); }

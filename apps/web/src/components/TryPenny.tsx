@@ -35,6 +35,18 @@ export default function TryPenny({ ownerSub, cpaSub }: { ownerSub: string; cpaSu
           <div className="screen"><Demo src="/penny/demo/cpa/" title="Penny — CPA view" mode="cpa" /></div>
         </div>
       )}
+
+      <div className="tp-cta">
+        <a
+          className="tp-launch"
+          href={view === "owner" ? "/penny/demo/businessowner/" : "/penny/demo/cpa/"}
+          target="_blank"
+          rel="noopener"
+        >
+          Open the full {view === "owner" ? "business-owner" : "CPA"} demo →
+        </a>
+        <span className="tp-cta-note">Opens the real interactive demo — click through it yourself.</span>
+      </div>
     </div>
   );
 }

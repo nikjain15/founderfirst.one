@@ -8,6 +8,7 @@ import {
 } from "../lib/supabase";
 import { HBarBreakdown } from "../lib/charts";
 import { IconAlert, IconExternalLink } from "../lib/icons";
+import { Takeaway } from "../lib/Takeaway";
 
 const RANGES: Array<{ label: string; days: number }> = [
   { label: "7d", days: 7 },
@@ -54,6 +55,21 @@ export function AnalyticsSignals() {
 
   return (
     <>
+      {pipe.needs_action > 0 ? (
+        <Takeaway tone="watch" action={{ label: "Work the pipeline →", to: "/audience#signals" }}>
+          <strong>{pipe.needs_action}</strong> promoted lead{pipe.needs_action === 1 ? "" : "s"} still unsent — draft and send outreach.
+        </Takeaway>
+      ) : replyRate != null ? (
+        <Takeaway tone="good" action={{ label: "Work the pipeline →", to: "/audience#signals" }}>
+          Pipeline clear: <strong>{replyRate}% reply</strong>
+          {winRate != null ? <>, <strong>{winRate}% win</strong></> : null}. Keep promoting strong signals.
+        </Takeaway>
+      ) : (
+        <Takeaway tone="neutral" action={{ label: "Work the pipeline →", to: "/audience#signals" }}>
+          Numbers fill in as you promote and send leads in the pipeline.
+        </Takeaway>
+      )}
+
       <div className="toolbar" style={{ marginTop: 0, marginBottom: 20 }}>
         {RANGES.map((r, i) => (
           <button key={r.label} className={`chip ${i === rangeIdx ? "active" : ""}`} onClick={() => setRangeIdx(i)} type="button">

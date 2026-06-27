@@ -160,7 +160,7 @@ export function App() {
                 <Link to="/support" className={location.pathname.startsWith("/support") ? "active" : ""}>Support</Link>
                 <Link to="/audience" className={location.pathname.startsWith("/audience") ? "active" : ""}>Audience</Link>
                 <Link to="/analytics" className={location.pathname.startsWith("/analytics") ? "active" : ""}>Analytics</Link>
-                <Link to="/content" className={location.pathname.startsWith("/content") ? "active" : ""}>Penny</Link>
+                <Link to="/content" className={location.pathname.startsWith("/content") || location.pathname.startsWith("/site-content") || location.pathname.startsWith("/blog-posts") ? "active" : ""}>Penny</Link>
               </div>
             )}
             {signedIn ? (
@@ -168,7 +168,7 @@ export function App() {
                 <div ref={settingsRef} className={`settings-menu ${settingsOpen ? "is-open" : ""}`}>
                   <button
                     type="button"
-                    className={`settings-trigger ${location.pathname.startsWith("/audit") || location.pathname.startsWith("/admins") || location.pathname.startsWith("/how-it-works") || location.pathname.startsWith("/quality") || location.pathname.startsWith("/emails") || location.pathname.startsWith("/site-content") || location.pathname.startsWith("/blog-posts") ? "active" : ""}`}
+                    className={`settings-trigger ${location.pathname.startsWith("/audit") || location.pathname.startsWith("/admins") || location.pathname.startsWith("/how-it-works") || location.pathname.startsWith("/quality") || location.pathname.startsWith("/emails") ? "active" : ""}`}
                     aria-haspopup="menu"
                     aria-expanded={settingsOpen}
                     aria-label="Settings"
@@ -179,13 +179,13 @@ export function App() {
                   </button>
                   <div className="settings-dropdown" role="menu">
                     <span className="settings-email">{session?.user.email}</span>
+                    <Link to="/emails" role="menuitem" className={location.pathname.startsWith("/emails") ? "active" : ""}>Emails</Link>
+                    <span className="settings-divider" role="separator" />
                     <Link to="/quality" role="menuitem" className={location.pathname.startsWith("/quality") ? "active" : ""}>Quality</Link>
                     <Link to="/admins" role="menuitem" className={location.pathname.startsWith("/admins") ? "active" : ""}>Admins</Link>
                     <Link to="/audit" role="menuitem" className={location.pathname.startsWith("/audit") ? "active" : ""}>Audit log</Link>
+                    <span className="settings-divider" role="separator" />
                     <Link to="/how-it-works" role="menuitem" className={location.pathname.startsWith("/how-it-works") ? "active" : ""}>How it works</Link>
-                    <Link to="/emails" role="menuitem" className={location.pathname.startsWith("/emails") ? "active" : ""}>Emails</Link>
-                    <Link to="/site-content" role="menuitem" className={location.pathname.startsWith("/site-content") ? "active" : ""}>Site content</Link>
-                    <Link to="/blog-posts" role="menuitem" className={location.pathname.startsWith("/blog-posts") ? "active" : ""}>Blog posts</Link>
                     <button type="button" role="menuitem" onClick={() => getClient().auth.signOut()}>
                       <IconLogOut size={14} />
                       Sign out

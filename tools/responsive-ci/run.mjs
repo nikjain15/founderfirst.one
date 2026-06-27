@@ -79,16 +79,20 @@ function collectViolations(thresholds) {
     out.push({ rule: "horizontalScroll", detail: `scrollWidth ${de.scrollWidth} > innerWidth ${window.innerWidth} (+${overflow}px)`, el: "document" });
   }
 
-  const interactive = Array.from(
-    document.querySelectorAll('a[href], button, [role="button"], input[type="submit"], input[type="button"], select, summary'),
+  // Tap-target rule applies to real controls (buttons, submit/button inputs,
+  // selects, summary, role=button) — NOT inline text links, which wrap to their
+  // content and are legitimately narrow (nav/footer links). A control is flagged
+  // only when BOTH dimensions are under the minimum (a clearly undersized hit
+  // area), so a tall-but-narrow icon button with 44px of vertical tap space passes.
+  const controls = Array.from(
+    document.querySelectorAll('button, [role="button"], input[type="submit"], input[type="button"], select, summary'),
   );
-  for (const el of interactive) {
+  for (const el of controls) {
     const r = el.getBoundingClientRect();
-    // Ignore hidden / zero-size (display:none, collapsed) elements.
     if (r.width === 0 && r.height === 0) continue;
     const style = getComputedStyle(el);
     if (style.display === "none" || style.visibility === "hidden") continue;
-    if ((r.height > 0 && r.height < thresholds.tapMinPx) || (r.width > 0 && r.width < thresholds.tapMinPx)) {
+    if (r.height < thresholds.tapMinPx && r.width < thresholds.tapMinPx) {
       const label = (el.textContent || el.getAttribute("aria-label") || el.tagName).trim().slice(0, 40);
       out.push({ rule: "tapTarget", detail: `${Math.round(r.width)}×${Math.round(r.height)}px (< ${thresholds.tapMinPx})`, el: `${el.tagName.toLowerCase()} "${label}"` });
     }

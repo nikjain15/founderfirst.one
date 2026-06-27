@@ -34,7 +34,17 @@ export const ROUTES = [
 // inputFont). Anything matched here is reported as KNOWN but doesn't fail CI.
 // Keep this list shrinking — every entry is debt. (Empty = strict gate.)
 export const BASELINE = new Set([
-  // e.g. "/blog/ @ 320 :: horizontalScroll",
+  // Pre-existing debt: the /compare feature matrix overflows horizontally on
+  // phones (a fixed-width table, ~685px). Baselined so the gate can land without
+  // blocking unrelated work; remove these once the table is made responsive
+  // (RESPONSIVE.md — tables go in .table-wrap).
+  "/compare/ @ 320 :: horizontalScroll",
+  "/compare/ @ 360 :: horizontalScroll",
+  "/compare/ @ 375 :: horizontalScroll",
+  "/compare/ @ 414 :: horizontalScroll",
+  "/compare/ @ 480 :: horizontalScroll",
+  "/compare/ @ 540 :: horizontalScroll",
+  "/compare/ @ 640 :: horizontalScroll",
 ]);
 
 export const VIEWPORT_HEIGHT = 900;

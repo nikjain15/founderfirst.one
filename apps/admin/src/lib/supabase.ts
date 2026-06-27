@@ -386,6 +386,38 @@ export async function composeEmail(brief: string): Promise<ComposedEmail> {
   return data.draft as ComposedEmail;
 }
 
+/** AI voice check — critique draft copy against the live voice guide, via the
+ *  admin-gated voice-check function (Ollama on the Signals host). On-demand;
+ *  the editor keeps its instant heuristic for live feedback. */
+export interface VoiceReview {
+  on_voice: boolean;
+  score: number; // 0–100
+  deviations: string[];
+  rewrites: { before: string; after: string }[];
+  summary: string;
+}
+export async function checkVoice(text: string): Promise<VoiceReview> {
+  const db = getClient();
+  const { data, error } = await db.functions.invoke("voice-check", { body: { text } });
+  if (error) {
+    let detail = error.message;
+    try {
+      const ctx = (error as any).context;
+      if (ctx && typeof ctx.json === "function") { const b = await ctx.json(); detail = b?.detail ?? b?.error ?? detail; }
+    } catch { /* fall back to error.message */ }
+    throw new Error(detail);
+  }
+  if (!data?.review) throw new Error("Voice check returned nothing.");
+  const r = data.review as Partial<VoiceReview>;
+  return {
+    on_voice: !!r.on_voice,
+    score: typeof r.score === "number" ? r.score : 0,
+    deviations: Array.isArray(r.deviations) ? r.deviations : [],
+    rewrites: Array.isArray(r.rewrites) ? r.rewrites : [],
+    summary: r.summary ?? "",
+  };
+}
+
 // ---- Custom scheduled emails -----------------------------------------------
 
 /** Create a new custom email template (admin-composed body). Returns its key. */

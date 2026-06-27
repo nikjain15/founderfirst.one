@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.signup-confirmation]
 verify_jwt = false
+
+[functions.voice-check]
+verify_jwt = false

@@ -1,10 +1,11 @@
 import type { APIRoute } from "astro";
+import { posts } from "../blog/posts";
 
 // Sitemap, served at /sitemap.xml. List the public, indexable pages here as the
 // site grows (kept manual — the @astrojs/sitemap integration crashes on our
 // endpoint routes).
 const SITE = "https://founderfirst.one";
-const PAGES = ["/"];
+const PAGES = ["/", "/compare/", "/blog/", ...posts.map((p) => `/blog/${p.slug}/`)];
 
 export const GET: APIRoute = () => {
   const urls = PAGES.map((p) => `  <url><loc>${SITE}${p}</loc></url>`).join("\n");

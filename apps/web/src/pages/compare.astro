@@ -1,0 +1,149 @@
+---
+import Base from "../layouts/Base.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import type { Page } from "@ff/content";
+
+const page: Page = {
+  slug: "/compare",
+  surface: "marketing",
+  seo: {
+    title: "How Penny compares — FounderFirst",
+    description:
+      "Penny is an autonomous AI bookkeeper — it does the books for you. See how it compares to QuickBooks, Xero, and Pilot across data entry, categorization, invoice chasing, and cost.",
+    keyFacts: [],
+  },
+  sections: [],
+};
+
+const cols = ["Penny", "QuickBooks", "Xero", "Pilot"];
+type Cell = "yes" | "no" | "part" | "na";
+const rows: Array<{ label: string; cells: Cell[]; notes?: (string | null)[] }> = [
+  { label: "Does the data entry for you", cells: ["yes", "no", "no", "yes"], notes: [null, null, null, "human"] },
+  { label: "Auto-categorizes 24/7", cells: ["yes", "part", "part", "part"], notes: [null, "rules", "rules", "periodic"] },
+  { label: "Chases late invoices", cells: ["yes", "no", "no", "no"] },
+  { label: "Real-profit view, always current", cells: ["yes", "part", "part", "part"] },
+  { label: "CPA-ready every day", cells: ["yes", "part", "part", "yes"] },
+  { label: "Read-only — can't move money", cells: ["yes", "part", "part", "na"] },
+  { label: "Nothing to migrate", cells: ["yes", "na", "na", "na"] },
+  { label: "Starts free (3 months)", cells: ["yes", "no", "no", "no"] },
+];
+const sym: Record<Cell, string> = { yes: "✓", no: "✕", part: "~", na: "–" };
+const word: Record<Cell, string> = { yes: "Yes", no: "No", part: "Partial", na: "Not applicable" };
+
+const verdicts = [
+  { name: "QuickBooks", line: "A ledger you operate. Penny does the bookkeeping for you, automatically." },
+  { name: "Xero", line: "Keep it if you love it — Penny does the data entry your books always need." },
+  { name: "Pilot", line: "A human service billed monthly. Penny is autonomous and starts free." },
+];
+---
+<Base page={page}>
+  <Nav />
+  <section class="cmp-hero">
+    <div class="wrap">
+      <p class="eyebrow brand">Compare</p>
+      <h1>How Penny compares.</h1>
+      <p class="lede">Penny is an autonomous AI bookkeeper — it does the books <em>for</em> you. Here's how that stacks up against the tools and services founders usually consider.</p>
+    </div>
+  </section>
+
+  <section class="cmp-matrix">
+    <div class="wrap">
+      <div class="legend">
+        <span><i class="i yes">✓</i> Yes</span>
+        <span><i class="i part">~</i> Partial</span>
+        <span><i class="i no">✕</i> No</span>
+        <span><i class="i na">–</i> N/A</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="rowhead"></th>
+              {cols.map((c, i) => <th class={i === 0 ? "penny" : ""}>{c}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr>
+                <th scope="row">{r.label}</th>
+                {r.cells.map((cell, i) => (
+                  <td class={`${cell} ${i === 0 ? "penny" : ""}`}>
+                    <i class={`i ${cell}`} aria-hidden="true">{sym[cell]}</i>
+                    {r.notes && r.notes[i] && <span class="note">{r.notes[i]}</span>}
+                    <span class="sr">{word[cell]}</span>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmp-verdicts">
+    <div class="wrap">
+      <h2>The short version</h2>
+      <div class="v-grid">
+        {verdicts.map((v) => (
+          <div class="v-card">
+            <div class="v-head"><span class="v-pill">Penny</span><span class="vs">vs</span><span class="v-name">{v.name}</span></div>
+            <p>{v.line}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="dark cmp-cta">
+    <div class="wrap center">
+      <h2>Ready to hand off the books?</h2>
+      <a href="/#waitlist" class="btn">Claim 3 months free →</a>
+    </div>
+  </section>
+  <Footer />
+</Base>
+<style>
+  h1 { font-size: clamp(30px, 4vw, 40px); line-height: 1.06; letter-spacing: var(--ls-tight); margin-bottom: var(--space-4); }
+  h2 { font-size: clamp(24px, 3vw, 32px); line-height: 1.12; letter-spacing: var(--ls-tighter); margin-bottom: var(--space-6); }
+  .eyebrow { font-size: var(--fs-eyebrow); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--ink-4); font-weight: var(--fw-semibold); }
+  .eyebrow.brand { color: var(--brand); margin-bottom: var(--space-3); }
+  .lede { font-size: var(--fs-body); color: var(--ink-3); line-height: 1.6; max-width: 620px; }
+  .lede em { font-style: italic; color: var(--brand); }
+  .cmp-hero { padding-bottom: var(--space-6); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  .legend { display: flex; gap: var(--space-5); flex-wrap: wrap; margin-bottom: var(--space-4); font-size: var(--fs-eyebrow); color: var(--ink-3); }
+  .legend span { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .i { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-size: 12px; font-weight: var(--fw-bold); }
+  .i.yes { background: var(--brand-tint); color: var(--brand); }
+  .i.part { background: var(--amber-bg); color: var(--amber); }
+  .i.no { background: var(--paper); color: var(--ink-4); }
+  .i.na { background: var(--paper); color: var(--ink-4); }
+
+  .table-wrap { overflow-x: auto; border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); }
+  table { width: 100%; border-collapse: collapse; min-width: 680px; }
+  th, td { padding: var(--space-5) var(--space-4); text-align: center; border-top: 1px solid var(--line-2); }
+  thead th { border-top: 0; font-size: var(--fs-label); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); color: var(--ink-4); font-weight: var(--fw-semibold); }
+  thead th.penny, td.penny { background: var(--brand-tint); }
+  thead th.penny { color: var(--brand); }
+  tbody th[scope="row"], .rowhead { text-align: left; font-weight: var(--fw-medium); color: var(--ink); font-size: var(--fs-ui); min-width: 240px; }
+  td .i { width: 24px; height: 24px; font-size: 14px; }
+  td .note { display: block; font-size: var(--fs-eyebrow); color: var(--ink-4); margin-top: var(--space-1); }
+
+  .cmp-verdicts .v-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); }
+  .v-card { border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-6); background: var(--white); }
+  .v-head { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+  .v-pill { font-size: var(--fs-tiny); font-weight: var(--fw-semibold); background: var(--brand); color: var(--white); padding: 2px var(--space-3); border-radius: var(--r-pill); }
+  .v-head .vs { font-family: var(--font-display); font-style: italic; color: var(--ink-4); font-size: var(--fs-data-row); }
+  .v-name { font-family: var(--font-display); font-weight: var(--fw-semibold); }
+  .v-card p { font-size: var(--fs-ui); color: var(--ink-3); line-height: 1.6; }
+
+  .dark { background: var(--dark); color: var(--white); }
+  .dark h2 { color: var(--white); }
+  .cmp-cta .btn { display: inline-flex; align-items: center; min-height: var(--tap-min); background: var(--brand); color: var(--white); padding: 0 var(--space-6); border-radius: var(--r-pill); font-weight: var(--fw-medium); margin-top: var(--space-4); }
+  .cmp-cta .btn:hover { background: var(--brand-hover); }
+
+  @media (max-width: 720px) { .cmp-verdicts .v-grid { grid-template-columns: 1fr; } }
+</style>

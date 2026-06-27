@@ -1,0 +1,169 @@
+---
+import Base from "../../layouts/Base.astro";
+import Nav from "../../components/Nav.astro";
+import Footer from "../../components/Footer.astro";
+import PennyGlance from "../../components/PennyGlance.astro";
+import { posts, postText } from "../../blog/posts";
+import type { Page } from "@ff/content";
+
+export function getStaticPaths() {
+  return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
+}
+const { post } = Astro.props;
+const site = "https://founderfirst.one";
+
+const page: Page = {
+  slug: `/blog/${post.slug}`,
+  surface: "blog",
+  seo: { title: `${post.title} — FounderFirst`, description: post.description, keyFacts: [] },
+  sections: [],
+};
+
+const articleLd = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  headline: post.title,
+  description: post.description,
+  articleBody: postText(post),
+  datePublished: post.date,
+  dateModified: post.date,
+  author: { "@type": "Organization", name: "FounderFirst" },
+  publisher: { "@type": "Organization", name: "FounderFirst", url: site },
+  mainEntityOfPage: `${site}/blog/${post.slug}`,
+});
+const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+---
+<Base page={page}>
+  <Nav />
+
+  <header class="post-hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <a class="back" href="/blog/">← All articles</a>
+        <p class="eyebrow brand">{post.tag} · {post.readMins} min read · {fmt(post.date)}</p>
+        <h1>{post.title}</h1>
+        <p class="lede">{post.description}</p>
+      </div>
+      <div class="hero-visual"><PennyGlance /></div>
+    </div>
+  </header>
+
+  <article class="post">
+    <div class="wrap">
+      <aside class="takeaways">
+        <div class="eyebrow brand">Key takeaways</div>
+        <ul>{post.takeaways.map((t) => <li>{t}</li>)}</ul>
+      </aside>
+
+      <div class="body">
+        {post.body.map((b: any) => (
+          b.h ? <h2>{b.h}</h2> :
+          b.p ? <p>{b.p}</p> :
+          b.quote ? <blockquote>{b.quote}</blockquote> :
+          b.callout ? (
+            <div class="callout"><div class="c-title">{b.callout.title}</div><p>{b.callout.text}</p></div>
+          ) :
+          b.stats ? (
+            <div class="stat-band">{b.stats.map((s: any) => (
+              <div class="stat"><div class="s-val">{s.value}</div><div class="s-label">{s.label}</div></div>
+            ))}</div>
+          ) :
+          b.visual === "glance" ? <figure class="fig"><PennyGlance /><figcaption>What you see when Penny categorizes a transaction.</figcaption></figure> :
+          b.visual === "operate-vs-penny" ? (
+            <div class="vs">
+              <div class="vs-col them"><div class="vs-h">QuickBooks / Xero</div><p>You operate it</p><ul><li>You do the data entry</li><li>You set the rules</li><li>You reconcile</li></ul></div>
+              <div class="vs-mid" aria-hidden="true">vs</div>
+              <div class="vs-col penny"><div class="vs-h">Penny</div><p>It does it for you</p><ul><li>Auto data entry, 24/7</li><li>Categorized on arrival</li><li>Always reconciled</li></ul></div>
+            </div>
+          ) :
+          b.visual === "readonly" ? (
+            <div class="badge-row">
+              <div class="badge"><span class="b-ic">🔒</span><div><strong>Read-only access</strong><span>Sees & sorts — can't move a cent</span></div></div>
+              <div class="badge"><span class="b-ic">🛡️</span><div><strong>Encrypted end to end</strong><span>In transit and at rest</span></div></div>
+            </div>
+          ) : null
+        ))}
+      </div>
+
+      <div class="post-cta">
+        <div>
+          <h2>Let Penny keep your books.</h2>
+          <p>Clean, CPA-ready books on autopilot — your first 3 months free.</p>
+        </div>
+        <a href="/#waitlist" class="btn">Claim 3 months free →</a>
+      </div>
+    </div>
+  </article>
+  <Footer />
+  <script type="application/ld+json" set:html={articleLd} is:inline />
+</Base>
+<style>
+  .post-hero { background: var(--brand-tint); border-bottom: var(--bw-hair) solid var(--line); padding-block: clamp(32px, 5vw, 56px); }
+  .hero-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: clamp(24px, 5vw, 56px); align-items: center; }
+  .back { font-size: var(--fs-data-row); color: var(--ink-3); display: inline-flex; min-height: var(--tap-min); align-items: center; }
+  .back:hover { color: var(--brand); }
+  .eyebrow { font-size: var(--fs-eyebrow); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--ink-4); font-weight: var(--fw-semibold); }
+  .eyebrow.brand { color: var(--brand); margin-bottom: var(--space-3); }
+  h1 { font-size: clamp(28px, 3.6vw, 40px); line-height: 1.08; letter-spacing: var(--ls-tight); margin-bottom: var(--space-4); }
+  .hero-copy .lede { font-size: var(--fs-body); color: var(--ink-2); line-height: 1.6; }
+  .hero-visual { display: flex; justify-content: center; }
+
+  .post { padding-block: clamp(32px, 5vw, 64px); }
+  .post .wrap { max-width: 720px; }
+  .takeaways { background: var(--white); border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-10); }
+  .takeaways .eyebrow.brand { margin-bottom: var(--space-3); }
+  .takeaways ul { list-style: none; display: grid; gap: var(--space-2); }
+  .takeaways li { position: relative; padding-left: var(--space-6); font-size: var(--fs-data-row); color: var(--ink-2); line-height: 1.5; }
+  .takeaways li::before { content: "✓"; position: absolute; left: 0; color: var(--brand); font-weight: var(--fw-bold); }
+
+  .body h2 { font-family: var(--font-display); font-size: var(--fs-h3); margin: var(--space-10) 0 var(--space-3); }
+  .body p { font-size: var(--fs-body); color: var(--ink-2); line-height: 1.75; margin-bottom: var(--space-4); }
+  blockquote { font-family: var(--font-display); font-size: clamp(20px, 2.6vw, 26px); line-height: 1.4; color: var(--ink); border-left: 3px solid var(--brand); padding-left: var(--space-5); margin: var(--space-10) 0; }
+
+  .stat-band { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); margin: var(--space-8) 0; }
+  .stat { background: var(--brand-tint); border-radius: var(--r-card-emph); padding: var(--space-5); text-align: center; }
+  .s-val { font-family: var(--font-display); font-size: clamp(26px, 4vw, 34px); color: var(--brand); line-height: 1; margin-bottom: var(--space-2); }
+  .s-label { font-size: var(--fs-eyebrow); color: var(--ink-3); line-height: 1.4; }
+
+  .callout { background: var(--ink); color: var(--white); border-radius: var(--r-card-emph); padding: var(--space-6); margin: var(--space-8) 0; }
+  .c-title { font-family: var(--font-display); font-size: var(--fs-h3); margin-bottom: var(--space-2); }
+  .callout p { color: rgba(255,255,255,0.78); line-height: 1.6; margin: 0; }
+
+  .fig { margin: var(--space-8) 0; display: grid; justify-items: center; gap: var(--space-3); }
+  .fig figcaption { font-size: var(--fs-eyebrow); color: var(--ink-4); text-align: center; }
+
+  .vs { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--space-4); align-items: center; margin: var(--space-8) 0; }
+  .vs-col { border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-5); background: var(--white); }
+  .vs-col.penny { border-color: var(--brand-soft); background: var(--brand-tint); }
+  .vs-h { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); font-weight: var(--fw-semibold); color: var(--ink-4); }
+  .vs-col.penny .vs-h { color: var(--brand); }
+  .vs-col p { font-family: var(--font-display); font-size: var(--fs-body); margin: var(--space-1) 0 var(--space-3); color: var(--ink); }
+  .vs-col ul { list-style: none; display: grid; gap: var(--space-2); }
+  .vs-col li { font-size: var(--fs-data-row); color: var(--ink-2); padding-left: var(--space-5); position: relative; }
+  .vs-col.them li::before { content: "·"; position: absolute; left: var(--space-2); color: var(--ink-4); }
+  .vs-col.penny li::before { content: "✓"; position: absolute; left: 0; color: var(--brand); font-weight: var(--fw-bold); }
+  .vs-mid { font-family: var(--font-display); color: var(--ink-4); font-size: var(--fs-data-row); }
+
+  .badge-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin: var(--space-8) 0; }
+  .badge { display: flex; gap: var(--space-3); align-items: center; border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-4) var(--space-5); background: var(--white); }
+  .b-ic { font-size: 22px; }
+  .badge strong { display: block; font-size: var(--fs-data-row); }
+  .badge span { font-size: var(--fs-tiny); color: var(--ink-4); }
+
+  .post-cta { margin-top: var(--space-12); padding-top: var(--space-8); border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap; }
+  .post-cta h2 { font-family: var(--font-display); font-size: var(--fs-h3); margin-bottom: var(--space-1); }
+  .post-cta p { font-size: var(--fs-data-row); color: var(--ink-3); }
+  .btn { display: inline-flex; align-items: center; min-height: var(--tap-min); background: var(--brand); color: var(--white); padding: 0 var(--space-6); border-radius: var(--r-pill); font-weight: var(--fw-medium); white-space: nowrap; }
+  .btn:hover { background: var(--brand-hover); }
+
+  @media (max-width: 768px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-visual { justify-content: flex-start; }
+  }
+  @media (max-width: 600px) {
+    .stat-band { grid-template-columns: 1fr; }
+    .vs { grid-template-columns: 1fr; }
+    .vs-mid { display: none; }
+    .badge-row { grid-template-columns: 1fr; }
+  }
+</style>

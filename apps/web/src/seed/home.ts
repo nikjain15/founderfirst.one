@@ -24,10 +24,10 @@ export const homeSeed: Page = {
       type: "hero",
       position: 0,
       data: {
-        headline: "Bookkeeping that runs itself.",
-        sub: "Meet Penny — your autonomous 24/7 bookkeeper. She sorts every transaction, chases late invoices, and keeps you CPA-ready. You just run the business.",
+        headline: "Operating software for business.",
+        sub: "Meet Penny — your 24/7 autonomous bookkeeper.",
         ctaLabel: "Claim 3 months free",
-        image: "/hero.png",
+        image: "/hero.jpg",
         cards: [
           { label: "Stripe payout", sub: "Revenue", value: "+$4,820" },
           { label: "Terra Wholesale", sub: "Cost of goods", value: "−$1,240" },
@@ -49,8 +49,22 @@ export const homeSeed: Page = {
       },
     },
     {
+      type: "showcase",
+      position: 3,
+      data: {
+        headline: "See exactly what Penny does.",
+        sub: "Connect your accounts once. Here's what runs on autopilot from day one.",
+        rows: [
+          { eyebrow: "Sort", kind: "sort", title: "Every transaction, sorted for you.", body: "Penny watches Stripe, your bank, and your cards and categorizes each one the moment it lands — no spreadsheets, no catch-up." },
+          { eyebrow: "Profit", kind: "profit", title: "See what you actually keep.", body: "Not just revenue — your real profit, broken down and updated as the money moves." },
+          { eyebrow: "Get paid", kind: "getpaid", title: "Late invoices, chased politely.", body: "Penny sends friendly, on-brand reminders in your voice, so you get paid without the awkward follow-up." },
+          { eyebrow: "CPA-ready", kind: "cpa", title: "No scramble at tax time.", body: "Clean, categorized, receipt-matched books — CPA-ready every day of the year, not just in April." },
+        ],
+      },
+    },
+    {
       type: "tryPenny",
-      position: 2,
+      position: 4,
       data: {
         eyebrow: "Try Penny",
         headline: "See Penny work — for real, right now.",
@@ -59,32 +73,22 @@ export const homeSeed: Page = {
       },
     },
     {
-      type: "comparison",
-      position: 3,
+      type: "trust",
+      position: 5,
       data: {
-        scatterLabel: "Today · scattered",
-        scatter: [
-          { source: "Stripe", value: "$4,820" },
-          { source: "PayPal", value: "$1,240" },
-          { source: "Bank", value: "$8,100" },
-          { source: "Credit card", value: "−$2,340" },
-          { source: "Receipts", value: "12 unsorted" },
-          { source: "Invoices", value: "3 overdue" },
+        headline: "Built on trust, not faith.",
+        sub: "Penny connects to the accounts your business runs on, so we hold ourselves to a simple standard: read-only by design, encrypted throughout, and your data always stays yours.",
+        items: [
+          { icon: "lock", title: "Penny can never move your money.", body: "Read-only access — she reads and sorts transactions, but can't touch a cent." },
+          { icon: "shield", title: "Locked down end to end.", body: "Bank-level encryption in transit and at rest, on the same rails your bank uses." },
+          { icon: "user", title: "Your books belong to you.", body: "Never sold or shared. Export or delete everything anytime." },
         ],
-        unifiedLabel: "With Penny · one view",
-        profitLabel: "Real profit · this month",
-        profitValue: "$8,420",
-        profitMeta: "Revenue $14,200 · Costs $5,780",
-        rows: [
-          { label: "Books", value: "✓ clean" },
-          { label: "CPA readiness", value: "✓ on track" },
-          { label: "Late invoices", value: "↪ nudging" },
-        ],
+        footnote: "100+ founders already on the waitlist — keeping their books on autopilot before launch.",
       },
     },
     {
       type: "steps",
-      position: 4,
+      position: 7,
       data: {
         headline: "Want Penny watching your books?",
         sub: "Drop your email — we'll save your spot and cover your first 3 months of bookkeeping.",
@@ -93,14 +97,6 @@ export const homeSeed: Page = {
           { num: "02", title: "3 months on us", body: "Your first 3 months are free when your spot opens — no card needed." },
           { num: "03", title: "Refer & stack months", body: "Each founder you refer adds a free month — up to 12 total." },
         ],
-      },
-    },
-    {
-      type: "cta",
-      position: 5,
-      data: {
-        headline: "Want to try Penny?",
-        sub: "Drop your email and we'll save your spot.",
         ctaLabel: "Claim 3 months free",
         note: "No spam. No pressure. Unsubscribe anytime.",
       },
@@ -109,11 +105,13 @@ export const homeSeed: Page = {
       type: "faq",
       position: 6,
       data: {
-        headline: "Questions founders ask",
+        headline: "Questions, answered.",
         entries: [
-          { question: "Can Penny move my money?", answer: "No. Penny connects with read-only access — she can see and categorize transactions, but can never move a cent or touch your accounts." },
-          { question: "Do I have to switch accounting software?", answer: "No. Penny keeps your books clean and CPA-ready and exports in your usual format." },
-          { question: "Is my financial data secure?", answer: "Yes. Bank connections run through the same encrypted infrastructure your bank uses; data is encrypted in transit and at rest." },
+          { question: "What is Penny?", answer: "Penny is an autonomous AI bookkeeper from FounderFirst. She connects to your Stripe, bank, and card accounts and keeps your books done for you, 24/7 — categorizing every transaction, chasing late invoices, and keeping you CPA-ready." },
+          { question: "How is Penny different from QuickBooks or Xero?", answer: "QuickBooks and Xero are tools you have to operate. Penny does the bookkeeping for you — she categorizes transactions, follows up on unpaid invoices, and keeps your books clean and CPA-ready, with nothing to migrate." },
+          { question: "Is my financial data safe?", answer: "Yes. Penny connects with read-only access, so she can see your transactions but can never move money. Your data is encrypted in transit and at rest, on the same rails your bank uses." },
+          { question: "How much does Penny cost?", answer: "Your first 3 months are free, and you can stack up to 12 free months by referring other founders. Paid pricing is shared as we open access to the waitlist." },
+          { question: "When can I start?", answer: "Join the waitlist and we'll save your spot. We're onboarding founders in batches now and will reach out when yours opens." },
         ],
       },
     },

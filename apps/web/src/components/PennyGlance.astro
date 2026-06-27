@@ -1,0 +1,41 @@
+---
+// A compact, on-brand "Penny at work" product visual — real UI, not a glyph.
+// Reused as the blog hero/cover and anywhere we need a credible product snapshot.
+interface Props { compact?: boolean }
+const { compact = false } = Astro.props;
+---
+<div class={`glance ${compact ? "is-compact" : ""}`}>
+  <div class="g-head"><span class="g-dot" aria-hidden="true"></span>Sorted by Penny · just now</div>
+  <div class="g-rows">
+    <div class="g-row"><div><strong>Stripe payout</strong><span>Revenue</span></div><div class="g-val pos">+$4,820</div></div>
+    <div class="g-row"><div><strong>Terra Wholesale</strong><span>Cost of goods</span></div><div class="g-val">−$1,240</div></div>
+    <div class="g-row"><div><strong>Card · Fuel</strong><span>Vehicle</span></div><div class="g-val">−$64</div></div>
+  </div>
+  <div class="g-profit">
+    <span class="g-plabel">Real profit · this month</span>
+    <strong class="g-pamt">$8,420</strong>
+    <div class="g-bars"><i class="rev"></i><i class="cost"></i><i class="prof"></i></div>
+  </div>
+</div>
+<style>
+  .glance { background: var(--white); border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); box-shadow: var(--shadow-float); padding: var(--space-5); display: grid; gap: var(--space-4); max-width: 360px; width: 100%; }
+  .g-head { display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); font-weight: var(--fw-semibold); color: var(--ink-4); }
+  .g-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
+  .g-rows { display: grid; gap: var(--space-2); }
+  .g-row { display: flex; justify-content: space-between; align-items: center; padding-block: var(--space-2); border-top: 1px solid var(--line-2); }
+  .g-row:first-child { border-top: 0; }
+  .g-row strong { font-size: var(--fs-data-row); font-weight: var(--fw-semibold); }
+  .g-row span { display: block; font-size: var(--fs-tiny); color: var(--ink-4); }
+  .g-val { font-variant-numeric: tabular-nums; font-weight: var(--fw-semibold); font-size: var(--fs-data-row); }
+  .g-val.pos { color: var(--income); }
+  .g-profit { background: var(--paper); border-radius: var(--r-card); padding: var(--space-4); display: grid; gap: var(--space-2); }
+  .g-plabel { font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); color: var(--ink-4); font-weight: var(--fw-semibold); }
+  .g-pamt { font-size: clamp(26px, 5vw, 32px); font-weight: var(--fw-bold); letter-spacing: -0.02em; line-height: 1; }
+  .g-bars { display: grid; gap: 5px; }
+  .g-bars i { display: block; height: 7px; border-radius: var(--r-pill); }
+  .g-bars .rev { width: 100%; background: var(--ink); }
+  .g-bars .cost { width: 41%; background: var(--line); }
+  .g-bars .prof { width: 59%; background: var(--brand); }
+  .is-compact { box-shadow: none; max-width: none; padding: var(--space-4); }
+  .is-compact .g-profit { display: none; }
+</style>

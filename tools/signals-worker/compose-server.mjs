@@ -65,7 +65,7 @@ Given a brief, return ONLY this JSON (no prose around it):
   "cta_label": <2-4 word button label, or "" if no button fits>,
   "footer":    <one muted line: why they got it, e.g. "You're getting this because you're a FounderFirst customer.">
 }
-Rules: write for a non-technical reader; do not use {curly-brace} placeholders; do not invent specific numbers, dates, or names that the brief didn't give you. Keep it honest and concrete.`;
+Rules: write for a non-technical reader; do not use {curly-brace} placeholders; do not invent specific numbers, dates, or names that the brief didn't give you. Keep it honest and concrete. Never use these filler phrases: "Hang tight", "Sounds good", "Awesome", "Great question", "Perfect", "I'd be happy to", "Unfortunately", "Thanks for reaching out". Never name the underlying technology, and never approximate a price.`;
 
 function send(res, status, obj) {
   const body = JSON.stringify(obj);

@@ -209,7 +209,7 @@ export async function sendEmail(input: SendInput): Promise<SendResult> {
   const resendKey = Deno.env.get("RESEND_API_KEY");
   // Keep the verified From identity from the secret — never override the sender
   // domain from the DB (would break Resend domain verification).
-  const from = Deno.env.get("NOTIFY_FROM") ?? "FounderFirst <onboarding@resend.dev>";
+  const from = Deno.env.get("NOTIFY_FROM") ?? "FounderFirst <founder@founderfirst.one>";
   if (!resendKey) {
     await log(supa, key, rendered.subject, to.length, trigger, "failed", null, "resend_key_missing");
     return { ok: false, sent: 0, failed: to.length, resendIds: [], detail: "resend_key_missing" };

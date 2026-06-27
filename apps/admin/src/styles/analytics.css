@@ -45,7 +45,7 @@
   align-self: center;
   text-decoration: none;
   color: var(--ink-3);
-  font-size: 13px;
+  font-size: var(--fs-label);
   font-weight: var(--fw-medium);
   padding: 0 4px;
   white-space: nowrap;
@@ -94,7 +94,7 @@
   font-variant-numeric: tabular-nums;
 }
 .kpi-sub {
-  font-size: 12px;
+  font-size: var(--fs-micro);
   color: var(--ink-4);
   margin-top: 4px;
 }
@@ -138,7 +138,7 @@
   background: var(--paper);
   padding: 1px 5px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: var(--fs-micro);
 }
 
 .mix-grid {
@@ -157,7 +157,7 @@
   display: flex;
   gap: 16px;
   margin-top: 8px;
-  font-size: 12px;
+  font-size: var(--fs-micro);
   color: var(--ink-3);
 }
 .chart-legend .dot {
@@ -201,7 +201,7 @@
   transition: width var(--dur-slow) var(--ease-out);
 }
 .hbar-value, .hbar-pct { font-variant-numeric: tabular-nums; }
-.empty-inline { color: var(--ink-4); font-size: 13px; padding: 6px 0; }
+.empty-inline { color: var(--ink-4); font-size: var(--fs-label); padding: 6px 0; }
 
 /* ---- CSAT / feedback --------------------------------------------------- */
 
@@ -225,7 +225,7 @@
 .feedback-rating { font-size: 18px; line-height: 1; }
 .feedback-body { min-width: 0; }
 .feedback-meta {
-  font-size: 12px;
+  font-size: var(--fs-micro);
   color: var(--ink-3);
   display: inline-flex;
   align-items: center;
@@ -234,7 +234,7 @@
   margin-bottom: 4px;
 }
 .feedback-comment {
-  font-size: 13px;
+  font-size: var(--fs-label);
   color: var(--ink);
   line-height: 1.5;
   margin-top: 2px;
@@ -242,7 +242,7 @@
 .feedback-ticket-link {
   display: inline-block;
   margin-top: 6px;
-  font-size: 12px;
+  font-size: var(--fs-micro);
   color: var(--ink-3);
   text-decoration: none;
 }
@@ -267,7 +267,7 @@
   border-color: var(--income-bg);
 }
 .feedback-strip-label {
-  font-size: 13px;
+  font-size: var(--fs-label);
   font-weight: var(--fw-semibold);
   color: var(--ink);
 }
@@ -281,7 +281,7 @@
 }
 .palette-row {
   display: grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: minmax(0, 220px) 1fr;
   gap: 16px;
   align-items: center;
 }
@@ -302,7 +302,7 @@
   flex-wrap: wrap;
 }
 .palette-note {
-  font-size: 12px;
+  font-size: var(--fs-micro);
   color: var(--ink-4);
   font-style: normal;
 }

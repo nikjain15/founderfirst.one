@@ -739,6 +739,64 @@ export const posthog = {
   topEvents: (days = 30, limit = 10)  => callPhProxy<{ rows: PhEventRow[]   }>({ action: "topEvents", days, limit }),
 };
 
+// ---- Product insights (learning loop: Synthesize + Act) --------------------
+
+export interface InsightRunRow {
+  id: string; window_days: number; summary: string; finding_count: number;
+  open_actions: number; model: string | null; status: string; created_at: string;
+}
+export interface InsightFinding {
+  observation?: string; likely_cause?: string; suggested_action?: string; confidence?: string;
+}
+export interface InsightActionRow {
+  id: string; run_id: string; title: string; observation: string; suggested_action: string;
+  confidence: string | null; status: "suggested" | "accepted" | "dismissed" | "done";
+  created_at: string; updated_at: string;
+}
+export interface InsightRunDetail {
+  run: {
+    id: string; window_days: number; metrics: unknown; summary: string;
+    findings: InsightFinding[]; model: string | null; status: string; created_at: string;
+  };
+  actions: InsightActionRow[];
+}
+
+export async function listInsightRuns(limit = 26): Promise<InsightRunRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_insight_runs", { p_limit: limit });
+  if (error) throw new Error(`list_insight_runs: ${error.message}`);
+  return (data ?? []) as InsightRunRow[];
+}
+
+export async function getInsightRun(id: string): Promise<InsightRunDetail | null> {
+  const db = getClient();
+  const { data, error } = await db.rpc("get_insight_run", { p_id: id });
+  if (error) throw new Error(`get_insight_run: ${error.message}`);
+  return (data ?? null) as InsightRunDetail | null;
+}
+
+/** Kick off a new synthesis run (PostHog snapshot → AI findings). */
+export async function generateInsights(days = 30): Promise<{ run_id: string; finding_count: number }> {
+  const db = getClient();
+  const { data, error } = await db.functions.invoke("synthesize-insights", { body: { days } });
+  if (error) {
+    let detail = error.message;
+    try {
+      const ctx = (error as any).context;
+      if (ctx && typeof ctx.json === "function") { const b = await ctx.json(); detail = b?.detail ?? b?.error ?? detail; }
+    } catch { /* fall back */ }
+    throw new Error(detail);
+  }
+  if (!data?.run_id) throw new Error("Synthesis returned nothing.");
+  return data as { run_id: string; finding_count: number };
+}
+
+export async function setInsightActionStatus(id: string, status: InsightActionRow["status"]): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("set_insight_action_status", { p_id: id, p_status: status });
+  if (error) throw new Error(`set_insight_action_status: ${error.message}`);
+}
+
 // ---- Product funnel --------------------------------------------------------
 
 export interface FunnelStageRow { stage: string; unique_users: number; total_events: number }

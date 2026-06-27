@@ -5,14 +5,16 @@ import { AnalyticsProduct } from "./AnalyticsProduct";
 import { AnalyticsMarketing } from "./AnalyticsMarketing";
 import { AnalyticsSignals } from "./AnalyticsSignals";
 import { AnalyticsPostHog } from "./AnalyticsPostHog";
+import { AnalyticsInsights } from "./AnalyticsInsights";
 
-type Tab = "waitlist" | "product" | "marketing" | "posthog" | "support" | "signals";
+type Tab = "waitlist" | "product" | "marketing" | "posthog" | "insights" | "support" | "signals";
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "waitlist",  label: "Waitlist"  },
   { id: "product",   label: "Product"   },
   { id: "marketing", label: "Marketing · GA4" },
   { id: "posthog",   label: "Product · PostHog" },
+  { id: "insights",  label: "Insights"  },
   { id: "support",   label: "Support"   },
   { id: "signals",   label: "Signals"   },
 ];
@@ -56,6 +58,7 @@ export function AnalyticsHome() {
         {tab === "product"   && <AnalyticsProduct />}
         {tab === "marketing" && <AnalyticsMarketing />}
         {tab === "posthog"   && <AnalyticsPostHog />}
+        {tab === "insights"  && <AnalyticsInsights />}
         {tab === "support"   && <AnalyticsSupport />}
         {tab === "signals"   && <AnalyticsSignals />}
       </div>

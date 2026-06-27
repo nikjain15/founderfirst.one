@@ -6,23 +6,32 @@
     <nav class="foot-links" aria-label="Footer">
       <a href="/">Home</a>
       <a href="/#product">Product</a>
-      <a href="#faq">FAQ</a>
-      <a href="#waitlist">Early access</a>
+      <a href="/#faq">FAQ</a>
+      <a href="/#waitlist">Early access</a>
       <a href="/compare/">Compare</a>
       <a href="/blog/">Blog</a>
       <a href="https://discord.gg/DGJdd6AEjH" target="_blank" rel="noopener noreferrer">Chat on Discord</a>
+      <button type="button" class="cookie-link" data-cookie-settings>Cookie settings</button>
     </nav>
     <span class="copy">© 2026 FounderFirst. All rights reserved.</span>
   </div>
 </footer>
+<script>
+  // Let visitors reopen the cookie choice anytime (GDPR-standard). The consent
+  // banner (React island) listens for this event and re-shows itself.
+  document.querySelectorAll("[data-cookie-settings]").forEach((b) =>
+    b.addEventListener("click", () => window.dispatchEvent(new CustomEvent("ff:open-consent"))),
+  );
+</script>
 <style>
   footer { border-top: 1px solid var(--line); padding-block: var(--space-10); }
   .foot-inner { display: flex; flex-direction: column; gap: var(--space-5); }
   .logo { display: flex; align-items: center; gap: var(--space-2); font-weight: var(--fw-bold); }
   .ff { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--ink); color: var(--white); font-size: var(--fs-tiny); font-weight: var(--fw-bold); }
   .foot-links { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-5); font-size: var(--fs-data-row); color: var(--ink-3); }
-  .foot-links a { min-height: var(--tap-min); display: inline-flex; align-items: center; }
-  .foot-links a:hover { color: var(--brand); }
+  .foot-links a, .cookie-link { min-height: var(--tap-min); display: inline-flex; align-items: center; }
+  .foot-links a:hover, .cookie-link:hover { color: var(--brand); }
+  .cookie-link { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
   .copy { font-size: var(--fs-eyebrow); color: var(--ink-4); }
   @media (min-width: 768px) {
     .foot-inner { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }

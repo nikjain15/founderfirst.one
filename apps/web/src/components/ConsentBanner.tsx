@@ -13,6 +13,10 @@ export default function ConsentBanner() {
   useEffect(() => {
     initAnalytics();                       // inits PostHog if already accepted
     setShow(getConsent() === "unset");
+    // Footer "Cookie settings" re-opens the choice anytime (GDPR-standard).
+    const open = () => setShow(true);
+    window.addEventListener("ff:open-consent", open);
+    return () => window.removeEventListener("ff:open-consent", open);
   }, []);
 
   if (!show) return null;

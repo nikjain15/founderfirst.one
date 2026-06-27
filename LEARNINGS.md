@@ -188,6 +188,33 @@ was awake, and the master secret vault lived only there.
   personal address). Company = **FounderFirst**, product = **Penny**; keep them
   distinct in copy.
 
+## 14. A green build can still ship broken UI — guard the silent failure modes.
+
+**What happened:** PR #66 accidentally truncated `apps/admin/src/styles/content.css`
+and `signals.css` to **0 bytes**. `styles.css` still `@import`ed them, so the
+bundler **silently skipped the empty files** — the build stayed green and
+deployed, but every admin sub-tab (Analytics, Audience, Signals, Penny) rendered
+as unstyled run-together text on prod. It went unnoticed until a user reported it.
+
+**Rules:**
+- **An `@import` of an empty or missing CSS partial is silently skipped, not an
+  error.** Same for many bundler inputs — absence degrades quietly instead of
+  failing loud. Don't assume "build passed" means "output is correct."
+- **Guard the silent failure modes in CI, not just type/lint errors.** A guard
+  exists: `pnpm check:css` ([scripts/check-css-imports.ts](scripts/check-css-imports.ts))
+  walks every `@import` chain and fails if any relative partial is missing or 0
+  bytes. It runs inside `pnpm build` and as an explicit step in
+  [pages.yml](.github/workflows/pages.yml). Keep it; extend the pattern to the
+  next silent failure you find.
+- **Verify a deploy from the deployed artifact, not the source.** The bug was
+  invisible in the repo (files looked fine in a stale checkout); it was only
+  provable by fetching the live CSS bundle and grepping for the missing
+  selectors. Inspect what prod actually serves (cf. rules 5 and 9).
+- **Local `main` drifting behind origin masks the real state.** The broken build
+  came from `origin/main` (40+ commits ahead of the local checkout); diagnosing
+  against the stale local tree was misleading. `git fetch` and compare against
+  `origin/main` before concluding what's deployed.
+
 ---
 
 *Add a numbered rule above when a mistake teaches a lesson worth not repeating.*

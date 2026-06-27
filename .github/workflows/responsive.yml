@@ -1,0 +1,53 @@
+name: Responsive gate
+
+# Builds the assembled site (dist/) and asserts the RESPONSIVE.md invariants —
+# no horizontal scroll, tap targets ≥ 44px, inputs ≥ 16px — across the full
+# width ladder for every public route. Fails the build on any non-baselined
+# violation. See tools/responsive-ci/.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  responsive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build (assemble dist/)
+        env:
+          # Same build-time env as the Pages workflow so the artifact matches prod.
+          VITE_SUPABASE_URL:      ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_POSTHOG_KEY:       ${{ secrets.VITE_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST:      ${{ vars.VITE_POSTHOG_HOST }}
+          VITE_GA_ID:             ${{ vars.VITE_GA_ID }}
+          VITE_ADMIN_EMAIL:       ${{ vars.VITE_ADMIN_EMAIL }}
+          PUBLIC_SUPABASE_URL:      ${{ vars.VITE_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          PUBLIC_POSTHOG_KEY:       ${{ secrets.VITE_POSTHOG_KEY }}
+          PUBLIC_POSTHOG_HOST:      ${{ vars.VITE_POSTHOG_HOST }}
+          PUBLIC_GA_ID:             ${{ vars.VITE_GA_ID }}
+        run: pnpm build
+
+      - name: Responsive gate
+        run: node tools/responsive-ci/run.mjs

@@ -8,6 +8,7 @@ import {
   setLivePage,
 } from "../lib/supabase";
 import { IconAlert, IconCheck } from "../lib/icons";
+import { ContentSubnav } from "./ContentSubnav";
 
 /**
  * Site content editor — edit the published copy of marketing pages, versioned
@@ -51,6 +52,8 @@ export function SiteContent() {
         Edit the published copy of every page. Change it once here → the website rebuilds and
         every surface (and matching emails) reflects it. On-voice, versioned, audited.
       </p>
+
+      <ContentSubnav active="site" />
 
       {isPending ? (
         <div className="empty">Loading…</div>

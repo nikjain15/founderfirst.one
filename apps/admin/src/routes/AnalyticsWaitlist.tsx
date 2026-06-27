@@ -9,6 +9,7 @@ import {
 } from "../lib/supabase";
 import { HBarBreakdown } from "../lib/charts";
 import { IconAlert } from "../lib/icons";
+import { Takeaway } from "../lib/Takeaway";
 
 export function AnalyticsWaitlist() {
   const dailyQ = useQuery({ queryKey: ["waitlistDaily", 30], queryFn: () => getWaitlistDaily(30) });
@@ -25,6 +26,7 @@ export function AnalyticsWaitlist() {
   const last7 = daily.slice(-7).reduce((s, r) => s + r.signups, 0);
   const prev7 = daily.slice(-14, -7).reduce((s, r) => s + r.signups, 0);
   const delta = prev7 > 0 ? Math.round(((last7 - prev7) / prev7) * 100) : null;
+  const topSource = [...sources].sort((a, b) => b.signups - a.signups)[0];
 
   if (loading) return <div className="empty">Loading…</div>;
   if (error) {
@@ -39,6 +41,22 @@ export function AnalyticsWaitlist() {
 
   return (
     <>
+      {delta != null && delta < 0 ? (
+        <Takeaway tone="watch">
+          Signups <strong>down {Math.abs(delta)}%</strong> vs the previous week — {last7} in the last 7 days.
+          {topSource ? <> Lean into <strong>{topSource.source}</strong>, your top source.</> : null}
+        </Takeaway>
+      ) : delta != null && delta > 0 ? (
+        <Takeaway tone="good">
+          Signups <strong>up {delta}%</strong> week-over-week — {last7} in the last 7 days
+          {topSource ? <>, led by <strong>{topSource.source}</strong></> : null}.
+        </Takeaway>
+      ) : (
+        <Takeaway tone="neutral">
+          <strong>{total}</strong> signups so far{topSource ? <>, mostly via <strong>{topSource.source}</strong></> : null}.
+        </Takeaway>
+      )}
+
       <div className="kpi-strip">
         <Kpi label="Total signups" value={total} />
         <Kpi label="Last 7 days"  value={last7} sub={delta != null ? `${delta >= 0 ? "+" : ""}${delta}% vs prev 7d` : undefined} />

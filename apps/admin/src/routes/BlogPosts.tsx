@@ -8,6 +8,7 @@ import {
   type BlogSummaryRow,
 } from "../lib/supabase";
 import { IconAlert, IconCheck } from "../lib/icons";
+import { ContentSubnav } from "./ContentSubnav";
 
 /**
  * Blog posts editor — same shape as the voice/page editors. Posts are stored as
@@ -130,6 +131,8 @@ export function BlogPosts() {
         </div>
         <button className="btn" onClick={startNew} disabled={busy}>+ New post</button>
       </div>
+
+      <ContentSubnav active="blog" />
 
       {displayError && <div className="alert alert-error" style={{ marginBottom: 12 }}><IconAlert size={16} /> <span>{displayError}</span></div>}
       {flash && <div className="alert alert-success" style={{ marginBottom: 12 }}><IconCheck size={16} /> <span>{flash}</span></div>}

@@ -773,9 +773,15 @@ export const posthog = {
 
 // ---- Product insights (learning loop: Synthesize + Act) --------------------
 
+/** The three outcome areas a run can target. */
+export type InsightGoal = "product" | "content" | "customer";
+/** One real datapoint a finding is grounded in (no hallucinated numbers). */
+export interface InsightEvidence { metric: string; value: number | string }
+
 export interface InsightRunRow {
   id: string; window_days: number; summary: string; finding_count: number;
   open_actions: number; model: string | null; status: string; created_at: string;
+  sources?: string[]; goals?: string[];
 }
 export interface InsightFinding {
   observation?: string; likely_cause?: string; suggested_action?: string; confidence?: string;
@@ -784,6 +790,7 @@ export interface InsightActionRow {
   id: string; run_id: string; title: string; observation: string; suggested_action: string;
   confidence: string | null; status: "suggested" | "accepted" | "dismissed" | "done";
   created_at: string; updated_at: string;
+  theme?: InsightGoal | null; surface?: string | null; evidence?: InsightEvidence[];
 }
 export interface InsightRunDetail {
   run: {
@@ -807,10 +814,14 @@ export async function getInsightRun(id: string): Promise<InsightRunDetail | null
   return (data ?? null) as InsightRunDetail | null;
 }
 
-/** Kick off a new synthesis run (PostHog snapshot → AI findings). */
-export async function generateInsights(days = 30): Promise<{ run_id: string; finding_count: number }> {
+/** Kick off a synthesis run over the chosen sources + goals (real data → grounded findings). */
+export async function generateInsights(
+  params: { days?: number; sources: string[]; goals: InsightGoal[] },
+): Promise<{ run_id: string; finding_count: number; dropped?: number }> {
   const db = getClient();
-  const { data, error } = await db.functions.invoke("synthesize-insights", { body: { days } });
+  const { data, error } = await db.functions.invoke("synthesize-insights", {
+    body: { days: params.days ?? 30, sources: params.sources, goals: params.goals },
+  });
   if (error) {
     let detail = error.message;
     try {
@@ -820,7 +831,7 @@ export async function generateInsights(days = 30): Promise<{ run_id: string; fin
     throw new Error(detail);
   }
   if (!data?.run_id) throw new Error("Synthesis returned nothing.");
-  return data as { run_id: string; finding_count: number };
+  return data as { run_id: string; finding_count: number; dropped?: number };
 }
 
 export async function setInsightActionStatus(id: string, status: InsightActionRow["status"]): Promise<void> {

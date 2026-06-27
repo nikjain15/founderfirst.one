@@ -143,7 +143,7 @@ function AddTxnSheet({ clientId, clientData, cpaAccount, onClose, onAdd }) {
             type="submit"
             style={{
               padding: "14px",
-              background: "var(--ink)",
+              background: "var(--brand)",
               color: "var(--white)",
               border: "none",
               borderRadius: "var(--r-pill)",
@@ -235,7 +235,7 @@ function FlagSheet({ row, onClose, onSubmit }) {
           </div>
           <button
             onClick={() => { onSubmit(reason, note.trim()); onClose(); }}
-            style={{ padding: 14, background: "var(--ink)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
+            style={{ padding: 14, background: "var(--brand)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
           >
             Flag transaction
           </button>
@@ -283,7 +283,7 @@ function AnnotateSheet({ row, existingAnnotations, onClose, onSubmit }) {
           <button
             onClick={() => { if (text.trim()) { onSubmit(text.trim()); onClose(); } }}
             disabled={!text.trim()}
-            style={{ padding: 14, background: "var(--ink)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)", cursor: text.trim() ? "pointer" : "default", fontFamily: "var(--font-sans)", opacity: text.trim() ? 1 : 0.45 }}
+            style={{ padding: 14, background: "var(--brand)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)", cursor: text.trim() ? "pointer" : "default", fontFamily: "var(--font-sans)", opacity: text.trim() ? 1 : 0.45 }}
           >
             Save note
           </button>
@@ -345,7 +345,7 @@ function SuggestReclassSheet({ row, onClose, onSubmit }) {
           <button
             onClick={() => { if (toCategory) { onSubmit(row.category || "", toCategory, note.trim()); onClose(); } }}
             disabled={!toCategory}
-            style={{ padding: 14, background: "var(--ink)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)", cursor: toCategory ? "pointer" : "default", fontFamily: "var(--font-sans)", opacity: toCategory ? 1 : 0.45 }}
+            style={{ padding: 14, background: "var(--brand)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)", cursor: toCategory ? "pointer" : "default", fontFamily: "var(--font-sans)", opacity: toCategory ? 1 : 0.45 }}
           >
             Send to founder for approval
           </button>
@@ -677,7 +677,7 @@ export default function Books({ clientId, clientData, approvals, cpaAccount, onU
           onClick={() => setAddOpen(true)}
           style={{
             padding: "7px 16px",
-            background: "var(--ink)",
+            background: "var(--brand)",
             color: "var(--white)",
             border: "none",
             borderRadius: "var(--r-pill)",

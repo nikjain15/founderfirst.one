@@ -55,7 +55,7 @@ function ConfirmDeleteSheet({ rule, onConfirm, onCancel }) {
               style={{
                 flex: 1,
                 padding: "13px",
-                background: "var(--ink)",
+                background: "var(--brand)",
                 color: "var(--white)",
                 border: "none",
                 borderRadius: "var(--r-pill)",

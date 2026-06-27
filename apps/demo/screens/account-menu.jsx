@@ -152,7 +152,7 @@ function RevokeConfirmSheet({ cpaName, onConfirm, onClose }) {
           type="button"
           onClick={onClose}
           style={{
-            width: "100%", padding: 14, background: "var(--ink)", border: "none",
+            width: "100%", padding: 14, background: "var(--brand)", border: "none",
             borderRadius: "var(--r-pill)", fontSize: 15, fontWeight: "var(--fw-semibold)",
             cursor: "pointer", fontFamily: "var(--font-sans)", color: "var(--white)",
           }}

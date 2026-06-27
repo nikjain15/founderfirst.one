@@ -31,6 +31,9 @@ alter table insight_actions
   add column if not exists evidence jsonb not null default '[]'::jsonb;  -- [{metric,value}] from the real snapshot
 
 -- Widen the list RPC so the run history can show what each run covered.
+-- Return-type change (added OUT columns) requires a drop first — Postgres won't
+-- alter a function's result columns via create-or-replace.
+drop function if exists list_insight_runs(int);
 create or replace function list_insight_runs(p_limit int default 26)
 returns table (id uuid, window_days int, summary text, finding_count int,
                open_actions int, model text, status text, created_at timestamptz,

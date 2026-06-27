@@ -9,20 +9,27 @@
  */
 
 :root {
-  /* -- Color (ink on paper foundation) ------------------------------------- */
-  --ink:      #0a0a0a;   /* primary text, primary buttons, filled marks */
-  --ink-2:    #2a2a2a;   /* secondary text, body copy */
-  --ink-3:    #5a5a5a;   /* supporting text, captions */
-  --ink-4:    #8a8a8a;   /* de-emphasized text, placeholders */
-  --line:     #e8e8e5;   /* card borders, dividers */
-  --line-2:   #f0f0ed;   /* subtle dividers */
-  --paper:    #f6f6f4;   /* warm off-white section backgrounds */
-  --white:    #ffffff;   /* default page background */
-  --dark:     #0a0a0a;   /* semantic alias for dark-section bg */
+  /* -- Color (ink on paper foundation) -------------------------------------
+     Aligned to the canonical FounderFirst brand (@ff/design-system/tokens.css):
+     warm cream field · navy-slate ink · emerald-green accent. Keep these in
+     lockstep with the shared tokens so the product matches the marketing site. */
+  --ink:      #28323f;   /* navy-slate — primary text, filled marks */
+  --ink-2:    #3d4651;   /* secondary text, body copy */
+  --ink-3:    #67707b;   /* supporting text, captions */
+  --ink-4:    #97a0aa;   /* de-emphasized text, placeholders */
+  --line:     #e6e0d3;   /* warm card borders, dividers */
+  --line-2:   #efebe0;   /* subtle dividers */
+  --paper:    #f4f1e9;   /* cream — section backgrounds */
+  --white:    #ffffff;   /* white cards on the cream */
+  --dark:     #28323f;   /* inverse sections = navy, not black */
   --error:    #b2291e;   /* inline error text only — never a background */
 
-  /* -- Semantic accent colors (use only in the zones documented below) ----- */
-  --sage:        #2B7A78;   /* active tab icon + label only. nowhere else. */
+  /* -- Brand + accent ------------------------------------------------------- */
+  --brand:       #32854c;   /* emerald green — primary CTAs / accent / Penny mark */
+  --brand-hover: #2a7142;
+  --brand-soft:  #c9e7d2;
+  --brand-tint:  #e9f5ee;
+  --sage:        #32854c;   /* active tab icon + label → brand green (was teal) */
   --income:      #1A9E6A;   /* income amount text + My Books income figures */
   --income-bg:   #f0faf5;   /* income category icon tint background only */
   --amber:       #C97D1A;   /* My Books "Needs a look" badge + stat subcopy */
@@ -40,12 +47,13 @@
   --cat-tech-bg:    #eef2fa;
   --cat-food-bg:    #fdf3ea;
   --cat-travel-bg:  #fdf3ea;
-  --cat-personal-bg:#f6f6f4;   /* neutral paper tint */
-  --cat-health-bg:  #f6f6f4;   /* neutral paper tint */
-  --cat-office-bg:  #f6f6f4;   /* neutral paper tint */
+  --cat-personal-bg:var(--paper);   /* neutral paper tint */
+  --cat-health-bg:  var(--paper);   /* neutral paper tint */
+  --cat-office-bg:  var(--paper);   /* neutral paper tint */
 
   /* -- Typography --------------------------------------------------------- */
   --font-sans: 'Inter', -apple-system, 'SF Pro Text', 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;   /* brand display headings */
 
   /* Fluid type scale. Use with clamp() on web; mobile sizes are the floor. */
   --fs-h1:         clamp(36px, 5.5vw, 64px);

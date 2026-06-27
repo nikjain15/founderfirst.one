@@ -1,15 +1,33 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 /**
- * Try Penny — the interactive demo section carried over from the legacy site
- * (kept per brand guidelines). Business-owner ↔ CPA toggle swaps between a phone
- * frame and a browser frame. Each frame embeds the live Penny demo; until the
- * demo sub-app is ported into apps/web it shows an on-brand placeholder.
+ * Try Penny — interactive demo. Business-owner ↔ CPA toggle swaps a phone frame
+ * (mobile app) for a browser frame (web console). The framed preview is a teaser;
+ * "Try it live" opens the real demo full-screen in an in-page lightbox so users
+ * get the whole product without leaving the page.
  */
 type View = "owner" | "cpa";
 
+const DEMO: Record<View, { src: string; label: string }> = {
+  owner: { src: "/penny/demo/businessowner/", label: "business-owner" },
+  cpa: { src: "/penny/demo/cpa/", label: "CPA" },
+};
+
 export default function TryPenny({ ownerSub, cpaSub }: { ownerSub: string; cpaSub: string }) {
   const [view, setView] = useState<View>("owner");
+  const [live, setLive] = useState(false);
+
+  // Lightbox: lock body scroll + close on Escape.
+  useEffect(() => {
+    if (!live) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setLive(false);
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [live]);
 
   return (
     <div className="tp">
@@ -25,38 +43,48 @@ export default function TryPenny({ ownerSub, cpaSub }: { ownerSub: string; cpaSu
       </div>
 
       {view === "owner" ? (
-        <div className="phone">
+        <button className="tp-frame phone" onClick={() => setLive(true)} aria-label="Try the business-owner demo live">
           <div className="notch" />
-          <div className="screen"><Demo src="/penny/demo/businessowner/" title="Penny — business-owner view" mode="owner" /></div>
-        </div>
+          <div className="screen"><Demo mode="owner" /></div>
+          <span className="tp-play"><span className="tp-play-ic">▶</span> Try it live</span>
+        </button>
       ) : (
-        <div className="browser">
+        <button className="tp-frame browser" onClick={() => setLive(true)} aria-label="Try the CPA demo live">
           <div className="bar"><span/><span/><span/><em>penny.app/cpa</em></div>
-          <div className="screen"><Demo src="/penny/demo/cpa/" title="Penny — CPA view" mode="cpa" /></div>
-        </div>
+          <div className="screen"><Demo mode="cpa" /></div>
+          <span className="tp-play"><span className="tp-play-ic">▶</span> Try it live</span>
+        </button>
       )}
 
       <div className="tp-cta">
-        <a
-          className="tp-launch"
-          href={view === "owner" ? "/penny/demo/businessowner/" : "/penny/demo/cpa/"}
-          target="_blank"
-          rel="noopener"
-        >
-          Open the full {view === "owner" ? "business-owner" : "CPA"} demo →
-        </a>
+        <button className="tp-launch" onClick={() => setLive(true)}>
+          Try the full {DEMO[view].label} demo →
+        </button>
         <span className="tp-cta-note">Opens the real interactive demo — click through it yourself.</span>
       </div>
+
+      {live && (
+        <div className="tp-lightbox" role="dialog" aria-modal="true" aria-label={`Penny ${DEMO[view].label} demo`} onClick={() => setLive(false)}>
+          <div className={`tp-lb-stage ${view}`} onClick={(e) => e.stopPropagation()}>
+            <div className="tp-lb-bar">
+              <span className="tp-lb-title"><span className="tp-lb-dot" /> Penny — {DEMO[view].label} demo</span>
+              <div className="tp-lb-actions">
+                <a className="tp-lb-newtab" href={DEMO[view].src} target="_blank" rel="noopener">Open in new tab ↗</a>
+                <button className="tp-lb-close" onClick={() => setLive(false)} aria-label="Close demo">✕</button>
+              </div>
+            </div>
+            <iframe className="tp-lb-frame" src={DEMO[view].src} title={`Penny ${DEMO[view].label} demo`} loading="lazy" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// In production the live Penny demo (deployed at /penny/demo/*) embeds here —
-// the phone shows the mobile business-owner app, the browser shows the web CPA
-// console. In dev those paths 404, so render an on-brand mock of each instead so
-// the section never looks empty or broken.
-function Demo({ src, title, mode }: { src: string; title: string; mode: "owner" | "cpa" }) {
-  if (import.meta.env.PROD) return <iframe src={src} title={title} loading="lazy" />;
+// Teaser preview inside the framed card. The real demo (deployed at
+// /penny/demo/*) loads in the lightbox; here we show an on-brand mock so the
+// teaser is never empty (and never 404s in dev).
+function Demo({ mode }: { mode: View }) {
   return mode === "owner" ? (
     <div className="tp-mock tp-mock-owner">
       <div className="tpm-top"><span className="p-badge">P</span><div><strong>Penny</strong><span>Categorized just now</span></div></div>

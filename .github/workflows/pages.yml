@@ -49,6 +49,13 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Guard: fail fast if any @import'ed CSS partial is missing or 0 bytes
+      # (the PR #66 regression — emptied partials are silently skipped by the
+      # bundler and ship unstyled UI). `pnpm build` runs this too; the explicit
+      # step gives a clear, isolated failure signal.
+      - name: Check CSS imports
+        run: pnpm check:css
+
       - name: Build (marketing + blog + assemble)
         env:
           # Build-time env. Configure in repo Settings → Secrets and variables.

@@ -76,7 +76,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--ink);
+  background: var(--brand);
   color: var(--white);
   border-radius: 50%;
   font-weight: var(--fw-bold);
@@ -153,7 +153,7 @@
   padding: 12px 22px;
   border: 0;
   border-radius: var(--r-pill);
-  background: var(--ink);
+  background: var(--brand);
   color: var(--white);
   font-weight: var(--fw-medium);
   font-size: 14px;
@@ -338,7 +338,7 @@
 
 .card-confidence-fill {
   height: 100%;
-  background: var(--ink);
+  background: var(--brand);
   border-radius: 99px;
   transition: width 0.4s var(--ease-out);
 }
@@ -838,7 +838,7 @@
   font-weight: var(--fw-bold);
   font-size: 16px;
 }
-.step-dot.filled { background: var(--ink); color: var(--white); }
+.step-dot.filled { background: var(--brand); color: var(--white); }
 .step-dot.hollow { background: var(--paper); color: var(--ink); }
 
 /* --- Ask Penny bar ---------------------------------------------------- */
@@ -864,7 +864,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--ink);
+  background: var(--brand);
   color: var(--white);
   border: 0;
   display: flex;
@@ -1041,7 +1041,7 @@
   transition: all var(--dur-base) var(--ease-out);
 }
 .progress-dot--filled {
-  background: var(--ink);
+  background: var(--brand);
   width: 18px;
   border-radius: 3px;
 }
@@ -1188,10 +1188,11 @@
   margin: 14px 0 20px;
 }
 .ob-welcome-headline {
+  font-family: var(--font-display);
   font-size: clamp(24px, 6.5vw, 30px);
   font-weight: var(--fw-bold);
-  letter-spacing: -0.025em;
-  line-height: 1.25;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
   color: var(--ink);
   margin: 0 0 12px;
   outline: none;
@@ -1368,7 +1369,7 @@
   transition: all var(--dur-fast) var(--ease-out);
 }
 .checkin-day-btn--selected {
-  background: var(--ink);
+  background: var(--brand);
   color: var(--white);
   border-color: var(--ink);
 }
@@ -1392,7 +1393,7 @@
   transition: all var(--dur-fast) var(--ease-out);
 }
 .checkin-time-btn--selected {
-  background: var(--ink);
+  background: var(--brand);
   color: var(--white);
   border-color: var(--ink);
 }
@@ -1570,7 +1571,7 @@
   min-width: 32px;
   min-height: 32px;
   border-radius: 50%;
-  background: var(--ink);
+  background: var(--brand);
   color: var(--white);
   border: none;
   display: flex;

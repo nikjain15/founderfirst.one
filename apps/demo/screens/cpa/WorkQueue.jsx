@@ -138,7 +138,7 @@ function QueueRow({ dot, description, age, cta, onCta, founderNote }) {
             onClick={onCta}
             style={{
               padding: "5px 12px",
-              background: "var(--ink)",
+              background: "var(--brand)",
               color: "var(--white)",
               border: "none",
               borderRadius: "var(--r-pill)",
@@ -262,7 +262,7 @@ function ActionSheet({ item, clientData, onClose, onUpdateCpa, clientId }) {
           <div style={{ display: "flex", gap: 10 }}>
             <button
               onClick={handleResolveFlag}
-              style={{ flex: 1, padding: "13px", background: "var(--ink)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 14, fontWeight: "var(--fw-semibold)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
+              style={{ flex: 1, padding: "13px", background: "var(--brand)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 14, fontWeight: "var(--fw-semibold)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
             >
               Mark resolved
             </button>
@@ -353,7 +353,7 @@ function ActionSheet({ item, clientData, onClose, onUpdateCpa, clientId }) {
           <div style={{ display: "flex", gap: 10 }}>
             <button
               onClick={handleAnswerQuestion}
-              style={{ flex: 1, padding: "13px", background: "var(--ink)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 14, fontWeight: "var(--fw-semibold)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
+              style={{ flex: 1, padding: "13px", background: "var(--brand)", color: "var(--white)", border: "none", borderRadius: "var(--r-pill)", fontSize: 14, fontWeight: "var(--fw-semibold)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
             >
               Submit answer
             </button>

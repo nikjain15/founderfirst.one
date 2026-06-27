@@ -718,6 +718,27 @@ export const ga = {
   sources:   (days = 30, limit = 10)  => callGaProxy<{ rows: GaSourceRow[]  }>({ action: "sources",   days, limit }),
 };
 
+// ---- PostHog (product analytics via posthog-proxy → HogQL) ------------------
+export interface PhOverview   { pageviews: number; users: number; sessions: number }
+export interface PhTrafficRow { date: string; pageviews: number; users: number }
+export interface PhPageRow    { path: string; views: number; users: number }
+export interface PhEventRow   { event: string; count: number }
+
+async function callPhProxy<T>(body: Record<string, unknown>): Promise<T> {
+  const db = getClient();
+  const { data, error } = await db.functions.invoke("posthog-proxy", { body });
+  if (error) throw new Error(`posthog-proxy: ${error.message}`);
+  if (data?.error) throw new Error(`posthog-proxy: ${data.error}${data.hint ? ` (${data.hint})` : ""}`);
+  return data as T;
+}
+
+export const posthog = {
+  overview:  (days = 30)              => callPhProxy<PhOverview>({ action: "overview",  days }),
+  traffic:   (days = 30)              => callPhProxy<{ rows: PhTrafficRow[] }>({ action: "traffic",   days }),
+  topPages:  (days = 30, limit = 10)  => callPhProxy<{ rows: PhPageRow[]    }>({ action: "topPages",  days, limit }),
+  topEvents: (days = 30, limit = 10)  => callPhProxy<{ rows: PhEventRow[]   }>({ action: "topEvents", days, limit }),
+};
+
 // ---- Product funnel --------------------------------------------------------
 
 export interface FunnelStageRow { stage: string; unique_users: number; total_events: number }

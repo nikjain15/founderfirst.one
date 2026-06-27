@@ -6,8 +6,11 @@
  *      is_admin()-gated RPCs, read with the caller's admin JWT),
  *   2. flattens it into a list of {metric,value} datapoints — the only numbers
  *      the model is allowed to cite,
- *   3. asks the Penny Worker /insights route (Workers AI) to produce a short
- *      summary + grounded findings bucketed by goal, each carrying evidence,
+ *   3. synthesizes a short summary + grounded findings bucketed by goal, each
+ *      carrying evidence. PRIMARY brain is Claude (Sonnet) via the Anthropic
+ *      API with a json_schema output contract; if Claude is unavailable (no key
+ *      / error / refusal) it FALLS BACK to the Penny Worker /insights route
+ *      (Workers AI). The `model` field on the run records which brain produced it.
  *   4. GROUNDING GUARD: drops any finding whose evidence doesn't match a real
  *      datapoint (defends against hallucinated numbers even if the model emits
  *      them), then writes insight_runs + one insight_actions row per finding.
@@ -16,8 +19,10 @@
  * Goals:   product | content | customer.
  *
  * Auth: verify_jwt = true (config.toml) + is_admin().
- * Secrets: POSTHOG_PERSONAL_API_KEY, POSTHOG_PROJECT_ID?, POSTHOG_HOST?,
- *   COMPOSE_ENDPOINT_URL (→ Penny Worker), COMPOSE_SECRET, SUPABASE_* (auto).
+ * Secrets: ANTHROPIC_API_KEY (primary), ANTHROPIC_MODEL? (default
+ *   claude-sonnet-4-6), POSTHOG_PERSONAL_API_KEY, POSTHOG_PROJECT_ID?,
+ *   POSTHOG_HOST?, COMPOSE_ENDPOINT_URL (→ Penny Worker, fallback),
+ *   COMPOSE_SECRET, SUPABASE_* (auto).
  */
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -185,6 +190,127 @@ async function collectSignals(userClient: any, days: number): Promise<Datapoint[
   return out;
 }
 
+/* ── Synthesis: Claude (primary) → Penny Worker (fallback) ─────────────────── */
+
+type Synthesis = { summary: string; findings: any[]; model: string };
+
+// json_schema output contract — guarantees parseable {summary, findings[]} with
+// no control-char repair pass. Mirrors the Penny Worker /insights shape so the
+// grounding guard + persistence below are identical for both brains. The
+// evidence `metric` is constrained to an ENUM of the real datapoint labels so
+// the model can only cite numbers it was given — structured outputs makes
+// grounding bulletproof and keeps every finding past the guard below (a free-
+// text metric tends to get rephrased and then dropped on the exact-match check).
+const buildInsightsSchema = (metricLabels: string[]) => ({
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    summary: { type: "string" },
+    findings: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          title: { type: "string" },
+          goal: { type: "string", enum: [...ALL_GOALS] },
+          surface: { type: "string" },
+          observation: { type: "string" },
+          suggested_action: { type: "string" },
+          confidence: { type: "string", enum: ["low", "medium", "high"] },
+          evidence: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                metric: { type: "string", enum: metricLabels },
+                value: { type: "string" },
+              },
+              required: ["metric", "value"],
+            },
+          },
+        },
+        required: ["title", "goal", "surface", "observation", "suggested_action", "confidence", "evidence"],
+      },
+    },
+  },
+  required: ["summary", "findings"],
+});
+
+async function synthesizeWithClaude(
+  available: Datapoint[], days: number, sources: string[], goals: string[],
+): Promise<Synthesis> {
+  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!apiKey) throw new Error("no_anthropic_key");
+  const model = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-sonnet-4-6";
+
+  const datapoints = available.map((d) => `- ${d.metric}: ${d.value}`).join("\n");
+  const system =
+    "You are the analyst behind FounderFirst's admin Insights. FounderFirst is the " +
+    "company; Penny is the product (an autonomous bookkeeper). You turn a metrics " +
+    "snapshot into a few sharp, decision-ready findings.\n\n" +
+    "RULES:\n" +
+    "- Cite ONLY the datapoints provided. Never invent or estimate numbers. Every " +
+    "finding MUST carry evidence drawn verbatim from the datapoint list (copy the " +
+    "metric label exactly; copy its value as a string).\n" +
+    "- Bucket each finding under one of the requested outcome areas (goal).\n" +
+    "- Prefer 3-6 findings that change a decision over a long list. If the data " +
+    "doesn't support a finding for a goal, omit it.\n" +
+    "- `surface` is the part of the product/funnel the finding is about (short label, " +
+    "may be empty). `suggested_action` is one concrete next step.\n" +
+    "- `summary` is 1-2 plain sentences a busy founder reads first.";
+  const userMsg =
+    `Window: last ${days} days.\n` +
+    `Outcome areas (goals) to bucket findings under: ${goals.join(", ")}.\n` +
+    `Data sources in scope: ${sources.join(", ")}.\n\n` +
+    `Datapoints (the ONLY numbers you may cite):\n${datapoints}`;
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4000,
+      system,
+      messages: [{ role: "user", content: userMsg }],
+      output_config: { format: { type: "json_schema", schema: buildInsightsSchema(available.map((d) => d.metric)) } },
+    }),
+    signal: AbortSignal.timeout(60_000),
+  });
+  if (!res.ok) throw new Error(`anthropic_${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const data = await res.json();
+  if (data?.stop_reason === "refusal") throw new Error("anthropic_refusal");
+  const textBlock = (data?.content ?? []).find((b: any) => b?.type === "text");
+  const parsed = JSON.parse(textBlock?.text ?? "{}");
+  return {
+    summary: String(parsed?.summary ?? ""),
+    findings: Array.isArray(parsed?.findings) ? parsed.findings : [],
+    model: `claude:${String(data?.model ?? model)}`,
+  };
+}
+
+async function synthesizeWithWorker(
+  available: Datapoint[], days: number, sources: string[], goals: string[],
+): Promise<Synthesis> {
+  const endpoint = Deno.env.get("COMPOSE_ENDPOINT_URL");
+  const secret = Deno.env.get("COMPOSE_SECRET");
+  if (!endpoint || !secret) throw new Error("worker_not_configured");
+  const res = await fetch(`${endpoint.replace(/\/$/, "")}/insights`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-compose-secret": secret },
+    body: JSON.stringify({ metrics: { available }, window_days: days, sources, goals }),
+    signal: AbortSignal.timeout(60_000),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.detail ?? `worker ${res.status}`);
+  return {
+    summary: String(data?.summary ?? ""),
+    findings: Array.isArray(data?.findings) ? data.findings : [],
+    model: String(data?.model ?? "workers-ai"),
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -226,30 +352,28 @@ Deno.serve(async (req) => {
     return json({ error: "no_data", detail: "The selected sources have no data in this window yet." }, 422);
   }
 
-  // ---- 2. Synthesize via the Penny Worker (Workers AI) ---------------------
-  const endpoint = Deno.env.get("COMPOSE_ENDPOINT_URL");
-  const secret = Deno.env.get("COMPOSE_SECRET");
-  if (!endpoint || !secret) {
-    return json({ error: "not_configured", detail: "AI synthesis isn't set up. Set COMPOSE_ENDPOINT_URL (Penny Worker) + COMPOSE_SECRET." }, 503);
-  }
-
+  // ---- 2. Synthesize: Claude (primary) → Penny Worker (fallback) -----------
   let summary = "";
   let findings: any[] = [];
-  let model = "workers-ai";
+  let model = "";
+  let claudeErr = "";
   try {
-    const res = await fetch(`${endpoint.replace(/\/$/, "")}/insights`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-compose-secret": secret },
-      body: JSON.stringify({ metrics: { available }, window_days: days, sources, goals }),
-      signal: AbortSignal.timeout(60_000),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) return json({ error: "synthesis_failed", detail: data?.detail ?? `host ${res.status}` }, 502);
-    summary = String(data.summary ?? "");
-    findings = Array.isArray(data.findings) ? data.findings : [];
-    if (data.model) model = String(data.model);
+    ({ summary, findings, model } = await synthesizeWithClaude(available, days, sources, goals));
   } catch (e) {
-    return json({ error: "synthesis_unreachable", detail: (e as Error).message }, 502);
+    claudeErr = (e as Error).message;
+    try {
+      ({ summary, findings, model } = await synthesizeWithWorker(available, days, sources, goals));
+    } catch (e2) {
+      const workerErr = (e2 as Error).message;
+      // Both brains down. If neither is even configured, that's a setup problem (503).
+      const unconfigured = claudeErr === "no_anthropic_key" && workerErr === "worker_not_configured";
+      return json(
+        unconfigured
+          ? { error: "not_configured", detail: "AI synthesis isn't set up. Set ANTHROPIC_API_KEY (primary) or COMPOSE_ENDPOINT_URL + COMPOSE_SECRET (Penny Worker fallback)." }
+          : { error: "synthesis_unreachable", detail: `claude: ${claudeErr}; worker: ${workerErr}` },
+        unconfigured ? 503 : 502,
+      );
+    }
   }
 
   // ---- 3. GROUNDING GUARD: keep only findings whose evidence is real -------

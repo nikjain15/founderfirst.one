@@ -1,0 +1,71 @@
+name: Admin E2E
+
+# Authenticated smoke test for the admin SPA. The admin is built with VITE_E2E=1
+# plus a throwaway test-admin's credentials, so it auto-signs-in with a REAL
+# session (apps/admin/src/lib/devAuth.ts); we then drive the authed UI headlessly
+# and assert the new surfaces render. This is how authed flows get verified
+# without a human + magic link. See tools/admin-e2e/.
+#
+# Required CI config (Settings → Secrets and variables → Actions):
+#   secrets.E2E_ADMIN_EMAIL     — a throwaway Supabase user that IS in the admins
+#                                 allow-list (insert into public.admins). NOT a
+#                                 real person's account.
+#   secrets.E2E_ADMIN_PASSWORD  — that user's password (password auth enabled).
+#   secrets.VITE_SUPABASE_ANON_KEY, vars.VITE_SUPABASE_URL — same as other workflows.
+#
+# If the E2E_ADMIN_* secrets are absent the build won't auto-login and the job
+# fails loudly at "authed nav renders" — that's the signal to add them, not a
+# silent skip.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  admin-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build admin with E2E auto-login
+        env:
+          VITE_SUPABASE_URL:      ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_POSTHOG_KEY:       ${{ secrets.VITE_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST:      ${{ vars.VITE_POSTHOG_HOST }}
+          VITE_GA_ID:             ${{ vars.VITE_GA_ID }}
+          VITE_ADMIN_EMAIL:       ${{ vars.VITE_ADMIN_EMAIL }}
+          # E2E-only: turns on the dev auth shim in a non-DEV build.
+          VITE_E2E:               "1"
+          VITE_DEV_ADMIN_EMAIL:    ${{ secrets.E2E_ADMIN_EMAIL }}
+          VITE_DEV_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+        run: pnpm build
+
+      - name: Admin E2E smoke
+        run: node tools/admin-e2e/run.mjs
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-e2e-screenshots
+          path: tools/admin-e2e/artifacts/
+          if-no-files-found: ignore

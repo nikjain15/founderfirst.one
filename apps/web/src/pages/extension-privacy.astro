@@ -1,0 +1,88 @@
+---
+import Base from "../layouts/Base.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import type { Page } from "@ff/content";
+
+// Internal-tool privacy policy for the "FounderFirst Signals — Capture" Chrome
+// extension. Ported from the legacy apps/marketing static page so apps/web owns
+// it. noindex (internal tool), canonical preserved.
+const page: Page = {
+  slug: "/extension-privacy",
+  surface: "marketing",
+  seo: {
+    title: "Privacy Policy — FounderFirst Signals Capture",
+    description: "Privacy policy for the FounderFirst Signals — Capture Chrome extension.",
+    canonical: "https://founderfirst.one/extension-privacy/",
+    keyFacts: [],
+    noindex: true,
+  },
+  sections: [],
+};
+---
+<Base page={page}>
+  <Nav />
+  <main class="legal">
+    <div class="wrap">
+      <h1>Privacy Policy — Signals Capture extension</h1>
+      <p class="upd">Last updated: June 21, 2026</p>
+
+      <div class="box">
+        <strong>In short:</strong> This is an internal tool for the FounderFirst team. It only does anything
+        when a team member explicitly clicks “Capture” on a post they’ve selected, and it sends that post
+        solely to FounderFirst’s own backend. It does not track browsing, run in the background, use
+        analytics, or sell or share data with anyone.
+      </div>
+
+      <h2>What the extension is</h2>
+      <p>
+        “FounderFirst Signals — Capture” is a Chrome extension used by the FounderFirst team to capture a
+        public social or community post (for example on Reddit, LinkedIn, Facebook, or X) into FounderFirst’s
+        internal admin, where it is reviewed as a potential sales lead.
+      </p>
+
+      <h2>What data it accesses, and when</h2>
+      <ul>
+        <li><strong>Only on an explicit action.</strong> When a team member selects text on a page and clicks
+          the “Capture to FounderFirst Signals” menu item, the extension reads the selected post’s
+          <strong>text, author name, and link</strong> from that page at that moment.</li>
+        <li><strong>Local settings.</strong> The extension stores its configured endpoint URL and a shared
+          access secret in your browser’s local storage so it knows where to send captured posts. These are
+          not personal data and are never shared.</li>
+        <li>It does <strong>not</strong> read pages in the background, track your browsing history, record
+          keystrokes, or collect personal, financial, health, location, or authentication information.</li>
+      </ul>
+
+      <h2>How data is used and shared</h2>
+      <ul>
+        <li>A captured post (its text, author, and link) is sent to <strong>FounderFirst’s own backend</strong>
+          (hosted on Supabase) for the sole purpose of reviewing it as a potential lead.</li>
+        <li>We do <strong>not</strong> sell or transfer this data to third parties.</li>
+        <li>We do <strong>not</strong> use the data for any purpose unrelated to the extension’s single purpose
+          above, nor for creditworthiness or lending.</li>
+      </ul>
+
+      <h2>Data retention &amp; deletion</h2>
+      <p>
+        Captured posts are stored in FounderFirst’s admin database and can be deleted by the team at any time.
+        To request deletion of captured data, contact us at the address below.
+      </p>
+
+      <h2>Contact</h2>
+      <p>Questions or deletion requests: <a href="mailto:nik@founderfirst.one">nik@founderfirst.one</a>.</p>
+    </div>
+  </main>
+  <Footer />
+</Base>
+<style>
+  .legal { padding-block: clamp(40px, 6vw, 72px); }
+  .legal .wrap { max-width: 720px; }
+  h1 { font-size: var(--fs-h1); line-height: 1.15; letter-spacing: var(--ls-tight); margin-bottom: var(--space-2); }
+  .upd { color: var(--ink-4); font-size: var(--fs-eyebrow); margin-bottom: var(--space-8); }
+  h2 { font-family: var(--font-display); font-size: var(--fs-h3); margin: var(--space-8) 0 var(--space-2); }
+  p, li { font-size: var(--fs-data-row); color: var(--ink-2); line-height: 1.65; }
+  ul { padding-left: var(--space-5); margin: 0; }
+  li { margin: var(--space-1) 0; }
+  .box { background: var(--white); border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-4) var(--space-5); margin: var(--space-5) 0; }
+  a { color: var(--brand); }
+</style>

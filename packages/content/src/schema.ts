@@ -26,6 +26,9 @@ export const SeoMeta = z.object({
   canonical: z.string().url().optional(),
   /** Short factual statements used to build llms.txt + structured data. */
   keyFacts: z.array(z.string()).default([]),
+  /** When true, emit <meta name="robots" content="noindex,follow"> (internal-
+   *  tool pages like the extension privacy policy that shouldn't be indexed). */
+  noindex: z.boolean().optional(),
 });
 export type SeoMeta = z.infer<typeof SeoMeta>;
 

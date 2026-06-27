@@ -17,6 +17,7 @@ const jsonLd = buildJsonLd(page, site);
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={page.seo.description} />
+    {page.seo.noindex && <meta name="robots" content="noindex,follow" />}
     <link rel="canonical" href={page.seo.canonical ?? site + page.slug} />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={page.seo.title} />

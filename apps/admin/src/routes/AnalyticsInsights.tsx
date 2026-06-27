@@ -5,6 +5,8 @@ import {
   getInsightRun,
   generateInsights,
   setInsightActionStatus,
+  createContentPipelineItem,
+  CONTENT_SURFACES,
   type InsightActionRow,
   type InsightGoal,
 } from "../lib/supabase";
@@ -83,6 +85,23 @@ export function AnalyticsInsights() {
       void qc.invalidateQueries({ queryKey: ["insightRuns"] });
     },
     onError: (e) => setError((e as Error).message),
+  });
+
+  const sendMut = useMutation({
+    mutationFn: (a: InsightActionRow) =>
+      createContentPipelineItem({
+        source: "insight",
+        topic: a.title,
+        angle: a.suggested_action || null,
+        grounding: { observation: a.observation, surface: a.surface, theme: a.theme, evidence: a.evidence ?? [] },
+        sourceRef: a.id,
+      }),
+    onSuccess: async () => {
+      setError(null);
+      setFlash("Sent to the content pipeline as a new idea.");
+      await qc.invalidateQueries({ queryKey: ["insightRun", activeId] });
+    },
+    onError: (e) => { setFlash(null); setError((e as Error).message); },
   });
 
   const displayError = error ?? (qErr ? (qErr as Error).message : null);
@@ -250,6 +269,18 @@ export function AnalyticsInsights() {
                             {a.confidence && <span className="ins-conf">confidence: {a.confidence}</span>}
                           </div>
                           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            {CONTENT_SURFACES.has(a.surface ?? "") && (
+                              a.resulting_content_id ? (
+                                <button className="btn" disabled title="Already routed to the content pipeline">
+                                  ✓ In pipeline
+                                </button>
+                              ) : (
+                                <button className="btn primary" disabled={sendMut.isPending}
+                                  onClick={() => sendMut.mutate(a)}>
+                                  {sendMut.isPending ? "Sending…" : "Send to pipeline"}
+                                </button>
+                              )
+                            )}
                             {(["accepted", "done", "dismissed", "suggested"] as const)
                               .filter((s) => s !== a.status)
                               .map((s) => (

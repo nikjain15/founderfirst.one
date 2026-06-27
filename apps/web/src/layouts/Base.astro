@@ -70,6 +70,14 @@ const jsonLd = buildJsonLd(page, site);
       .tp-pill { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border-radius: var(--r-pill); font-size: var(--fs-data-row); color: var(--ink-3); min-height: var(--tap-min); }
       .tp-pill.on { background: var(--ink); color: var(--white); }
       .tp-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--brand); }
+      /* Clickable teaser frame → opens the lightbox */
+      .tp-frame { border: 0; padding: 0; cursor: pointer; position: relative; transition: transform var(--dur-base) var(--ease-out); }
+      .tp-frame:hover { transform: translateY(-2px); }
+      .tp-frame:hover .tp-play, .tp-frame:focus-visible .tp-play { opacity: 1; }
+      .tp-play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: var(--space-2); background: rgba(40,50,63,0.42); color: var(--white); font-weight: var(--fw-semibold); font-size: var(--fs-data-row); opacity: 0; transition: opacity var(--dur-base) var(--ease-out); border-radius: 36px; z-index: 3; }
+      .tp-frame.browser .tp-play { border-radius: var(--r-card-emph); }
+      .tp-play-ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--brand); font-size: 13px; }
+
       .phone { width: 320px; max-width: 100%; background: var(--ink); border-radius: 36px; padding: 12px; box-shadow: var(--shadow-phone); position: relative; }
       .phone .notch { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: 90px; height: 18px; background: var(--ink); border-radius: 0 0 12px 12px; z-index: 2; }
       .phone .screen { background: var(--white); border-radius: 26px; overflow: hidden; height: 560px; }
@@ -85,10 +93,25 @@ const jsonLd = buildJsonLd(page, site);
 
       /* "Open full demo" launch CTA under the device frame */
       .tp-cta { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); margin-top: var(--space-6); }
-      .tp-launch { display: inline-flex; align-items: center; gap: var(--space-2); background: var(--brand); color: var(--white); padding: 0 var(--space-6); min-height: var(--tap-min); border-radius: var(--r-pill); font-weight: var(--fw-medium); }
+      .tp-launch { display: inline-flex; align-items: center; gap: var(--space-2); background: var(--brand); color: var(--white); padding: 0 var(--space-6); min-height: var(--tap-min); border: 0; border-radius: var(--r-pill); font-weight: var(--fw-medium); font-size: var(--fs-data-row); cursor: pointer; }
       .tp-launch:hover { background: var(--brand-hover); }
       .tp-cta-note { font-size: var(--fs-eyebrow); color: var(--ink-4); }
       .dark .tp-cta-note { color: rgba(255,255,255,0.55); }
+
+      /* Full-screen demo lightbox (Option B) */
+      .tp-lightbox { position: fixed; inset: 0; z-index: var(--z-max); background: rgba(20,24,30,0.72); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: var(--space-4); }
+      .tp-lb-stage { background: var(--white); border-radius: var(--r-card-emph); overflow: hidden; box-shadow: var(--shadow-float-lg); display: flex; flex-direction: column; width: 100%; }
+      .tp-lb-stage.owner { max-width: 420px; height: min(92vh, 860px); }
+      .tp-lb-stage.cpa { max-width: 1100px; height: min(88vh, 760px); }
+      .tp-lb-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--line); background: var(--paper); }
+      .tp-lb-title { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--fs-data-row); font-weight: var(--fw-semibold); color: var(--ink); }
+      .tp-lb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
+      .tp-lb-actions { display: inline-flex; align-items: center; gap: var(--space-3); }
+      .tp-lb-newtab { font-size: var(--fs-eyebrow); color: var(--ink-3); white-space: nowrap; }
+      .tp-lb-newtab:hover { color: var(--brand); }
+      .tp-lb-close { width: var(--tap-min); height: var(--tap-min); display: grid; place-items: center; border: 0; background: transparent; color: var(--ink-3); font-size: 18px; cursor: pointer; border-radius: var(--r-pill); }
+      .tp-lb-close:hover { background: var(--line-2); color: var(--ink); }
+      .tp-lb-frame { flex: 1; width: 100%; border: 0; background: var(--white); }
 
       /* Try Penny dev mocks — phone (owner) + browser (CPA). Real demo embeds in prod. */
       .tp-mock { height: 100%; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); background: var(--paper); }

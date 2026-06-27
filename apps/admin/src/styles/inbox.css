@@ -79,8 +79,8 @@
 }
 .chip:hover { border-color: var(--ink-3); }
 .chip.active {
-  background: var(--ink);
-  border-color: var(--ink);
+  background: var(--brand);
+  border-color: var(--brand);
   color: var(--white);
 }
 

@@ -10,14 +10,14 @@ const d: any = section.data;
   <section class="hero">
     <div class="wrap hero-inner">
       <h1>{d.headline}</h1>
-      <p class="hero-sub">{d.sub}</p>
+      <p class="hero-sub">{d.sub}{d.link && <> <a class="hero-link" href={d.link.href}>{d.link.label} →</a></>}</p>
       <SignupForm client:load source="hero" ctaLabel={d.ctaLabel} />
       <p class="muted">Join 100+ founders already on the waitlist.</p>
     </div>
     {d.image && (
       <div class="wrap hero-photo-wrap">
         <div class="hero-photo">
-          <img src={d.image} alt="A small-business owner checking her books on her phone in her shop" />
+          <img src={d.image} alt="A small-business owner checking her books on her phone in her shop" width="1600" height="893" fetchpriority="high" decoding="async" />
           <div class="float-card today">
             <div class="eyebrow">Today · sorted by Penny</div>
             {d.cards?.map((c: any) => (
@@ -35,13 +35,82 @@ const d: any = section.data;
   </section>
 )}
 
+{section.type === "proof" && (
+  <section class="proof">
+    <div class="wrap proof-inner">
+      <span class="proof-label">{d.label}</span>
+      <div class="proof-items">
+        {d.items.map((i: any) => (
+          <span class="proof-chip"><span>{i.source}</span><strong>{i.value}</strong></span>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
 {section.type === "features" && (
   <section class="dark">
     <div class="wrap">
-      <h2 class="center">{d.headline}</h2>
-      <div class="grid-3">
-        {d.items.map((i: any) => (
-          <div class="feat"><div class="feat-t">{i.title}</div><p>{i.body}</p></div>
+      <h2 class="center statement">{d.headline}</h2>
+    </div>
+  </section>
+)}
+
+{section.type === "showcase" && (
+  <section id="product">
+    <div class="wrap">
+      <h2>{d.headline}</h2>
+      {d.sub && <p class="lede">{d.sub}</p>}
+      <div class="show-rows">
+        {d.rows.map((r: any) => (
+          <div class="show-row">
+            <div class="show-copy">
+              {r.eyebrow && <div class="eyebrow brand">{r.eyebrow}</div>}
+              <h3>{r.title}</h3>
+              <p>{r.body}</p>
+            </div>
+            <div class="show-media">
+              {r.image
+                ? <img src={r.image} alt={r.title} />
+                : (
+                  <div class={`mock mock-${r.kind}`}>
+                    {r.kind === "sort" && (
+                      <div class="m-rows">
+                        <div class="m-row"><span>Stripe payout</span><em class="tag rev">Revenue</em></div>
+                        <div class="m-row"><span>Terra Wholesale</span><em class="tag cog">Cost of goods</em></div>
+                        <div class="m-row"><span>Card · Fuel</span><em class="tag op">Vehicle</em></div>
+                      </div>
+                    )}
+                    {r.kind === "profit" && (
+                      <div class="m-profit">
+                        <div class="eyebrow">Real profit · this month</div>
+                        <div class="m-amt">$8,420</div>
+                        <div class="m-bars">
+                          <div class="m-bar"><span>Revenue</span><i class="rev"></i></div>
+                          <div class="m-bar"><span>Costs</span><i class="cost"></i></div>
+                          <div class="m-bar"><span>Real profit</span><i class="prof"></i></div>
+                        </div>
+                      </div>
+                    )}
+                    {r.kind === "getpaid" && (
+                      <div class="m-invoice">
+                        <span class="m-meta">Invoice #1042 · 14 days late</span>
+                        <p class="m-quote">“Hi Sarah — just a friendly nudge that invoice #1042 is now a couple of weeks past due. Here's the link to settle it whenever you get a moment.”</p>
+                        <span class="m-sent">✓ Sent by Penny · 8:02am</span>
+                      </div>
+                    )}
+                    {r.kind === "cpa" && (
+                      <div class="m-meters">
+                        <div class="m-meter"><span>Income categorized</span><strong>100%</strong></div>
+                        <div class="m-meter"><span>Expenses categorized</span><strong>100%</strong></div>
+                        <div class="m-meter"><span>Receipts matched</span><strong>96%</strong></div>
+                        <div class="m-meter"><span>CPA export ready</span><strong>✓</strong></div>
+                      </div>
+                    )}
+                  </div>
+                )}
+            </div>
+          </div>
         ))}
       </div>
     </div>
@@ -71,16 +140,47 @@ const d: any = section.data;
   </section>
 )}
 
-{section.type === "steps" && (
-  <section class="dark">
+{section.type === "tryPenny" && (
+  <section id="how" class="dark">
+    <div class="wrap center">
+      <div class="eyebrow brand">{d.eyebrow}</div>
+      <h2>{d.headline}</h2>
+      <TryPenny client:load ownerSub={d.ownerSub} cpaSub={d.cpaSub} />
+    </div>
+  </section>
+)}
+
+{section.type === "trust" && (
+  <section id="trust">
     <div class="wrap">
-      <h2 class="center">{d.headline}</h2>
+      <h2>{d.headline}</h2>
+      {d.sub && <p class="lede trust-lede">{d.sub}</p>}
+      <div class="grid-3 trust-grid">
+        {d.items.map((i: any) => (
+          <div class="trust-card">
+            <div class="eyebrow brand">{i.icon === "lock" ? "Read-only" : i.icon === "shield" ? "Encrypted" : "Yours"}</div>
+            <div class="feat-t">{i.title}</div>
+            <p>{i.body}</p>
+          </div>
+        ))}
+      </div>
+      {d.footnote && <p class="trust-foot">{d.footnote}</p>}
+    </div>
+  </section>
+)}
+
+{section.type === "steps" && (
+  <section class="dark" id="waitlist">
+    <div class="wrap center">
+      <h2>{d.headline}</h2>
       <p class="center muted-light">{d.sub}</p>
-      <div class="grid-3">
+      <div class="grid-3 steps-grid">
         {d.steps.map((s: any) => (
           <div class="step"><div class="step-num">{s.num}</div><div class="feat-t">{s.title}</div><p>{s.body}</p></div>
         ))}
       </div>
+      {d.ctaLabel && <div class="steps-form"><SignupForm client:load source="waitlist" ctaLabel={d.ctaLabel} /></div>}
+      {d.note && <p class="muted-light small">{d.note}</p>}
     </div>
   </section>
 )}
@@ -96,20 +196,10 @@ const d: any = section.data;
   </section>
 )}
 
-{section.type === "tryPenny" && (
-  <section id="how">
-    <div class="wrap center">
-      <div class="eyebrow">{d.eyebrow}</div>
-      <h2>{d.headline}</h2>
-      <TryPenny client:visible ownerSub={d.ownerSub} cpaSub={d.cpaSub} />
-    </div>
-  </section>
-)}
-
 {section.type === "faq" && (
-  <section>
+  <section id="faq">
     <div class="wrap faq">
-      <h2 class="center">{d.headline}</h2>
+      <h2>{d.headline}</h2>
       <div class="faq-list">
         {d.entries.map((e: any) => (
           <details><summary>{e.question}</summary><p>{e.answer}</p></details>
@@ -120,23 +210,31 @@ const d: any = section.data;
 )}
 
 <style>
-  h1 { font-size: var(--fs-h1); margin-bottom: var(--space-4); }
-  h2 { font-size: var(--fs-h2); margin-bottom: var(--space-4); }
+  /* Marketing headings, sized to the Ploy reference (tighter than the global
+     display tokens, which run large for hero billboards). */
+  h1 { font-size: clamp(30px, 4vw, 40px); margin-bottom: var(--space-4); line-height: 1.06; letter-spacing: var(--ls-tight); }
+  h2 { font-size: clamp(26px, 3vw, 34px); margin-bottom: var(--space-3); line-height: 1.12; letter-spacing: var(--ls-tighter); }
   .center { text-align: center; }
   .muted { color: var(--ink-3); }
   .small { font-size: var(--fs-eyebrow); }
   .eyebrow { font-size: var(--fs-eyebrow); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--ink-4); font-weight: var(--fw-semibold); }
+  .eyebrow.brand { color: var(--brand); }
   .dark { background: var(--dark); color: var(--white); }
   .dark .muted-light, .dark p { color: rgba(255,255,255,0.7); }
   .dark .feat-t, .dark h2 { color: var(--white); }
+  .dark .eyebrow.brand { color: var(--brand-soft); }
 
-  .hero-inner { text-align: center; padding-block: clamp(48px,8vw,96px) var(--space-8); max-width: 860px; }
-  .hero-sub { font-size: var(--fs-body); color: var(--ink-3); margin-bottom: var(--space-6); }
+  .hero { padding-block: var(--space-6) var(--space-10); }
+  .hero-inner { text-align: center; padding-block: var(--space-4) var(--space-5); max-width: 820px; }
+  .hero-sub { font-size: var(--fs-body); color: var(--ink-3); margin-bottom: var(--space-6); max-width: 620px; margin-inline: auto; }
+  .hero-link { color: var(--brand); font-weight: var(--fw-medium); white-space: nowrap; }
+  .hero-link:hover { color: var(--brand-hover); }
+  .hero-photo-wrap { margin-top: var(--space-4); max-width: 1000px; }
   .hero-photo { position: relative; border-radius: var(--r-card-emph); overflow: hidden; box-shadow: var(--shadow-float-lg); }
-  .hero-photo img { width: 100%; height: clamp(20rem, 40vw, 34rem); object-fit: cover; display: block; }
+  .hero-photo img { width: 100%; height: clamp(15rem, 26vw, 22rem); object-fit: cover; display: block; }
   .float-card { position: absolute; background: var(--white); border-radius: var(--r-card); padding: var(--space-4); box-shadow: var(--shadow-float); }
   .float-card.today { top: var(--space-6); left: var(--space-6); min-width: 240px; }
-  .float-card.profit { top: var(--space-6); right: var(--space-6); background: var(--dark); color: var(--white); }
+  .float-card.profit { bottom: var(--space-6); right: var(--space-6); background: var(--dark); color: var(--white); }
   .float-card.profit .eyebrow.inv { color: rgba(255,255,255,0.6); }
   .txn { display: flex; justify-content: space-between; align-items: center; padding-block: var(--space-2); border-top: 1px solid var(--line-2); }
   .txn:first-of-type { border-top: 0; }
@@ -145,10 +243,68 @@ const d: any = section.data;
   .profit-amt { font-size: var(--fs-card-value); font-weight: var(--fw-bold); letter-spacing: -0.02em; line-height: 1.1; }
   .profit-amt.dark-text { color: var(--ink); }
 
+  /* Proof ribbon — a clean white "sorted by Penny" card on the cream (no heavy
+     colored band); a single green dot carries the brand. */
+  .proof { padding-block: var(--space-4) var(--space-2); }
+  .proof-inner { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; justify-content: center; background: var(--white); border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); box-shadow: var(--shadow-float); padding: var(--space-3) var(--space-5); max-width: 920px; margin-inline: auto; }
+  .proof-label { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); font-weight: var(--fw-semibold); color: var(--ink-3); }
+  .proof-label::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); flex-shrink: 0; }
+  .proof-items { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: center; }
+  .proof-chip { display: inline-flex; align-items: center; gap: var(--space-2); background: var(--paper); border-radius: var(--r-pill); padding: var(--space-1) var(--space-3); font-size: var(--fs-data-row); }
+  .proof-chip span { color: var(--ink-4); }
+  .proof-chip strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  .statement { max-width: 820px; margin-inline: auto; line-height: 1.25; }
+
   .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-8); margin-top: var(--space-8); }
   .feat-t, .step .feat-t { font-family: var(--font-display); font-size: var(--fs-h3); margin-bottom: var(--space-2); }
-  .feat p, .step p { font-size: var(--fs-data-row); line-height: 1.6; }
-  .step-num { font-family: var(--font-display); font-size: var(--fs-h3); color: var(--brand); margin-bottom: var(--space-2); }
+  .feat p, .step p, .trust-card p { font-size: var(--fs-data-row); line-height: 1.6; }
+  .step-num { font-family: var(--font-display); font-size: var(--fs-h3); color: var(--brand-soft); margin-bottom: var(--space-2); }
+  .steps-grid { text-align: left; max-width: 880px; margin-inline: auto; }
+  .steps-form { margin: var(--space-10) 0 var(--space-2); }
+
+  /* Showcase zigzag */
+  .show-rows { display: flex; flex-direction: column; gap: clamp(48px, 6vw, 80px); margin-top: var(--space-10); }
+  .show-row { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px, 5vw, 64px); align-items: center; }
+  .show-row:nth-child(even) .show-copy { order: 2; }
+  .show-copy h3 { font-family: var(--font-display); font-size: clamp(20px, 2.2vw, 24px); margin: var(--space-2) 0 var(--space-3); line-height: 1.2; }
+  .show-copy p { font-size: var(--fs-body); color: var(--ink-3); line-height: 1.6; max-width: 30rem; }
+  .show-media { display: flex; align-items: center; justify-content: center; }
+  .show-media img { width: 100%; max-width: 420px; border-radius: var(--r-card-emph); }
+  /* Uniform mock card size across all four rows — consistent width + height. */
+  .mock { width: 100%; max-width: 420px; min-height: 220px; display: flex; flex-direction: column; justify-content: center; background: var(--white); border-radius: var(--r-card-emph); box-shadow: var(--shadow-float); padding: var(--space-6); border: var(--bw-hair) solid var(--line-2); }
+  .m-rows { display: flex; flex-direction: column; gap: var(--space-2); }
+  .m-row { display: flex; justify-content: space-between; align-items: center; padding-block: var(--space-2); border-top: 1px solid var(--line-2); font-size: var(--fs-data-row); }
+  .m-row:first-child { border-top: 0; }
+  .tag { font-style: normal; font-size: var(--fs-tiny); padding: 2px var(--space-2); border-radius: var(--r-pill); }
+  .tag.rev { background: var(--income-bg); color: var(--income); }
+  .tag.cog { background: var(--amber-bg); color: var(--amber); }
+  .tag.op { background: var(--brand-tint); color: var(--brand); }
+  .m-amt { font-size: var(--fs-card-value); font-weight: var(--fw-bold); letter-spacing: -0.02em; line-height: 1.1; margin: var(--space-1) 0 var(--space-4); }
+  .m-bars { display: flex; flex-direction: column; gap: var(--space-3); }
+  .m-bar span { display: block; font-size: var(--fs-tiny); color: var(--ink-4); margin-bottom: var(--space-1); }
+  .m-bar i { display: block; height: 8px; border-radius: var(--r-pill); }
+  .m-bar .rev { width: 100%; background: var(--ink); }
+  .m-bar .cost { width: 41%; background: var(--line); }
+  .m-bar .prof { width: 59%; background: var(--brand); }
+  .m-invoice { display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--fs-data-row); }
+  .m-invoice .m-meta { font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); color: var(--ink-4); }
+  .m-invoice .m-quote { color: var(--ink-2); line-height: 1.55; }
+  .m-invoice .m-sent { font-size: var(--fs-tiny); font-weight: var(--fw-semibold); color: var(--brand); }
+  .m-meters { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; }
+  .m-meter { display: flex; justify-content: space-between; font-size: var(--fs-data-row); padding-block: var(--space-1); }
+  .m-meter strong { color: var(--brand); font-variant-numeric: tabular-nums; }
+
+  /* Section lede — intro paragraph under an h2 */
+  .lede { font-size: var(--fs-body); color: var(--ink-3); max-width: 560px; line-height: 1.6; margin-top: var(--space-3); }
+  .lede.center { margin-inline: auto; }
+
+  /* Trust trio — matches staging: max-w-2xl sub, gap-5 / 3 equal cards */
+  .trust-lede { margin-bottom: 0; max-width: 640px; }
+  .trust-grid { margin-top: var(--space-10); grid-template-columns: repeat(3, 1fr); gap: var(--space-5); }
+  .trust-card { border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-6); background: var(--white); }
+  .trust-card .eyebrow.brand { margin-bottom: var(--space-3); }
+  .trust-foot { margin-top: var(--space-8); padding-top: var(--space-5); border-top: 1px solid var(--line); font-size: var(--fs-data-row); color: var(--ink-3); }
 
   .compare { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--space-6); align-items: center; }
   .panel { border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-6); background: var(--white); }
@@ -160,10 +316,9 @@ const d: any = section.data;
   .rows { margin-top: var(--space-4); }
   .row { display: flex; justify-content: space-between; padding-block: var(--space-2); border-top: 1px solid var(--line-2); font-size: var(--fs-data-row); }
 
-  .step-num { }
-  .faq { max-width: 720px; }
-  .faq-list { margin-top: var(--space-6); }
-  details { border-top: 1px solid var(--line); padding-block: var(--space-4); }
+  .faq { max-width: 768px; margin-inline: auto; }
+  .faq-list { margin-top: var(--space-10); border-top: 1px solid var(--line); }
+  details { border-bottom: 1px solid var(--line); padding-block: var(--space-4); }
   summary { font-weight: var(--fw-semibold); cursor: pointer; font-size: var(--fs-body); }
   details p { margin-top: var(--space-2); color: var(--ink-3); line-height: 1.6; }
 
@@ -172,5 +327,8 @@ const d: any = section.data;
     .arrow { transform: rotate(90deg); justify-self: center; }
     .float-card.today { position: static; margin: var(--space-4); min-width: 0; }
     .float-card.profit { position: static; margin: var(--space-4); }
+    .show-row { grid-template-columns: 1fr; gap: var(--space-5); }
+    .show-row:nth-child(even) .show-copy { order: 0; }
+    .trust-grid { grid-template-columns: 1fr; }
   }
 </style>

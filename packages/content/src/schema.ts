@@ -42,6 +42,8 @@ export const HeroSection = z.object({
     sub: z.string(),
     ctaLabel: z.string(),
     image: z.string().optional(),
+    /** Optional inline text link under the sub (e.g. "See how Penny works"). */
+    link: z.object({ label: z.string(), href: z.string() }).optional(),
     /** Overlay transaction-card mock rows (the photo-hero device). */
     cards: z.array(z.object({ label: z.string(), sub: z.string(), value: z.string() })).default([]),
   }),
@@ -77,6 +79,9 @@ export const StepsSection = z.object({
     headline: z.string(),
     sub: z.string(),
     steps: z.array(z.object({ num: z.string(), title: z.string(), body: z.string() })),
+    /** When set, renders an inline signup form below the steps (final waitlist). */
+    ctaLabel: z.string().optional(),
+    note: z.string().optional(),
   }),
 });
 
@@ -97,6 +102,48 @@ export const FaqSection = z.object({
   }),
 });
 
+/** Thin accent strip under the hero — "Today · sorted by Penny" proof ribbon. */
+export const ProofSection = z.object({
+  ...baseSection,
+  type: z.literal("proof"),
+  data: z.object({
+    label: z.string(),
+    items: z.array(z.object({ source: z.string(), value: z.string() })),
+  }),
+});
+
+/** Zigzag image↔text feature showcase (replaces the flat features grid as the
+    deep "what Penny does" section). Each row alternates side automatically.
+    `kind` selects a lightweight on-brand mock when no image is supplied. */
+export const ShowcaseSection = z.object({
+  ...baseSection,
+  type: z.literal("showcase"),
+  data: z.object({
+    headline: z.string(),
+    sub: z.string().optional(),
+    rows: z.array(z.object({
+      eyebrow: z.string().optional(),
+      title: z.string(),
+      body: z.string(),
+      kind: z.enum(["sort", "profit", "getpaid", "cpa"]),
+      image: z.string().optional(),
+    })),
+  }),
+});
+
+/** "Built on trust, not faith" — security/credibility trio. */
+export const TrustSection = z.object({
+  ...baseSection,
+  type: z.literal("trust"),
+  data: z.object({
+    headline: z.string(),
+    sub: z.string().optional(),
+    items: z.array(z.object({ icon: z.string(), title: z.string(), body: z.string() })),
+    /** Small reassurance line under the cards (e.g. waitlist proof). */
+    footnote: z.string().optional(),
+  }),
+});
+
 export const TryPennySection = z.object({
   ...baseSection,
   type: z.literal("tryPenny"),
@@ -110,6 +157,7 @@ export const TryPennySection = z.object({
 
 export const Section = z.discriminatedUnion("type", [
   HeroSection, FeaturesSection, ComparisonSection, StepsSection, CtaSection, FaqSection, TryPennySection,
+  ProofSection, ShowcaseSection, TrustSection,
 ]);
 export type Section = z.infer<typeof Section>;
 

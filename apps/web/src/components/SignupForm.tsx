@@ -30,7 +30,11 @@ export default function SignupForm({ source, ctaLabel }: { source: string; ctaLa
         if (error) throw new Error(error.message);
       }
       setState("done");
-      setMsg("You're on the list — we'll save your spot and email you when it opens.");
+      setMsg("You're in! Taking you to your welcome page…");
+      // Redirect to the on-brand confirmed/welcome page (keeps the flow consistent
+      // with the legacy site). Preserve any referral param.
+      const ref = new URLSearchParams(window.location.search).get("ref");
+      window.location.href = ref ? `/confirmed/?ref=${encodeURIComponent(ref)}` : "/confirmed/";
     } catch {
       setState("error");
       setMsg("Something went wrong. Please try again.");
@@ -45,7 +49,7 @@ export default function SignupForm({ source, ctaLabel }: { source: string; ctaLa
     <form className="signup" onSubmit={submit} noValidate>
       <input
         type="email" name="email" value={email} onChange={(e) => setEmail(e.currentTarget.value)}
-        placeholder="you@yourbusiness.com" aria-label="Email" autoComplete="email"
+        placeholder="Your best email" aria-label="Email" autoComplete="email"
         inputMode="email" spellCheck={false} required
       />
       <button type="submit" disabled={state === "sending"}>

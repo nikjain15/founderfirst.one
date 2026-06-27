@@ -1,0 +1,66 @@
+---
+import Base from "../layouts/Base.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import type { Page } from "@ff/content";
+
+const page: Page = {
+  slug: "/confirmed",
+  surface: "marketing",
+  seo: {
+    title: "You're on the list — FounderFirst",
+    description: "Your spot is saved. Penny will email you the moment early access opens.",
+    keyFacts: [],
+  },
+  sections: [],
+};
+---
+<Base page={page}>
+  <Nav />
+  <section class="confirmed">
+    <div class="wrap center">
+      <span class="p-badge" aria-hidden="true">P</span>
+      <div class="eyebrow brand">You're in</div>
+      <h1>Your spot is saved.</h1>
+      <p class="lede">Welcome aboard — Penny will email you the moment early access opens. While you wait, here's how to move up the line and get more free months.</p>
+
+      <div class="next">
+        <div class="next-card">
+          <div class="step-num">01</div>
+          <div class="t">Refer &amp; stack months</div>
+          <p>Each founder you refer adds a free month — up to 12 total. We'll send your personal invite link by email.</p>
+        </div>
+        <div class="next-card">
+          <div class="step-num">02</div>
+          <div class="t">Join the community</div>
+          <p>Meet other founders and get early product updates in our Discord.</p>
+          <a class="btn-ghost" href="https://discord.gg/DGJdd6AEjH" target="_blank" rel="noopener noreferrer">Chat on Discord →</a>
+        </div>
+        <div class="next-card">
+          <div class="step-num">03</div>
+          <div class="t">See Penny in action</div>
+          <p>Take the interactive demo for a spin while your spot opens.</p>
+          <a class="btn-ghost" href="/#how">See how Penny works →</a>
+        </div>
+      </div>
+
+      <a href="/" class="btn">Back to home</a>
+    </div>
+  </section>
+  <Footer />
+</Base>
+<style>
+  .confirmed { padding-block: clamp(48px, 8vw, 96px); }
+  .p-badge { display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--brand); color: var(--white); font-family: var(--font-display); font-size: 24px; margin-bottom: var(--space-5); }
+  .eyebrow { font-size: var(--fs-eyebrow); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; font-weight: var(--fw-semibold); color: var(--brand); margin-bottom: var(--space-3); }
+  h1 { font-size: clamp(30px, 4vw, 40px); line-height: 1.06; letter-spacing: var(--ls-tight); margin-bottom: var(--space-4); }
+  .lede { font-size: var(--fs-body); color: var(--ink-3); line-height: 1.6; max-width: 560px; margin: 0 auto var(--space-10); }
+  .next { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-5); text-align: left; max-width: 880px; margin: 0 auto var(--space-10); }
+  .next-card { border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-6); background: var(--white); display: flex; flex-direction: column; gap: var(--space-2); }
+  .step-num { font-family: var(--font-display); font-size: var(--fs-h3); color: var(--brand); }
+  .next-card .t { font-family: var(--font-display); font-size: var(--fs-h3); }
+  .next-card p { font-size: var(--fs-data-row); color: var(--ink-3); line-height: 1.5; }
+  .btn-ghost { color: var(--brand); font-weight: var(--fw-medium); min-height: var(--tap-min); display: inline-flex; align-items: center; }
+  .btn { display: inline-flex; align-items: center; min-height: var(--tap-min); background: var(--brand); color: var(--white); padding: 0 var(--space-6); border-radius: var(--r-pill); font-weight: var(--fw-medium); }
+  .btn:hover { background: var(--brand-hover); }
+</style>

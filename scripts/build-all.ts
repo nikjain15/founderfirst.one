@@ -33,7 +33,6 @@ const ROOT = resolve(__dirname, "..");
 const DIST = resolve(ROOT, "dist");
 const MARKETING_DIST = resolve(ROOT, "apps/marketing/dist");
 const WEB_DIST = resolve(ROOT, "apps/web/dist");
-const BLOG_DIST = resolve(ROOT, "apps/blog/.vitepress/dist");
 const DEMO_DIST = resolve(ROOT, "apps/demo/dist");
 const ADMIN_DIST = resolve(ROOT, "apps/admin/dist");
 
@@ -77,11 +76,13 @@ function main(): void {
   step("Building marketing app (legacy — kept for confirmed/ + extension-privacy/)");
   run("pnpm --filter @ff/marketing build");
 
-  step("Building web app (Astro — the new homepage)");
+  step("Building web app (Astro — the new homepage + blog + compare + confirmed)");
   run("pnpm --filter @ff/web build");
 
-  step("Building blog");
-  run("pnpm --filter @ff/blog build");
+  // NOTE: the blog now lives in apps/web (Astro — /blog + /blog/[slug] with
+  // BlogPosting JSON-LD for SEO/GEO). The legacy VitePress blog (apps/blog) is
+  // retired from the deploy; do not build or copy it, or it overwrites the new
+  // Astro blog at dist/blog/.
 
   step("Building Penny demo");
   run("pnpm --filter @ff/demo build");
@@ -99,11 +100,8 @@ function main(): void {
   step("Copying marketing → dist/ (for confirmed/ + extension-privacy/)");
   copyDir(MARKETING_DIST, DIST);
 
-  step("Copying web → dist/ (new homepage overrides marketing index)");
+  step("Copying web → dist/ (new homepage + /blog + /compare + /confirmed override marketing)");
   copyDir(WEB_DIST, DIST);
-
-  step("Copying blog → dist/blog/");
-  copyDir(BLOG_DIST, resolve(DIST, "blog"));
 
   step("Copying admin → dist/admin/");
   const adminOut = resolve(DIST, "admin");

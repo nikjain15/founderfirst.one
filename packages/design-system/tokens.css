@@ -5,12 +5,13 @@
 
 :root {
   /* -- Brand (canonical — drives every surface) ----------------------- */
-  /* FounderFirst brand: warm cream field · forest-green accent · navy-slate
-     ink · Fraunces display. Change these → all surfaces follow. */
-  --brand:        #2f7d52;   /* forest green — primary CTA / accent */
-  --brand-hover:  #276b46;
-  --brand-soft:   #c8e6d0;   /* soft-green fills, accent strips */
-  --brand-tint:   #eaf4ee;   /* faint green wash */
+  /* FounderFirst brand: warm cream field · emerald-green accent · navy-slate
+     ink · Fraunces display. Change these → all surfaces follow.
+     Green matches the approved Ploy staging reference (oklch 55% .118 151). */
+  --brand:        #32854c;   /* emerald green — primary CTA / accent */
+  --brand-hover:  #2a7142;
+  --brand-soft:   #c9e7d2;   /* soft-green fills, accent strips */
+  --brand-tint:   #e9f5ee;   /* faint green wash */
 
   /* -- Color: ink scale + surfaces ------------------------------------ */
   /* Neutrals carry the new brand: navy-slate ink on a cream paper field.

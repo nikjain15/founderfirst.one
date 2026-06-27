@@ -5,7 +5,7 @@
 import type { Page, Section, Surface } from "./schema";
 
 export const SECTION_TYPES = [
-  "hero", "features", "comparison", "tryPenny", "steps", "cta", "faq",
+  "hero", "features", "proof", "showcase", "trust", "comparison", "tryPenny", "steps", "cta", "faq",
 ] as const;
 
 export function emptySection(type: (typeof SECTION_TYPES)[number], position: number): Section {
@@ -13,6 +13,12 @@ export function emptySection(type: (typeof SECTION_TYPES)[number], position: num
     case "hero":
       return { type, position, data: { headline: "", sub: "", ctaLabel: "Claim 3 months free", cards: [] } };
     case "features":
+      return { type, position, data: { headline: "", items: [] } };
+    case "proof":
+      return { type, position, data: { label: "", items: [] } };
+    case "showcase":
+      return { type, position, data: { headline: "", rows: [] } };
+    case "trust":
       return { type, position, data: { headline: "", items: [] } };
     case "comparison":
       return { type, position, data: { scatterLabel: "", scatter: [], unifiedLabel: "", profitLabel: "", profitValue: "", profitMeta: "", rows: [] } };

@@ -791,6 +791,7 @@ export interface InsightActionRow {
   confidence: string | null; status: "suggested" | "accepted" | "dismissed" | "done";
   created_at: string; updated_at: string;
   theme?: InsightGoal | null; surface?: string | null; evidence?: InsightEvidence[];
+  resulting_content_id?: string | null;  // set once routed to the content pipeline
 }
 export interface InsightRunDetail {
   run: {
@@ -838,6 +839,33 @@ export async function setInsightActionStatus(id: string, status: InsightActionRo
   const db = getClient();
   const { error } = await db.rpc("set_insight_action_status", { p_id: id, p_status: status });
   if (error) throw new Error(`set_insight_action_status: ${error.message}`);
+}
+
+/** Content surfaces whose insight actions can be routed into the content pipeline. */
+export const CONTENT_SURFACES = new Set(["blog", "podcast", "social"]);
+
+/**
+ * Route an insight action into the content pipeline as a new 'idea'. Links the
+ * action back via resulting_content_id (closes the learning loop). Returns the
+ * new content_pipeline row id.
+ */
+export async function createContentPipelineItem(params: {
+  source: "insight" | "manual" | "signal";
+  topic: string;
+  angle?: string | null;
+  grounding?: unknown;
+  sourceRef?: string | null;
+}): Promise<string> {
+  const db = getClient();
+  const { data, error } = await db.rpc("create_content_pipeline_item", {
+    p_source: params.source,
+    p_topic: params.topic,
+    p_angle: params.angle ?? null,
+    p_grounding: params.grounding ?? {},
+    p_source_ref: params.sourceRef ?? null,
+  });
+  if (error) throw new Error(`create_content_pipeline_item: ${error.message}`);
+  return data as string;
 }
 
 // ---- Product funnel --------------------------------------------------------

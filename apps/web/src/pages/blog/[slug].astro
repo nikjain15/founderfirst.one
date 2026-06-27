@@ -5,13 +5,14 @@ import Footer from "../../components/Footer.astro";
 import PennyGlance from "../../components/PennyGlance.astro";
 import { getBlogPosts, blogPostText as postText } from "../../lib/blog";
 import type { Page } from "@ff/content";
+import { SITE } from "../../lib/site";
 
 export async function getStaticPaths() {
   const posts = await getBlogPosts();
   return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
 }
 const { post } = Astro.props;
-const site = "https://founderfirst.one";
+const site = SITE.url;
 
 const page: Page = {
   slug: `/blog/${post.slug}`,

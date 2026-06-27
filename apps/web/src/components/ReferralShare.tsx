@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { SITE as SITE_CONFIG } from "../lib/site";
 
 /**
  * Referral share — a React island on /confirmed. Reads the signup's ?slug= from
@@ -10,7 +11,7 @@ import { createClient } from "@supabase/supabase-js";
  */
 const URL = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined;
 const ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined;
-const SITE = "https://founderfirst.one";
+const SITE = SITE_CONFIG.url;
 const SHARE_MSG =
   "I just joined the FounderFirst waitlist — Penny is an autonomous AI bookkeeper that does your books for you. Grab your spot:";
 

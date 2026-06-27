@@ -5,10 +5,11 @@ import "@ff/design-system/components/typography.css";
 import type { Page } from "@ff/content";
 import { buildJsonLd } from "../lib/seo";
 import ConsentBanner from "../components/ConsentBanner.tsx";
+import { SITE } from "../lib/site";
 
 interface Props { page: Page }
 const { page } = Astro.props;
-const site = "https://founderfirst.one";
+const site = SITE.url;
 const jsonLd = buildJsonLd(page, site);
 ---
 <!doctype html>
@@ -35,6 +36,13 @@ const jsonLd = buildJsonLd(page, site);
       body { background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
       .wrap { width: 100%; max-width: var(--page-max); margin-inline: auto; padding-inline: var(--page-pad-x); }
       section { padding-block: var(--section-y); }
+      /* Two same-background sections in a row (e.g. the Try Penny demo + the
+         "Penny handles the books" statement, both dark) would otherwise stack
+         their vertical padding into one oversized empty band. Collapse the
+         second one's top padding so adjacent same-tone sections read as a single
+         continuous block with a single, responsive gap. */
+      section.dark + section.dark,
+      section:not(.dark):not(.hero) + section:not(.dark) { padding-block-start: 0; }
       a { color: inherit; text-decoration: none; }
 
       /* Signup form (shared by the hero + CTA islands) */

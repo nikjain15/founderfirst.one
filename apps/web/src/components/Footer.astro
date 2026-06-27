@@ -1,19 +1,40 @@
 ---
+import { SITE } from "../lib/site";
 ---
 <footer>
   <div class="wrap foot-inner">
-    <span class="logo"><span class="ff">FF</span> FounderFirst</span>
-    <nav class="foot-links" aria-label="Footer">
-      <a href="/">Home</a>
-      <a href="/#product">Product</a>
-      <a href="/#faq">FAQ</a>
-      <a href="/#waitlist">Early access</a>
-      <a href="/compare/">Compare</a>
-      <a href="/blog/">Blog</a>
-      <a href="https://discord.gg/DGJdd6AEjH" target="_blank" rel="noopener noreferrer">Chat on Discord</a>
-      <button type="button" class="cookie-link" data-cookie-settings>Cookie settings</button>
+    <div class="foot-brand">
+      <span class="logo"><span class="ff">FF</span> FounderFirst</span>
+      <p class="foot-tag">Penny is your autonomous 24/7 bookkeeper — clean books, real profit, and late invoices chased, automatically.</p>
+      <a class="foot-social" href={SITE.discord} target="_blank" rel="noopener noreferrer">Chat with us on Discord →</a>
+    </div>
+
+    <nav class="foot-cols" aria-label="Footer">
+      <div class="foot-col">
+        <h2 class="foot-h">Penny</h2>
+        <a href="/#product">What it does</a>
+        <a href="/#how">Try Penny</a>
+        <a href="/compare/">Compare</a>
+        <a href="/#waitlist">Get 3 months free</a>
+      </div>
+      <div class="foot-col">
+        <h2 class="foot-h">Resources</h2>
+        <a href="/blog/">Blog</a>
+        <a href="/#faq">FAQ</a>
+        <a href={SITE.discord} target="_blank" rel="noopener noreferrer">Community</a>
+      </div>
+      <div class="foot-col">
+        <h2 class="foot-h">Legal</h2>
+        <a href="/privacy/">Privacy</a>
+        <a href="/terms/">Terms</a>
+        <button type="button" class="cookie-link" data-cookie-settings>Cookie settings</button>
+      </div>
     </nav>
+  </div>
+
+  <div class="wrap foot-base">
     <span class="copy">© 2026 FounderFirst. All rights reserved.</span>
+    <a class="foot-home" href="/">founderfirst.one</a>
   </div>
 </footer>
 <script>
@@ -24,17 +45,26 @@
   );
 </script>
 <style>
-  footer { border-top: 1px solid var(--line); padding-block: var(--space-10); }
-  .foot-inner { display: flex; flex-direction: column; gap: var(--space-5); }
+  footer { border-top: 1px solid var(--line); padding-block: var(--space-10) var(--space-6); margin-top: var(--space-8); }
+  .foot-inner { display: grid; grid-template-columns: 1fr; gap: var(--space-8); }
   .logo { display: flex; align-items: center; gap: var(--space-2); font-weight: var(--fw-bold); }
   .ff { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--ink); color: var(--white); font-size: var(--fs-tiny); font-weight: var(--fw-bold); }
-  .foot-links { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-5); font-size: var(--fs-data-row); color: var(--ink-3); }
-  .foot-links a, .cookie-link { min-height: var(--tap-min); display: inline-flex; align-items: center; }
-  .foot-links a:hover, .cookie-link:hover { color: var(--brand); }
-  .cookie-link { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
-  .copy { font-size: var(--fs-eyebrow); color: var(--ink-4); }
+  .foot-tag { margin: var(--space-3) 0; max-width: 32rem; font-size: var(--fs-data-row); color: var(--ink-3); line-height: 1.55; }
+  .foot-social { font-size: var(--fs-data-row); color: var(--brand); font-weight: var(--fw-medium); }
+  .foot-social:hover { color: var(--brand-hover); }
+
+  .foot-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-6); }
+  .foot-col { display: flex; flex-direction: column; gap: var(--space-1); }
+  .foot-h { font-size: var(--fs-eyebrow); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--ink-4); font-weight: var(--fw-semibold); margin-bottom: var(--space-2); }
+  .foot-col a, .cookie-link { font-size: var(--fs-data-row); color: var(--ink-3); min-height: var(--tap-min); display: inline-flex; align-items: center; text-align: left; }
+  .foot-col a:hover, .cookie-link:hover { color: var(--brand); }
+  .cookie-link { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+
+  .foot-base { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); justify-content: space-between; align-items: center; margin-top: var(--space-8); padding-top: var(--space-5); border-top: 1px solid var(--line-2); }
+  .copy, .foot-home { font-size: var(--fs-eyebrow); color: var(--ink-4); }
+  .foot-home:hover { color: var(--brand); }
+
   @media (min-width: 768px) {
-    .foot-inner { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
-    .foot-links { order: 3; flex-basis: 100%; border-top: 1px solid var(--line-2); padding-top: var(--space-4); }
+    .foot-inner { grid-template-columns: 1.6fr 2fr; gap: var(--space-10); }
   }
 </style>

@@ -179,6 +179,14 @@ was awake, and the master secret vault lived only there.
 - When you can't take a local DB backup (no Docker/`pg_dump`/`psql` in the
   shell), say so — don't pretend one exists. Only proceed with a drop when the
   data is provably redundant and the live source is intact.
+- **One source of truth for config, not per-file constants.** Site-wide strings
+  (canonical URL, public contact email, company/product names, social links)
+  live in `apps/web/src/lib/site.ts` (`SITE`); design values live in
+  `packages/design-system/tokens.css`. Never hardcode them in a page/component —
+  import the constant or token so a change happens once and applies everywhere.
+  The public contact email is **always `founder@founderfirst.one`** (never a
+  personal address). Company = **FounderFirst**, product = **Penny**; keep them
+  distinct in copy.
 
 ---
 

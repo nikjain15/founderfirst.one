@@ -4,6 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 
 import { getClient, isAdmin, logAudit } from "./lib/supabase";
 import { CONTENT_MOCK } from "./lib/contentMock";
+import { DEV_AUTO_LOGIN, devAutoSignIn } from "./lib/devAuth";
 import { hasSupabase } from "./lib/env";
 import { IconLogOut, IconMenu, IconClose, IconSettings, IconChevronDown } from "./lib/icons";
 import { RouteErrorBoundary } from "./lib/ErrorBoundary";
@@ -70,6 +71,14 @@ export function App() {
     const db = getClient();
     db.auth.getSession().then(async ({ data }) => {
       const s = data.session ?? null;
+      // Dev/E2E only: if there's no session, auto-sign-in with test creds. The
+      // SIGNED_IN listener below validates admin + sets the session. Dead code
+      // in prod (DEV_AUTO_LOGIN is false). See lib/devAuth.ts.
+      if (!s && DEV_AUTO_LOGIN) {
+        await devAutoSignIn(db);
+        setLoading(false);
+        return;
+      }
       if (s) {
         const ok = await isAdmin(s.user.email ?? "").catch(() => false);
         if (!ok) {

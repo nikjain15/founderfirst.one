@@ -2,8 +2,8 @@ import { useState } from "react";
 
 /**
  * Try Penny — interactive demo. Business-owner ↔ CPA toggle swaps a phone frame
- * (mobile app) for a browser frame (web console). The framed preview is an
- * on-brand teaser; the link below opens the real interactive demo in a new tab.
+ * (mobile app) for a browser frame (web console). The frame embeds the LIVE demo
+ * (screen-in-screen); the link below opens it full-screen in a new tab.
  */
 type View = "owner" | "cpa";
 
@@ -44,15 +44,19 @@ export default function TryPenny({ ownerSub, cpaSub }: { ownerSub: string; cpaSu
         <a className="tp-launch" href={DEMO[view].src} target="_blank" rel="noopener">
           Try the full {DEMO[view].label} demo →
         </a>
-        <span className="tp-cta-note">Opens the real interactive demo — click through it yourself.</span>
+        <span className="tp-cta-note">Click through it right here, or open it full-screen.</span>
       </div>
     </div>
   );
 }
 
-// Teaser preview inside the framed card — an on-brand mock so it's never empty
-// (and never 404s in dev). The real demo lives at /penny/demo/* (linked above).
+// In production the live Penny demo (deployed at /penny/demo/*) is embedded in
+// the frame. In dev those paths 404 (the demo isn't served by the web dev
+// server), so show an on-brand mock so the frame is never empty.
 function Demo({ mode }: { mode: View }) {
+  if (import.meta.env.PROD) {
+    return <iframe src={DEMO[mode].src} title={`Penny ${DEMO[mode].label} demo`} loading="lazy" />;
+  }
   return mode === "owner" ? (
     <div className="tp-mock tp-mock-owner">
       <div className="tpm-top"><span className="p-badge">P</span><div><strong>Penny</strong><span>Categorized just now</span></div></div>

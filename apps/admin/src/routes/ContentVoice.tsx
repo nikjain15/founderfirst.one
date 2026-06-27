@@ -5,7 +5,9 @@ import {
   listVoice,
   createVoiceVersion,
   setLiveVoice,
+  checkVoice,
   type VoiceRow,
+  type VoiceReview,
 } from "../lib/supabase";
 import { IconAlert, IconCheck } from "../lib/icons";
 // Repo-root VOICE.md, bundled as a string so the empty-state editor seeds
@@ -119,6 +121,16 @@ export function ContentVoice() {
     onError: (e) => setError((e as Error).message),
   });
   const saving = saveMut.isPending || setLiveMut.isPending;
+
+  // On-demand AI voice check — critiques the current draft against the live
+  // voice guide. The instant heuristic (rendered-HTML decoration) stays; this
+  // is the deeper, opt-in pass.
+  const [review, setReview] = useState<VoiceReview | null>(null);
+  const checkMut = useMutation({
+    mutationFn: () => checkVoice(draft),
+    onSuccess: (r) => { setReview(r); setError(null); },
+    onError: (e) => { setReview(null); setError((e as Error).message); },
+  });
 
   function handleSave() {
     if (!draft.trim()) return;
@@ -241,6 +253,14 @@ export function ContentVoice() {
             )}
             {editing && (
               <>
+                <button
+                  className="btn"
+                  onClick={() => checkMut.mutate()}
+                  disabled={checkMut.isPending || draft.trim().length < 10}
+                  title="Critique this draft against the live voice guide (AI)"
+                >
+                  {checkMut.isPending ? "Checking…" : "AI voice check"}
+                </button>
                 <button className="btn" onClick={cancelEditing} disabled={saving}>
                   Cancel
                 </button>
@@ -314,6 +334,54 @@ export function ContentVoice() {
                 <RenderedBody html={rendered} />
               </div>
             </div>
+            {review && (
+              <div
+                style={{
+                  border: "1px solid var(--line)",
+                  borderRadius: 8,
+                  padding: 16,
+                  background: "var(--white)",
+                  display: "grid",
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className={`badge ${review.on_voice ? "badge-live" : "badge-warn"}`}>
+                    {review.on_voice ? "● On voice" : "● Off voice"}
+                  </span>
+                  <strong style={{ fontSize: "var(--fs-data-row)" }}>Score: {review.score}/100</strong>
+                </div>
+                {review.summary && (
+                  <p style={{ margin: 0, fontSize: "var(--fs-data-row)", color: "var(--ink-2)" }}>{review.summary}</p>
+                )}
+                {review.deviations.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: "var(--fs-eyebrow)", fontWeight: "var(--fw-semibold)", color: "var(--ink-3)", marginBottom: 4 }}>
+                      Deviations
+                    </div>
+                    <ul style={{ margin: 0, paddingLeft: 18, fontSize: "var(--fs-data-row)", color: "var(--ink-2)" }}>
+                      {review.deviations.map((d, i) => <li key={i}>{d}</li>)}
+                    </ul>
+                  </div>
+                )}
+                {review.rewrites.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: "var(--fs-eyebrow)", fontWeight: "var(--fw-semibold)", color: "var(--ink-3)", marginBottom: 4 }}>
+                      Suggested rewrites
+                    </div>
+                    <div style={{ display: "grid", gap: 6 }}>
+                      {review.rewrites.map((rw, i) => (
+                        <div key={i} style={{ fontSize: "var(--fs-data-row)" }}>
+                          <span style={{ color: "var(--error)", textDecoration: "line-through" }}>{rw.before}</span>
+                          {" → "}
+                          <span style={{ color: "var(--income)" }}>{rw.after}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <div>
               <label style={{ display: "block", fontSize: "var(--fs-eyebrow)", fontWeight: "var(--fw-semibold)", color: "var(--ink-3)", marginBottom: 4 }}>
                 What changed in this version? (optional)

@@ -3,13 +3,18 @@
    can never reach in, and ours never leak out. */
 
 :host, .penny-root {
-  --p-ink: #0a0a0a;
-  --p-ink-2: #2a2a2a;
-  --p-ink-3: #5a5a5a;
-  --p-ink-4: #8a8a8a;
-  --p-line: #e8e8e5;
-  --p-paper: #f6f6f4;
+  /* Mirrors @ff/design-system/tokens.css (Shadow DOM is isolated, so these are
+     re-declared here, not imported). Keep in lockstep with the canonical brand:
+     navy-slate ink · warm cream · emerald-green accent. */
+  --p-ink: #28323f;
+  --p-ink-2: #3d4651;
+  --p-ink-3: #67707b;
+  --p-ink-4: #97a0aa;
+  --p-line: #e6e0d3;
+  --p-paper: #f4f1e9;
   --p-white: #ffffff;
+  --p-brand: #32854c;
+  --p-brand-hover: #2a7142;
   --p-radius: 12px;
   --p-radius-lg: 20px;
   --p-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
@@ -27,7 +32,7 @@
   width: 56px;
   height: 56px;
   border-radius: 999px;
-  background: var(--p-ink);
+  background: var(--p-brand);
   color: var(--p-white);
   font-weight: 700;
   font-size: 22px;
@@ -42,7 +47,7 @@
   transition: transform 120ms ease;
 }
 .penny-launcher:hover { transform: scale(1.04); }
-.penny-launcher:focus-visible { outline: 2px solid var(--p-ink); outline-offset: 3px; }
+.penny-launcher:focus-visible { outline: 2px solid var(--p-brand); outline-offset: 3px; }
 
 .penny-panel {
   position: fixed;
@@ -262,7 +267,7 @@
 }
 .penny-input:focus { outline: none; border-color: var(--p-ink-3); background: var(--p-white); }
 .penny-send {
-  background: var(--p-ink);
+  background: var(--p-brand);
   color: var(--p-white);
   border: 0;
   border-radius: 999px;

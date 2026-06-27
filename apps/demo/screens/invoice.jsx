@@ -398,23 +398,23 @@ export default function InvoiceScreen({ state, set, navigate, onSaveDraft }) {
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${data.invoiceNumber}</title>
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; font-size: 13px; color: #0a0a0a; margin: 0; padding: 40px; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; font-size: 13px; color: #28323f; margin: 0; padding: 40px; }
   .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
   .biz { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
-  .biz-addr { font-size: 12px; color: #666; margin-top: 4px; }
+  .biz-addr { font-size: 12px; color: #67707b; margin-top: 4px; }
   .inv-label { font-size: 15px; font-weight: 600; text-align: right; }
-  .inv-num { font-size: 12px; color: #888; text-align: right; }
-  hr { border: none; border-top: 1px solid #e0e0dc; margin: 16px 0; }
+  .inv-num { font-size: 12px; color: #97a0aa; text-align: right; }
+  hr { border: none; border-top: 1px solid #e6e0d3; margin: 16px 0; }
   .billing { display: flex; justify-content: space-between; margin-bottom: 24px; }
-  .eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin: 0 0 4px; }
+  .eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #97a0aa; margin: 0 0 4px; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-  th { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #888; border-top: 1px solid #e0e0dc; border-bottom: 1px solid #e0e0dc; padding: 8px 0; text-align: left; }
+  th { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #97a0aa; border-top: 1px solid #e6e0d3; border-bottom: 1px solid #e6e0d3; padding: 8px 0; text-align: left; }
   th:not(:first-child) { text-align: right; }
-  td { padding: 6px 0; border-bottom: 1px solid #f0f0ec; }
+  td { padding: 6px 0; border-bottom: 1px solid #efebe0; }
   .totals { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
   .total-row { display: flex; gap: 32px; font-size: 13px; }
   .total-bold { font-weight: 700; font-size: 15px; margin-top: 4px; }
-  .notes { margin-top: 20px; padding-top: 16px; border-top: 1px solid #e0e0dc; font-size: 12px; color: #666; }
+  .notes { margin-top: 20px; padding-top: 16px; border-top: 1px solid #e6e0d3; font-size: 12px; color: #67707b; }
   @media print { body { padding: 20px; } }
 </style></head><body>
 <div class="header">
@@ -434,8 +434,8 @@ export default function InvoiceScreen({ state, set, navigate, onSaveDraft }) {
     <div style="font-weight:500">${data.client || "—"}</div>
   </div>
   <div style="text-align:right">
-    <div style="color:#888;font-size:12px">Date: ${fmtDt(data.date)}</div>
-    <div style="color:#888;font-size:12px">Due: ${fmtDt(data.dueDate)}</div>
+    <div style="color:#97a0aa;font-size:12px">Date: ${fmtDt(data.date)}</div>
+    <div style="color:#97a0aa;font-size:12px">Due: ${fmtDt(data.dueDate)}</div>
   </div>
 </div>
 <table>
@@ -443,8 +443,8 @@ export default function InvoiceScreen({ state, set, navigate, onSaveDraft }) {
   <tbody>${rows}</tbody>
 </table>
 <div class="totals">
-  <div class="total-row"><span style="color:#888">Subtotal</span><span>${fmtD(subtotal)}</span></div>
-  ${parseFloat(data.taxRate) > 0 ? `<div class="total-row"><span style="color:#888">Tax (${data.taxRate}%)</span><span>${fmtD(tax)}</span></div>` : ""}
+  <div class="total-row"><span style="color:#97a0aa">Subtotal</span><span>${fmtD(subtotal)}</span></div>
+  ${parseFloat(data.taxRate) > 0 ? `<div class="total-row"><span style="color:#97a0aa">Tax (${data.taxRate}%)</span><span>${fmtD(tax)}</span></div>` : ""}
   <div class="total-row total-bold"><span>Total due</span><span>${fmtD(total)}</span></div>
 </div>
 ${data.notes ? `<div class="notes"><p class="eyebrow" style="margin-bottom:4px">Notes</p>${data.notes}</div>` : ""}

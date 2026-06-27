@@ -1,24 +1,65 @@
 ---
+import { SITE } from "../lib/site";
 ---
-<nav class="site-nav">
+<nav class="site-nav" data-nav>
   <div class="wrap nav-inner">
     <a href="/" class="logo"><span class="ff">FF</span> FounderFirst</a>
-    <div class="links">
-      <a href="/#how">How Penny works</a>
-      <a href="/#waitlist">Early access</a>
-      <a href="https://discord.gg/DGJdd6AEjH" target="_blank" rel="noopener noreferrer">Community</a>
-      <a href="/#waitlist" class="cta">Claim 3 months free</a>
+    <button class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-menu" data-nav-toggle>
+      <span></span><span></span><span></span>
+    </button>
+    <div class="links" id="nav-menu" data-nav-menu>
+      <a href="/#product">What it does</a>
+      <a href="/#how">Try Penny</a>
+      <a href={SITE.discord} target="_blank" rel="noopener noreferrer">Community</a>
     </div>
   </div>
 </nav>
 <style>
   .site-nav { position: sticky; top: 0; z-index: var(--z-sticky); background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
-  .nav-inner { display: flex; align-items: center; justify-content: space-between; padding-block: var(--space-4); }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding-block: var(--space-4); }
   .logo { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: var(--fw-bold); min-height: var(--tap-min); }
   .ff { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; background: var(--ink); color: var(--white); font-size: var(--fs-tiny); font-weight: var(--fw-bold); }
-  .links { display: flex; align-items: center; gap: var(--space-6); font-size: var(--fs-data-row); color: var(--ink-2); }
-  .links a { display: inline-flex; align-items: center; min-height: var(--tap-min); }
-  .links .cta { background: var(--brand); color: var(--white); padding: var(--space-2) var(--space-5); border-radius: var(--r-pill); font-weight: var(--fw-medium); }
-  .links .cta:hover { background: var(--brand-hover); }
-  @media (max-width: 540px) { .links a:not(.cta) { display: none; } }
+
+  .links { display: flex; align-items: center; gap: var(--space-6); font-size: var(--fs-ui); color: var(--ink); }
+  .links a { display: inline-flex; align-items: center; min-height: var(--tap-min); white-space: nowrap; font-weight: var(--fw-medium); }
+  .links a:hover { color: var(--brand); }
+
+  /* Hamburger — hidden on desktop, a real toggle on phones/tablets. */
+  .nav-toggle { display: none; flex-direction: column; justify-content: center; gap: 5px; width: var(--tap-min); height: var(--tap-min); margin-inline-start: auto; background: none; border: 0; cursor: pointer; }
+  .nav-toggle span { display: block; width: 22px; height: 2px; border-radius: 2px; background: var(--ink); transition: transform .2s ease, opacity .2s ease; }
+
+  @media (max-width: 720px) {
+    .nav-toggle { display: flex; }
+    .links {
+      position: absolute; inset-inline: 0; top: 100%;
+      flex-direction: column; align-items: stretch; gap: 0;
+      background: var(--paper); border-bottom: 1px solid var(--line);
+      padding: var(--space-2) clamp(24px, 6vw, 80px) var(--space-5);
+      box-shadow: var(--shadow-float);
+      /* collapsed by default */
+      display: none;
+    }
+    [data-nav].open .links { display: flex; }
+    .links a { min-height: 48px; border-top: 1px solid var(--line); }
+    .links a:first-child { border-top: 0; }
+    [data-nav].open .nav-toggle span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    [data-nav].open .nav-toggle span:nth-child(2) { opacity: 0; }
+    [data-nav].open .nav-toggle span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  }
 </style>
+<script>
+  // Toggle the mobile menu; close on link tap, Escape, or resize to desktop.
+  const nav = document.querySelector("[data-nav]");
+  const toggle = nav?.querySelector("[data-nav-toggle]");
+  const menu = nav?.querySelector("[data-nav-menu]");
+  if (nav && toggle && menu) {
+    const set = (open: boolean) => {
+      nav.classList.toggle("open", open);
+      toggle.setAttribute("aria-expanded", String(open));
+    };
+    toggle.addEventListener("click", () => set(!nav.classList.contains("open")));
+    menu.addEventListener("click", (e) => { if ((e.target as HTMLElement).tagName === "A") set(false); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") set(false); });
+    window.addEventListener("resize", () => { if (window.innerWidth > 720) set(false); });
+  }
+</script>

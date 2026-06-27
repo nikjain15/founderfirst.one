@@ -1,0 +1,104 @@
+---
+import Base from "../layouts/Base.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import type { Page } from "@ff/content";
+import { SITE } from "../lib/site";
+
+// Site-wide terms of service for founderfirst.one. Indexable. Plain-language;
+// review with counsel before relying on it.
+const page: Page = {
+  slug: "/terms",
+  surface: "marketing",
+  seo: {
+    title: "Terms of Service — FounderFirst",
+    description:
+      "The terms for using founderfirst.one, the Penny demo, and the waitlist. Penny is a bookkeeping assistant, not a licensed accountant or financial advisor.",
+    canonical: "https://founderfirst.one/terms/",
+    keyFacts: [
+      "These terms govern use of founderfirst.one, the Penny demo, and the waitlist.",
+      "Penny is a bookkeeping assistant and does not provide licensed tax, accounting, or financial advice.",
+      "Joining the waitlist does not guarantee access or a specific price.",
+    ],
+  },
+  sections: [],
+};
+---
+<Base page={page}>
+  <Nav />
+  <main class="legal">
+    <div class="wrap">
+      <h1>Terms of Service</h1>
+      <p class="upd">Last updated: June 27, 2026</p>
+
+      <div class="box">
+        <strong>In short:</strong> Use the site and Penny demo fairly and lawfully. Penny helps with bookkeeping
+        but is not your accountant or financial advisor. Joining the waitlist saves your spot but doesn't guarantee
+        access or a price.
+      </div>
+
+      <h2>Acceptance</h2>
+      <p>
+        By using <a href={SITE.url}>founderfirst.one</a>, the Penny demo, or joining the waitlist,
+        you agree to these terms. If you don't agree, please don't use the site.
+      </p>
+
+      <h2>What we offer today</h2>
+      <ul>
+        <li>An informational website about Penny, an autonomous AI bookkeeper.</li>
+        <li>An interactive <strong>demo</strong> showing how Penny works (sample data, not your real accounts).</li>
+        <li>A <strong>waitlist</strong> for early access. Joining saves your spot but does not guarantee access,
+          timing, or any particular price; offers like "3 months free" apply when your access opens and may change.</li>
+      </ul>
+
+      <h2>Not financial or professional advice</h2>
+      <p>
+        Penny is a bookkeeping assistant. It is <strong>not</strong> a licensed accountant, tax preparer, auditor,
+        or financial advisor, and nothing it produces is professional tax, legal, accounting, or investment advice.
+        Always confirm important decisions with a qualified professional.
+      </p>
+
+      <h2>Acceptable use</h2>
+      <ul>
+        <li>Don't misuse the site — no attempts to break, overload, scrape at scale, or gain unauthorized access.</li>
+        <li>Don't use the site or Penny for anything unlawful.</li>
+        <li>Don't submit someone else's personal data without permission.</li>
+      </ul>
+
+      <h2>Intellectual property</h2>
+      <p>
+        The FounderFirst name, Penny, the site, and its content are ours and protected by applicable law. You may
+        not copy or reuse them except as allowed by these terms or with our permission.
+      </p>
+
+      <h2>Disclaimers &amp; liability</h2>
+      <p>
+        The site and demo are provided "as is," without warranties of any kind. To the fullest extent permitted by
+        law, FounderFirst is not liable for any indirect, incidental, or consequential damages arising from your use
+        of the site, the demo, or the waitlist.
+      </p>
+
+      <h2>Changes</h2>
+      <p>
+        We may update these terms as the product evolves; we'll change the "last updated" date above. Continued use
+        after a change means you accept the updated terms.
+      </p>
+
+      <h2>Contact</h2>
+      <p>Questions: <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.</p>
+    </div>
+  </main>
+  <Footer />
+</Base>
+<style>
+  .legal { padding-block: clamp(40px, 6vw, 72px); }
+  .legal .wrap { max-width: 720px; }
+  h1 { font-size: var(--fs-h1); line-height: 1.15; letter-spacing: var(--ls-tight); margin-bottom: var(--space-2); }
+  .upd { color: var(--ink-4); font-size: var(--fs-eyebrow); margin-bottom: var(--space-8); }
+  h2 { font-family: var(--font-display); font-size: var(--fs-h3); margin: var(--space-8) 0 var(--space-2); }
+  p, li { font-size: var(--fs-data-row); color: var(--ink-2); line-height: 1.65; }
+  ul { padding-left: var(--space-5); margin: 0; }
+  li { margin: var(--space-1) 0; }
+  .box { background: var(--white); border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-4) var(--space-5); margin: var(--space-5) 0; }
+  a { color: var(--brand); }
+</style>

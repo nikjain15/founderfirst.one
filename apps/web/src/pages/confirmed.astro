@@ -4,6 +4,7 @@ import Nav from "../components/Nav.astro";
 import Footer from "../components/Footer.astro";
 import ReferralShare from "../components/ReferralShare.tsx";
 import type { Page } from "@ff/content";
+import { SITE } from "../lib/site";
 
 const page: Page = {
   slug: "/confirmed",
@@ -35,7 +36,7 @@ const page: Page = {
           <div class="step-num">02</div>
           <div class="t">Join the community</div>
           <p>Meet other founders and get early product updates in our Discord.</p>
-          <a class="btn-ghost" href="https://discord.gg/DGJdd6AEjH" target="_blank" rel="noopener noreferrer">Chat on Discord →</a>
+          <a class="btn-ghost" href={SITE.discord} target="_blank" rel="noopener noreferrer">Chat on Discord →</a>
         </div>
         <div class="next-card">
           <div class="step-num">03</div>

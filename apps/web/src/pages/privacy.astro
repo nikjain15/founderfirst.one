@@ -1,0 +1,141 @@
+---
+import Base from "../layouts/Base.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import type { Page } from "@ff/content";
+import { SITE } from "../lib/site";
+
+// Site-wide privacy policy for founderfirst.one (waitlist, analytics, cookies,
+// and the Penny assistant). Indexable — a real privacy policy is an E-E-A-T /
+// trust signal for search + AI engines, and a legal requirement given we collect
+// email + run analytics. Keep the copy plain and honest; review with counsel.
+const page: Page = {
+  slug: "/privacy",
+  surface: "marketing",
+  seo: {
+    title: "Privacy Policy — FounderFirst",
+    description:
+      "How FounderFirst collects, uses, and protects your data — waitlist email, product analytics, cookies, and conversations with Penny. Read-only by design; your data stays yours.",
+    canonical: "https://founderfirst.one/privacy/",
+    keyFacts: [
+      "FounderFirst collects your email only when you join the waitlist.",
+      "Penny connects to your accounts with read-only access and can never move money.",
+      "Product analytics run only after you accept cookies.",
+      `You can request access, export, or deletion of your data anytime at ${SITE.email}.`,
+    ],
+  },
+  sections: [],
+};
+---
+<Base page={page}>
+  <Nav />
+  <main class="legal">
+    <div class="wrap">
+      <h1>Privacy Policy</h1>
+      <p class="upd">Last updated: June 27, 2026</p>
+
+      <div class="box">
+        <strong>In short:</strong> We collect your email only when you choose to join the waitlist, and product
+        analytics only after you accept cookies. Penny connects to your financial accounts with read-only access
+        and can never move money. We don't sell your data, and you can ask us to export or delete it at any time.
+      </div>
+
+      <h2>Who we are</h2>
+      <p>
+        FounderFirst ("we", "us") operates <a href={SITE.url}>founderfirst.one</a> and Penny, an
+        autonomous AI bookkeeper for small-business owners. This policy explains what we collect on this website
+        and through Penny, and what you can do about it.
+      </p>
+
+      <h2>What we collect</h2>
+      <ul>
+        <li><strong>Waitlist email.</strong> When you join the waitlist, we store the email address you submit and,
+          if you arrived through a referral link, the referral that sent you. That's it — no name or payment details
+          are required to join.</li>
+        <li><strong>Product analytics.</strong> If you accept cookies, we record anonymous usage events (pages viewed,
+          features clicked) via our product-analytics tools so we can build a better product. These run
+          <strong>only</strong> after you accept — decline and they stay off.</li>
+        <li><strong>Conversations with Penny.</strong> If you chat with Penny (on the site or via our Discord
+          assistant), we store those messages so Penny can answer in context and improve.</li>
+        <li><strong>Financial data (for customers).</strong> When you connect an account to Penny, she reads your
+          transactions with <strong>read-only</strong> access to keep your books. She can never move, send, or
+          withdraw money.</li>
+      </ul>
+
+      <h2>How we use it</h2>
+      <ul>
+        <li>To save your spot on the waitlist and email you about your access (and, if you opt in, product updates).</li>
+        <li>To understand how the site and product are used so we can improve them.</li>
+        <li>To provide Penny's bookkeeping: categorizing transactions, surfacing real profit, and chasing invoices.</li>
+        <li>We do <strong>not</strong> sell or rent your personal data, and we do not use it for creditworthiness or lending.</li>
+      </ul>
+
+      <h2>Cookies &amp; analytics</h2>
+      <p>
+        We use essential cookies to run the site and, with your consent, analytics cookies to measure usage.
+        You can change your choice anytime via
+        <button type="button" class="inline-link" data-cookie-settings>Cookie settings</button> in the footer.
+      </p>
+
+      <h2>Who we share data with</h2>
+      <p>
+        We don't sell your data. We share it only with the service providers that help us run FounderFirst and
+        Penny — by category, each under their own privacy terms:
+      </p>
+      <ul>
+        <li><strong>Hosting &amp; infrastructure providers</strong> — to run the website and Penny securely.</li>
+        <li><strong>Database &amp; backend providers</strong> — to store your waitlist entry and Penny data.</li>
+        <li><strong>Email delivery providers</strong> — to send the emails you ask for.</li>
+        <li><strong>Product-analytics providers</strong> — only if you accept cookies, to measure usage.</li>
+        <li><strong>Discord</strong> — if you choose to use Penny inside Discord, your messages are handled there.</li>
+      </ul>
+      <p>A current list of the specific providers we use is available on request at <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.</p>
+
+      <h2>Data retention &amp; the Penny assistant</h2>
+      <p>
+        We keep your data for as long as your account or waitlist entry is active, or as needed to provide the service.
+        <strong>Conversations you have with Penny — including direct messages through our Discord assistant — are
+        stored in our database and retained even after you disconnect the assistant</strong>, so we keep a record of
+        the help provided. You can request erasure of these conversations at any time (see below).
+      </p>
+
+      <h2>Your rights</h2>
+      <ul>
+        <li><strong>Access &amp; export.</strong> Ask for a copy of the data we hold about you.</li>
+        <li><strong>Deletion.</strong> Ask us to delete your waitlist entry, your Penny conversations, or your account data.</li>
+        <li><strong>Opt out.</strong> Unsubscribe from emails anytime, and decline analytics via Cookie settings.</li>
+      </ul>
+
+      <h2>Contact</h2>
+      <p>
+        Questions, access, or deletion requests: <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.
+        We'll respond within a reasonable time.
+      </p>
+
+      <h2>Changes</h2>
+      <p>
+        We may update this policy as the product evolves. We'll change the "last updated" date above and, for
+        material changes, give notice on the site.
+      </p>
+    </div>
+  </main>
+  <Footer />
+</Base>
+<style>
+  .legal { padding-block: clamp(40px, 6vw, 72px); }
+  .legal .wrap { max-width: 720px; }
+  h1 { font-size: var(--fs-h1); line-height: 1.15; letter-spacing: var(--ls-tight); margin-bottom: var(--space-2); }
+  .upd { color: var(--ink-4); font-size: var(--fs-eyebrow); margin-bottom: var(--space-8); }
+  h2 { font-family: var(--font-display); font-size: var(--fs-h3); margin: var(--space-8) 0 var(--space-2); }
+  p, li { font-size: var(--fs-data-row); color: var(--ink-2); line-height: 1.65; }
+  ul { padding-left: var(--space-5); margin: 0; }
+  li { margin: var(--space-1) 0; }
+  .box { background: var(--white); border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-4) var(--space-5); margin: var(--space-5) 0; }
+  a, .inline-link { color: var(--brand); }
+  .inline-link { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; text-decoration: underline; }
+</style>
+<script>
+  document.querySelectorAll("[data-cookie-settings]").forEach((b) =>
+    b.addEventListener("click", () => window.dispatchEvent(new CustomEvent("ff:open-consent"))),
+  );
+</script>

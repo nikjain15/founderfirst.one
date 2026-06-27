@@ -65,7 +65,7 @@
 }
 .chip {
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fs-label);
   font-weight: var(--fw-medium);
   padding: 7px 14px;
   border-radius: var(--r-pill);
@@ -107,7 +107,7 @@
   color: inherit;
   transition: background var(--dur-fast) var(--ease-out);
 }
-@media (min-width: 641px) {
+@media (min-width: 640px) {
   .ticket-row { grid-template-columns: 64px 1fr auto; gap: 16px; padding: 16px 18px; }
 }
 @media (max-width: 480px) {
@@ -144,7 +144,7 @@
   letter-spacing: var(--ls-normal);
 }
 .ticket-meta {
-  font-size: 13px;
+  font-size: var(--fs-label);
   color: var(--ink-3);
   margin: 0;
   display: inline-flex;

@@ -79,7 +79,7 @@ a:hover { opacity: 0.7; }
   display: inline-flex;
   align-items: center;
   gap: 18px;
-  font-size: 13px;
+  font-size: var(--fs-label);
   color: var(--ink-3);
 }
 /* Links fill the space between the brand and the settings gear and center
@@ -165,7 +165,7 @@ a:hover { opacity: 0.7; }
 .admin-nav .settings-menu.is-open .settings-dropdown { display: flex; }
 .admin-nav .settings-email {
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: var(--fs-micro);
   color: var(--ink-4);
   word-break: break-all;
   border-bottom: 1px solid var(--line);
@@ -180,7 +180,7 @@ a:hover { opacity: 0.7; }
   text-align: left;
   text-decoration: none;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--fs-label);
   color: var(--ink-2);
   background: transparent;
   border: 0;
@@ -249,7 +249,7 @@ a:hover { opacity: 0.7; }
   .admin-nav .nav-links a.active { border-bottom-color: var(--ink); }
   .admin-nav .nav-email {
     padding: 12px 4px 4px;
-    font-size: 12px;
+    font-size: var(--fs-micro);
     color: var(--ink-4);
     word-break: break-all;
   }
@@ -321,7 +321,7 @@ a:hover { opacity: 0.7; }
   margin-bottom: 14px;
 }
 .field label {
-  font-size: 13px;
+  font-size: var(--fs-label);
   font-weight: var(--fw-semibold);
   color: var(--ink-2);
 }

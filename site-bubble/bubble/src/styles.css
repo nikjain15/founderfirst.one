@@ -109,8 +109,8 @@
 .penny-close {
   background: none;
   border: 0;
-  width: 28px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
   color: var(--p-ink-3);
   font-size: 20px;
@@ -200,9 +200,12 @@
   background: var(--p-white);
   border: 1px solid var(--p-line);
   color: var(--p-ink-2);
-  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 14px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
   font-family: inherit;
 }
@@ -225,7 +228,7 @@
   padding: 9px 12px;
   border-radius: 999px;
   border: 0;
-  font-size: 14px;
+  font-size: 16px;
   font-family: inherit;
   background: var(--p-white);
   color: var(--p-ink);
@@ -260,7 +263,7 @@
   border-radius: 18px;
   padding: 9px 12px;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.4;
   max-height: 120px;
   background: var(--p-paper);
@@ -271,8 +274,8 @@
   color: var(--p-white);
   border: 0;
   border-radius: 999px;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;

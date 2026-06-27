@@ -3,6 +3,7 @@ import Base from "../layouts/Base.astro";
 import Nav from "../components/Nav.astro";
 import Footer from "../components/Footer.astro";
 import type { Page } from "@ff/content";
+import { SITE } from "../lib/site";
 
 // Internal-tool privacy policy for the "FounderFirst Signals — Capture" Chrome
 // extension. Ported from the legacy apps/marketing static page so apps/web owns
@@ -69,7 +70,7 @@ const page: Page = {
       </p>
 
       <h2>Contact</h2>
-      <p>Questions or deletion requests: <a href="mailto:nik@founderfirst.one">nik@founderfirst.one</a>.</p>
+      <p>Questions or deletion requests: <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.</p>
     </div>
   </main>
   <Footer />

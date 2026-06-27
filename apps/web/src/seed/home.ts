@@ -25,8 +25,8 @@ export const homeSeed: Page = {
       position: 0,
       data: {
         headline: "Operating software for business.",
-        sub: "Meet Penny — your 24/7 autonomous bookkeeper.",
-        ctaLabel: "Claim 3 months free",
+        sub: "Meet Penny — your 24/7 autonomous bookkeeper. Clean books, real profit, and late invoices chased, automatically.",
+        ctaLabel: "Get 3 months free",
         image: "/hero.jpg",
         cards: [
           { label: "Stripe payout", sub: "Revenue", value: "+$4,820" },
@@ -37,7 +37,7 @@ export const homeSeed: Page = {
     },
     {
       type: "features",
-      position: 1,
+      position: 2,
       data: {
         headline:
           "Penny handles the books and the chasing — so you can focus on your business.",
@@ -64,7 +64,7 @@ export const homeSeed: Page = {
     },
     {
       type: "tryPenny",
-      position: 4,
+      position: 1,
       data: {
         eyebrow: "Try Penny",
         headline: "See Penny work — for real, right now.",
@@ -74,7 +74,7 @@ export const homeSeed: Page = {
     },
     {
       type: "trust",
-      position: 5,
+      position: 4,
       data: {
         headline: "Built on trust, not faith.",
         sub: "Penny connects to the accounts your business runs on, so we hold ourselves to a simple standard: read-only by design, encrypted throughout, and your data always stays yours.",
@@ -88,7 +88,7 @@ export const homeSeed: Page = {
     },
     {
       type: "steps",
-      position: 7,
+      position: 5,
       data: {
         headline: "Want Penny watching your books?",
         sub: "Drop your email — we'll save your spot and cover your first 3 months of bookkeeping.",

@@ -23,7 +23,7 @@ and a single confident green.
 | Ink | `--ink` | `#28323f` navy-slate | Primary text; dark/inverse section backgrounds (`--dark`) |
 | Paper | `--paper` | `#f4f1e9` warm cream | The primary page field (body background) |
 | White | `--white` | `#ffffff` | Cards sitting on the cream |
-| **Brand** | `--brand` | `#2f7d52` forest green | Primary CTAs, accents, the Penny mark, active nav. Hover `--brand-hover`, fills `--brand-soft` / `--brand-tint` |
+| **Brand** | `--brand` | `#32854c` emerald green | Primary CTAs, accents, the Penny mark, active nav. Hover `--brand-hover`, fills `--brand-soft` / `--brand-tint`. Admin inherits this via `--sage` (no admin edits needed) |
 | Line | `--line` | `#e6e0d3` warm | Hairline borders |
 | Semantic | `--income` / `--amber` / `--error` | — | **Meaning only** (success / warning / error), never decoration |
 
@@ -38,9 +38,30 @@ Ink steps `--ink-2/3/4` derive muted navy greys. Inverse (dark) sections use
 | Body / UI | `--font-sans` | **Inter** |
 | Mono | `--font-mono` | code, ids, payloads |
 
-Heading sizes/weights live in `components/typography.css`; UI/app sizes in the
-`--fs-ui` / `--fs-label` / `--fs-kpi` scale (use these on dense admin surfaces,
-not the marketing-shaped `--fs-h*`).
+Three type scales, single-sourced — **never inline a font-size:**
+- **Marketing display** `--fs-display-1/2/3` (`40 / 34 / 24px` fluid) — public pages
+  (marketing, blog, compare, confirmed). Staging-aligned; this is the standard for
+  any new public page heading.
+- **Billboard** `--fs-h1/2/3` — oversized hero type; shared with some admin headers.
+- **App/UI** `--fs-ui` / `--fs-label` / `--fs-kpi` — dense admin surfaces.
+
+---
+
+## Section & layout patterns (the standard for any new page)
+
+Replicate these so every surface feels like one system:
+
+- **Background rhythm** — alternate cream (`--paper`) and dark (`--dark`) bands;
+  never two dark bands touching. White cards (`--white`) sit on cream.
+- **Alignment** — hero + dark "statement" bands are **centred**; content sections
+  (features, showcase, trust, FAQ, compare) are **left-aligned**.
+- **Buttons** — pills (`--r-pill`), brand-green primary (`button.css`), `≥44px` tall.
+- **Cards** — `--white` bg, `--bw-hair` `--line` border, `--r-card-emph` radius,
+  `--shadow-float`; brand-tinted variant uses `--brand-tint` + `--brand-soft` border.
+- **Eyebrows** — `--fs-eyebrow`, uppercase, `--ls-eyebrow`; brand-coloured when it
+  labels a feature.
+- **Section padding** — `--section-y` block, `--page-pad-x` inline, content capped
+  at `--page-max` (1080px).
 
 ---
 
@@ -48,8 +69,10 @@ not the marketing-shaped `--fs-h*`).
 
 **New** — defines the current brand:
 - Fraunces serif **display headings** (previously Inter-only; serif was avatar-only).
-- **Cream / forest-green / navy-slate** palette (previously near-black / white / grey).
-- **Green** primary CTAs and Penny mark (previously ink/black).
+- **Cream / emerald-green / navy-slate** palette (previously near-black / white / grey).
+- **Green** (`#32854c`, staging-aligned) primary CTAs and Penny mark (previously ink/black).
+- **Marketing display type scale** `--fs-display-1/2/3` + standardized section/card
+  patterns (above) — applied across marketing, blog, and compare.
 
 **Kept** — carried forward unchanged, still on-brand:
 - Penny **`p-mark`** + **`penny-bubble`** identity.

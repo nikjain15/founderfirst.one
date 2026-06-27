@@ -54,6 +54,13 @@
   --fs-h1:           clamp(36px, 5.5vw, 64px);
   --fs-h2:           clamp(26px, 3.8vw, 44px);
   --fs-h3:           clamp(17px, 2vw, 21px);
+
+  /* Marketing display scale — staging-aligned (tighter than the billboard
+     --fs-h1/2/3 above, which are also used by admin). Use these on marketing,
+     blog, and compare headings so the public type scale is single-sourced. */
+  --fs-display-1:    clamp(30px, 4vw, 40px);    /* hero / page h1 */
+  --fs-display-2:    clamp(26px, 3vw, 34px);    /* section h2 */
+  --fs-display-3:    clamp(20px, 2.2vw, 24px);  /* card / showcase h3 */
   --fs-body:         clamp(15px, 1.6vw, 17px);
   --fs-card-value:   clamp(30px, 8vw, 46px);
   --fs-screen-title: 17px;

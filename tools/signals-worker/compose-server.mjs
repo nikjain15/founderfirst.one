@@ -1,9 +1,13 @@
 /**
- * compose-server — tiny local HTTP service that drafts email copy with Ollama.
+ * compose-server — tiny local HTTP service for the FounderFirst AI features that
+ * run on the local Ollama model. Three POST routes (shared secret, JSON in/out):
+ *   /compose      — draft email copy from a brief        (admin EmailHub)
+ *   /voice-check  — critique copy vs the live voice guide (admin Penny → Voice)
+ *   /insights     — turn a metrics snapshot into findings (admin Analytics → Insights)
+ * plus GET /health.
  *
- * The admin "Draft with AI" button (Settings → Emails → + New email) can't reach
- * Ollama directly: Ollama binds to localhost on this machine and has no auth, and
- * the browser must never hold a shared secret. So the path is:
+ * The browser can't reach Ollama directly (localhost-only, no auth) and must never
+ * hold the shared secret. So each feature's path is:
  *
  *   admin (browser, signed-in)  →  email-compose Supabase function (checks admin)
  *     →  THIS service over a Cloudflare Tunnel (shared secret)  →  local Ollama
@@ -80,24 +84,28 @@ function readBody(req) {
 
 const cleanStr = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
-async function compose(brief) {
+// Shared local-Ollama JSON call — all routes go through this.
+async function ollamaJSON(system, user, temperature = 0.4) {
   const res = await fetch(`${OLLAMA}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: MODEL, stream: false, format: "json",
-      options: { temperature: 0.5 },
+      options: { temperature },
       messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: `Brief:\n${brief.slice(0, 2000)}` },
+        { role: "system", content: system },
+        { role: "user", content: user },
       ],
     }),
   });
   if (!res.ok) throw new Error(`ollama ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const data = await res.json();
-  let p;
-  try { p = JSON.parse(data.message?.content ?? "{}"); }
+  try { return JSON.parse(data.message?.content ?? "{}"); }
   catch { throw new Error("model did not return valid JSON"); }
+}
+
+async function compose(brief) {
+  const p = await ollamaJSON(SYSTEM, `Brief:\n${brief.slice(0, 2000)}`, 0.5);
   return {
     subject:   cleanStr(p.subject, 60),
     preheader: cleanStr(p.preheader, 120),
@@ -110,20 +118,104 @@ async function compose(brief) {
   };
 }
 
+// ---- /voice-check — critique draft copy against the live voice guide --------
+const VOICE_SYSTEM = `You are a brand-voice editor for FounderFirst. You are given (1) the official VOICE GUIDE and (2) a piece of DRAFT copy. Judge how well the draft matches the guide.
+
+Return ONLY this JSON (no prose around it):
+{
+  "on_voice":   <true if the draft broadly matches the guide, false otherwise>,
+  "score":      <integer 0-100, how on-voice it is>,
+  "deviations": <array of short strings, each a specific way the draft breaks the guide; [] if none>,
+  "rewrites":   <array of {"before": <offending phrase from the draft>, "after": <on-voice rewrite>}; [] if none>,
+  "summary":    <one or two plain sentences summarizing the verdict>
+}
+Rules: cite only phrases that actually appear in the draft. Be concrete and brief. Do not invent rules that aren't in the guide.`;
+
+async function voiceCheck(text, guide) {
+  const p = await ollamaJSON(
+    VOICE_SYSTEM,
+    `VOICE GUIDE:\n${String(guide).slice(0, 8000)}\n\nDRAFT:\n${String(text).slice(0, 4000)}`,
+    0.3,
+  );
+  const rewrites = Array.isArray(p.rewrites)
+    ? p.rewrites.filter((r) => r && (r.before || r.after))
+        .map((r) => ({ before: cleanStr(r.before, 300), after: cleanStr(r.after, 300) })).slice(0, 12)
+    : [];
+  return {
+    on_voice: !!p.on_voice,
+    score: Math.max(0, Math.min(100, Math.round(Number(p.score) || 0))),
+    deviations: Array.isArray(p.deviations) ? p.deviations.map((d) => cleanStr(d, 300)).filter(Boolean).slice(0, 12) : [],
+    rewrites,
+    summary: cleanStr(p.summary, 600),
+  };
+}
+
+// ---- /insights — turn a metrics snapshot into findings ---------------------
+const INSIGHTS_SYSTEM = `You are a product analyst for FounderFirst (an autonomous AI bookkeeper for small businesses; the site collects waitlist signups). You are given a JSON snapshot of product metrics (pageviews, users, sessions, top pages, top events) over a time window. Produce a short, concrete read.
+
+Return ONLY this JSON (no prose around it):
+{
+  "summary":  <2-4 plain sentences on what the numbers say overall>,
+  "findings": <array (3-6 items) of {
+     "observation":     <one specific thing the data shows>,
+     "likely_cause":    <a plausible reason>,
+     "suggested_action":<one concrete next step the team could take>,
+     "confidence":      <"low" | "medium" | "high">
+  }>
+}
+Rules: base every observation on the numbers given; do not invent metrics that aren't present. Be specific and actionable, not generic.`;
+
+async function insights(metrics, windowDays) {
+  const p = await ollamaJSON(
+    INSIGHTS_SYSTEM,
+    `Window: ${windowDays} days\nMetrics JSON:\n${JSON.stringify(metrics).slice(0, 6000)}`,
+    0.4,
+  );
+  const findings = Array.isArray(p.findings)
+    ? p.findings.filter(Boolean).map((f) => ({
+        observation: cleanStr(f.observation, 400),
+        likely_cause: cleanStr(f.likely_cause, 400),
+        suggested_action: cleanStr(f.suggested_action, 400),
+        confidence: ["low", "medium", "high"].includes(String(f.confidence).toLowerCase()) ? String(f.confidence).toLowerCase() : "medium",
+      })).filter((f) => f.observation || f.suggested_action).slice(0, 8)
+    : [];
+  return { summary: cleanStr(p.summary, 1200), findings, model: MODEL };
+}
+
+const ROUTES = new Set(["/compose", "/voice-check", "/insights"]);
+
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/health") return send(res, 200, { ok: true, model: MODEL });
-  if (req.method !== "POST" || req.url !== "/compose") return send(res, 404, { error: "not_found" });
+  if (req.method !== "POST" || !ROUTES.has(req.url)) return send(res, 404, { error: "not_found" });
   if (req.headers["x-compose-secret"] !== SECRET) return send(res, 401, { error: "unauthorized" });
 
   try {
     const body = JSON.parse((await readBody(req)) || "{}");
-    const brief = typeof body.brief === "string" ? body.brief.trim() : "";
-    if (brief.length < 3) return send(res, 400, { error: "brief_required" });
-    const draft = await compose(brief);
-    if (!draft.subject || !draft.heading) return send(res, 502, { error: "weak_draft", detail: "model returned an empty subject/heading" });
-    send(res, 200, { ok: true, draft });
+
+    if (req.url === "/compose") {
+      const brief = typeof body.brief === "string" ? body.brief.trim() : "";
+      if (brief.length < 3) return send(res, 400, { error: "brief_required" });
+      const draft = await compose(brief);
+      if (!draft.subject || !draft.heading) return send(res, 502, { error: "weak_draft", detail: "model returned an empty subject/heading" });
+      return send(res, 200, { ok: true, draft });
+    }
+
+    if (req.url === "/voice-check") {
+      const text = typeof body.text === "string" ? body.text.trim() : "";
+      const guide = typeof body.guide === "string" ? body.guide : "";
+      if (text.length < 10) return send(res, 400, { error: "text_required" });
+      const review = await voiceCheck(text, guide);
+      return send(res, 200, { ok: true, review });
+    }
+
+    if (req.url === "/insights") {
+      const metrics = body.metrics ?? {};
+      const windowDays = Number(body.window_days) || 30;
+      const out = await insights(metrics, windowDays);
+      return send(res, 200, { ok: true, ...out });
+    }
   } catch (e) {
-    send(res, 500, { error: "compose_failed", detail: String(e?.message ?? e) });
+    send(res, 500, { error: "request_failed", detail: String(e?.message ?? e) });
   }
 });
 

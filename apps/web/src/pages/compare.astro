@@ -68,7 +68,7 @@ const verdicts = [
               <tr>
                 <th scope="row">{r.label}</th>
                 {r.cells.map((cell, i) => (
-                  <td class={`${cell} ${i === 0 ? "penny" : ""}`}>
+                  <td class={`${cell} ${i === 0 ? "penny" : ""}`} data-col={cols[i]}>
                     <i class={`i ${cell}`} aria-hidden="true">{sym[cell]}</i>
                     {r.notes && r.notes[i] && <span class="note">{r.notes[i]}</span>}
                     <span class="sr">{word[cell]}</span>
@@ -146,4 +146,20 @@ const verdicts = [
   .cmp-cta .btn:hover { background: var(--brand-hover); }
 
   @media (max-width: 720px) { .cmp-verdicts .v-grid { grid-template-columns: 1fr; } }
+
+  /* Phones: drop the wide scroll-table and stack the matrix as one card per
+     feature (no horizontal overflow). Each cell shows its column label. */
+  @media (max-width: 640px) {
+    .table-wrap { overflow-x: visible; border: 0; border-radius: 0; }
+    .cmp-matrix table { min-width: 0; display: block; }
+    .cmp-matrix thead { display: none; }
+    .cmp-matrix tbody { display: block; }
+    .cmp-matrix tbody tr { display: block; background: var(--white); border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-4); }
+    .cmp-matrix tbody th[scope="row"] { display: block; min-width: 0; border-top: 0; padding: 0 0 var(--space-2); font-size: var(--fs-ui); font-weight: var(--fw-semibold); }
+    .cmp-matrix tbody td { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); text-align: left; padding: var(--space-2) 0; border-top: 1px solid var(--line-2); }
+    .cmp-matrix tbody td::before { content: attr(data-col); font-size: var(--fs-data-row); color: var(--ink-3); }
+    .cmp-matrix tbody td.penny { background: transparent; }
+    .cmp-matrix tbody td.penny::before { color: var(--brand); font-weight: var(--fw-medium); }
+    .cmp-matrix tbody td .note { margin: 0 0 0 auto; }
+  }
 </style>

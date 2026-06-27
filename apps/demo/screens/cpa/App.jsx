@@ -391,6 +391,7 @@ function BottomTabBar({ active, onChange }) {
             onClick={() => onChange(key)}
             style={{
               flex: 1,
+              minHeight: "var(--tap-min)",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -548,7 +549,7 @@ function DashboardView({ cpa, clients, onClientChange }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))",
           gap: 16,
         }}
       >

@@ -58,7 +58,7 @@
 }
 .funnel-bar-label {
   color: var(--white);
-  font-size: 12px;
+  font-size: var(--fs-micro);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }

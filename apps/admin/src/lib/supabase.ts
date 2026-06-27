@@ -994,6 +994,45 @@ export async function setLivePage(id: string): Promise<void> {
   if (error) throw new Error(`set_live_page: ${error.message}`);
 }
 
+// ---- Blog posts (admin-editable content model) -----------------------------
+// Versioned blog posts, same pattern as content_pages. RPCs admin-gated server-
+// side (is_admin) + audited. See migration 20260627121000_blog_posts.sql.
+
+export interface BlogSummaryRow { slug: string; title: string; date: string; version: number; is_live: boolean; updated_at: string; }
+export interface BlogVersionRow {
+  id: string; version: number; payload: unknown; notes: string | null;
+  is_live: boolean; created_at: string; created_by: string | null; created_by_email: string | null;
+}
+
+export async function listBlogPosts(): Promise<BlogSummaryRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_blog_posts");
+  if (error) throw new Error(`list_blog_posts: ${error.message}`);
+  return ((data as BlogSummaryRow[]) ?? []).map((r) => ({ ...r, version: Number(r.version) }));
+}
+
+export async function listBlogPostVersions(slug: string): Promise<BlogVersionRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_blog_post_versions", { p_slug: slug });
+  if (error) throw new Error(`list_blog_post_versions: ${error.message}`);
+  return ((data as BlogVersionRow[]) ?? []).map((r) => ({ ...r, version: Number(r.version) }));
+}
+
+export async function createBlogPostVersion(slug: string, payload: unknown, notes?: string): Promise<string> {
+  const db = getClient();
+  const { data, error } = await db.rpc("create_blog_post_version", {
+    p_slug: slug, p_payload: payload, p_notes: notes ?? null,
+  });
+  if (error) throw new Error(`create_blog_post_version: ${error.message}`);
+  return data as string;
+}
+
+export async function setLiveBlogPost(id: string): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("set_live_blog_post", { p_id: id });
+  if (error) throw new Error(`set_live_blog_post: ${error.message}`);
+}
+
 // ---- Signals (social listening + outreach) ---------------------------------
 // All RPCs are admin-gated server-side (is_admin) and audited via
 // log_admin_action. Mirrors the ticket wrappers above. See SIGNALS_SOLUTION.md.

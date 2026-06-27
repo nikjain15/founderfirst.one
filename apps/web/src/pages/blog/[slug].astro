@@ -3,10 +3,11 @@ import Base from "../../layouts/Base.astro";
 import Nav from "../../components/Nav.astro";
 import Footer from "../../components/Footer.astro";
 import PennyGlance from "../../components/PennyGlance.astro";
-import { posts, postText } from "../../blog/posts";
+import { getBlogPosts, blogPostText as postText } from "../../lib/blog";
 import type { Page } from "@ff/content";
 
-export function getStaticPaths() {
+export async function getStaticPaths() {
+  const posts = await getBlogPosts();
   return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
 }
 const { post } = Astro.props;

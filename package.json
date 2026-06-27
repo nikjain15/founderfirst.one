@@ -9,7 +9,8 @@
     "dev:blog": "pnpm --filter @ff/blog dev",
     "build:marketing": "pnpm --filter @ff/marketing build",
     "build:blog": "pnpm --filter @ff/blog build",
-    "build": "tsx scripts/build-all.ts",
+    "check:css": "tsx scripts/check-css-imports.ts",
+    "build": "tsx scripts/check-css-imports.ts && tsx scripts/build-all.ts",
     "vendor:demo": "tsx scripts/vendor-demo.ts",
     "test:responsive": "pnpm build && node tools/responsive-ci/run.mjs",
     "test:responsive:only": "node tools/responsive-ci/run.mjs"

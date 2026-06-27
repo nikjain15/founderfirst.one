@@ -8,6 +8,7 @@ import {
 } from "../lib/supabase";
 import { DualBarChart, HBarBreakdown, zipOpensResolves } from "../lib/charts";
 import { IconAlert } from "../lib/icons";
+import { Takeaway } from "../lib/Takeaway";
 
 export function AnalyticsSupport() {
   // Headline snapshot — surfaces errors below.
@@ -26,10 +27,6 @@ export function AnalyticsSupport() {
 
   return (
     <div>
-      <div className="eyebrow" style={{ marginBottom: 10 }}>Support · analytics</div>
-      <h1 className="page-title">How support is doing.</h1>
-      <p className="page-sub">Volume, response time, ticket mix. Last 7–30 days.</p>
-
       {loading && <div className="empty">Loading…</div>}
       {error && (
         <div className="empty" style={{ color: "var(--error)", borderColor: "var(--error-bg)" }}>
@@ -41,6 +38,18 @@ export function AnalyticsSupport() {
 
       {!loading && !error && data && (
         <>
+          {data.stale_count > 0 ? (
+            <Takeaway tone="watch" action={{ label: "Open inbox →", to: "/support" }}>
+              <strong>{data.stale_count}</strong> ticket{data.stale_count === 1 ? "" : "s"} stale over 24h — clear these first.
+            </Takeaway>
+          ) : data.open_count > 0 ? (
+            <Takeaway tone="neutral" action={{ label: "Open inbox →", to: "/support" }}>
+              <strong>{data.open_count}</strong> open, none stale. Avg first reply {formatMinutes(data.avg_first_response_minutes_7d)}.
+            </Takeaway>
+          ) : (
+            <Takeaway tone="good">Inbox clear — nothing open right now.</Takeaway>
+          )}
+
           {/* Headline KPIs */}
           <div className="kpi-grid">
             <KPI label="Open now"        value={data.open_count} />

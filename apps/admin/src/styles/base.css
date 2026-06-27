@@ -192,6 +192,11 @@ a:hover { opacity: 0.7; }
 .admin-nav .settings-dropdown a:hover,
 .admin-nav .settings-dropdown button:hover { background: var(--line-2); color: var(--ink); }
 .admin-nav .settings-dropdown a.active { color: var(--ink); font-weight: var(--fw-medium); }
+.admin-nav .settings-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 6px;
+}
 
 /* Hamburger toggle — only visible on narrow screens. */
 .admin-nav .nav-toggle {

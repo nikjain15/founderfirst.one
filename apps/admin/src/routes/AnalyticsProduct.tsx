@@ -7,6 +7,7 @@ import {
   type EventsDailyRow,
 } from "../lib/supabase";
 import { IconAlert } from "../lib/icons";
+import { Takeaway } from "../lib/Takeaway";
 
 const STAGE_LABELS: Record<string, { title: string; sub: string }> = {
   visited:        { title: "Visited site",      sub: "page_view event" },
@@ -56,8 +57,31 @@ export function AnalyticsProduct() {
     ? Math.round((events.reduce((s, e) => s + e.identified, 0) / totalEvents) * 100)
     : 0;
 
+  // Biggest leak in the funnel — the step where the fewest people carry through.
+  // That's where one fix moves the most users, so it's the recommended focus.
+  let worstStep: { from: string; to: string; pct: number } | null = null;
+  for (let i = 1; i < funnel.length; i++) {
+    const prev = funnel[i - 1].unique_users;
+    if (prev <= 0) continue;
+    const pct = Math.round((funnel[i].unique_users / prev) * 100);
+    if (!worstStep || pct < worstStep.pct) {
+      worstStep = {
+        from: STAGE_LABELS[funnel[i - 1].stage]?.title ?? funnel[i - 1].stage,
+        to: STAGE_LABELS[funnel[i].stage]?.title ?? funnel[i].stage,
+        pct,
+      };
+    }
+  }
+
   return (
     <>
+      {top > 0 && worstStep && (
+        <Takeaway tone="watch">
+          Biggest drop-off: <strong>{worstStep.from} → {worstStep.to}</strong> — only{" "}
+          <strong>{worstStep.pct}%</strong> carry through. Fix this step to move activation most.
+        </Takeaway>
+      )}
+
       <div className="toolbar" style={{ marginTop: 0, marginBottom: 20 }}>
         {RANGES.map((r, i) => (
           <button

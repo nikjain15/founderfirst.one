@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ContentPrompt } from "./ContentPrompt";
 import { ContentVoice } from "./ContentVoice";
+import { ContentSubnav } from "./ContentSubnav";
 import {
   getClient,
   listPrompts,
@@ -12,48 +14,23 @@ import {
 
 // "kb" (knowledge base) is intentionally omitted from the nav until the
 // Phase 2 vector-search feature ships — the panel was a dead placeholder.
+// Site copy + the blog live on their own routes (see ContentSubnav).
 type Tab = "prompt" | "voice";
 
-const TABS: Array<{ id: Tab; label: string }> = [
-  { id: "prompt", label: "Prompt" },
-  { id: "voice",  label: "Voice" },
-];
-
 export function ContentHome() {
-  const [tab, setTab] = useState<Tab>(() => {
-    const fromHash = (typeof window !== "undefined" ? window.location.hash.slice(1) : "") as Tab;
-    return TABS.some((t) => t.id === fromHash) ? fromHash : "prompt";
-  });
-
-  function setTabAndHash(t: Tab) {
-    setTab(t);
-    if (typeof window !== "undefined") window.location.hash = t;
-  }
+  const location = useLocation();
+  const navigate = useNavigate();
+  const tab: Tab = location.hash.slice(1) === "voice" ? "voice" : "prompt";
 
   return (
     <div>
-      <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · content</div>
-      <h1 className="page-title">Penny's brain.</h1>
-      <p className="page-sub">Edit the system prompt and the voice guide shared across every surface.</p>
+      <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · penny</div>
+      <h1 className="page-title">Penny.</h1>
+      <p className="page-sub">Penny's brain, the site copy, and the blog — everything Penny knows and says, in one place.</p>
 
-      <ActivityStrip onJumpTab={setTabAndHash} />
+      <ActivityStrip onJumpTab={(t) => navigate(`/content#${t}`)} />
 
-      <div className="tabs" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            id={`tab-${t.id}`}
-            role="tab"
-            aria-selected={tab === t.id}
-            aria-controls="content-tabpanel"
-            className={`tab ${tab === t.id ? "active" : ""}`}
-            onClick={() => setTabAndHash(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <ContentSubnav active={tab} />
 
       <div className="tab-panel" role="tabpanel" id="content-tabpanel" aria-labelledby={`tab-${tab}`}>
         {tab === "prompt" && <ContentPrompt />}

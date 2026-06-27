@@ -331,3 +331,104 @@
 .ph-setup .muted { line-height: 1.6; margin: var(--space-3) 0; }
 .ph-steps { margin: var(--space-3) 0 var(--space-4); padding-left: var(--space-5); display: grid; gap: var(--space-2); color: var(--ink-2); font-size: var(--fs-label); line-height: 1.6; }
 .ph-steps code, .ph-setup code { background: var(--paper); border-radius: var(--r-card); padding: 1px 6px; font-family: var(--font-mono); font-size: 0.92em; }
+
+/* Merged-tab source label — separates each source's report inside a tab
+   (e.g. Waitlist vs Traffic under Acquisition). The first one has no rule. */
+.analytics-section-label {
+  margin: 0 0 var(--space-3);
+  color: var(--ink-2);
+  font-size: var(--fs-eyebrow);
+}
+.analytics-section + .analytics-section .analytics-section-label {
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line);
+  margin-top: var(--space-4);
+}
+
+/* Takeaway — the "so what / now what" line every data screen leads with.
+   Left accent encodes tone; the action link is the recommended next step. */
+.takeaway {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin: 0 0 var(--space-4);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--ink-3);
+  border-radius: var(--r-card);
+  font-size: var(--fs-data-row);
+  line-height: 1.45;
+}
+.takeaway-good  { border-left-color: var(--income); }
+.takeaway-watch { border-left-color: var(--amber); }
+.takeaway-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+.takeaway-good  .takeaway-dot { background: var(--income); }
+.takeaway-watch .takeaway-dot { background: var(--amber); }
+.takeaway-text { flex: 1 1 auto; color: var(--ink); }
+.takeaway-text strong { font-weight: var(--fw-semibold); }
+.takeaway-action {
+  flex: none;
+  text-decoration: none;
+  font-weight: var(--fw-medium);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.takeaway-action:hover { text-decoration: underline; }
+@media (max-width: 640px) {
+  .takeaway { align-items: flex-start; flex-wrap: wrap; }
+  .takeaway-action { width: 100%; }
+}
+
+/* ── Insights generator ───────────────────────────────────────────────── */
+.ins-config {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+}
+.ins-config-row { display: grid; gap: var(--space-2); }
+.ins-config-label {
+  font-size: var(--fs-eyebrow);
+  font-weight: var(--fw-semibold);
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.ins-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.ins-goals { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-2); }
+.ins-goal {
+  display: flex; gap: var(--space-2); align-items: flex-start; text-align: left;
+  padding: var(--space-3); border: 1px solid var(--line); border-radius: var(--r-card);
+  background: var(--white); cursor: pointer; min-height: var(--tap-min);
+}
+.ins-goal.on { border-color: var(--ink); border-width: 1.5px; }
+.ins-goal-tick { font-size: 15px; line-height: 1.2; }
+.ins-goal-title { display: block; font-size: var(--fs-data-row); font-weight: var(--fw-semibold); color: var(--ink); }
+.ins-goal-sub { display: block; font-size: var(--fs-eyebrow); color: var(--ink-3); margin-top: 2px; }
+.ins-config-gen { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+
+.ins-area { margin-bottom: var(--space-4); }
+.ins-area-head { display: flex; align-items: baseline; gap: var(--space-2); margin-bottom: var(--space-2); }
+.ins-area-name { font-size: var(--fs-data-row); font-weight: var(--fw-bold); color: var(--ink); }
+.ins-area-count { font-size: var(--fs-tiny); color: var(--ink-3); }
+.ins-card {
+  border: 1px solid var(--line); border-left: 3px solid var(--ink-3);
+  border-radius: var(--r-card); padding: 14px; background: var(--white); display: grid; gap: 8px;
+}
+.ins-card-obs { margin: 0; font-size: var(--fs-eyebrow); color: var(--ink-3); line-height: 1.5; }
+.ins-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ins-evidence {
+  font-size: var(--fs-tiny); padding: 2px 8px; border-radius: 999px;
+  background: var(--paper); border: 1px solid var(--line); color: var(--ink-2);
+}
+.ins-conf { font-size: var(--fs-tiny); color: var(--ink-4); }

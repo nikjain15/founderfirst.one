@@ -7,23 +7,43 @@ import { AnalyticsSignals } from "./AnalyticsSignals";
 import { AnalyticsPostHog } from "./AnalyticsPostHog";
 import { AnalyticsInsights } from "./AnalyticsInsights";
 
-type Tab = "waitlist" | "product" | "marketing" | "posthog" | "insights" | "support" | "signals";
+type Tab = "acquisition" | "product" | "support" | "signals";
 
 const TABS: Array<{ id: Tab; label: string }> = [
-  { id: "waitlist",  label: "Waitlist"  },
-  { id: "product",   label: "Product"   },
-  { id: "marketing", label: "Marketing · GA4" },
-  { id: "posthog",   label: "Product · PostHog" },
-  { id: "insights",  label: "Insights"  },
-  { id: "support",   label: "Support"   },
-  { id: "signals",   label: "Signals"   },
+  { id: "acquisition", label: "Acquisition" },
+  { id: "product",     label: "Product"     },
+  { id: "support",     label: "Support"     },
+  { id: "signals",     label: "Signals"     },
 ];
 
+// Old per-source hashes still deep-link here — fold them into the merged tabs so
+// existing bookmarks and the back-compat redirects keep working.
+const HASH_ALIASES: Record<string, Tab> = {
+  waitlist:  "acquisition",
+  marketing: "acquisition",
+  posthog:   "product",
+  insights:  "product",
+};
+
+function resolveTab(hash: string): Tab {
+  if (TABS.some((t) => t.id === hash)) return hash as Tab;
+  return HASH_ALIASES[hash] ?? "acquisition";
+}
+
+/** A labelled block grouping one source's report inside a merged tab. */
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <section className="analytics-section">
+      <div className="eyebrow analytics-section-label">{label}</div>
+      {children}
+    </section>
+  );
+}
+
 export function AnalyticsHome() {
-  const [tab, setTab] = useState<Tab>(() => {
-    const fromHash = (typeof window !== "undefined" ? window.location.hash.slice(1) : "") as Tab;
-    return TABS.some((t) => t.id === fromHash) ? fromHash : "waitlist";
-  });
+  const [tab, setTab] = useState<Tab>(() =>
+    resolveTab(typeof window !== "undefined" ? window.location.hash.slice(1) : "")
+  );
 
   function setTabAndHash(t: Tab) {
     setTab(t);
@@ -54,13 +74,21 @@ export function AnalyticsHome() {
       </div>
 
       <div className="tab-panel" role="tabpanel" id="analytics-tabpanel" aria-labelledby={`tab-${tab}`}>
-        {tab === "waitlist"  && <AnalyticsWaitlist />}
-        {tab === "product"   && <AnalyticsProduct />}
-        {tab === "marketing" && <AnalyticsMarketing />}
-        {tab === "posthog"   && <AnalyticsPostHog />}
-        {tab === "insights"  && <AnalyticsInsights />}
-        {tab === "support"   && <AnalyticsSupport />}
-        {tab === "signals"   && <AnalyticsSignals />}
+        {tab === "acquisition" && (
+          <>
+            <Section label="Waitlist"><AnalyticsWaitlist /></Section>
+            <Section label="Traffic · GA4"><AnalyticsMarketing /></Section>
+          </>
+        )}
+        {tab === "product" && (
+          <>
+            <Section label="Activation funnel"><AnalyticsProduct /></Section>
+            <Section label="Usage · PostHog"><AnalyticsPostHog /></Section>
+            <Section label="Insights"><AnalyticsInsights /></Section>
+          </>
+        )}
+        {tab === "support" && <AnalyticsSupport />}
+        {tab === "signals" && <AnalyticsSignals />}
       </div>
     </div>
   );

@@ -11,6 +11,7 @@
  * Audit). All data via the admin-gated sig_* RPCs. See SIGNALS_SOLUTION.md.
  */
 import { useState, useEffect, useMemo, Fragment } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   listSigItems,
@@ -98,6 +99,11 @@ export function Signals({ embedded = false }: { embedded?: boolean } = {}) {
           );
         })}
       </nav>
+
+      <p className="page-sub" style={{ margin: "0 0 16px" }}>
+        Pipeline performance — reply &amp; win rates, drop-off, market themes — lives in{" "}
+        <Link to="/analytics#signals">Analytics → Signals →</Link>
+      </p>
 
       <div className="tab-panel">
         {tab === "sources"  && <SourcesTab />}

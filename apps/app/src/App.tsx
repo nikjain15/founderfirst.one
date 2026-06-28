@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./auth/AuthProvider";
+import { ActiveOrgProvider } from "./org/ActiveOrgProvider";
 import Login from "./routes/Login";
 import Home from "./routes/Home";
 
@@ -29,7 +30,9 @@ export default function App() {
               path="/"
               element={
                 <RequireAuth>
-                  <Home />
+                  <ActiveOrgProvider>
+                    <Home />
+                  </ActiveOrgProvider>
                 </RequireAuth>
               }
             />

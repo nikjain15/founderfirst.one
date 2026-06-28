@@ -1,101 +1,39 @@
 /**
- * Authed shell + org-switcher. The org list comes from the RLS-scoped client, so
- * a user sees ONLY orgs they can access (Phase 0 isolation, exercised end-to-end).
- * Role-scoped lens routing (owner vs cpa vs admin) is the next Phase 1 sub-step;
- * for now the shell shows the active org and a placeholder workspace.
+ * Authed home: top bar + the role-scoped lens for the active org. The lens is
+ * chosen from the derived role (owner vs cpa); data + RLS are identical underneath
+ * — only the default view and affordances differ (ARCHITECTURE.md §B1).
  */
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getClient } from "../lib/supabase";
-import { useAuth } from "../auth/AuthProvider";
-import { SITE } from "@ff/site";
-
-interface Org {
-  id: string;
-  name: string;
-  type: "business" | "firm";
-}
-
-const ACTIVE_ORG_KEY = "ff.activeOrg";
+import Topbar from "../components/Topbar";
+import { useActiveOrg } from "../org/ActiveOrgProvider";
+import OwnerLens from "../lenses/OwnerLens";
+import CpaLens from "../lenses/CpaLens";
 
 export default function Home() {
-  const { session, signOut } = useAuth();
-
-  const orgsQuery = useQuery({
-    queryKey: ["orgs"],
-    queryFn: async (): Promise<Org[]> => {
-      const { data, error } = await getClient()
-        .from("organizations")
-        .select("id,name,type")
-        .order("name");
-      if (error) throw error;
-      return (data ?? []) as Org[];
-    },
-  });
-
-  const orgs = orgsQuery.data ?? [];
-  const [activeOrgId, setActiveOrgId] = useState<string>(
-    () => localStorage.getItem(ACTIVE_ORG_KEY) ?? "",
-  );
-
-  // Default the active org to the first available once loaded.
-  useEffect(() => {
-    if (!activeOrgId && orgs.length > 0) setActiveOrgId(orgs[0].id);
-  }, [orgs, activeOrgId]);
-
-  useEffect(() => {
-    if (activeOrgId) localStorage.setItem(ACTIVE_ORG_KEY, activeOrgId);
-  }, [activeOrgId]);
-
-  const activeOrg = orgs.find((o) => o.id === activeOrgId) ?? null;
+  const { loading, error, orgs, activeOrg, roleInfo } = useActiveOrg();
 
   return (
     <div className="shell">
-      <header className="topbar">
-        <span className="brand">{SITE.company}</span>
-        {orgs.length > 0 && (
-          <select
-            className="org-switcher"
-            value={activeOrgId}
-            onChange={(e) => setActiveOrgId(e.target.value)}
-            aria-label="Active organization"
-          >
-            {orgs.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.name} · {o.type}
-              </option>
-            ))}
-          </select>
-        )}
-        <span className="spacer" />
-        <span className="muted">{session?.user.email}</span>
-        <button className="ghost" onClick={() => void signOut()}>
-          Sign out
-        </button>
-      </header>
-
+      <Topbar />
       <main className="workspace">
-        {orgsQuery.isLoading && <p className="muted">Loading your workspaces…</p>}
-        {orgsQuery.isError && (
-          <p className="error">Couldn't load organizations.</p>
-        )}
-        {!orgsQuery.isLoading && orgs.length === 0 && (
+        {loading && <p className="muted">Loading your workspaces…</p>}
+        {error && <p className="error">Couldn't load your workspaces.</p>}
+
+        {!loading && orgs.length === 0 && (
           <div className="empty">
             <h1>Welcome.</h1>
             <p className="muted">
-              You don't have any organizations yet. (Create-business / accept-invite
-              flows land in the next Phase 1 step.)
+              You don't have any organizations yet. Create-business and
+              accept-invite flows land in the next Phase 1 slice.
             </p>
           </div>
         )}
-        {activeOrg && (
-          <div className="empty">
-            <h1>{activeOrg.name}</h1>
-            <p className="muted">
-              {activeOrg.type === "firm" ? "CPA practice" : "Business"} workspace —
-              role-scoped lens coming next.
-            </p>
-          </div>
+
+        {activeOrg && roleInfo?.lens === "owner" && <OwnerLens org={activeOrg} />}
+        {activeOrg && roleInfo?.lens === "cpa" && (
+          <CpaLens org={activeOrg} roleInfo={roleInfo} />
+        )}
+        {activeOrg && !roleInfo && (
+          <p className="muted">You don't have access to this organization.</p>
         )}
       </main>
     </div>

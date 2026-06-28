@@ -94,3 +94,36 @@ button.ghost { background: transparent; color: var(--ink-2); border-color: var(-
 }
 .empty { text-align: center; max-width: 32rem; }
 .empty h1 { font-size: var(--fs-h1); margin: 0 0 0.5rem; }
+
+/* ── role / lens ─────────────────────────────────────────────── */
+.role-pill {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-chip);
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--r-pill);
+  border: var(--bw-hair) solid var(--line);
+  color: var(--ink-2);
+}
+.role-pill.role-owner { background: var(--brand-tint); color: var(--brand); border-color: transparent; }
+.role-pill.role-cpa { background: var(--brand-soft); color: var(--ink-2); border-color: transparent; }
+
+.lens { width: min(100%, var(--page-max, 60rem)); }
+.lens h1 { font-size: var(--fs-h1); margin: 0 0 0.25rem; }
+.lens-stub {
+  margin-top: 1rem;
+  padding-left: 1.1rem;
+  color: var(--ink-3);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.readonly-note {
+  margin-top: 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--r-card);
+  background: var(--amber-bg);
+  color: var(--ink-2);
+  font-size: var(--fs-ui);
+}

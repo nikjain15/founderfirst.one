@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ContentPrompt } from "./ContentPrompt";
 import { ContentVoice } from "./ContentVoice";
+import { ContentPipeline } from "./ContentPipeline";
 import { ContentSubnav } from "./ContentSubnav";
 import {
   getClient,
@@ -15,12 +16,13 @@ import {
 // "kb" (knowledge base) is intentionally omitted from the nav until the
 // Phase 2 vector-search feature ships — the panel was a dead placeholder.
 // Site copy + the blog live on their own routes (see ContentSubnav).
-type Tab = "prompt" | "voice";
+type Tab = "prompt" | "voice" | "pipeline";
 
 export function ContentHome() {
   const location = useLocation();
   const navigate = useNavigate();
-  const tab: Tab = location.hash.slice(1) === "voice" ? "voice" : "prompt";
+  const hash = location.hash.slice(1);
+  const tab: Tab = hash === "voice" ? "voice" : hash === "pipeline" ? "pipeline" : "prompt";
 
   return (
     <div>
@@ -33,8 +35,9 @@ export function ContentHome() {
       <ContentSubnav active={tab} />
 
       <div className="tab-panel" role="tabpanel" id="content-tabpanel" aria-labelledby={`tab-${tab}`}>
-        {tab === "prompt" && <ContentPrompt />}
-        {tab === "voice"  && <ContentVoice />}
+        {tab === "prompt"   && <ContentPrompt />}
+        {tab === "voice"    && <ContentVoice />}
+        {tab === "pipeline" && <ContentPipeline />}
       </div>
     </div>
   );

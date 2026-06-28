@@ -868,6 +868,46 @@ export async function createContentPipelineItem(params: {
   return data as string;
 }
 
+export type ContentStatus = "idea" | "drafting" | "review" | "published" | "dismissed";
+export type ContentSource = "insight" | "manual" | "signal";
+
+/** Board summary row (from list_content_pipeline). */
+export interface ContentPipelineSummary {
+  id: string; source: ContentSource; topic: string; angle: string | null;
+  status: ContentStatus; has_audio: boolean; published_ref: string | null;
+  created_at: string; updated_at: string;
+}
+
+/** Full row (from get_content_pipeline_item / to_jsonb). */
+export interface ContentPipelineItem {
+  id: string; source: ContentSource; source_ref: string | null;
+  topic: string; angle: string | null; grounding: unknown;
+  status: ContentStatus; draft_md: string | null; script: unknown;
+  audio_url: string | null; seo: unknown; published_ref: string | null;
+  promo_schedule_id: string | null; created_by: string | null;
+  created_at: string; updated_at: string;
+}
+
+export async function listContentPipeline(status?: ContentStatus): Promise<ContentPipelineSummary[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_content_pipeline", { p_status: status ?? null });
+  if (error) throw new Error(`list_content_pipeline: ${error.message}`);
+  return (data ?? []) as ContentPipelineSummary[];
+}
+
+export async function getContentPipelineItem(id: string): Promise<ContentPipelineItem | null> {
+  const db = getClient();
+  const { data, error } = await db.rpc("get_content_pipeline_item", { p_id: id });
+  if (error) throw new Error(`get_content_pipeline_item: ${error.message}`);
+  return (data ?? null) as ContentPipelineItem | null;
+}
+
+export async function setContentPipelineStatus(id: string, status: ContentStatus): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("set_content_pipeline_status", { p_id: id, p_status: status });
+  if (error) throw new Error(`set_content_pipeline_status: ${error.message}`);
+}
+
 // ---- Product funnel --------------------------------------------------------
 
 export interface FunnelStageRow { stage: string; unique_users: number; total_events: number }

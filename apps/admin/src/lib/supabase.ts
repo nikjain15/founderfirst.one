@@ -1071,6 +1071,42 @@ export async function setLiveVoice(id: string): Promise<void> {
   if (error) throw new Error(`set_live_voice: ${error.message}`);
 }
 
+// ── Discord persona — the bot's editable instruction block. Same model as
+// penny_voice; consumed live by the Worker (buildDiscordSystemPrompt).
+export interface DiscordPersonaRow {
+  id: string;
+  version: number;
+  body: string;
+  notes: string | null;
+  is_live: boolean;
+  created_at: string;
+  created_by: string | null;
+  created_by_email: string | null;
+}
+
+export async function listDiscordPersona(): Promise<DiscordPersonaRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_discord_persona");
+  if (error) throw new Error(`list_discord_persona: ${error.message}`);
+  return ((data as DiscordPersonaRow[]) ?? []).map((r) => ({ ...r, version: Number(r.version) }));
+}
+
+export async function createDiscordPersonaVersion(body: string, notes?: string): Promise<string> {
+  const db = getClient();
+  const { data, error } = await db.rpc("create_discord_persona_version", {
+    p_body: body,
+    p_notes: notes ?? null,
+  });
+  if (error) throw new Error(`create_discord_persona_version: ${error.message}`);
+  return data as string;
+}
+
+export async function setLiveDiscordPersona(id: string): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("set_live_discord_persona", { p_id: id });
+  if (error) throw new Error(`set_live_discord_persona: ${error.message}`);
+}
+
 // ---- Site content (unified content model — Phase 1) ------------------------
 // Versioned page + email content, same model as penny_voice. RPCs are
 // admin-gated server-side (is_admin) and audited via log_admin_action.

@@ -3,6 +3,7 @@ import Base from "../../layouts/Base.astro";
 import Nav from "../../components/Nav.astro";
 import Footer from "../../components/Footer.astro";
 import PennyGlance from "../../components/PennyGlance.astro";
+import PennySafe from "../../components/PennySafe.astro";
 import { getBlogPosts } from "../../lib/blog";
 import type { Page } from "@ff/content";
 
@@ -37,7 +38,7 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
     <div class="wrap">
       {featured && (
         <a class="featured" href={`/blog/${featured.slug}/`}>
-          <div class="f-visual"><PennyGlance /></div>
+          <div class="f-visual">{featured.hero === "safe" ? <PennySafe /> : <PennyGlance />}</div>
           <div class="f-copy">
             <div class="meta">{featured.tag} · {fmt(featured.date)} · {featured.readMins} min read</div>
             <h2>{featured.title}</h2>

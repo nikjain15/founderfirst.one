@@ -19,6 +19,8 @@ export interface Post {
   date: string;        // ISO — drives dateModified/datePublished GEO signal
   readMins: number;
   tag: string;
+  /** Cover visual shown in the post hero + the /blog featured card. One per post. */
+  hero: "glance" | "safe";
   /** Scannable summary shown as a "Key takeaways" callout at the top of the post. */
   takeaways: string[];
   body: Block[];
@@ -33,6 +35,7 @@ export const posts: Post[] = [
     date: "2026-06-28",
     readMins: 5,
     tag: "Guides",
+    hero: "safe",
     takeaways: [
       "Yes — a well-built AI bookkeeper is safe. What matters is how it connects to your accounts.",
       "Read-only by design: it can see and sort your transactions but can never move a cent.",
@@ -67,6 +70,7 @@ export const posts: Post[] = [
     date: "2026-06-20",
     readMins: 5,
     tag: "Guides",
+    hero: "glance",
     takeaways: [
       "An autonomous AI bookkeeper does the books for you — it's not a tool you operate.",
       "It categorizes every transaction, chases late invoices, and stays CPA-ready 24/7.",

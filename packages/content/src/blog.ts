@@ -29,6 +29,8 @@ export const BlogPost = z.object({
   date: z.string(), // ISO
   readMins: z.number(),
   tag: z.string(),
+  /** Cover visual shown in the post hero + the /blog featured card. One per post. */
+  hero: z.enum(["glance", "safe"]).default("glance"),
   takeaways: z.array(z.string()).default([]),
   body: z.array(BlogBlock).default([]),
 });

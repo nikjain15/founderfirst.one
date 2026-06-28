@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "./auth/AuthProvider";
 import { ActiveOrgProvider } from "./org/ActiveOrgProvider";
 import Login from "./routes/Login";
 import Home from "./routes/Home";
+import Accept from "./routes/Accept";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,6 +27,7 @@ export default function App() {
         <BrowserRouter basename="/app">
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/accept" element={<Accept />} />
             <Route
               path="/"
               element={

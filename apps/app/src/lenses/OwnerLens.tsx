@@ -1,6 +1,7 @@
 /** Business Owner lens — default view is "How's my business" (ARCHITECTURE.md
- *  §B7). Stub for now; the cockpit + ledger screens seed from apps/demo next. */
+ *  §B7). Stub cockpit for now; the owner can already invite their accountant. */
 import type { Org } from "../org/ActiveOrgProvider";
+import InviteCpa from "../org/InviteCpa";
 
 export default function OwnerLens({ org }: { org: Org }) {
   return (
@@ -12,6 +13,7 @@ export default function OwnerLens({ org }: { org: Org }) {
         <li>Tap-to-confirm categorization</li>
         <li>Receipt capture (PWA)</li>
       </ul>
+      <InviteCpa orgId={org.id} />
     </section>
   );
 }

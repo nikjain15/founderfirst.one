@@ -1,7 +1,7 @@
 name: Deploy to GitHub Pages
 
-# Builds the workspace (marketing + blog + vendored Penny demo) and deploys
-# dist/ to GitHub Pages.
+# Builds the workspace (apps/web + admin + Penny demo, assembled by
+# scripts/build-all.ts) and deploys dist/ to GitHub Pages.
 #
 # Activation: GitHub → Settings → Pages → "Source: GitHub Actions".
 # Until that switch is flipped, this workflow runs builds but the legacy
@@ -56,7 +56,7 @@ jobs:
       - name: Check CSS imports
         run: pnpm check:css
 
-      - name: Build (marketing + blog + assemble)
+      - name: Build (web + admin + demo, assembled by build-all.ts)
         env:
           # Build-time env. Configure in repo Settings → Secrets and variables.
           # Values fall back to empty strings; the apps degrade to preview mode.

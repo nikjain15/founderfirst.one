@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Penny AI Quality &amp; Cost Layer — Plan &amp; Decisions</title>
+<style>
+  :root{
+    --ink:#1c1c1a; --ink-2:#55554f; --ink-3:#8a8980;
+    --line:#e4e2da; --line-2:#cfcdc3;
+    --paper:#ffffff; --paper-2:#faf9f5; --paper-3:#f1efe8;
+    --accent:#0f6e56; --accent-bg:#e1f5ee;
+    --warn:#854f0b; --warn-bg:#faeeda;
+    --gate:#0c447c; --gate-bg:#e6f1fb;
+    --danger:#791f1f; --danger-bg:#fcebeb;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:var(--paper-2); margin:0; line-height:1.6;}
+  .wrap{max-width:960px; margin:0 auto; padding:48px 28px 96px;}
+  header.doc{border-bottom:2px solid var(--ink); padding-bottom:18px; margin-bottom:8px;}
+  h1{font-size:30px; font-weight:600; margin:0 0 6px;}
+  .sub{color:var(--ink-2); font-size:15px;}
+  .meta{color:var(--ink-3); font-size:13px; margin-top:10px;}
+  h2{font-size:21px; font-weight:600; margin:44px 0 12px; padding-top:10px; border-top:1px solid var(--line);}
+  h3{font-size:16px; font-weight:600; margin:24px 0 8px;}
+  p{margin:10px 0;}
+  ul,ol{margin:10px 0; padding-left:22px;}
+  li{margin:5px 0;}
+  code{background:var(--paper-3); padding:1px 6px; border-radius:5px; font-size:13px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:14px; background:var(--paper);}
+  th,td{text-align:left; padding:9px 11px; border-bottom:1px solid var(--line); vertical-align:top;}
+  th{color:var(--ink-2); font-weight:600; font-size:12.5px; text-transform:uppercase; letter-spacing:.03em;}
+  tr:last-child td{border-bottom:none;}
+  .card{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; margin:16px 0;}
+  .pill{display:inline-block; padding:1px 9px; border-radius:11px; font-size:12px; font-weight:600; white-space:nowrap;}
+  .pill.gate{background:var(--gate-bg); color:var(--gate);}
+  .pill.score{background:var(--paper-3); color:var(--ink-2);}
+  .pill.req{background:var(--danger-bg); color:var(--danger);}
+  .pill.now{background:var(--accent-bg); color:var(--accent);}
+  .pill.later{background:var(--warn-bg); color:var(--warn);}
+  .tag{font-size:12px; color:var(--ink-3);}
+  .callout{border-left:3px solid var(--accent); background:var(--accent-bg); padding:12px 16px; border-radius:0 8px 8px 0; margin:16px 0;}
+  .callout.warn{border-color:var(--warn); background:var(--warn-bg);}
+  .callout.danger{border-color:var(--danger); background:var(--danger-bg);}
+  .did{font-weight:600; color:var(--accent);}
+  .lead{font-size:16px; color:var(--ink-2);}
+  .flow{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:14px 0; font-size:13.5px;}
+  .flow .step{background:var(--paper); border:1px solid var(--line-2); border-radius:8px; padding:7px 11px;}
+  .flow .arr{color:var(--ink-3);}
+  .small{font-size:13px; color:var(--ink-2);}
+  .toc{columns:2; column-gap:32px; font-size:14px;}
+  .toc a{color:var(--accent); text-decoration:none;}
+  @media(max-width:640px){ .toc{columns:1} h1{font-size:25px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <h1>Penny — AI Quality &amp; Cost Layer</h1>
+  <div class="sub">A single layer every AI request passes through: routes to the right model, records everything, audits quality before it reaches users, and earns more autonomy as it proves itself — built on the existing Cloudflare + Supabase stack.</div>
+  <div class="meta">Plan &amp; agreed decisions · for stress-testing · 27 Jun 2026 · status: design locked, pre-build</div>
+</header>
+
+<div class="card">
+  <strong>On this page</strong>
+  <div class="toc" style="margin-top:8px;">
+    <a href="#why">1. Why we're building this</a><br>
+    <a href="#what">2. What it is (plain English)</a><br>
+    <a href="#decisions">3. Decisions agreed (D1–D14)</a><br>
+    <a href="#evals">4. The evals (quality checks)</a><br>
+    <a href="#records">5. What we record per answer</a><br>
+    <a href="#loop">6. Improvement loop &amp; autonomy ramp</a><br>
+    <a href="#arch">7. Architecture &amp; tools (build vs buy)</a><br>
+    <a href="#admin">8. The admin views</a><br>
+    <a href="#phases">9. Phased build plan</a><br>
+    <a href="#guardrails">10. Guardrails document v1</a><br>
+    <a href="#assumptions">11. Assumptions &amp; risks to stress-test</a><br>
+    <a href="#avoid">12. Things we deliberately avoid</a>
+  </div>
+</div>
+
+<h2 id="why">1. Why we're building this</h2>
+<p class="lead">Penny uses AI in ~11 separate places (website chat, Discord, insights, email drafts, signals scoring, …) across three runtimes (Cloudflare Workers, Supabase Edge Functions, a local Mac host). Each was built independently — its own model choice, its own error handling, no shared records.</p>
+<p>That creates four problems that get worse as we grow and add more products:</p>
+<ul>
+  <li><strong>Cost balloons.</strong> Expensive models used even for easy tasks; no shared caching. Cost per customer rises with volume instead of falling.</li>
+  <li><strong>Quality is invisible.</strong> No record of which model answered, how good it was, or whether a human had to fix it. We can't prove quality is going up.</li>
+  <li><strong>Stakes are high.</strong> This is bookkeeping — a wrong number or wrong tax claim is a real liability, not a demo bug.</li>
+  <li><strong>It doesn't reuse.</strong> Every future agent re-solves the same hard problem from scratch.</li>
+</ul>
+<div class="callout">
+  <strong>The real scaling law for an autonomous product:</strong> the binding constraint isn't tokens — it's <em>human-review attention</em>. We only scale if the share of decisions resolved <em>without</em> a human climbs over time, safely. Cost is downstream of that.
+</div>
+<p class="small"><strong>A gift we found in the code:</strong> we already record fragments of this — <code>model</code> on insight_runs, <code>confidence</code> on insight_actions, <code>intent</code>/<code>model</code> on sig_scores, <code>outcome</code> on sig_leads, <code>bot_confidence</code> on tickets — in five incompatible shapes. This layer unifies them into one source of truth. It's a tidy-up, not a green field.</p>
+
+<h2 id="what">2. What it is (plain English)</h2>
+<p>One "middle desk" every AI request goes through. A product declares <em>what</em> it needs; the desk decides <em>how</em> to run it and keeps getting better on its own. It does six jobs:</p>
+<ol>
+  <li><strong>Routes</strong> to the cheapest model that's good enough (cheap for easy, frontier only when hard).</li>
+  <li><strong>Records</strong> every request — model, confidence, cost, speed, outcome.</li>
+  <li><strong>Audits</strong> — a second AI grades each answer against that use case's evals; risky ones are blocked or sent to a human.</li>
+  <li><strong>Queues for human review</strong> when needed.</li>
+  <li><strong>Reuses &amp; learns</strong> — caches answers; repeated approved answers graduate into rules (no model call).</li>
+  <li><strong>Shows it</strong> — cost + quality trends and controls on the FounderFirst admin.</li>
+</ol>
+
+<h2 id="decisions">3. Decisions agreed (D1–D14)</h2>
+<p class="small">Numbered so we can reference them precisely while stress-testing.</p>
+<table>
+  <thead><tr><th style="width:42px;">#</th><th>Decision</th><th style="width:38%;">Rationale / notes</th></tr></thead>
+  <tbody>
+    <tr><td><strong>D1</strong></td><td><span class="did">Scope:</span> design for both today's live tools <em>and</em> the future bookkeeping product. Build now on the 3 live tools (Penny chat, Insights, Email drafts); design every record + eval so categorization plugs straight in when bookkeeping ships.</td><td>"Both at once," made honest — we don't wait on a product that isn't live, but we don't design ourselves into a corner either.</td></tr>
+    <tr><td><strong>D2</strong></td><td><span class="did">Auditing:</span> AI grades every answer <em>and</em> a human reviews everything in the early stage of each use case.</td><td>Highest confidence while we build trust. Review load shrinks via the autonomy ramp (D5), not by skipping checks.</td></tr>
+    <tr><td><strong>D3</strong></td><td><span class="did">Live chat exception:</span> a second AI checks each reply instantly before it sends; humans review a <em>sample</em> afterward.</td><td>You can't pause a live customer chat for human review. Async work (bookkeeping, emails, insights) keeps full pre-send review.</td></tr>
+    <tr><td><strong>D4</strong></td><td><span class="did">Control:</span> you approve each step that increases autonomy. We also write a living <em>guardrails document</em> (§10) so the rules are explicit and updatable.</td><td>Human-in-control now; codified rules so future steps follow policy, not vibes.</td></tr>
+    <tr><td><strong>D5</strong></td><td><span class="did">Autonomy ramp:</span> every use case starts at 100% human review. It earns less review only after sustained high eval + approval rates with zero safety/privacy failures — and you approve each step. Quality drop ⇒ auto-rollback.</td><td>This is the "reduce its role step by step" mechanism. Thresholds live in the guardrails doc.</td></tr>
+    <tr><td><strong>D6</strong></td><td><span class="did">Quality = evals,</span> prioritized by harm. Split into <span class="pill gate">gate</span> (blocks/escalates) and <span class="pill score">score</span> (tracked). Full list in §4.</td><td>"Good" is measurable and ordered by what hurts most if wrong.</td></tr>
+    <tr><td><strong>D7</strong></td><td><span class="did">Evals are per-use-case &amp; configurable</span> from a shared library — add/edit/remove, set gate-or-score, tune thresholds, edit judge criteria, add custom evals.</td><td>Penny chat ≠ Insights ≠ categorization. One library, different selection per use case.</td></tr>
+    <tr><td><strong>D8</strong></td><td><span class="did">Mandatory floor:</span> for anything customer-facing, Safety + Privacy gates are always on and locked.</td><td>You customize <em>above</em> the floor, never below it. Enforced in UI + guardrails doc.</td></tr>
+    <tr><td><strong>D9</strong></td><td><span class="did">One source of truth:</span> records, review queue, dashboard, eval config, and model config all live in Supabase + the admin app — not in a third-party tool.</td><td>Matches the "one concept = one source of truth" rule; keeps data under our control.</td></tr>
+    <tr><td><strong>D10</strong></td><td><span class="did">Config-driven, no hardcoding:</span> which model, routing, spend caps, caching, evals, thresholds are all editable data, surfaced in the admin — never hardcoded per file.</td><td>Same principle as <code>site.ts</code>/tokens. Change once, applies live, written to audit log.</td></tr>
+    <tr><td><strong>D11</strong></td><td><span class="did">Front door = Cloudflare AI Gateway.</span> Routing, fallback, exact-match cache, spend budgets, request logs.</td><td>Native to our stack, free to start, zero new servers.</td></tr>
+    <tr><td><strong>D12</strong></td><td><span class="did">AI-judge runs in our Worker</span> (not a framework) for the inline pre-user gate; batch grading for async work.</td><td>No new tool for the runtime check. Frameworks only for designing/CI-testing criteria later.</td></tr>
+    <tr><td><strong>D13</strong></td><td><span class="did">Langfuse Cloud is optional, later</span> — bolted on for heavier eval tooling if it earns its place. Never self-hosted.</td><td>Self-hosting drags in Postgres+ClickHouse+Redis+S3 = the always-on burden we avoid.</td></tr>
+    <tr><td><strong>D14</strong></td><td><span class="did">Safe first move:</span> Phase 0 = turn on the gateway + start recording with <em>no behavior change</em>. Same models, same answers; we just gain visibility.</td><td>De-risks everything; gives real data before we tune anything.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="evals">4. The evals (quality checks)</h2>
+<p>Ordered by criticality — most harmful if wrong, first. <span class="pill gate">gate</span> = blocks or escalates; the answer never reaches the user if it fails. <span class="pill score">score</span> = tracked to drive improvement, not blocking. Per D7, each use case picks and tunes its own set above the mandatory floor (D8).</p>
+<table>
+  <thead><tr><th style="width:34px;">#</th><th>Eval</th><th>What it checks</th><th>Checked by</th><th>Type</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><strong>Safe / knows limits</strong></td><td>No wrong money/tax/legal advice; recognizes when to defer to a human.</td><td>rules + AI judge</td><td><span class="pill gate">gate</span> <span class="pill req">required</span></td></tr>
+    <tr><td>2</td><td><strong>Privacy</strong></td><td>No wrong-customer data; no leaked personal info.</td><td>rules</td><td><span class="pill gate">gate</span> <span class="pill req">required</span></td></tr>
+    <tr><td>3</td><td><strong>Truthful / grounded</strong></td><td>Every number/fact traces to real source data; nothing invented.</td><td>rule where possible + AI judge</td><td><span class="pill gate">gate</span></td></tr>
+    <tr><td>4</td><td><strong>Correct &amp; math adds up</strong></td><td>Right category from the chart of accounts; totals reconcile. (Bookkeeping.)</td><td>rule (math) + AI judge + human</td><td><span class="pill gate">gate</span></td></tr>
+    <tr><td>5</td><td><strong>Consistent</strong></td><td>Same vendor/question → same answer over time.</td><td>compare vs past decisions</td><td><span class="pill score">score</span></td></tr>
+    <tr><td>6</td><td><strong>Valid format</strong></td><td>Structurally complete output (real category code, required fields, valid JSON).</td><td>rule</td><td><span class="pill gate">gate</span></td></tr>
+    <tr><td>7</td><td><strong>On-brand voice</strong></td><td>Sounds like Penny / FounderFirst, not generic.</td><td>AI judge vs voice guide</td><td><span class="pill score">score</span></td></tr>
+    <tr><td>8</td><td><strong>Actually helpful</strong></td><td>Resolved the real need; for chat, didn't force a re-ask/escalation.</td><td>AI judge + behavior signal</td><td><span class="pill score">score</span></td></tr>
+  </tbody>
+</table>
+<p class="small">Tracked alongside (not answer-quality): <strong>cost per task</strong> and <strong>speed</strong> — the "cost going down" half of the goal.</p>
+
+<h2 id="records">5. What we record per answer</h2>
+<p>One record per AI answer — the single source of truth feeding the dashboard and the learning loop. Eval results reference the eval's <em>version</em>, since the set differs per use case and definitions change over time.</p>
+<table>
+  <thead><tr><th>Field group</th><th>Captures</th></tr></thead>
+  <tbody>
+    <tr><td><strong>The ask</strong></td><td>use case, which customer/tenant, the input</td></tr>
+    <tr><td><strong>The answer</strong></td><td>what was produced</td></tr>
+    <tr><td><strong>The engine</strong></td><td>which model/provider, cost, latency, cache hit?</td></tr>
+    <tr><td><strong>The evals</strong></td><td>each configured eval's pass/score + version</td></tr>
+    <tr><td><strong>The gate decision</strong></td><td>passed / blocked / escalated</td></tr>
+    <tr><td><strong>Human verdict</strong></td><td>(when reviewed) approved / edited (+ the edit) / rejected (+ why)</td></tr>
+    <tr><td><strong>Final outcome</strong></td><td>used? later corrected by customer/CPA?</td></tr>
+  </tbody>
+</table>
+<p class="small">Lands as a new Supabase table (working name <code>ai_decisions</code>), additive — existing per-feature columns keep working and are migrated/retired one at a time once the unified log is trusted.</p>
+
+<h2 id="loop">6. Improvement loop &amp; autonomy ramp</h2>
+<p>Every block, edit, rejection, and later correction is a lesson. Patterns drive fixes (better prompt, a new rule, a model swap). Two specific mechanisms:</p>
+<ul>
+  <li><strong>Rule graduation.</strong> A repeated, human-approved answer (e.g. "vendor AWS → Software", 50×) becomes a deterministic rule that fires with no model call — cheaper <em>and</em> more consistent. Tenant-scoped (one customer's rule never fires on another's books).</li>
+  <li><strong>Autonomy ramp (D5).</strong> 100% review → the system recommends reducing review when evals + approval stay high with zero safety/privacy misses → you approve → less review. Quality dips ⇒ snaps back automatically.</li>
+</ul>
+<div class="flow">
+  <span class="step">answer produced</span><span class="arr">→</span>
+  <span class="step">evals run</span><span class="arr">→</span>
+  <span class="step">gate: pass / block / escalate</span><span class="arr">→</span>
+  <span class="step">human verdict (early)</span><span class="arr">→</span>
+  <span class="step">recorded</span><span class="arr">→</span>
+  <span class="step">patterns → rules + ramp</span>
+</div>
+
+<h2 id="arch">7. Architecture &amp; tools (build vs buy)</h2>
+<p>Researched against one hard constraint: <strong>no new always-on server to babysit</strong> (the lesson from running prod on a Mac). Almost everything is either already in the stack or a free/cheap managed tier.</p>
+<table>
+  <thead><tr><th>Job</th><th>Tool</th><th>New server?</th></tr></thead>
+  <tbody>
+    <tr><td>Front door — route, fallback, exact-cache, spend caps, logs</td><td><strong>Cloudflare AI Gateway</strong></td><td>No (part of Cloudflare)</td></tr>
+    <tr><td>Inline quality check on live answers</td><td><strong>AI-judge call inside our Worker</strong> (no framework)</td><td>No</td></tr>
+    <tr><td>Records + dashboard + review queue + eval/model config</td><td><strong>Supabase + apps/admin</strong> (our source of truth)</td><td>No</td></tr>
+    <tr><td>Reuse / rule graduation</td><td>Gateway cache now; <strong>Vectorize/Upstash</strong> semantic cache later</td><td>No</td></tr>
+    <tr><td>Heavier eval tooling (optional, later)</td><td><strong>Langfuse Cloud</strong></td><td>No (cloud only)</td></tr>
+  </tbody>
+</table>
+<p class="small"><strong>Cost to start:</strong> ~$0–29/month. <strong>Ollama gap:</strong> zero-infra gateways can't reach the local Mac Ollama — so Mac paths stay out of the customer-facing path (use Workers AI instead), consistent with retiring Mac-as-prod.</p>
+<div class="flow">
+  <span class="step">product calls <code>resolve()</code></span><span class="arr">→</span>
+  <span class="step">Cloudflare AI Gateway</span><span class="arr">→</span>
+  <span class="step">model</span><span class="arr">→</span>
+  <span class="step">AI-judge + evals</span><span class="arr">→</span>
+  <span class="step">gate</span><span class="arr">→</span>
+  <span class="step">Supabase record</span><span class="arr">→</span>
+  <span class="step">admin dashboard + controls</span>
+</div>
+
+<h2 id="admin">8. The admin views</h2>
+<p>Three screens on the FounderFirst admin (reusing existing patterns — KPI strips, tables, review surfaces):</p>
+<ul>
+  <li><strong>Overview</strong> — KPI strip (total spend, quality, autonomy %, awaiting review); per-use-case table with <em>total cost</em>, cost/task, quality, model in use, review mode, status; and a "what to do next" actions feed (apply cheaper route, approve more autonomy, see a failing pattern).</li>
+  <li><strong>Use-case detail</strong> — cost breakdown + cost-by-model; <em>editable</em> models &amp; routing (main / backup / hard-questions / spend cap / caching) with "test before saving"; quality checks; autonomy dial + recommendation; what's working; recent answers.</li>
+  <li><strong>Eval setup (per use case)</strong> — table of applied evals (method, gate/score, threshold, live pass-rate), add from library or create custom, locked mandatory gates, "save to this use case" vs "save to library", "test on recent answers".</li>
+</ul>
+
+<h2 id="phases">9. Phased build plan</h2>
+<p>Each phase ships something usable and de-risks the next. Build order is bottom-up: seam + measurement first, cleverness later (you can't self-tune before you can measure).</p>
+<table>
+  <thead><tr><th style="width:60px;">Phase</th><th>Delivers</th><th>Key pieces</th></tr></thead>
+  <tbody>
+    <tr><td><span class="pill now">0</span></td><td><strong>Front door + recording, no behavior change</strong> (D14)</td><td>Turn on Cloudflare AI Gateway in front of the 3 live call sites; <code>ai_decisions</code> table; a thin <code>resolve()</code> seam that forwards to today's models and logs every answer. Start the guardrails doc.</td></tr>
+    <tr><td><span class="pill now">1</span></td><td><strong>Visibility</strong> — the overview dashboard</td><td>Admin "AI quality &amp; cost" page reading records: total cost per use case, models in use, volume, basic trends.</td></tr>
+    <tr><td><span class="pill now">2</span></td><td><strong>Judging</strong> — evals + AI-judge</td><td>Eval library + per-use-case config; in-Worker judge; inline gate for live chat (block/escalate); batch grading for async work.</td></tr>
+    <tr><td><span class="pill now">3</span></td><td><strong>Human review queue</strong></td><td>Approve/edit/reject screen in admin for async work; corrections recorded and fed back.</td></tr>
+    <tr><td><span class="pill now">4</span></td><td><strong>Control</strong> — model &amp; routing from the admin</td><td>Config-driven model/routing/caps/caching per use case; "test before saving"; all changes audit-logged.</td></tr>
+    <tr><td><span class="pill later">5</span></td><td><strong>Cheaper &amp; more autonomous</strong></td><td>Semantic cache (Vectorize/Upstash); rule graduation; autonomy-ramp recommendations enforced against the guardrails doc.</td></tr>
+    <tr><td><span class="pill later">6</span></td><td><strong>Bookkeeping plugs in</strong></td><td>Categorization use case onboarded when the product ships; optional Langfuse Cloud for heavier evals.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="guardrails">10. Guardrails document v1 (living)</h2>
+<p>The written rulebook the system follows. Starts here, updated as we learn; later editable in admin.</p>
+<div class="card">
+  <h3 style="margin-top:0;">Mandatory floor (cannot be disabled)</h3>
+  <ul>
+    <li>Customer-facing use cases must run the <strong>Safe</strong> and <strong>Privacy</strong> gates at all times.</li>
+    <li>Financial outputs (numbers, categories) must run the <strong>Truthful/grounded</strong> and <strong>Math-adds-up</strong> gates.</li>
+    <li>No output ships if a <span class="pill gate">gate</span> fails — it is blocked or escalated to a human.</li>
+  </ul>
+  <h3>Autonomy-ramp rules (placeholder thresholds — tune with real data)</h3>
+  <ul>
+    <li>A use case may move from <em>100% review</em> → <em>sampling</em> only after: ≥ [N] decisions, ≥ [X]% human-approval, and <strong>zero</strong> safety/privacy failures over [T] weeks.</li>
+    <li>Each reduction is <strong>proposed by the system and approved by a human</strong> (D4). Approval is audit-logged.</li>
+    <li><strong>Rollback:</strong> if any gate-failure or approval-rate drops below [Y]% over [rolling window], the use case auto-reverts to the previous (stricter) review level.</li>
+  </ul>
+  <h3>Model-change rules</h3>
+  <ul>
+    <li>Model/routing changes must pass "test on recent answers" before going live.</li>
+    <li>Spend caps per use case are enforced by the gateway; hitting a cap triggers fallback, not failure.</li>
+  </ul>
+</div>
+
+<h2 id="assumptions">11. Assumptions &amp; risks to stress-test</h2>
+<p>The deliberate list of things we should attack before building, so we don't miss anything.</p>
+<div class="callout warn">
+  <strong>Assumptions baked in (validate each):</strong>
+  <ul style="margin-bottom:0;">
+    <li>That an <strong>AI judge</strong> is reliable enough to gate customer-facing answers without too many false blocks (or missed bad answers).</li>
+    <li>That adding a judge + evals to <strong>live chat</strong> won't add noticeable latency.</li>
+    <li>That a <strong>per-use-case eval config in Supabase</strong> is expressive enough for real bookkeeping checks (not just text grading).</li>
+    <li>That <strong>Cloudflare AI Gateway</strong> covers our routing needs and that dropping local Ollama from the runtime path is acceptable.</li>
+    <li>That "<strong>both at once</strong>" (D1) is realistic given bookkeeping isn't live — i.e. we won't over-design for a product whose shape may change.</li>
+    <li>That <strong>rule graduation</strong> can be made safe in a multi-tenant financial system (no cross-customer leakage).</li>
+  </ul>
+</div>
+<div class="callout danger">
+  <strong>Top risks:</strong>
+  <ul style="margin-bottom:0;">
+    <li><strong>Judge cost &amp; latency:</strong> grading every answer doubles model calls — could erode the cost savings or slow chat.</li>
+    <li><strong>False confidence:</strong> evals that pass but miss real errors → we ramp autonomy on a bad signal.</li>
+    <li><strong>Scope creep:</strong> building for bookkeeping before it exists.</li>
+    <li><strong>Source-of-truth drift:</strong> if Langfuse (or any second store) creeps in, we re-create the very fragmentation we're fixing.</li>
+    <li><strong>Migration safety:</strong> wiring 11 call sites and retiring scattered columns without breaking live surfaces.</li>
+  </ul>
+</div>
+
+<h2 id="avoid">12. Things we deliberately avoid</h2>
+<ul>
+  <li><strong>Always-on infra we babysit:</strong> LiteLLM, Kong, self-hosted Langfuse/Helicone/Argilla, GPTCache, self-hosted Redis.</li>
+  <li><strong>Dead/fading tools:</strong> OpenAI Evals (shutting down), Humanloop (shut down), Helicone (maintenance mode).</li>
+  <li><strong>A second source of truth</strong> for records/queue/dashboard outside Supabase + admin (D9).</li>
+  <li><strong>Hardcoded model choices</strong> per file (D10).</li>
+  <li><strong>Mac-host dependencies</strong> in any customer-facing path.</li>
+</ul>
+<p class="small" style="margin-top:8px;">Freshness caveat: a few "fading/shutting down" facts came from secondary 2026 write-ups — confirm first-party before betting the roadmap on any one of them.</p>
+
+<p class="meta" style="margin-top:48px; border-top:1px solid var(--line); padding-top:16px;">Next step: adversarial stress test of every decision (D1–D14), assumption, and risk above — then turn the surviving plan into build tickets.</p>
+
+</div>
+</body>
+</html>

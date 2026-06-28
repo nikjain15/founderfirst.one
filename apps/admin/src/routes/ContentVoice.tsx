@@ -10,6 +10,7 @@ import {
   type VoiceReview,
 } from "../lib/supabase";
 import { IconAlert, IconCheck } from "../lib/icons";
+import { SITE } from "@ff/site";
 // Repo-root VOICE.md, bundled as a string so the empty-state editor seeds
 // from the canonical file instead of an empty textarea. After v1 is saved
 // the live serving voice is always whatever was last published from here.
@@ -116,7 +117,7 @@ export function ContentVoice() {
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["voice"] });
       void qc.invalidateQueries({ queryKey: ["liveVoice"] });
-      if (selected) setFlash(`Voice v${selected.version} is now live. Open the Penny bubble on founderfirst.one to verify within a minute.`);
+      if (selected) setFlash(`Voice v${selected.version} is now live. Open the Penny bubble on ${SITE.host} to verify within a minute.`);
     },
     onError: (e) => setError((e as Error).message),
   });
@@ -502,7 +503,7 @@ function FootnoteHint() {
       <strong>How this works.</strong> The live version is used by every Penny surface —
       site bubble, support bot, in-product Penny. Edits go live within ~60 seconds of
       clicking <em>Set live</em>; no redeploy. After publishing,{" "}
-      <a href="https://founderfirst.one" target="_blank" rel="noreferrer">
+      <a href={SITE.url} target="_blank" rel="noreferrer">
         open the Penny bubble to verify →
       </a>
     </div>

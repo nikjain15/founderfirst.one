@@ -139,4 +139,27 @@ export class Supabase {
     const rows = (await res.json()) as Array<{ id: string; version: number; body: string; updated_at: string }>;
     return rows[0] ?? null;
   }
+
+  /**
+   * Fetch the currently live Discord persona via get_live_discord_persona().
+   * Returns null when nothing is published yet (or the table isn't migrated) —
+   * the caller falls back to the Worker's baked-in DISCORD_PERSONA_BASE.
+   */
+  async getLiveDiscordPersona(): Promise<{ id: string; version: number; body: string; updated_at: string } | null> {
+    const res = await fetch(`${this.url}/rest/v1/rpc/get_live_discord_persona`, {
+      method: "POST",
+      headers: {
+        apikey: this.serviceKey,
+        Authorization: `Bearer ${this.serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`get_live_discord_persona failed (${res.status}): ${body}`);
+    }
+    const rows = (await res.json()) as Array<{ id: string; version: number; body: string; updated_at: string }>;
+    return rows[0] ?? null;
+  }
 }

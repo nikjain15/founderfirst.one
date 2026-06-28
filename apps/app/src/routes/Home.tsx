@@ -3,13 +3,16 @@
  * chosen from the derived role (owner vs cpa); data + RLS are identical underneath
  * — only the default view and affordances differ (ARCHITECTURE.md §B1).
  */
+import { useState } from "react";
 import Topbar from "../components/Topbar";
 import { useActiveOrg } from "../org/ActiveOrgProvider";
+import CreateOrg from "../org/CreateOrg";
 import OwnerLens from "../lenses/OwnerLens";
 import CpaLens from "../lenses/CpaLens";
 
 export default function Home() {
   const { loading, error, orgs, activeOrg, roleInfo } = useActiveOrg();
+  const [creating, setCreating] = useState(false);
 
   return (
     <div className="shell">
@@ -21,10 +24,8 @@ export default function Home() {
         {!loading && orgs.length === 0 && (
           <div className="empty">
             <h1>Welcome.</h1>
-            <p className="muted">
-              You don't have any organizations yet. Create-business and
-              accept-invite flows land in the next Phase 1 slice.
-            </p>
+            <p className="muted">Create your first organization to get started.</p>
+            <CreateOrg />
           </div>
         )}
 
@@ -34,6 +35,18 @@ export default function Home() {
         )}
         {activeOrg && !roleInfo && (
           <p className="muted">You don't have access to this organization.</p>
+        )}
+
+        {orgs.length > 0 && (
+          <div className="new-org">
+            {creating ? (
+              <CreateOrg onDone={() => setCreating(false)} />
+            ) : (
+              <button className="ghost" onClick={() => setCreating(true)}>
+                + New organization
+              </button>
+            )}
+          </div>
         )}
       </main>
     </div>

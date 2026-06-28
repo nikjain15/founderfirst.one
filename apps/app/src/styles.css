@@ -127,3 +127,29 @@ button.ghost { background: transparent; color: var(--ink-2); border-color: var(-
   color: var(--ink-2);
   font-size: var(--fs-ui);
 }
+
+/* ── create org ──────────────────────────────────────────────── */
+.create-org {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(100%, 22rem);
+}
+.create-org .seg {
+  display: flex;
+  gap: 0.4rem;
+}
+.create-org .seg button {
+  flex: 1;
+  background: transparent;
+  color: var(--ink-2);
+  border-color: var(--line);
+}
+.create-org .seg button.on {
+  background: var(--brand-tint);
+  color: var(--brand);
+  border-color: transparent;
+}
+.new-org { margin-top: 2rem; }
+.new-org .create-org { margin-top: 0; }

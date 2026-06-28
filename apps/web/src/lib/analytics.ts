@@ -34,8 +34,13 @@ function start(): void {
       api_host: HOST,
       autocapture: true,        // clicks/rage-clicks → heatmaps
       capture_pageview: false,  // we send pageviews explicitly
+      enable_heatmaps: true,    // clickmaps + scrollmaps (the Heatmaps product)
+      disable_session_recording: false, // session replay (also enable it in PostHog project settings)
       persistence: "localStorage",
     });
+    // Tag every event with the product so insights segment per-surface, not in
+    // aggregate. Keep this key consistent across all FounderFirst surfaces.
+    posthog.register({ product: "website" });
     posthog.capture("$pageview");
   }
   startGa();

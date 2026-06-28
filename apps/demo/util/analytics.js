@@ -8,10 +8,20 @@
 
 import posthog from 'posthog-js';
 
-posthog.init(import.meta.env.VITE_PUBLIC_POSTHOG_KEY, {
-  api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
-  enableExceptionAutocapture: true,
-  capture_pageview: false,
-});
+const KEY = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
+if (KEY) {
+  posthog.init(KEY, {
+    api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
+    autocapture: true,                 // clicks/rage-clicks (was missing → no click data)
+    enable_heatmaps: true,             // clickmaps + scrollmaps
+    enableExceptionAutocapture: true,
+    disable_session_recording: false,  // session replay
+    capture_pageview: false,
+  });
+  // Tag every event with the product so the demo segments separately from the
+  // website/app/admin in PostHog. (Path /businessowner vs /cpa splits the view.)
+  posthog.register({ product: 'demo' });
+  posthog.capture('$pageview');        // was never sent before
+}
 
 export default posthog;

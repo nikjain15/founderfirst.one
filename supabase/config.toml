@@ -56,3 +56,12 @@ verify_jwt = false
 
 [functions.voice-check]
 verify_jwt = false
+
+[functions.content-draft]
+verify_jwt = true
+
+[functions.content-audio]
+verify_jwt = true
+
+[functions.content-publish]
+verify_jwt = true

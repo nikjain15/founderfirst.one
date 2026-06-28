@@ -3,6 +3,12 @@ project_id = "ejqsfzggyfsjzrcevlnq"
 [functions.ga-proxy]
 verify_jwt = true
 
+[functions.invites]
+verify_jwt = true
+
+[functions.invites-accept]
+verify_jwt = true
+
 [functions.gsc-proxy]
 verify_jwt = true
 

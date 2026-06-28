@@ -25,10 +25,13 @@ export function AnalyticsVisibility() {
 
   // Two independent sources — keep them independent so a GSC 403 (until the
   // service account is granted access) never hides the GEO panel, and vice versa.
-  const summaryQ = useQuery({ queryKey: ["gsc.summary", days],    queryFn: () => gsc.summary(days) });
-  const byDateQ  = useQuery({ queryKey: ["gsc.byDate", days],     queryFn: () => gsc.byDate(days) });
-  const queriesQ = useQuery({ queryKey: ["gsc.topQueries", days], queryFn: () => gsc.topQueries(days, 10) });
-  const pagesQ   = useQuery({ queryKey: ["gsc.topPages", days],   queryFn: () => gsc.topPages(days, 10) });
+  // retry:1 — GSC fails cleanly (403 until the Search Console API is enabled, or
+  // empty until Google backfills). One retry covers a cold-start blip; beyond
+  // that, surface the helpful error card fast instead of a long spinner.
+  const summaryQ = useQuery({ queryKey: ["gsc.summary", days],    queryFn: () => gsc.summary(days),        retry: 1 });
+  const byDateQ  = useQuery({ queryKey: ["gsc.byDate", days],     queryFn: () => gsc.byDate(days),         retry: 1 });
+  const queriesQ = useQuery({ queryKey: ["gsc.topQueries", days], queryFn: () => gsc.topQueries(days, 10), retry: 1 });
+  const pagesQ   = useQuery({ queryKey: ["gsc.topPages", days],   queryFn: () => gsc.topPages(days, 10),   retry: 1 });
   const geoQ     = useQuery({ queryKey: ["geo.summary", days],    queryFn: () => getGeoSummary(days) });
 
   const gscError = summaryQ.error || byDateQ.error || queriesQ.error || pagesQ.error;

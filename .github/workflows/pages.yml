@@ -56,6 +56,30 @@ jobs:
       - name: Check CSS imports
         run: pnpm check:css
 
+      # Guard: every query against the tenant-partitioned ai_decisions table must
+      # carry tenant_id (plan D15). Service-role bypasses RLS, so a missing
+      # predicate is a silent cross-tenant leak. `pnpm build` runs this too.
+      - name: Check tenant predicate
+        run: pnpm check:tenant
+
+      # Guard: prove resolve() (the AI quality & cost layer) builds the same
+      # provider request each live call site built before the seam — answers
+      # unchanged. Pure + deterministic; no network.
+      - name: Check inference parity
+        run: pnpm check:inference
+
+      # Guard: the Phase-2 judge — deterministic gates, generator-family-aware panel
+      # composition (judge ≠ generator, D20), fail-closed on judge error (D3), and
+      # classifier triage. Pure + mocked transports; no network.
+      - name: Check judge
+        run: pnpm check:judge
+
+      # Guard: the Supabase Edge copy of @ff/inference (vendored under _shared)
+      # must match packages/inference/src — fails if core.ts was edited without
+      # re-running `pnpm vendor:inference`.
+      - name: Check vendored inference
+        run: pnpm check:vendor
+
       - name: Build (web + admin + demo, assembled by build-all.ts)
         env:
           # Build-time env. Configure in repo Settings → Secrets and variables.

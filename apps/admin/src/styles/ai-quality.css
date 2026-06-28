@@ -1,0 +1,117 @@
+/* AI quality & cost dashboard (/ai-quality).
+   Reuses the shared KPI strip (.kpi-strip/.kpi-tile — analytics.css), tabs,
+   .table-wrap/.data-table, and .analytics-section/.section-head. Only the
+   AI-specific bits live here: model pills, the spend sparkline, and the
+   legacy↔new reconcile cards. */
+
+/* --- Spend sparkline ------------------------------------------------------- */
+.ai-spend-spark {
+  width: 100%;
+  height: 40px;
+  display: block;
+  color: var(--income);
+}
+
+/* --- Model pills (per-use-case table) -------------------------------------- */
+.ai-models {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ai-model-pill {
+  font-size: var(--fs-eyebrow);
+  font-variant-numeric: tabular-nums;
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* --- Reconcile cards (D21) ------------------------------------------------- */
+.ai-reconcile {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 12px;
+}
+.ai-reconcile-card {
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: var(--r-card);
+  background: var(--white);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ai-reconcile-card.ok   { border-left-color: var(--income); }
+.ai-reconcile-card.warn { border-left-color: var(--amber); }
+.ai-reconcile-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ai-reconcile-surface {
+  font-size: var(--fs-data-row);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-2);
+}
+.ai-reconcile-drift {
+  font-size: var(--fs-eyebrow);
+  font-weight: var(--fw-medium);
+  color: var(--ink-3);
+}
+.ai-reconcile-card.warn .ai-reconcile-drift { color: var(--amber); }
+.ai-reconcile-counts {
+  font-size: var(--fs-data-row);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.ai-reconcile-counts .muted { color: var(--ink-4); }
+.ai-reconcile-note {
+  font-size: var(--fs-eyebrow);
+  color: var(--ink-3);
+}
+
+/* --- Eval setup (#evals) --------------------------------------------------- */
+.ai-eval-name {
+  font-weight: var(--fw-medium);
+  margin-right: 6px;
+}
+.ai-eval-desc {
+  font-size: var(--fs-eyebrow);
+  color: var(--ink-3);
+  margin-top: 2px;
+  max-width: 42ch;
+}
+.ai-eval-floor td { background: var(--paper-2, var(--paper)); }
+.ai-eval-select,
+.ai-eval-input {
+  font-size: 16px; /* DS: ≥16px prevents iOS zoom on focus (RESPONSIVE rule 5) */
+  font-family: inherit;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--white);
+  color: var(--ink);
+  min-height: var(--tap-min);
+}
+.ai-eval-input {
+  width: 7ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ai-eval-select:disabled,
+.ai-eval-input:disabled { opacity: 0.55; }
+.ai-eval-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.ai-eval-add-label {
+  font-size: var(--fs-eyebrow);
+  color: var(--ink-3);
+}

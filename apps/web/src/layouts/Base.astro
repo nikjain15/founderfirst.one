@@ -11,6 +11,10 @@ interface Props { page: Page }
 const { page } = Astro.props;
 const site = SITE.url;
 const jsonLd = buildJsonLd(page, site);
+// Default social-share image when a page doesn't set its own. Absolute URL —
+// social + AI-answer crawlers require it. Swap hero.jpg for a purpose-built
+// 1200×630 og.png later; this guarantees cards/previews never render blank.
+const ogImage = page.seo.ogImage ?? `${site}/hero.jpg`;
 ---
 <!doctype html>
 <html lang="en">
@@ -21,10 +25,15 @@ const jsonLd = buildJsonLd(page, site);
     {page.seo.noindex && <meta name="robots" content="noindex,follow" />}
     <link rel="canonical" href={page.seo.canonical ?? site + page.slug} />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE.company} />
     <meta property="og:title" content={page.seo.title} />
     <meta property="og:description" content={page.seo.description} />
     <meta property="og:url" content={site + page.slug} />
-    {page.seo.ogImage && <meta property="og:image" content={page.seo.ogImage} />}
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={page.seo.title} />
+    <meta name="twitter:description" content={page.seo.description} />
+    <meta name="twitter:image" content={ogImage} />
     <title>{page.seo.title}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

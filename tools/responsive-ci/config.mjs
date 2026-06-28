@@ -19,7 +19,7 @@ export const THRESHOLDS = {
 };
 
 // Routes served from the assembled dist/. These are the public, statically
-// rendered pages (apps/web overlaid on apps/marketing). Admin is an auth-gated
+// rendered pages (apps/web — Astro). Admin is an auth-gated
 // SPA; gating it needs test creds, so it's intentionally out of the default gate.
 export const ROUTES = [
   "/", // marketing homepage (apps/web)

@@ -1,13 +1,21 @@
 /**
  * build-all — assemble the final deploy artifact at <repo>/dist/.
  *
+ * Surface → source → URL (single source of truth for what's live):
+ *   apps/web (Astro)  → founderfirst.one/ + /blog + /compare + /confirmed
+ *                       + /extension-privacy + /privacy + /terms + llms.txt
+ *                       + sitemap.xml + robots.txt   ← the live marketing site
+ *   apps/admin (React)→ founderfirst.one/admin/
+ *   apps/demo         → founderfirst.one/penny/demo/
+ * (apps/marketing and apps/blog were retired — apps/web fully replaced them.)
+ *
  * Output layout (what GitHub Pages serves):
  *
  *   dist/
- *   ├─ index.html                           ← marketing landing
- *   ├─ confirmed/index.html                 ← signup confirmation
- *   ├─ assets/                              ← marketing CSS + JS bundles
- *   ├─ blog/                                ← VitePress
+ *   ├─ index.html                           ← Astro web homepage
+ *   ├─ confirmed/index.html                 ← signup confirmation (Astro)
+ *   ├─ _astro/                              ← Astro CSS + JS bundles
+ *   ├─ blog/                                ← Astro blog (/blog + /blog/[slug])
  *   │  └─ …
  *   ├─ penny/demo/
  *   │  ├─ index.html                        ← redirect → /penny/demo/businessowner/
@@ -31,7 +39,6 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const DIST = resolve(ROOT, "dist");
-const MARKETING_DIST = resolve(ROOT, "apps/marketing/dist");
 const WEB_DIST = resolve(ROOT, "apps/web/dist");
 const DEMO_DIST = resolve(ROOT, "apps/demo/dist");
 const ADMIN_DIST = resolve(ROOT, "apps/admin/dist");
@@ -73,16 +80,8 @@ function writeRedirect(filePath: string, target: string, title: string): void {
 }
 
 function main(): void {
-  step("Building marketing app (legacy — kept for confirmed/ + extension-privacy/)");
-  run("pnpm --filter @ff/marketing build");
-
-  step("Building web app (Astro — the new homepage + blog + compare + confirmed)");
+  step("Building web app (Astro — the live homepage + blog + compare + confirmed + extension-privacy + privacy + terms)");
   run("pnpm --filter @ff/web build");
-
-  // NOTE: the blog now lives in apps/web (Astro — /blog + /blog/[slug] with
-  // BlogPosting JSON-LD for SEO/GEO). The legacy VitePress blog (apps/blog) is
-  // retired from the deploy; do not build or copy it, or it overwrites the new
-  // Astro blog at dist/blog/.
 
   step("Building Penny demo");
   run("pnpm --filter @ff/demo build");
@@ -94,13 +93,10 @@ function main(): void {
   rmSync(DIST, { recursive: true, force: true });
   mkdirSync(DIST, { recursive: true });
 
-  // Layer order matters: copy legacy marketing first (gives us confirmed/ and
-  // extension-privacy/), then copy the Astro web build OVER it so the new
-  // homepage (index.html + _astro/ + llms.txt + sitemap.xml + robots.txt) wins.
-  step("Copying marketing → dist/ (for confirmed/ + extension-privacy/)");
-  copyDir(MARKETING_DIST, DIST);
-
-  step("Copying web → dist/ (new homepage + /blog + /compare + /confirmed override marketing)");
+  // apps/web is the whole marketing site: homepage, /blog, /compare, /confirmed,
+  // /extension-privacy, /privacy, /terms, plus index.html + _astro/ + llms.txt
+  // + sitemap.xml + robots.txt.
+  step("Copying web → dist/ (homepage + blog + compare + confirmed + extension-privacy + privacy + terms)");
   copyDir(WEB_DIST, DIST);
 
   step("Copying admin → dist/admin/");

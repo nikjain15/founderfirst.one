@@ -5,8 +5,8 @@ components**. Edit the look once here → every surface (marketing, blog, admin,
 Penny bubble) updates. `tokens.css` is canonical; never hardcode colour, px, or
 font-size anywhere else.
 
-Consumed by: `apps/web` (Astro marketing), `apps/marketing` (legacy), `apps/blog`,
-`apps/admin`, `site-bubble` (Penny).
+Consumed by: `apps/web` (Astro marketing + blog), `apps/admin`,
+`site-bubble` (Penny).
 
 ---
 

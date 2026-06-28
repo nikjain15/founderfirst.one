@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "FounderFirst marketing — Astro + React islands, rendered from the @ff/content single source of truth. Phase 2 of the unified architecture; will replace apps/marketing.",
+  "description": "FounderFirst marketing site (the live founderfirst.one) — Astro + React islands, rendered from the @ff/content single source of truth. Replaced the legacy apps/marketing + apps/blog.",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",

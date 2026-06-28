@@ -1,0 +1,155 @@
+/* apps/app shell styles — tokens only (no hardcoded hex / font sizes), per CLAUDE.md. */
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+}
+
+.muted { color: var(--ink-3); }
+.error { color: var(--error); }
+
+.center {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+}
+
+/* ── auth screen ─────────────────────────────────────────────── */
+.auth-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--page-pad-x);
+}
+.auth-card {
+  width: min(100%, 24rem);
+  background: var(--paper);
+  border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card);
+  padding: var(--pad-card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.auth-card .brand {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-h3);
+}
+.auth-card h1 { font-size: var(--fs-h2); margin: 0; }
+.auth-card form { display: flex; flex-direction: column; gap: 0.75rem; }
+
+input {
+  font-size: var(--fs-input);
+  padding: 0.6rem 0.75rem;
+  border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  color: var(--ink);
+}
+input:focus-visible { outline: var(--focus-ring); }
+
+button {
+  min-height: var(--tap-min, 44px);
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-semibold);
+  border-radius: var(--r-pill);
+  border: var(--bw-hair) solid transparent;
+  background: var(--brand);
+  color: var(--paper);
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+}
+button:hover:not(:disabled) { background: var(--brand-hover); }
+button:disabled { opacity: 0.5; cursor: default; }
+button.ghost { background: transparent; color: var(--ink-2); border-color: var(--line); }
+
+/* ── authed shell ────────────────────────────────────────────── */
+.shell { min-height: 100dvh; display: flex; flex-direction: column; }
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem var(--page-pad-x);
+  border-bottom: var(--bw-hair) solid var(--line);
+}
+.topbar .brand { font-family: var(--font-display); font-weight: var(--fw-bold); }
+.topbar .spacer { flex: 1; }
+.org-switcher {
+  font-size: var(--fs-ui);
+  padding: 0.4rem 0.6rem;
+  border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  color: var(--ink);
+}
+.workspace {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: var(--pad-screen, var(--page-pad-x));
+}
+.empty { text-align: center; max-width: 32rem; }
+.empty h1 { font-size: var(--fs-h1); margin: 0 0 0.5rem; }
+
+/* ── role / lens ─────────────────────────────────────────────── */
+.role-pill {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-chip);
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--r-pill);
+  border: var(--bw-hair) solid var(--line);
+  color: var(--ink-2);
+}
+.role-pill.role-owner { background: var(--brand-tint); color: var(--brand); border-color: transparent; }
+.role-pill.role-cpa { background: var(--brand-soft); color: var(--ink-2); border-color: transparent; }
+
+.lens { width: min(100%, var(--page-max, 60rem)); }
+.lens h1 { font-size: var(--fs-h1); margin: 0 0 0.25rem; }
+.lens-stub {
+  margin-top: 1rem;
+  padding-left: 1.1rem;
+  color: var(--ink-3);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.readonly-note {
+  margin-top: 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--r-card);
+  background: var(--amber-bg);
+  color: var(--ink-2);
+  font-size: var(--fs-ui);
+}
+
+/* ── create org ──────────────────────────────────────────────── */
+.create-org {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(100%, 22rem);
+}
+.create-org .seg {
+  display: flex;
+  gap: 0.4rem;
+}
+.create-org .seg button {
+  flex: 1;
+  background: transparent;
+  color: var(--ink-2);
+  border-color: var(--line);
+}
+.create-org .seg button.on {
+  background: var(--brand-tint);
+  color: var(--brand);
+  border-color: transparent;
+}
+.new-org { margin-top: 2rem; }
+.new-org .create-org { margin-top: 0; }

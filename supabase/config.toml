@@ -15,6 +15,9 @@ verify_jwt = true
 [functions.synthesize-insights]
 verify_jwt = true
 
+[functions.orgs]
+verify_jwt = true
+
 [functions.notify-content-change]
 verify_jwt = false
 

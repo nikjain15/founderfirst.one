@@ -6,6 +6,7 @@
  *                       + /extension-privacy + /privacy + /terms + llms.txt
  *                       + sitemap.xml + robots.txt   ← the live marketing site
  *   apps/admin (React)→ founderfirst.one/admin/
+ *   apps/app (React)  → founderfirst.one/app/  ← unified authed SPA (owner/CPA lenses)
  *   apps/demo         → founderfirst.one/penny/demo/
  * (apps/marketing and apps/blog were retired — apps/web fully replaced them.)
  *
@@ -42,6 +43,7 @@ const DIST = resolve(ROOT, "dist");
 const WEB_DIST = resolve(ROOT, "apps/web/dist");
 const DEMO_DIST = resolve(ROOT, "apps/demo/dist");
 const ADMIN_DIST = resolve(ROOT, "apps/admin/dist");
+const APP_DIST = resolve(ROOT, "apps/app/dist");
 
 function step(label: string): void {
   console.info(`\n▸ ${label}`);
@@ -89,6 +91,9 @@ function main(): void {
   step("Building admin app");
   run("pnpm --filter @ff/admin build");
 
+  step("Building unified app (apps/app — authed owner/CPA lenses)");
+  run("pnpm --filter @ff/app build");
+
   step("Wiping dist/");
   rmSync(DIST, { recursive: true, force: true });
   mkdirSync(DIST, { recursive: true });
@@ -127,6 +132,18 @@ function main(): void {
   for (const route of ADMIN_ROUTES) {
     mkdirSync(resolve(adminOut, route), { recursive: true });
     cpSync(resolve(adminOut, "index.html"), resolve(adminOut, route, "index.html"));
+  }
+
+  step("Copying app → dist/app/");
+  const appOut = resolve(DIST, "app");
+  copyDir(APP_DIST, appOut);
+  // SPA fallback for the unified app's URL-reachable routes (BrowserRouter
+  // basename="/app"). Keep in sync with the top-level <Route path> entries in
+  // apps/app/src/App.tsx. The catch-all (*) redirects client-side to "/".
+  const APP_ROUTES = ["login"];
+  for (const route of APP_ROUTES) {
+    mkdirSync(resolve(appOut, route), { recursive: true });
+    cpSync(resolve(appOut, "index.html"), resolve(appOut, route, "index.html"));
   }
 
   step("Copying penny demo → dist/penny/demo/");

@@ -20,6 +20,7 @@ import {
   resolve,
   buildRecordRequest,
   DEFAULT_CONFIG,
+  DEFAULT_PRICES,
   type AiDecisionRecord,
   type FetchLike,
   type GatewayConfig,
@@ -28,6 +29,17 @@ import {
   type ResolveResult,
   type ResolveTask,
 } from "../core.ts";
+import {
+  judge,
+  toEvalDefs,
+  applyOutcome,
+  judgeInputFrom,
+  DEFAULT_ROSTER,
+  type EvalDef,
+  type JudgeCtx,
+  type SourceReconcile,
+  type UseCaseEvalRow,
+} from "../judge.ts";
 
 export interface DenoInferenceEnv {
   ANTHROPIC_API_KEY: string;
@@ -81,4 +93,106 @@ export function resolveOnDeno(
   config?: InferenceConfig,
 ): Promise<ResolveResult> {
   return resolve(task, makeDenoCtx(env, config));
+}
+
+/* ── Phase 2: judging on Supabase Edge (Deno) ──────────────────────────────── */
+//
+// Deno has NO Workers-AI binding, and an Anthropic judge can't grade an Anthropic
+// generator (D20). So the LLM panel is DEFERRED here (llmDisabled) — only the
+// deterministic floor + SQL-reconcile gates run, which need no model. Insights
+// (Anthropic-generated) still gets its valid_format gate + a recorded decision;
+// its grounded LLM gate is deferred to a Worker-side batch (a later phase) rather
+// than fabricating a same-family judge or adding a Cloudflare API-token secret.
+
+const CONFIG_TTL_MS = 60_000;
+const _evalConfigCache = new Map<string, { at: number; defs: EvalDef[] }>();
+
+export async function loadEvalDefsDeno(env: DenoInferenceEnv, useCase: string): Promise<EvalDef[]> {
+  const hit = _evalConfigCache.get(useCase);
+  if (hit && Date.now() - hit.at < CONFIG_TTL_MS) return hit.defs;
+  try {
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/ai_runtime_usecase_evals`, {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ p_use_case: useCase }),
+    });
+    if (!res.ok) {
+      console.error(`loadEvalDefsDeno(${useCase}) ${res.status}`);
+      return hit?.defs ?? [];
+    }
+    const rows = (await res.json()) as UseCaseEvalRow[];
+    const defs = toEvalDefs(rows);
+    _evalConfigCache.set(useCase, { at: Date.now(), defs });
+    return defs;
+  } catch (e) {
+    console.error("loadEvalDefsDeno error:", e instanceof Error ? e.message : e);
+    return hit?.defs ?? [];
+  }
+}
+
+async function writeDecisionRecordDeno(env: DenoInferenceEnv, record: AiDecisionRecord): Promise<void> {
+  try {
+    const { url, init } = buildRecordRequest(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY, record);
+    const res = await fetch(url, init);
+    if (!res.ok && res.status !== 409) {
+      console.error(`ai_decisions write (${res.status}): ${(await res.text()).slice(0, 200)}`);
+    }
+  } catch (e) {
+    console.error("ai_decisions write log-drop:", e instanceof Error ? e.message : e);
+  }
+}
+
+function makeDenoJudgeCtx(env: DenoInferenceEnv, reconcile?: SourceReconcile): JudgeCtx {
+  return {
+    resolveCtx: makeDenoCtx(env),
+    prices: DEFAULT_PRICES,
+    now: () => Date.now(),
+    random: () => Math.random(),
+    roster: DEFAULT_ROSTER,
+    mode: "async",
+    phase: "all",
+    llmDisabled: true, // no Workers-AI binding on Edge; same-family Anthropic judge barred (D20)
+    reconcile,
+  };
+}
+
+/**
+ * Resolve an answer AND judge it (deterministic gates only on Deno), writing ONE
+ * enriched row. The answer is returned immediately; judging + the single write run
+ * on EdgeRuntime.waitUntil when available, else awaited fire-and-forget (D18).
+ */
+export async function resolveAndJudgeOnDeno(
+  task: ResolveTask,
+  env: DenoInferenceEnv,
+  opts?: { reconcile?: SourceReconcile; context?: { sourceIds?: string[] } | null },
+): Promise<ResolveResult> {
+  const id = crypto.randomUUID();
+  const result = await resolve({ ...task, record: { ...task.record, id, defer: true } }, makeDenoCtx(env));
+  const base = result.record;
+  if (!base) return result;
+
+  const work = (async () => {
+    try {
+      const defs = await loadEvalDefsDeno(env, task.useCase);
+      if (defs.length === 0) {
+        await writeDecisionRecordDeno(env, base);
+        return;
+      }
+      const input = judgeInputFrom(task, result.model, result.text, base.output_json ?? undefined, defs, opts?.context);
+      const outcome = await judge(input, makeDenoJudgeCtx(env, opts?.reconcile));
+      await writeDecisionRecordDeno(env, applyOutcome(base, outcome, new Date().toISOString()));
+    } catch (e) {
+      console.error("resolveAndJudgeOnDeno log-drop:", e instanceof Error ? e.message : e);
+      await writeDecisionRecordDeno(env, base);
+    }
+  })();
+
+  const er = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime;
+  if (er && typeof er.waitUntil === "function") er.waitUntil(work);
+  else void work;
+  return result;
 }

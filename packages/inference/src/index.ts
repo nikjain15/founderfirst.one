@@ -10,3 +10,4 @@
  *   - Node (CI): import { resolveOnNode }    from "@ff/inference/adapters/node"
  */
 export * from "./core";
+export * from "./judge";

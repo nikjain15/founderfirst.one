@@ -33,6 +33,11 @@
 export type Provider = "anthropic" | "workers-ai";
 export type Runtime = "workers" | "deno" | "node";
 
+/** Gate decision recorded on ai_decisions.gate_status. "unevaluated" = Phase-0
+ *  pass-through (no judge ran). The judge (judge.ts) sets the rest. Defined here
+ *  (not judge.ts) so the record type can reference it without a circular import. */
+export type GateStatus = "unevaluated" | "passed" | "blocked" | "escalated" | "failed_closed";
+
 export interface ModelRef {
   provider: Provider;
   /** e.g. "claude-haiku-4-5-20251001" or "@cf/meta/llama-3.3-70b-instruct-fp8-fast" */
@@ -94,6 +99,14 @@ export interface ResolveTask {
   pinModel?: ModelRef;
   /** Record controls + correlation. */
   record?: {
+    /** Client-generated decision id. Lets the judged path build the record, grade
+     *  it, and write ONE enriched row by a known id (no insert→update race). */
+    id?: string;
+    /** Defer the log write: resolve() builds the record and returns it on
+     *  ResolveResult.record instead of firing recordSink. The caller (the judged
+     *  path) enriches it with eval results and writes it once. Default false =
+     *  Phase-0 auto-write behavior, unchanged. */
+    defer?: boolean;
     /** session id / run id stored as request_ref for correlation. */
     ref?: string | null;
     /** PII minimization: when false, `input` is stored null (D11). Default true. */
@@ -118,6 +131,11 @@ export interface ResolveResult {
   costUsd: number;
   latencyMs: number;
   cacheHit: boolean;
+  /** The decision id (client-generated when task.record.id is set, else absent). */
+  decisionId?: string;
+  /** Present only on the deferred path (task.record.defer): the built record for
+   *  the caller to enrich with eval results and write once. */
+  record?: AiDecisionRecord;
 }
 
 /* ── Injected runtime bindings ────────────────────────────────────────────── */
@@ -171,6 +189,8 @@ export interface ResolveCtx {
 /* ── The record (mirrors the ai_decisions table, server-defaulted cols omitted) ─ */
 
 export interface AiDecisionRecord {
+  /** Client-generated id (judged path) so eval results land on a known row. */
+  id?: string;
   tenant_id: string;
   use_case: string;
   runtime: Runtime;
@@ -184,8 +204,13 @@ export interface AiDecisionRecord {
   cost_usd: number | null;
   latency_ms: number | null;
   cache_hit: boolean;
-  /** Phase 2 fills evals + gate_status; Phase 0 ships the answer as-is. */
-  gate_status: "unevaluated";
+  /** Phase 2 fills evals + gate_status; Phase 0 ships the answer as 'unevaluated'. */
+  gate_status: GateStatus;
+  /** Per-eval results keyed by eval key (judge.ts EvalResult); set by the judged path. */
+  evals?: Record<string, unknown>;
+  judge_cost_usd?: number | null;
+  judge_latency_ms?: number | null;
+  judged_at?: string | null;
   legacy_table?: string | null;
   legacy_id?: string | null;
 }
@@ -260,7 +285,7 @@ class InferenceError extends Error {
 }
 export { InferenceError };
 
-interface ProviderOutput {
+export interface ProviderOutput {
   text: string;
   raw?: unknown;
   usage: { inputTokens?: number; outputTokens?: number };
@@ -423,6 +448,52 @@ export function buildRecordRequest(
   };
 }
 
+/* ── rawModelCall() — provider call WITHOUT logging (judge panel reuses this) ── */
+
+/**
+ * Call a model and return its raw output — the SAME provider code path resolve()
+ * uses, but with no ai_decisions write. The Phase-2 judge panel (judge.ts) calls
+ * checker models through this so there is exactly one Anthropic/Workers-AI HTTP
+ * implementation in the codebase. Judge calls are meta (they grade an answer);
+ * they are NOT themselves logged as decisions — their cost is rolled into the
+ * judged answer's `judge_cost_usd` instead. Applies the same off-Workers @cf/*
+ * guard as resolve().
+ */
+export async function rawModelCall(
+  ctx: ResolveCtx,
+  model: ModelRef,
+  opts: {
+    system?: string;
+    messages: ChatMessage[];
+    maxTokens: number;
+    temperature?: number;
+    jsonObject?: boolean;
+    jsonSchema?: Record<string, unknown>;
+    timeoutMs?: number;
+  },
+): Promise<ProviderOutput> {
+  if (model.provider === "workers-ai" && ctx.runtime !== "workers") {
+    throw new InferenceError(
+      `workers-ai model "${model.model}" not reachable on runtime "${ctx.runtime}"`,
+      "config_error",
+    );
+  }
+  const task: ResolveTask = {
+    useCase: "_judge",
+    tenantId: "_judge",
+    system: opts.system,
+    messages: opts.messages,
+    maxTokens: opts.maxTokens,
+    temperature: opts.temperature,
+    jsonObject: opts.jsonObject,
+    jsonSchema: opts.jsonSchema,
+    timeoutMs: opts.timeoutMs,
+  };
+  return model.provider === "anthropic"
+    ? callAnthropic(task, model, ctx)
+    : callWorkersAi(task, model, ctx);
+}
+
 /* ── resolve() — the one entry point ──────────────────────────────────────── */
 
 export async function resolve(task: ResolveTask, ctx: ResolveCtx): Promise<ResolveResult> {
@@ -456,31 +527,37 @@ export async function resolve(task: ResolveTask, ctx: ResolveCtx): Promise<Resol
   const latencyMs = ctx.now() - started;
   const costUsd = computeCostUsd(model.model, out.usage, ctx.config.prices);
 
-  // D18: build + fire the record off the hot path. Never let logging throw.
-  if (ctx.recordSink) {
-    const storeInput = task.record?.storeInput !== false;
-    const record: AiDecisionRecord = {
-      tenant_id: task.tenantId,
-      use_case: task.useCase,
-      runtime: ctx.runtime,
-      provider: model.provider,
-      model: model.model,
-      request_ref: task.record?.ref ?? null,
-      input: storeInput ? { messages: task.messages } : null,
-      output: out.text,
-      output_json: out.raw && typeof out.raw === "object" ? out.raw : null,
-      usage: out.usage,
-      cost_usd: costUsd,
-      latency_ms: latencyMs,
-      cache_hit: false,
-      gate_status: "unevaluated",
-      legacy_table: task.record?.legacyTable ?? null,
-      legacy_id: task.record?.legacyId ?? null,
-    };
+  // Build the record once. On the default path we fire it off the hot path (D18);
+  // on the deferred path (task.record.defer) we return it for the judged path to
+  // enrich and write exactly once (no insert→update race).
+  const storeInput = task.record?.storeInput !== false;
+  const record: AiDecisionRecord = {
+    id: task.record?.id,
+    tenant_id: task.tenantId,
+    use_case: task.useCase,
+    runtime: ctx.runtime,
+    provider: model.provider,
+    model: model.model,
+    request_ref: task.record?.ref ?? null,
+    input: storeInput ? { messages: task.messages } : null,
+    output: out.text,
+    output_json: out.raw && typeof out.raw === "object" ? out.raw : null,
+    usage: out.usage,
+    cost_usd: costUsd,
+    latency_ms: latencyMs,
+    cache_hit: false,
+    gate_status: "unevaluated",
+    legacy_table: task.record?.legacyTable ?? null,
+    legacy_id: task.record?.legacyId ?? null,
+  };
+
+  const deferred = task.record?.defer === true;
+  if (!deferred && ctx.recordSink) {
+    // D18: never let logging throw; recordSink is fire-and-forget.
     try {
       ctx.recordSink(record);
     } catch {
-      /* recordSink must be fire-and-forget; swallow so the answer always ships. */
+      /* swallow so the answer always ships. */
     }
   }
 
@@ -493,5 +570,7 @@ export async function resolve(task: ResolveTask, ctx: ResolveCtx): Promise<Resol
     costUsd,
     latencyMs,
     cacheHit: false,
+    decisionId: task.record?.id,
+    record: deferred ? record : undefined,
   };
 }

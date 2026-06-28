@@ -39,15 +39,24 @@ export interface VendoredFile {
  *  used by both the writer (below) and the drift checker. */
 export function buildVendored(): VendoredFile[] {
   const core = readFileSync(resolve(ROOT, "packages/inference/src/core.ts"), "utf8");
+  // judge.ts imports core with no extension (bundler style); Deno needs ".ts".
+  let judge = readFileSync(resolve(ROOT, "packages/inference/src/judge.ts"), "utf8");
+  judge = judge.replace('from "./core"', 'from "./core.ts"');
+  // The adapter imports core + judge one level up in the package; in the vendored
+  // layout they sit alongside it.
   let denoAdapter = readFileSync(resolve(ROOT, "packages/inference/src/adapters/deno.ts"), "utf8");
-  // The adapter imports the core one level up in the package; in the vendored
-  // layout core sits alongside it.
-  denoAdapter = denoAdapter.replace('from "../core.ts"', 'from "./core.ts"');
+  denoAdapter = denoAdapter
+    .replace('from "../core.ts"', 'from "./core.ts"')
+    .replace('from "../judge.ts"', 'from "./judge.ts"');
 
   return [
     {
       relPath: "supabase/functions/_shared/inference/core.ts",
       content: HEADER("packages/inference/src/core.ts") + core,
+    },
+    {
+      relPath: "supabase/functions/_shared/inference/judge.ts",
+      content: HEADER("packages/inference/src/judge.ts") + judge,
     },
     {
       relPath: "supabase/functions/_shared/inference/deno.ts",

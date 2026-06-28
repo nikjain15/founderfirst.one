@@ -52,6 +52,12 @@ const ogImage = page.seo.ogImage ?? `${site}/hero.jpg`;
          continuous block with a single, responsive gap. */
       section.dark + section.dark,
       section:not(.dark):not(.hero) + section:not(.dark) { padding-block-start: 0; }
+      /* With the top padding gone, the section's first heading has no padding to
+         contain its margin, so the UA margin-top escapes upward and shows the page
+         background as a seam between the two same-tone sections. Zero it here only
+         (normal sections keep their padding, which absorbs that margin). */
+      section.dark + section.dark > .wrap > :first-child,
+      section:not(.dark):not(.hero) + section:not(.dark) > .wrap > :first-child { margin-block-start: 0; }
       a { color: inherit; text-decoration: none; }
 
       /* Signup form (shared by the hero + CTA islands) */
@@ -88,9 +94,13 @@ const ogImage = page.seo.ogImage ?? `${site}/hero.jpg`;
       .tp-pill { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border-radius: var(--r-pill); font-size: var(--fs-data-row); color: var(--ink-3); min-height: var(--tap-min); }
       .tp-pill.on { background: var(--ink); color: var(--white); }
       .tp-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--brand); }
-      .phone { width: 320px; max-width: 100%; background: var(--ink); border-radius: 36px; padding: 12px; box-shadow: var(--shadow-phone); position: relative; }
+      /* Width matches the demo's native phone (var(--phone-width)) so the embedded
+         product renders at full size — no text-shrinking squeeze. Height is tuned to
+         the demo's welcome screen (~560px content): tall enough to show it in full,
+         short enough that the demo's bottom-pinned CTA doesn't leave dead space. */
+      .phone { width: calc(var(--phone-width) + 24px); max-width: 100%; background: var(--ink); border-radius: 36px; padding: 12px; box-shadow: var(--shadow-phone); position: relative; }
       .phone .notch { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: 90px; height: 18px; background: var(--ink); border-radius: 0 0 12px 12px; z-index: 2; }
-      .phone .screen { background: var(--white); border-radius: 26px; overflow: hidden; height: 560px; }
+      .phone .screen { background: var(--white); border-radius: 26px; overflow: hidden; height: 580px; }
       .browser { width: 100%; max-width: 760px; background: var(--white); border: 1px solid var(--line); border-radius: var(--r-card-emph); overflow: hidden; box-shadow: var(--shadow-float); }
       .browser .bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--line); }
       .browser .bar span { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }

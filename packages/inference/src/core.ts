@@ -221,6 +221,7 @@ export const USE_CASE = {
   PENNY_CHAT: "penny_chat",
   INSIGHTS: "insights",
   EMAIL_COMPOSE: "email_compose",
+  CONTENT_DRAFT: "content_draft",
 } as const;
 
 export const TENANT_FOUNDERFIRST = "org:founderfirst";
@@ -251,6 +252,7 @@ export const DEFAULT_ROUTING: Record<string, ModelRef> = {
   [USE_CASE.PENNY_CHAT]: { provider: "anthropic", model: "claude-haiku-4-5-20251001" },
   [USE_CASE.INSIGHTS]: { provider: "anthropic", model: "claude-sonnet-4-6" },
   [USE_CASE.EMAIL_COMPOSE]: { provider: "workers-ai", model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast" },
+  [USE_CASE.CONTENT_DRAFT]: { provider: "anthropic", model: "claude-sonnet-4-6" },
 };
 
 export const DEFAULT_CONFIG: InferenceConfig = {

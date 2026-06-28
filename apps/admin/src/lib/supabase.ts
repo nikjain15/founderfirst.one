@@ -1195,6 +1195,109 @@ export async function createContentPipelineItem(params: {
   return data as string;
 }
 
+export type ContentStatus = "idea" | "drafting" | "review" | "published" | "dismissed";
+
+/** One row in the content-pipeline board list (lightweight; full row via getContentPipelineItem). */
+export interface ContentPipelineRow {
+  id: string;
+  source: "insight" | "manual" | "signal";
+  topic: string;
+  angle: string | null;
+  status: ContentStatus;
+  has_audio: boolean;
+  published_ref: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Full content_pipeline row (the review screen). Mirrors the table; JSON columns stay loose. */
+export interface ContentPipelineItem extends ContentPipelineRow {
+  source_ref: string | null;
+  grounding: unknown;
+  draft_md: string | null;
+  script: unknown;
+  audio_url: string | null;
+  seo: unknown;
+  promo_schedule_id: string | null;
+  created_by: string | null;
+}
+
+/** The single active brand-voice profile (drives the draft/audio steps). */
+export interface VoiceProfile {
+  id: string;
+  name: string;
+  reference_clip_url: string | null;
+  provider_default: "chatterbox" | "elevenlabs";
+  is_active: boolean;
+  version: number;
+  created_at: string;
+}
+
+/** Board list, newest-updated first. Pass a status to filter to one stage. */
+export async function listContentPipeline(status?: ContentStatus): Promise<ContentPipelineRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_content_pipeline", { p_status: status ?? null });
+  if (error) throw new Error(`list_content_pipeline: ${error.message}`);
+  return (data as ContentPipelineRow[]) ?? [];
+}
+
+/** Full row for the review screen, or null if not found. */
+export async function getContentPipelineItem(id: string): Promise<ContentPipelineItem | null> {
+  const db = getClient();
+  const { data, error } = await db.rpc("get_content_pipeline_item", { p_id: id });
+  if (error) throw new Error(`get_content_pipeline_item: ${error.message}`);
+  return (data as ContentPipelineItem | null) ?? null;
+}
+
+/** Move an item between stages (the human-in-the-loop step), audited server-side. */
+export async function setContentPipelineStatus(id: string, status: ContentStatus): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("set_content_pipeline_status", { p_id: id, p_status: status });
+  if (error) throw new Error(`set_content_pipeline_status: ${error.message}`);
+}
+
+/** The active brand-voice profile, or null if none is active yet. */
+export async function getActiveVoiceProfile(): Promise<VoiceProfile | null> {
+  const db = getClient();
+  const { data, error } = await db.rpc("get_active_voice_profile");
+  if (error) throw new Error(`get_active_voice_profile: ${error.message}`);
+  return (data as VoiceProfile | null) ?? null;
+}
+
+/** Surface the JSON error body from an edge-function invoke (they return {error}). */
+async function fnError(error: unknown): Promise<string> {
+  let detail = (error as Error).message;
+  try {
+    const ctx = (error as { context?: { json?: () => Promise<{ error?: string; detail?: string }> } }).context;
+    if (ctx?.json) { const b = await ctx.json(); detail = b?.detail ?? b?.error ?? detail; }
+  } catch { /* fall back to message */ }
+  return detail;
+}
+
+/** Step 5 — auto-draft a pipeline item with Claude (brand-voice blog + audio script). */
+export async function draftContentItem(itemId: string): Promise<{ model?: string }> {
+  const db = getClient();
+  const { data, error } = await db.functions.invoke("content-draft", { body: { item_id: itemId } });
+  if (error) throw new Error(await fnError(error));
+  return (data as { model?: string }) ?? {};
+}
+
+/** Step 6 — render the item's audio script to a branded-voice MP3 (Chatterbox → ElevenLabs). */
+export async function generateContentAudio(itemId: string): Promise<{ provider?: string; audio_url?: string }> {
+  const db = getClient();
+  const { data, error } = await db.functions.invoke("content-audio", { body: { item_id: itemId } });
+  if (error) throw new Error(await fnError(error));
+  return (data as { provider?: string; audio_url?: string }) ?? {};
+}
+
+/** Step 8 — publish the item to the blog (+ best-effort promo) and mark it published. */
+export async function publishContentItem(itemId: string): Promise<{ blog_path?: string }> {
+  const db = getClient();
+  const { data, error } = await db.functions.invoke("content-publish", { body: { item_id: itemId } });
+  if (error) throw new Error(await fnError(error));
+  return (data as { blog_path?: string }) ?? {};
+}
+
 // ---- Product funnel --------------------------------------------------------
 
 export interface FunnelStageRow { stage: string; unique_users: number; total_events: number }

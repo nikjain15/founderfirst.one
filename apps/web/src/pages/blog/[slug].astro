@@ -71,6 +71,12 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
               <div class="stat"><div class="s-val">{s.value}</div><div class="s-label">{s.label}</div></div>
             ))}</div>
           ) :
+          b.audio ? (
+            <figure class="audio-card">
+              <figcaption class="audio-cap"><span class="audio-mark" aria-hidden="true">▶</span> Listen — read in Penny's voice</figcaption>
+              <audio controls preload="none" src={b.audio}></audio>
+            </figure>
+          ) :
           b.visual === "glance" ? <figure class="fig"><PennyGlance /><figcaption>What you see when Penny categorizes a transaction.</figcaption></figure> :
           b.visual === "operate-vs-penny" ? (
             <div class="vs">
@@ -127,6 +133,11 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
   .stat { background: var(--brand-tint); border-radius: var(--r-card-emph); padding: var(--space-5); text-align: center; }
   .s-val { font-family: var(--font-display); font-size: clamp(26px, 4vw, 34px); color: var(--brand); line-height: 1; margin-bottom: var(--space-2); }
   .s-label { font-size: var(--fs-eyebrow); color: var(--ink-3); line-height: 1.4; }
+
+  .audio-card { background: var(--brand-tint); border: 1px solid var(--brand); border-radius: var(--r-card-emph); padding: var(--space-5); margin: var(--space-8) 0; }
+  .audio-cap { display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-eyebrow); color: var(--brand); margin-bottom: var(--space-3); font-weight: var(--fw-semibold); }
+  .audio-mark { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: var(--r-pill); background: var(--brand); color: var(--white); font-size: 11px; }
+  .audio-card audio { width: 100%; }
 
   .callout { background: var(--ink); color: var(--white); border-radius: var(--r-card-emph); padding: var(--space-6); margin: var(--space-8) 0; }
   .c-title { font-family: var(--font-display); font-size: var(--fs-h3); margin-bottom: var(--space-2); }

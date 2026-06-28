@@ -27,6 +27,7 @@ const AIQuality     = lazy(() => named(import("./routes/AIQuality"), "AIQuality"
 const EmailHub      = lazy(() => named(import("./routes/EmailHub"), "EmailHub"));
 const SiteContent   = lazy(() => named(import("./routes/SiteContent"), "SiteContent"));
 const BlogPosts     = lazy(() => named(import("./routes/BlogPosts"), "BlogPosts"));
+const ContentPipeline = lazy(() => named(import("./routes/ContentPipeline"), "ContentPipeline"));
 
 /** Gate a route behind sign-in; bounce to /login (remembering where we came from). */
 function RequireAuth({ signedIn, children }: { signedIn: boolean; children: ReactElement }) {
@@ -244,6 +245,7 @@ export function App() {
             <Route path="/emails" element={<RequireAuth signedIn={signedIn}><EmailHub /></RequireAuth>} />
             <Route path="/site-content" element={<RequireAuth signedIn={signedIn}><SiteContent /></RequireAuth>} />
             <Route path="/blog-posts" element={<RequireAuth signedIn={signedIn}><BlogPosts /></RequireAuth>} />
+            <Route path="/content-pipeline" element={<RequireAuth signedIn={signedIn}><ContentPipeline /></RequireAuth>} />
             {/* Back-compat redirects — old top-level tabs now live under Audience. */}
             <Route path="/users" element={<Navigate to="/audience#web" replace />} />
             <Route path="/signals" element={<Navigate to="/audience#signals" replace />} />

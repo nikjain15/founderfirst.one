@@ -6,12 +6,14 @@ import { AnalyticsMarketing } from "./AnalyticsMarketing";
 import { AnalyticsSignals } from "./AnalyticsSignals";
 import { AnalyticsPostHog } from "./AnalyticsPostHog";
 import { AnalyticsInsights } from "./AnalyticsInsights";
+import { AnalyticsVisibility } from "./AnalyticsVisibility";
 
-type Tab = "acquisition" | "product" | "support" | "signals";
+type Tab = "acquisition" | "product" | "visibility" | "support" | "signals";
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "acquisition", label: "Acquisition" },
   { id: "product",     label: "Product"     },
+  { id: "visibility",  label: "Visibility"  },
   { id: "support",     label: "Support"     },
   { id: "signals",     label: "Signals"     },
 ];
@@ -23,6 +25,8 @@ const HASH_ALIASES: Record<string, Tab> = {
   marketing: "acquisition",
   posthog:   "product",
   insights:  "product",
+  seo:       "visibility",
+  geo:       "visibility",
 };
 
 function resolveTab(hash: string): Tab {
@@ -87,6 +91,7 @@ export function AnalyticsHome() {
             <Section label="Insights"><AnalyticsInsights /></Section>
           </>
         )}
+        {tab === "visibility" && <AnalyticsVisibility />}
         {tab === "support" && <AnalyticsSupport />}
         {tab === "signals" && <AnalyticsSignals />}
       </div>

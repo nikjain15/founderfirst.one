@@ -120,8 +120,17 @@ import { CONNECT_DISCORD_HTML } from "./connect-page";
 // AI quality & cost layer (Phase 0): every AI call routes through resolve(). The
 // pure core + per-runtime adapters live in packages/inference (relative import —
 // the worker bundles via esbuild and is not a pnpm-workspace member).
-import { resolveOnWorkers } from "../../../packages/inference/src/adapters/workers";
-import { USE_CASE, anonTenant, type ChatMessage } from "../../../packages/inference/src/core";
+// Phase 2 (judging): live chat runs an inline gate pass (Option B, D3) — fail
+// closed to a human handoff — and an async score pass, writing one judged row.
+import {
+  resolveDeferredOnWorkers,
+  loadEvalDefs,
+  judgeInputFrom,
+  judgeChatGatesInline,
+  chatNeedsHandoff,
+  finalizeChatDecision,
+} from "../../../packages/inference/src/adapters/workers";
+import { USE_CASE, anonTenant, type ChatMessage, type ResolveTask } from "../../../packages/inference/src/core";
 
 export type { Env };
 
@@ -234,6 +243,16 @@ const FALLBACK_RESPONSE: PennyResponse = {
   cta: null,
 };
 
+// Shown when the inline gate blocks/escalates or the judge times out (fail closed,
+// D3): the answer is held back and the customer is routed to a human teammate.
+const HANDOFF_RESPONSE: PennyResponse = {
+  bubbles: [
+    { headline: "I want to get this exactly right, so I'm looping in a human teammate.", tone: "fyi" },
+    { headline: "Email founder@founderfirst.one with your question and we'll follow up personally.", tone: "fyi" },
+  ],
+  cta: null,
+};
+
 /* ── Site-content cache (15 min in KV) ────────────────────────────────── */
 
 async function getSiteContent(env: Env): Promise<string> {
@@ -335,33 +354,42 @@ ${JSON.stringify(state, null, 2)}
     { role: "user", content: body.message },
   ];
 
-  // Call model + parse. Routes through the AI quality & cost layer (resolve()):
-  // same model (env.ANTHROPIC_MODEL), max_tokens, prompt-caching beta, and 429
-  // backoff as before — output is byte-identical — plus an async, crash-safe
-  // ai_decisions log on ctx.waitUntil (D18). tenant_id = the anonymous session,
-  // so each visitor is its own isolation unit (D15).
+  // Call model + parse, then judge (Phase 2, Option B / D3). The answer model,
+  // max_tokens, prompt-caching beta, and 429 backoff are unchanged. The decision
+  // log is DEFERRED so the inline gate result lands on the same row. tenant_id =
+  // the anonymous session, so each visitor is its own isolation unit (D15).
+  const chatTask: ResolveTask = {
+    useCase: USE_CASE.PENNY_CHAT,
+    tenantId: anonTenant(body.sessionId),
+    system,
+    messages,
+    maxTokens: 600,
+    pinModel: { provider: "anthropic", model: env.ANTHROPIC_MODEL },
+    anthropic: {
+      betas: ["prompt-caching-2024-07-31"],
+      cacheSystem: true,
+      maxRetries: 2,
+      retryBaseMs: 8_000,
+    },
+    record: { id: crypto.randomUUID(), ref: body.sessionId, storeInput: true },
+  };
   let parsed: PennyResponse;
   try {
-    const result = await resolveOnWorkers(
-      {
-        useCase: USE_CASE.PENNY_CHAT,
-        tenantId: anonTenant(body.sessionId),
-        system,
-        messages,
-        maxTokens: 600,
-        pinModel: { provider: "anthropic", model: env.ANTHROPIC_MODEL },
-        anthropic: {
-          betas: ["prompt-caching-2024-07-31"],
-          cacheSystem: true,
-          maxRetries: 2,
-          retryBaseMs: 8_000,
-        },
-        record: { ref: body.sessionId, storeInput: true },
-      },
-      env,
-      ctx,
-    );
+    // Resolve the answer (log deferred) and load eval config in parallel.
+    const [result, evalDefs] = await Promise.all([
+      resolveDeferredOnWorkers(chatTask, env, ctx),
+      loadEvalDefs(env, USE_CASE.PENNY_CHAT),
+    ]);
     parsed = parseModelJson(result.text);
+
+    // Inline gate pass: deterministic floor + classifier-triaged LLM gates under a
+    // 400ms budget. On block / escalate / timeout / error → FAIL CLOSED to a human
+    // handoff. The original answer is still recorded (for review); only what SHIPS
+    // is swapped. Score evals run async; one enriched row is written on waitUntil.
+    const jinput = judgeInputFrom(chatTask, result.model, result.text, parsed, evalDefs);
+    const gate = await judgeChatGatesInline(jinput, env, ctx, 400);
+    if (chatNeedsHandoff(gate.gateStatus)) parsed = HANDOFF_RESPONSE;
+    if (result.record) finalizeChatDecision(env, ctx, result.record, jinput, gate);
   } catch (err) {
     console.error("model_call_failed", err instanceof Error ? err.message : err);
     parsed = FALLBACK_RESPONSE;

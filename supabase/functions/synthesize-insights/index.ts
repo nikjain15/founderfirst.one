@@ -32,7 +32,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 // repo's pattern for shared Deno code) so `supabase functions deploy` bundles it
 // from within supabase/functions/. Source of truth is packages/inference/src;
 // regenerate with `pnpm vendor:inference` (drift-guarded by `pnpm check:vendor`).
-import { resolveOnDeno } from "../_shared/inference/deno.ts";
+import { resolveAndJudgeOnDeno } from "../_shared/inference/deno.ts";
 import { USE_CASE, TENANT_FOUNDERFIRST } from "../_shared/inference/core.ts";
 
 const CORS_HEADERS = {
@@ -279,7 +279,9 @@ async function synthesizeWithClaude(
   // retry (a 429 throws → the caller falls back to the Penny Worker). Internal
   // admin tool → tenant_id = the FounderFirst org (D15). The ai_decisions log is
   // additive — insight_runs.model keeps being written below (D21 dual-write).
-  const result = await resolveOnDeno(
+  // Phase 2: batch grading runs the deterministic gates (valid_format) on Edge;
+  // the grounded LLM gate is recorded as deferred (no Workers-AI judge on Deno).
+  const result = await resolveAndJudgeOnDeno(
     {
       useCase: USE_CASE.INSIGHTS,
       tenantId: TENANT_FOUNDERFIRST,

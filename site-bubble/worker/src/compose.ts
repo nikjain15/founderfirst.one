@@ -13,7 +13,7 @@
  * cta_label, footer} } — identical shape the admin "Draft with AI" UI expects.
  */
 import type { Env } from "./worker-env";
-import { resolveOnWorkers } from "../../../packages/inference/src/adapters/workers";
+import { resolveAndJudgeOnWorkers } from "../../../packages/inference/src/adapters/workers";
 import { USE_CASE, TENANT_FOUNDERFIRST } from "../../../packages/inference/src/core";
 
 const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
@@ -90,10 +90,11 @@ export async function handleEmailCompose(req: Request, env: Env, ctx: ExecutionC
 
   let parsed: Record<string, unknown>;
   try {
-    // Routes through the AI quality & cost layer (resolve()): same Workers-AI
-    // model + params as before (output unchanged), plus an async ai_decisions
-    // log. Internal admin tool → tenant_id = the FounderFirst org (D15).
-    const result = await resolveOnWorkers(
+    // Routes through the AI quality & cost layer: same Workers-AI model + params
+    // as before (output unchanged). Phase 2 — async batch grading (D2): the draft
+    // is judged off the hot path and ONE enriched ai_decisions row is written.
+    // Internal admin tool → tenant_id = the FounderFirst org (D15).
+    const result = await resolveAndJudgeOnWorkers(
       {
         useCase: USE_CASE.EMAIL_COMPOSE,
         tenantId: TENANT_FOUNDERFIRST,

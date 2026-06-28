@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Penny AI Quality &amp; Cost Layer — Plan &amp; Decisions</title>
+<title>Penny AI Quality &amp; Cost Layer — Plan &amp; Decisions (v2, hardened)</title>
 <style>
   :root{
     --ink:#1c1c1a; --ink-2:#55554f; --ink-3:#8a8980;
@@ -39,8 +39,8 @@
   .pill.gate{background:var(--gate-bg); color:var(--gate);}
   .pill.score{background:var(--paper-3); color:var(--ink-2);}
   .pill.req{background:var(--danger-bg); color:var(--danger);}
-  .pill.now{background:var(--accent-bg); color:var(--accent);}
-  .pill.later{background:var(--warn-bg); color:var(--warn);}
+  .pill.new{background:var(--accent-bg); color:var(--accent);}
+  .pill.amend{background:var(--warn-bg); color:var(--warn);}
   .tag{font-size:12px; color:var(--ink-3);}
   .callout{border-left:3px solid var(--accent); background:var(--accent-bg); padding:12px 16px; border-radius:0 8px 8px 0; margin:16px 0;}
   .callout.warn{border-color:var(--warn); background:var(--warn-bg);}
@@ -62,23 +62,28 @@
 <header class="doc">
   <h1>Penny — AI Quality &amp; Cost Layer</h1>
   <div class="sub">A single layer every AI request passes through: routes to the right model, records everything, audits quality before it reaches users, and earns more autonomy as it proves itself — built on the existing Cloudflare + Supabase stack.</div>
-  <div class="meta">Plan &amp; agreed decisions · for stress-testing · 27 Jun 2026 · status: design locked, pre-build</div>
+  <div class="meta"><strong>v3 — hardened after the 35-agent stress test + Nik's review-model and training decisions.</strong> Built as a full, well-structured product (not a pilot): every confirmed finding is a committed fix. · 27 Jun 2026 · status: ready to build</div>
 </header>
+
+<div class="callout">
+  <strong>What changed in v2 (and why):</strong> the stress test verdict was <em>proceed with changes — no architectural rethink</em>. This version folds in <strong>every confirmed finding</strong> as a hard requirement, and removes all "minimum / defer / optional" framing per the directive that this is a <strong>fully-functioning product</strong>. Major additions: deterministic tenant isolation (D15), two-part grounding (D16), gated rule-graduation (D17), async crash-safe logging (D18), retention + erasure (D19), judge robustness incl. injection defense and judge≠generator (D20), migration safety via dual-write/reconcile (D21), honest cost accounting + KPIs (D22), and live-chat fail-CLOSED semantics (amended D3). All six build phases are committed.
+  <br><br><strong>v3 (Nik's decisions):</strong> review is now a <strong>panel of diverse-model AI checkers</strong> — answers they agree on pass; only failures/disagreements reach a human, so human effort scales with problems, not customers (amended D2, D12). Early on a human also samples the panel's <em>passes</em> to validate it (D25). And we <strong>archive (not purge) at 90 days to train our own cheaper models</strong> on de-identified data, while still honoring legal deletion (amended D19, new D24).
+</div>
 
 <div class="card">
   <strong>On this page</strong>
   <div class="toc" style="margin-top:8px;">
     <a href="#why">1. Why we're building this</a><br>
     <a href="#what">2. What it is (plain English)</a><br>
-    <a href="#decisions">3. Decisions agreed (D1–D14)</a><br>
+    <a href="#decisions">3. Decisions (D1–D14 amended, D15–D23 new)</a><br>
     <a href="#evals">4. The evals (quality checks)</a><br>
     <a href="#records">5. What we record per answer</a><br>
     <a href="#loop">6. Improvement loop &amp; autonomy ramp</a><br>
-    <a href="#arch">7. Architecture &amp; tools (build vs buy)</a><br>
+    <a href="#arch">7. Architecture &amp; tools</a><br>
     <a href="#admin">8. The admin views</a><br>
-    <a href="#phases">9. Phased build plan</a><br>
-    <a href="#guardrails">10. Guardrails document v1</a><br>
-    <a href="#assumptions">11. Assumptions &amp; risks to stress-test</a><br>
+    <a href="#phases">9. Build plan (all phases committed)</a><br>
+    <a href="#guardrails">10. Guardrails document v2</a><br>
+    <a href="#confirm">11. Still needs your confirmation</a><br>
     <a href="#avoid">12. Things we deliberately avoid</a>
   </div>
 </div>
@@ -101,173 +106,198 @@
 <p>One "middle desk" every AI request goes through. A product declares <em>what</em> it needs; the desk decides <em>how</em> to run it and keeps getting better on its own. It does six jobs:</p>
 <ol>
   <li><strong>Routes</strong> to the cheapest model that's good enough (cheap for easy, frontier only when hard).</li>
-  <li><strong>Records</strong> every request — model, confidence, cost, speed, outcome.</li>
-  <li><strong>Audits</strong> — a second AI grades each answer against that use case's evals; risky ones are blocked or sent to a human.</li>
+  <li><strong>Records</strong> every request — model, confidence, cost, speed, outcome — under one tenant-scoped, crash-safe log.</li>
+  <li><strong>Audits</strong> — deterministic checks first, then a <strong>panel of AI checkers using different model families</strong> grades each answer; agreed answers pass, only failures/disagreements go to a human (early on, a human also samples the passes).</li>
   <li><strong>Queues for human review</strong> when needed.</li>
-  <li><strong>Reuses &amp; learns</strong> — caches answers; repeated approved answers graduate into rules (no model call).</li>
-  <li><strong>Shows it</strong> — cost + quality trends and controls on the FounderFirst admin.</li>
+  <li><strong>Reuses &amp; learns</strong> — caches answers; repeated approved answers graduate into rules that are still re-checked through the gates.</li>
+  <li><strong>Shows it</strong> — cost + quality trends and live controls on the FounderFirst admin.</li>
 </ol>
 
-<h2 id="decisions">3. Decisions agreed (D1–D14)</h2>
-<p class="small">Numbered so we can reference them precisely while stress-testing.</p>
+<h2 id="decisions">3. Decisions</h2>
+<p class="small">Numbered for traceability. D1–D14 are the original set (amendments from the stress test marked <span class="pill amend">amended</span>); D15–D23 are new hardening decisions <span class="pill new">new</span>.</p>
 <table>
-  <thead><tr><th style="width:42px;">#</th><th>Decision</th><th style="width:38%;">Rationale / notes</th></tr></thead>
+  <thead><tr><th style="width:42px;">#</th><th>Decision</th><th style="width:34%;">Rationale / notes</th></tr></thead>
   <tbody>
-    <tr><td><strong>D1</strong></td><td><span class="did">Scope:</span> design for both today's live tools <em>and</em> the future bookkeeping product. Build now on the 3 live tools (Penny chat, Insights, Email drafts); design every record + eval so categorization plugs straight in when bookkeeping ships.</td><td>"Both at once," made honest — we don't wait on a product that isn't live, but we don't design ourselves into a corner either.</td></tr>
-    <tr><td><strong>D2</strong></td><td><span class="did">Auditing:</span> AI grades every answer <em>and</em> a human reviews everything in the early stage of each use case.</td><td>Highest confidence while we build trust. Review load shrinks via the autonomy ramp (D5), not by skipping checks.</td></tr>
-    <tr><td><strong>D3</strong></td><td><span class="did">Live chat exception:</span> a second AI checks each reply instantly before it sends; humans review a <em>sample</em> afterward.</td><td>You can't pause a live customer chat for human review. Async work (bookkeeping, emails, insights) keeps full pre-send review.</td></tr>
-    <tr><td><strong>D4</strong></td><td><span class="did">Control:</span> you approve each step that increases autonomy. We also write a living <em>guardrails document</em> (§10) so the rules are explicit and updatable.</td><td>Human-in-control now; codified rules so future steps follow policy, not vibes.</td></tr>
-    <tr><td><strong>D5</strong></td><td><span class="did">Autonomy ramp:</span> every use case starts at 100% human review. It earns less review only after sustained high eval + approval rates with zero safety/privacy failures — and you approve each step. Quality drop ⇒ auto-rollback.</td><td>This is the "reduce its role step by step" mechanism. Thresholds live in the guardrails doc.</td></tr>
-    <tr><td><strong>D6</strong></td><td><span class="did">Quality = evals,</span> prioritized by harm. Split into <span class="pill gate">gate</span> (blocks/escalates) and <span class="pill score">score</span> (tracked). Full list in §4.</td><td>"Good" is measurable and ordered by what hurts most if wrong.</td></tr>
+    <tr><td><strong>D1</strong></td><td><span class="did">Scope:</span> design for both today's live tools and the future bookkeeping product. Build now on the 3 live tools (Penny chat, Insights, Email drafts); design every record + eval so categorization plugs straight in when bookkeeping ships.</td><td>"Both at once," made honest — we don't wait on a product that isn't live, but we don't design ourselves into a corner.</td></tr>
+    <tr><td><strong>D2</strong> <span class="pill amend">amended</span></td><td><span class="did">Auditing = a panel of diverse-model AI checkers.</span> Every answer is graded by several AI checkers of <strong>different model families</strong>. Answers they agree pass go through; <strong>only failures or disagreements</strong> (plus any deterministic-gate failure or low confidence) go to a <strong>human</strong>. So human effort scales with the number of problems, not the number of customers. Tiered for cost (cheap checks first, full panel only on doubt — D12).</td><td>Removes the day-one human-review bottleneck. The plain-code checks (D8/D15/D16) still run underneath — model agreement is not proof of correctness.</td></tr>
+    <tr><td><strong>D3</strong> <span class="pill amend">amended</span></td><td><span class="did">Live chat:</span> deterministic rule checks (Privacy/format) run first; an inline judge is a <strong>cheap fast classifier with a hard p95 &lt;500ms added-latency budget</strong>, not a second frontier call. On judge <strong>timeout/error, fail CLOSED</strong> to a templated human-handoff deferral — never ship ungated, never fail-open.</td><td>Today's chat is non-streaming, so a serial frontier judge would double latency and a missing verdict would silently void the floor.</td></tr>
+    <tr><td><strong>D4</strong></td><td><span class="did">Control:</span> you approve each step that increases autonomy. A living <em>guardrails document</em> (§10) holds the rules.</td><td>Human-in-control now; codified rules so future steps follow policy.</td></tr>
+    <tr><td><strong>D5</strong> <span class="pill amend">amended</span></td><td><span class="did">Autonomy ramp:</span> starts at 100% review; advances only on <strong>zero-edit</strong> approval (not approve-after-silent-edit) + sustained eval pass + zero safety/privacy failures, per <strong>tenant cohort</strong>, and <strong>you approve each step</strong>. Rollback is keyed on the <strong>lagging</strong> CPA/customer-correction rate, and an always-on <strong>shadow review sample</strong> continues after ramping.</td><td>The naive signal is inflated by the reviewers it replaces and blind to errors that surface weeks later at tax time.</td></tr>
+    <tr><td><strong>D6</strong></td><td><span class="did">Quality = evals,</span> prioritized by harm; <span class="pill gate">gate</span> blocks/escalates, <span class="pill score">score</span> is tracked. Full list in §4.</td><td>"Good" is measurable and ordered by what hurts most if wrong.</td></tr>
     <tr><td><strong>D7</strong></td><td><span class="did">Evals are per-use-case &amp; configurable</span> from a shared library — add/edit/remove, set gate-or-score, tune thresholds, edit judge criteria, add custom evals.</td><td>Penny chat ≠ Insights ≠ categorization. One library, different selection per use case.</td></tr>
-    <tr><td><strong>D8</strong></td><td><span class="did">Mandatory floor:</span> for anything customer-facing, Safety + Privacy gates are always on and locked.</td><td>You customize <em>above</em> the floor, never below it. Enforced in UI + guardrails doc.</td></tr>
-    <tr><td><strong>D9</strong></td><td><span class="did">One source of truth:</span> records, review queue, dashboard, eval config, and model config all live in Supabase + the admin app — not in a third-party tool.</td><td>Matches the "one concept = one source of truth" rule; keeps data under our control.</td></tr>
-    <tr><td><strong>D10</strong></td><td><span class="did">Config-driven, no hardcoding:</span> which model, routing, spend caps, caching, evals, thresholds are all editable data, surfaced in the admin — never hardcoded per file.</td><td>Same principle as <code>site.ts</code>/tokens. Change once, applies live, written to audit log.</td></tr>
-    <tr><td><strong>D11</strong></td><td><span class="did">Front door = Cloudflare AI Gateway.</span> Routing, fallback, exact-match cache, spend budgets, request logs.</td><td>Native to our stack, free to start, zero new servers.</td></tr>
-    <tr><td><strong>D12</strong></td><td><span class="did">AI-judge runs in our Worker</span> (not a framework) for the inline pre-user gate; batch grading for async work.</td><td>No new tool for the runtime check. Frameworks only for designing/CI-testing criteria later.</td></tr>
-    <tr><td><strong>D13</strong></td><td><span class="did">Langfuse Cloud is optional, later</span> — bolted on for heavier eval tooling if it earns its place. Never self-hosted.</td><td>Self-hosting drags in Postgres+ClickHouse+Redis+S3 = the always-on burden we avoid.</td></tr>
-    <tr><td><strong>D14</strong></td><td><span class="did">Safe first move:</span> Phase 0 = turn on the gateway + start recording with <em>no behavior change</em>. Same models, same answers; we just gain visibility.</td><td>De-risks everything; gives real data before we tune anything.</td></tr>
+    <tr><td><strong>D8</strong> <span class="pill amend">amended</span></td><td><span class="did">Mandatory floor:</span> customer-facing ⇒ Safety + Privacy always on and locked; financial outputs ⇒ grounded + math always on. The locked floor is enforced by <strong>deterministic, non-LLM checks</strong> — never solely by an injectable judge.</td><td>You customize above the floor, never below it.</td></tr>
+    <tr><td><strong>D9</strong></td><td><span class="did">One source of truth:</span> records, review queue, dashboard, eval config, and model config live in Supabase + the admin app — not in a third-party tool.</td><td>"One concept = one source of truth"; data under our control.</td></tr>
+    <tr><td><strong>D10</strong></td><td><span class="did">Config-driven, no hardcoding:</span> model, routing, spend caps, caching, evals, thresholds are editable data in the admin — never hardcoded per file. Changes apply live and are audit-logged.</td><td>Same principle as <code>site.ts</code>/tokens.</td></tr>
+    <tr><td><strong>D11</strong> <span class="pill amend">amended</span></td><td><span class="did">Front door = Cloudflare AI Gateway</span> for routing, fallback, cache, budgets, logs — with <strong>cache keyed by tenant_id (or exact-match cache off for financial use cases)</strong>, <strong>minimized body-logging</strong> for financial data (Supabase is the sole audit record), and per-use-case spend caps enforced in <code>resolve()</code> if the gateway only caps per-gateway.</td><td>The global cache could serve one tenant's answer to another; gateway logs are a third PII store.</td></tr>
+    <tr><td><strong>D12</strong> <span class="pill amend">amended</span></td><td><span class="did">The checker panel is tiered, in our Worker:</span> deterministic rules → a cheap fast classifier → escalate to the <strong>multi-model panel</strong> (different families) only when there's doubt; a human only on disagreement/failure. Gate-evals run inline; <strong>score-evals are sampled (10–20%)</strong>, not 100%.</td><td>Running every model on every answer is most expensive exactly where volume is highest; tiering + sampling keeps cost in check (D22).</td></tr>
+    <tr><td><strong>D13</strong></td><td><span class="did">Langfuse Cloud is optional, later</span> — added for heavier eval tooling if it earns its place. Never self-hosted.</td><td>Self-hosting = the always-on burden we avoid.</td></tr>
+    <tr><td><strong>D14</strong> <span class="pill amend">amended</span></td><td><span class="did">First move = the seam, output unchanged.</span> Phase 0 is a <strong>real (small) code change</strong>: a thin <code>resolve()</code> core + per-runtime adapters routing the 3 live sites through the gateway and the log. Not a config flip — but answers don't change.</td><td><code>env.AI.run()</code> needs a binding/gateway change and <code>fetch(anthropic)</code> needs URL surgery; the Edge runtime has no Workers-AI binding.</td></tr>
+  </tbody>
+</table>
+<table>
+  <thead><tr><th style="width:42px;">#</th><th>Hardening decision (v2)</th><th style="width:34%;">Why it's required</th></tr></thead>
+  <tbody>
+    <tr><td><strong>D15</strong> <span class="pill new">new</span></td><td><span class="did">Tenant isolation is a deterministic data-layer invariant.</span> <code>tenant_id NOT NULL</code> on <code>ai_decisions</code>, the cache, and the rule table; a required tenant predicate on every query, asserted by a CI test. The Privacy eval is defense-in-depth, never the boundary.</td><td>The stack runs as SERVICE_ROLE (RLS bypassed) with no tenant_id today; a missing predicate is a silent cross-tenant leak an AI eval can't catch.</td></tr>
+    <tr><td><strong>D16</strong> <span class="pill new">new</span></td><td><span class="did">Grounding is two checks:</span> (a) source-exists (cheap rule) + (b) <strong>source-is-correct</strong> — a deterministic SQL reconciliation that the cited transaction/period/account matches the claim's tenant, date window, and account. Financial use cases cannot advance on the ramp until (b) exists as code.</td><td>The dominant bookkeeping error is a real number on the wrong invoice/period — it passes a "number exists" check cleanly.</td></tr>
+    <tr><td><strong>D17</strong> <span class="pill new">new</span></td><td><span class="did">Rule graduation never bypasses the gates.</span> Rule/cache-fired decisions are periodically re-run through the math/grounding gates + a sampled judge; each graduated rule carries an expiry + re-validation and <strong>auto-demotes on CPA correction</strong>; rules/cache are tenant-partitioned by primary key and learned mappings are never promoted to a shared scope.</td><td>A no-model-call rule otherwise skips every gate, laundering a one-time error into permanent, invisible autonomy.</td></tr>
+    <tr><td><strong>D18</strong> <span class="pill new">new</span></td><td><span class="did">Logging is async &amp; crash-safe.</span> The decision-log write fires via <code>ctx.waitUntil()</code> after the response returns, never blocking the reply; it log-drops with a counter if Supabase is unavailable (the answer still ships). Eval results are a JSONB column on the single record.</td><td>A synchronous write would add latency and let a Supabase hiccup take Penny chat down.</td></tr>
+    <tr><td><strong>D19</strong> <span class="pill amend">amended</span></td><td><span class="did">Retention + erasure are first-class.</span> Raw input/answer is kept <strong>90 days</strong>, then <strong>archived (de-identified) to train our own models</strong> (D24) — not silently purged. A right-to-erasure request cascades to ai_decisions + judge rationale + cache/Vectorize <strong>and the archive</strong>, per the law. Personal details are stripped <em>before</em> data enters any training set, so a trained model is never tied to an individual.</td><td>Serves the training goal while keeping legal deletion achievable (you can't un-train a model). Ties to the open Discord erasure obligation.</td></tr>
+    <tr><td><strong>D20</strong> <span class="pill new">new</span></td><td><span class="did">Judge robustness.</span> Customer input is treated as <strong>data, never instructions</strong> (structured delimiting + instruction hierarchy); the locked floor has a deterministic non-LLM check; injection canaries live in the eval suite; the <strong>judge is a different model family than the generator</strong> on gate evals, and a stronger model guards the locked financial gates.</td><td>A vendor memo can prompt-inject the judge to PASS; a same-model judge shares the generator's blind spots.</td></tr>
+    <tr><td><strong>D21</strong> <span class="pill new">new</span></td><td><span class="did">Migration safety.</span> <code>resolve()</code> dual-writes the legacy column + ai_decisions; a scheduled job reconciles them on a sample for N days; consumers flip to read ai_decisions one surface at a time behind a flag; legacy columns are retired last. Migrations applied manually.</td><td>Live admin surfaces read those scattered columns today; cutting writes silently shows stale data (LEARNINGS rule 14, rule 3).</td></tr>
+    <tr><td><strong>D22</strong> <span class="pill new">new</span></td><td><span class="did">Honest cost accounting.</span> "Judge cost as % of answer cost" and "cost per resolved task" (incl. retries/escalations + human time) are first-class KPIs with caps. The $0–29/mo figure is infra-only; per-answer cost is net-neutral-to-up until caching + rule graduation mature.</td><td>The judge adds 2–3× tokens where volume is highest; the savings mechanisms come later in the build — say so plainly.</td></tr>
+    <tr><td><strong>D23</strong> <span class="pill new">new</span></td><td><span class="did">No scope-cut.</span> This is a fully-functioning, well-structured product. All six phases are committed build milestones; nothing is shipped as a thin pilot or left optional.</td><td>Per directive — robustness over speed-to-a-demo.</td></tr>
+    <tr><td><strong>D24</strong> <span class="pill new">new</span></td><td><span class="did">Train our own models from the collected data</span> to cut dependence on expensive external models over time. Training uses <strong>de-identified</strong> data only; the model-training pipeline is itself a use case that flows through the same gates and records.</td><td>Compounding margin + a moat: more usage → better owned models → lower cost. The de-identify step is what keeps legal deletion possible.</td></tr>
+    <tr><td><strong>D25</strong> <span class="pill new">new</span></td><td><span class="did">Validate the panel, don't just trust it.</span> Early in each use case, a human reviews a small <strong>random sample of the answers the panel PASSED</strong> — not only the failures — to confirm the panel is actually right. The sample shrinks as the panel proves out (this is the autonomy ramp, D5).</td><td>A panel can be confidently wrong together; sampling the passes is how we earn the right to trust it.</td></tr>
   </tbody>
 </table>
 
 <h2 id="evals">4. The evals (quality checks)</h2>
-<p>Ordered by criticality — most harmful if wrong, first. <span class="pill gate">gate</span> = blocks or escalates; the answer never reaches the user if it fails. <span class="pill score">score</span> = tracked to drive improvement, not blocking. Per D7, each use case picks and tunes its own set above the mandatory floor (D8).</p>
+<p>Ordered by criticality. <span class="pill gate">gate</span> blocks/escalates; <span class="pill score">score</span> is tracked (and <strong>sampled 10–20%</strong>, not run on every answer — D12). Each use case picks and tunes its set above the mandatory floor (D8). Gate evals use a judge of a <strong>different model family</strong> than the generator (D20).</p>
 <table>
   <thead><tr><th style="width:34px;">#</th><th>Eval</th><th>What it checks</th><th>Checked by</th><th>Type</th></tr></thead>
   <tbody>
-    <tr><td>1</td><td><strong>Safe / knows limits</strong></td><td>No wrong money/tax/legal advice; recognizes when to defer to a human.</td><td>rules + AI judge</td><td><span class="pill gate">gate</span> <span class="pill req">required</span></td></tr>
-    <tr><td>2</td><td><strong>Privacy</strong></td><td>No wrong-customer data; no leaked personal info.</td><td>rules</td><td><span class="pill gate">gate</span> <span class="pill req">required</span></td></tr>
-    <tr><td>3</td><td><strong>Truthful / grounded</strong></td><td>Every number/fact traces to real source data; nothing invented.</td><td>rule where possible + AI judge</td><td><span class="pill gate">gate</span></td></tr>
-    <tr><td>4</td><td><strong>Correct &amp; math adds up</strong></td><td>Right category from the chart of accounts; totals reconcile. (Bookkeeping.)</td><td>rule (math) + AI judge + human</td><td><span class="pill gate">gate</span></td></tr>
-    <tr><td>5</td><td><strong>Consistent</strong></td><td>Same vendor/question → same answer over time.</td><td>compare vs past decisions</td><td><span class="pill score">score</span></td></tr>
+    <tr><td>1</td><td><strong>Safe / knows limits</strong></td><td>No wrong money/tax/legal advice; defers to a human when it should.</td><td><strong>deterministic rules</strong> + AI judge</td><td><span class="pill gate">gate</span> <span class="pill req">required</span></td></tr>
+    <tr><td>2</td><td><strong>Privacy / tenant isolation</strong></td><td>Output contains only this tenant's data; no leaked PII.</td><td><strong>deterministic tenant-isolation rule</strong> (D15) + judge for free-text leaks</td><td><span class="pill gate">gate</span> <span class="pill req">required</span></td></tr>
+    <tr><td>3a</td><td><strong>Source exists</strong></td><td>Every number/fact traces to real source data; nothing invented.</td><td>rule</td><td><span class="pill gate">gate</span></td></tr>
+    <tr><td>3b</td><td><strong>Source is correct</strong></td><td>The cited transaction/period/account is the <em>right</em> one for the claim (tenant, date window, account match).</td><td><strong>deterministic SQL reconciliation</strong> (D16) + judge</td><td><span class="pill gate">gate</span></td></tr>
+    <tr><td>4</td><td><strong>Math adds up</strong></td><td>Totals reconcile; right category from the chart of accounts.</td><td>rule (math) + AI judge + human</td><td><span class="pill gate">gate</span></td></tr>
+    <tr><td>5</td><td><strong>Consistent</strong></td><td>Same vendor/question → same answer over time (allowing for deliberate re-categorizations).</td><td>compare vs past decisions</td><td><span class="pill score">score</span></td></tr>
     <tr><td>6</td><td><strong>Valid format</strong></td><td>Structurally complete output (real category code, required fields, valid JSON).</td><td>rule</td><td><span class="pill gate">gate</span></td></tr>
     <tr><td>7</td><td><strong>On-brand voice</strong></td><td>Sounds like Penny / FounderFirst, not generic.</td><td>AI judge vs voice guide</td><td><span class="pill score">score</span></td></tr>
-    <tr><td>8</td><td><strong>Actually helpful</strong></td><td>Resolved the real need; for chat, didn't force a re-ask/escalation.</td><td>AI judge + behavior signal</td><td><span class="pill score">score</span></td></tr>
+    <tr><td>8</td><td><strong>Actually helpful</strong></td><td>Resolved the real need; for chat, didn't force a re-ask/escalation. Guards against gaming the ramp by over-deferring.</td><td>AI judge + behavior + deferral-rate guard</td><td><span class="pill score">score</span></td></tr>
   </tbody>
 </table>
-<p class="small">Tracked alongside (not answer-quality): <strong>cost per task</strong> and <strong>speed</strong> — the "cost going down" half of the goal.</p>
+<p class="small">Tracked alongside (not answer-quality): <strong>cost per resolved task</strong>, <strong>judge cost as % of answer cost</strong>, and <strong>speed</strong> (D22).</p>
 
 <h2 id="records">5. What we record per answer</h2>
-<p>One record per AI answer — the single source of truth feeding the dashboard and the learning loop. Eval results reference the eval's <em>version</em>, since the set differs per use case and definitions change over time.</p>
+<p>One record per AI answer in <code>ai_decisions</code> (Supabase) — the single source of truth. Written async (D18), tenant-scoped (D15), with a retention TTL (D19). Eval results live in a JSONB column referencing each eval's <em>version</em>.</p>
 <table>
   <thead><tr><th>Field group</th><th>Captures</th></tr></thead>
   <tbody>
-    <tr><td><strong>The ask</strong></td><td>use case, which customer/tenant, the input</td></tr>
-    <tr><td><strong>The answer</strong></td><td>what was produced</td></tr>
-    <tr><td><strong>The engine</strong></td><td>which model/provider, cost, latency, cache hit?</td></tr>
-    <tr><td><strong>The evals</strong></td><td>each configured eval's pass/score + version</td></tr>
-    <tr><td><strong>The gate decision</strong></td><td>passed / blocked / escalated</td></tr>
-    <tr><td><strong>Human verdict</strong></td><td>(when reviewed) approved / edited (+ the edit) / rejected (+ why)</td></tr>
-    <tr><td><strong>Final outcome</strong></td><td>used? later corrected by customer/CPA?</td></tr>
+    <tr><td><strong>Tenant</strong></td><td><code>tenant_id</code> (NOT NULL) — the isolation key on this row, the cache, and any rule</td></tr>
+    <tr><td><strong>The ask</strong></td><td>use case, the input (subject to retention TTL / redaction)</td></tr>
+    <tr><td><strong>The answer</strong></td><td>what was produced (subject to retention TTL)</td></tr>
+    <tr><td><strong>The engine</strong></td><td>model/provider, generator vs judge model, cost, latency, cache hit?</td></tr>
+    <tr><td><strong>The evals</strong></td><td>JSONB — each configured eval's pass/score + version</td></tr>
+    <tr><td><strong>The gate decision</strong></td><td>passed / blocked / escalated / failed-closed</td></tr>
+    <tr><td><strong>Human verdict</strong></td><td>(when reviewed) approved-as-is / approved-after-edit (+ the edit) / rejected (+ why) — the <strong>zero-edit</strong> flag feeds the ramp (D5)</td></tr>
+    <tr><td><strong>Cost-to-resolution</strong></td><td>total incl. retries, escalations, and human time (D22)</td></tr>
+    <tr><td><strong>Final outcome</strong></td><td>used? later corrected by customer/CPA? (the lagging rollback signal)</td></tr>
   </tbody>
 </table>
-<p class="small">Lands as a new Supabase table (working name <code>ai_decisions</code>), additive — existing per-feature columns keep working and are migrated/retired one at a time once the unified log is trusted.</p>
+<p class="small"><strong>Migration (D21):</strong> additive table; <code>resolve()</code> dual-writes legacy columns + ai_decisions, a scheduled job reconciles on a sample for N days, consumers flip behind a flag one surface at a time, legacy columns retire last.</p>
 
 <h2 id="loop">6. Improvement loop &amp; autonomy ramp</h2>
-<p>Every block, edit, rejection, and later correction is a lesson. Patterns drive fixes (better prompt, a new rule, a model swap). Two specific mechanisms:</p>
+<p>Every block, edit, rejection, and later correction is a lesson. Two mechanisms:</p>
 <ul>
-  <li><strong>Rule graduation.</strong> A repeated, human-approved answer (e.g. "vendor AWS → Software", 50×) becomes a deterministic rule that fires with no model call — cheaper <em>and</em> more consistent. Tenant-scoped (one customer's rule never fires on another's books).</li>
-  <li><strong>Autonomy ramp (D5).</strong> 100% review → the system recommends reducing review when evals + approval stay high with zero safety/privacy misses → you approve → less review. Quality dips ⇒ snaps back automatically.</li>
+  <li><strong>Rule graduation (D17).</strong> A repeated, human-approved answer becomes a fast rule — but it is still periodically re-run through the math/grounding gates + a sampled judge, carries an expiry, auto-demotes on CPA correction, and is tenant-partitioned (never shared across customers).</li>
+  <li><strong>Autonomy ramp (D5).</strong> 100% review → the system recommends reducing review when <strong>zero-edit</strong> approval + evals stay high with zero safety/privacy misses (per tenant cohort) → you approve → less review, with a continuous shadow sample. Rollback triggers on the lagging CPA/customer-correction rate.</li>
 </ul>
 <div class="flow">
   <span class="step">answer produced</span><span class="arr">→</span>
-  <span class="step">evals run</span><span class="arr">→</span>
-  <span class="step">gate: pass / block / escalate</span><span class="arr">→</span>
-  <span class="step">human verdict (early)</span><span class="arr">→</span>
-  <span class="step">recorded</span><span class="arr">→</span>
-  <span class="step">patterns → rules + ramp</span>
+  <span class="step">deterministic gates</span><span class="arr">→</span>
+  <span class="step">panel of diverse models</span><span class="arr">→</span>
+  <span class="step">agree → pass · disagree/fail → human</span><span class="arr">→</span>
+  <span class="step">human verdict (zero-edit?) + sampled passes</span><span class="arr">→</span>
+  <span class="step">async record</span><span class="arr">→</span>
+  <span class="step">patterns → gated rules + ramp</span>
 </div>
 
-<h2 id="arch">7. Architecture &amp; tools (build vs buy)</h2>
-<p>Researched against one hard constraint: <strong>no new always-on server to babysit</strong> (the lesson from running prod on a Mac). Almost everything is either already in the stack or a free/cheap managed tier.</p>
+<h2 id="arch">7. Architecture &amp; tools</h2>
+<p>Researched against one hard constraint: <strong>no new always-on server to babysit</strong> (the Mac-as-prod lesson).</p>
 <table>
   <thead><tr><th>Job</th><th>Tool</th><th>New server?</th></tr></thead>
   <tbody>
-    <tr><td>Front door — route, fallback, exact-cache, spend caps, logs</td><td><strong>Cloudflare AI Gateway</strong></td><td>No (part of Cloudflare)</td></tr>
-    <tr><td>Inline quality check on live answers</td><td><strong>AI-judge call inside our Worker</strong> (no framework)</td><td>No</td></tr>
-    <tr><td>Records + dashboard + review queue + eval/model config</td><td><strong>Supabase + apps/admin</strong> (our source of truth)</td><td>No</td></tr>
-    <tr><td>Reuse / rule graduation</td><td>Gateway cache now; <strong>Vectorize/Upstash</strong> semantic cache later</td><td>No</td></tr>
-    <tr><td>Heavier eval tooling (optional, later)</td><td><strong>Langfuse Cloud</strong></td><td>No (cloud only)</td></tr>
+    <tr><td>Front door — route, fallback, cache, spend caps, logs</td><td><strong>Cloudflare AI Gateway</strong> (tenant-keyed cache, minimized logging — D11)</td><td>No</td></tr>
+    <tr><td>The seam</td><td><strong><code>resolve()</code> pure core + per-runtime adapters</strong> (workers / deno / node) — D14</td><td>No</td></tr>
+    <tr><td>Inline + batch quality checks</td><td><strong>Deterministic rules + tiered AI-judge in our Worker</strong> (judge ≠ generator — D12/D20)</td><td>No</td></tr>
+    <tr><td>Records + dashboard + review queue + config</td><td><strong>Supabase + apps/admin</strong> (source of truth, tenant-scoped)</td><td>No</td></tr>
+    <tr><td>Reuse / rule graduation</td><td>Gateway cache now; <strong>tenant-partitioned Vectorize/Upstash</strong> semantic cache</td><td>No</td></tr>
+    <tr><td>Heavier eval tooling (optional)</td><td><strong>Langfuse Cloud</strong></td><td>No (cloud only)</td></tr>
   </tbody>
 </table>
-<p class="small"><strong>Cost to start:</strong> ~$0–29/month. <strong>Ollama gap:</strong> zero-infra gateways can't reach the local Mac Ollama — so Mac paths stay out of the customer-facing path (use Workers AI instead), consistent with retiring Mac-as-prod.</p>
+<p class="small"><strong>Cost honesty (D22):</strong> ~$0–29/mo is infra only; per-answer cost is net neutral-to-up until caching + rule graduation mature. <strong>Ollama:</strong> stays out of any customer-facing path (no SLA); the routing table refuses a <code>@cf/...</code> model on a Deno/Node call site.</p>
 <div class="flow">
   <span class="step">product calls <code>resolve()</code></span><span class="arr">→</span>
   <span class="step">Cloudflare AI Gateway</span><span class="arr">→</span>
   <span class="step">model</span><span class="arr">→</span>
-  <span class="step">AI-judge + evals</span><span class="arr">→</span>
+  <span class="step">deterministic gates + tiered judge</span><span class="arr">→</span>
   <span class="step">gate</span><span class="arr">→</span>
-  <span class="step">Supabase record</span><span class="arr">→</span>
+  <span class="step">async Supabase record</span><span class="arr">→</span>
   <span class="step">admin dashboard + controls</span>
 </div>
 
 <h2 id="admin">8. The admin views</h2>
-<p>Three screens on the FounderFirst admin (reusing existing patterns — KPI strips, tables, review surfaces):</p>
+<p>Three screens on the FounderFirst admin (reusing existing patterns):</p>
 <ul>
-  <li><strong>Overview</strong> — KPI strip (total spend, quality, autonomy %, awaiting review); per-use-case table with <em>total cost</em>, cost/task, quality, model in use, review mode, status; and a "what to do next" actions feed (apply cheaper route, approve more autonomy, see a failing pattern).</li>
-  <li><strong>Use-case detail</strong> — cost breakdown + cost-by-model; <em>editable</em> models &amp; routing (main / backup / hard-questions / spend cap / caching) with "test before saving"; quality checks; autonomy dial + recommendation; what's working; recent answers.</li>
-  <li><strong>Eval setup (per use case)</strong> — table of applied evals (method, gate/score, threshold, live pass-rate), add from library or create custom, locked mandatory gates, "save to this use case" vs "save to library", "test on recent answers".</li>
+  <li><strong>Overview</strong> — KPI strip (total spend, quality, autonomy %, awaiting review, <strong>judge cost as % of answer cost</strong>, <strong>cost per resolved task</strong>); per-use-case table with total cost, cost/task, quality, model in use, review mode, status; and a "what to do next" actions feed.</li>
+  <li><strong>Use-case detail</strong> — cost breakdown + cost-by-model; editable models &amp; routing (main / backup / hard-questions / spend cap / caching) with "test before saving"; quality checks; autonomy dial + recommendation; what's working; recent answers (showing gate outcome incl. fail-closed).</li>
+  <li><strong>Eval setup (per use case)</strong> — applied evals (method, gate/score, threshold, live pass-rate), add from library or create custom, locked mandatory gates, save-to-use-case vs save-to-library, "test on recent answers".</li>
 </ul>
 
-<h2 id="phases">9. Phased build plan</h2>
-<p>Each phase ships something usable and de-risks the next. Build order is bottom-up: seam + measurement first, cleverness later (you can't self-tune before you can measure).</p>
+<h2 id="phases">9. Build plan — all phases committed</h2>
+<p>Dependency-ordered. Foundations (isolation, crash-safe logging, migration safety, retention) come first because data lands from Phase 0. Nothing here is optional.</p>
 <table>
   <thead><tr><th style="width:60px;">Phase</th><th>Delivers</th><th>Key pieces</th></tr></thead>
   <tbody>
-    <tr><td><span class="pill now">0</span></td><td><strong>Front door + recording, no behavior change</strong> (D14)</td><td>Turn on Cloudflare AI Gateway in front of the 3 live call sites; <code>ai_decisions</code> table; a thin <code>resolve()</code> seam that forwards to today's models and logs every answer. Start the guardrails doc.</td></tr>
-    <tr><td><span class="pill now">1</span></td><td><strong>Visibility</strong> — the overview dashboard</td><td>Admin "AI quality &amp; cost" page reading records: total cost per use case, models in use, volume, basic trends.</td></tr>
-    <tr><td><span class="pill now">2</span></td><td><strong>Judging</strong> — evals + AI-judge</td><td>Eval library + per-use-case config; in-Worker judge; inline gate for live chat (block/escalate); batch grading for async work.</td></tr>
-    <tr><td><span class="pill now">3</span></td><td><strong>Human review queue</strong></td><td>Approve/edit/reject screen in admin for async work; corrections recorded and fed back.</td></tr>
-    <tr><td><span class="pill now">4</span></td><td><strong>Control</strong> — model &amp; routing from the admin</td><td>Config-driven model/routing/caps/caching per use case; "test before saving"; all changes audit-logged.</td></tr>
-    <tr><td><span class="pill later">5</span></td><td><strong>Cheaper &amp; more autonomous</strong></td><td>Semantic cache (Vectorize/Upstash); rule graduation; autonomy-ramp recommendations enforced against the guardrails doc.</td></tr>
-    <tr><td><span class="pill later">6</span></td><td><strong>Bookkeeping plugs in</strong></td><td>Categorization use case onboarded when the product ships; optional Langfuse Cloud for heavier evals.</td></tr>
+    <tr><td><strong>0</strong></td><td><strong>Foundations + seam</strong> (answers unchanged)</td><td><code>resolve()</code> core + per-runtime adapters; <code>ai_decisions</code> with <code>tenant_id NOT NULL</code> + retention fields + JSONB evals; required-predicate CI test; async <code>waitUntil()</code> logging; dual-write alongside legacy columns; route the 3 live sites through it. Start guardrails doc + 90-day retention/archive policy + erasure cascade.</td></tr>
+    <tr><td><strong>1</strong></td><td><strong>Visibility</strong> — the dashboard</td><td>Admin "AI quality &amp; cost" overview reading records: total cost per use case, models, judge-cost-% + cost-per-resolved KPIs; legacy↔new reconcile job.</td></tr>
+    <tr><td><strong>2</strong></td><td><strong>Judging</strong></td><td>Eval library + per-use-case config UI; deterministic floor checks (Safety/Privacy/tenant/format); two-part grounding (3a rule + 3b SQL reconciliation); <strong>tiered multi-model checker panel (different families)</strong>; injection canaries; human only on disagreement/failure + early pass-sampling; inline fast-classifier + fail-CLOSED for chat; load-test gate before chat goes live.</td></tr>
+    <tr><td><strong>3</strong></td><td><strong>Human review queue</strong></td><td>Approve/edit/reject in admin; zero-edit-approval capture; shadow-sample; corrections fed back.</td></tr>
+    <tr><td><strong>4</strong></td><td><strong>Control</strong></td><td>Config-driven model/routing/caps/caching per use case from admin; "test before saving"; spend caps resolve()-enforced; all changes audit-logged.</td></tr>
+    <tr><td><strong>5</strong></td><td><strong>Cheaper &amp; autonomous</strong></td><td>Tenant-partitioned semantic cache; gated rule graduation (expiry + auto-demote); autonomy ramp (zero-edit + lagging rollback + shadow); erasure cascade extended to cache/Vectorize.</td></tr>
+    <tr><td><strong>6</strong></td><td><strong>Bookkeeping plugs in</strong></td><td>Categorization use case onboarded with the product; stand up the de-identified model-training pipeline (D24); optional Langfuse Cloud for heavier evals.</td></tr>
   </tbody>
 </table>
 
-<h2 id="guardrails">10. Guardrails document v1 (living)</h2>
-<p>The written rulebook the system follows. Starts here, updated as we learn; later editable in admin.</p>
+<h2 id="guardrails">10. Guardrails document v2 (living)</h2>
 <div class="card">
   <h3 style="margin-top:0;">Mandatory floor (cannot be disabled)</h3>
   <ul>
-    <li>Customer-facing use cases must run the <strong>Safe</strong> and <strong>Privacy</strong> gates at all times.</li>
-    <li>Financial outputs (numbers, categories) must run the <strong>Truthful/grounded</strong> and <strong>Math-adds-up</strong> gates.</li>
-    <li>No output ships if a <span class="pill gate">gate</span> fails — it is blocked or escalated to a human.</li>
+    <li>Customer-facing use cases run the <strong>Safe</strong> and <strong>Privacy/tenant-isolation</strong> gates at all times, enforced by deterministic non-LLM checks (D8, D15, D20).</li>
+    <li>Financial outputs run <strong>Source-exists</strong>, <strong>Source-correct</strong>, and <strong>Math</strong> gates (D16).</li>
+    <li>No output ships if a gate fails. <strong>On judge timeout/error, fail CLOSED</strong> to a templated human-handoff (D3).</li>
+    <li>Tenant isolation: <code>tenant_id NOT NULL</code> + required query predicate everywhere; the Privacy eval is defense-in-depth, never the boundary (D15).</li>
   </ul>
-  <h3>Autonomy-ramp rules (placeholder thresholds — tune with real data)</h3>
+  <h3>Autonomy-ramp rules (placeholder thresholds — tuned with real data + reviewer capacity)</h3>
   <ul>
-    <li>A use case may move from <em>100% review</em> → <em>sampling</em> only after: ≥ [N] decisions, ≥ [X]% human-approval, and <strong>zero</strong> safety/privacy failures over [T] weeks.</li>
-    <li>Each reduction is <strong>proposed by the system and approved by a human</strong> (D4). Approval is audit-logged.</li>
-    <li><strong>Rollback:</strong> if any gate-failure or approval-rate drops below [Y]% over [rolling window], the use case auto-reverts to the previous (stricter) review level.</li>
+    <li>Advance from <em>100% review</em> → <em>sampling</em> only after: ≥ [N] decisions, ≥ [X]% <strong>zero-edit</strong> approval, and <strong>zero</strong> safety/privacy failures over [T] weeks, <strong>per tenant cohort</strong>.</li>
+    <li>Each reduction is proposed by the system and <strong>approved by a human</strong>, audit-logged (D4).</li>
+    <li><strong>Rollback</strong> on the lagging CPA/customer-correction rate falling below [Y]% (rolling window); a shadow review sample runs continuously post-ramp.</li>
+    <li>Financial use cases cannot advance until the Source-correct reconciliation gate (D16) exists as code.</li>
+    <li>Graduated rules are re-validated through the gates, expire, and auto-demote on correction (D17).</li>
   </ul>
-  <h3>Model-change rules</h3>
+  <h3>Model, judge &amp; cost rules</h3>
   <ul>
-    <li>Model/routing changes must pass "test on recent answers" before going live.</li>
-    <li>Spend caps per use case are enforced by the gateway; hitting a cap triggers fallback, not failure.</li>
+    <li>Gate-eval judge is a different model family than the generator; locked financial gates use a stronger judge (D20).</li>
+    <li>Model/routing changes pass "test on recent answers" before going live (D10).</li>
+    <li>Spend caps per use case are enforced (gateway or resolve()); hitting a cap triggers fallback, not failure (D11).</li>
+    <li>"Judge cost as % of answer cost" stays under [cap]; score-evals are sampled, not run at 100% (D12, D22).</li>
+  </ul>
+  <h3>Data rules</h3>
+  <ul>
+    <li>Raw input/answer purged after the review+ramp window; scores + hashed refs retained for trends (D19).</li>
+    <li>Right-to-erasure cascades to ai_decisions + judge rationale + cache/Vectorize; immutable audit fields are separated from purgeable PII (D19).</li>
+    <li>Gateway body-logging minimized for financial use cases; gateway/exact-match cache keyed by tenant or off for financial (D11).</li>
   </ul>
 </div>
 
-<h2 id="assumptions">11. Assumptions &amp; risks to stress-test</h2>
-<p>The deliberate list of things we should attack before building, so we don't miss anything.</p>
-<div class="callout warn">
-  <strong>Assumptions baked in (validate each):</strong>
-  <ul style="margin-bottom:0;">
-    <li>That an <strong>AI judge</strong> is reliable enough to gate customer-facing answers without too many false blocks (or missed bad answers).</li>
-    <li>That adding a judge + evals to <strong>live chat</strong> won't add noticeable latency.</li>
-    <li>That a <strong>per-use-case eval config in Supabase</strong> is expressive enough for real bookkeeping checks (not just text grading).</li>
-    <li>That <strong>Cloudflare AI Gateway</strong> covers our routing needs and that dropping local Ollama from the runtime path is acceptable.</li>
-    <li>That "<strong>both at once</strong>" (D1) is realistic given bookkeeping isn't live — i.e. we won't over-design for a product whose shape may change.</li>
-    <li>That <strong>rule graduation</strong> can be made safe in a multi-tenant financial system (no cross-customer leakage).</li>
+<h2 id="confirm">11. Resolved &amp; still open</h2>
+<p><strong>Resolved by Nik (folded into the decisions above):</strong></p>
+<div class="callout">
+  <ul style="margin:0;">
+    <li><strong>Review model</strong> — a panel of diverse-model AI checkers is the primary reviewer; only failures/disagreements reach a human (D2, D12, D25).</li>
+    <li><strong>Live-chat shape</strong> — <strong>Option B confirmed:</strong> instant deterministic safety/privacy pre-filter, stream the answer, run the panel async + sample, fail CLOSED (D3).</li>
+    <li><strong>Retention</strong> — keep raw 90 days, then archive (de-identified) to train our own models; honor legal deletion across all stores (D19, D24).</li>
   </ul>
 </div>
-<div class="callout danger">
-  <strong>Top risks:</strong>
-  <ul style="margin-bottom:0;">
-    <li><strong>Judge cost &amp; latency:</strong> grading every answer doubles model calls — could erode the cost savings or slow chat.</li>
-    <li><strong>False confidence:</strong> evals that pass but miss real errors → we ramp autonomy on a bad signal.</li>
-    <li><strong>Scope creep:</strong> building for bookkeeping before it exists.</li>
-    <li><strong>Source-of-truth drift:</strong> if Langfuse (or any second store) creeps in, we re-create the very fragmentation we're fixing.</li>
-    <li><strong>Migration safety:</strong> wiring 11 call sites and retiring scattered columns without breaking live surfaces.</li>
-  </ul>
+<p><strong>Still open (small — not blocking the build):</strong></p>
+<div class="callout warn">
+  <ol style="margin:0;">
+    <li><strong>Rough human availability + who reviews</strong> — how much review time you'll have early (for failures + the pass-sample), and whether it's you or a hired bookkeeper/CPA. Tunes onboarding pace + the early sample size, no longer a hard cap.</li>
+    <li><strong>Legal sign-off</strong> — confirmation (you now, a lawyer/accountant before bookkeeping data flows) that the 90-day archive, de-identify-before-train, and erasure cascade meet compliance.</li>
+    <li><strong>Panel composition</strong> — which specific models make up the checker panel (implementation detail; I'll propose a default set).</li>
+  </ol>
 </div>
 
 <h2 id="avoid">12. Things we deliberately avoid</h2>
@@ -277,10 +307,12 @@
   <li><strong>A second source of truth</strong> for records/queue/dashboard outside Supabase + admin (D9).</li>
   <li><strong>Hardcoded model choices</strong> per file (D10).</li>
   <li><strong>Mac-host dependencies</strong> in any customer-facing path.</li>
+  <li><strong>An AI eval as a security boundary</strong> — isolation and the locked floor are deterministic code (D15, D20).</li>
+  <li><strong>Rules/cache that skip the gates</strong> or cross tenants (D17).</li>
 </ul>
-<p class="small" style="margin-top:8px;">Freshness caveat: a few "fading/shutting down" facts came from secondary 2026 write-ups — confirm first-party before betting the roadmap on any one of them.</p>
+<p class="small" style="margin-top:8px;">Freshness caveat: a few "fading/shutting down" tool facts came from secondary 2026 write-ups — confirm first-party before committing.</p>
 
-<p class="meta" style="margin-top:48px; border-top:1px solid var(--line); padding-top:16px;">Next step: adversarial stress test of every decision (D1–D14), assumption, and risk above — then turn the surviving plan into build tickets.</p>
+<p class="meta" style="margin-top:48px; border-top:1px solid var(--line); padding-top:16px;">v2 hardened from the 35-agent adversarial stress test. Next: confirm the three items in §11, then break Phase 0 into build tickets.</p>
 
 </div>
 </body>

@@ -140,7 +140,7 @@ function main(): void {
   // SPA fallback for the unified app's URL-reachable routes (BrowserRouter
   // basename="/app"). Keep in sync with the top-level <Route path> entries in
   // apps/app/src/App.tsx. The catch-all (*) redirects client-side to "/".
-  const APP_ROUTES = ["login"];
+  const APP_ROUTES = ["login", "accept"];
   for (const route of APP_ROUTES) {
     mkdirSync(resolve(appOut, route), { recursive: true });
     cpSync(resolve(appOut, "index.html"), resolve(appOut, route, "index.html"));

@@ -13,6 +13,7 @@
     "@astrojs/react": "^3.6.2",
     "@ff/content": "workspace:*",
     "@ff/design-system": "workspace:*",
+    "@ff/site": "workspace:*",
     "@ff/ui": "workspace:*",
     "@supabase/supabase-js": "^2.45.0",
     "astro": "^4.16.18",

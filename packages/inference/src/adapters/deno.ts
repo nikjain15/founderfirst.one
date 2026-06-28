@@ -77,7 +77,9 @@ export function makeDenoCtx(
     runtime: "deno",
     config,
     transports: {
-      anthropic: { apiKey: env.ANTHROPIC_API_KEY, fetch: fetch as unknown as FetchLike },
+      // Bind fetch to globalThis — calling the bare global as `transport.fetch(...)`
+      // rebinds `this` and throws "Illegal invocation".
+      anthropic: { apiKey: env.ANTHROPIC_API_KEY, fetch: fetch.bind(globalThis) as unknown as FetchLike },
     },
     gateway,
     recordSink,

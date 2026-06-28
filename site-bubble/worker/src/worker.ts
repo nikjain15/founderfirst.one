@@ -117,6 +117,20 @@ import {
 import { handleEmailCompose } from "./compose";
 import { handleInsights } from "./insights";
 import { CONNECT_DISCORD_HTML } from "./connect-page";
+// AI quality & cost layer (Phase 0): every AI call routes through resolve(). The
+// pure core + per-runtime adapters live in packages/inference (relative import —
+// the worker bundles via esbuild and is not a pnpm-workspace member).
+// Phase 2 (judging): live chat runs an inline gate pass (Option B, D3) — fail
+// closed to a human handoff — and an async score pass, writing one judged row.
+import {
+  resolveDeferredOnWorkers,
+  loadEvalDefs,
+  judgeInputFrom,
+  judgeChatGatesInline,
+  chatNeedsHandoff,
+  finalizeChatDecision,
+} from "../../../packages/inference/src/adapters/workers";
+import { USE_CASE, anonTenant, type ChatMessage, type ResolveTask } from "../../../packages/inference/src/core";
 
 export type { Env };
 
@@ -229,6 +243,16 @@ const FALLBACK_RESPONSE: PennyResponse = {
   cta: null,
 };
 
+// Shown when the inline gate blocks/escalates or the judge times out (fail closed,
+// D3): the answer is held back and the customer is routed to a human teammate.
+const HANDOFF_RESPONSE: PennyResponse = {
+  bubbles: [
+    { headline: "I want to get this exactly right, so I'm looping in a human teammate.", tone: "fyi" },
+    { headline: "Email founder@founderfirst.one with your question and we'll follow up personally.", tone: "fyi" },
+  ],
+  cta: null,
+};
+
 /* ── Site-content cache (15 min in KV) ────────────────────────────────── */
 
 async function getSiteContent(env: Env): Promise<string> {
@@ -244,7 +268,7 @@ async function getSiteContent(env: Env): Promise<string> {
 
 /* ── /chat handler ────────────────────────────────────────────────────── */
 
-async function handleChat(req: Request, env: Env, origin: string | null): Promise<Response> {
+async function handleChat(req: Request, env: Env, ctx: ExecutionContext, origin: string | null): Promise<Response> {
   let body: ChatBody;
   try {
     body = (await req.json()) as ChatBody;
@@ -325,16 +349,47 @@ ${site}
 ${JSON.stringify(state, null, 2)}
 </session_state>`;
 
-  const messages = [
+  const messages: ChatMessage[] = [
     ...body.history.slice(-10).map((m) => ({ role: m.role, content: m.content })),
     { role: "user", content: body.message },
   ];
 
-  // Call model + parse.
+  // Call model + parse, then judge (Phase 2, Option B / D3). The answer model,
+  // max_tokens, prompt-caching beta, and 429 backoff are unchanged. The decision
+  // log is DEFERRED so the inline gate result lands on the same row. tenant_id =
+  // the anonymous session, so each visitor is its own isolation unit (D15).
+  const chatTask: ResolveTask = {
+    useCase: USE_CASE.PENNY_CHAT,
+    tenantId: anonTenant(body.sessionId),
+    system,
+    messages,
+    maxTokens: 600,
+    pinModel: { provider: "anthropic", model: env.ANTHROPIC_MODEL },
+    anthropic: {
+      betas: ["prompt-caching-2024-07-31"],
+      cacheSystem: true,
+      maxRetries: 2,
+      retryBaseMs: 8_000,
+    },
+    record: { id: crypto.randomUUID(), ref: body.sessionId, storeInput: true },
+  };
   let parsed: PennyResponse;
   try {
-    const raw = await callAnthropic(env, system, messages);
-    parsed = parseModelJson(raw);
+    // Resolve the answer (log deferred) and load eval config in parallel.
+    const [result, evalDefs] = await Promise.all([
+      resolveDeferredOnWorkers(chatTask, env, ctx),
+      loadEvalDefs(env, USE_CASE.PENNY_CHAT),
+    ]);
+    parsed = parseModelJson(result.text);
+
+    // Inline gate pass: deterministic floor + classifier-triaged LLM gates under a
+    // 400ms budget. On block / escalate / timeout / error → FAIL CLOSED to a human
+    // handoff. The original answer is still recorded (for review); only what SHIPS
+    // is swapped. Score evals run async; one enriched row is written on waitUntil.
+    const jinput = judgeInputFrom(chatTask, result.model, result.text, parsed, evalDefs);
+    const gate = await judgeChatGatesInline(jinput, env, ctx, 400);
+    if (chatNeedsHandoff(gate.gateStatus)) parsed = HANDOFF_RESPONSE;
+    if (result.record) finalizeChatDecision(env, ctx, result.record, jinput, gate);
   } catch (err) {
     console.error("model_call_failed", err instanceof Error ? err.message : err);
     parsed = FALLBACK_RESPONSE;
@@ -484,7 +539,7 @@ function handleBubbleJs(env: Env): Response {
 /* ── Router ───────────────────────────────────────────────────────────── */
 
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const origin = req.headers.get("Origin");
     const url = new URL(req.url);
 
@@ -499,7 +554,7 @@ export default {
       return handleBubbleJs(env);
     }
     if (url.pathname === "/chat" && req.method === "POST") {
-      return handleChat(req, env, origin);
+      return handleChat(req, env, ctx, origin);
     }
     if (url.pathname === "/waitlist" && req.method === "POST") {
       return handleWaitlist(req, env, origin);
@@ -532,10 +587,10 @@ export default {
       return handleDiscordErase(req, env);
     }
     if (url.pathname === "/compose" && req.method === "POST") {
-      return handleEmailCompose(req, env);
+      return handleEmailCompose(req, env, ctx);
     }
     if (url.pathname === "/insights" && req.method === "POST") {
-      return handleInsights(req, env);
+      return handleInsights(req, env, ctx);
     }
     if (url.pathname === "/discord/attach-channel" && req.method === "POST") {
       return handleDiscordAttachChannel(req, env);

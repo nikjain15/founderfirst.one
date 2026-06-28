@@ -32,3 +32,12 @@ binding = "AI"
 ALLOWED_ORIGINS = "https://founderfirst.one,https://www.founderfirst.one,http://localhost:4000,http://127.0.0.1:4000"
 ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 SITE_URL = "https://founderfirst.one"
+
+# Cloudflare AI Gateway (AI quality & cost layer, D11). Leave UNSET to call
+# providers directly (the Phase-0 default — byte-identical to today). To route
+# every AI call through the gateway (routing, fallback, spend caps, logs):
+#   1. Create a gateway in the Cloudflare dashboard (AI → AI Gateway), cache OFF.
+#   2. Uncomment + fill these, then `wrangler deploy`.
+# resolve() reads both; with either missing it falls back to direct calls.
+# AI_GATEWAY_ACCOUNT_ID = "<cloudflare-account-id>"
+# AI_GATEWAY_ID = "<gateway-id>"

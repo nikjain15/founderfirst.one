@@ -1,0 +1,14 @@
+{
+  "name": "@ff/inference",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The AI quality & cost layer — one resolve() every Penny AI request passes through. Pure runtime-agnostic core + per-runtime adapters (workers / deno / node). Single source of truth for routing, cost math, and the ai_decisions record shape.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./core": "./src/core.ts",
+    "./adapters/node": "./src/adapters/node.ts"
+  }
+}

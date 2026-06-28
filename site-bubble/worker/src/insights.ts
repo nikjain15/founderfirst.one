@@ -22,6 +22,8 @@
  *   goal, surface, title, observation, suggested_action, confidence, evidence }] }
  */
 import type { Env } from "./worker-env";
+import { resolveOnWorkers } from "../../../packages/inference/src/adapters/workers";
+import { USE_CASE, TENANT_FOUNDERFIRST } from "../../../packages/inference/src/core";
 
 const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
@@ -114,7 +116,7 @@ Available metric labels you may cite (and nothing else):
 ${allowed.map((m) => `- ${m}`).join("\n")}`;
 }
 
-export async function handleInsights(req: Request, env: Env): Promise<Response> {
+export async function handleInsights(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   if (!env.COMPOSE_SECRET) {
     return jsonResp({ error: "not_configured", detail: "COMPOSE_SECRET not set on the Worker." }, 503);
   }
@@ -149,16 +151,27 @@ export async function handleInsights(req: Request, env: Env): Promise<Response> 
 
   let parsed: { summary?: unknown; findings?: unknown };
   try {
-    const out = (await env.AI.run(MODEL, {
-      messages: [
-        { role: "system", content: buildSystem(goals, allowed) },
-        { role: "user", content: `DATA:\n${dataBlock}\n\nReturn the JSON now. Ground every finding in the available metrics.` },
-      ],
-      max_tokens: 1400,
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-    })) as { response?: unknown };
-    const resp = out.response;
+    // Routes through the AI quality & cost layer (resolve()): same Workers-AI
+    // model + params as before (output unchanged), plus an async ai_decisions
+    // log. Internal admin tool → tenant_id = the FounderFirst org (D15).
+    const result = await resolveOnWorkers(
+      {
+        useCase: USE_CASE.INSIGHTS,
+        tenantId: TENANT_FOUNDERFIRST,
+        system: buildSystem(goals, allowed),
+        messages: [
+          { role: "user", content: `DATA:\n${dataBlock}\n\nReturn the JSON now. Ground every finding in the available metrics.` },
+        ],
+        maxTokens: 1400,
+        temperature: 0.2,
+        jsonObject: true,
+        pinModel: { provider: "workers-ai", model: MODEL },
+        record: { storeInput: true },
+      },
+      env,
+      ctx,
+    );
+    const resp = result.raw;
     parsed =
       resp && typeof resp === "object"
         ? (resp as Record<string, unknown>)

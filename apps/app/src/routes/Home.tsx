@@ -3,7 +3,8 @@
  * chosen from the derived role (owner vs cpa); data + RLS are identical underneath
  * — only the default view and affordances differ (ARCHITECTURE.md §B1).
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Topbar from "../components/Topbar";
 import { useActiveOrg } from "../org/ActiveOrgProvider";
 import CreateOrg from "../org/CreateOrg";
@@ -13,6 +14,16 @@ import CpaLens from "../lenses/CpaLens";
 export default function Home() {
   const { loading, error, orgs, activeOrg, roleInfo } = useActiveOrg();
   const [creating, setCreating] = useState(false);
+  const nav = useNavigate();
+
+  // Resume an invite the user opened before signing in.
+  useEffect(() => {
+    const pending = localStorage.getItem("ff.pendingInvite");
+    if (pending) {
+      localStorage.removeItem("ff.pendingInvite");
+      nav(`/accept?token=${pending}`, { replace: true });
+    }
+  }, [nav]);
 
   return (
     <div className="shell">

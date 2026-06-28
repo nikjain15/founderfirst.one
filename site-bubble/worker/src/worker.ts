@@ -34,6 +34,7 @@ import { PROMPT_GUARDRAILS } from "./prompt-guardrails";
 const PROMPT_TTL_MS = 60_000;
 let promptCache: { body: string; fetchedAt: number } | null = null;
 let voiceCache: { body: string | null; fetchedAt: number } | null = null;
+let discordPersonaCache: { body: string; fetchedAt: number } | null = null;
 
 async function getCachedLiveSystemPrompt(supa: Supabase): Promise<string> {
   const now = Date.now();
@@ -72,6 +73,29 @@ async function getCachedLiveVoice(supa: Supabase): Promise<string | null> {
   } catch (e) {
     console.error("getLiveVoice failed, skipping voice preface:", e);
     return null;
+  }
+}
+
+/**
+ * Live Discord persona — the bot's behavioral instruction block (output format,
+ * memory rules, safety), edited via /admin/content#discord. Fetched at runtime
+ * (cached ~60s) so changes propagate without redeploying the Worker. Falls back
+ * to the baked-in DISCORD_PERSONA_BASE on any error or until a version is
+ * published, so Discord stays online and behaves identically pre-migration.
+ */
+async function getCachedLiveDiscordPersona(supa: Supabase): Promise<string> {
+  const now = Date.now();
+  if (discordPersonaCache && now - discordPersonaCache.fetchedAt < PROMPT_TTL_MS) {
+    return discordPersonaCache.body;
+  }
+  try {
+    const live = await supa.getLiveDiscordPersona();
+    const body = live?.body ?? DISCORD_PERSONA_BASE;
+    discordPersonaCache = { body, fetchedAt: now };
+    return body;
+  } catch (e) {
+    console.error("getLiveDiscordPersona failed, using baked-in persona:", e);
+    return DISCORD_PERSONA_BASE;
   }
 }
 import {
@@ -355,26 +379,17 @@ ${JSON.stringify(state, null, 2)}
 /* ── Discord system-prompt builder ────────────────────────────────────── */
 
 /**
- * Build the system prompt for a Discord turn. Same voice + guardrails as the
- * web widget so Penny sounds identical on both surfaces, plus a per-user
- * context block from get_user_context_for_discord. No bubbles/CTA JSON
- * contract — Discord is plain chat, so we strip the JSON-output guardrails
- * down to "speak as Penny" and let the model reply in prose.
+ * Baked-in fallback for the Discord persona — the behavioral instruction block
+ * (output format, memory rules, safety). The live, admin-editable version lives
+ * in penny_discord_persona and is fetched by getCachedLiveDiscordPersona; this
+ * constant is used only until a version is published (or on fetch error), so
+ * Discord behaviour is identical before and after the migration.
  *
- * Keep this function in sync with handleChat's prompt assembly above.
+ * Keep this in sync with the admin starter (apps/admin/src/routes/ContentDiscord.tsx).
+ * The runtime <user_context> block is appended by buildDiscordSystemPrompt, not
+ * stored here.
  */
-async function buildDiscordSystemPrompt(supa: Supabase, contextBlock: string): Promise<string> {
-  // Deliberately DO NOT include getCachedLiveSystemPrompt — that prompt is
-  // tuned for the web widget and emits {bubbles, cta} JSON for the bubble UI.
-  // Discord is plain chat. We get Penny's character from the voice guide
-  // alone (which is voice/tone, not output format), plus an explicit Discord
-  // instruction block below.
-  const voice = await getCachedLiveVoice(supa);
-  const voicePreface = voice
-    ? `# FounderFirst Voice — canonical (applies to every surface)\n\n${voice}\n\n---\n\n`
-    : "";
-
-  return `${voicePreface}You are Penny on Discord, helping a returning FounderFirst user.
+const DISCORD_PERSONA_BASE = `You are Penny on Discord, helping a returning FounderFirst user.
 
 Output format (strict):
 - Plain prose only. Never emit JSON, never wrap your reply in code fences, never use markdown headings.
@@ -395,7 +410,29 @@ Memory:
 
 Safety:
 - Never reveal information about any other user. Treat <user_context> as the only person you're talking to.
-- If you don't know something specific to this user, say so plainly and offer the next step.
+- If you don't know something specific to this user, say so plainly and offer the next step.`;
+
+/**
+ * Build the system prompt for a Discord turn. Same voice as the web widget so
+ * Penny sounds identical on both surfaces, then the admin-editable Discord
+ * persona, then a per-user context block from get_user_context_for_discord. No
+ * bubbles/CTA JSON contract — Discord is plain chat, so the persona keeps Penny
+ * in prose.
+ *
+ * Keep this function in sync with handleChat's prompt assembly above.
+ */
+async function buildDiscordSystemPrompt(supa: Supabase, contextBlock: string): Promise<string> {
+  // Deliberately DO NOT include getCachedLiveSystemPrompt — that prompt is
+  // tuned for the web widget and emits {bubbles, cta} JSON for the bubble UI.
+  // Discord is plain chat. Penny's character comes from the voice guide (tone,
+  // not output format) plus the live Discord persona (output format + rules).
+  const voice = await getCachedLiveVoice(supa);
+  const voicePreface = voice
+    ? `# FounderFirst Voice — canonical (applies to every surface)\n\n${voice}\n\n---\n\n`
+    : "";
+  const persona = await getCachedLiveDiscordPersona(supa);
+
+  return `${voicePreface}${persona}
 
 <user_context>
 ${contextBlock}

@@ -28,10 +28,16 @@ different model family than the generator (D20). Roster (`DEFAULT_ROSTER`,
 `resolvePanel(generator, roster, needStrong)` picks ≥2 distinct families ≠ the
 generator's; the strong judge fills the 2nd slot when the generator IS one of the
 panel families (e.g. the Meta email generator leaves only Mistral). **Live chat
-caps the inline panel to ONE judge** (classifier + 1 judge fit the <500ms budget;
-the full panel runs async). **On Supabase Edge (Deno) the LLM panel is deferred**
-(`llmDisabled`) — no Workers-AI binding there and a same-family Anthropic judge is
-barred — so insights gets its deterministic gates now and LLM grounding later.
+runs the DETERMINISTIC floor inline** (`llmDisabled` — safety prefilter + privacy
++ valid-format, instant, reliably block hard-unsafe/PII within the <500ms budget)
+and runs the **full multi-model LLM panel ASYNC** (`finalizeChatDecision`, phase
+"all"), which sets `gate_status` so blocked/escalated answers reach the review
+queue. Real Workers-AI judge latency (~0.5–2s) can't fit an inline live-chat
+budget, so an inline LLM judge would fail-closed on every turn — verified in prod
+(28 Jun). A deterministic gate fail still fails closed to a human handoff. **On
+Supabase Edge (Deno) the LLM panel is likewise deferred** (no Workers-AI binding,
+same-family Anthropic judge barred) — insights gets deterministic gates now, LLM
+grounding later.
 
 The deterministic floor runs for **every** gate that declares a `check_ref` —
 including an `llm_judge` eval like `safety` ("rules + AI judge"): the rule is a

@@ -313,6 +313,80 @@ export async function upsertAIEval(args: {
   return (data as number) ?? 0;
 }
 
+// ---- AI human review queue (Phase 3) ---------------------------------------
+// Reads/writes ai_decisions verdict columns via is_admin()-gated RPCs. The queue
+// surfaces gate-stops (blocked/escalated/failed_closed) + a D25 shadow sample of
+// passed answers; a verdict captures zero_edit (the autonomy-ramp signal, D5).
+
+export interface AIEvalResult {
+  type: "gate" | "score";
+  version: number;
+  by: string;
+  pass?: boolean;
+  score?: number;
+  rationale?: string;
+  escalated?: boolean;
+  votes?: Array<{ model: string; pass?: boolean; score?: number; reason?: string }>;
+  latencyMs?: number;
+  costUsd?: number;
+}
+
+export interface AIReviewItem {
+  id: string;
+  created_at: string;
+  use_case: string;
+  tenant_id: string;
+  model: string;
+  provider: string;
+  gate_status: "passed" | "blocked" | "escalated" | "failed_closed" | "unevaluated";
+  request_ref: string | null;
+  input: { messages?: Array<{ role: string; content: string }> } | null;
+  output: string | null;
+  output_json: unknown;
+  evals: Record<string, AIEvalResult>;
+  cost_usd: number | string | null;
+  judge_cost_usd: number | string | null;
+  is_shadow: boolean;
+}
+
+export interface AIReviewKpis {
+  window_days: number;
+  awaiting: number;
+  reviewed: number;
+  approved_pct: number | null;
+  zero_edit_pct: number | null;
+}
+
+export type AIReviewFilter = "needs" | "shadow" | "all";
+export type AIReviewVerdict = "approved" | "approved_after_edit" | "rejected";
+
+export async function getAIReviewQueue(filter: AIReviewFilter = "needs", limit = 50): Promise<AIReviewItem[]> {
+  const { data, error } = await getClient().rpc("admin_ai_review_queue", { p_filter: filter, p_limit: limit });
+  if (error) throw new Error(`getAIReviewQueue: ${error.message}`);
+  return (data as AIReviewItem[]) ?? [];
+}
+
+export async function getAIReviewKpis(days = 30): Promise<AIReviewKpis | null> {
+  const { data, error } = await getClient().rpc("admin_ai_review_kpis", { p_days: days });
+  if (error) throw new Error(`getAIReviewKpis: ${error.message}`);
+  return (data as AIReviewKpis) ?? null;
+}
+
+export async function submitAIReview(args: {
+  id: string;
+  verdict: AIReviewVerdict;
+  edit?: Record<string, unknown> | string | null;
+  reason?: string | null;
+}): Promise<void> {
+  const { error } = await getClient().rpc("admin_ai_review_submit", {
+    p_id: args.id,
+    p_verdict: args.verdict,
+    p_edit: args.edit ?? null,
+    p_reason: args.reason ?? null,
+  });
+  if (error) throw new Error(error.message);
+}
+
 // ---- Changelog ("What's new") ----------------------------------------------
 
 export type ChangelogKind = "new" | "improved" | "fixed";

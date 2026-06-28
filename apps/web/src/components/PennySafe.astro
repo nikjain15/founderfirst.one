@@ -1,0 +1,44 @@
+---
+// A security-themed "Penny at work" product visual — the read-only posture, as
+// real UI rather than a glyph. Used as the cover for the AI-safety blog post so
+// each article carries its own distinct hero (PennyGlance is the books visual).
+interface Props { compact?: boolean }
+const { compact = false } = Astro.props;
+---
+<div class={`safe ${compact ? "is-compact" : ""}`}>
+  <div class="s-head">
+    <svg class="s-lock" viewBox="0 0 24 24" width="14" height="14" fill="none" aria-hidden="true">
+      <rect x="4" y="10" width="16" height="10" rx="2" fill="currentColor" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2" />
+    </svg>
+    Connections · read-only
+  </div>
+  <div class="s-rows">
+    <div class="s-row"><div><strong>Stripe</strong><span>Connected</span></div><span class="s-badge">Read-only <i>✓</i></span></div>
+    <div class="s-row"><div><strong>Chase · Checking</strong><span>Connected</span></div><span class="s-badge">Read-only <i>✓</i></span></div>
+    <div class="s-row"><div><strong>Amex · Card</strong><span>Connected</span></div><span class="s-badge">Read-only <i>✓</i></span></div>
+  </div>
+  <div class="s-guard">
+    <span class="s-glabel">Move money</span>
+    <strong class="s-gamt">Never</strong>
+    <span class="s-gsub">Penny can see and sort — it can't move a cent.</span>
+  </div>
+</div>
+<style>
+  .safe { background: var(--white); border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); box-shadow: var(--shadow-float); padding: var(--space-5); display: grid; gap: var(--space-4); max-width: 360px; width: 100%; }
+  .s-head { display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); font-weight: var(--fw-semibold); color: var(--ink-4); }
+  .s-lock { color: var(--brand); flex: none; }
+  .s-rows { display: grid; gap: var(--space-2); }
+  .s-row { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); padding-block: var(--space-2); border-top: 1px solid var(--line-2); }
+  .s-row:first-child { border-top: 0; }
+  .s-row strong { font-size: var(--fs-data-row); font-weight: var(--fw-semibold); }
+  .s-row span { display: block; font-size: var(--fs-tiny); color: var(--ink-4); }
+  .s-badge { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-size: var(--fs-tiny); font-weight: var(--fw-semibold); color: var(--brand); background: var(--brand-tint); border-radius: var(--r-pill); padding: 3px var(--space-2); }
+  .s-badge i { font-style: normal; }
+  .s-guard { background: var(--paper); border-radius: var(--r-card); padding: var(--space-4); display: grid; gap: var(--space-1); }
+  .s-glabel { font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); color: var(--ink-4); font-weight: var(--fw-semibold); }
+  .s-gamt { font-family: var(--font-display); font-size: clamp(26px, 5vw, 32px); font-weight: var(--fw-bold); letter-spacing: -0.02em; line-height: 1; color: var(--ink); }
+  .s-gsub { font-size: var(--fs-tiny); color: var(--ink-4); line-height: 1.4; }
+  .is-compact { box-shadow: none; max-width: none; padding: var(--space-4); }
+  .is-compact .s-guard { display: none; }
+</style>

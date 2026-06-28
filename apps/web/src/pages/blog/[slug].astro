@@ -3,6 +3,7 @@ import Base from "../../layouts/Base.astro";
 import Nav from "../../components/Nav.astro";
 import Footer from "../../components/Footer.astro";
 import PennyGlance from "../../components/PennyGlance.astro";
+import PennySafe from "../../components/PennySafe.astro";
 import { getBlogPosts, blogPostText as postText } from "../../lib/blog";
 import type { Page } from "@ff/content";
 import { SITE } from "../../lib/site";
@@ -46,7 +47,7 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
         <h1>{post.title}</h1>
         <p class="lede">{post.description}</p>
       </div>
-      <div class="hero-visual"><PennyGlance /></div>
+      <div class="hero-visual">{post.hero === "safe" ? <PennySafe /> : <PennyGlance />}</div>
     </div>
   </header>
 

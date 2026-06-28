@@ -78,6 +78,8 @@ The mission is simple: give business owners the back-office support that used to
 
 **Design tokens** — all color, spacing, radius, and font-size come from [packages/design-system/tokens.css](packages/design-system/tokens.css). Never inline hex values or magic px.
 
+**Blog** — every blog post follows [apps/web/BLOG_PRINCIPLES.md](apps/web/BLOG_PRINCIPLES.md): DB-first publishing, typed content blocks, a unique on-topic hero per post, uniform `/blog` layout, [VOICE.md](VOICE.md) tone, and the SEO/GEO + ship checklist. Read it before adding or editing a post.
+
 ---
 
 *© 2026 FounderFirst. All rights reserved.*

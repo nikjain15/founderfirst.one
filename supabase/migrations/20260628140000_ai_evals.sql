@@ -322,7 +322,7 @@ returns table (
   library_kind text, effective_kind text, mandatory boolean, is_floor boolean,
   enabled boolean, kind_override text,
   default_threshold numeric, threshold_override numeric, effective_threshold numeric,
-  sample_rate numeric, position int, panel_policy jsonb,
+  sample_rate numeric, "position" int, panel_policy jsonb,
   eval_version int
 )
 language plpgsql security definer set search_path = public as $$
@@ -460,7 +460,7 @@ returns table (
   eval_key text, name text, description text, method text,
   effective_kind text, mandatory boolean, is_floor boolean,
   judge_criteria text, effective_threshold numeric, check_ref text,
-  sample_rate numeric, position int, panel_policy jsonb, enabled boolean,
+  sample_rate numeric, "position" int, panel_policy jsonb, enabled boolean,
   eval_version int
 )
 language plpgsql security definer set search_path = public as $$

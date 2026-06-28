@@ -115,6 +115,74 @@ export async function listAuditRuns(limit = 26): Promise<AuditRunRow[]> {
   return (data as AuditRunRow[]) ?? [];
 }
 
+// ---- AI quality & cost (the /ai-quality dashboard) -------------------------
+// Reads ai_decisions (Phase 0) via is_admin()-gated RPCs. Numeric columns come
+// back from PostgREST as strings (precision-preserving) for the table RPCs; the
+// jsonb KPI blob returns real numbers. The dashboard coerces with Number().
+
+export interface AIKpis {
+  window_days: number;
+  decision_count: number;
+  total_cost_usd: number;
+  resolved_count: number;
+  cost_per_resolved: number | null;
+  avg_latency_ms: number | null;
+  cache_hit_pct: number | null;
+  awaiting_review: number;
+  judge_cost_usd: number | null; // Phase 2
+  judge_cost_pct: number | null; // Phase 2
+  zero_edit_pct: number | null;  // Phase 3
+}
+
+export interface AIUseCaseRow {
+  use_case: string;
+  decisions: number;
+  total_cost: number | string;
+  cost_per_task: number | string | null;
+  avg_latency_ms: number | null;
+  cache_hit_pct: number | null;
+  awaiting_review: number;
+  models: string[];
+}
+
+export interface AIDailyRow { day: string; cost: number | string; decisions: number }
+
+export interface AIReconcileRow {
+  surface: string;
+  run_at: string;
+  window_days: number;
+  legacy_count: number;
+  new_count: number;
+  drift: number;
+  note: string;
+}
+
+export interface AIOverview {
+  kpis: AIKpis;
+  useCases: AIUseCaseRow[];
+  daily: AIDailyRow[];
+  reconcile: AIReconcileRow[];
+}
+
+export async function getAIOverview(days = 30): Promise<AIOverview> {
+  const db = getClient();
+  const [kpis, useCases, daily, reconcile] = await Promise.all([
+    db.rpc("admin_ai_kpis", { p_days: days }),
+    db.rpc("admin_ai_usecases", { p_days: days }),
+    db.rpc("admin_ai_daily", { p_days: days }),
+    db.rpc("admin_ai_reconcile_latest"),
+  ]);
+  for (const r of [kpis, useCases, daily, reconcile]) {
+    if (r.error) throw new Error(`getAIOverview: ${r.error.message}`);
+  }
+  return {
+    kpis: (kpis.data as AIKpis) ?? null,
+    useCases: (useCases.data as AIUseCaseRow[]) ?? [],
+    daily: (daily.data as AIDailyRow[]) ?? [],
+    reconcile: (reconcile.data as AIReconcileRow[]) ?? [],
+  };
+}
+
 // ---- Changelog ("What's new") ----------------------------------------------
 
 export type ChangelogKind = "new" | "improved" | "fixed";

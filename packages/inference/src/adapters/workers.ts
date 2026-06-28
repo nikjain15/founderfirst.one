@@ -88,7 +88,9 @@ export function makeWorkersCtx(
     runtime: "workers",
     config,
     transports: {
-      anthropic: { apiKey: env.ANTHROPIC_API_KEY, fetch: fetch as unknown as FetchLike },
+      // Bind fetch to globalThis — calling the bare global as `transport.fetch(...)`
+      // rebinds `this` and throws "Illegal invocation" on Workers.
+      anthropic: { apiKey: env.ANTHROPIC_API_KEY, fetch: fetch.bind(globalThis) as unknown as FetchLike },
       workersAi: { run: (m, i, o) => env.AI.run(m, i, o) },
     },
     gateway,
@@ -150,6 +152,9 @@ export interface WorkersJudgeOpts {
   phase?: "gates" | "scores" | "all";
   /** Per-judge-call timeout. */
   callTimeoutMs?: number;
+  /** Skip LLM evals this pass (deterministic only) — used for the inline chat
+   *  gate so it stays within budget; the panel re-judges async. */
+  llmDisabled?: boolean;
   reconcile?: SourceReconcile;
 }
 
@@ -167,6 +172,7 @@ export function makeWorkersJudgeCtx(
     mode: opts.mode,
     phase: opts.phase ?? "all",
     callTimeoutMs: opts.callTimeoutMs ?? (opts.mode === "inline" ? 2_000 : undefined),
+    llmDisabled: opts.llmDisabled,
     reconcile: opts.reconcile,
   };
 }
@@ -204,10 +210,16 @@ const failClosedOutcome = (budgetMs: number): JudgeOutcome => ({
 });
 
 /**
- * Live-chat inline GATE pass (Option B, D3). Runs deterministic floor gates +
- * classifier-triaged LLM gate evals under a hard overall budget. On timeout OR
- * error it FAILS CLOSED (gateStatus 'failed_closed') so the caller hands off to a
- * human — never ships an ungated answer. Score evals are deferred (not run here).
+ * Live-chat inline GATE pass (Option B, D3). Runs the DETERMINISTIC floor only —
+ * safety prefilter + privacy + valid-format — which block hard-unsafe / PII /
+ * malformed answers instantly (no model call, so well within the <500ms budget).
+ * The LLM panel (classifier + multi-model judges) runs ASYNC in finalizeChat
+ * Decision — real Workers-AI latency (~0.5–2s) can't fit an inline live-chat
+ * budget, and a marketing chat can't wait on it. A deterministic gate fail still
+ * FAILS CLOSED to a human handoff; the async panel's verdict updates gate_status
+ * so blocked/escalated answers surface in the review queue (Phase 3).
+ *
+ * The budget is a crash-safety net only (deterministic checks finish in ~1ms).
  */
 export async function judgeChatGatesInline(
   input: JudgeInput,
@@ -216,10 +228,11 @@ export async function judgeChatGatesInline(
   budgetMs = 400,
 ): Promise<JudgeOutcome> {
   if (input.evals.filter((e) => e.kind === "gate" && e.enabled).length === 0) {
-    // No gate evals configured for this use case → nothing to fail closed on.
     return { evals: {}, gateStatus: "passed", judgeCostUsd: 0, judgeLatencyMs: 0 };
   }
-  const jctx = makeWorkersJudgeCtx(env, exec, { mode: "inline", phase: "gates", callTimeoutMs: budgetMs });
+  // llmDisabled → only the deterministic floor runs inline; LLM gates are recorded
+  // deferred and re-judged by the async panel below.
+  const jctx = makeWorkersJudgeCtx(env, exec, { mode: "inline", phase: "gates", llmDisabled: true });
   let timer: ReturnType<typeof setTimeout> | undefined;
   const budget = new Promise<JudgeOutcome>((res) => {
     timer = setTimeout(() => res(failClosedOutcome(budgetMs)), budgetMs);
@@ -241,9 +254,12 @@ export function chatNeedsHandoff(status: JudgeOutcome["gateStatus"]): boolean {
 }
 
 /**
- * Finalize a chat decision: merge the inline gate outcome, run the sampled SCORE
- * evals async, and write ONE enriched row on waitUntil. Nothing here blocks the
- * already-returned answer.
+ * Finalize a chat decision: merge the inline deterministic outcome, then run the
+ * FULL panel async (mode "async", phase "all" — LLM gate evals via the multi-model
+ * panel + sampled score evals), and write ONE enriched row on waitUntil. The
+ * answer already shipped, so the async panel can't block it — but its verdict sets
+ * gate_status, so a blocked/escalated answer surfaces in the review queue and
+ * feeds the autonomy ramp. Nothing here blocks the response.
  */
 export function finalizeChatDecision(
   env: WorkersInferenceEnv,
@@ -256,13 +272,13 @@ export function finalizeChatDecision(
     (async () => {
       let merged = applyOutcome(base, gateOutcome, new Date().toISOString());
       try {
-        const scoreOutcome = await judge(
+        const panelOutcome = await judge(
           input,
-          makeWorkersJudgeCtx(env, exec, { mode: "async", phase: "scores" }),
+          makeWorkersJudgeCtx(env, exec, { mode: "async", phase: "all" }),
         );
-        merged = applyOutcome(merged, scoreOutcome, new Date().toISOString());
+        merged = applyOutcome(merged, panelOutcome, new Date().toISOString());
       } catch (e) {
-        console.error("chat score pass:", e instanceof Error ? e.message : e);
+        console.error("chat async panel:", e instanceof Error ? e.message : e);
       }
       await writeDecisionRecord(env, merged);
     })(),

@@ -750,6 +750,61 @@ export const ga = {
   sources:   (days = 30, limit = 10)  => callGaProxy<{ rows: GaSourceRow[]  }>({ action: "sources",   days, limit }),
 };
 
+// ---- Google Search Console (search visibility, via gsc-proxy) --------------
+
+export interface GscSummary { clicks: number; impressions: number; ctr: number; position: number }
+export interface GscDateRow  { date: string;  clicks: number; impressions: number; ctr: number; position: number }
+export interface GscQueryRow { query: string; clicks: number; impressions: number; ctr: number; position: number }
+export interface GscPageRow  { page: string;  clicks: number; impressions: number; ctr: number; position: number }
+
+async function callGscProxy<T>(body: Record<string, unknown>): Promise<T> {
+  const db = getClient();
+  const { data, error } = await db.functions.invoke("gsc-proxy", { body });
+  if (error) throw new Error(`gsc-proxy: ${error.message}`);
+  if (data?.error) throw new Error(`gsc-proxy: ${data.error}${data.hint ? ` (${data.hint})` : ""}`);
+  return data as T;
+}
+
+export const gsc = {
+  summary:     (days = 28)              => callGscProxy<GscSummary>({ action: "summary",    days }),
+  byDate:      (days = 28)              => callGscProxy<{ rows: GscDateRow[]  }>({ action: "byDate",     days }),
+  topQueries:  (days = 28, limit = 10)  => callGscProxy<{ rows: GscQueryRow[] }>({ action: "topQueries", days, limit }),
+  topPages:    (days = 28, limit = 10)  => callGscProxy<{ rows: GscPageRow[]  }>({ action: "topPages",   days, limit }),
+};
+
+// ---- GEO / AI-answer visibility (citation tracking, via geo_summary RPC) ----
+
+export interface GeoPromptStatus {
+  prompt: string;
+  topic: string | null;
+  cited: boolean;
+  mentioned: boolean;
+  rank: number | null;              // best rank across engines that cited
+  engines_cited: string[];          // which engines cited this prompt
+}
+export interface GeoEngineStat { engine: string; probes: number; cited: number; rate: number }
+export interface GeoTrendRow    { date: string; cited: number; total: number; rate: number }
+export interface GeoCompetitor  { name: string; count: number }
+export interface GeoSummary {
+  days: number;
+  prompts_tracked: number;
+  probes: number;                   // total (prompt × engine) probes in window
+  cited_count: number;              // prompts cited by ANY engine
+  mentioned_count: number;
+  citation_rate: number;            // 0..1, per-prompt
+  engines: GeoEngineStat[];         // per-engine breakdown (per-probe)
+  prompts: GeoPromptStatus[];
+  trend: GeoTrendRow[];
+  competitors: GeoCompetitor[];
+}
+
+export async function getGeoSummary(days = 28): Promise<GeoSummary> {
+  const db = getClient();
+  const { data, error } = await db.rpc("geo_summary", { p_days: days });
+  if (error) throw new Error(`geo_summary: ${error.message}`);
+  return data as GeoSummary;
+}
+
 // ---- PostHog (product analytics via posthog-proxy → HogQL) ------------------
 export interface PhOverview   { pageviews: number; users: number; sessions: number }
 export interface PhTrafficRow { date: string; pageviews: number; users: number }

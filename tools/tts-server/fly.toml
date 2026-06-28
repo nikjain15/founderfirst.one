@@ -1,0 +1,28 @@
+# FounderFirst TTS server — Chatterbox brand-voice synthesis on a Fly GPU machine
+# that SCALES TO ZERO (spins up per job, stops when idle). Same Fly account as
+# founderfirst-discord-bridge. Deploy: `fly deploy` from this dir. Set the secret
+# with `fly secrets set TTS_SERVER_SECRET=...` (must match the edge function's
+# TTS_SERVER_SECRET). The edge function calls https://founderfirst-tts.fly.dev/synthesize.
+app = 'founderfirst-tts'
+primary_region = 'iad'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'      # stop when idle …
+  auto_start_machines = true       # … and start on the next request
+  min_machines_running = 0         # scale to zero
+
+  [http_service.concurrency]
+    type = 'requests'
+    soft_limit = 1                 # one synth job per machine; Fly starts more if needed
+    hard_limit = 2
+
+# GPU machine — an L40S is plenty for Chatterbox; A10 also works. Sized for
+# bursty, low-volume synthesis, not always-on.
+[[vm]]
+  size = 'l40s'
+  memory = '16gb'

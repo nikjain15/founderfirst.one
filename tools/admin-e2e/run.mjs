@@ -115,6 +115,17 @@ async function main() {
 
     await page.screenshot({ path: join(ARTIFACTS, "insights.png"), fullPage: true });
     console.log(`\nScreenshot → ${join(ARTIFACTS, "insights.png")}`);
+
+    // 4. Content pipeline board (Penny → Pipeline) renders.
+    await page.goto(`${base}/admin/content-pipeline`, { waitUntil: "networkidle" });
+    await page.getByRole("heading", { name: /content pipeline/i }).waitFor({ timeout: 15_000 });
+    check("Content Pipeline board renders", true);
+
+    const pipelineTab = await page.getByRole("tab", { name: "Pipeline", exact: true }).count();
+    check("Pipeline sub-tab present under Penny", pipelineTab > 0);
+
+    await page.screenshot({ path: join(ARTIFACTS, "content-pipeline.png"), fullPage: true });
+    console.log(`Screenshot → ${join(ARTIFACTS, "content-pipeline.png")}`);
   } catch (e) {
     check("smoke run completed", false, (e instanceof Error ? e.message : String(e)).slice(0, 200));
     await page.screenshot({ path: join(ARTIFACTS, "failure.png"), fullPage: true }).catch(() => {});

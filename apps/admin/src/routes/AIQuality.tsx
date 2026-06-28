@@ -10,11 +10,13 @@
  * Until the layer is deployed, every RPC returns zero rows and the page shows an
  * honest empty state explaining where the data comes from.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getAIOverview, type AIUseCaseRow } from "../lib/supabase";
 import { Takeaway } from "../lib/Takeaway";
 import { IconAlert } from "../lib/icons";
+import { AIEvals } from "./AIEvals";
 
 const WINDOWS: Array<{ id: number; label: string }> = [
   { id: 7, label: "7 days" },
@@ -28,12 +30,22 @@ const USE_CASE_LABELS: Record<string, string> = {
   email_compose: "Email drafting",
 };
 
+type SubTab = "overview" | "evals";
+
 export function AIQuality() {
+  const location = useLocation();
+  const sub: SubTab = location.hash === "#evals" ? "evals" : "overview";
   const [days, setDays] = useState(30);
   const { data, isPending, error } = useQuery({
     queryKey: ["aiOverview", days],
     queryFn: () => getAIOverview(days),
+    enabled: sub === "overview",
   });
+
+  // Keep the document scrolled to top when switching sub-tabs via hash.
+  useEffect(() => {
+    if (sub) window.scrollTo({ top: 0 });
+  }, [sub]);
 
   const kpis = data?.kpis;
   const empty = !isPending && !error && (!kpis || kpis.decision_count === 0);
@@ -62,9 +74,18 @@ export function AIQuality() {
       <div className="eyebrow" style={{ marginBottom: 10 }}>Admin · AI</div>
       <h1 className="page-title">What Penny's AI costs — and how it's doing.</h1>
       <p className="page-sub">
-        Every AI request flows through one layer that records cost, speed, and quality. Watch spend per use case and what needs a human.
+        Every AI request flows through one layer that records cost, speed, and quality. Watch spend per use case, tune the quality checks, and see what needs a human.
       </p>
 
+      <div className="tabs" role="tablist" aria-label="AI sections" style={{ marginBottom: 6 }}>
+        <a role="tab" aria-selected={sub === "overview"} className={`tab ${sub === "overview" ? "active" : ""}`} href="#overview">Overview</a>
+        <a role="tab" aria-selected={sub === "evals"} className={`tab ${sub === "evals" ? "active" : ""}`} href="#evals">Eval setup</a>
+      </div>
+
+      {sub === "evals" && <AIEvals />}
+
+      {sub === "overview" && (
+      <>
       <div className="tabs" role="tablist" aria-label="Time window">
         {WINDOWS.map((w) => (
           <button
@@ -112,7 +133,21 @@ export function AIQuality() {
             <Kpi label="Avg latency" value={kpis.avg_latency_ms == null ? "—" : `${kpis.avg_latency_ms} ms`} />
             <Kpi label="Cache hit" value={kpis.cache_hit_pct == null ? "—" : `${kpis.cache_hit_pct}%`} />
             <Kpi label="Awaiting review" value={String(kpis.awaiting_review)} warn={kpis.awaiting_review > 0} />
-            <Kpi label="Judge cost %" value={kpis.judge_cost_pct == null ? "—" : `${kpis.judge_cost_pct}%`} sub="from Phase 2" />
+            <Kpi
+              label="Judge cost %"
+              value={kpis.judge_cost_pct == null ? "—" : `${kpis.judge_cost_pct}%`}
+              sub={kpis.judged_count ? `${kpis.judged_count} judged · ${fmtUsd(num(kpis.judge_cost_usd))}` : "no judged answers yet"}
+            />
+            <Kpi
+              label="Gate outcomes"
+              value={kpis.judged_count ? `${kpis.gate_passed ?? 0} ✓` : "—"}
+              sub={
+                kpis.judged_count
+                  ? `${kpis.gate_blocked ?? 0} blocked · ${kpis.gate_escalated ?? 0} escalated · ${kpis.gate_failed_closed ?? 0} failed-closed`
+                  : "from the judge panel"
+              }
+              warn={!!(kpis.gate_blocked || kpis.gate_failed_closed)}
+            />
           </div>
 
           {/* Daily spend trend */}
@@ -138,6 +173,8 @@ export function AIQuality() {
                     <th className="num">Decisions</th>
                     <th className="num">Total cost</th>
                     <th className="num">Cost / task</th>
+                    <th className="num">Judge cost</th>
+                    <th>Gates ✓/✕/⤴</th>
                     <th className="num">Avg latency</th>
                     <th className="num">Cache</th>
                     <th>Models</th>
@@ -151,6 +188,10 @@ export function AIQuality() {
                       <td className="num">{u.decisions}</td>
                       <td className="num">{fmtUsd(num(u.total_cost))}</td>
                       <td className="num">{fmtUsd(num(u.cost_per_task))}</td>
+                      <td className="num">{u.judge_cost == null ? "—" : fmtUsd(num(u.judge_cost))}</td>
+                      <td className="num">
+                        {u.judged ? `${u.gate_passed ?? 0}/${u.gate_blocked ?? 0}/${u.gate_escalated ?? 0}` : <span className="muted">—</span>}
+                      </td>
                       <td className="num">{u.avg_latency_ms == null ? "—" : `${u.avg_latency_ms} ms`}</td>
                       <td className="num">{u.cache_hit_pct == null ? "—" : `${u.cache_hit_pct}%`}</td>
                       <td><ModelList models={u.models} /></td>
@@ -186,6 +227,8 @@ export function AIQuality() {
             </section>
           )}
         </>
+      )}
+      </>
       )}
     </div>
   );

@@ -129,9 +129,14 @@ export interface AIKpis {
   avg_latency_ms: number | null;
   cache_hit_pct: number | null;
   awaiting_review: number;
-  judge_cost_usd: number | null; // Phase 2
-  judge_cost_pct: number | null; // Phase 2
-  zero_edit_pct: number | null;  // Phase 3
+  judge_cost_usd: number | null;     // Phase 2
+  judge_cost_pct: number | null;     // Phase 2
+  judged_count: number | null;       // Phase 2
+  gate_passed: number | null;        // Phase 2
+  gate_blocked: number | null;       // Phase 2
+  gate_escalated: number | null;     // Phase 2
+  gate_failed_closed: number | null; // Phase 2
+  zero_edit_pct: number | null;      // Phase 3
 }
 
 export interface AIUseCaseRow {
@@ -143,6 +148,12 @@ export interface AIUseCaseRow {
   cache_hit_pct: number | null;
   awaiting_review: number;
   models: string[];
+  judge_cost: number | string | null;  // Phase 2
+  gate_passed: number | null;          // Phase 2
+  gate_blocked: number | null;         // Phase 2
+  gate_escalated: number | null;       // Phase 2
+  gate_failed_closed: number | null;   // Phase 2
+  judged: number | null;               // Phase 2
 }
 
 export interface AIDailyRow { day: string; cost: number | string; decisions: number }
@@ -181,6 +192,125 @@ export async function getAIOverview(days = 30): Promise<AIOverview> {
     daily: (daily.data as AIDailyRow[]) ?? [],
     reconcile: (reconcile.data as AIReconcileRow[]) ?? [],
   };
+}
+
+// ---- AI eval config (Phase 2) ----------------------------------------------
+
+export interface AIUseCase {
+  use_case: string;
+  label: string;
+  customer_facing: boolean;
+  financial: boolean;
+}
+
+export interface AILibraryEval {
+  key: string;
+  version: number;
+  name: string;
+  description: string | null;
+  method: "deterministic" | "sql_reconciliation" | "llm_judge" | "classifier";
+  kind: "gate" | "score";
+  mandatory: boolean;
+  floor_customer: boolean;
+  floor_financial: boolean;
+  judge_criteria: string | null;
+  default_threshold: number | string | null;
+  check_ref: string | null;
+}
+
+export interface AIUseCaseEval {
+  eval_key: string;
+  name: string;
+  description: string | null;
+  method: AILibraryEval["method"];
+  library_kind: "gate" | "score";
+  effective_kind: "gate" | "score";
+  mandatory: boolean;
+  is_floor: boolean;
+  enabled: boolean;
+  kind_override: "gate" | "score" | null;
+  default_threshold: number | string | null;
+  threshold_override: number | string | null;
+  effective_threshold: number | string | null;
+  sample_rate: number | string;
+  position: number;
+  panel_policy: Record<string, unknown>;
+  eval_version: number;
+}
+
+export async function getAIUseCases(): Promise<AIUseCase[]> {
+  const { data, error } = await getClient().rpc("admin_ai_use_cases");
+  if (error) throw new Error(`getAIUseCases: ${error.message}`);
+  return (data as AIUseCase[]) ?? [];
+}
+
+export async function getAIEvalLibrary(): Promise<AILibraryEval[]> {
+  const { data, error } = await getClient().rpc("admin_ai_eval_library");
+  if (error) throw new Error(`getAIEvalLibrary: ${error.message}`);
+  return (data as AILibraryEval[]) ?? [];
+}
+
+export async function getAIUseCaseEvals(useCase: string): Promise<AIUseCaseEval[]> {
+  const { data, error } = await getClient().rpc("admin_ai_usecase_evals", { p_use_case: useCase });
+  if (error) throw new Error(`getAIUseCaseEvals: ${error.message}`);
+  return (data as AIUseCaseEval[]) ?? [];
+}
+
+export async function setAIUseCaseEval(args: {
+  useCase: string;
+  evalKey: string;
+  enabled?: boolean;
+  kindOverride?: "gate" | "score" | "" | null;
+  thresholdOverride?: number | null;
+  sampleRate?: number | null;
+  position?: number | null;
+  panelPolicy?: Record<string, unknown> | null;
+}): Promise<void> {
+  const { error } = await getClient().rpc("admin_ai_eval_set", {
+    p_use_case: args.useCase,
+    p_eval_key: args.evalKey,
+    p_enabled: args.enabled ?? null,
+    p_kind_override: args.kindOverride ?? null,
+    p_threshold_override: args.thresholdOverride ?? null,
+    p_sample_rate: args.sampleRate ?? null,
+    p_position: args.position ?? null,
+    p_panel_policy: args.panelPolicy ?? null,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function attachAIEval(useCase: string, evalKey: string, position = 100): Promise<void> {
+  const { error } = await getClient().rpc("admin_ai_eval_attach", { p_use_case: useCase, p_eval_key: evalKey, p_position: position });
+  if (error) throw new Error(error.message);
+}
+
+export async function detachAIEval(useCase: string, evalKey: string): Promise<void> {
+  const { error } = await getClient().rpc("admin_ai_eval_detach", { p_use_case: useCase, p_eval_key: evalKey });
+  if (error) throw new Error(error.message);
+}
+
+export async function upsertAIEval(args: {
+  key: string;
+  name: string;
+  description: string;
+  method: AILibraryEval["method"];
+  kind: "gate" | "score";
+  judgeCriteria?: string | null;
+  defaultThreshold?: number | null;
+  checkRef?: string | null;
+}): Promise<number> {
+  const { data, error } = await getClient().rpc("admin_ai_eval_upsert", {
+    p_key: args.key,
+    p_name: args.name,
+    p_description: args.description,
+    p_method: args.method,
+    p_kind: args.kind,
+    p_judge_criteria: args.judgeCriteria ?? null,
+    p_default_threshold: args.defaultThreshold ?? null,
+    p_check_ref: args.checkRef ?? null,
+  });
+  if (error) throw new Error(error.message);
+  return (data as number) ?? 0;
 }
 
 // ---- Changelog ("What's new") ----------------------------------------------

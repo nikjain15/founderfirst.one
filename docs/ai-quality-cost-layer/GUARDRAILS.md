@@ -6,9 +6,40 @@ The load-bearing rules for the layer every Penny AI request passes through
 decisions D1–D25). Update it as each phase lands. Nothing below is disableable
 without an explicit, audit-logged decision.
 
-Status: **Phase 0 (the seam).** Answers unchanged; the layer records every call.
-Phases 1–6 add the dashboard, judging, review queue, controls, caching/ramp, and
+Status: **Phase 2 (judging) built.** Phase 0 = the seam (answers unchanged), Phase
+1 = the dashboard, **Phase 2 = the eval library + tiered checker panel + live-chat
+gate**. Phases 3–6 add the review queue, admin model controls, caching/ramp, and
 bookkeeping. Rules for later phases are stated now so the build follows policy.
+
+## Panel composition (the approved Phase-2 default)
+
+The checker panel is **generator-family-aware** — gate-eval judges are always a
+different model family than the generator (D20). Roster (`DEFAULT_ROSTER`,
+`packages/inference/src/judge.ts`), all reachable on today's stack (Anthropic API
++ Workers-AI via the gateway, no new infra):
+
+- **Fast-classifier (inline triage):** `@cf/meta/llama-3.1-8b-instruct-fast` (Meta).
+- **Panel (escalation):** `@cf/meta/llama-3.3-70b-instruct-fp8-fast` (Meta) +
+  `@cf/mistralai/mistral-small-3.1-24b-instruct` (Mistral) — two distinct
+  non-Anthropic families for grading the Anthropic generators (chat=Haiku,
+  insights=Sonnet).
+- **Strong judge (financial floor / Meta-generator filler):** `claude-sonnet-4-6`.
+
+`resolvePanel(generator, roster, needStrong)` picks ≥2 distinct families ≠ the
+generator's; the strong judge fills the 2nd slot when the generator IS one of the
+panel families (e.g. the Meta email generator leaves only Mistral). **Live chat
+caps the inline panel to ONE judge** (classifier + 1 judge fit the <500ms budget;
+the full panel runs async). **On Supabase Edge (Deno) the LLM panel is deferred**
+(`llmDisabled`) — no Workers-AI binding there and a same-family Anthropic judge is
+barred — so insights gets its deterministic gates now and LLM grounding later.
+
+The deterministic floor runs for **every** gate that declares a `check_ref` —
+including an `llm_judge` eval like `safety` ("rules + AI judge"): the rule is a
+hard floor BENEATH the panel and a rule fail blocks before any model call.
+
+The load-test gate (`pnpm test:chat-latency`) must pass (p95 added-latency <500ms,
+slow-judge runs capped at the budget → fail-closed) **before** live-chat judging is
+enabled. Unit-tested by `pnpm check:judge`; both run nothing against the network.
 
 ## Mandatory floor (cannot be disabled)
 

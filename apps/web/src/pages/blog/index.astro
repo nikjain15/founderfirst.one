@@ -21,7 +21,6 @@ const page: Page = {
   sections: [],
 };
 const sorted = [...posts].sort((a, b) => (a.date < b.date ? 1 : -1));
-const [featured, ...rest] = sorted;
 const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 ---
 <Base page={page}>
@@ -36,30 +35,19 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
 
   <section class="blog-list">
     <div class="wrap">
-      {featured && (
-        <a class="featured" href={`/blog/${featured.slug}/`}>
-          <div class="f-visual">{featured.hero === "safe" ? <PennySafe /> : <PennyGlance />}</div>
-          <div class="f-copy">
-            <div class="meta">{featured.tag} · {fmt(featured.date)} · {featured.readMins} min read</div>
-            <h2>{featured.title}</h2>
-            <p>{featured.description}</p>
-            <span class="more">Read article →</span>
-          </div>
-        </a>
-      )}
-
-      {rest.length > 0 && (
-        <div class="grid">
-          {rest.map((post) => (
-            <a class="card" href={`/blog/${post.slug}/`}>
-              <div class="meta">{post.tag} · {fmt(post.date)} · {post.readMins} min</div>
-              <h3>{post.title}</h3>
+      <div class="post-list">
+        {sorted.map((post) => (
+          <a class="post-row" href={`/blog/${post.slug}/`}>
+            <div class="row-visual">{post.hero === "safe" ? <PennySafe /> : <PennyGlance />}</div>
+            <div class="row-copy">
+              <div class="meta">{post.tag} · {fmt(post.date)} · {post.readMins} min read</div>
+              <h2>{post.title}</h2>
               <p>{post.description}</p>
-              <span class="more">Read →</span>
-            </a>
-          ))}
-        </div>
-      )}
+              <span class="more">Read article →</span>
+            </div>
+          </a>
+        ))}
+      </div>
     </div>
   </section>
   <Footer />
@@ -73,21 +61,17 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
   .meta { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); color: var(--ink-4); font-weight: var(--fw-semibold); }
   .more { color: var(--brand); font-weight: var(--fw-medium); font-size: var(--fs-data-row); }
 
-  .featured { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 0; border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); overflow: hidden; background: var(--white); transition: box-shadow var(--dur-base) var(--ease-out); }
-  .featured:hover { box-shadow: var(--shadow-float); }
-  .f-visual { background: var(--brand-tint); display: grid; place-items: center; padding: clamp(24px, 4vw, 48px); border-right: var(--bw-hair) solid var(--line); }
-  .f-copy { padding: clamp(24px, 4vw, 44px); display: flex; flex-direction: column; gap: var(--space-3); justify-content: center; }
-  .f-copy h2 { font-family: var(--font-display); font-size: clamp(22px, 2.6vw, 28px); line-height: 1.2; }
-  .f-copy p { font-size: var(--fs-data-row); color: var(--ink-3); line-height: 1.6; }
-
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-5); margin-top: var(--space-6); }
-  .card { border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-6); background: var(--white); display: flex; flex-direction: column; gap: var(--space-2); transition: box-shadow var(--dur-base) var(--ease-out); }
-  .card:hover { box-shadow: var(--shadow-float); }
-  .card h3 { font-family: var(--font-display); font-size: var(--fs-h3); line-height: 1.25; }
-  .card p { font-size: var(--fs-data-row); color: var(--ink-3); line-height: 1.55; }
+  /* One consistent card format for every post: visual + copy, side by side. */
+  .post-list { display: grid; gap: var(--space-6); }
+  .post-row { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 0; border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); overflow: hidden; background: var(--white); transition: box-shadow var(--dur-base) var(--ease-out); }
+  .post-row:hover { box-shadow: var(--shadow-float); }
+  .row-visual { background: var(--brand-tint); display: grid; place-items: center; padding: clamp(24px, 4vw, 48px); border-right: var(--bw-hair) solid var(--line); }
+  .row-copy { padding: clamp(24px, 4vw, 44px); display: flex; flex-direction: column; gap: var(--space-3); justify-content: center; }
+  .row-copy h2 { font-family: var(--font-display); font-size: clamp(22px, 2.6vw, 28px); line-height: 1.2; }
+  .row-copy p { font-size: var(--fs-data-row); color: var(--ink-3); line-height: 1.6; }
 
   @media (max-width: 700px) {
-    .featured { grid-template-columns: 1fr; }
-    .f-visual { border-right: 0; border-bottom: var(--bw-hair) solid var(--line); }
+    .post-row { grid-template-columns: 1fr; }
+    .row-visual { border-right: 0; border-bottom: var(--bw-hair) solid var(--line); }
   }
 </style>

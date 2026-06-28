@@ -26,6 +26,9 @@ importers:
       '@ff/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@ff/site':
+        specifier: workspace:*
+        version: link:../../packages/site
       '@supabase/supabase-js':
         specifier: ^2.45.0
         version: 2.105.1
@@ -94,6 +97,9 @@ importers:
       '@ff/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@ff/site':
+        specifier: workspace:*
+        version: link:../../packages/site
       '@ff/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -130,6 +136,8 @@ importers:
         version: 3.25.76
 
   packages/design-system: {}
+
+  packages/site: {}
 
   packages/ui:
     dependencies:

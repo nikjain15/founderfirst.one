@@ -5,6 +5,7 @@
  * deep-link within the page.
  */
 import { WhatsNew } from "./WhatsNew";
+import { SITE } from "@ff/site";
 
 interface Feature {
   name: string;
@@ -100,7 +101,7 @@ export function HowItWorks({ currentEmail }: { currentEmail: string }) {
       <h1 className="page-title">How it works.</h1>
       <p className="page-sub">
         A tour of the admin — what each tab does and the actions you can take. Sign in
-        at <code>founderfirst.one/admin</code> with a magic link sent to your inbox; your
+        at <code>{SITE.host}/admin</code> with a magic link sent to your inbox; your
         email must be on the admin list.
       </p>
 

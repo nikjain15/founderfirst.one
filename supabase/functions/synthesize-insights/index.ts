@@ -26,6 +26,14 @@
  */
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+// AI quality & cost layer (Phase 0): the Claude call routes through resolve().
+// Deno adapter — HTTP only, no Workers-AI binding here (the routing guard refuses
+// @cf/* on this runtime). Imported from the vendored copy under _shared (the
+// repo's pattern for shared Deno code) so `supabase functions deploy` bundles it
+// from within supabase/functions/. Source of truth is packages/inference/src;
+// regenerate with `pnpm vendor:inference` (drift-guarded by `pnpm check:vendor`).
+import { resolveOnDeno } from "../_shared/inference/deno.ts";
+import { USE_CASE, TENANT_FOUNDERFIRST } from "../_shared/inference/core.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -266,27 +274,35 @@ async function synthesizeWithClaude(
     `Data sources in scope: ${sources.join(", ")}.\n\n` +
     `Datapoints (the ONLY numbers you may cite):\n${datapoints}`;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({
-      model,
-      max_tokens: 4000,
+  // Routes through the AI quality & cost layer (resolve()): same model, max_tokens,
+  // json_schema output contract, and 60s timeout as before (output unchanged), no
+  // retry (a 429 throws → the caller falls back to the Penny Worker). Internal
+  // admin tool → tenant_id = the FounderFirst org (D15). The ai_decisions log is
+  // additive — insight_runs.model keeps being written below (D21 dual-write).
+  const result = await resolveOnDeno(
+    {
+      useCase: USE_CASE.INSIGHTS,
+      tenantId: TENANT_FOUNDERFIRST,
       system,
       messages: [{ role: "user", content: userMsg }],
-      output_config: { format: { type: "json_schema", schema: buildInsightsSchema(available.map((d) => d.metric)) } },
-    }),
-    signal: AbortSignal.timeout(60_000),
-  });
-  if (!res.ok) throw new Error(`anthropic_${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const data = await res.json();
-  if (data?.stop_reason === "refusal") throw new Error("anthropic_refusal");
-  const textBlock = (data?.content ?? []).find((b: any) => b?.type === "text");
-  const parsed = JSON.parse(textBlock?.text ?? "{}");
+      maxTokens: 4000,
+      jsonSchema: buildInsightsSchema(available.map((d) => d.metric)),
+      timeoutMs: 60_000,
+      anthropic: { maxRetries: 0 },
+      pinModel: { provider: "anthropic", model },
+      record: { storeInput: true, legacyTable: "insight_runs" },
+    },
+    {
+      ANTHROPIC_API_KEY: apiKey,
+      SUPABASE_URL: Deno.env.get("SUPABASE_URL") ?? "",
+      SUPABASE_SERVICE_KEY: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    },
+  );
+  const parsed = JSON.parse(result.text || "{}");
   return {
     summary: String(parsed?.summary ?? ""),
     findings: Array.isArray(parsed?.findings) ? parsed.findings : [],
-    model: `claude:${String(data?.model ?? model)}`,
+    model: `claude:${result.providerModel}`,
   };
 }
 

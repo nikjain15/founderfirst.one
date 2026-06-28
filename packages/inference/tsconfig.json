@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
+    "types": []
+  },
+  "comment": "Strictly typecheck only the pure, runtime-agnostic files. Each runtime adapter (workers/deno/node) references runtime-specific globals and is type-checked by its consumer (Worker tsc / Deno / tsx), not here.",
+  "include": ["src/core.ts", "src/index.ts"]
+}

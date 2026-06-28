@@ -117,6 +117,11 @@ import {
 import { handleEmailCompose } from "./compose";
 import { handleInsights } from "./insights";
 import { CONNECT_DISCORD_HTML } from "./connect-page";
+// AI quality & cost layer (Phase 0): every AI call routes through resolve(). The
+// pure core + per-runtime adapters live in packages/inference (relative import —
+// the worker bundles via esbuild and is not a pnpm-workspace member).
+import { resolveOnWorkers } from "../../../packages/inference/src/adapters/workers";
+import { USE_CASE, anonTenant, type ChatMessage } from "../../../packages/inference/src/core";
 
 export type { Env };
 
@@ -244,7 +249,7 @@ async function getSiteContent(env: Env): Promise<string> {
 
 /* ── /chat handler ────────────────────────────────────────────────────── */
 
-async function handleChat(req: Request, env: Env, origin: string | null): Promise<Response> {
+async function handleChat(req: Request, env: Env, ctx: ExecutionContext, origin: string | null): Promise<Response> {
   let body: ChatBody;
   try {
     body = (await req.json()) as ChatBody;
@@ -325,16 +330,38 @@ ${site}
 ${JSON.stringify(state, null, 2)}
 </session_state>`;
 
-  const messages = [
+  const messages: ChatMessage[] = [
     ...body.history.slice(-10).map((m) => ({ role: m.role, content: m.content })),
     { role: "user", content: body.message },
   ];
 
-  // Call model + parse.
+  // Call model + parse. Routes through the AI quality & cost layer (resolve()):
+  // same model (env.ANTHROPIC_MODEL), max_tokens, prompt-caching beta, and 429
+  // backoff as before — output is byte-identical — plus an async, crash-safe
+  // ai_decisions log on ctx.waitUntil (D18). tenant_id = the anonymous session,
+  // so each visitor is its own isolation unit (D15).
   let parsed: PennyResponse;
   try {
-    const raw = await callAnthropic(env, system, messages);
-    parsed = parseModelJson(raw);
+    const result = await resolveOnWorkers(
+      {
+        useCase: USE_CASE.PENNY_CHAT,
+        tenantId: anonTenant(body.sessionId),
+        system,
+        messages,
+        maxTokens: 600,
+        pinModel: { provider: "anthropic", model: env.ANTHROPIC_MODEL },
+        anthropic: {
+          betas: ["prompt-caching-2024-07-31"],
+          cacheSystem: true,
+          maxRetries: 2,
+          retryBaseMs: 8_000,
+        },
+        record: { ref: body.sessionId, storeInput: true },
+      },
+      env,
+      ctx,
+    );
+    parsed = parseModelJson(result.text);
   } catch (err) {
     console.error("model_call_failed", err instanceof Error ? err.message : err);
     parsed = FALLBACK_RESPONSE;
@@ -484,7 +511,7 @@ function handleBubbleJs(env: Env): Response {
 /* ── Router ───────────────────────────────────────────────────────────── */
 
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const origin = req.headers.get("Origin");
     const url = new URL(req.url);
 
@@ -499,7 +526,7 @@ export default {
       return handleBubbleJs(env);
     }
     if (url.pathname === "/chat" && req.method === "POST") {
-      return handleChat(req, env, origin);
+      return handleChat(req, env, ctx, origin);
     }
     if (url.pathname === "/waitlist" && req.method === "POST") {
       return handleWaitlist(req, env, origin);
@@ -532,10 +559,10 @@ export default {
       return handleDiscordErase(req, env);
     }
     if (url.pathname === "/compose" && req.method === "POST") {
-      return handleEmailCompose(req, env);
+      return handleEmailCompose(req, env, ctx);
     }
     if (url.pathname === "/insights" && req.method === "POST") {
-      return handleInsights(req, env);
+      return handleInsights(req, env, ctx);
     }
     if (url.pathname === "/discord/attach-channel" && req.method === "POST") {
       return handleDiscordAttachChannel(req, env);

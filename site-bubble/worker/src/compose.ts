@@ -13,6 +13,8 @@
  * cta_label, footer} } — identical shape the admin "Draft with AI" UI expects.
  */
 import type { Env } from "./worker-env";
+import { resolveOnWorkers } from "../../../packages/inference/src/adapters/workers";
+import { USE_CASE, TENANT_FOUNDERFIRST } from "../../../packages/inference/src/core";
 
 const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
@@ -68,7 +70,7 @@ function escapeControlChars(s: string): string {
   return out;
 }
 
-export async function handleEmailCompose(req: Request, env: Env): Promise<Response> {
+export async function handleEmailCompose(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   if (!env.COMPOSE_SECRET) {
     return jsonResp({ error: "not_configured", detail: "COMPOSE_SECRET not set on the Worker." }, 503);
   }
@@ -88,16 +90,25 @@ export async function handleEmailCompose(req: Request, env: Env): Promise<Respon
 
   let parsed: Record<string, unknown>;
   try {
-    const out = (await env.AI.run(MODEL, {
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: `Brief:\n${brief.slice(0, 2000)}` },
-      ],
-      max_tokens: 700,
-      temperature: 0.5,
-      response_format: { type: "json_object" },
-    })) as { response?: unknown };
-    const resp = out.response;
+    // Routes through the AI quality & cost layer (resolve()): same Workers-AI
+    // model + params as before (output unchanged), plus an async ai_decisions
+    // log. Internal admin tool → tenant_id = the FounderFirst org (D15).
+    const result = await resolveOnWorkers(
+      {
+        useCase: USE_CASE.EMAIL_COMPOSE,
+        tenantId: TENANT_FOUNDERFIRST,
+        system: SYSTEM,
+        messages: [{ role: "user", content: `Brief:\n${brief.slice(0, 2000)}` }],
+        maxTokens: 700,
+        temperature: 0.5,
+        jsonObject: true,
+        pinModel: { provider: "workers-ai", model: MODEL },
+        record: { storeInput: true },
+      },
+      env,
+      ctx,
+    );
+    const resp = result.raw;
     // Workers AI models vary: some return the JSON as a string, others as an
     // already-parsed object. Handle both, and repair raw control chars.
     parsed =

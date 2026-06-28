@@ -24,5 +24,12 @@ export interface Env {
   // Shared secret between the email-compose Supabase fn and the /compose route.
   // Set via `wrangler secret put COMPOSE_SECRET`; must match the Supabase secret.
   COMPOSE_SECRET?: string;
+
+  // Cloudflare AI Gateway (AI quality & cost layer, D11). Set BOTH to route every
+  // AI call through the gateway (routing, fallback, spend caps, logs). Unset =
+  // call providers directly, byte-identical to today. Configured as [vars] in
+  // wrangler.toml; cache stays OFF in Phase 0 so answers never change/cross tenants.
+  AI_GATEWAY_ACCOUNT_ID?: string;
+  AI_GATEWAY_ID?: string;
 }
 

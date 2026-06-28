@@ -137,6 +137,8 @@ importers:
 
   packages/design-system: {}
 
+  packages/inference: {}
+
   packages/site: {}
 
   packages/ui:

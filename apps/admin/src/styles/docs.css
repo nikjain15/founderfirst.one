@@ -204,6 +204,17 @@
   color: var(--ink);
   font-size: var(--fs-data-row);
 }
+.whatsnew-item-area {
+  flex: 0 0 auto;
+  color: var(--ink-3);
+  font-size: var(--fs-eyebrow);
+  letter-spacing: var(--ls-chip);
+  text-transform: uppercase;
+  font-weight: var(--fw-bold);
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--paper);
+}
 .whatsnew-item-meta {
   color: var(--ink-4);
   font-size: var(--fs-eyebrow);

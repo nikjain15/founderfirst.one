@@ -37,49 +37,128 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-type Entry = {
-  id: string; kind: string; title: string; body: string;
+export type Entry = {
+  id: string; kind: string; area: string; title: string; body: string;
   created_at: string; created_by: string | null;
 };
 
-const KIND_LABEL: Record<string, string> = { new: "New", improved: "Improved", fixed: "Fixed" };
+// Bullet-marker color by kind — the ✓ carries New/Improved/Fixed without a pill.
 const KIND_COLOR_KEY: Record<string, "income" | "amber" | "ink3"> = { new: "income", improved: "amber", fixed: "ink3" };
 
 const word = (n: number, base: string) => `${base}${n === 1 ? "" : "s"}`;
 
-/** Dynamic body for the digest — built with the resolved brand so colors track email_brand. */
-function digestBody(entries: Entry[]) {
-  return (brand: typeof BRAND) => entries.slice(0, 25).map((e) => {
-    const label = KIND_LABEL[e.kind] ?? e.kind;
-    const color = brand[KIND_COLOR_KEY[e.kind] ?? "ink3"];
-    const title = escapeHtml(e.title || "—");
-    const body = e.body ? `<br/><span style="color:${brand.ink2};">${escapeHtml(e.body)}</span>` : "";
-    return `<tr>
-      <td style="padding:10px 0;border-bottom:1px solid ${brand.line};font-size:14px;color:${brand.ink2};vertical-align:top;">
-        <span style="display:inline-block;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:${color};border:1px solid ${color}33;border-radius:999px;padding:2px 8px;margin-right:8px;">${escapeHtml(label)}</span>
-        <strong style="color:${brand.ink};">${title}</strong>${body}
-      </td>
-    </tr>`;
-  }).join("");
+// -----------------------------------------------------------------------------
+// AREA registry — the section spine of the digest. Each shipped entry carries an
+// `area`; entries are grouped under these sections in this order. Covers are
+// STABLE per-area images (curated once, refreshed when a surface changes) hosted
+// at SITE_URL/email/whatsnew/<img>. Empty areas are skipped; unknown areas fall
+// into "general". Keep keys in sync with the admin composer (WhatsNew.tsx).
+// -----------------------------------------------------------------------------
+const SITE_URL = (Deno.env.get("SITE_URL") ?? "https://founderfirst.one").replace(/\/+$/, "");
+const IMG_BASE = `${SITE_URL}/email/whatsnew`;
+
+type AreaMeta = {
+  key: string; label: string; title: string;
+  accent: "income" | "amber" | "ink3"; img: string | null; alt: string;
+};
+const AREAS: AreaMeta[] = [
+  { key: "site",    label: "The site",       title: "A new front door",            accent: "income", img: "site.png",    alt: "The new FounderFirst homepage" },
+  { key: "product", label: "The product",    title: "Penny grew up",               accent: "income", img: "product.png", alt: "The Penny app — owner and CPA views" },
+  { key: "penny",   label: "Smarter Penny",  title: "She checks her own work",     accent: "income", img: "penny.png",   alt: "Penny's quality dashboard and human review queue" },
+  { key: "reach",   label: "Reach + care",   title: "Finding people, keeping trust", accent: "amber", img: "reach.png",  alt: "The Signals lead feed in the admin" },
+  { key: "infra",   label: "Under the hood", title: "Quietly stronger",            accent: "ink3",   img: "infra.png",   alt: "The search and AI-answer visibility dashboard" },
+  { key: "general", label: "More",           title: "Also this week",              accent: "ink3",   img: null,          alt: "" },
+];
+const AREA_KEYS = new Set(AREAS.map((a) => a.key));
+const normArea = (a: string | null | undefined) => (a ?? "general").trim().toLowerCase();
+
+/** Group entries by area key (registry order is applied later by the caller). */
+function groupByArea(entries: Entry[]): Map<string, Entry[]> {
+  const grouped = new Map<string, Entry[]>();
+  for (const e of entries.slice(0, 40)) {
+    const key = AREA_KEYS.has(normArea(e.area)) ? normArea(e.area) : "general";
+    const list = grouped.get(key) ?? [];
+    list.push(e);
+    grouped.set(key, list);
+  }
+  return grouped;
 }
 
-function digestVars(entries: Entry[]) {
+/** Three at-a-glance stats. Solid paper cells (Outlook-safe), colored numbers. */
+function statStrip(entries: Entry[], areaCount: number, brand: typeof BRAND): string {
+  const fresh = entries.filter((e) => e.kind === "new").length;
+  const cell = (n: number, label: string, key: "income" | "amber" | "ink3") =>
+    `<td width="33%" align="center" bgcolor="${brand.paper}" style="border-radius:10px;padding:14px 8px;text-align:center;">
+       <div style="font-size:22px;font-weight:700;color:${brand[key]};font-family:${brand.font};line-height:1.1;">${n}</div>
+       <div style="font-size:11px;color:${brand[key]};font-family:${brand.font};">${label}</div></td>`;
+  return `<tr><td style="padding:2px 0 0;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:8px 0;">
+      <tr>${cell(entries.length, "shipped", "income")}${cell(areaCount, areaCount === 1 ? "area" : "areas", "amber")}${cell(fresh, "brand-new", "ink3")}</tr>
+    </table></td></tr>`;
+}
+
+/** One themed section: pill label + title + (optional) cover image + ✓ bullets. */
+function sectionRow(area: AreaMeta, items: Entry[], brand: typeof BRAND): string {
+  const accent = brand[area.accent];
+  const pill = `<span style="display:inline-block;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;font-weight:700;color:${accent};border:1px solid ${accent}33;border-radius:999px;padding:3px 10px;font-family:${brand.font};">${escapeHtml(area.label)}</span>`;
+  const title = `<div style="margin:12px 0 0;font-size:18px;font-weight:700;color:${brand.ink};letter-spacing:-0.01em;font-family:${brand.font};">${escapeHtml(area.title)}</div>`;
+  const cover = area.img
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:14px 0 6px;"><tr>
+         <td bgcolor="${brand.paper}" style="border-radius:10px;border:1px solid ${brand.line};">
+           <img src="${IMG_BASE}/${area.img}" width="100%" alt="${escapeHtml(area.alt)}" style="display:block;width:100%;max-width:100%;height:auto;border-radius:10px;border:0;outline:none;text-decoration:none;" />
+         </td></tr></table>`
+    : "";
+  const rows = items.map((e) => {
+    const marker = brand[KIND_COLOR_KEY[e.kind] ?? "ink3"];
+    const body = e.body ? `<br/><span style="color:${brand.ink2};">${escapeHtml(e.body)}</span>` : "";
+    return `<tr>
+      <td valign="top" style="padding:6px 0;width:20px;color:${marker};font-size:14px;font-weight:700;font-family:${brand.font};">&#10003;</td>
+      <td style="padding:6px 0;font-size:14px;line-height:1.5;color:${brand.ink2};font-family:${brand.font};"><strong style="color:${brand.ink};">${escapeHtml(e.title || "—")}</strong>${body}</td>
+    </tr>`;
+  }).join("");
+  return `<tr><td style="padding:26px 0 0;border-top:1px solid ${brand.line};">
+    ${pill}${title}${cover}
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">${rows}</table>
+  </td></tr>`;
+}
+
+/** Dynamic body for the digest — built with the resolved brand so colors track email_brand. */
+export function digestBody(entries: Entry[]) {
+  return (brand: typeof BRAND) => {
+    const grouped = groupByArea(entries);
+    const live = AREAS.filter((a) => (grouped.get(a.key)?.length ?? 0) > 0);
+    const sections = live.map((a) => sectionRow(a, grouped.get(a.key)!, brand)).join("");
+    return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+      ${statStrip(entries, live.length, brand)}
+      ${sections}
+    </table>`;
+  };
+}
+
+export function digestVars(entries: Entry[]) {
   const n = entries.length;
   // topShipped goes into the (hidden) preheader, which emailShell escapes — pass raw.
   return { n, thingword: word(n, "thing"), topShipped: entries[0]?.title ?? "" };
 }
 
-const digestText = (entries: Entry[], whatsNewUrl: string) => () =>
-  `${entries.length} ${word(entries.length, "thing")} shipped this week.\n\n` +
-  `New, Improved, and Fixed — newest first.\n\n` +
-  entries.slice(0, 25).map((e) => `• [${KIND_LABEL[e.kind] ?? e.kind}] ${e.title}${e.body ? "\n  " + e.body : ""}`).join("\n") +
-  `\n\nSee it in the admin: ${whatsNewUrl}\n`;
+export const digestText = (entries: Entry[], whatsNewUrl: string) => () => {
+  const grouped = groupByArea(entries);
+  let out = `${entries.length} ${word(entries.length, "thing")} shipped this week.\n\n`;
+  for (const a of AREAS) {
+    const items = grouped.get(a.key);
+    if (!items?.length) continue;
+    out += `${a.label.toUpperCase()} — ${a.title}\n`;
+    for (const e of items) out += `  • ${e.title}${e.body ? " — " + e.body : ""}\n`;
+    out += `\n`;
+  }
+  return out + `See it all in the admin: ${whatsNewUrl}\n`;
+};
 
 const nudgeText = (count: number, whatsNewUrl: string) => () =>
   `This week's digest is ready to review.\n\n` +
   `There ${count === 1 ? "is" : "are"} ${count} update(s) from this week. Review and send when you're ready:\n${whatsNewUrl}\n`;
 
-Deno.serve(async (req) => {
+const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
   if (req.method !== "POST")    return json({ error: "method_not_allowed" }, 405);
 
@@ -182,4 +261,8 @@ Deno.serve(async (req) => {
     recipients: recipients.length,
   });
   return json({ ok: true, sent: result.sent, mode: "send", entryCount: entries.length });
-});
+};
+
+// Start the server only when run as the entrypoint — importing this module (e.g.
+// the local email-preview renderer) gets the exported builders without serving.
+if (import.meta.main) Deno.serve(handler);

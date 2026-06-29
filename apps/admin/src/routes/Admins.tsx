@@ -25,9 +25,12 @@ export function Admins({ currentEmail }: Props) {
   // Audit rows for both writes are produced by the admins_audit DB trigger.
   const inviteMut = useMutation({
     mutationFn: (target: string) => inviteAdmin(target),
-    onSuccess: (_d, target) => {
+    onSuccess: (res, target) => {
       setEmail("");
-      setStatus({ kind: "ok", msg: `Added ${target}.` });
+      setStatus({
+        kind: "ok",
+        msg: res.emailed ? `Added ${target} — welcome email sent.` : `Added ${target}.`,
+      });
       void qc.invalidateQueries({ queryKey: ["admins"] });
     },
     onError: (err) => setStatus({ kind: "err", msg: (err as Error).message }),

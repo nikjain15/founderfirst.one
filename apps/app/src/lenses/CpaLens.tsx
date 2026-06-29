@@ -1,29 +1,10 @@
-/** CPA lens — default view is the client workqueue (ARCHITECTURE.md §B8). Stub
- *  for now. read_only engagements see the queue but mutation actions are disabled
- *  (reflected here via the access badge; real enforcement is server-side). */
+/** CPA lens — the client's books, defaulting to the Journal (the CPA's working
+ *  surface). read_only engagements see everything but every mutation is disabled
+ *  in the UI and refused server-side (ARCHITECTURE.md §B8). The ranked workqueue
+ *  + reconciliation land in later phases. */
 import type { Org, RoleInfo } from "../org/ActiveOrgProvider";
+import Ledger from "../ledger/Ledger";
 
 export default function CpaLens({ org, roleInfo }: { org: Org; roleInfo: RoleInfo }) {
-  const isPractice = roleInfo.via === "membership" && org.type === "firm";
-  return (
-    <section className="lens">
-      <h1>{org.name}</h1>
-      <p className="muted">
-        {isPractice ? "CPA practice" : "Client books"} —{" "}
-        {roleInfo.canWrite ? "full access" : "read-only access"}.
-        {" "}Workqueue + ledger land next.
-      </p>
-      <ul className="lens-stub">
-        <li>Ranked workqueue across clients</li>
-        <li>Double-entry ledger · reconciliation · period close</li>
-        <li>Learned categorization rules</li>
-      </ul>
-      {!roleInfo.canWrite && (
-        <p className="readonly-note">
-          You have read-only access to this client — posting and close actions are
-          disabled.
-        </p>
-      )}
-    </section>
-  );
+  return <Ledger org={org} canWrite={roleInfo.canWrite} defaultTab="journal" />;
 }

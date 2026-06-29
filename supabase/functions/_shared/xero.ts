@@ -7,12 +7,18 @@ export const XERO_AUTHORIZE = "https://login.xero.com/identity/connect/authorize
 export const XERO_TOKEN = "https://identity.xero.com/connect/token";
 export const XERO_CONNECTIONS = "https://api.xero.com/connections";
 export const XERO_API = "https://api.xero.com/api.xro/2.0";
-// NOTE: this app currently only has settings + contacts scopes enabled (an
-// un-reviewed Xero app rejects accounting.transactions/reports/journals as
-// invalid_scope). settings.read covers the chart of accounts. To pull bank
-// transactions later, enable accounting.transactions.read on the Xero app and
-// add it here.
-export const XERO_SCOPE = "openid offline_access accounting.settings.read accounting.contacts.read";
+// Scopes. This app was created after Xero's 2 Mar 2026 granular-scope cutoff, so
+// the OLD broad scopes (accounting.transactions/reports/journals) no longer exist
+// for it and return invalid_scope — verified empirically at the authorize endpoint.
+// The granular replacements ARE available with no app review:
+//   • accounting.settings.read         → chart of accounts (Accounts endpoint)
+//   • accounting.contacts.read         → contacts
+//   • accounting.banktransactions.read → BankTransactions endpoint (what we import)
+// (See https://developer.xero.com/faq/granular-scopes — broad accounting.transactions
+// split into invoices / payments / banktransactions.) Scope must be %20-delimited
+// (URLSearchParams encodes spaces as '+', which Xero rejects) — see authorizeUrl.
+export const XERO_SCOPE =
+  "openid offline_access accounting.settings.read accounting.contacts.read accounting.banktransactions.read";
 
 const CLIENT_ID = () => Deno.env.get("XERO_CLIENT_ID") ?? "";
 const CLIENT_SECRET = () => Deno.env.get("XERO_CLIENT_SECRET") ?? "";

@@ -289,6 +289,81 @@ export async function detachAIEval(useCase: string, evalKey: string): Promise<vo
   if (error) throw new Error(error.message);
 }
 
+/* ---- Phase 4: model / routing / caps / caching config (admin_ai_model_*) ---- */
+
+export interface AIModelConfigRow {
+  use_case: string;
+  label: string;
+  runtime: string;
+  main_provider: string;
+  main_model: string;
+  backup_provider: string | null;
+  backup_model: string | null;
+  cache_enabled: boolean;
+  monthly_cap_usd: number | string | null;
+  spend_mtd_usd: number | string | null;
+  customer_facing: boolean;
+  financial: boolean;
+  updated_at: string | null;
+  updated_by: string | null;
+}
+
+export interface AIModelPrice {
+  model: string;
+  provider: string;
+  input_per_mtok: number | string;
+  output_per_mtok: number | string;
+  updated_at: string | null;
+}
+
+export async function getAIModelConfig(): Promise<AIModelConfigRow[]> {
+  const { data, error } = await getClient().rpc("admin_ai_model_config");
+  if (error) throw new Error(`getAIModelConfig: ${error.message}`);
+  return (data as AIModelConfigRow[]) ?? [];
+}
+
+export async function getAIModels(): Promise<AIModelPrice[]> {
+  const { data, error } = await getClient().rpc("admin_ai_models");
+  if (error) throw new Error(`getAIModels: ${error.message}`);
+  return (data as AIModelPrice[]) ?? [];
+}
+
+export async function setAIModelConfig(args: {
+  useCase: string;
+  mainProvider: string;
+  mainModel: string;
+  backupProvider?: string | null;
+  backupModel?: string | null;
+  cacheEnabled?: boolean | null;
+  monthlyCapUsd?: number | null;
+}): Promise<void> {
+  const { error } = await getClient().rpc("admin_ai_model_config_set", {
+    p_use_case: args.useCase,
+    p_main_provider: args.mainProvider,
+    p_main_model: args.mainModel,
+    p_backup_provider: args.backupProvider ?? null,
+    p_backup_model: args.backupModel ?? null,
+    p_cache_enabled: args.cacheEnabled ?? null,
+    p_monthly_cap_usd: args.monthlyCapUsd ?? null,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function setAIPrice(args: {
+  model: string;
+  provider: string;
+  inputPerMTok: number;
+  outputPerMTok: number;
+}): Promise<void> {
+  const { error } = await getClient().rpc("admin_ai_price_set", {
+    p_model: args.model,
+    p_provider: args.provider,
+    p_input_per_mtok: args.inputPerMTok,
+    p_output_per_mtok: args.outputPerMTok,
+  });
+  if (error) throw new Error(error.message);
+}
+
 export async function upsertAIEval(args: {
   key: string;
   name: string;

@@ -78,6 +78,65 @@ export function useLedgerRefresh(orgId: string | undefined) {
   };
 }
 
+// ── categorization (Phase 4) ─────────────────────────────────────────────────
+export interface UncategorizedEntry {
+  entry_id: string;
+  entry_date: string;
+  memo: string | null;
+  source: string;
+  source_ref: string | null;
+  line_id: string;
+  amount_minor: number;
+  side: "D" | "C";
+  currency: string;
+  from_account_id: string;
+  created_at: string;
+}
+
+/** Posted entries still sitting on the Uncategorized holding account. */
+export function useUncategorized(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["uncategorized", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<UncategorizedEntry[]> => {
+      const sb = getClient();
+      const { data, error } = await sb.rpc("list_uncategorized_entries", { p_org: orgId });
+      if (error) throw error;
+      return (data ?? []) as UncategorizedEntry[];
+    },
+  });
+}
+
+export interface CategoryProposal {
+  account_id: string;
+  code: string | null;
+  name: string;
+  type: string;
+  confidence: number;
+  rationale: string;
+  source: "rule" | "penny";
+}
+
+/** Penny's grounded suggestion for one uncategorized entry. */
+export const proposeCategory = (org_id: string, entry_id: string) =>
+  invoke<{ from_account_id: string; proposal: CategoryProposal | null; note?: string }>(
+    "categorize", { op: "propose", org_id, entry_id },
+  );
+
+/** Approve a category — reverses + reposts onto the chosen account and learns it. */
+export const approveCategory = (
+  org_id: string, entry_id: string, to_account_id: string, learn_value?: string | null,
+) =>
+  invoke<{ entry: JournalEntry }>(
+    "categorize", { op: "approve", org_id, entry_id, to_account_id, learn: true, learn_value: learn_value ?? null },
+  );
+
+/** Invalidate the uncategorized queue (after an approve). */
+export function useUncategorizedRefresh(orgId: string | undefined) {
+  const qc = useQueryClient();
+  return () => { void qc.invalidateQueries({ queryKey: ["uncategorized", orgId] }); };
+}
+
 // ── write-path (Edge Functions) ──────────────────────────────────────────────
 async function invoke<T = unknown>(name: string, body: Record<string, unknown>): Promise<T> {
   const sb = getClient();

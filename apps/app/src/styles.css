@@ -446,3 +446,43 @@ button.ghost.sm, .ghost.sm {
   .ip-head, .ip-row { grid-template-columns: 5.5rem 1fr 5rem 1.5rem; }
   .ob-head, .ob-row { grid-template-columns: 1fr 5rem 1fr 2.25rem; }
 }
+
+/* ── Categorize (Penny's lovable core) ─────────────────────────────────────── */
+.penny-lead { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--ink-2); }
+.penny-lead strong { color: var(--ink); }
+
+.cat-list { list-style: none; margin: 0.75rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.cat-row {
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-card);
+  padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; background: var(--surface, #fff);
+}
+.cat-main { display: grid; grid-template-columns: 6rem 1fr auto; align-items: baseline; gap: 0.75rem; }
+.cat-date { font-size: var(--fs-micro); color: var(--ink-3); }
+.cat-memo { font-weight: var(--fw-medium); overflow-wrap: anywhere; }
+.cat-amt { font-variant-numeric: tabular-nums; font-weight: var(--fw-bold); white-space: nowrap; }
+.cat-amt.in { color: var(--income); }
+.cat-amt.out { color: var(--ink); }
+
+.cat-propose { display: flex; flex-direction: column; gap: 0.15rem; }
+.penny-suggest { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; }
+.penny-suggest .ps-text { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; }
+.penny-suggest strong { color: var(--ink); }
+.ps-why { flex-basis: 100%; }
+.confidence {
+  font-size: var(--fs-micro); padding: 0.1rem 0.45rem; border-radius: var(--r-pill);
+  letter-spacing: var(--ls-chip); text-transform: uppercase;
+  background: var(--brand-tint); color: var(--brand);
+}
+.confidence.c-rule { background: var(--income-bg); color: var(--income); }
+.confidence.c-hi   { background: var(--income-bg); color: var(--income); }
+.confidence.c-mid  { background: var(--brand-tint); color: var(--brand); }
+.confidence.c-lo   { background: var(--amber-bg); color: var(--amber); }
+
+.cat-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.cat-actions select { flex: 1 1 12rem; min-height: var(--tap-min); }
+.cat-approve { min-height: var(--tap-min); padding: 0 1.1rem; white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .cat-main { grid-template-columns: 1fr auto; }
+  .cat-main .cat-date { grid-column: 1 / -1; }
+}

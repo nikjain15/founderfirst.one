@@ -12,6 +12,9 @@ import "@ff/design-system/components/button.css";
 import "./styles.css";
 
 import { App } from "./App";
+import { initAdminAnalytics } from "./lib/analytics";
+
+initAdminAnalytics();
 
 const container = document.getElementById("root");
 if (!container) throw new Error("root element missing");

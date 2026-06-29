@@ -1,8 +1,17 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { posthog, type PhTrafficRow } from "../lib/supabase";
+import { posthog, type PhTrafficRow, type PhProduct } from "../lib/supabase";
 import { HBarBreakdown } from "../lib/charts";
 import { IconAlert } from "../lib/icons";
+
+const PRODUCTS: Array<{ label: string; value: PhProduct | "" }> = [
+  { label: "All products", value: "" },
+  { label: "Website", value: "website" },
+  { label: "Penny demo", value: "demo" },
+  { label: "Chat", value: "chat" },
+  { label: "App", value: "app" },
+  { label: "Admin", value: "admin" },
+];
 
 /**
  * PostHog product analytics — pageviews, users, sessions, traffic, top pages
@@ -18,11 +27,13 @@ const RANGES: Array<{ label: string; days: number }> = [
 export function AnalyticsPostHog() {
   const [rangeIdx, setRangeIdx] = useState(1);
   const days = RANGES[rangeIdx].days;
+  const [product, setProduct] = useState<PhProduct | "">("");
+  const p = product || undefined;
 
-  const overviewQ = useQuery({ queryKey: ["ph.overview", days],  queryFn: () => posthog.overview(days) });
-  const trafficQ  = useQuery({ queryKey: ["ph.traffic", days],   queryFn: () => posthog.traffic(days) });
-  const pagesQ    = useQuery({ queryKey: ["ph.topPages", days],  queryFn: () => posthog.topPages(days, 10) });
-  const eventsQ   = useQuery({ queryKey: ["ph.topEvents", days], queryFn: () => posthog.topEvents(days, 10) });
+  const overviewQ = useQuery({ queryKey: ["ph.overview", days, product],  queryFn: () => posthog.overview(days, p) });
+  const trafficQ  = useQuery({ queryKey: ["ph.traffic", days, product],   queryFn: () => posthog.traffic(days, p) });
+  const pagesQ    = useQuery({ queryKey: ["ph.topPages", days, product],  queryFn: () => posthog.topPages(days, 10, p) });
+  const eventsQ   = useQuery({ queryKey: ["ph.topEvents", days, product], queryFn: () => posthog.topEvents(days, 10, p) });
 
   const loading = overviewQ.isPending || trafficQ.isPending || pagesQ.isPending || eventsQ.isPending;
   const error = overviewQ.error || trafficQ.error || pagesQ.error || eventsQ.error;
@@ -54,6 +65,9 @@ export function AnalyticsPostHog() {
             {r.label}
           </button>
         ))}
+        <select className="chip" value={product} onChange={(e) => setProduct(e.target.value as PhProduct | "")} aria-label="Filter by product">
+          {PRODUCTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
         <div className="toolbar-spacer" />
         <a href="https://us.posthog.com/project/394556" target="_blank" rel="noopener noreferrer" style={{ fontSize: "var(--fs-data-row)", color: "var(--ink-3)" }}>via PostHog ↗</a>
       </div>

@@ -364,6 +364,44 @@ export async function setAIPrice(args: {
   if (error) throw new Error(error.message);
 }
 
+/* ---- Phase 5: model catalog (ai_model_catalog) — the browsable universe -------- */
+
+export interface AICatalogRow {
+  model: string;
+  provider: string;
+  display_name: string | null;
+  description: string | null;
+  context_length: number | null;
+  input_per_mtok: number | string | null;
+  output_per_mtok: number | string | null;
+  modalities: string[] | null;
+  capabilities: Record<string, unknown> | null;
+  benchmarks: Record<string, unknown> | null;
+  intelligence: number | string | null;
+  elo: number | string | null;
+  task_tag: string | null;
+  recommended_for: string[] | null;
+  routable: boolean;
+  source: string;
+  synced_at: string | null;
+}
+
+export async function getAICatalog(filter?: { provider?: string; recommendedFor?: string }): Promise<AICatalogRow[]> {
+  const { data, error } = await getClient().rpc("admin_ai_catalog", {
+    p_provider: filter?.provider ?? null,
+    p_recommended_for: filter?.recommendedFor ?? null,
+    p_limit: 500,
+  });
+  if (error) throw new Error(`getAICatalog: ${error.message}`);
+  return (data as AICatalogRow[]) ?? [];
+}
+
+export async function syncAICatalog(): Promise<Record<string, unknown>> {
+  const { data, error } = await getClient().functions.invoke("ai-catalog-sync", { body: {} });
+  if (error) throw new Error(`syncAICatalog: ${error.message}`);
+  return (data as Record<string, unknown>) ?? {};
+}
+
 export async function upsertAIEval(args: {
   key: string;
   name: string;

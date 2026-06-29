@@ -19,6 +19,7 @@ import { IconAlert } from "../lib/icons";
 import { AIEvals } from "./AIEvals";
 import { AIReview } from "./AIReview";
 import { AIModels } from "./AIModels";
+import { AICatalog } from "./AICatalog";
 
 const WINDOWS: Array<{ id: number; label: string }> = [
   { id: 7, label: "7 days" },
@@ -32,7 +33,7 @@ const USE_CASE_LABELS: Record<string, string> = {
   email_compose: "Email drafting",
 };
 
-type SubTab = "overview" | "evals" | "review" | "models";
+type SubTab = "overview" | "evals" | "review" | "models" | "catalog";
 
 export function AIQuality() {
   const location = useLocation();
@@ -40,7 +41,8 @@ export function AIQuality() {
     location.hash === "#evals" ? "evals"
       : location.hash === "#review" ? "review"
         : location.hash === "#models" ? "models"
-          : "overview";
+          : location.hash === "#catalog" ? "catalog"
+            : "overview";
   const [days, setDays] = useState(30);
   const { data, isPending, error } = useQuery({
     queryKey: ["aiOverview", days],
@@ -87,12 +89,14 @@ export function AIQuality() {
         <a role="tab" aria-selected={sub === "overview"} className={`tab ${sub === "overview" ? "active" : ""}`} href="#overview">Overview</a>
         <a role="tab" aria-selected={sub === "review"} className={`tab ${sub === "review" ? "active" : ""}`} href="#review">Review queue</a>
         <a role="tab" aria-selected={sub === "models"} className={`tab ${sub === "models" ? "active" : ""}`} href="#models">Models</a>
+        <a role="tab" aria-selected={sub === "catalog"} className={`tab ${sub === "catalog" ? "active" : ""}`} href="#catalog">Catalog</a>
         <a role="tab" aria-selected={sub === "evals"} className={`tab ${sub === "evals" ? "active" : ""}`} href="#evals">Eval setup</a>
       </div>
 
       {sub === "evals" && <AIEvals />}
       {sub === "review" && <AIReview />}
       {sub === "models" && <AIModels />}
+      {sub === "catalog" && <AICatalog />}
 
       {sub === "overview" && (
       <>

@@ -335,6 +335,57 @@ async function testPhase4(): Promise<void> {
   expect("cache allowed for non-customer/non-financial", cacheable.get().options?.gateway?.skipCache === false);
 }
 
+/* ── 7. Phase 5b — OpenRouter provider (OpenAI-compatible) ──────────────────── */
+
+async function testOpenRouter(): Promise<void> {
+  console.info("Phase 5b (OpenRouter provider):");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let captured: any;
+  const ctx: ResolveCtx = {
+    runtime: "deno", // OpenRouter is HTTP — reachable on any runtime
+    config: DEFAULT_CONFIG,
+    transports: {
+      openrouter: {
+        apiKey: "OR_KEY",
+        fetch: async (url, init) => {
+          captured = { url, init };
+          return {
+            ok: true,
+            status: 200,
+            text: async () => "",
+            json: async () => ({
+              model: "x/echo",
+              choices: [{ message: { content: "{}" } }],
+              usage: { prompt_tokens: 1, completion_tokens: 1 },
+            }),
+          };
+        },
+      },
+    },
+    now: () => 0,
+    sleep: async () => {},
+    timeoutSignal: (ms: number) => ({ __timeoutMs: ms }),
+  };
+  await resolve(
+    {
+      useCase: USE_CASE.EMAIL_COMPOSE,
+      tenantId: TENANT_FOUNDERFIRST,
+      system: "S",
+      messages: [{ role: "user", content: "hi" }],
+      maxTokens: 50,
+      jsonObject: true,
+      pinModel: { provider: "openrouter", model: "meta-llama/llama-3.2-3b-instruct" },
+    },
+    ctx,
+  );
+  const body = JSON.parse(captured.init.body);
+  expect("url is openrouter chat/completions", captured.url === "https://openrouter.ai/api/v1/chat/completions");
+  expect("Authorization bearer", captured.init.headers["Authorization"] === "Bearer OR_KEY");
+  expect("model passed through", body.model === "meta-llama/llama-3.2-3b-instruct");
+  expect("system folded into messages[0]", body.messages[0].role === "system" && body.messages[1].role === "user");
+  expect("json_object response_format", body.response_format?.type === "json_object");
+}
+
 /* ── run ──────────────────────────────────────────────────────────────────── */
 
 await testChat();
@@ -343,6 +394,7 @@ await testCompose();
 await testInsightsFallback();
 await testInvariants();
 await testPhase4();
+await testOpenRouter();
 
 if (failures > 0) {
   console.error(`\n✗ parity: ${failures} check(s) failed — answers may have changed.`);

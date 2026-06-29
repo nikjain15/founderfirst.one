@@ -49,6 +49,9 @@ export interface DenoInferenceEnv {
   SUPABASE_SERVICE_KEY: string;
   AI_GATEWAY_ACCOUNT_ID?: string;
   AI_GATEWAY_ID?: string;
+  /** OpenRouter key (Phase 5b) — set as a Supabase secret to make OpenRouter
+   *  models routable from the edge fn; unset = not routable here. */
+  OPENROUTER_API_KEY?: string;
 }
 
 export function makeDenoCtx(
@@ -82,6 +85,9 @@ export function makeDenoCtx(
       // Bind fetch to globalThis — calling the bare global as `transport.fetch(...)`
       // rebinds `this` and throws "Illegal invocation".
       anthropic: { apiKey: env.ANTHROPIC_API_KEY, fetch: fetch.bind(globalThis) as unknown as FetchLike },
+      openrouter: env.OPENROUTER_API_KEY
+        ? { apiKey: env.OPENROUTER_API_KEY, fetch: fetch.bind(globalThis) as unknown as FetchLike }
+        : undefined,
     },
     gateway,
     recordSink,

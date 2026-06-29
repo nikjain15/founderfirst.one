@@ -10,7 +10,7 @@
  */
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAICatalog, syncAICatalog } from "../lib/supabase";
+import { getAICatalog, syncAICatalog, setAIPrice, type AICatalogRow } from "../lib/supabase";
 import { Takeaway } from "../lib/Takeaway";
 import { IconAlert } from "../lib/icons";
 
@@ -47,8 +47,22 @@ export function AICatalog() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["aiCatalog"] }),
   });
 
+  // Register a catalog model into ai_model_prices → it becomes selectable per use
+  // case in the Models tab. (The catalog `routable` flag updates on the next sync;
+  // we mark it locally so the row reflects it immediately.)
+  const [registered, setRegistered] = useState<Set<string>>(new Set());
+  const registerMut = useMutation({
+    mutationFn: (r: AICatalogRow) =>
+      setAIPrice({ model: r.model, provider: r.provider, inputPerMTok: num(r.input_per_mtok), outputPerMTok: num(r.output_per_mtok) }),
+    onSuccess: (_d, r) => {
+      setRegistered((s) => new Set(s).add(r.model));
+      qc.invalidateQueries({ queryKey: ["aiModelConfig"] });
+      qc.invalidateQueries({ queryKey: ["aiModels"] });
+    },
+  });
+
   const rows = catalog.data ?? [];
-  const err = catalog.error || syncMut.error;
+  const err = catalog.error || syncMut.error || registerMut.error;
   const syncedAt = rows.find((r) => r.synced_at)?.synced_at;
 
   const takeaway = useMemo(() => {
@@ -145,7 +159,15 @@ export function AICatalog() {
                       {(!r.recommended_for || r.recommended_for.length === 0) && <span className="muted">—</span>}
                     </span>
                   </td>
-                  <td>{r.routable ? <span className="badge badge-good">routable</span> : <span className="muted">browse</span>}</td>
+                  <td>
+                    {r.routable || registered.has(r.model) ? (
+                      <span className="badge badge-good">routable</span>
+                    ) : (
+                      <button type="button" className="btn-link" disabled={registerMut.isPending} onClick={() => registerMut.mutate(r)}>
+                        Register
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

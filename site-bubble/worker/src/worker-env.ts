@@ -31,5 +31,10 @@ export interface Env {
   // wrangler.toml; cache stays OFF in Phase 0 so answers never change/cross tenants.
   AI_GATEWAY_ACCOUNT_ID?: string;
   AI_GATEWAY_ID?: string;
+
+  // OpenRouter key (Phase 5b) — one key, hundreds of hosted models behind the
+  // gateway. Set via `wrangler secret put OPENROUTER_API_KEY`. Unset = OpenRouter
+  // models aren't routable (resolve() throws if one is routed without it).
+  OPENROUTER_API_KEY?: string;
 }
 

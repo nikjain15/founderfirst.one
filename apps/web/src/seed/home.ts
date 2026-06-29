@@ -74,7 +74,7 @@ export const homeSeed: Page = {
     },
     {
       type: "trust",
-      position: 4,
+      position: 5,
       data: {
         headline: "Built on trust, not faith.",
         sub: "Penny connects to the accounts your business runs on, so we hold ourselves to a simple standard: read-only by design, encrypted throughout, and your data always stays yours.",
@@ -88,7 +88,7 @@ export const homeSeed: Page = {
     },
     {
       type: "steps",
-      position: 5,
+      position: 7,
       data: {
         headline: "Want Penny watching your books?",
         sub: "Drop your email — we'll save your spot and cover your first 3 months of bookkeeping.",
@@ -103,7 +103,7 @@ export const homeSeed: Page = {
     },
     {
       type: "faq",
-      position: 6,
+      position: 8,
       data: {
         headline: "Questions, answered.",
         entries: [
@@ -112,6 +112,33 @@ export const homeSeed: Page = {
           { question: "Is my financial data safe?", answer: "Yes. Penny connects with read-only access, so she can see your transactions but can never move money. Your data is encrypted in transit and at rest, on the same rails your bank uses." },
           { question: "How much does Penny cost?", answer: "Your first 3 months are free, and you can stack up to 12 free months by referring other founders. Paid pricing is shared as we open access to the waitlist." },
           { question: "When can I start?", answer: "Join the waitlist and we'll save your spot. We're onboarding founders in batches now and will reach out when yours opens." },
+        ],
+      },
+    },
+    {
+      type: "chat",
+      position: 4,
+      data: {
+        eyebrow: "How Penny works",
+        headline: "A conversation, not a chore.",
+        turns: [
+          { who: "you", text: "So what do I actually have to do?" },
+          { who: "penny", text: "Connect Stripe, your bank, your card — anywhere money moves. I watch it 24/7 and sort every transaction the way your CPA needs it." },
+          { who: "penny", text: "A few times a week I'll ping you — “business or personal?” One tap. Done." },
+          { who: "you", text: "That's it?" },
+          { who: "penny", text: "That's it. Your books stay clean, your real profit stays clear, and I'll chase your late invoices for you." },
+        ],
+      },
+    },
+    {
+      type: "about",
+      position: 6,
+      data: {
+        eyebrow: "About",
+        headline: "Operating software for business owners.",
+        body: [
+          "FounderFirst builds the operating software that runs the back office of a small business — so owners can spend their time on the work they started the business to do, not the admin behind it.",
+          "Penny is our first product: an autonomous bookkeeper that keeps your books clean, your real profit clear, and your records CPA-ready, every day. It's the first of more to come — the company is FounderFirst, the product is Penny.",
         ],
       },
     },

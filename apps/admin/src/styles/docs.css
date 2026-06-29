@@ -265,6 +265,37 @@
   width: 100%;
   flex: 1 1 auto;
 }
+.whatsnew-digest-pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.whatsnew-digest-pick-label {
+  color: var(--ink-3);
+  font-size: var(--fs-eyebrow);
+  margin-right: 2px;
+}
+.whatsnew-pick-chip {
+  min-height: var(--tap-min);
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  color: var(--ink-2);
+  font-size: var(--fs-data-row);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.whatsnew-pick-chip:hover {
+  border-color: var(--ink-4);
+}
+.whatsnew-pick-chip.is-on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
 .whatsnew-digest-last {
   color: var(--ink-4);
   font-size: var(--fs-eyebrow);

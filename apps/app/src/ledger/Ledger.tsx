@@ -16,15 +16,17 @@ import {
 import { balanceSheet, profitAndLoss, trialBalance } from "./reports";
 import { formatMoney, formatMoneyShort, parseMoneyToMinor } from "./money";
 import { ACCOUNT_TYPES } from "./types";
+import ImportFlow from "../import/ImportFlow";
 import type {
   AccountType, AccountingPeriod, DraftLine, JournalEntry, LedgerAccount,
 } from "./types";
 
-type Tab = "overview" | "accounts" | "journal" | "reports" | "periods";
-const TABS: { id: Tab; label: string }[] = [
+type Tab = "overview" | "accounts" | "journal" | "import" | "reports" | "periods";
+const ALL_TABS: { id: Tab; label: string; writeOnly?: boolean }[] = [
   { id: "overview", label: "Overview" },
   { id: "accounts", label: "Accounts" },
   { id: "journal", label: "Journal" },
+  { id: "import", label: "Import", writeOnly: true },
   { id: "reports", label: "Reports" },
   { id: "periods", label: "Periods" },
 ];
@@ -41,6 +43,7 @@ export default function Ledger({
   defaultTab?: Tab;
 }) {
   const [tab, setTab] = useState<Tab>(defaultTab);
+  const tabs = ALL_TABS.filter((t) => !t.writeOnly || canWrite);
   const accounts = useAccounts(org.id);
   const entries = useEntries(org.id);
   const periods = usePeriods(org.id);
@@ -59,7 +62,7 @@ export default function Ledger({
       </header>
 
       <nav className="ledger-tabs" role="tablist" aria-label="Ledger sections">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t.id}
             role="tab"
@@ -93,6 +96,9 @@ export default function Ledger({
               accounts={accounts.data ?? []} entries={entries.data ?? []}
               onChange={refresh}
             />
+          )}
+          {tab === "import" && canWrite && (
+            <ImportFlow orgId={org.id} accounts={accounts.data ?? []} onDone={() => { refresh(); setTab("journal"); }} />
           )}
           {tab === "reports" && <Reports entries={entries.data ?? []} />}
           {tab === "periods" && (

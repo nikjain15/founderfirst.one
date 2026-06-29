@@ -381,3 +381,48 @@ button.ghost.sm, .ghost.sm {
   .entry-form .line-row { grid-template-columns: 1fr 5.5rem 2.25rem; }
   .entry-form .line-row select[aria-label="Debit or credit"] { grid-column: 1 / 2; }
 }
+
+/* ── history import ───────────────────────────────────────────── */
+.import-flow { display: flex; flex-direction: column; gap: 0.9rem; }
+.import-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.75rem; }
+.import-choice {
+  display: flex; flex-direction: column; gap: 0.25rem; text-align: left;
+  padding: var(--pad-card); background: var(--white);
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-card);
+  color: var(--ink); min-height: var(--tap-min, 44px);
+}
+.import-choice:hover:not(:disabled) { border-color: var(--brand); background: var(--brand-soft); }
+.import-choice:disabled { opacity: 0.5; }
+.import-choice .ic-title { font-weight: var(--fw-semibold); }
+.import-choice .ic-sub { font-size: var(--fs-ui); color: var(--ink-3); }
+
+.file-drop {
+  display: grid; place-items: center; gap: 0.4rem; position: relative;
+  padding: 2rem; border: var(--bw) dashed var(--line); border-radius: var(--r-card);
+  color: var(--ink-2); cursor: pointer; background: var(--white);
+}
+.file-drop:hover { border-color: var(--brand); color: var(--brand); }
+.file-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.import-preview { border: var(--bw-hair) solid var(--line); border-radius: var(--r-card); overflow: hidden; }
+.ip-head, .ip-row {
+  display: grid; grid-template-columns: 7rem 1fr 7rem 2rem; gap: 0.5rem;
+  padding: 0.4rem 0.7rem; align-items: center;
+}
+.ip-head {
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip);
+  color: var(--ink-3); background: var(--paper); border-bottom: var(--bw-hair) solid var(--line);
+}
+.ip-row { border-bottom: var(--bw-hair) solid var(--line-2); font-size: var(--fs-ui); }
+.ip-row.bad { color: var(--ink-3); background: var(--error-bg); }
+.ip-row .ip-desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ip-row .ip-amt { text-align: right; font-variant-numeric: tabular-nums; }
+.import-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.import-done { text-align: center; padding: 1.5rem 0; display: flex; flex-direction: column; gap: 0.6rem; align-items: center; }
+.import-done h3 { margin: 0; font-size: var(--fs-h3); }
+.ob-head, .ob-row { grid-template-columns: 1fr 7rem 1fr 2.25rem; }
+
+@media (max-width: 640px) {
+  .ip-head, .ip-row { grid-template-columns: 5.5rem 1fr 5rem 1.5rem; }
+  .ob-head, .ob-row { grid-template-columns: 1fr 5rem 1fr 2.25rem; }
+}

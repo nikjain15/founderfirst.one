@@ -141,6 +141,46 @@ export const upsertAccount = (input: {
 export const setPeriod = (org_id: string, period_id: string, action: "close" | "reopen") =>
   invoke<{ period: AccountingPeriod }>("ledger-periods", { org_id, period_id, action });
 
+// ── history import (Phase 3) ──────────────────────────────────────────────────
+export type ImportSource = "csv" | "bank_statement" | "trial_balance" | "opening_balances";
+
+export interface ImportBatch {
+  id: string;
+  org_id: string;
+  source: ImportSource;
+  status: "draft" | "previewed" | "committed" | "discarded";
+  filename: string | null;
+  bank_account_id: string | null;
+  cutover_date: string | null;
+}
+export interface StagedRow {
+  row_num: number;
+  raw?: Record<string, unknown>;
+  txn_date?: string | null;
+  description?: string | null;
+  amount_minor?: number | null;
+  account_id?: string | null;
+  side?: "D" | "C" | null;
+  status?: "pending" | "ready" | "error" | "skipped";
+}
+
+export const createImportBatch = (input: {
+  org_id: string;
+  source: ImportSource;
+  filename?: string | null;
+  bank_account_id?: string | null;
+  cutover_date?: string | null;
+}) => invoke<{ result: ImportBatch }>("imports", { op: "create", ...input });
+
+export const addImportRows = (org_id: string, batch_id: string, rows: StagedRow[]) =>
+  invoke<{ result: number }>("imports", { op: "add_rows", org_id, batch_id, rows });
+
+export const commitImportBatch = (org_id: string, batch_id: string) =>
+  invoke<{ result: ImportBatch }>("imports", { op: "commit", org_id, batch_id });
+
+export const discardImportBatch = (org_id: string, batch_id: string) =>
+  invoke<{ result: ImportBatch }>("imports", { op: "discard", org_id, batch_id });
+
 /** A client-side idempotency key for a money mutation (replays are de-duped). */
 export function newIdempotencyKey(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();

@@ -1,0 +1,337 @@
+/**
+ * History import (ARCHITECTURE.md §6.4). A guided, previewable, reversible flow:
+ *   Bank CSV   → upload → map columns → pick bank + contra → preview → commit
+ *   Opening balances → cutover date + per-account balances → preview → commit
+ *
+ * CSV is parsed in the browser; only normalized rows go to the `imports` edge fn,
+ * which stages then commits them through the verified ledger write-path. Nothing
+ * touches the ledger until "Import" — before that it's discardable staging.
+ */
+import { useMemo, useState } from "react";
+import {
+  addImportRows, commitImportBatch, createImportBatch, discardImportBatch,
+  type StagedRow,
+} from "../ledger/api";
+import { parseAmountCell, parseCsv, parseDateCell, type ParsedCsv } from "./csv";
+import { formatMoney } from "../ledger/money";
+import type { LedgerAccount } from "../ledger/types";
+
+type Mode = "choose" | "csv" | "opening";
+const today = () => new Date().toISOString().slice(0, 10);
+
+export default function ImportFlow({
+  orgId, accounts, onDone,
+}: {
+  orgId: string; accounts: LedgerAccount[]; onDone: () => void;
+}) {
+  const [mode, setMode] = useState<Mode>("choose");
+  const live = accounts.filter((a) => !a.is_archived);
+
+  if (mode === "choose") {
+    return (
+      <div className="import-flow">
+        <div className="panel-toolbar">
+          <span className="muted">Bring your existing books in. Nothing posts until you confirm.</span>
+        </div>
+        <div className="import-choices">
+          <button className="import-choice" onClick={() => setMode("csv")}>
+            <span className="ic-title">Bank statement (CSV)</span>
+            <span className="ic-sub">Upload a transactions export — map the columns and we'll post them.</span>
+          </button>
+          <button className="import-choice" onClick={() => setMode("opening")} disabled={live.length < 1}>
+            <span className="ic-title">Opening balances</span>
+            <span className="ic-sub">Start the books at a cutover date with each account's balance.</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (mode === "csv") return <CsvImport orgId={orgId} accounts={live} onBack={() => setMode("choose")} onDone={onDone} />;
+  return <OpeningBalances orgId={orgId} accounts={live} onBack={() => setMode("choose")} onDone={onDone} />;
+}
+
+// ── Bank CSV ──────────────────────────────────────────────────────────────────
+function CsvImport({
+  orgId, accounts, onBack, onDone,
+}: {
+  orgId: string; accounts: LedgerAccount[]; onBack: () => void; onDone: () => void;
+}) {
+  const [filename, setFilename] = useState("");
+  const [csv, setCsv] = useState<ParsedCsv | null>(null);
+  const [dateCol, setDateCol] = useState<number>(-1);
+  const [descCol, setDescCol] = useState<number>(-1);
+  const [amtCol, setAmtCol] = useState<number>(-1);
+  const [positiveIs, setPositiveIs] = useState<"in" | "out">("in");
+  const [bankId, setBankId] = useState("");
+  const [contraId, setContraId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [done, setDone] = useState<number | null>(null);
+
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFilename(f.name);
+    setErr(null);
+    f.text().then((t) => {
+      const parsed = parseCsv(t);
+      setCsv(parsed);
+      // best-effort auto-map by header name
+      const find = (re: RegExp) => parsed.headers.findIndex((h) => re.test(h.toLowerCase()));
+      setDateCol(find(/date/));
+      setDescCol(find(/desc|payee|name|memo|detail/));
+      setAmtCol(find(/amount|amt|debit|value/));
+    }).catch(() => setErr("Couldn't read that file."));
+  }
+
+  // normalized preview rows
+  const rows = useMemo(() => {
+    if (!csv || dateCol < 0 || amtCol < 0) return [];
+    return csv.rows.map((r, i) => {
+      const date = parseDateCell(r[dateCol] ?? "");
+      let amount = parseAmountCell(r[amtCol] ?? "");
+      if (amount != null && positiveIs === "out") amount = -amount;
+      const description = descCol >= 0 ? (r[descCol] ?? "").trim() : "";
+      const valid = Boolean(date) && amount != null && amount !== 0;
+      return { row_num: i + 1, raw: Object.fromEntries(csv.headers.map((h, j) => [h, r[j] ?? ""])), date, description, amount, valid };
+    });
+  }, [csv, dateCol, descCol, amtCol, positiveIs]);
+
+  const readyCount = rows.filter((r) => r.valid).length;
+  const canImport = Boolean(bankId && contraId && readyCount > 0 && !busy);
+
+  async function doImport() {
+    setBusy(true); setErr(null);
+    try {
+      const { result: batch } = await createImportBatch({
+        org_id: orgId, source: "bank_statement", filename: filename || null, bank_account_id: bankId,
+      });
+      const staged: StagedRow[] = rows.map((r) => ({
+        row_num: r.row_num, raw: r.raw,
+        txn_date: r.date, description: r.description, amount_minor: r.amount,
+        account_id: contraId, status: r.valid ? "ready" : "error",
+      }));
+      await addImportRows(orgId, batch.id, staged);
+      try {
+        await commitImportBatch(orgId, batch.id);
+        setDone(readyCount);
+      } catch (e) {
+        // commit failed → leave no orphan staging
+        await discardImportBatch(orgId, batch.id).catch(() => {});
+        throw e;
+      }
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (done != null) {
+    return (
+      <div className="import-flow">
+        <div className="import-done">
+          <h3>Imported {done} {done === 1 ? "transaction" : "transactions"}.</h3>
+          <p className="muted">They're posted against your bank account and the contra you chose — re-categorize any of them from the Journal.</p>
+          <button onClick={onDone}>Back to the books</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="import-flow">
+      <div className="panel-toolbar">
+        <button className="ghost sm" onClick={onBack}>← Back</button>
+        <span className="muted">{csv ? `${csv.rows.length} rows · ${filename}` : "Bank statement CSV"}</span>
+      </div>
+
+      {!csv ? (
+        <label className="file-drop">
+          <input type="file" accept=".csv,text/csv" onChange={onFile} />
+          <span>Choose a CSV file…</span>
+        </label>
+      ) : (
+        <>
+          <div className="ledger-form">
+            <div className="form-row">
+              <label><span>Date column</span>
+                <ColSelect headers={csv.headers} value={dateCol} onChange={setDateCol} />
+              </label>
+              <label><span>Description column</span>
+                <ColSelect headers={csv.headers} value={descCol} onChange={setDescCol} allowNone />
+              </label>
+              <label><span>Amount column</span>
+                <ColSelect headers={csv.headers} value={amtCol} onChange={setAmtCol} />
+              </label>
+            </div>
+            <div className="form-row">
+              <label><span>Positive amounts are</span>
+                <select value={positiveIs} onChange={(e) => setPositiveIs(e.target.value as "in" | "out")}>
+                  <option value="in">money in (deposits)</option>
+                  <option value="out">money out (withdrawals)</option>
+                </select>
+              </label>
+              <label className="grow"><span>Bank account</span>
+                <AccountSelect accounts={accounts} value={bankId} onChange={setBankId} filterType="asset" />
+              </label>
+              <label className="grow"><span>Post the other side to</span>
+                <AccountSelect accounts={accounts} value={contraId} onChange={setContraId} />
+              </label>
+            </div>
+          </div>
+
+          <div className="import-preview">
+            <div className="ip-head"><span>Date</span><span>Description</span><span>Amount</span><span>OK</span></div>
+            {rows.slice(0, 50).map((r) => (
+              <div className={`ip-row${r.valid ? "" : " bad"}`} key={r.row_num}>
+                <span>{r.date ?? "—"}</span>
+                <span className="ip-desc">{r.description || "—"}</span>
+                <span className="ip-amt">{r.amount != null ? formatMoney(r.amount) : "—"}</span>
+                <span>{r.valid ? "✓" : "—"}</span>
+              </div>
+            ))}
+            {rows.length > 50 && <p className="muted sm">…and {rows.length - 50} more</p>}
+          </div>
+          {err && <p className="error sm">{err}</p>}
+          <div className="form-actions import-actions">
+            <span className="muted sm">{readyCount} of {rows.length} rows ready</span>
+            <button disabled={!canImport} onClick={doImport}>
+              {busy ? "Importing…" : `Import ${readyCount} transactions`}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Opening balances ──────────────────────────────────────────────────────────
+interface ObRow { account_id: string; amount: string; side: "D" | "C"; }
+
+function OpeningBalances({
+  orgId, accounts, onBack, onDone,
+}: {
+  orgId: string; accounts: LedgerAccount[]; onBack: () => void; onDone: () => void;
+}) {
+  const [cutover, setCutover] = useState(today());
+  const [rows, setRows] = useState<ObRow[]>([{ account_id: "", amount: "", side: "D" }]);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  const parsed = rows.map((r) => parseAmountCell(r.amount) ?? 0);
+  const debit = rows.reduce((s, r, i) => s + (r.side === "D" ? parsed[i] : 0), 0);
+  const credit = rows.reduce((s, r, i) => s + (r.side === "C" ? parsed[i] : 0), 0);
+  const plug = debit - credit; // plugged to Opening Balance Equity
+  const valid = rows.filter((r, i) => r.account_id && parsed[i] > 0);
+  const canImport = valid.length > 0 && !busy;
+
+  const update = (i: number, patch: Partial<ObRow>) =>
+    setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const addRow = () => setRows((rs) => [...rs, { account_id: "", amount: "", side: "D" }]);
+  const removeRow = (i: number) => setRows((rs) => (rs.length > 1 ? rs.filter((_, j) => j !== i) : rs));
+
+  async function doImport() {
+    setBusy(true); setErr(null);
+    try {
+      const { result: batch } = await createImportBatch({
+        org_id: orgId, source: "opening_balances", cutover_date: cutover,
+      });
+      const staged: StagedRow[] = rows.map((r, i) => ({
+        row_num: i + 1,
+        description: "Opening balance",
+        amount_minor: parsed[i],
+        account_id: r.account_id || null,
+        side: r.side,
+        status: r.account_id && parsed[i] > 0 ? "ready" : "skipped",
+      }));
+      await addImportRows(orgId, batch.id, staged);
+      try { await commitImportBatch(orgId, batch.id); setDone(true); }
+      catch (e) { await discardImportBatch(orgId, batch.id).catch(() => {}); throw e; }
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="import-flow">
+        <div className="import-done">
+          <h3>Opening balances posted.</h3>
+          <p className="muted">Your balance sheet is correct as of {cutover}. Any imbalance was plugged to Opening Balance Equity.</p>
+          <button onClick={onDone}>Back to the books</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="import-flow">
+      <div className="panel-toolbar">
+        <button className="ghost sm" onClick={onBack}>← Back</button>
+        <span className="muted">Opening balances at cutover</span>
+      </div>
+      <div className="ledger-form">
+        <div className="form-row">
+          <label><span>Cutover date</span>
+            <input type="date" value={cutover} onChange={(e) => setCutover(e.target.value)} />
+          </label>
+        </div>
+        <div className="lines-head ob-head"><span>Account</span><span>Dr/Cr</span><span>Balance</span><span /></div>
+        {rows.map((r, i) => (
+          <div className="line-row ob-row" key={i}>
+            <AccountSelect accounts={accounts} value={r.account_id} onChange={(v) => update(i, { account_id: v })} />
+            <select value={r.side} onChange={(e) => update(i, { side: e.target.value as "D" | "C" })} aria-label="Debit or credit">
+              <option value="D">Debit</option><option value="C">Credit</option>
+            </select>
+            <input inputMode="decimal" value={r.amount} onChange={(e) => update(i, { amount: e.target.value })} placeholder="0.00" aria-label="Balance" />
+            <button type="button" className="line-del" onClick={() => removeRow(i)} disabled={rows.length <= 1} aria-label="Remove">×</button>
+          </div>
+        ))}
+        <div className="entry-foot">
+          <button type="button" className="ghost sm" onClick={addRow}>+ Add account</button>
+          <span className="balance-indicator">
+            Dr {formatMoney(debit)} · Cr {formatMoney(credit)}
+            {plug !== 0 && ` · plug ${formatMoney(Math.abs(plug))} ${plug > 0 ? "Cr" : "Dr"}`}
+          </span>
+        </div>
+      </div>
+      {err && <p className="error sm">{err}</p>}
+      <div className="form-actions">
+        <button disabled={!canImport} onClick={doImport}>{busy ? "Posting…" : "Import opening balances"}</button>
+      </div>
+    </div>
+  );
+}
+
+// ── small selects ─────────────────────────────────────────────────────────────
+function ColSelect({
+  headers, value, onChange, allowNone,
+}: {
+  headers: string[]; value: number; onChange: (v: number) => void; allowNone?: boolean;
+}) {
+  return (
+    <select value={value} onChange={(e) => onChange(Number(e.target.value))}>
+      {allowNone && <option value={-1}>— none —</option>}
+      {!allowNone && value < 0 && <option value={-1}>Select…</option>}
+      {headers.map((h, i) => <option key={i} value={i}>{h || `Column ${i + 1}`}</option>)}
+    </select>
+  );
+}
+
+function AccountSelect({
+  accounts, value, onChange, filterType,
+}: {
+  accounts: LedgerAccount[]; value: string; onChange: (v: string) => void; filterType?: LedgerAccount["type"];
+}) {
+  const opts = filterType ? accounts.filter((a) => a.type === filterType) : accounts;
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} aria-label="Account">
+      <option value="">Select account…</option>
+      {opts.map((a) => <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ""}{a.name}</option>)}
+    </select>
+  );
+}

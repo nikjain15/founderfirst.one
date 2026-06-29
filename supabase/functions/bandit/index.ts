@@ -3,13 +3,14 @@
  * RUNNING experiment:
  *   1. reads per-arm exposures + conversions from PostHog (HogQL, read-only key),
  *   2. computes conversion rate + lift vs control, upserts experiment_results,
- *   3. recommends a rollout split favouring the leader (stored on the arms), and
- *   4. for `auto`-tier experiments only, auto-promotes a decisive winner.
+ *   3. for `auto`-tier experiments, SHIFTS the PostHog flag's traffic split toward
+ *      the better-converting arms (true multi-armed bandit, with an exploration
+ *      floor) — using the PostHog write scope, and
+ *   4. auto-promotes a decisive winner.
  *
  * Guardrails: only touches experiments (marketing copy). Never pricing/legal/
- * security. Applying the winning copy to the live content version stays a content-
- * publish step. Reweighting the PostHog flag itself needs a PostHog *write* key
- * (we hold read-only) — the recommended split is stored for that step.
+ * security. Applying the winning copy to the live content version stays a
+ * content-publish step. `propose`/`inform` tiers never auto-shift or auto-promote.
  *
  * Auth: shared secret header `x-bandit-secret` == env BANDIT_SECRET.
  * Secrets: POSTHOG_PERSONAL_API_KEY, POSTHOG_PROJECT_ID?, SUPABASE_SERVICE_ROLE_KEY.
@@ -21,6 +22,8 @@ const WIN_THRESHOLD = 0.10;  // +10% rel. conversion vs control to auto-promote
 
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "Content-Type": "application/json" } });
 
+const EXPLORE_FLOOR = 5;     // min % per arm — always keep exploring
+
 async function hogql(host: string, project: string, key: string, query: string): Promise<any[]> {
   const res = await fetch(`${host}/api/projects/${project}/query/`, {
     method: "POST",
@@ -29,6 +32,41 @@ async function hogql(host: string, project: string, key: string, query: string):
   });
   if (!res.ok) throw new Error(`posthog_${res.status}: ${await res.text()}`);
   return (await res.json()).results ?? [];
+}
+
+/** Multi-armed bandit reweight: shift the PostHog flag's variant split toward the
+ *  better-converting arms (proportional, with an exploration floor). Needs a
+ *  PostHog write key. Returns a human summary + the new split. */
+async function reweightFlag(
+  host: string, project: string, writeKey: string, flagKey: string, rate: (v: string) => number,
+): Promise<{ msg: string; split: Record<string, number> }> {
+  const lr = await fetch(`${host}/api/projects/${project}/feature_flags/?key=${encodeURIComponent(flagKey)}`, {
+    headers: { Authorization: `Bearer ${writeKey}` },
+  });
+  if (!lr.ok) throw new Error(`flag_lookup_${lr.status}`);
+  const flag = ((await lr.json()).results ?? []).find((f: any) => f.key === flagKey);
+  const variants = flag?.filters?.multivariate?.variants ?? [];
+  if (!flag || !variants.length) return { msg: "no multivariate flag", split: {} };
+
+  const keys: string[] = variants.map((v: any) => v.key);
+  const raw = keys.map((k) => Math.max(rate(k), 0.0001));
+  const sum = raw.reduce((a, b) => a + b, 0);
+  let pct = raw.map((r) => Math.max(EXPLORE_FLOOR, Math.round((r / sum) * 100)));
+  // normalize to exactly 100 by adjusting the largest arm
+  const total = pct.reduce((a, b) => a + b, 0);
+  const maxIdx = pct.indexOf(Math.max(...pct));
+  pct[maxIdx] += 100 - total;
+
+  const split: Record<string, number> = {};
+  const updated = variants.map((v: any, i: number) => { split[v.key] = pct[i]; return { ...v, rollout_percentage: pct[i] }; });
+  const filters = { ...flag.filters, multivariate: { ...flag.filters.multivariate, variants: updated } };
+  const pr = await fetch(`${host}/api/projects/${project}/feature_flags/${flag.id}/`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${writeKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ filters }),
+  });
+  if (!pr.ok) throw new Error(`flag_patch_${pr.status}: ${await pr.text()}`);
+  return { msg: keys.map((k) => `${k}:${split[k]}%`).join(" "), split };
 }
 
 Deno.serve(async (req) => {
@@ -75,6 +113,7 @@ Deno.serve(async (req) => {
       }
 
       // pick leader among variants with enough data
+      const totalExp = Object.values(expo).reduce((a, b) => a + b, 0);
       const ranked = variants.filter((v) => (expo[v] ?? 0) >= MIN_EXPOSURES).sort((a, b) => rate(b) - rate(a));
       const leader = ranked[0];
       let action = "observing";
@@ -84,6 +123,18 @@ Deno.serve(async (req) => {
           action = `auto-promoted ${leader}`;
         } else {
           action = `winner ${leader} (needs human promote — ${e.policy_tier} tier)`;
+        }
+      } else if (e.policy_tier === "auto" && totalExp >= MIN_EXPOSURES) {
+        // No decisive winner yet → shift the flag's traffic toward the leaders
+        // (true multi-armed bandit; needs the PostHog write scope, which we have).
+        try {
+          const { msg, split } = await reweightFlag(HOST, PROJECT, PH_KEY, e.key, rate);
+          for (const [vk, pct] of Object.entries(split)) {
+            await db.from("experiment_arms").update({ rollout_pct: pct }).eq("experiment_id", e.id).eq("variant_key", vk);
+          }
+          action = split && Object.keys(split).length ? `reweighted → ${msg}` : "observing";
+        } catch (err) {
+          action = `reweight failed: ${(err as Error).message}`;
         }
       }
       summary.push({ key: e.key, variants: variants.length, leader: leader ?? null, action });

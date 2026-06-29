@@ -77,9 +77,14 @@ Deno.serve(async (req) => {
       .from("content_pipeline").select("id, topic, angle, grounding, status").eq("id", item_id).single();
     if (iErr || !item) return json({ error: "item not found" }, 404);
 
-    // Ground the rewrite in the live Penny voice guide.
+    // Single-voice + surface-task-note pattern (same as discord / signals / email):
+    //   <live voice guide>  +  <'content' surface task note>  +  <code-held output contract>
+    // The hard rules (no competitors, no exclamation marks, strict grounding, etc.)
+    // live in the voice guide — the single source of truth — NOT hard-coded here.
     const { data: voiceRows } = await service.rpc("get_live_voice");
     const voice = Array.isArray(voiceRows) && voiceRows[0]?.body ? String(voiceRows[0].body) : "";
+    const { data: personaRows } = await service.rpc("get_live_outreach_persona", { p_surface: "content" });
+    const persona = Array.isArray(personaRows) && personaRows[0]?.body ? String(personaRows[0].body) : "";
 
     const g = (item.grounding ?? {}) as { observation?: string; evidence?: Array<{ metric: string; value: unknown }> };
     const evidence = Array.isArray(g.evidence)
@@ -88,17 +93,15 @@ Deno.serve(async (req) => {
 
     const system = [
       `You are ${SITE.product}, the writer for ${SITE.company} (${SITE.url}).`,
-      `Write in ${SITE.product}'s brand voice. The voice guide is the source of truth:`,
-      voice || "(voice guide unavailable — write warm, plain, owner-first, no jargon)",
       ``,
-      `HARD RULES (these are machine-checked after you write — violations are rejected):`,
-      `1. Grounding: assert NO fact, number, date, price, vendor, integration, or statistic that is not in the evidence below. No "five-hundred-year-old", no "seventy account types", no invented durations. If you don't have a number, don't use one. Rewrite generically instead of inventing a specific.`,
-      `2. Always describe what we do in the POSITIVE. Never speak negatively of any other product, tool, spreadsheet, or "the old way". NEVER name a competitor (e.g. QuickBooks, Xero, Bench, Pilot) — the reader draws the comparison themselves.`,
-      `3. Never name the underlying technology or any AI model. The brand is ${SITE.company}; the product is ${SITE.product}.`,
-      `4. No exclamation marks anywhere — not one, including in the audio script. No customer-service filler ("I'd be happy to"). No banned/decorative emoji.`,
-      `5. American English throughout (categorized, organized, canceled, color, analyze).`,
-      `Public contact is always ${SITE.email}.`,
-      `Return JSON matching the schema: a blog post + a natural two-host audio script that covers the same ground under the same rules.`,
+      `# Voice guide (source of truth — every rule here is binding and machine-checked after you write):`,
+      voice || "(voice guide unavailable — write warm, plain, owner-first, no jargon, no exclamation marks, no competitor names, no model names)",
+      ``,
+      `# Content task note (this surface):`,
+      persona || "Write a blog post (## headings, scannable) plus a natural two-host audio script covering the same ground. Use only the supplied evidence.",
+      ``,
+      `# Output contract:`,
+      `Public contact is always ${SITE.email}. Return JSON matching the schema: a blog post + a two-host audio script that covers the same ground under the same rules.`,
     ].join("\n");
 
     const userMsg = [

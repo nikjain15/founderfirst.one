@@ -54,6 +54,15 @@ verify_jwt = false
 [functions.xero-import]
 verify_jwt = true
 
+[functions.qbo-connect]
+verify_jwt = true
+
+[functions.qbo-callback]
+verify_jwt = false
+
+[functions.qbo-import]
+verify_jwt = true
+
 [functions.notify-content-change]
 verify_jwt = false
 

@@ -55,12 +55,33 @@ export interface PriceEntry {
   outputPerMTok: number;
 }
 
+/** Per-use-case control config (Phase 4, D10/D11). Loaded from ai_model_config
+ *  via the service-role twin and cached by the adapter (~60s). All optional so a
+ *  config without `meta` behaves exactly as Phase 0–2 (backward compatible). */
+export interface UseCaseMeta {
+  main: ModelRef;
+  /** Cheaper fallback used when month-to-date spend hits the cap (D11). */
+  backup?: ModelRef;
+  /** Monthly spend cap (USD). null/undefined = no cap. */
+  capUsd?: number;
+  /** Month-to-date spend (USD) supplied by the runtime twin for cap comparison. */
+  spentUsd?: number;
+  /** Admin caching toggle — only ever honored for non-customer-facing,
+   *  non-financial use cases (the exact-match gateway cache is global; D11/D15). */
+  cacheEnabled?: boolean;
+  customerFacing?: boolean;
+  financial?: boolean;
+}
+
 export interface InferenceConfig {
-  /** use case -> the model it routes to. Phase 0 prefers task.pinModel; this is
-   *  the future home that the admin (Phase 4) will populate from the DB (D10). */
+  /** use case -> the model it routes to. Phase 0 prefers task.pinModel; populated
+   *  from the DB by the admin (Phase 4, D10). Kept as the simple main-model map so
+   *  existing callers/tests that read `config.routing` are unaffected. */
   routing: Record<string, ModelRef>;
   /** model id -> price. Editable config (D10/D22); seed values, verify in admin. */
   prices: Record<string, PriceEntry>;
+  /** Per-use-case control config (backup, cap, cache). Absent = Phase 0–2 behavior. */
+  meta?: Record<string, UseCaseMeta>;
 }
 
 /* ── The ask / the answer ─────────────────────────────────────────────────── */
@@ -260,6 +281,55 @@ export const DEFAULT_CONFIG: InferenceConfig = {
   prices: DEFAULT_PRICES,
 };
 
+/* ── DB-backed config (Phase 4): build InferenceConfig from the runtime twin ──── */
+
+/** One row of ai_runtime_inference_config().config (the service-role twin). */
+export interface TwinConfigRow {
+  use_case: string;
+  runtime: Runtime;
+  customer_facing: boolean;
+  financial: boolean;
+  main: ModelRef;
+  backup: ModelRef | null;
+  cache_enabled: boolean;
+  monthly_cap_usd: number | null;
+  spend_mtd_usd: number;
+}
+export interface TwinPayload {
+  config: TwinConfigRow[];
+  prices: Record<string, PriceEntry>;
+}
+
+/**
+ * Turn the runtime twin payload into an InferenceConfig (Phase 4, D10). DB values
+ * are layered OVER the seed defaults so a use case or price missing from the DB
+ * still resolves (and an empty/failed payload degrades to DEFAULT_CONFIG). This is
+ * the single place the twin shape is interpreted — adapters just fetch + cache it,
+ * and it's unit-tested in Node so Workers and Deno stay identical.
+ */
+export function buildInferenceConfig(payload: Partial<TwinPayload> | null | undefined): InferenceConfig {
+  const routing: Record<string, ModelRef> = { ...DEFAULT_ROUTING };
+  const meta: Record<string, UseCaseMeta> = {};
+  for (const r of payload?.config ?? []) {
+    if (!r?.use_case || !r.main?.model) continue;
+    routing[r.use_case] = r.main;
+    meta[r.use_case] = {
+      main: r.main,
+      backup: r.backup ?? undefined,
+      capUsd: r.monthly_cap_usd ?? undefined,
+      spentUsd: r.spend_mtd_usd ?? 0,
+      cacheEnabled: !!r.cache_enabled,
+      customerFacing: !!r.customer_facing,
+      financial: !!r.financial,
+    };
+  }
+  return {
+    routing,
+    prices: { ...DEFAULT_PRICES, ...(payload?.prices ?? {}) },
+    meta,
+  };
+}
+
 /* ── Cost math ────────────────────────────────────────────────────────────── */
 
 export function computeCostUsd(
@@ -300,6 +370,7 @@ async function callAnthropic(
   task: ResolveTask,
   model: ModelRef,
   ctx: ResolveCtx,
+  cacheAllowed = false,
 ): Promise<ProviderOutput> {
   const t = ctx.transports.anthropic;
   if (!t) throw new InferenceError("anthropic transport not provided", "config_error");
@@ -315,6 +386,9 @@ async function callAnthropic(
   };
   const betas = task.anthropic?.betas ?? [];
   if (betas.length) headers["anthropic-beta"] = betas.join(",");
+  // D11: through the gateway, skip the (global, non-tenant-keyed) cache unless the
+  // use case has been explicitly cleared for caching by resolve(). Default: skip.
+  if (ctx.gateway && !cacheAllowed) headers["cf-aig-skip-cache"] = "true";
 
   const systemField =
     task.system === undefined
@@ -386,6 +460,7 @@ async function callWorkersAi(
   task: ResolveTask,
   model: ModelRef,
   ctx: ResolveCtx,
+  cacheAllowed = false,
 ): Promise<ProviderOutput> {
   const t = ctx.transports.workersAi;
   if (!t) throw new InferenceError("workers-ai transport not provided", "config_error");
@@ -401,7 +476,7 @@ async function callWorkersAi(
   // Gateway routing for the binding is config-gated; cache stays OFF in Phase 0
   // so answers are byte-identical (D11).
   const options = ctx.gateway
-    ? { gateway: { id: ctx.gateway.gatewayId, skipCache: true } }
+    ? { gateway: { id: ctx.gateway.gatewayId, skipCache: !cacheAllowed } }
     : undefined;
 
   let out: { response?: unknown; usage?: { prompt_tokens?: number; completion_tokens?: number } };
@@ -504,23 +579,38 @@ export async function resolve(task: ResolveTask, ctx: ResolveCtx): Promise<Resol
     throw new InferenceError(`tenant_id required for use case "${task.useCase}"`, "config_error");
   }
 
-  const model = task.pinModel ?? ctx.config.routing[task.useCase];
+  const meta = ctx.config.meta?.[task.useCase];
+  let model = task.pinModel ?? ctx.config.routing[task.useCase] ?? meta?.main;
   if (!model) {
     throw new InferenceError(`no model routed for use case "${task.useCase}"`, "config_error");
   }
+  // D11 spend cap: when month-to-date spend has hit the cap, fall back to the
+  // cheaper backup model — a cap is a fallback, never a failure. Pinned callers
+  // (the Phase 0–2 byte-identical paths) opt out of the swap.
+  let capFallback = false;
+  if (!task.pinModel && meta?.capUsd != null && (meta.spentUsd ?? 0) >= meta.capUsd && meta.backup) {
+    model = meta.backup;
+    capFallback = true;
+  }
   // The routing table refuses a @cf/* (Workers-AI) model off the Workers runtime —
-  // Supabase Edge (Deno) and Node can't reach the AI binding.
+  // Supabase Edge (Deno) and Node can't reach the AI binding. Checked on the
+  // effective model (after any cap fallback).
   if (model.provider === "workers-ai" && ctx.runtime !== "workers") {
     throw new InferenceError(
       `workers-ai model "${model.model}" not reachable on runtime "${ctx.runtime}"`,
       "config_error",
     );
   }
+  // Caching is only safe for non-customer-facing, non-financial use cases — the
+  // exact-match gateway cache is global and not tenant-keyed (D11/D15).
+  const cacheAllowed = !!meta?.cacheEnabled && !meta?.customerFacing && !meta?.financial;
 
   const started = ctx.now();
   let out: ProviderOutput;
   try {
-    out = model.provider === "anthropic" ? await callAnthropic(task, model, ctx) : await callWorkersAi(task, model, ctx);
+    out = model.provider === "anthropic"
+      ? await callAnthropic(task, model, ctx, cacheAllowed)
+      : await callWorkersAi(task, model, ctx, cacheAllowed);
   } catch (err) {
     // We do not log failed generations here in Phase 0 (callers keep their own
     // error handling + fallbacks unchanged). Re-throw so behavior is identical.
@@ -544,7 +634,7 @@ export async function resolve(task: ResolveTask, ctx: ResolveCtx): Promise<Resol
     input: storeInput ? { messages: task.messages } : null,
     output: out.text,
     output_json: out.raw && typeof out.raw === "object" ? out.raw : null,
-    usage: out.usage,
+    usage: capFallback ? { ...out.usage, cap_fallback: true } : out.usage,
     cost_usd: costUsd,
     latency_ms: latencyMs,
     cache_hit: false,

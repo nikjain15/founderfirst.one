@@ -16,8 +16,6 @@ import type { Env } from "./worker-env";
 import { resolveAndJudgeOnWorkers } from "../../../packages/inference/src/adapters/workers";
 import { USE_CASE, TENANT_FOUNDERFIRST } from "../../../packages/inference/src/core";
 
-const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
-
 const SYSTEM = `You write short transactional/announcement emails for FounderFirst, a bookkeeping and accounting service for US founders, freelancers, and small-business owners. The voice is plain, warm, and useful — never salesy or hypey, no exclamation marks, no emoji.
 
 Given a brief, return ONLY this JSON (no prose around it):
@@ -103,7 +101,7 @@ export async function handleEmailCompose(req: Request, env: Env, ctx: ExecutionC
         maxTokens: 700,
         temperature: 0.5,
         jsonObject: true,
-        pinModel: { provider: "workers-ai", model: MODEL },
+        // Phase 4 (D10): model from DB routing (ai_model_config), editable in admin.
         record: { storeInput: true },
       },
       env,

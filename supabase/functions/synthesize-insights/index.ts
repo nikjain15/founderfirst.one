@@ -291,7 +291,8 @@ async function synthesizeWithClaude(
       jsonSchema: buildInsightsSchema(available.map((d) => d.metric)),
       timeoutMs: 60_000,
       anthropic: { maxRetries: 0 },
-      pinModel: { provider: "anthropic", model },
+      // Phase 4 (D10): model from DB routing (ai_model_config) via the cached
+      // loader — seeded to claude-sonnet-4-6, now editable from the admin.
       record: { storeInput: true, legacyTable: "insight_runs" },
     },
     {

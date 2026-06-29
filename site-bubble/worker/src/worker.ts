@@ -364,7 +364,8 @@ ${JSON.stringify(state, null, 2)}
     system,
     messages,
     maxTokens: 600,
-    pinModel: { provider: "anthropic", model: env.ANTHROPIC_MODEL },
+    // Phase 4 (D10): the model now comes from DB routing (ai_model_config) via the
+    // cached config loader — seeded to the same model, now editable from the admin.
     anthropic: {
       betas: ["prompt-caching-2024-07-31"],
       cacheSystem: true,

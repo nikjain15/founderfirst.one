@@ -99,6 +99,11 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
 
   const [preview, setPreview] = useState<DigestPreview | null>(null);
   const [digestMsg, setDigestMsg] = useState<string | null>(null);
+  // Optional override: comma/space-separated emails. Empty → all admins.
+  const [recipients, setRecipients] = useState("");
+  const toArg = recipients.trim() || undefined;
+  const custom = !!toArg;
+  const who = (n: number) => (custom ? `${n} recipient${n === 1 ? "" : "s"}` : `${n} admin${n === 1 ? "" : "s"}`);
 
   const previewMut = useMutation({
     mutationFn: previewWeeklyDigest,
@@ -110,7 +115,7 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
     mutationFn: sendWeeklyDigest,
     onSuccess: (r) => {
       setPreview(null);
-      setDigestMsg(`Sent to ${r.sent} admin${r.sent === 1 ? "" : "s"}.`);
+      setDigestMsg(`Sent to ${who(r.sent)}.`);
       void qc.invalidateQueries({ queryKey: ["changelog-last-send"] });
     },
     onError: (e) => setDigestMsg((e as Error).message),
@@ -118,8 +123,8 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
 
   function onSendDigest() {
     if (!preview) return;
-    if (!confirm(`Send this week's digest to ${preview.recipientCount} admin(s)?`)) return;
-    sendMut.mutate();
+    if (!confirm(`Send this week's digest to ${who(preview.recipientCount)}?`)) return;
+    sendMut.mutate(toArg);
   }
 
   function onDelete(entry: ChangelogEntry) {
@@ -153,12 +158,21 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
         <div className="whatsnew-digest-info">
           <strong>Weekly digest</strong>
           <span className="whatsnew-digest-sub">
-            {thisWeekCount} update{thisWeekCount === 1 ? "" : "s"} from the last 7 days · sends to all admins, only when you click send.
+            {thisWeekCount} update{thisWeekCount === 1 ? "" : "s"} from the last 7 days ·{" "}
+            {custom ? "sends to the people you list below" : "sends to all admins"}, only when you click send.
           </span>
+          <input
+            className="whatsnew-title-input whatsnew-digest-to"
+            type="text"
+            value={recipients}
+            onChange={(e) => setRecipients(e.target.value)}
+            placeholder="Send to specific people (optional) — comma-separated emails; blank = all admins"
+            aria-label="Digest recipients (optional)"
+          />
           {lastSend && (
             <span className="whatsnew-digest-last">
               Last sent {relDate(lastSend.sent_at)}
-              {lastSend.sent_by ? ` by ${lastSend.sent_by}` : ""} to {lastSend.recipients} admin{lastSend.recipients === 1 ? "" : "s"}.
+              {lastSend.sent_by ? ` by ${lastSend.sent_by}` : ""} to {lastSend.recipients} recipient{lastSend.recipients === 1 ? "" : "s"}.
             </span>
           )}
         </div>
@@ -166,7 +180,7 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
           <button
             type="button"
             className="btn"
-            onClick={() => previewMut.mutate()}
+            onClick={() => previewMut.mutate(toArg)}
             disabled={previewMut.isPending || thisWeekCount === 0}
             title={thisWeekCount === 0 ? "Nothing shipped in the last 7 days" : ""}
           >
@@ -181,7 +195,7 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
             <div>
               <strong>Preview</strong>
               <span className="whatsnew-digest-sub">
-                Subject: “{preview.subject}” · goes to {preview.recipientCount} admin{preview.recipientCount === 1 ? "" : "s"}
+                Subject: “{preview.subject}” · goes to {who(preview.recipientCount)}
               </span>
             </div>
             <button type="button" className="btn-link" onClick={() => setPreview(null)}>Cancel</button>
@@ -189,7 +203,7 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
           <iframe className="whatsnew-preview-frame" title="Digest preview" sandbox="" srcDoc={preview.html} />
           <div className="whatsnew-preview-actions">
             <button type="button" className="btn" onClick={onSendDigest} disabled={sendMut.isPending}>
-              {sendMut.isPending ? "Sending…" : `Send to ${preview.recipientCount} admin${preview.recipientCount === 1 ? "" : "s"}`}
+              {sendMut.isPending ? "Sending…" : `Send to ${who(preview.recipientCount)}`}
             </button>
           </div>
         </div>

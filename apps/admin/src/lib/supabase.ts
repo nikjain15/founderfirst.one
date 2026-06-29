@@ -571,26 +571,34 @@ export interface DigestPreview {
   text: string;
 }
 
-/** Render this week's digest exactly as recipients would see it — sends nothing. */
-export async function previewWeeklyDigest(): Promise<DigestPreview> {
+/**
+ * Render this week's digest exactly as recipients would see it — sends nothing.
+ * Pass `to` (comma/whitespace-separated emails) to preview against a specific
+ * recipient list instead of all admins.
+ */
+export async function previewWeeklyDigest(to?: string): Promise<DigestPreview> {
   const db = getClient();
   const { data, error } = await db.functions.invoke("changelog-digest", {
-    body: { mode: "preview" },
+    body: { mode: "preview", ...(to ? { to } : {}) },
   });
   if (error) throw new Error(`previewWeeklyDigest: ${error.message}`);
   return data as DigestPreview;
 }
 
-/** Send this week's digest to all admins. Only an admin (the caller) can do this. */
-export async function sendWeeklyDigest(): Promise<{ sent: number; entryCount: number }> {
+/**
+ * Send this week's digest. With no `to`, goes to all admins; pass `to`
+ * (comma/whitespace-separated emails) to send only to specific people.
+ */
+export async function sendWeeklyDigest(to?: string): Promise<{ sent: number; entryCount: number }> {
   const db = getClient();
   const { data, error } = await db.functions.invoke("changelog-digest", {
-    body: { mode: "send" },
+    body: { mode: "send", ...(to ? { to } : {}) },
   });
   if (error) throw new Error(`sendWeeklyDigest: ${error.message}`);
   void logAudit("changelog.send_digest", "changelog", null, {
     sent: data?.sent ?? 0,
     entries: data?.entryCount ?? 0,
+    to: to || "all-admins",
   });
   return { sent: data?.sent ?? 0, entryCount: data?.entryCount ?? 0 };
 }

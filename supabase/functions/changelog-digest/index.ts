@@ -206,7 +206,18 @@ const handler = async (req: Request): Promise<Response> => {
 
   const { data: admins, error: aErr } = await service.from("admins").select("email");
   if (aErr) return json({ error: "admin_lookup_failed", detail: aErr.message }, 500);
-  const recipients = (admins ?? []).map((r: { email: string }) => r.email).filter(Boolean);
+  const allAdmins = (admins ?? []).map((r: { email: string }) => r.email).filter(Boolean);
+
+  // Optional admin-supplied recipient list (one or more emails, comma/whitespace
+  // separated). When provided, the digest goes only to these addresses instead
+  // of the full admin list — lets an admin forward it to specific people.
+  const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  const overrideTo = [...new Set(
+    String(body?.to ?? "").split(/[,\s]+/).map((s) => s.trim().toLowerCase()).filter(Boolean),
+  )];
+  const badTo = overrideTo.filter((e) => !EMAIL_RE.test(e));
+  if (badTo.length) return json({ error: "bad_recipient", detail: badTo.join(", ") }, 400);
+  const recipients = overrideTo.length ? overrideTo : allAdmins;
 
   const adminUrl = Deno.env.get("ADMIN_URL") ?? "https://founderfirst.one/admin";
   const whatsNewUrl = `${adminUrl}/how-it-works#whats-new`;

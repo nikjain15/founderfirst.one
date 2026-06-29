@@ -249,6 +249,11 @@
   font-size: var(--fs-data-row);
   line-height: 1.5;
 }
+.whatsnew-digest-to {
+  margin-top: 8px;
+  width: 100%;
+  flex: 1 1 auto;
+}
 .whatsnew-digest-last {
   color: var(--ink-4);
   font-size: var(--fs-eyebrow);

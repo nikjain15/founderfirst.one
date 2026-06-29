@@ -17,13 +17,15 @@ import { balanceSheet, profitAndLoss, trialBalance } from "./reports";
 import { formatMoney, formatMoneyShort, parseMoneyToMinor } from "./money";
 import { ACCOUNT_TYPES } from "./types";
 import ImportFlow from "../import/ImportFlow";
+import Categorize from "./Categorize";
 import type {
   AccountType, AccountingPeriod, DraftLine, JournalEntry, LedgerAccount,
 } from "./types";
 
-type Tab = "overview" | "accounts" | "journal" | "import" | "reports" | "periods";
+type Tab = "overview" | "categorize" | "accounts" | "journal" | "import" | "reports" | "periods";
 const ALL_TABS: { id: Tab; label: string; writeOnly?: boolean }[] = [
   { id: "overview", label: "Overview" },
+  { id: "categorize", label: "Categorize", writeOnly: true },
   { id: "accounts", label: "Accounts" },
   { id: "journal", label: "Journal" },
   { id: "import", label: "Import", writeOnly: true },
@@ -96,6 +98,9 @@ export default function Ledger({
               accounts={accounts.data ?? []} entries={entries.data ?? []}
               onChange={refresh}
             />
+          )}
+          {tab === "categorize" && canWrite && (
+            <Categorize orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []} onChange={refresh} />
           )}
           {tab === "import" && canWrite && (
             <ImportFlow orgId={org.id} accounts={accounts.data ?? []} onDone={() => { refresh(); setTab("journal"); }} />

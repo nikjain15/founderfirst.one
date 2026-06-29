@@ -52,20 +52,43 @@ const MODEL  = process.env.OLLAMA_COMPOSE_MODEL || process.env.OLLAMA_SCORE_MODE
 
 if (!SECRET) { console.error("compose-server: COMPOSE_SECRET is not set — refusing to start."); process.exit(1); }
 
-const SYSTEM = `You write short transactional/announcement emails for FounderFirst, a bookkeeping and accounting service for US founders, freelancers, and small-business owners. The voice is plain, warm, and useful — never salesy or hypey, no exclamation marks, no emoji.
+// Baked-in fallback for the email TASK NOTE. The live, admin-editable version
+// lives in penny_outreach_persona (surface='email') and is passed in by the
+// email-compose edge function; this is used only until a version is published
+// (or if the fetch fails), so behaviour is unchanged by the migration.
+// Keep in sync with the seed in migration 20260629120000_outreach_persona.sql.
+const EMAIL_PERSONA_BASE = `You write short transactional/announcement emails for FounderFirst, a bookkeeping and accounting service for US founders, freelancers, and small-business owners.
 
-Given a brief, return ONLY this JSON (no prose around it):
+Rules:
+- Write for a non-technical reader; plain, warm, and useful — never salesy or hypey.
+- Do not invent specific numbers, dates, or names that the brief didn't give you. Keep it honest and concrete.
+- Do not use {curly-brace} placeholders.
+- Never name the underlying technology, and never approximate a price.
+- Sign off as "— The FounderFirst team".`;
+
+// The output CONTRACT stays in code (it's a structural format, not voice). The
+// system prompt is assembled as: canonical voice guide + task note + this block.
+const EMAIL_FORMAT = `Given a brief, return ONLY this JSON (no prose around it):
 {
   "subject":   <inbox subject line, <= 45 characters, specific and plain>,
   "preheader": <40-90 chars of preview text that ADDS to the subject, never repeats it>,
   "eyebrow":   <a 1-2 word label shown above the headline, Title Case, e.g. "Product update">,
   "heading":   <one clear sentence that pays off the subject>,
   "intro":     <one optional setup sentence, or "">,
-  "body":      <the main message in plain text; use \\n\\n between short paragraphs; 2-4 sentences total; sign off as "— The FounderFirst team">,
+  "body":      <the main message in plain text; use \\n\\n between short paragraphs; 2-4 sentences total>,
   "cta_label": <2-4 word button label, or "" if no button fits>,
   "footer":    <one muted line: why they got it, e.g. "You're getting this because you're a FounderFirst customer.">
+}`;
+
+// Build the compose system prompt: one voice guide for every surface, then the
+// surface task note, then the output contract. Mirrors the signals-worker draft.
+function buildComposeSystem(voice, persona) {
+  const voicePreface = voice && voice.trim()
+    ? `# FounderFirst Voice — canonical (applies to every surface)\n\n${voice.trim()}\n\n---\n\n`
+    : "";
+  const taskNote = persona && persona.trim() ? persona.trim() : EMAIL_PERSONA_BASE;
+  return `${voicePreface}${taskNote}\n\n${EMAIL_FORMAT}`;
 }
-Rules: write for a non-technical reader; do not use {curly-brace} placeholders; do not invent specific numbers, dates, or names that the brief didn't give you. Keep it honest and concrete. Never use these filler phrases: "Hang tight", "Sounds good", "Awesome", "Great question", "Perfect", "I'd be happy to", "Unfortunately", "Thanks for reaching out". Never name the underlying technology, and never approximate a price.`;
 
 function send(res, status, obj) {
   const body = JSON.stringify(obj);
@@ -104,8 +127,8 @@ async function ollamaJSON(system, user, temperature = 0.4) {
   catch { throw new Error("model did not return valid JSON"); }
 }
 
-async function compose(brief) {
-  const p = await ollamaJSON(SYSTEM, `Brief:\n${brief.slice(0, 2000)}`, 0.5);
+async function compose(brief, voice, persona) {
+  const p = await ollamaJSON(buildComposeSystem(voice, persona), `Brief:\n${brief.slice(0, 2000)}`, 0.5);
   return {
     subject:   cleanStr(p.subject, 60),
     preheader: cleanStr(p.preheader, 120),
@@ -195,7 +218,9 @@ const server = http.createServer(async (req, res) => {
     if (req.url === "/compose") {
       const brief = typeof body.brief === "string" ? body.brief.trim() : "";
       if (brief.length < 3) return send(res, 400, { error: "brief_required" });
-      const draft = await compose(brief);
+      const voice   = typeof body.voice === "string" ? body.voice : "";
+      const persona = typeof body.persona === "string" ? body.persona : "";
+      const draft = await compose(brief, voice, persona);
       if (!draft.subject || !draft.heading) return send(res, 502, { error: "weak_draft", detail: "model returned an empty subject/heading" });
       return send(res, 200, { ok: true, draft });
     }

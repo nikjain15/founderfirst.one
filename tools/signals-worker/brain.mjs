@@ -3,11 +3,12 @@
  *
  *   embed(text)        -> number[]            (Ollama, local, free)
  *   score(item)        -> { intent, pain_tags, competitor }   (Ollama, local)
- *   draft(ctx, voice)  -> string              (managed, Anthropic — quality)
+ *   draft(ctx, voice, persona) -> string      (managed, Anthropic — quality)
  *
  * Scoring + embeddings run locally on the VM (cheap, high-volume, low-stakes).
- * Drafting is customer-facing, so it uses the managed model with the live
- * brand voice. Swap either by changing env — nothing else in the worker cares.
+ * Drafting is customer-facing, so it uses the managed model with the live brand
+ * voice + the live Signals task note (penny_outreach_persona). Swap either by
+ * changing env — nothing else in the worker cares.
  *
  * See SIGNALS_SOLUTION.md §3 (the brain interface).
  */
@@ -110,24 +111,38 @@ export async function score(item) {
 
 // ---- Outreach drafting (managed — Anthropic) -------------------------------
 
-export async function draft({ post, painTags, competitor, channel }, voiceBody) {
-  if (!cfg.anthropicKey) throw new Error("draft: ANTHROPIC_API_KEY not set");
-
-  const channelRule = channel === "email"
-    ? "This is a cold email. Open on THEIR specific situation; give one genuinely useful pointer; under 90 words; end with one low-pressure next step."
-    : "This is a reply in a public/community thread. Lead with real help on THEIR exact problem. Mention FounderFirst in at most ONE sentence, only if it fits naturally — otherwise not at all. Under 80 words.";
-
-  const system = `${voiceBody ? `Brand voice guide:\n${voiceBody}\n\n` : ""}You draft short, problem-driven outreach for FounderFirst, a bookkeeping/accounting service for US founders, freelancers, and small businesses.
+/**
+ * Baked-in fallback for the Signals outreach task note. The live, admin-editable
+ * version lives in penny_outreach_persona (surface='signals') and is fetched at
+ * runtime by index.mjs; this constant is used only until a version is published
+ * (or on fetch error), so behaviour is identical before and after the migration.
+ *
+ * Keep in sync with the seed in migration 20260629120000_outreach_persona.sql
+ * and the admin starter (apps/admin/src/routes/ContentOutreach.tsx).
+ */
+export const SIGNALS_PERSONA_BASE = `You draft short, problem-driven outreach for FounderFirst, a bookkeeping/accounting service for US founders, freelancers, and small businesses. You are replying in a public/community thread.
 
 Rules:
 - Reference a SPECIFIC detail from their post so it's obviously not a template.
 - Open with a concrete, useful insight about their exact problem — never flattery, never "congrats" or "sounds like you've built something real".
+- Lead with real help on THEIR exact problem. Mention FounderFirst in at most ONE sentence, only if it fits naturally — otherwise not at all.
 - Never hard-sell. No "we help businesses like yours", no feature lists.
 - Don't claim to be a fellow founder or invent facts about them.
-- Plain, human, specific. Write ONLY the message body — no subject, preamble, or quotes.`;
+- Plain, human, specific. Under 80 words. Write ONLY the message body — no subject, preamble, or quotes.`;
+
+// system = one canonical voice guide  +  the live (or baked-in) task note.
+// Same shape as the Discord bot (worker.ts buildDiscordSystemPrompt): tone comes
+// from the shared voice, the surface-specific job from the persona.
+export async function draft({ post, painTags, competitor }, voiceBody, personaBody) {
+  if (!cfg.anthropicKey) throw new Error("draft: ANTHROPIC_API_KEY not set");
+
+  const voicePreface = voiceBody
+    ? `# FounderFirst Voice — canonical (applies to every surface)\n\n${voiceBody}\n\n---\n\n`
+    : "";
+  const persona = (personaBody && personaBody.trim()) || SIGNALS_PERSONA_BASE;
+  const system = `${voicePreface}${persona}`;
 
   const user = `Draft an outreach message for this person.
-Channel rule: ${channelRule}
 Their pain: ${painTags?.length ? painTags.join(", ") : "bookkeeping/accounting"}${competitor ? `\nTool they mention: ${competitor}` : ""}
 
 Their post:

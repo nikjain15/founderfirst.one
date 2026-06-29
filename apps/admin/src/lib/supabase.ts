@@ -1696,6 +1696,52 @@ export async function setLiveDiscordPersona(id: string): Promise<void> {
   if (error) throw new Error(`set_live_discord_persona: ${error.message}`);
 }
 
+// ── Outreach personas — the editable TASK NOTE each outreach surface layers on
+// top of the single shared Voice guide. One surface-keyed store (signals,
+// email); same versioned/live-toggle model as penny_voice / penny_discord_persona.
+// Consumed live by the signals-worker (draft) and email-compose (compose).
+export type OutreachSurface = "signals" | "email";
+
+export interface OutreachPersonaRow {
+  id: string;
+  surface: OutreachSurface;
+  version: number;
+  body: string;
+  notes: string | null;
+  is_live: boolean;
+  created_at: string;
+  created_by: string | null;
+  created_by_email: string | null;
+}
+
+export async function listOutreachPersona(surface: OutreachSurface): Promise<OutreachPersonaRow[]> {
+  const db = getClient();
+  const { data, error } = await db.rpc("list_outreach_persona", { p_surface: surface });
+  if (error) throw new Error(`list_outreach_persona: ${error.message}`);
+  return ((data as OutreachPersonaRow[]) ?? []).map((r) => ({ ...r, version: Number(r.version) }));
+}
+
+export async function createOutreachPersonaVersion(
+  surface: OutreachSurface,
+  body: string,
+  notes?: string,
+): Promise<string> {
+  const db = getClient();
+  const { data, error } = await db.rpc("create_outreach_persona_version", {
+    p_surface: surface,
+    p_body: body,
+    p_notes: notes ?? null,
+  });
+  if (error) throw new Error(`create_outreach_persona_version: ${error.message}`);
+  return data as string;
+}
+
+export async function setLiveOutreachPersona(id: string): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("set_live_outreach_persona", { p_id: id });
+  if (error) throw new Error(`set_live_outreach_persona: ${error.message}`);
+}
+
 // ---- Site content (unified content model — Phase 1) ------------------------
 // Versioned page + email content, same model as penny_voice. RPCs are
 // admin-gated server-side (is_admin) and audited via log_admin_action.

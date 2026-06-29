@@ -32,15 +32,27 @@ const SETTINGS_KEY = "optimizer_last_run";
 
 const scoreOf = (row) => Array.isArray(row.sig_scores) ? row.sig_scores[0] : row.sig_scores;
 
+// Lead stage for an item (1:1). PostgREST nests it as an array under sig_leads.
+const leadStageOf = (row) => {
+  const l = Array.isArray(row.sig_leads) ? row.sig_leads[0] : row.sig_leads;
+  return l?.stage ?? null;
+};
+
 function perSourceStats(items, relThreshold) {
   const by = new Map();
   for (const it of items) {
     const sc = scoreOf(it);
     if (!sc) continue;   // judge SCORED items only — pending items have no signal yet
     const k = it.source_id ?? "none";
-    if (!by.has(k)) by.set(k, { n: 0, rel: 0, relHit: 0, intent: 0, us: 0, needs: 0, promoted: 0 });
+    if (!by.has(k)) by.set(k, { n: 0, rel: 0, relHit: 0, intent: 0, us: 0, needs: 0, promoted: 0, replied: 0, won: 0 });
     const s = by.get(k); s.n++;
     if (it.status === "promoted") s.promoted++;
+    // Real outcomes — the only true measure of source quality. "replied"/"won"
+    // are set by a human as a lead advances; a source that promotes leads but
+    // never gets a reply or win is producing good-LOOKING posts, not good leads.
+    const stage = leadStageOf(it);
+    if (stage === "replied" || stage === "won") s.replied++;
+    if (stage === "won") s.won++;
     if (sc.relevance != null) { s.rel += sc.relevance; if (sc.relevance >= relThreshold) s.relHit++; }
     if (sc.intent != null) s.intent += sc.intent;
     if (sc.geo === "us") s.us++;
@@ -52,8 +64,15 @@ function perSourceStats(items, relThreshold) {
     s.needs_rate  = s.n ? s.needs / s.n : 0;
     s.avg_intent  = s.n ? s.intent / s.n : 0;
     s.promo_rate  = s.n ? s.promoted / s.n : 0;
-    // Composite: does this source bring topically-relevant, US, in-need posts?
-    s.yield = 0.4 * s.rel_rate + 0.3 * s.us_rate + 0.3 * s.needs_rate + Math.min(0.2, s.promo_rate);
+    s.reply_rate  = s.n ? s.replied / s.n : 0;
+    s.won_rate    = s.n ? s.won / s.n : 0;
+    // Composite: relevant + US + in-need posts (proxy), PLUS a bonus for posts
+    // that became real replies/wins (truth). The outcome bonus only ever RAISES
+    // yield, so proven sources rank higher and resist retirement; sources with
+    // no real outcome are judged on the proxy alone.
+    s.yield = 0.4 * s.rel_rate + 0.3 * s.us_rate + 0.3 * s.needs_rate
+      + Math.min(0.2, s.promo_rate)
+      + Math.min(0.25, s.reply_rate + 2 * s.won_rate);
   }
   return by;
 }
@@ -119,22 +138,35 @@ export async function runOptimizer(db, settings) {
 
   const stats = perSourceStats(items, settings.relevance_threshold);
 
-  // 1. DIAGNOSE + auto-disable dead sources (hybrid: retirement is automatic).
+  // Sources that have EVER produced a real outcome (a lead that replied or won),
+  // across all time — not just this window. Wins are rare and lagging, so a
+  // proven source is never retired over a single quiet week.
+  const proven = await fetchProvenSources(db);
+
+  // 1. DIAGNOSE + auto-disable dead sources (hybrid: retirement is automatic,
+  //    but reversible — a disabled source can be re-enabled in the Sources tab).
+  //    A source is protected ONLY if it produced a real outcome (a lead that
+  //    replied or won). Stale promotions that never got a reply no longer shield
+  //    a dead source — that's the fix that keeps the list fresh.
   const disabled = [];
   for (const [sid, st] of stats) {
     if (sid === "none") continue;
     const src = srcById.get(sid);
     if (!src || !src.enabled) continue;
-    if (st.n >= MIN_VOLUME && st.yield < DEAD_YIELD && st.promoted === 0) {
+    const hasRealOutcome = st.replied > 0 || st.won > 0 || proven.has(sid);
+    if (st.n >= MIN_VOLUME && st.yield < DEAD_YIELD && !hasRealOutcome) {
       const { error } = await db.from("sig_sources").update({ enabled: false, updated_at: new Date().toISOString() }).eq("id", sid);
-      if (!error) { disabled.push({ platform: src.platform, query: src.query, yield: +st.yield.toFixed(2), n: st.n }); log(`disabled "${src.query}" (yield ${st.yield.toFixed(2)}, n=${st.n})`); }
+      if (!error) {
+        disabled.push({ platform: src.platform, query: src.query, yield: +st.yield.toFixed(2), n: st.n, promoted: st.promoted });
+        log(`disabled "${src.query}" (yield ${st.yield.toFixed(2)}, n=${st.n}, promoted=${st.promoted}, no reply/win)`);
+      }
     }
   }
 
   // 2. LEARN — leaderboard + pain themes.
   const leaderboard = [...stats.entries()]
     .filter(([sid]) => sid !== "none" && srcById.has(sid))
-    .map(([sid, st]) => ({ platform: srcById.get(sid).platform, query: srcById.get(sid).query, yield: +st.yield.toFixed(2), n: st.n, promoted: st.promoted, us_rate: +st.us_rate.toFixed(2), needs_rate: +st.needs_rate.toFixed(2) }))
+    .map(([sid, st]) => ({ platform: srcById.get(sid).platform, query: srcById.get(sid).query, yield: +st.yield.toFixed(2), n: st.n, promoted: st.promoted, replied: st.replied, won: st.won, us_rate: +st.us_rate.toFixed(2), needs_rate: +st.needs_rate.toFixed(2) }))
     .sort((a, b) => b.yield - a.yield);
   const winners = leaderboard.slice(0, 8);
   const themes = painThemes(items);
@@ -205,7 +237,7 @@ async function fetchAllItemsFull(db, sinceISO) {
   for (let from = 0; ; from += 1000) {
     const { data, error } = await db
       .from("sig_items")
-      .select("source_id,status,sig_scores(relevance,intent,geo,role,pain_tags)")
+      .select("source_id,status,sig_scores(relevance,intent,geo,role,pain_tags),sig_leads(stage)")
       .gte("captured_at", sinceISO)
       .range(from, from + 999);
     if (error) throw new Error(`stats fetch: ${error.message}`);
@@ -213,6 +245,26 @@ async function fetchAllItemsFull(db, sinceISO) {
     if (!data || data.length < 1000) break;
   }
   return out;
+}
+
+// Source ids that have EVER produced a lead that replied or won (all time).
+// Leads are low-volume (only the promoted set), so this is a cheap read.
+async function fetchProvenSources(db) {
+  const ids = new Set();
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await db
+      .from("sig_leads")
+      .select("sig_items!inner(source_id)")
+      .in("stage", ["replied", "won"])
+      .range(from, from + 999);
+    if (error) { console.warn(`[optimizer] proven-sources fetch: ${error.message}`); break; }
+    for (const row of data ?? []) {
+      const item = Array.isArray(row.sig_items) ? row.sig_items[0] : row.sig_items;
+      if (item?.source_id) ids.add(item.source_id);
+    }
+    if (!data || data.length < 1000) break;
+  }
+  return ids;
 }
 
 // Daily gate: run at most once per 24h.

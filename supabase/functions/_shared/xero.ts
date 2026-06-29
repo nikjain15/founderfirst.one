@@ -20,14 +20,15 @@ function basicAuth(): string {
 }
 
 export function authorizeUrl(state: string): string {
+  // NOTE: scope must be %20-delimited, not '+'. URLSearchParams encodes spaces as
+  // '+', which Xero rejects as a single invalid_scope — so build scope explicitly.
   const p = new URLSearchParams({
     response_type: "code",
     client_id: CLIENT_ID(),
     redirect_uri: REDIRECT_URI(),
-    scope: XERO_SCOPE,
     state,
   });
-  return `${XERO_AUTHORIZE}?${p.toString()}`;
+  return `${XERO_AUTHORIZE}?${p.toString()}&scope=${encodeURIComponent(XERO_SCOPE)}`;
 }
 
 export interface XeroTokens {

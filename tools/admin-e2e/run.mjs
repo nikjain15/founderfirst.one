@@ -131,7 +131,51 @@ async function main() {
     await page.screenshot({ path: join(ARTIFACTS, "content-pipeline.png"), fullPage: true });
     console.log(`Screenshot → ${join(ARTIFACTS, "content-pipeline.png")}`);
 
-    // 5. Capture the behind-auth digest covers (best-effort — never fails the
+    // 5. What's-new weekly digest: the admin recipient picker + the stale-count
+    // guard. We exercise preview (sends nothing) but NEVER click Send.
+    await page.goto(`${base}/admin/how-it-works`, { waitUntil: "networkidle" });
+    const digestInput = page.getByLabel("Digest recipients (optional)");
+    await digestInput.waitFor({ state: "visible", timeout: 15_000 });
+    await digestInput.scrollIntoViewIfNeeded();
+    check("What's-new digest renders", true);
+
+    const chips = page.locator(".whatsnew-pick-chip");
+    const chipCount = await chips.count();
+    check("admin picker chips render", chipCount > 0, `${chipCount} chips`);
+
+    // Toggling an admin chip writes that email into the recipient box.
+    if (chipCount > 1) {
+      await digestInput.fill("");
+      const firstAdmin = chips.nth(1); // nth(0) is the "All admins" chip
+      const chipEmail = (await firstAdmin.innerText()).replace(/^✓\s*/, "").trim();
+      await firstAdmin.click();
+      const afterToggle = await digestInput.inputValue();
+      check("chip toggle fills recipient box", afterToggle.includes(chipEmail), afterToggle);
+
+      // Stale-count guard: open a preview, then toggle a chip — the preview must
+      // disappear so its "Send to N" count can't diverge from the new list.
+      const reviewBtn = page.getByRole("button", { name: /Review & send/ });
+      if (await reviewBtn.isEnabled().catch(() => false)) {
+        await reviewBtn.click();
+        const previewEl = page.locator(".whatsnew-preview");
+        await previewEl.waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
+        if (await previewEl.count()) {
+          await chips.nth(2 < chipCount ? 2 : 1).click(); // edit the list
+          await previewEl.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
+          check("editing recipients clears the open preview", (await previewEl.count()) === 0);
+        } else {
+          check("digest preview rendered", false, "preview did not appear (no recent entries?)");
+        }
+      } else {
+        console.log("  (Review & send disabled — nothing shipped in last 7 days; skipping preview check)");
+      }
+    }
+
+    await page.evaluate(() => document.getElementById("whats-new")?.scrollIntoView());
+    await page.screenshot({ path: join(ARTIFACTS, "whatsnew-digest.png"), fullPage: true });
+    console.log(`Screenshot → ${join(ARTIFACTS, "whatsnew-digest.png")}`);
+
+    // 6. Capture the behind-auth digest covers (best-effort — never fails the
     // gate). Banner clip matches the public covers (1200×630). Written to both
     // the CI artifact and the public folder (for local authed runs).
     await mkdir(EMAIL_OUT, { recursive: true });

@@ -1,0 +1,65 @@
+name: Deploy Penny app (penny.founderfirst.one)
+
+# penny.founderfirst.one is the root-hosted (base "/") build of apps/app on the
+# Cloudflare Pages project "penny". The same codebase also ships under
+# founderfirst.one/app/ via pages.yml (base "/app/"); App.tsx follows BASE_URL so
+# one bundle serves both. This workflow keeps the Cloudflare copy in lockstep with
+# main — without it, penny.* was a manual `wrangler pages deploy` and drifted.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/app/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/penny.yml'
+  workflow_dispatch:
+
+# One Pages deploy at a time; newest main wins.
+concurrency:
+  group: penny-pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm version comes from package.json `packageManager` — don't also pass version:.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Root-hosted build: base "/" (NOT "/app/"). Supabase URL/anon are baked in
+      # at build time — same repo var + secret pages.yml uses, so both copies talk
+      # to the same prod backend.
+      - name: Build apps/app (base=/)
+        env:
+          VITE_SUPABASE_URL:      ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: pnpm -C apps/app exec vite build --base=/
+
+      # SPA fallback so client-side routes (e.g. /accept, /login) resolve on Pages.
+      - name: SPA redirects
+        run: printf '/* /index.html 200\n' > apps/app/dist/_redirects
+
+      - name: Deploy to Cloudflare Pages (project: penny)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: 430f00d6622c766342f89a4e6a2261f6
+          command: pages deploy apps/app/dist --project-name=penny --branch=main

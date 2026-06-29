@@ -7,7 +7,12 @@ export const XERO_AUTHORIZE = "https://login.xero.com/identity/connect/authorize
 export const XERO_TOKEN = "https://identity.xero.com/connect/token";
 export const XERO_CONNECTIONS = "https://api.xero.com/connections";
 export const XERO_API = "https://api.xero.com/api.xro/2.0";
-export const XERO_SCOPE = "openid offline_access accounting.transactions.read accounting.settings.read";
+// NOTE: this app currently only has settings + contacts scopes enabled (an
+// un-reviewed Xero app rejects accounting.transactions/reports/journals as
+// invalid_scope). settings.read covers the chart of accounts. To pull bank
+// transactions later, enable accounting.transactions.read on the Xero app and
+// add it here.
+export const XERO_SCOPE = "openid offline_access accounting.settings.read accounting.contacts.read";
 
 const CLIENT_ID = () => Deno.env.get("XERO_CLIENT_ID") ?? "";
 const CLIENT_SECRET = () => Deno.env.get("XERO_CLIENT_SECRET") ?? "";

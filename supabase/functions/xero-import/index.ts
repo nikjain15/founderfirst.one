@@ -89,28 +89,35 @@ Deno.serve(async (req) => {
       upserted++;
     }
 
-    // 2. bank transactions → staged rows (previewable; not committed)
+    // 2. bank transactions → staged rows (previewable; not committed).
+    //    Gracefully skip if the app lacks the accounting.transactions scope — the
+    //    CoA import (above) still succeeds; transactions need that scope enabled.
     const rows: Record<string, unknown>[] = [];
     let rowNum = 0;
-    for (let pageNum = 1; pageNum <= 20; pageNum++) {
-      const txnResp = await xeroGet(`BankTransactions?page=${pageNum}`, access, tenant) as { BankTransactions?: XeroBankTxn[] };
-      const txns = txnResp.BankTransactions ?? [];
-      if (txns.length === 0) break;
-      for (const t of txns) {
-        const sign = (t.Type ?? "").toUpperCase().startsWith("RECEIVE") ? 1 : -1; // RECEIVE = into bank
-        const contraCode = t.LineItems?.[0]?.AccountCode ?? null;
-        const contraId = contraCode ? codeToId.get(contraCode) : undefined;
-        rows.push({
-          row_num: ++rowNum,
-          raw: t as unknown as Record<string, unknown>,
-          txn_date: xeroDate(t.Date),
-          description: t.Contact?.Name ?? t.Reference ?? t.LineItems?.[0]?.Description ?? "Xero transaction",
-          amount_minor: sign * toMinor(t.Total),
-          account_id: contraId ?? null,
-          status: contraId && t.Date && t.Total ? "ready" : "error",
-        });
+    let txnNote = "";
+    try {
+      for (let pageNum = 1; pageNum <= 20; pageNum++) {
+        const txnResp = await xeroGet(`BankTransactions?page=${pageNum}`, access, tenant) as { BankTransactions?: XeroBankTxn[] };
+        const txns = txnResp.BankTransactions ?? [];
+        if (txns.length === 0) break;
+        for (const t of txns) {
+          const sign = (t.Type ?? "").toUpperCase().startsWith("RECEIVE") ? 1 : -1; // RECEIVE = into bank
+          const contraCode = t.LineItems?.[0]?.AccountCode ?? null;
+          const contraId = contraCode ? codeToId.get(contraCode) : undefined;
+          rows.push({
+            row_num: ++rowNum,
+            raw: t as unknown as Record<string, unknown>,
+            txn_date: xeroDate(t.Date),
+            description: t.Contact?.Name ?? t.Reference ?? t.LineItems?.[0]?.Description ?? "Xero transaction",
+            amount_minor: sign * toMinor(t.Total),
+            account_id: contraId ?? null,
+            status: contraId && t.Date && t.Total ? "ready" : "error",
+          });
+        }
+        if (txns.length < 100) break;
       }
-      if (txns.length < 100) break;
+    } catch (e) {
+      txnNote = ` Transactions skipped (${(e as Error).message.includes("403") ? "accounting.transactions scope not enabled on the Xero app" : (e as Error).message}).`;
     }
 
     const bankId = bankCode ? codeToId.get(bankCode) : undefined;
@@ -129,7 +136,8 @@ Deno.serve(async (req) => {
     return json({
       batch_id: batchId, accounts: upserted, rows: rows.length,
       ready: rows.filter((r) => r.status === "ready").length,
-      note: "Transactions staged for preview — review and commit in the Import tab.",
+      note: `Imported ${upserted} accounts.` +
+        (rows.length ? ` ${rows.length} transactions staged — review and commit in the Import tab.` : txnNote),
     }, 200);
   } catch (e) {
     return json({ error: "import_failed", detail: (e as Error).message }, 502);

@@ -165,9 +165,9 @@ export function emailShell(opts: EmailShellOptions): string {
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background:${b.paper};font-family:${b.font};color:${b.ink};-webkit-font-smoothing:antialiased;">
+<body bgcolor="${b.paper}" style="margin:0;padding:0;background:${b.paper};font-family:${b.font};color:${b.ink};-webkit-font-smoothing:antialiased;">
   ${preheader}
-  <table role="presentation" class="ff-page" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:${b.paper};padding:28px 16px;">
+  <table role="presentation" class="ff-page" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="${b.paper}" style="background:${b.paper};padding:28px 16px;">
     <tr>
       <td align="center">
         <!--[if mso]><table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0"><tr><td><![endif]-->

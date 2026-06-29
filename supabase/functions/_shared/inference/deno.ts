@@ -25,6 +25,7 @@
 import {
   resolve,
   buildRecordRequest,
+  buildInferenceConfig,
   DEFAULT_CONFIG,
   DEFAULT_PRICES,
   type AiDecisionRecord,
@@ -34,6 +35,7 @@ import {
   type ResolveCtx,
   type ResolveResult,
   type ResolveTask,
+  type TwinPayload,
 } from "./core.ts";
 import {
   judge,
@@ -95,12 +97,43 @@ export function makeDenoCtx(
   };
 }
 
-export function resolveOnDeno(
+/** Model/routing config cache (~60s) from the service-role twin (Phase 4, D10).
+ *  Falls back to last good cache or DEFAULT_CONFIG — never throws (D18). */
+let _inferenceConfigCache: { at: number; config: InferenceConfig } | null = null;
+
+export async function loadInferenceConfigDeno(env: DenoInferenceEnv): Promise<InferenceConfig> {
+  if (_inferenceConfigCache && Date.now() - _inferenceConfigCache.at < 60_000) {
+    return _inferenceConfigCache.config;
+  }
+  try {
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/ai_runtime_inference_config`, {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    if (!res.ok) {
+      console.error(`loadInferenceConfigDeno ${res.status}`);
+      return _inferenceConfigCache?.config ?? DEFAULT_CONFIG;
+    }
+    const config = buildInferenceConfig((await res.json()) as TwinPayload);
+    _inferenceConfigCache = { at: Date.now(), config };
+    return config;
+  } catch (e) {
+    console.error("loadInferenceConfigDeno error:", e instanceof Error ? e.message : e);
+    return _inferenceConfigCache?.config ?? DEFAULT_CONFIG;
+  }
+}
+
+export async function resolveOnDeno(
   task: ResolveTask,
   env: DenoInferenceEnv,
   config?: InferenceConfig,
 ): Promise<ResolveResult> {
-  return resolve(task, makeDenoCtx(env, config));
+  return resolve(task, makeDenoCtx(env, config ?? (await loadInferenceConfigDeno(env))));
 }
 
 /* ── Phase 2: judging on Supabase Edge (Deno) ──────────────────────────────── */
@@ -179,7 +212,10 @@ export async function resolveAndJudgeOnDeno(
   opts?: { reconcile?: SourceReconcile; context?: { sourceIds?: string[] } | null },
 ): Promise<ResolveResult> {
   const id = crypto.randomUUID();
-  const result = await resolve({ ...task, record: { ...task.record, id, defer: true } }, makeDenoCtx(env));
+  const result = await resolve(
+    { ...task, record: { ...task.record, id, defer: true } },
+    makeDenoCtx(env, await loadInferenceConfigDeno(env)),
+  );
   const base = result.record;
   if (!base) return result;
 

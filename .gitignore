@@ -41,3 +41,8 @@ packages/*/dist/
 # Database backups / dumps — contain real emails + auth rows, never commit.
 _backups/
 supabase/.temp/
+
+# local build artifacts (worktree-only, never committed)
+deno.lock
+site-bubble/worker/pnpm-lock.yaml
+site-bubble/worker/pnpm-workspace.yaml

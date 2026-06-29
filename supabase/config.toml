@@ -42,6 +42,9 @@ verify_jwt = true
 [functions.ledger-periods]
 verify_jwt = true
 
+[functions.imports]
+verify_jwt = true
+
 [functions.notify-content-change]
 verify_jwt = false
 

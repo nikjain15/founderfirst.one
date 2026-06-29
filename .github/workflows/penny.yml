@@ -57,9 +57,10 @@ jobs:
       - name: SPA redirects
         run: printf '/* /index.html 200\n' > apps/app/dist/_redirects
 
+      # Deploy with wrangler directly (no third-party action) — same command proven
+      # locally. CLOUDFLARE_API_TOKEN has Account:Pages:Edit.
       - name: Deploy to Cloudflare Pages (project: penny)
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: 430f00d6622c766342f89a4e6a2261f6
-          command: pages deploy apps/app/dist --project-name=penny --branch=main
+        env:
+          CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: "430f00d6622c766342f89a4e6a2261f6"
+        run: pnpm dlx wrangler@4 pages deploy apps/app/dist --project-name=penny --branch=main

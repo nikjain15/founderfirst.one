@@ -181,6 +181,40 @@ export const commitImportBatch = (org_id: string, batch_id: string) =>
 export const discardImportBatch = (org_id: string, batch_id: string) =>
   invoke<{ result: ImportBatch }>("imports", { op: "discard", org_id, batch_id });
 
+// ── external accounting connections (QBO/Xero) ────────────────────────────────
+export type ExternalProvider = "qbo" | "xero";
+export interface ExternalConnection {
+  id: string;
+  provider: ExternalProvider;
+  tenant_name: string | null;
+  status: "pending" | "active" | "revoked" | "error";
+}
+
+export function useConnections(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["external-connections", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<ExternalConnection[]> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("external_connections")
+        .select("id,provider,tenant_name,status")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as ExternalConnection[];
+    },
+  });
+}
+
+export const connectProvider = (provider: ExternalProvider, org_id: string) =>
+  invoke<{ authorize_url: string }>(`${provider}-connect`, { org_id });
+
+export const importProvider = (provider: ExternalProvider, org_id: string, connection_id: string) =>
+  invoke<{ batch_id: string; accounts: number; rows: number; ready: number }>(
+    `${provider}-import`, { org_id, connection_id },
+  );
+
 /** A client-side idempotency key for a money mutation (replays are de-duped). */
 export function newIdempotencyKey(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();

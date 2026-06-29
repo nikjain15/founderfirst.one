@@ -24,7 +24,10 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter basename="/app">
+        {/* basename follows the build base (Vite BASE_URL): "/app/" for the
+            GitHub-Pages build at founderfirst.one/app/, "/" for the root-hosted
+            Cloudflare-Pages build at penny.founderfirst.one. */}
+        <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "") || "/"}>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/accept" element={<Accept />} />

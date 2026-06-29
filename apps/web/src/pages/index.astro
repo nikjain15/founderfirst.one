@@ -4,13 +4,16 @@ import Nav from "../components/Nav.astro";
 import Footer from "../components/Footer.astro";
 import Section from "../components/Section.astro";
 import { getHomepage } from "../lib/content";
+import { getRunningExperiments } from "../lib/experiments";
 
-// Resolve homepage content at build time (published row → seed fallback).
+// Resolve homepage content at build time (published row → seed fallback) +
+// any running experiments (assignment happens client-side via PostHog flags).
 const page = await getHomepage();
 const sections = [...page.sections].sort((a, b) => a.position - b.position);
+const experiments = await getRunningExperiments();
 ---
 <Base page={page}>
   <Nav />
-  {sections.map((section) => <Section section={section} />)}
+  {sections.map((section) => <Section section={section} experiment={experiments[section.type]} />)}
   <Footer />
 </Base>

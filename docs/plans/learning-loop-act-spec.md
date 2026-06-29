@@ -42,6 +42,11 @@ Per-experiment policy tier: `auto` / `propose` / `inform`.
 - **Act-1 — AI-drafted variants + experiments tab.** "Draft a variant" in admin reuses the
   `email-compose` + `voice-check` path; N arms; admin **Experiments** tab shows arms, exposures,
   conversion, lift, and Promote/Stop controls. Policy tier defaults to `propose`.
+  - **Voice is single-sourced (mandatory).** Auto-drafting pulls the **live admin Voice guide**
+    (`/content#voice`) as system context and runs **`voice-check`** on every draft (same soft
+    warning used elsewhere) — it must NEVER hardcode tone rules. So when the Voice guide changes,
+    every future variant follows automatically; one source of truth for brand voice across emails,
+    site copy, Penny, and experiments.
 - **Act-2 — bandit.** Scheduled job (or PostHog experiments) auto-shifts rollout % toward the
   leading arm and auto-promotes at a confidence threshold — **only** for `auto`-tier experiments.
 - **Act-3 — personalization by segment.** Owner vs CPA, new vs returning, source, device →

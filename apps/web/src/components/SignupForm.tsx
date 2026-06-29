@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { track } from "../lib/analytics";
 
 /**
  * Waitlist signup — a React island (Astro renders it interactive). Calls the
@@ -40,6 +41,9 @@ export default function SignupForm({ source, ctaLabel }: { source: string; ctaLa
             .catch(() => { /* non-blocking */ });
         }
       }
+      // Conversion event for the learning loop — PostHog auto-attaches any active
+      // experiment flag, so this attributes the signup to its variant.
+      track("signup", { source });
       setState("done");
       setMsg("You're in! Taking you to your welcome page…");
       // Redirect to the on-brand confirmed/welcome page. Carry the slug (for the

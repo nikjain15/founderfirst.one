@@ -21,6 +21,12 @@ verify_jwt = true
 [functions.synthesize-insights]
 verify_jwt = true
 
+[functions.draft-variant]
+verify_jwt = false
+
+[functions.bandit]
+verify_jwt = false
+
 [functions.orgs]
 verify_jwt = true
 

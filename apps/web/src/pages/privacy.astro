@@ -20,7 +20,7 @@ const page: Page = {
     keyFacts: [
       "FounderFirst collects your email only when you join the waitlist.",
       "Penny connects to your accounts with read-only access and can never move money.",
-      "Product analytics run only after you accept cookies.",
+      "We measure anonymous, cookieless usage by default; cookies + session recording only after you accept.",
       `You can request access, export, or deletion of your data anytime at ${SITE.email}.`,
     ],
   },
@@ -35,9 +35,11 @@ const page: Page = {
       <p class="upd">Last updated: June 27, 2026</p>
 
       <div class="box">
-        <strong>In short:</strong> We collect your email only when you choose to join the waitlist, and product
-        analytics only after you accept cookies. Penny connects to your financial accounts with read-only access
-        and can never move money. We don't sell your data, and you can ask us to export or delete it at any time.
+        <strong>In short:</strong> We collect your email only when you choose to join the waitlist. By default we
+        measure <strong>anonymous, cookieless</strong> usage (no cookies, nothing that identifies you); cookies and
+        session recording switch on <strong>only if you accept</strong>, and decline turns analytics off entirely.
+        Penny connects to your financial accounts with read-only access and can never move money. We don't sell your
+        data, and you can ask us to export or delete it at any time.
       </div>
 
       <h2>Who we are</h2>
@@ -52,9 +54,11 @@ const page: Page = {
         <li><strong>Waitlist email.</strong> When you join the waitlist, we store the email address you submit and,
           if you arrived through a referral link, the referral that sent you. That's it — no name or payment details
           are required to join.</li>
-        <li><strong>Product analytics.</strong> If you accept cookies, we record anonymous usage events (pages viewed,
-          features clicked) via our product-analytics tools so we can build a better product. These run
-          <strong>only</strong> after you accept — decline and they stay off.</li>
+        <li><strong>Product analytics.</strong> By default we record <strong>anonymous, cookieless</strong> usage
+          events (pages viewed, features clicked) — stored in memory for the visit only, with no cookies and nothing
+          that identifies you — so we can build a better product. If you <strong>accept</strong>, we additionally use
+          cookies and may record your session to diagnose UX issues; if you <strong>decline</strong>, analytics stay
+          off entirely.</li>
         <li><strong>Conversations with Penny.</strong> If you chat with Penny (on the site or via our Discord
           assistant), we store those messages so Penny can answer in context and improve.</li>
         <li><strong>Financial data (for customers).</strong> When you connect an account to Penny, she reads your
@@ -72,7 +76,9 @@ const page: Page = {
 
       <h2>Cookies &amp; analytics</h2>
       <p>
-        We use essential cookies to run the site and, with your consent, analytics cookies to measure usage.
+        We use essential cookies to run the site. For analytics, we default to an <strong>anonymous, cookieless</strong>
+        mode (memory-only, no device storage, IP discarded) that doesn't require consent; only if you <strong>accept</strong>
+        do we set analytics cookies and enable session recording, and <strong>decline</strong> turns analytics off.
         You can change your choice anytime via
         <button type="button" class="inline-link" data-cookie-settings>Cookie settings</button> in the footer.
       </p>

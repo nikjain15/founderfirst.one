@@ -1286,6 +1286,7 @@ export interface ExperimentRow {
   id: string; key: string; name: string; status: ExpStatus; section_type: string;
   primary_metric: string; policy_tier: PolicyTier; created_at: string;
   started_at: string | null; stopped_at: string | null;
+  winning_variant_key?: string | null; page_slug?: string;
 }
 export interface ArmRow {
   id: string; experiment_id: string; variant_key: string;
@@ -1341,6 +1342,24 @@ export const experiments = {
     if (error) throw new Error(`draft-variant: ${error.message}`);
     if (data?.error) throw new Error(`draft-variant: ${data.error}${data.detail ? ` — ${data.detail}` : ""}`);
     return String(data?.text ?? "");
+  },
+  /** Promote a winner: APPLY its section copy to the live content_pages row
+   *  (new version → set live) so the site actually changes, then mark the
+   *  experiment promoted. This closes the "promote ≠ publish" gap. */
+  promoteWinner: async (exp: ExperimentRow, winning: ArmRow): Promise<void> => {
+    const slug = exp.page_slug || "/";
+    const versions = await listPageVersions(slug);
+    const live = versions.find((v) => v.is_live);
+    if (!live) throw new Error(`No live version for ${slug}`);
+    const page: any = structuredClone(live.payload);
+    const section = (page.sections ?? []).find((s: any) => s.type === exp.section_type);
+    if (!section) throw new Error(`Live page has no '${exp.section_type}' section to update`);
+    section.data = { ...section.data, ...winning.payload };
+    const newId = await createPageVersion(slug, page.surface ?? "marketing", page, `Promoted experiment "${exp.key}" → variant ${winning.variant_key}`);
+    await setLivePage(newId);
+    const db = getClient();
+    const { error } = await db.from("experiments").update({ status: "promoted", winning_variant_key: winning.variant_key, stopped_at: new Date().toISOString() }).eq("id", exp.id);
+    if (error) throw new Error(error.message);
   },
 };
 

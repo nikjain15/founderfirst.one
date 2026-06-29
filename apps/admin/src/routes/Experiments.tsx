@@ -75,6 +75,7 @@ function ExperimentCard({ exp }: { exp: ExperimentRow }) {
   const refresh = () => { qc.invalidateQueries({ queryKey: ["exp.arms", exp.id] }); qc.invalidateQueries({ queryKey: ["experiments"] }); };
 
   const setStatus = useMutation({ mutationFn: (s: ExperimentRow["status"]) => experiments.setStatus(exp.id, s), onSuccess: refresh });
+  const promote = useMutation({ mutationFn: (w: ArmRow) => experiments.promoteWinner(exp, w), onSuccess: refresh });
   const addArm = useMutation({
     mutationFn: (a: { variant_key: string; headline: string; is_control?: boolean }) =>
       experiments.addArm({ experiment_id: exp.id, variant_key: a.variant_key, payload: { headline: a.headline }, is_control: a.is_control }),
@@ -85,6 +86,11 @@ function ExperimentCard({ exp }: { exp: ExperimentRow }) {
   const results = resQ.data ?? [];
   const resultFor = (vk: string): ExpResultRow | undefined => results.find((r) => r.variant_key === vk);
   const nextVariantKey = arms.some((a) => a.is_control) ? `v${arms.length}` : "control";
+  // Winner = best-converting arm with real data (else can't promote).
+  const winnerArm = arms
+    .map((a) => ({ a, r: resultFor(a.variant_key) }))
+    .filter((x) => x.r && x.r.exposures > 0 && x.r.conv_rate != null)
+    .sort((x, y) => (y.r!.conv_rate! - x.r!.conv_rate!))[0]?.a;
 
   const [draftText, setDraftText] = useState("");
   const [brief, setBrief] = useState("");
@@ -102,9 +108,16 @@ function ExperimentCard({ exp }: { exp: ExperimentRow }) {
         <div className="toolbar" style={{ gap: 8 }}>
           {exp.status === "draft" && <button className="btn-ghost" disabled={arms.length < 2} onClick={() => setStatus.mutate("running")}>Start</button>}
           {exp.status === "running" && <button className="btn-ghost" onClick={() => setStatus.mutate("stopped")}>Stop</button>}
-          {exp.status !== "promoted" && <button className="btn-ghost" onClick={() => setStatus.mutate("promoted")}>Promote winner</button>}
+          {exp.status !== "promoted" && (
+            <button className="btn-ghost" disabled={!winnerArm || promote.isPending} title={winnerArm ? `Apply "${winnerArm.variant_key}" to the live site` : "Needs conversion data to pick a winner"}
+              onClick={() => winnerArm && promote.mutate(winnerArm)}>
+              {promote.isPending ? "Publishing…" : winnerArm ? `Promote ${winnerArm.variant_key} → live` : "Promote winner"}
+            </button>
+          )}
         </div>
       </div>
+      {promote.error && <div className="login-status err" style={{ marginTop: 10 }}>{(promote.error as Error).message}</div>}
+      {exp.status === "promoted" && exp.winning_variant_key && <div className="login-status ok" style={{ marginTop: 10 }}>Published <code>{exp.winning_variant_key}</code> to the live site.</div>}
 
       <div className="table-wrap" style={{ marginTop: 14 }}>
         <table className="data-table">

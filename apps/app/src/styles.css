@@ -56,6 +56,9 @@ input {
   color: var(--ink);
 }
 input:focus-visible { outline: var(--focus-ring); }
+/* Every select shares the ≥16px control size (RESPONSIVE.md rule 5 — stops iOS
+   focus-zoom) and is comfortably tappable, app-wide, not just inside forms. */
+select { font-size: var(--fs-input); min-height: var(--tap-min); }
 
 button {
   min-height: var(--tap-min, 44px);

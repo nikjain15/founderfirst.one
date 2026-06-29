@@ -30,7 +30,7 @@
 
 /* ── Identity & config types ──────────────────────────────────────────────── */
 
-export type Provider = "anthropic" | "workers-ai";
+export type Provider = "anthropic" | "workers-ai" | "openrouter";
 export type Runtime = "workers" | "deno" | "node";
 
 /** Gate decision recorded on ai_decisions.gate_status. "unevaluated" = Phase-0
@@ -180,6 +180,12 @@ export interface WorkersAiTransport {
   /** env.AI.run(model, input, options?) */
   run: (model: string, input: unknown, options?: unknown) => Promise<unknown>;
 }
+/** OpenRouter — OpenAI-compatible; one key, hundreds of hosted models (Phase 5b).
+ *  Reachable on every runtime (HTTP), so no @cf-style runtime guard applies. */
+export interface OpenRouterTransport {
+  apiKey: string;
+  fetch: FetchLike;
+}
 
 /** Cloudflare AI Gateway routing (D11). Config-gated — absent = call providers
  *  directly (byte-identical to today). */
@@ -194,6 +200,7 @@ export interface ResolveCtx {
   transports: {
     anthropic?: AnthropicTransport;
     workersAi?: WorkersAiTransport;
+    openrouter?: OpenRouterTransport;
   };
   gateway?: GatewayConfig;
   /** Crash-safe, fire-and-forget record write (D18). The adapter wraps this in
@@ -497,6 +504,94 @@ async function callWorkersAi(
   };
 }
 
+async function callOpenRouter(
+  task: ResolveTask,
+  model: ModelRef,
+  ctx: ResolveCtx,
+  cacheAllowed = false,
+): Promise<ProviderOutput> {
+  const t = ctx.transports.openrouter;
+  if (!t) throw new InferenceError("openrouter transport not provided", "config_error");
+
+  const url = ctx.gateway
+    ? `https://gateway.ai.cloudflare.com/v1/${ctx.gateway.accountId}/${ctx.gateway.gatewayId}/openrouter/v1/chat/completions`
+    : "https://openrouter.ai/api/v1/chat/completions";
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${t.apiKey}`,
+    // OpenRouter attribution headers (optional but recommended).
+    "HTTP-Referer": "https://founderfirst.one",
+    "X-Title": "FounderFirst Penny",
+  };
+  if (ctx.gateway && !cacheAllowed) headers["cf-aig-skip-cache"] = "true";
+
+  // OpenAI-compatible: system folds into the messages array.
+  const messages = task.system
+    ? [{ role: "system", content: task.system }, ...task.messages]
+    : task.messages;
+
+  const body: Record<string, unknown> = {
+    model: model.model,
+    messages,
+    max_tokens: task.maxTokens,
+  };
+  if (task.temperature !== undefined) body.temperature = task.temperature;
+  // Use json_object for any structured request — widely supported across OpenRouter
+  // models (strict json_schema isn't); callers already re-parse/guard the JSON.
+  if (task.jsonSchema || task.jsonObject) body.response_format = { type: "json_object" };
+
+  const signal = task.timeoutMs && ctx.timeoutSignal ? ctx.timeoutSignal(task.timeoutMs) : undefined;
+  const maxRetries = task.anthropic?.maxRetries ?? 0;
+  const baseMs = task.anthropic?.retryBaseMs ?? 4_000;
+  let attempt = 0;
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const res = await t.fetch(url, { method: "POST", headers, body: JSON.stringify(body), signal });
+    if (res.status === 429) {
+      attempt++;
+      if (attempt > maxRetries) throw new InferenceError("rate-limited", "rate_limited");
+      await ctx.sleep(baseMs * Math.pow(2, attempt - 1));
+      continue;
+    }
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new InferenceError(`openrouter ${res.status}: ${errText.slice(0, 300)}`, "provider_error");
+    }
+    const data = (await res.json()) as {
+      model?: string;
+      choices?: Array<{ message?: { content?: string } }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    };
+    return {
+      text: data.choices?.[0]?.message?.content ?? "",
+      providerModel: data.model,
+      usage: { inputTokens: data.usage?.prompt_tokens, outputTokens: data.usage?.completion_tokens },
+    };
+  }
+}
+
+/** Dispatch to the right provider. OpenRouter + Anthropic are HTTP (any runtime);
+ *  Workers-AI is guarded to the Workers runtime by the caller. */
+function callProvider(
+  task: ResolveTask,
+  model: ModelRef,
+  ctx: ResolveCtx,
+  cacheAllowed = false,
+): Promise<ProviderOutput> {
+  switch (model.provider) {
+    case "anthropic":
+      return callAnthropic(task, model, ctx, cacheAllowed);
+    case "openrouter":
+      return callOpenRouter(task, model, ctx, cacheAllowed);
+    case "workers-ai":
+      return callWorkersAi(task, model, ctx, cacheAllowed);
+    default:
+      throw new InferenceError(`unknown provider "${model.provider}"`, "config_error");
+  }
+}
+
 /* ── Record write (shared REST shape; adapters supply fetch) ──────────────── */
 
 /**
@@ -566,9 +661,7 @@ export async function rawModelCall(
     jsonSchema: opts.jsonSchema,
     timeoutMs: opts.timeoutMs,
   };
-  return model.provider === "anthropic"
-    ? callAnthropic(task, model, ctx)
-    : callWorkersAi(task, model, ctx);
+  return callProvider(task, model, ctx);
 }
 
 /* ── resolve() — the one entry point ──────────────────────────────────────── */
@@ -608,9 +701,7 @@ export async function resolve(task: ResolveTask, ctx: ResolveCtx): Promise<Resol
   const started = ctx.now();
   let out: ProviderOutput;
   try {
-    out = model.provider === "anthropic"
-      ? await callAnthropic(task, model, ctx, cacheAllowed)
-      : await callWorkersAi(task, model, ctx, cacheAllowed);
+    out = await callProvider(task, model, ctx, cacheAllowed);
   } catch (err) {
     // We do not log failed generations here in Phase 0 (callers keep their own
     // error handling + fallbacks unchanged). Re-throw so behavior is identical.

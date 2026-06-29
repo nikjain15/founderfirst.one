@@ -57,6 +57,9 @@ export interface WorkersInferenceEnv {
    *  call providers directly (byte-identical to today). */
   AI_GATEWAY_ACCOUNT_ID?: string;
   AI_GATEWAY_ID?: string;
+  /** OpenRouter key (Phase 5b) — set as a Worker secret; unset = OpenRouter models
+   *  aren't routable (resolve() throws config_error if one is routed without it). */
+  OPENROUTER_API_KEY?: string;
 }
 
 interface ExecutionContextLike {
@@ -94,6 +97,9 @@ export function makeWorkersCtx(
       // rebinds `this` and throws "Illegal invocation" on Workers.
       anthropic: { apiKey: env.ANTHROPIC_API_KEY, fetch: fetch.bind(globalThis) as unknown as FetchLike },
       workersAi: { run: (m, i, o) => env.AI.run(m, i, o) },
+      openrouter: env.OPENROUTER_API_KEY
+        ? { apiKey: env.OPENROUTER_API_KEY, fetch: fetch.bind(globalThis) as unknown as FetchLike }
+        : undefined,
     },
     gateway,
     recordSink,

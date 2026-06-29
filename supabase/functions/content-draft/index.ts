@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { resolveAndJudgeOnDeno } from "../_shared/inference/deno.ts";
 import { USE_CASE, TENANT_FOUNDERFIRST } from "../_shared/inference/core.ts";
+import { judgeContent, passesGate } from "../_shared/content_judge.ts";
 
 /**
  * content-draft — Step 5 of the content pipeline. Turns a pipeline "idea" into a
@@ -90,9 +91,14 @@ Deno.serve(async (req) => {
       `Write in ${SITE.product}'s brand voice. The voice guide is the source of truth:`,
       voice || "(voice guide unavailable — write warm, plain, owner-first, no jargon)",
       ``,
-      `Rules: write ONLY from the topic and the supplied evidence. Do NOT invent statistics or facts.`,
-      `Public contact is always ${SITE.email}. Refer to the company as ${SITE.company} and the product as ${SITE.product}.`,
-      `Return JSON matching the schema: a blog post + a natural two-host audio script that covers the same ground.`,
+      `HARD RULES (these are machine-checked after you write — violations are rejected):`,
+      `1. Grounding: assert NO fact, number, date, price, vendor, integration, or statistic that is not in the evidence below. No "five-hundred-year-old", no "seventy account types", no invented durations. If you don't have a number, don't use one. Rewrite generically instead of inventing a specific.`,
+      `2. Always describe what we do in the POSITIVE. Never speak negatively of any other product, tool, spreadsheet, or "the old way". NEVER name a competitor (e.g. QuickBooks, Xero, Bench, Pilot) — the reader draws the comparison themselves.`,
+      `3. Never name the underlying technology or any AI model. The brand is ${SITE.company}; the product is ${SITE.product}.`,
+      `4. No exclamation marks anywhere — not one, including in the audio script. No customer-service filler ("I'd be happy to"). No banned/decorative emoji.`,
+      `5. American English throughout (categorized, organized, canceled, color, analyze).`,
+      `Public contact is always ${SITE.email}.`,
+      `Return JSON matching the schema: a blog post + a natural two-host audio script that covers the same ground under the same rules.`,
     ].join("\n");
 
     const userMsg = [
@@ -130,6 +136,20 @@ Deno.serve(async (req) => {
     const parsed = JSON.parse(result.text || "{}");
     if (!parsed.title || !parsed.body_md) return json({ error: "draft_incomplete", model: result.model }, 502);
 
+    // Editorial quality gate — judge the draft against the voice guide + the exact
+    // evidence (Opus judges Sonnet). A clean 'ship' auto-advances to review; anything
+    // else stays in 'drafting' with the judge's issues attached for a human. Fail closed.
+    const allowedFacts = Array.isArray(g.evidence) ? g.evidence.map((e) => String(e.value)) : [];
+    const audioText = (parsed.audio_script ?? [] as Array<{ speaker: string; text: string }>)
+      .map((t: { speaker: string; text: string }) => `[${t.speaker}] ${t.text}`).join("\n");
+    const judged = await judgeContent(apiKey, {
+      voice, allowedFacts, topic: String(item.topic),
+      seo: { slug: parsed.slug, title: parsed.title, description: parsed.description, tag: parsed.tag, takeaways: parsed.takeaways ?? [] },
+      blogMd: String(parsed.body_md), audioScript: audioText,
+    });
+    const judge = judged.ok ? judged.judge : null;
+    const passed = judge ? passesGate(judge) : false;
+
     const { error: wErr } = await service.from("content_pipeline").update({
       draft_md: String(parsed.body_md),
       script: { audio: parsed.audio_script ?? [] },
@@ -137,11 +157,12 @@ Deno.serve(async (req) => {
         slug: parsed.slug, title: parsed.title, description: parsed.description,
         tag: parsed.tag, read_mins: parsed.read_mins, takeaways: parsed.takeaways ?? [],
       },
-      status: "drafting",
+      judge: judge ?? { error: judged.ok ? null : judged.error, verdict: "reject" },
+      status: passed ? "review" : "drafting",
     }).eq("id", item_id);
     if (wErr) return json({ error: wErr.message }, 500);
 
-    return json({ ok: true, item_id, model: result.model });
+    return json({ ok: true, item_id, model: result.model, gate: { passed, verdict: judge?.verdict ?? "reject", overall: judge?.overall ?? null, fabricated: judge?.grounding?.fabricated_claims ?? [], issues: judge?.issues ?? [] } });
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
   }

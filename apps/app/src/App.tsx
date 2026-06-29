@@ -6,6 +6,8 @@ import { ActiveOrgProvider } from "./org/ActiveOrgProvider";
 import Login from "./routes/Login";
 import Home from "./routes/Home";
 import Accept from "./routes/Accept";
+import StaffHome from "./staff/StaffHome";
+import { useIsPlatformStaff } from "./staff/api";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,6 +22,14 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+// The staff console is its own top-level route (not org-scoped). The DB enforces
+// staff-only access; this just picks the right view once we know the answer.
+function StaffRoute() {
+  const { data, isLoading } = useIsPlatformStaff();
+  if (isLoading) return <div className="center muted">Loading…</div>;
+  return <StaffHome isStaff={Boolean(data)} />;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -31,6 +41,14 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/accept" element={<Accept />} />
+            <Route
+              path="/staff"
+              element={
+                <RequireAuth>
+                  <StaffRoute />
+                </RequireAuth>
+              }
+            />
             <Route
               path="/"
               element={

@@ -1,11 +1,14 @@
 /** Shared top bar: brand, org-switcher, current lens/role, account. */
+import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useActiveOrg } from "../org/ActiveOrgProvider";
+import { useIsPlatformStaff } from "../staff/api";
 import { SITE } from "@ff/site";
 
 export default function Topbar() {
   const { session, signOut } = useAuth();
   const { orgs, activeOrg, roleInfo, setActiveOrgId } = useActiveOrg();
+  const isStaff = useIsPlatformStaff();
 
   return (
     <header className="topbar">
@@ -38,6 +41,9 @@ export default function Topbar() {
         )}
 
         <span className="spacer" />
+        {isStaff.data && (
+          <Link className="ghost sm staff-link" to="/staff">Staff console</Link>
+        )}
         <span className="muted topbar-email">{session?.user.email}</span>
         <button className="ghost" onClick={() => void signOut()}>Sign out</button>
       </div>

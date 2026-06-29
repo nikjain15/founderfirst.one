@@ -34,8 +34,9 @@ export default function Home() {
 
         {!loading && orgs.length === 0 && (
           <div className="empty">
+            <span className="p-mark p-mark-lg welcome-mark" aria-hidden="true">P</span>
             <h1>Welcome.</h1>
-            <p className="muted">Create your first organization to get started.</p>
+            <p className="muted">Create your first organization and Penny will start keeping your books.</p>
             <CreateOrg />
           </div>
         )}

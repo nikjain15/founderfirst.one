@@ -23,7 +23,8 @@ export default function Login() {
     setError(null);
     const { error: err } = await getClient().auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/app/` },
+      // base-aware: "/app/" on founderfirst.one/app/, "/" on penny.founderfirst.one
+      options: { emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}` },
     });
     setBusy(false);
     if (err) setError(err.message);
@@ -33,7 +34,10 @@ export default function Login() {
   return (
     <main className="auth-screen">
       <div className="auth-card">
-        <div className="brand">{SITE.company}</div>
+        <div className="brand" title={`Penny by ${SITE.company}`}>
+          <span className="p-mark p-mark-md" aria-hidden="true">P</span>
+          Penny
+        </div>
         {sent ? (
           <p className="muted">
             Check <strong>{email}</strong> for a sign-in link.

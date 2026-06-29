@@ -9,7 +9,10 @@ export default function Topbar() {
 
   return (
     <header className="topbar">
-      <span className="brand">{SITE.company}</span>
+      <span className="brand" title={`Penny by ${SITE.company}`}>
+        <span className="p-mark p-mark-sm" aria-hidden="true">P</span>
+        Penny
+      </span>
 
       {orgs.length > 0 && (
         <select

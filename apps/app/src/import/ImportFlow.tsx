@@ -9,8 +9,8 @@
  */
 import { useMemo, useState } from "react";
 import {
-  addImportRows, commitImportBatch, createImportBatch, discardImportBatch,
-  type StagedRow,
+  addImportRows, commitImportBatch, connectProvider, createImportBatch, discardImportBatch,
+  importProvider, useConnections, type ExternalProvider, type StagedRow,
 } from "../ledger/api";
 import { parseAmountCell, parseCsv, parseDateCell, type ParsedCsv } from "./csv";
 import { formatMoney } from "../ledger/money";
@@ -43,6 +43,7 @@ export default function ImportFlow({
             <span className="ic-sub">Start the books at a cutover date with each account's balance.</span>
           </button>
         </div>
+        <ConnectSoftware orgId={orgId} onImported={onDone} />
       </div>
     );
   }
@@ -303,6 +304,67 @@ function OpeningBalances({
       <div className="form-actions">
         <button disabled={!canImport} onClick={doImport}>{busy ? "Posting…" : "Import opening balances"}</button>
       </div>
+    </div>
+  );
+}
+
+// ── Connect QuickBooks / Xero ────────────────────────────────────────────────
+const PROVIDERS: { id: ExternalProvider; label: string }[] = [
+  { id: "qbo", label: "QuickBooks" },
+  { id: "xero", label: "Xero" },
+];
+
+function ConnectSoftware({ orgId, onImported }: { orgId: string; onImported: () => void }) {
+  const conns = useConnections(orgId);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const active = (conns.data ?? []).filter((c) => c.status === "active");
+  const connectedProviders = new Set(active.map((c) => c.provider));
+
+  async function connect(provider: ExternalProvider) {
+    setBusy(provider); setErr(null);
+    try {
+      const { authorize_url } = await connectProvider(provider, orgId);
+      window.open(authorize_url, "_blank", "noopener,noreferrer");
+      setMsg("Approve access in the new tab, then come back and click Pull.");
+    } catch (e) { setErr((e as Error).message); } finally { setBusy(null); }
+  }
+  async function pull(provider: ExternalProvider, connectionId: string) {
+    setBusy(connectionId); setErr(null); setMsg(null);
+    try {
+      const r = await importProvider(provider, orgId, connectionId);
+      setMsg(`Pulled ${r.accounts} accounts and staged ${r.ready} transactions for review.`);
+      onImported();
+    } catch (e) { setErr((e as Error).message); } finally { setBusy(null); }
+  }
+
+  return (
+    <div className="connect-software">
+      <h3 className="section-h">Or connect your accounting software</h3>
+      <p className="muted sm">Pull your chart of accounts and history straight from QuickBooks or Xero. Transactions arrive as a preview you confirm.</p>
+      <div className="connect-row">
+        {PROVIDERS.map((p) => (
+          <button key={p.id} className="ghost sm" disabled={busy === p.id || connectedProviders.has(p.id)} onClick={() => connect(p.id)}>
+            {connectedProviders.has(p.id) ? `${p.label} connected` : busy === p.id ? "Opening…" : `Connect ${p.label}`}
+          </button>
+        ))}
+      </div>
+      {active.length > 0 && (
+        <ul className="conn-list">
+          {active.map((c) => (
+            <li key={c.id}>
+              <span>{c.tenant_name ?? c.provider} <span className="status-pill s-open">{c.provider}</span></span>
+              <button className="ghost sm" disabled={busy === c.id} onClick={() => pull(c.provider, c.id)}>
+                {busy === c.id ? "Pulling…" : "Pull history"}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {msg && <p className="muted sm">{msg}</p>}
+      {err && <p className="error sm">{err}</p>}
     </div>
   );
 }

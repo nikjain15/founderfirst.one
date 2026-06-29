@@ -38,12 +38,12 @@ const DRAFT_SCHEMA = {
     title: { type: "string" },
     description: { type: "string", description: "one-sentence summary for cards + SEO" },
     tag: { type: "string", enum: ["Guides", "Product", "Stories", "Money"] },
-    read_mins: { type: "integer", minimum: 1, maximum: 20 },
-    takeaways: { type: "array", minItems: 1, maxItems: 5, items: { type: "string" } },
+    read_mins: { type: "integer", description: "estimated read time in minutes, 1–20" },
+    takeaways: { type: "array", description: "1–5 key takeaways", items: { type: "string" } },
     body_md: { type: "string", description: "the full post in markdown (## headings + paragraphs)" },
     audio_script: {
-      type: "array", minItems: 2,
-      description: "two-host conversational read of the post",
+      type: "array",
+      description: "two-host conversational read of the post (at least two turns)",
       items: {
         type: "object", additionalProperties: false, required: ["speaker", "text"],
         properties: { speaker: { type: "string", enum: ["host", "guest"] }, text: { type: "string" } },

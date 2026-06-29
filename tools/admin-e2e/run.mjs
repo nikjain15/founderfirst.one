@@ -30,6 +30,10 @@ import { chromium } from "playwright";
 const ROOT = resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const DIST = resolve(ROOT, "dist");
 const ARTIFACTS = resolve(fileURLToPath(new URL("./artifacts/", import.meta.url)));
+// Cover images for the weekly "What's new" digest live here. The behind-auth
+// areas (penny/reach/infra) are captured below; copy them from the CI artifact
+// into this folder and commit to refresh the email covers.
+const EMAIL_OUT = resolve(ROOT, "apps/web/public/email/whatsnew");
 
 const MIME = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
@@ -126,6 +130,29 @@ async function main() {
 
     await page.screenshot({ path: join(ARTIFACTS, "content-pipeline.png"), fullPage: true });
     console.log(`Screenshot → ${join(ARTIFACTS, "content-pipeline.png")}`);
+
+    // 5. Capture the behind-auth digest covers (best-effort — never fails the
+    // gate). Banner clip matches the public covers (1200×630). Written to both
+    // the CI artifact and the public folder (for local authed runs).
+    await mkdir(EMAIL_OUT, { recursive: true });
+    const COVERS = [
+      { name: "penny.png", url: `${base}/admin/quality` },
+      { name: "reach.png", url: `${base}/admin/audience#signals` },
+      { name: "infra.png", url: `${base}/admin/analytics#visibility` },
+    ];
+    const COVER_CLIP = { x: 0, y: 132, width: 1200, height: 630 };
+    for (const c of COVERS) {
+      try {
+        await page.goto(c.url, { waitUntil: "networkidle", timeout: 20_000 });
+        await page.waitForTimeout(1200);
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.screenshot({ path: join(ARTIFACTS, c.name), clip: COVER_CLIP });
+        await page.screenshot({ path: join(EMAIL_OUT, c.name), clip: COVER_CLIP });
+        console.log(`Cover → ${c.name}  (from ${c.url.replace(base, "")})`);
+      } catch (err) {
+        console.log(`  (cover ${c.name} skipped — ${(err instanceof Error ? err.message : String(err)).slice(0, 100)})`);
+      }
+    }
   } catch (e) {
     check("smoke run completed", false, (e instanceof Error ? e.message : String(e)).slice(0, 200));
     await page.screenshot({ path: join(ARTIFACTS, "failure.png"), fullPage: true }).catch(() => {});

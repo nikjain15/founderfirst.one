@@ -466,9 +466,23 @@ export async function submitAIReview(args: {
 
 export type ChangelogKind = "new" | "improved" | "fixed";
 
+// Section buckets for the weekly digest. Keys must match the AREA registry in
+// supabase/functions/changelog-digest/index.ts (the email groups by these).
+export type ChangelogArea = "site" | "product" | "penny" | "reach" | "infra" | "general";
+
+export const CHANGELOG_AREAS: { key: ChangelogArea; label: string }[] = [
+  { key: "site",    label: "The site" },
+  { key: "product", label: "The product" },
+  { key: "penny",   label: "Smarter Penny" },
+  { key: "reach",   label: "Reach + care" },
+  { key: "infra",   label: "Under the hood" },
+  { key: "general", label: "More" },
+];
+
 export interface ChangelogEntry {
   id: string;
   kind: ChangelogKind;
+  area: ChangelogArea;
   title: string;
   body: string;
   created_at: string;
@@ -479,25 +493,26 @@ export async function listChangelog(): Promise<ChangelogEntry[]> {
   const db = getClient();
   const { data, error } = await db
     .from("changelog_entries")
-    .select("id, kind, title, body, created_at, created_by")
+    .select("id, kind, area, title, body, created_at, created_by")
     .order("created_at", { ascending: false });
   if (error) throw new Error(`listChangelog: ${error.message}`);
   return (data as ChangelogEntry[]) ?? [];
 }
 
 export async function addChangelogEntry(
-  entry: { kind: ChangelogKind; title: string; body: string },
+  entry: { kind: ChangelogKind; area: ChangelogArea; title: string; body: string },
 ): Promise<ChangelogEntry> {
   const db = getClient();
   // created_by defaults to auth.email() in the DB; no need to pass it.
   const { data, error } = await db
     .from("changelog_entries")
-    .insert({ kind: entry.kind, title: entry.title.trim(), body: entry.body.trim() })
-    .select("id, kind, title, body, created_at, created_by")
+    .insert({ kind: entry.kind, area: entry.area, title: entry.title.trim(), body: entry.body.trim() })
+    .select("id, kind, area, title, body, created_at, created_by")
     .single();
   if (error) throw new Error(error.message);
   void logAudit("changelog.add", "changelog_entry", data.id, {
     kind: entry.kind,
+    area: entry.area,
     title: entry.title.trim(),
   });
   return data as ChangelogEntry;

@@ -13,14 +13,17 @@ import {
   previewWeeklyDigest,
   sendWeeklyDigest,
   lastDigestSend,
+  CHANGELOG_AREAS,
   type ChangelogEntry,
   type ChangelogKind,
+  type ChangelogArea,
   type DigestPreview,
 } from "../lib/supabase";
 
 const SEEN_KEY = "ff.admin.changelog.lastSeenAt";
 const KIND_LABEL: Record<ChangelogKind, string> = { new: "New", improved: "Improved", fixed: "Fixed" };
 const KINDS: ChangelogKind[] = ["new", "improved", "fixed"];
+const AREA_LABEL = Object.fromEntries(CHANGELOG_AREAS.map((a) => [a.key, a.label])) as Record<ChangelogArea, string>;
 
 function relDate(iso: string): string {
   const d = new Date(iso);
@@ -59,14 +62,15 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
   // ---- Composer -------------------------------------------------------------
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<ChangelogKind>("new");
+  const [area, setArea] = useState<ChangelogArea>("product");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
   const addMut = useMutation({
-    mutationFn: () => addChangelogEntry({ kind, title, body }),
+    mutationFn: () => addChangelogEntry({ kind, area, title, body }),
     onSuccess: () => {
-      setTitle(""); setBody(""); setKind("new"); setOpen(false); setErr(null);
+      setTitle(""); setBody(""); setKind("new"); setArea("product"); setOpen(false); setErr(null);
       void qc.invalidateQueries({ queryKey: ["changelog"] });
     },
     onError: (e) => setErr((e as Error).message),
@@ -204,6 +208,15 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
             >
               {KINDS.map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
             </select>
+            <select
+              className="topic-select"
+              value={area}
+              onChange={(e) => setArea(e.target.value as ChangelogArea)}
+              aria-label="Section"
+              title="Which section of the weekly email this lands in"
+            >
+              {CHANGELOG_AREAS.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
+            </select>
             <input
               className="whatsnew-title-input"
               placeholder="What changed? e.g. Added the How-it-works guide"
@@ -246,6 +259,7 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
                 <div className="whatsnew-item-head">
                   <span className={`whatsnew-kind kind-${e.kind}`}>{KIND_LABEL[e.kind]}</span>
                   <span className="whatsnew-item-title">{e.title}</span>
+                  {e.area && <span className="whatsnew-item-area">{AREA_LABEL[e.area] ?? e.area}</span>}
                   <span className="whatsnew-item-meta">{relDate(e.created_at)}</span>
                   <button
                     type="button"

@@ -88,6 +88,16 @@ export const FALLBACK: Record<string, TemplateRow> = {
     cta_label: "Review & send",
     footer: "You're getting this because you can send the weekly digest. It's a nudge, not the digest itself.",
   },
+  admin_welcome: {
+    email_key: "admin_welcome",
+    eyebrow: "FounderFirst · Admin",
+    subject: "You've got FounderFirst admin access",
+    preheader: "Sign in any time with a one-tap magic link — no password.",
+    heading: "You're an admin now, {firstName}.",
+    intro: "{addedBy} added you to the FounderFirst admin. Sign in any time at founderfirst.one/admin — enter this email and we'll send a one-tap magic link, no password to remember. You'll also get the weekly \"What's new\" and the Signals digests.",
+    cta_label: "Open the admin",
+    footer: "You're getting this because {addedBy} gave you FounderFirst admin access.",
+  },
   penny_brain: {
     email_key: "penny_brain",
     eyebrow: "Penny's brain",

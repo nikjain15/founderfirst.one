@@ -1177,6 +1177,71 @@ export const posthog = {
   topEvents: (days = 30, limit = 10, product?: PhProduct) => callPhProxy<{ rows: PhEventRow[]   }>({ action: "topEvents", days, limit, product }),
 };
 
+// ---- Learning loop "Act": experiments --------------------------------------
+export type ExpStatus = "draft" | "running" | "stopped" | "promoted";
+export type PolicyTier = "auto" | "propose" | "inform";
+export interface ExperimentRow {
+  id: string; key: string; name: string; status: ExpStatus; section_type: string;
+  primary_metric: string; policy_tier: PolicyTier; created_at: string;
+  started_at: string | null; stopped_at: string | null;
+}
+export interface ArmRow {
+  id: string; experiment_id: string; variant_key: string;
+  payload: Record<string, unknown>; is_control: boolean; rollout_pct: number | null;
+}
+export interface ExpResultRow {
+  variant_key: string; exposures: number; conversions: number;
+  conv_rate: number | null; lift: number | null; as_of: string;
+}
+
+export const experiments = {
+  list: async (): Promise<ExperimentRow[]> => {
+    const db = getClient();
+    const { data, error } = await db.from("experiments").select("*").order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []) as ExperimentRow[];
+  },
+  arms: async (experimentId: string): Promise<ArmRow[]> => {
+    const db = getClient();
+    const { data, error } = await db.from("experiment_arms").select("*").eq("experiment_id", experimentId).order("is_control", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []) as ArmRow[];
+  },
+  results: async (experimentId: string): Promise<ExpResultRow[]> => {
+    const db = getClient();
+    const { data, error } = await db.from("experiment_results").select("variant_key, exposures, conversions, conv_rate, lift, as_of").eq("experiment_id", experimentId);
+    if (error) throw new Error(error.message);
+    return (data ?? []) as ExpResultRow[];
+  },
+  create: async (e: { key: string; name: string; section_type: string; policy_tier?: PolicyTier }): Promise<ExperimentRow> => {
+    const db = getClient();
+    const { data, error } = await db.from("experiments").insert({ key: e.key, name: e.name, section_type: e.section_type, policy_tier: e.policy_tier ?? "propose" }).select().single();
+    if (error) throw new Error(error.message);
+    return data as ExperimentRow;
+  },
+  addArm: async (a: { experiment_id: string; variant_key: string; payload: Record<string, unknown>; is_control?: boolean }): Promise<void> => {
+    const db = getClient();
+    const { error } = await db.from("experiment_arms").insert({ experiment_id: a.experiment_id, variant_key: a.variant_key, payload: a.payload, is_control: a.is_control ?? false });
+    if (error) throw new Error(error.message);
+  },
+  setStatus: async (id: string, status: ExpStatus): Promise<void> => {
+    const db = getClient();
+    const patch: Record<string, unknown> = { status };
+    if (status === "running") patch.started_at = new Date().toISOString();
+    if (status === "stopped" || status === "promoted") patch.stopped_at = new Date().toISOString();
+    const { error } = await db.from("experiments").update(patch).eq("id", id);
+    if (error) throw new Error(error.message);
+  },
+  /** AI-draft a variant — on-voice by construction (draft-variant reads the live Voice guide). */
+  draft: async (field: string, control: string, brief?: string): Promise<string> => {
+    const db = getClient();
+    const { data, error } = await db.functions.invoke("draft-variant", { body: { field, control, brief } });
+    if (error) throw new Error(`draft-variant: ${error.message}`);
+    if (data?.error) throw new Error(`draft-variant: ${data.error}${data.detail ? ` — ${data.detail}` : ""}`);
+    return String(data?.text ?? "");
+  },
+};
+
 // ---- Product insights (learning loop: Synthesize + Act) --------------------
 
 /** The three outcome areas a run can target. */

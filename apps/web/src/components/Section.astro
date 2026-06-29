@@ -2,14 +2,23 @@
 import type { Section } from "@ff/content";
 import SignupForm from "./SignupForm.tsx";
 import TryPenny from "./TryPenny.tsx";
-interface Props { section: Section }
-const { section } = Astro.props;
+import ExperimentText from "./ExperimentText.tsx";
+import type { Experiment } from "../lib/experiments";
+interface Props { section: Section; experiment?: Experiment }
+const { section, experiment } = Astro.props;
 const d: any = section.data;
+// If a running experiment targets this section, build the per-arm text maps so
+// the assignment island can render the visitor's variant.
+const expHeadline: Record<string, string> | undefined = experiment
+  ? Object.fromEntries(experiment.arms.map((a) => [a.variant_key, (a.payload as any).headline ?? d.headline]))
+  : undefined;
 ---
 {section.type === "hero" && (
   <section class="hero">
     <div class="wrap hero-inner">
-      <h1>{d.headline}</h1>
+      {expHeadline
+        ? <h1><ExperimentText client:load flag={experiment!.key} variants={expHeadline} fallback={d.headline} /></h1>
+        : <h1>{d.headline}</h1>}
       <p class="hero-sub">{d.sub}{d.link && <> <a class="hero-link" href={d.link.href}>{d.link.label} →</a></>}</p>
       <SignupForm client:load source="hero" ctaLabel={d.ctaLabel} />
       <p class="muted">Join 100+ founders already on the waitlist.</p>

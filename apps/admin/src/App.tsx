@@ -28,6 +28,7 @@ const EmailHub      = lazy(() => named(import("./routes/EmailHub"), "EmailHub"))
 const SiteContent   = lazy(() => named(import("./routes/SiteContent"), "SiteContent"));
 const BlogPosts     = lazy(() => named(import("./routes/BlogPosts"), "BlogPosts"));
 const ContentPipeline = lazy(() => named(import("./routes/ContentPipeline"), "ContentPipeline"));
+const Experiments   = lazy(() => named(import("./routes/Experiments"), "Experiments"));
 
 /** Gate a route behind sign-in; bounce to /login (remembering where we came from). */
 function RequireAuth({ signedIn, children }: { signedIn: boolean; children: ReactElement }) {
@@ -194,6 +195,7 @@ export function App() {
                     <span className="settings-divider" role="separator" />
                     <Link to="/quality" role="menuitem" className={location.pathname.startsWith("/quality") ? "active" : ""}>Quality</Link>
                     <Link to="/ai-quality" role="menuitem" className={location.pathname.startsWith("/ai-quality") ? "active" : ""}>AI quality</Link>
+                    <Link to="/experiments" role="menuitem" className={location.pathname.startsWith("/experiments") ? "active" : ""}>Experiments</Link>
                     <Link to="/admins" role="menuitem" className={location.pathname.startsWith("/admins") ? "active" : ""}>Admins</Link>
                     <Link to="/audit" role="menuitem" className={location.pathname.startsWith("/audit") ? "active" : ""}>Audit log</Link>
                     <span className="settings-divider" role="separator" />
@@ -246,6 +248,7 @@ export function App() {
             <Route path="/site-content" element={<RequireAuth signedIn={signedIn}><SiteContent /></RequireAuth>} />
             <Route path="/blog-posts" element={<RequireAuth signedIn={signedIn}><BlogPosts /></RequireAuth>} />
             <Route path="/content-pipeline" element={<RequireAuth signedIn={signedIn}><ContentPipeline /></RequireAuth>} />
+            <Route path="/experiments" element={<RequireAuth signedIn={signedIn}><Experiments /></RequireAuth>} />
             {/* Back-compat redirects — old top-level tabs now live under Audience. */}
             <Route path="/users" element={<Navigate to="/audience#web" replace />} />
             <Route path="/signals" element={<Navigate to="/audience#signals" replace />} />

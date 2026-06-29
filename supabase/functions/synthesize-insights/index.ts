@@ -299,6 +299,9 @@ async function synthesizeWithClaude(
       ANTHROPIC_API_KEY: apiKey,
       SUPABASE_URL: Deno.env.get("SUPABASE_URL") ?? "",
       SUPABASE_SERVICE_KEY: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      // Phase 5b: set the OPENROUTER_API_KEY Supabase secret to let insights route
+      // to an OpenRouter model; unset = not routable here (anthropic/workers paths unaffected).
+      OPENROUTER_API_KEY: Deno.env.get("OPENROUTER_API_KEY") ?? undefined,
     },
   );
   const parsed = JSON.parse(result.text || "{}");

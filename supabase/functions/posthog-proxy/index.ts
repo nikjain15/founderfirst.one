@@ -72,36 +72,40 @@ Deno.serve(async (req) => {
   const HOST    = (Deno.env.get("POSTHOG_HOST") ?? "https://us.posthog.com").replace(/\/$/, "");
   if (!KEY) return json({ error: "missing_config", hint: "Set POSTHOG_PERSONAL_API_KEY secret" }, 500);
 
-  let body: { action?: string; days?: number; limit?: number };
+  let body: { action?: string; days?: number; limit?: number; product?: string };
   try { body = await req.json(); } catch { return json({ error: "bad_json" }, 400); }
   const days  = Math.max(1, Math.min(body.days  ?? 30, 365));
   const limit = Math.max(1, Math.min(body.limit ?? 10,  50));
   const since = `timestamp >= now() - INTERVAL ${days} DAY`;
+  // Optional per-product filter — whitelisted (never interpolate raw input).
+  const PRODUCTS = ["website", "demo", "app", "admin", "chat"];
+  const prod = body.product && PRODUCTS.includes(body.product)
+    ? ` AND properties.product = '${body.product}'` : "";
 
   try {
     if (body.action === "overview") {
       const r = await hogql(HOST, PROJECT, KEY,
         `SELECT count() AS pageviews, count(DISTINCT person_id) AS users, count(DISTINCT $session_id) AS sessions
-         FROM events WHERE event = '$pageview' AND ${since}`);
+         FROM events WHERE event = '$pageview' AND ${since}${prod}`);
       const row = r[0] ?? [0, 0, 0];
       return json({ pageviews: Number(row[0] ?? 0), users: Number(row[1] ?? 0), sessions: Number(row[2] ?? 0) });
     }
     if (body.action === "traffic") {
       const r = await hogql(HOST, PROJECT, KEY,
         `SELECT toDate(timestamp) AS day, count() AS pageviews, count(DISTINCT person_id) AS users
-         FROM events WHERE event = '$pageview' AND ${since} GROUP BY day ORDER BY day`);
+         FROM events WHERE event = '$pageview' AND ${since}${prod} GROUP BY day ORDER BY day`);
       return json({ rows: r.map((x: any[]) => ({ date: String(x[0]), pageviews: Number(x[1]), users: Number(x[2]) })) });
     }
     if (body.action === "topPages") {
       const r = await hogql(HOST, PROJECT, KEY,
         `SELECT properties.$pathname AS path, count() AS views, count(DISTINCT person_id) AS users
-         FROM events WHERE event = '$pageview' AND ${since} GROUP BY path ORDER BY views DESC LIMIT ${limit}`);
+         FROM events WHERE event = '$pageview' AND ${since}${prod} GROUP BY path ORDER BY views DESC LIMIT ${limit}`);
       return json({ rows: r.map((x: any[]) => ({ path: String(x[0] ?? "/"), views: Number(x[1]), users: Number(x[2]) })) });
     }
     if (body.action === "topEvents") {
       const r = await hogql(HOST, PROJECT, KEY,
         `SELECT event, count() AS n FROM events
-         WHERE event NOT LIKE '$%' AND ${since} GROUP BY event ORDER BY n DESC LIMIT ${limit}`);
+         WHERE event NOT LIKE '$%' AND ${since}${prod} GROUP BY event ORDER BY n DESC LIMIT ${limit}`);
       return json({ rows: r.map((x: any[]) => ({ event: String(x[0]), count: Number(x[1]) })) });
     }
     return json({ error: "unknown_action" }, 400);

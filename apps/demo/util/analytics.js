@@ -8,10 +8,12 @@
 
 import posthog from 'posthog-js';
 
-const KEY = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
+// Build env provides VITE_POSTHOG_KEY/HOST (see .github/workflows/pages.yml) —
+// the old VITE_PUBLIC_* names never matched, so capture silently never ran.
+const KEY = import.meta.env.VITE_POSTHOG_KEY || import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
 if (KEY) {
   posthog.init(KEY, {
-    api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
+    api_host: import.meta.env.VITE_POSTHOG_HOST || import.meta.env.VITE_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
     autocapture: true,                 // clicks/rage-clicks (was missing → no click data)
     enable_heatmaps: true,             // clickmaps + scrollmaps
     enableExceptionAutocapture: true,

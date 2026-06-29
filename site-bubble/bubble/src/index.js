@@ -55,6 +55,11 @@ function getWorkerUrl() {
 function emitPennyEvent(name, props) {
   try {
     window.dispatchEvent(new CustomEvent("penny:event", { detail: { name, props: props || {} } }));
+    // Forward to PostHog via the host page's instance (the bubble runs on
+    // founderfirst.one where apps/web already initialised it, post-consent).
+    // `product: "chat"` per-event overrides the host's product super-property so
+    // chat interactions segment separately in the same project.
+    window.posthog?.capture?.(name, { ...(props || {}), product: "chat" });
   } catch { /* swallow */ }
 }
 

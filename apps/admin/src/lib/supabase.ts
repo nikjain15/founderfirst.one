@@ -1091,11 +1091,15 @@ async function callPhProxy<T>(body: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
+/** Per-product filter (undefined = all surfaces). Tagged via the `product`
+ *  super-property on each surface's PostHog init. */
+export type PhProduct = "website" | "demo" | "app" | "admin" | "chat";
+
 export const posthog = {
-  overview:  (days = 30)              => callPhProxy<PhOverview>({ action: "overview",  days }),
-  traffic:   (days = 30)              => callPhProxy<{ rows: PhTrafficRow[] }>({ action: "traffic",   days }),
-  topPages:  (days = 30, limit = 10)  => callPhProxy<{ rows: PhPageRow[]    }>({ action: "topPages",  days, limit }),
-  topEvents: (days = 30, limit = 10)  => callPhProxy<{ rows: PhEventRow[]   }>({ action: "topEvents", days, limit }),
+  overview:  (days = 30, product?: PhProduct)             => callPhProxy<PhOverview>({ action: "overview",  days, product }),
+  traffic:   (days = 30, product?: PhProduct)             => callPhProxy<{ rows: PhTrafficRow[] }>({ action: "traffic",   days, product }),
+  topPages:  (days = 30, limit = 10, product?: PhProduct) => callPhProxy<{ rows: PhPageRow[]    }>({ action: "topPages",  days, limit, product }),
+  topEvents: (days = 30, limit = 10, product?: PhProduct) => callPhProxy<{ rows: PhEventRow[]   }>({ action: "topEvents", days, limit, product }),
 };
 
 // ---- Product insights (learning loop: Synthesize + Act) --------------------

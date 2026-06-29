@@ -402,6 +402,38 @@ export async function syncAICatalog(): Promise<Record<string, unknown>> {
   return (data as Record<string, unknown>) ?? {};
 }
 
+/* ---- Phase 5: autonomy ramp (review level per use case, D5) -------------------- */
+
+export interface AIRampRow {
+  use_case: string;
+  label: string;
+  current_mode: string;
+  current_sample_rate: number | string;
+  recommended_mode: string;
+  recommended_sample_rate: number | string;
+  decisions: number;
+  reviewed: number;
+  zero_edit_pct: number | string | null;
+  gate_pass_pct: number | string | null;
+  safety_fail: number;
+  rationale: string;
+}
+
+export async function getRampRecommendations(days = 30): Promise<AIRampRow[]> {
+  const { data, error } = await getClient().rpc("admin_ai_ramp_recommendations", { p_days: days });
+  if (error) throw new Error(`getRampRecommendations: ${error.message}`);
+  return (data as AIRampRow[]) ?? [];
+}
+
+export async function setReviewMode(useCase: string, mode: "full" | "sampling", sampleRate: number): Promise<void> {
+  const { error } = await getClient().rpc("admin_ai_set_review_mode", {
+    p_use_case: useCase,
+    p_mode: mode,
+    p_sample_rate: sampleRate,
+  });
+  if (error) throw new Error(error.message);
+}
+
 export async function upsertAIEval(args: {
   key: string;
   name: string;

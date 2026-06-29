@@ -21,6 +21,7 @@ import {
 } from "../lib/supabase";
 import { Takeaway } from "../lib/Takeaway";
 import { IconAlert } from "../lib/icons";
+import { AIRamp } from "./AIRamp";
 
 const FILTERS: Array<{ id: AIReviewFilter; label: string }> = [
   { id: "needs", label: "Needs review" },
@@ -92,6 +93,8 @@ export function AIReview() {
 
   return (
     <div>
+      <AIRamp />
+
       {takeaway}
 
       {kpis && (

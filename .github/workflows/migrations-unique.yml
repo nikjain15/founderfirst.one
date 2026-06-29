@@ -1,0 +1,37 @@
+name: Migration timestamps
+
+# Asserts every file in supabase/migrations/ has a unique timestamp prefix.
+# Two migrations sharing a prefix break clean re-applies and the Supabase
+# Preview/branching check (which replays migrations from scratch). This guard
+# stops a duplicate from reaching main. See PRs #92/#93 for the original incidents.
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+  workflow_dispatch:
+
+jobs:
+  unique-timestamps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assert unique migration timestamp prefixes
+        run: |
+          cd supabase/migrations
+          # Prefix = leading digits before the first underscore (e.g. 20260628120000).
+          dupes="$(ls *.sql 2>/dev/null | grep -oE '^[0-9]+' | sort | uniq -d || true)"
+          if [ -n "$dupes" ]; then
+            echo "::error::Duplicate migration timestamp prefix(es) found — each migration must have a unique prefix."
+            for p in $dupes; do
+              echo "::error::  prefix $p is shared by:"
+              ls "${p}"_*.sql | sed 's/^/      /'
+            done
+            exit 1
+          fi
+          echo "OK — all $(ls *.sql | wc -l | tr -d ' ') migration timestamp prefixes are unique."

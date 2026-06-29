@@ -45,6 +45,7 @@ const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: fal
 const toVector = (arr) => `[${arr.join(",")}]`;
 
 let cachedVoice = null;
+let cachedPersona = null;
 let cachedKeywords = null;
 let cachedExcludes = null;
 let cachedSettings = null;
@@ -83,6 +84,16 @@ async function getVoice() {
   if (error) { console.warn("voice unavailable:", error.message); cachedVoice = ""; return ""; }
   cachedVoice = data?.[0]?.body ?? "";
   return cachedVoice;
+}
+
+// Live Signals outreach task note (surface='signals'). Empty string -> draft()
+// falls back to its baked-in SIGNALS_PERSONA_BASE.
+async function getPersona() {
+  if (cachedPersona !== null) return cachedPersona;
+  const { data, error } = await db.rpc("get_live_outreach_persona", { p_surface: "signals" });
+  if (error) { console.warn("persona unavailable:", error.message); cachedPersona = ""; return ""; }
+  cachedPersona = data?.[0]?.body ?? "";
+  return cachedPersona;
 }
 
 async function getPainKeywords() {
@@ -188,9 +199,11 @@ async function processItem(item, painKeywords, excludeKeywords, settings) {
   if (promote && leadId) {
     try {
       const voice = await getVoice();
+      const persona = await getPersona();
       const message = await draft(
-        { post: text, painTags: scored.pain_tags, competitor: scored.competitor, channel: "on_platform" },
+        { post: text, painTags: scored.pain_tags, competitor: scored.competitor },
         voice,
+        persona,
       );
       const { error } = await db.rpc("sig_set_lead_draft", {
         p_lead_id: leadId, p_draft: message, p_model: brainConfig.draftModel,
@@ -289,7 +302,7 @@ async function main() {
     try {
       const n = await cycle();
       // Refresh caches occasionally so keyword/voice edits propagate.
-      if (n === 0) { cachedKeywords = null; cachedExcludes = null; cachedVoice = null; cachedSettings = null; }
+      if (n === 0) { cachedKeywords = null; cachedExcludes = null; cachedVoice = null; cachedPersona = null; cachedSettings = null; }
       // Daily self-improvement pass (self-gated to once / 24h).
       await maybeRunOptimizer(db, await getSettings());
     } catch (e) { console.error("cycle error:", e.message); }

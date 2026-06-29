@@ -147,6 +147,29 @@ export const TrustSection = z.object({
   }),
 });
 
+/** "About" — the FounderFirst company story (vision; Penny is the first product). */
+export const AboutSection = z.object({
+  ...baseSection,
+  type: z.literal("about"),
+  data: z.object({
+    eyebrow: z.string().optional(),
+    headline: z.string(),
+    body: z.array(z.string()),   // paragraphs
+  }),
+});
+
+/** "A conversation, not a chore" — the Penny chat back-and-forth showing how
+    little the owner actually has to do. Turns alternate you ↔ penny. */
+export const ChatSection = z.object({
+  ...baseSection,
+  type: z.literal("chat"),
+  data: z.object({
+    eyebrow: z.string().optional(),
+    headline: z.string(),
+    turns: z.array(z.object({ who: z.enum(["you", "penny"]), text: z.string() })),
+  }),
+});
+
 export const TryPennySection = z.object({
   ...baseSection,
   type: z.literal("tryPenny"),
@@ -160,7 +183,7 @@ export const TryPennySection = z.object({
 
 export const Section = z.discriminatedUnion("type", [
   HeroSection, FeaturesSection, ComparisonSection, StepsSection, CtaSection, FaqSection, TryPennySection,
-  ProofSection, ShowcaseSection, TrustSection,
+  ProofSection, ShowcaseSection, TrustSection, AboutSection, ChatSection,
 ]);
 export type Section = z.infer<typeof Section>;
 

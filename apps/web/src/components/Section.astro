@@ -218,6 +218,37 @@ const expHeadline: Record<string, string> | undefined = experiment
   </section>
 )}
 
+{section.type === "chat" && (
+  <section id="how-it-works">
+    <div class="wrap">
+      {d.eyebrow && <div class="eyebrow brand">{d.eyebrow}</div>}
+      <h2>{d.headline}</h2>
+      <div class="chat">
+        {d.turns.map((t: any) => (
+          t.who === "penny" ? (
+            <div class="chat-row penny">
+              <span class="chat-mark">P</span>
+              <div class="chat-bubble penny">{t.text}</div>
+            </div>
+          ) : (
+            <div class="chat-row you"><div class="chat-bubble you">{t.text}</div></div>
+          )
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+{section.type === "about" && (
+  <section id="about" class="dark">
+    <div class="wrap about">
+      {d.eyebrow && <div class="eyebrow brand">{d.eyebrow}</div>}
+      <h2>{d.headline}</h2>
+      <div class="about-body">{d.body.map((p: any) => <p>{p}</p>)}</div>
+    </div>
+  </section>
+)}
+
 <style>
   /* Marketing headings, sized to the Ploy reference (tighter than the global
      display tokens, which run large for hero billboards). */
@@ -340,4 +371,18 @@ const expHeadline: Record<string, string> | undefined = experiment
     .show-row:nth-child(even) .show-copy { order: 0; }
     .trust-grid { grid-template-columns: 1fr; }
   }
+
+  /* Chat — "a conversation, not a chore" */
+  .chat { max-width: 640px; margin: var(--space-8) auto 0; display: flex; flex-direction: column; gap: var(--space-3); }
+  .chat-row { display: flex; gap: var(--space-2); align-items: flex-end; }
+  .chat-row.you { justify-content: flex-end; }
+  .chat-mark { flex-shrink: 0; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--brand); color: var(--white); font-family: var(--font-display); font-size: var(--fs-data-row); }
+  .chat-bubble { font-size: var(--fs-body); line-height: 1.5; padding: var(--space-3) var(--space-4); border-radius: var(--r-card-emph); max-width: 78%; }
+  .chat-bubble.penny { background: var(--white); border: var(--bw-hair) solid var(--line); border-bottom-left-radius: var(--space-1); box-shadow: var(--shadow-card); }
+  .chat-bubble.you { background: var(--brand); color: var(--white); border-bottom-right-radius: var(--space-1); }
+
+  /* About — company story (dark band) */
+  .about { max-width: 720px; }
+  .about-body { margin-top: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+  .about-body p { font-size: var(--fs-body); line-height: 1.65; color: rgba(255,255,255,0.78); }
 </style>

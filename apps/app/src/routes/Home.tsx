@@ -40,7 +40,9 @@ export default function Home() {
           </div>
         )}
 
-        {activeOrg && roleInfo?.lens === "owner" && <OwnerLens org={activeOrg} />}
+        {activeOrg && roleInfo?.lens === "owner" && (
+          <OwnerLens org={activeOrg} roleInfo={roleInfo} />
+        )}
         {activeOrg && roleInfo?.lens === "cpa" && (
           <CpaLens org={activeOrg} roleInfo={roleInfo} />
         )}

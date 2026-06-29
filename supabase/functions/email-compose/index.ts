@@ -61,12 +61,26 @@ Deno.serve(async (req) => {
   catch { return json({ error: "bad_json" }, 400); }
   if (brief.length < 3) return json({ error: "brief_required", detail: "Describe the email you want in a sentence or two." }, 400);
 
+  // ---- Single voice + email task note ---------------------------------------
+  // One canonical voice guide drives every surface; email layers its own task
+  // note on top (penny_outreach_persona, surface='email'). We fetch both here
+  // (service role) and forward them so compose-server doesn't hold a second copy
+  // of FounderFirst's voice. If either is unset, compose-server falls back to its
+  // baked-in default, so email keeps working.
+  const svc = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+  const [{ data: voiceRows }, { data: personaRows }] = await Promise.all([
+    svc.rpc("get_live_voice"),
+    svc.rpc("get_live_outreach_persona", { p_surface: "email" }),
+  ]);
+  const voice   = (voiceRows as { body?: string }[] | null)?.[0]?.body ?? "";
+  const persona = (personaRows as { body?: string }[] | null)?.[0]?.body ?? "";
+
   // ---- Forward to the host compose-server over the tunnel ------------------
   try {
     const res = await fetch(`${endpoint.replace(/\/$/, "")}/compose`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-compose-secret": secret },
-      body: JSON.stringify({ brief }),
+      body: JSON.stringify({ brief, voice, persona }),
       signal: AbortSignal.timeout(45_000),
     });
     const data = await res.json().catch(() => ({}));

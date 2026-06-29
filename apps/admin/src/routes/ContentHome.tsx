@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ContentPrompt } from "./ContentPrompt";
 import { ContentVoice } from "./ContentVoice";
 import { ContentDiscord } from "./ContentDiscord";
+import { ContentOutreach } from "./ContentOutreach";
 import { ContentSubnav } from "./ContentSubnav";
 import {
   getClient,
@@ -16,13 +17,17 @@ import {
 // "kb" (knowledge base) is intentionally omitted from the nav until the
 // Phase 2 vector-search feature ships — the panel was a dead placeholder.
 // Site copy + the blog live on their own routes (see ContentSubnav).
-type Tab = "prompt" | "voice" | "discord";
+type Tab = "prompt" | "voice" | "discord" | "outreach";
 
 export function ContentHome() {
   const location = useLocation();
   const navigate = useNavigate();
   const hash = location.hash.slice(1);
-  const tab: Tab = hash === "voice" ? "voice" : hash === "discord" ? "discord" : "prompt";
+  const tab: Tab =
+    hash === "voice" ? "voice"
+    : hash === "discord" ? "discord"
+    : hash === "outreach" ? "outreach"
+    : "prompt";
 
   return (
     <div>
@@ -35,9 +40,10 @@ export function ContentHome() {
       <ContentSubnav active={tab} />
 
       <div className="tab-panel" role="tabpanel" id="content-tabpanel" aria-labelledby={`tab-${tab}`}>
-        {tab === "prompt"  && <ContentPrompt />}
-        {tab === "voice"   && <ContentVoice />}
-        {tab === "discord" && <ContentDiscord />}
+        {tab === "prompt"   && <ContentPrompt />}
+        {tab === "voice"    && <ContentVoice />}
+        {tab === "discord"  && <ContentDiscord />}
+        {tab === "outreach" && <ContentOutreach />}
       </div>
     </div>
   );

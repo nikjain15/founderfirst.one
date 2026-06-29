@@ -13,6 +13,7 @@ import {
   previewWeeklyDigest,
   sendWeeklyDigest,
   lastDigestSend,
+  listAdmins,
   CHANGELOG_AREAS,
   type ChangelogEntry,
   type ChangelogKind,
@@ -105,6 +106,40 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
   const custom = !!toArg;
   const who = (n: number) => (custom ? `${n} recipient${n === 1 ? "" : "s"}` : `${n} admin${n === 1 ? "" : "s"}`);
 
+  // ---- Recipient picker: toggle admins straight from the list ----------------
+  const { data: admins = [] } = useQuery({ queryKey: ["digest-admins"], queryFn: listAdmins });
+
+  // The recipients box is the single source of truth; the chips just edit it.
+  const selected = useMemo(
+    () => new Set(recipients.split(/[,\s]+/).map((s) => s.trim().toLowerCase()).filter(Boolean)),
+    [recipients],
+  );
+
+  // Editing the recipient list invalidates an open preview so its count can't
+  // diverge from what would actually send.
+  function setRecipientList(value: string) {
+    setRecipients(value);
+    setPreview(null);
+  }
+  function commitSelection(next: Set<string>) {
+    setRecipientList(Array.from(next).join(", "));
+  }
+  function toggleEmail(email: string) {
+    const e = email.toLowerCase();
+    const next = new Set(selected);
+    if (next.has(e)) next.delete(e);
+    else next.add(e);
+    commitSelection(next);
+  }
+  const adminEmails = useMemo(() => admins.map((a) => a.email.toLowerCase()), [admins]);
+  const allAdminsSelected = adminEmails.length > 0 && adminEmails.every((e) => selected.has(e));
+  function toggleAllAdmins() {
+    const next = new Set(selected);
+    if (allAdminsSelected) adminEmails.forEach((e) => next.delete(e));
+    else adminEmails.forEach((e) => next.add(e));
+    commitSelection(next);
+  }
+
   const previewMut = useMutation({
     mutationFn: previewWeeklyDigest,
     onSuccess: (d) => { setPreview(d); setDigestMsg(null); },
@@ -165,10 +200,38 @@ export function WhatsNew({ currentEmail }: { currentEmail: string }) {
             className="whatsnew-title-input whatsnew-digest-to"
             type="text"
             value={recipients}
-            onChange={(e) => setRecipients(e.target.value)}
+            onChange={(e) => setRecipientList(e.target.value)}
             placeholder="Send to specific people (optional) — comma-separated emails; blank = all admins"
             aria-label="Digest recipients (optional)"
           />
+          {admins.length > 0 && (
+            <div className="whatsnew-digest-pick">
+              <span className="whatsnew-digest-pick-label">Pick from admins:</span>
+              <button
+                type="button"
+                className={`whatsnew-pick-chip ${allAdminsSelected ? "is-on" : ""}`}
+                onClick={toggleAllAdmins}
+                aria-pressed={allAdminsSelected}
+              >
+                {allAdminsSelected ? "✓ " : ""}All admins
+              </button>
+              {admins.map((a) => {
+                const on = selected.has(a.email.toLowerCase());
+                return (
+                  <button
+                    key={a.email}
+                    type="button"
+                    className={`whatsnew-pick-chip ${on ? "is-on" : ""}`}
+                    onClick={() => toggleEmail(a.email)}
+                    aria-pressed={on}
+                    title={on ? "Click to remove" : "Click to add"}
+                  >
+                    {on ? "✓ " : ""}{a.email}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {lastSend && (
             <span className="whatsnew-digest-last">
               Last sent {relDate(lastSend.sent_at)}

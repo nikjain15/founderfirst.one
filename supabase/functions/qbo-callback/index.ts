@@ -9,16 +9,16 @@ import { exchangeCode } from "../_shared/qbo.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+// Supabase's function gateway force-rewrites any text/html body to text/plain
+// (anti-phishing sandbox), so an HTML page rendered from *.supabase.co shows raw
+// source. Redirect to the app domain — which can render — instead.
+const APP_BASE = Deno.env.get("APP_BASE_URL") ?? "https://founderfirst.one/app/";
 
-function page(title: string, body: string, ok = true): Response {
-  return new Response(
-    `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-     <title>${title}</title>
-     <body style="font-family:system-ui;max-width:32rem;margin:4rem auto;padding:0 1rem;text-align:center;color:#1a1a1a">
-     <h1 style="font-size:1.4rem">${ok ? "✓ " : "⚠️ "}${title}</h1><p style="color:#555">${body}</p>
-     <p><button onclick="window.close()" style="padding:.6rem 1.2rem;border-radius:999px;border:0;background:#0a7d6b;color:#fff;font-size:1rem">Close</button></p>`,
-    { status: ok ? 200 : 400, headers: { "Content-Type": "text/html; charset=utf-8" } },
-  );
+/** 302 back to the app with a connection result the UI can surface. */
+function back(params: Record<string, string>): Response {
+  const u = new URL(APP_BASE);
+  for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
+  return Response.redirect(u.toString(), 302);
 }
 
 Deno.serve(async (req) => {
@@ -27,13 +27,13 @@ Deno.serve(async (req) => {
   const state = url.searchParams.get("state");
   const realmId = url.searchParams.get("realmId");
   const err = url.searchParams.get("error");
-  if (err) return page("Connection cancelled", `QuickBooks returned: ${err}`, false);
-  if (!code || !state || !realmId) return page("Missing parameters", "The callback was missing code, state, or realmId.", false);
+  if (err) return back({ provider: "qbo", status: "error", message: `QuickBooks returned: ${err}` });
+  if (!code || !state || !realmId) return back({ provider: "qbo", status: "error", message: "Missing code, state, or realmId." });
 
   const svc = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: conn } = await svc
     .from("external_connections").select("id, org_id").eq("state", state).eq("provider", "qbo").maybeSingle();
-  if (!conn) return page("Unknown request", "That connection request wasn't recognized (or expired).", false);
+  if (!conn) return back({ provider: "qbo", status: "error", message: "That connection request wasn't recognized (or expired)." });
 
   try {
     const tok = await exchangeCode(code);
@@ -44,9 +44,9 @@ Deno.serve(async (req) => {
       status: "active", state: null, last_error: null, updated_at: new Date().toISOString(),
     }).eq("id", conn.id);
     if (upErr) throw new Error(upErr.message);
-    return page("Connected to QuickBooks", "Your company is linked. Head back to FounderFirst and run the import.");
+    return back({ provider: "qbo", status: "connected", org: conn.org_id });
   } catch (e) {
     await svc.from("external_connections").update({ status: "error", last_error: (e as Error).message }).eq("id", conn.id);
-    return page("Couldn't finish connecting", (e as Error).message, false);
+    return back({ provider: "qbo", status: "error", message: (e as Error).message });
   }
 });

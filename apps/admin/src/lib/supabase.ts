@@ -68,13 +68,22 @@ export async function listAdmins(): Promise<AdminRow[]> {
   return (data as AdminRow[]) ?? [];
 }
 
-export async function inviteAdmin(email: string): Promise<void> {
+export async function inviteAdmin(email: string): Promise<{ emailed: boolean }> {
   const db = getClient();
+  const target = email.trim().toLowerCase();
   const me = (await db.auth.getUser()).data.user?.email ?? null;
   const { error } = await db
     .from("admins")
-    .insert({ email: email.trim().toLowerCase(), added_by: me });
+    .insert({ email: target, added_by: me });
   if (error) throw new Error(error.message);
+  // Best-effort welcome email — the new admin gets a "you have access, here's
+  // how to sign in" note. A send failure must never fail the add itself.
+  try {
+    const { data } = await db.functions.invoke("admin-welcome", { body: { email: target } });
+    return { emailed: !!(data as { sent?: number } | null)?.sent };
+  } catch {
+    return { emailed: false };
+  }
 }
 
 export async function removeAdmin(email: string): Promise<void> {

@@ -224,10 +224,17 @@ export async function sendEmail(input: SendInput): Promise<SendResult> {
   let lastDetail: unknown;
 
   for (const chunk of chunks) {
+    // Privacy: a single recipient gets a normal To (transactional emails should
+    // address the person). Multiple recipients (admin digests, broadcasts) go in
+    // BCC with To set to our own From, so recipients never see each other's
+    // addresses.
+    const envelope = chunk.length === 1
+      ? { to: chunk }
+      : { to: [from], bcc: chunk };
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to: chunk, subject: rendered.subject, html: rendered.html, text: rendered.text }),
+      body: JSON.stringify({ from, ...envelope, subject: rendered.subject, html: rendered.html, text: rendered.text }),
     });
     const respBody: any = await res.json().catch(() => ({}));
     if (res.ok) {

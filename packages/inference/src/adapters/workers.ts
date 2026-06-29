@@ -13,6 +13,7 @@
 import {
   resolve,
   buildRecordRequest,
+  buildInferenceConfig,
   DEFAULT_CONFIG,
   DEFAULT_PRICES,
   type AiDecisionRecord,
@@ -23,6 +24,7 @@ import {
   type ResolveCtx,
   type ResolveResult,
   type ResolveTask,
+  type TwinPayload,
 } from "../core";
 import {
   judge,
@@ -101,13 +103,13 @@ export function makeWorkersCtx(
   };
 }
 
-export function resolveOnWorkers(
+export async function resolveOnWorkers(
   task: ResolveTask,
   env: WorkersInferenceEnv,
   exec: ExecutionContextLike,
   config?: InferenceConfig,
 ): Promise<ResolveResult> {
-  return resolve(task, makeWorkersCtx(env, exec, config));
+  return resolve(task, makeWorkersCtx(env, exec, config ?? (await loadInferenceConfig(env))));
 }
 
 /* ── Phase 2: judging on Workers ───────────────────────────────────────────── */
@@ -116,6 +118,39 @@ export function resolveOnWorkers(
  *  the Worker. Config is global (no customer data), so caching is safe. */
 const CONFIG_TTL_MS = 60_000;
 const _evalConfigCache = new Map<string, { at: number; defs: EvalDef[] }>();
+
+/** Model/routing config cache (per isolate, ~60s). Loaded from the service-role
+ *  twin ai_runtime_inference_config (Phase 4, D10): routing, prices, per-use-case
+ *  meta (backup/cap/cache). On any error, falls back to the last good cache or the
+ *  seed DEFAULT_CONFIG — never throws into the answer path (D18). */
+let _inferenceConfigCache: { at: number; config: InferenceConfig } | null = null;
+
+export async function loadInferenceConfig(env: WorkersInferenceEnv): Promise<InferenceConfig> {
+  if (_inferenceConfigCache && Date.now() - _inferenceConfigCache.at < CONFIG_TTL_MS) {
+    return _inferenceConfigCache.config;
+  }
+  try {
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/ai_runtime_inference_config`, {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    if (!res.ok) {
+      console.error(`loadInferenceConfig ${res.status}: ${(await res.text()).slice(0, 200)}`);
+      return _inferenceConfigCache?.config ?? DEFAULT_CONFIG;
+    }
+    const config = buildInferenceConfig((await res.json()) as TwinPayload);
+    _inferenceConfigCache = { at: Date.now(), config };
+    return config;
+  } catch (e) {
+    console.error("loadInferenceConfig error:", e instanceof Error ? e.message : e);
+    return _inferenceConfigCache?.config ?? DEFAULT_CONFIG;
+  }
+}
 
 /** Load the resolved eval config for a use case via the service-role runtime RPC
  *  (ai_runtime_usecase_evals). On any error, falls back to the last good cache or
@@ -193,13 +228,16 @@ export async function writeDecisionRecord(env: WorkersInferenceEnv, record: AiDe
 
 /** Resolve WITHOUT writing the log — the deferred path. The caller (live chat)
  *  judges the answer, then writes one enriched row via finalizeChatDecision. */
-export function resolveDeferredOnWorkers(
+export async function resolveDeferredOnWorkers(
   task: ResolveTask,
   env: WorkersInferenceEnv,
   exec: ExecutionContextLike,
   config?: InferenceConfig,
 ): Promise<ResolveResult> {
-  return resolve({ ...task, record: { ...task.record, defer: true } }, makeWorkersCtx(env, exec, config));
+  return resolve(
+    { ...task, record: { ...task.record, defer: true } },
+    makeWorkersCtx(env, exec, config ?? (await loadInferenceConfig(env))),
+  );
 }
 
 const failClosedOutcome = (budgetMs: number): JudgeOutcome => ({
@@ -300,7 +338,7 @@ export async function resolveAndJudgeOnWorkers(
   const id = crypto.randomUUID();
   const result = await resolve(
     { ...task, record: { ...task.record, id, defer: true } },
-    makeWorkersCtx(env, exec),
+    makeWorkersCtx(env, exec, await loadInferenceConfig(env)),
   );
   const base = result.record;
   if (!base) return result; // no record built (shouldn't happen on defer) — ship answer

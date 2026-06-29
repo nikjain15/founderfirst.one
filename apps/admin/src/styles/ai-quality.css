@@ -166,3 +166,22 @@
 .ai-review-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .ai-review-error { margin: 0; font-size: var(--fs-eyebrow); color: var(--error); }
 .btn-danger { color: var(--error); border-color: var(--error); background: transparent; }
+
+/* ---- Phase 4: per-use-case model config cards (#models) ---- */
+.ai-cfg-card {
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--white);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.ai-cfg-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+.ai-cfg-title { font-weight: var(--fw-semibold); font-size: var(--fs-data-row); }
+.ai-cfg-meta { font-size: var(--fs-eyebrow); color: var(--ink-3); }
+.ai-cfg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.ai-cfg-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ai-cfg-label { font-size: var(--fs-eyebrow); color: var(--ink-2); }
+.ai-cfg-toggle > span { display: inline-flex; align-items: center; gap: 6px; min-height: var(--tap-min); }
+.ai-cfg-issues { margin: 12px 0 0; padding-left: 18px; color: var(--error); font-size: var(--fs-eyebrow); }
+.ai-cfg-ok { margin-top: 12px; color: var(--income); font-size: var(--fs-eyebrow); }
+.ai-cfg-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }

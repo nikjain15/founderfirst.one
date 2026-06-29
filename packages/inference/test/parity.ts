@@ -14,6 +14,7 @@
  */
 import {
   resolve,
+  buildInferenceConfig,
   DEFAULT_CONFIG,
   USE_CASE,
   TENANT_FOUNDERFIRST,
@@ -125,7 +126,8 @@ async function testChat(): Promise<void> {
       system,
       messages,
       maxTokens: 600,
-      pinModel: { provider: "anthropic", model: "claude-haiku-4-5-20251001" },
+      // Phase 4: no pinModel — the model comes from DB routing (DEFAULT_CONFIG seed
+      // = claude-haiku-4-5-20251001), proving the swap is byte-identical.
       anthropic: { betas: ["prompt-caching-2024-07-31"], cacheSystem: true, maxRetries: 2, retryBaseMs: 8_000 },
     },
     cap.ctx,
@@ -164,7 +166,7 @@ async function testSynthesize(): Promise<void> {
       jsonSchema: schema,
       timeoutMs: 60_000,
       anthropic: { maxRetries: 0 },
-      pinModel: { provider: "anthropic", model: "claude-sonnet-4-6" },
+      // Phase 4: model from DB routing (seed = claude-sonnet-4-6).
     },
     cap.ctx,
   );
@@ -199,7 +201,7 @@ async function testCompose(): Promise<void> {
       maxTokens: 700,
       temperature: 0.5,
       jsonObject: true,
-      pinModel: { provider: "workers-ai", model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast" },
+      // Phase 4: model from DB routing (seed = @cf/meta/llama-3.3-70b-instruct-fp8-fast).
     },
     cap.ctx,
   );
@@ -283,6 +285,56 @@ async function testInvariants(): Promise<void> {
   expect("@cf/* refused on deno runtime", refused);
 }
 
+/* ── 6. Phase 4 — DB-backed config: routing, cap fallback, cache gate ───────── */
+
+async function testPhase4(): Promise<void> {
+  console.info("Phase 4 (DB-backed config):");
+
+  // buildInferenceConfig layers DB rows over the seed defaults.
+  const cfg = buildInferenceConfig({
+    config: [
+      {
+        use_case: USE_CASE.PENNY_CHAT, runtime: "workers",
+        customer_facing: true, financial: false,
+        main: { provider: "anthropic", model: "claude-haiku-4-5-20251001" },
+        backup: { provider: "workers-ai", model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast" },
+        cache_enabled: true, monthly_cap_usd: 0, spend_mtd_usd: 5, // spend >= cap → fallback
+      },
+      {
+        use_case: USE_CASE.EMAIL_COMPOSE, runtime: "workers",
+        customer_facing: false, financial: false,
+        main: { provider: "workers-ai", model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast" },
+        backup: null, cache_enabled: true, monthly_cap_usd: null, spend_mtd_usd: 0,
+      },
+    ],
+    prices: {},
+  });
+  expect("routing built from DB", cfg.routing[USE_CASE.PENNY_CHAT].model === "claude-haiku-4-5-20251001");
+  expect("meta backup present", cfg.meta?.[USE_CASE.PENNY_CHAT]?.backup?.provider === "workers-ai");
+  expect("seed price preserved (merge)", cfg.prices["claude-sonnet-4-6"]?.outputPerMTok === 15);
+
+  // Cap fallback: spend(5) >= cap(0) with a backup → resolve swaps to the backup.
+  const capHit = workersAiCaptureCtx();
+  capHit.ctx.config = cfg;
+  capHit.ctx.gateway = { accountId: "a", gatewayId: "g" };
+  await resolve(
+    { useCase: USE_CASE.PENNY_CHAT, tenantId: anonTenant("s"), messages: [{ role: "user", content: "x" }], maxTokens: 10 },
+    capHit.ctx,
+  );
+  expect("cap fallback → backup model", capHit.get().model === "@cf/meta/llama-3.3-70b-instruct-fp8-fast");
+  expect("customer-facing skips cache even when enabled", capHit.get().options?.gateway?.skipCache === true);
+
+  // Cache allowed for a non-customer-facing, non-financial use case with cache on.
+  const cacheable = workersAiCaptureCtx();
+  cacheable.ctx.config = cfg;
+  cacheable.ctx.gateway = { accountId: "a", gatewayId: "g" };
+  await resolve(
+    { useCase: USE_CASE.EMAIL_COMPOSE, tenantId: TENANT_FOUNDERFIRST, messages: [{ role: "user", content: "x" }], maxTokens: 10 },
+    cacheable.ctx,
+  );
+  expect("cache allowed for non-customer/non-financial", cacheable.get().options?.gateway?.skipCache === false);
+}
+
 /* ── run ──────────────────────────────────────────────────────────────────── */
 
 await testChat();
@@ -290,6 +342,7 @@ await testSynthesize();
 await testCompose();
 await testInsightsFallback();
 await testInvariants();
+await testPhase4();
 
 if (failures > 0) {
   console.error(`\n✗ parity: ${failures} check(s) failed — answers may have changed.`);

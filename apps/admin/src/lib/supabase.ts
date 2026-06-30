@@ -1496,7 +1496,56 @@ export interface VoiceProfile {
   is_active: boolean;
   version: number;
   created_at: string;
+  // Voice-studio (Kokoro) synthesis settings — Penny's spoken voice, admin-tunable.
+  engine: "kokoro" | "chatterbox" | "elevenlabs";
+  voice_a: string;
+  voice_b: string | null;
+  blend: number;   // weight of voice_a (0–1); voice_b = 1-blend
+  speed: number;   // 0.5–2.0
+  gap_ms: number;  // pause between sentences
+  lang: "a" | "b"; // a=American, b=British
+  bitrate: string;
+  warmth: number;  // -6..6 dB low-shelf
 }
+
+/** The tunable spoken-voice settings an admin can change (all optional → partial update). */
+export type VoiceSynthSettings = Partial<
+  Pick<VoiceProfile, "engine" | "voice_a" | "voice_b" | "blend" | "speed" | "gap_ms" | "lang" | "bitrate" | "warmth">
+>;
+
+/** Update the active profile's spoken-voice settings. Renderer picks them up live. */
+export async function setVoiceSynthSettings(s: VoiceSynthSettings): Promise<void> {
+  const db = getClient();
+  const { error } = await db.rpc("set_voice_synth_settings", {
+    p_engine: s.engine ?? null,
+    p_voice_a: s.voice_a ?? null,
+    p_voice_b: s.voice_b ?? null,
+    p_blend: s.blend ?? null,
+    p_speed: s.speed ?? null,
+    p_gap_ms: s.gap_ms ?? null,
+    p_lang: s.lang ?? null,
+    p_bitrate: s.bitrate ?? null,
+    p_warmth: s.warmth ?? null,
+  });
+  if (error) throw new Error(`set_voice_synth_settings: ${error.message}`);
+}
+
+/** Kokoro American + British female voices offered in the studio. */
+export const KOKORO_VOICES: { id: string; label: string }[] = [
+  { id: "af_heart", label: "Heart — warm, balanced (American)" },
+  { id: "af_nova", label: "Nova — friendly, rounded (American)" },
+  { id: "af_aoede", label: "Aoede — warm, melodic (American)" },
+  { id: "af_bella", label: "Bella — rich (American)" },
+  { id: "af_kore", label: "Kore — clear, warm (American)" },
+  { id: "af_sarah", label: "Sarah — standard warm (American)" },
+  { id: "af_nicole", label: "Nicole — soft, intimate (American)" },
+  { id: "af_river", label: "River — calm, soft (American)" },
+  { id: "af_sky", label: "Sky — light, gentle (American)" },
+  { id: "af_alloy", label: "Alloy — smooth, neutral (American)" },
+  { id: "af_jessica", label: "Jessica — bright, youthful (American)" },
+  { id: "bf_emma", label: "Emma — warm (British)" },
+  { id: "bf_isabella", label: "Isabella — clear (British)" },
+];
 
 /** Board list, newest-updated first. Pass a status to filter to one stage. */
 export async function listContentPipeline(status?: ContentStatus): Promise<ContentPipelineRow[]> {

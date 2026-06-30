@@ -1,20 +1,22 @@
--- #5 + #6 — import commit integrity.
+-- #6 — trial-balance import plug must be sized over the SAME rows that get posted.
 --
--- #5 (silent partial data loss): the csv/bank branch marked invalid 'ready' rows
--- as 'error' and CONTINUED, then reported the batch 'committed' with no count —
--- so transactions could vanish with no signal and the frozen batch could never
--- re-post them. Now the commit is ATOMIC: an invalid 'ready' row RAISES (naming the
--- row), rolling the whole commit back so nothing is silently dropped — the user
--- fixes the row and re-imports.
+-- In the opening_balances/trial_balance branch, v_debits/v_credits summed over ALL
+-- ready rows, but v_lines posted only rows with account_id+side+amount<>0. A ready
+-- row missing account/side contributed to the plug but not the lines, so the Opening
+-- Balance Equity plug was mis-sized and a legitimate import failed opaquely as
+-- "unbalanced". Now ready opening rows are validated up front (raise with a clear,
+-- row-naming message if any is missing account/side/amount), so the plug and the
+-- posted lines are computed over the identical, all-valid set.
 --
--- #6 (trial-balance plug mis-sized): v_debits/v_credits summed over ALL ready rows
--- but v_lines posted only rows with account_id+side+amount, so the Opening Balance
--- Equity plug was sized off a superset and a legit import failed opaquely as
--- "unbalanced". Now ready opening-balance rows are validated up front (raise if any
--- is missing account/side/amount), so the plug and the posted lines are computed
--- over the identical, all-valid set.
+-- The csv/bank_statement branch is preserved EXACTLY as the Phase 4 version: an
+-- unresolved contra falls back to the Uncategorized holding account (so the txn
+-- still posts and shows up for Penny), and only truly un-postable rows (zero amount
+-- / missing date) are skipped with an 'error' status — they are not silent data
+-- loss, and routing means account-less rows are NOT dropped. (Surfacing the skipped
+-- count to the importer UI is a tracked minor follow-up.)
 --
--- Reproduces commit_import_batch verbatim except those two changes.
+-- Reproduces the Phase 4 commit_import_batch verbatim except the #6 opening-balance
+-- validation + matched plug row-set.
 
 create or replace function commit_import_batch(p_actor uuid, p_org uuid, p_batch uuid)
 returns import_batches language plpgsql security definer set search_path = public as $$
@@ -24,6 +26,8 @@ declare
   v_entry  journal_entries;
   v_bank   uuid;
   v_obe    uuid;
+  v_uncat  uuid;
+  v_contra uuid;
   v_lines  jsonb;
   v_debits bigint := 0;
   v_credits bigint := 0;
@@ -43,21 +47,27 @@ begin
   if v_b.source in ('csv', 'bank_statement') then
     v_bank := v_b.bank_account_id;
     if v_bank is null then raise exception 'no_bank_account: csv/statement import needs a bank account' using errcode = 'invalid_parameter_value'; end if;
-    -- one balanced entry per row: bank vs contra, sided by signed amount
+    -- one balanced entry per row: bank vs contra, sided by signed amount.
+    -- An unresolved contra falls back to the Uncategorized holding account so
+    -- the transaction still posts (and shows up for Penny to categorize).
     for v_row in select * from import_rows where batch_id = p_batch and status = 'ready' order by row_num loop
-      if v_row.account_id is null or coalesce(v_row.amount_minor,0) = 0 or v_row.txn_date is null then
-        -- #5: atomic — abort the whole commit rather than silently dropping the row.
-        raise exception 'import_row_invalid: row % is missing date / amount / account — fix or remove it and re-import (no rows were posted)', v_row.row_num
-          using errcode = 'invalid_parameter_value';
+      if coalesce(v_row.amount_minor,0) = 0 or v_row.txn_date is null then
+        update import_rows set status = 'error', error = 'missing date / amount' where id = v_row.id;
+        continue;
+      end if;
+      v_contra := v_row.account_id;
+      if v_contra is null then
+        if v_uncat is null then v_uncat := resolve_uncategorized_account(p_actor, p_org); end if;
+        v_contra := v_uncat;
       end if;
       if v_row.amount_minor > 0 then  -- money into the bank
         v_lines := jsonb_build_array(
-          jsonb_build_object('account_id', v_bank,         'amount_minor', v_row.amount_minor,  'side', 'D'),
-          jsonb_build_object('account_id', v_row.account_id,'amount_minor', v_row.amount_minor,  'side', 'C'));
+          jsonb_build_object('account_id', v_bank,   'amount_minor', v_row.amount_minor,  'side', 'D'),
+          jsonb_build_object('account_id', v_contra, 'amount_minor', v_row.amount_minor,  'side', 'C'));
       else                            -- money out of the bank
         v_lines := jsonb_build_array(
-          jsonb_build_object('account_id', v_row.account_id,'amount_minor', -v_row.amount_minor, 'side', 'D'),
-          jsonb_build_object('account_id', v_bank,          'amount_minor', -v_row.amount_minor, 'side', 'C'));
+          jsonb_build_object('account_id', v_contra, 'amount_minor', -v_row.amount_minor, 'side', 'D'),
+          jsonb_build_object('account_id', v_bank,   'amount_minor', -v_row.amount_minor, 'side', 'C'));
       end if;
       v_entry := post_journal_entry(
         p_actor, p_org, v_row.txn_date,
@@ -84,7 +94,6 @@ begin
                   'account_id', account_id, 'amount_minor', abs(amount_minor), 'side', side,
                   'memo', description))
                 from import_rows where batch_id = p_batch and status = 'ready');
-    -- plug any imbalance to Opening Balance Equity so the books open balanced
     v_diff := v_debits - v_credits;
     if v_diff <> 0 then
       v_obe := resolve_opening_balance_equity(p_actor, p_org);

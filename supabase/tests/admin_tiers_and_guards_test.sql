@@ -30,10 +30,10 @@ insert into ledger_accounts (id, org_id, name, type, code) values
   ('00000000-0000-0000-0000-0000000ca001', '00000000-0000-0000-0000-0000000c0001', 'Cash',  'asset',  '1000'),
   ('00000000-0000-0000-0000-0000000ca002', '00000000-0000-0000-0000-0000000c0001', 'Sales', 'income', '4000');
 insert into accounting_periods (id, org_id, period_start, period_end, status) values
-  ('00000000-0000-0000-0000-0000000cp001', '00000000-0000-0000-0000-0000000c0001', '2026-03-01', '2026-03-31', 'open');
+  ('00000000-0000-0000-0000-0000000c9001', '00000000-0000-0000-0000-0000000c0001', '2026-03-01', '2026-03-31', 'open');
 insert into journal_entries (id, org_id, entry_date, period_id, status, source, idempotency_key, posted_by) values
   ('00000000-0000-0000-0000-0000000ce001', '00000000-0000-0000-0000-0000000c0001', '2026-03-15',
-   '00000000-0000-0000-0000-0000000cp001', 'posted', 'manual', 'curtest-1', '00000000-0000-0000-0000-0000000ad001');
+   '00000000-0000-0000-0000-0000000c9001', 'posted', 'manual', 'curtest-1', '00000000-0000-0000-0000-0000000ad001');
 
 create table _r (name text primary key, got boolean);
 grant insert, select on _r to authenticated;

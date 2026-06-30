@@ -352,6 +352,11 @@ function ConnectSoftware({ orgId, onImported }: { orgId: string; onImported: () 
     <div className="connect-software">
       <h3 className="section-h">Or connect your accounting software</h3>
       <p className="muted sm">Pull your chart of accounts and history straight from QuickBooks or Xero. Transactions arrive as a preview you confirm.</p>
+      {conns.isError && (
+        <p className="error sm" role="alert">
+          Couldn’t check your connected software — reload to try again.
+        </p>
+      )}
       <div className="connect-row">
         {PROVIDERS.map((p) => (
           <button key={p.id} className="ghost sm" disabled={busy === p.id || connectedProviders.has(p.id)} onClick={() => connect(p.id)}>

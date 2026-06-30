@@ -11,6 +11,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Fired by content-publish (Supabase edge fn) so a newly-published post/episode
+  # rebuilds the static site without a code push. Needs a GH token on the fn side.
+  repository_dispatch:
+    types: [content-published]
 
 # Pages deploys are mutually exclusive — let the latest in-flight run win.
 concurrency:

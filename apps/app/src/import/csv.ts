@@ -58,32 +58,49 @@ export function parseCsv(text: string): ParsedCsv {
  * month/day combinations return null rather than producing a bogus ISO string
  * (e.g. "13/04/2026" no longer yields "2026-13-04").
  */
+// A real calendar date? (rejects Feb 30, Apr 31, and Feb 29 in a non-leap year).
+function realDate(y: number, m: number, d: number): boolean {
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
 export function parseDateCell(v: string, fmt: DateFormat = "mdy"): string | null {
   const s = (v ?? "").trim();
   if (!s) return null;
-  // already ISO-ish
-  const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  // ISO-ish (also yyyy/mm/dd, yyyy.mm.dd) — VALIDATED so "2026/02/30" rejects
+  // instead of silently rolling over to "2026-03-02".
+  const iso = s.match(/^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})$/);
   if (iso) {
-    const mm = +iso[2], dd = +iso[3];
-    if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
-    return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
+    const y = +iso[1], mm = +iso[2], dd = +iso[3];
+    return realDate(y, mm, dd) ? `${y}-${pad2(mm)}-${pad2(dd)}` : null;
   }
-  const parts = s.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})$/);
+  const parts = s.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})$/);
   if (parts) {
     let [, a, b, y] = parts;
     if (y.length === 2) y = `20${y}`;
     const na = +a, nb = +b;
-    let m: string, d: string;
-    if (na > 12 && nb <= 12) { d = a; m = b; }        // first part must be the day
-    else if (nb > 12 && na <= 12) { m = a; d = b; }   // second part must be the day
-    else if (fmt === "dmy") { d = a; m = b; }         // ambiguous → honour fmt
-    else { m = a; d = b; }
-    const mi = +m, di = +d;
-    if (mi < 1 || mi > 12 || di < 1 || di > 31) return null;
-    return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+    let m: number, d: number;
+    if (na > 12 && nb <= 12) { d = na; m = nb; }        // first part must be the day
+    else if (nb > 12 && na <= 12) { m = na; d = nb; }   // second part must be the day
+    else if (fmt === "dmy") { d = na; m = nb; }         // ambiguous → honour fmt
+    else { m = na; d = nb; }
+    return realDate(+y, m, d) ? `${y}-${pad2(m)}-${pad2(d)}` : null;  // rejects 29/02 non-leap, etc.
   }
-  const t = Date.parse(s);
-  if (!Number.isNaN(t)) return new Date(t).toISOString().slice(0, 10);
+  // Excel / Google Sheets SERIAL date — a bare integer with no separators
+  // ("45292" → 2024-01-01). The most common spreadsheet date encoding, which
+  // previously fell to Date.parse and became the YEAR 45292.
+  if (/^\d{4,6}$/.test(s)) {
+    const serial = +s;
+    if (serial < 20000 || serial > 80000) return null;   // ~1954..2119 sanity window
+    return new Date(Date.UTC(1899, 11, 30) + serial * 86400000).toISOString().slice(0, 10);
+  }
+  // Named-month formats only ("Jan 5, 2026", "5-Jan-2026"). We do NOT fall back to
+  // Date.parse for numeric input — that silently rolls invalid dates over.
+  if (/[a-z]/i.test(s)) {
+    const t = Date.parse(s);
+    if (!Number.isNaN(t)) return new Date(t).toISOString().slice(0, 10);
+  }
   return null;
 }
 
@@ -97,6 +114,18 @@ export function parseAmountCell(v: string): number | null {
   if (!s) return null;
   let neg = false;
   if (/^\(.*\)$/.test(s)) { neg = true; s = s.slice(1, -1); } // (123) = negative
+  // Scientific notation (Excel's default render for large numbers, e.g. "1.23E+09").
+  // Must run BEFORE the symbol-strip below, which would drop the 'e' and turn
+  // "1e9" into "19" ($1,000,000,000 → $19.00). Expand precisely; reject if the
+  // result overflows exact integer cents rather than silently corrupting.
+  const sci = s.replace(/[\s$€£,]/g, "");
+  if (/^[+-]?\d+(\.\d+)?[eE][+-]?\d+$/.test(sci)) {
+    const num = Number(sci);
+    if (!Number.isFinite(num)) return null;
+    const minor = Math.round(Math.abs(num) * 100);
+    if (!Number.isSafeInteger(minor)) return null;
+    return (neg || num < 0) ? -minor : minor;
+  }
   s = s.replace(/[^0-9.,\-]/g, "");
   if (s.startsWith("-")) neg = true;
   s = s.replace(/-/g, "");

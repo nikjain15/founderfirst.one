@@ -55,7 +55,7 @@ def account_balance(org, account):
     q = (f"select coalesce(sum(case when side='D' then amount_minor else -amount_minor end),0) bal "
          f"from journal_lines where org_id='{org}' and account_id='{account}'")
     st, j = mgmt_sql(q)
-    return j[0]["bal"] if st in (200,201) else j
+    return int(j[0]["bal"]) if st in (200,201) else j
 
 def entries_for(org):
     q = (f"select id,memo,status,source,reverses_id from journal_entries where org_id='{org}' "

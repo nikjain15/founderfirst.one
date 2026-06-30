@@ -156,6 +156,101 @@ Creating a firm via the `orgs` fn assigns the creator `role='owner'`, but
 - `supabase/tests/phase4_categorize_stress_test.sql` — pgTAP for F1 guard + F4.
 - `docs/stress/categorize/` — this report, `repro/`, `manifest.json`, `cleanup.sql`.
 
+---
+
+# Round 2 — deeper validation (independent AI auditors + UI + coverage)
+
+Per the "never make a mistake / deeper guardrails" ask, two **independent AI agents**
+re-checked this loop from different angles (read-only, so they couldn't disturb prod):
+an adversarial **fix-completeness auditor** and an edge/negative **test-matrix designer**.
+Their leads were then executed live and turned into permanent tests.
+
+## What the validators found (and what we did)
+
+- **F7 — `approve_journal_entry` has the same unlocked pattern (P1 latent → hardened).**
+  The auditor noticed `approve_journal_entry` (owner approving a CPA's pending entry)
+  reads with a plain `SELECT` and `UPDATE`s with no status precondition — the F1
+  shape. **Live result: NOT reproducible — 0 double-wins across 64 concurrent pairs.**
+  Unlike `reverse` (which *inserts* a row before locking, so it doubles), approve's
+  only mutation is the `UPDATE`, whose row-lock serializes the callers; losers
+  cleanly get `not_pending`. So it's **latent, not a live break** — but it becomes a
+  real money bug the instant approve gains a side-effect, and it's a 3-line fix.
+  **Hardened in this PR (FIX 3): `FOR UPDATE` + status-guarded `UPDATE`.**
+- **F8 — holding account was a selectable Approve target (P3 → FIXED).** Found via the
+  UI test: the per-row account picker listed "9999 · Uncategorized", so a user could
+  "categorize" a txn back onto the holding account — a no-op reverse/repost that also
+  learns a junk rule. **Fixed:** `Categorize.tsx` now excludes the line's own holding
+  account from the picker (Penny's proposal already excluded it). *Recommend a server
+  guard too: reject recategorize where `to_account = from_account`.*
+- **F9 — `times_applied` mis-attribution (P2, flagged).** The busiest-wins counter
+  bump in `recategorize_entry` keys on `account_id = p_to_account_id AND match_value`
+  rather than the specific rule just learned — if two memos point at one account the
+  increment can touch the wrong row, skewing precedence. Lives in the drifted prod
+  `recategorize` (F3's domain); fold the fix into the recategorize-capture migration.
+- **F10 — duplicate `ledger_audit` row per recategorize (P3, cosmetic).** The deployed
+  `recategorize_entry` writes an explicit `entry.recategorize` audit row AND the
+  `journal_entries` audit trigger writes one for the repost → two identical rows.
+  Harmless but noisy; fold into the recategorize-capture migration.
+- **C1 reinforced (P0, deploy gate).** The **repo** `recategorize_entry` does NOT force
+  the repost to `posted`, so a CPA categorizing under `cpa_posts_require_approval`
+  would reverse the original (gone from reports) while the repost sits `pending_review`
+  and is *also* dropped from the queue (`status='posted'` filter) — the txn vanishes
+  from books **and** queue. Prod was hardened to force `posted`; **a `main` deploy
+  re-opens this.** Same root cause as F3.
+
+## New coverage executed live (all PASS on current prod)
+
+| Area | Result |
+|---|---|
+| Rule precedence — exact beats contains; contains still matches superstrings | ✅ |
+| Correction **learns B not A** (upsert re-points, no duplicate row) | ✅ |
+| Rule → later-archived account | ✅ propose layer suppresses it; approve into archived rejected. **Note:** the raw matcher still returns the archived id (a stale rule survives) — only the categorize fn's grounding filter saves it. |
+| Multi-line entry recategorize — only the holding line moves, known lines untouched, balanced | ✅ |
+| CPA pending post **excluded from posted reports** until owner approves | ✅ |
+| `approve_journal_entry` concurrent double-approve (64 pairs) | ✅ exactly one winner; rest `not_pending` |
+| LIKE-escape extra branches — backslash `a\b`, trailing `100%` | ✅ (pgTAP) |
+| **UI end-to-end** (`apps/app`, real prod, injected tester session) | ✅ see below |
+
+**UI end-to-end (the part not previously tested):** drove the real `apps/app`
+Categorize screen against live prod with a tester session. Verified: the queue loads
+("Penny found 3 transactions"), each row shows a **grounded** proposal with a
+confidence badge + plain-language rationale (AWS→Software 95%, Starbucks→Meals 95%),
+the picker is pre-filled with Penny's pick, and clicking **Approve** drove the full
+server path — the original was reversed, reposted onto Software (balance = $120.00),
+**trial balance tied**, a rule was learned, the audit trail was written, and the row
+dropped off the queue (3→2) with no errors.
+
+## New artifacts in this round
+
+- Migration `20260630140000…sql` — **+ FIX 3** (`approve_journal_entry` lock).
+- `supabase/tests/phase4_categorize_stress2_test.sql` — 11 deterministic regressions
+  (escape branches, precedence, learns-B-not-A, multi-line, approve guard).
+- `apps/app/src/ledger/Categorize.tsx` — F8 picker fix (excludes the holding account).
+- `repro/s8_coverage.py`, `repro/s9_approve_race.py` — the live coverage runs.
+
+## Still NOT tested (honest remaining gaps + why)
+
+- **High-volume UI (250-row queue) thundering-herd** — the lazy "Ask Penny beyond
+  the first 8" guard is **code-verified** (`AUTO_PROPOSE_LIMIT=8`, `enabled: wanted`)
+  but not load-tested through the browser.
+- **Forced AI hard-failures** (real 429 / timeout / malformed model JSON) — can't be
+  forced deterministically against the live model; the server's catch-paths are
+  code-verified to return `proposal:null` + a `note` at HTTP 200 (never a 500).
+- **Multi-currency lines** — unreachable: the single-currency guard trigger rejects
+  any non-home-currency line before it can land, so this can't be exercised today.
+- **Exact period-close-vs-categorize interleave (R3)** and **engagement-revoke
+  mid-session race (C4)** — the deterministic outcomes hold (single-call atomicity;
+  `can_write` → 403 after revoke), but the precise concurrent timing wasn't forced.
+
+## The standing guardrail
+
+The permanent regression net is the **pgTAP suite** (`supabase/tests/phase4_categorize*`),
+which runs in the existing `db-tests.yml` CI gate on every PR — so the LIKE-escape,
+precedence, learns-B-not-A, multi-line, reverse-guard, and approve-guard behaviours are
+checked automatically forever. The concurrency *races* themselves can't be expressed in
+single-session pgTAP; the live harness in `repro/` is the reusable proof for those (a
+candidate for a scheduled, namespaced prod canary — recommended, not yet wired).
+
 ## ⚑ Flags for the integrator
 
 - **Shared-file / shared-function edits:** the migration does `CREATE OR REPLACE`

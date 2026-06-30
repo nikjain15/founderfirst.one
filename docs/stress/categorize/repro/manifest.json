@@ -31,6 +31,34 @@
     {
       "id": "0798a12f-c978-473d-a313-02c417921be9",
       "email": "ownerS3-db2be819@cattest.founderfirst.test"
+    },
+    {
+      "id": "af213202-34c6-4895-8cec-2e8479c9758a",
+      "email": "ownerS8-124bea42@cattest.founderfirst.test"
+    },
+    {
+      "id": "208ef316-68a8-4bd7-8feb-8beb92eadb59",
+      "email": "ownerS9-713a4fac@cattest.founderfirst.test"
+    },
+    {
+      "id": "a6307fe7-5919-47b6-a17b-fa8b69b20dce",
+      "email": "cpaS9-ba318b00@cattest.founderfirst.test"
+    },
+    {
+      "id": "ff0d9e51-4a1e-48f7-a1f2-74d21ee687c5",
+      "email": "ownerS9b-31139483@cattest.founderfirst.test"
+    },
+    {
+      "id": "576727c4-8fdb-48f9-9b73-23ec416bb31d",
+      "email": "ownerS9c-d25fb0ea@cattest.founderfirst.test"
+    },
+    {
+      "id": "278fe0f5-99cb-4367-a612-470d548ce59d",
+      "email": "cpaS9c-7bfdbcae@cattest.founderfirst.test"
+    },
+    {
+      "id": "f6d4fd13-af53-4810-a86d-413010ae1971",
+      "email": "uiowner-8554582f@cattest.founderfirst.test"
     }
   ],
   "orgs": [
@@ -65,12 +93,40 @@
     {
       "id": "c223cfd8-d96f-4943-bf6e-1a7807219a2f",
       "name": "[CATTEST] Biz S3"
+    },
+    {
+      "id": "3f5cb3a2-72c9-4c94-92b8-b7bcabf6f47d",
+      "name": "[CATTEST] Biz S8"
+    },
+    {
+      "id": "fc015025-5ed0-422f-baa1-b12312ac46cb",
+      "name": "[CATTEST] Client S9"
+    },
+    {
+      "id": "f5784f11-ab25-432c-9c0b-306830b674d5",
+      "name": "[CATTEST] Firm S9"
+    },
+    {
+      "id": "5b0f8fd6-8ab8-4b4d-86b4-604fabd1d8eb",
+      "name": "[CATTEST] Biz S9b"
+    },
+    {
+      "id": "0e15c90f-573f-4ce8-bd2f-c3b567bc0704",
+      "name": "[CATTEST] Client S9c"
+    },
+    {
+      "id": "808a3e3a-06f7-40cf-8cdc-01f67ecb889a",
+      "name": "[CATTEST] Firm S9c"
+    },
+    {
+      "id": "bfdb1c8c-a54a-4ac2-987e-68c48c033bde",
+      "name": "[CATTEST] UI Co"
     }
   ],
   "note": "[CATTEST] fixtures on PROD",
   "summary": {
-    "users": 8,
-    "orgs": 8,
-    "journal_entries": 86
+    "users": 15,
+    "orgs": 15,
+    "journal_entries": 124
   }
 }

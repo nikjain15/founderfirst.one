@@ -96,6 +96,11 @@ function CategorizeRow({
 
   const amount = signedAmount(entry);
   const p = proposal.data?.proposal ?? null;
+  // Never offer the holding ("Uncategorized") account this line already sits on as
+  // a target — "categorizing" a txn back onto Uncategorized is a no-op reverse/
+  // repost that also learns a useless rule. (Penny's proposal already excludes it;
+  // this closes the manual-select path.)
+  const targets = accounts.filter((a) => a.id !== entry.from_account_id);
 
   async function approve() {
     if (!chosen) return;
@@ -147,7 +152,7 @@ function CategorizeRow({
         <div className="cat-actions">
           <select value={chosen} onChange={(e) => setChosen(e.target.value)} aria-label="Account">
             <option value="">Select account…</option>
-            {accounts.map((a) => (
+            {targets.map((a) => (
               <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ""}{a.name}</option>
             ))}
           </select>

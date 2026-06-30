@@ -107,8 +107,44 @@ returns uuid language sql stable security definer set search_path = public as $$
    limit 1;
 $$;
 
+-- ── FIX 3 (defense-in-depth): approve_journal_entry — same unlocked pattern ────
+-- approve_journal_entry reads the entry with a plain SELECT and its `UPDATE … SET
+-- status='posted'` carries no status precondition — the SAME anti-pattern as F1.
+-- Unlike reverse (which INSERTs a reversal row before any lock, so concurrent
+-- reverses double), approve's only mutation IS the UPDATE, whose implicit row lock
+-- serializes concurrent approves — so in practice the loser re-reads 'posted' and
+-- raises not_pending. Verified live: 0 double-wins across 64 concurrent pairs.
+-- So this is LATENT, not a reproduced break. But it becomes a real money bug the
+-- instant approve gains a side-effect (post deferred lines, fire a webhook, etc.),
+-- and the lost-update on approved_by is an audit-integrity wrinkle today. Hardened
+-- so the guard is authoritative (loser deterministically gets not_pending), at
+-- zero cost. Mirrors the F1 reasoning one function over in the same file.
+create or replace function approve_journal_entry(p_actor uuid, p_org uuid, p_entry_id uuid)
+returns journal_entries language plpgsql security definer set search_path = public as $$
+declare v_e journal_entries;
+begin
+  if not has_membership_as(p_actor, p_org) then
+    raise exception 'forbidden: only a business member may approve' using errcode = 'insufficient_privilege';
+  end if;
+  -- LOCK the entry so concurrent approves serialize on the snapshot, not just on
+  -- the UPDATE's row lock; the loser blocks, re-reads 'posted', raises not_pending.
+  select * into v_e from journal_entries where id = p_entry_id and org_id = p_org for update;
+  if not found then raise exception 'not_found: entry % not in org %', p_entry_id, p_org using errcode = 'no_data_found'; end if;
+  if v_e.status <> 'pending_review' then
+    raise exception 'not_pending: entry is not awaiting approval' using errcode = 'restrict_violation';
+  end if;
+  -- status precondition on the UPDATE itself (belt + suspenders with the lock)
+  update journal_entries set status = 'posted', approved_by = p_actor
+   where id = p_entry_id and status = 'pending_review'
+  returning * into v_e;
+  if not found then raise exception 'not_pending: entry is not awaiting approval' using errcode = 'restrict_violation'; end if;
+  return v_e;
+end$$;
+
 -- grants unchanged (signatures identical); re-assert for safety.
 revoke all on function reverse_journal_entry(uuid, uuid, uuid, text, date, text) from public;
 revoke all on function match_categorization_rule(uuid, text)                     from public;
+revoke all on function approve_journal_entry(uuid, uuid, uuid)                   from public;
 grant execute on function reverse_journal_entry(uuid, uuid, uuid, text, date, text) to service_role;
 grant execute on function match_categorization_rule(uuid, text)                    to service_role;
+grant execute on function approve_journal_entry(uuid, uuid, uuid)                  to service_role;

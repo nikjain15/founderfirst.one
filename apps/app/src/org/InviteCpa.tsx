@@ -37,6 +37,8 @@ export default function InviteCpa({ orgId }: { orgId: string }) {
       <input
         type="email"
         required
+        autoComplete="email"
+        aria-label="Accountant email"
         placeholder="cpa@firm.com"
         value={email}
         onChange={(e) => setEmail(e.target.value)}

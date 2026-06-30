@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getClient } from "../lib/supabase";
 import { useAuth } from "../auth/AuthProvider";
+import { SITE } from "@ff/site";
 
 const PENDING_KEY = "ff.pendingInvite";
 
@@ -35,7 +36,7 @@ export default function Accept() {
         body: { token },
       });
       if (error) {
-        setMsg("We couldn't accept this invite — it may be expired or already used.");
+        setMsg(`We couldn't accept this invite — it may be expired or already used. Still stuck? Email ${SITE.email} and we'll sort it out.`);
         return;
       }
       const orgId = (data as { org_id?: string } | null)?.org_id;
@@ -49,8 +50,11 @@ export default function Accept() {
   return (
     <main className="auth-screen">
       <div className="auth-card">
-        <div className="brand">Invitation</div>
-        <p className="muted">{msg}</p>
+        <div className="brand" title={`Penny by ${SITE.company}`}>
+          <span className="p-mark p-mark-md" aria-hidden="true">P</span>
+          Penny
+        </div>
+        <p className="muted" role="status" aria-live="polite">{msg}</p>
       </div>
     </main>
   );

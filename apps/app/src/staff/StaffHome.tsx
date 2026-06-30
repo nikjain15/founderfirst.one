@@ -16,6 +16,7 @@ import {
   type StaffOrg, type BreakGlassWindow,
 } from "./api";
 import { balanceSheet, profitAndLoss, trialBalance } from "../ledger/reports";
+import { Takeaway } from "../ledger/Takeaway";
 import { formatMoney, formatMoneyShort } from "../ledger/money";
 import type { JournalEntry } from "../ledger/types";
 
@@ -265,6 +266,14 @@ function ReadOnlyBooks({
 
   return (
     <div className="staff-books">
+      {tb.balanced ? (
+        <Takeaway tone="neutral">
+          Net income <strong>{formatMoney(pnl.netIncome)}</strong> across <strong>{entries.length}</strong>{" "}
+          {entries.length === 1 ? "entry" : "entries"}. Read-only — close break-glass when you're done.
+        </Takeaway>
+      ) : (
+        <Takeaway tone="watch">These books don't currently balance — debits ≠ credits.</Takeaway>
+      )}
       <div className="kpis">
         <Kpi label="Accounts" value={String(accountCount)} />
         <Kpi label="Entries" value={String(entries.length)} />

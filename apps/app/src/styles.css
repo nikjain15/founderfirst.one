@@ -529,3 +529,27 @@ button.ghost.sm, .ghost.sm {
 @media (max-width: 640px) {
   .staff-org-row { flex-wrap: wrap; }
 }
+
+/* ── Takeaway — "so what / now what" lead line (mirrors apps/admin) ─────────── */
+.takeaway {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4); margin: 0 0 var(--space-4);
+  background: var(--white); border: var(--bw-hair) solid var(--line);
+  border-left: 3px solid var(--ink-3); border-radius: var(--r-card);
+  font-size: var(--fs-data-row); line-height: 1.45;
+}
+.takeaway-good  { border-left-color: var(--income); }
+.takeaway-watch { border-left-color: var(--amber); }
+.takeaway-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
+.takeaway-good  .takeaway-dot { background: var(--income); }
+.takeaway-watch .takeaway-dot { background: var(--amber); }
+.takeaway-text { flex: 1 1 auto; color: var(--ink); }
+.takeaway-text strong { font-weight: var(--fw-semibold); }
+.takeaway-action {
+  flex: none; text-decoration: none; font-weight: var(--fw-medium); color: var(--ink);
+  white-space: nowrap; background: transparent; border: 0; padding: 0; cursor: pointer; min-height: 0;
+}
+.takeaway-action:hover { text-decoration: underline; background: transparent; }
+@media (max-width: 640px) {
+  .takeaway { align-items: flex-start; flex-wrap: wrap; }
+}

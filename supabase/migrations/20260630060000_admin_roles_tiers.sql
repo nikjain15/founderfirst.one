@@ -68,6 +68,10 @@ drop policy if exists "admins_select_authenticated" on public.admins;
 create policy "admins_select_admins"
   on public.admins for select to authenticated
   using (public.is_admin());
+-- Make the table-level read grant explicit (the early admins table relied on
+-- Supabase default privileges; be self-contained so a fresh replay matches prod).
+-- RLS (admins_select_admins) still restricts the visible rows to admins only.
+grant select on public.admins to authenticated;
 
 -- Role changes (incl. promoting to super) are super-only. insert/delete already
 -- require is_super(); add the missing UPDATE policy so editors/viewers can't

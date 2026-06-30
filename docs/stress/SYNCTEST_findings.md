@@ -73,13 +73,28 @@ is real). The fix in this PR makes it status-only (`xero_api_failed Accounts: 40
 - Provider→home-currency **FX conversion** is out of scope; imports coerce to home currency
   without conversion. Multi-currency provider data needs a follow-up.
 
+## DEPLOYED to prod (30-Jun, owner-authorized)
+
+- Migration `20260630161500_sync_provider_commit_and_dedup.sql` applied + recorded in the
+  ledger. Verified live: `import_rows.external_id` exists; `commit_import_batch(3-arg)` now
+  routes qbo/xero through the bank branch + keys on `ext:<source>:<external_id>`;
+  `add_import_rows` persists `external_id`.
+- Edge fns `qbo-import` + `xero-import` deployed (with `_shared/{qbo,xero}.ts`). **F2 fix
+  verified live**: the same bogus-token pull that previously leaked the raw Xero body now
+  returns `"xero_api_failed Accounts: 401"` (status-only).
+- ⚠ **Integrator coordination:** prod has a SECOND `commit_import_batch(p_actor,p_org,p_batch,
+  p_limit int)` overload from a parallel session — it still has the old csv-only branch + no
+  dedup. The app's commit path (`imports` edge fn) calls the **3-arg** version (fixed), so
+  this overload is dormant for the app, but whoever owns the `p_limit` chunked-commit work
+  must apply the same F0/F1 changes (qbo/xero branch + `ext:` key) before routing through it.
+
 ## Fixes in this PR
 
 - **Edge fns (write-but-don't-deploy — flag):** `_shared/qbo.ts`, `_shared/xero.ts`,
   `qbo-import/index.ts`, `xero-import/index.ts` — F2, F3, F4, F5 + send `external_id` per
   row + pre-skip already-imported txns (degrades gracefully pre-migration).
 - **Migration (write-but-don't-deploy — flag):**
-  `20260630130000_sync_provider_commit_and_dedup.sql` — adds `import_rows.external_id`;
+  `20260630161500_sync_provider_commit_and_dedup.sql` — adds `import_rows.external_id`;
   `commit_import_batch` routes `'qbo'/'xero'` through the bank branch (F0) and keys provider
   rows on `'ext:<source>:<external_id>'` (F1); `add_import_rows` persists `external_id`.
   Reproduces the latest deployed bodies verbatim except those diffs. **⚠ Shared function:

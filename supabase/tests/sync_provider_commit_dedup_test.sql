@@ -1,4 +1,4 @@
--- [stress:sync] QBO/Xero import → commit path (migration 20260630130000).
+-- [stress:sync] QBO/Xero import → commit path (migration 20260630161500).
 --   F0: a provider batch (source 'qbo'/'xero', bank_account_id set, cutover null,
 --       rows with signed amount + contra, no `side`) commits through the BANK branch
 --       — it used to fall into the opening-balance branch and raise no_cutover_date.
@@ -28,7 +28,7 @@ insert into ledger_accounts (id, org_id, code, name, type) values
   ('00000000-0000-0000-0000-00000000c001', '00000000-0000-0000-0000-0000000000b1', '1000', 'Cash',  'asset'),
   ('00000000-0000-0000-0000-00000000c003', '00000000-0000-0000-0000-0000000000b1', '5000', 'Rent',  'expense');
 
--- the new provenance column exists (migration 20260630130000)
+-- the new provenance column exists (migration 20260630161500)
 select has_column('import_rows', 'external_id', 'import_rows.external_id exists');
 
 -- ── F0: a QBO batch commits via the bank branch (was: no_cutover_date) ─────────

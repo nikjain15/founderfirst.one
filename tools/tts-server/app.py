@@ -32,12 +32,39 @@ app = FastAPI(title="founderfirst-tts")
 _model = None
 
 
+def _pick_device() -> str:
+    # Override with TTS_DEVICE; otherwise auto-detect. cuda on the Fly GPU,
+    # mps/cpu when running natively on a Mac (the free local path).
+    forced = os.environ.get("TTS_DEVICE")
+    if forced:
+        return forced
+    import torch  # type: ignore
+    if torch.cuda.is_available():
+        return "cuda"
+    if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
 def _get_model():
     global _model
     if _model is None:
         # Imported lazily so /health and boot don't require the GPU stack.
+        import torch  # type: ignore
         from chatterbox.tts import ChatterboxTTS  # type: ignore
-        _model = ChatterboxTTS.from_pretrained(device="cuda")
+        device = _pick_device()
+        # Chatterbox 0.1.1 ships CUDA-tagged checkpoints and calls torch.load
+        # without map_location, so it fails on CPU/MPS machines. Force the load
+        # onto the target device. Harmless on CUDA (where it already maps there).
+        if device != "cuda":
+            _orig_load = torch.load
+            torch.load = lambda *a, **k: _orig_load(*a, **{**k, "map_location": device})
+            try:
+                _model = ChatterboxTTS.from_pretrained(device=device)
+            finally:
+                torch.load = _orig_load
+        else:
+            _model = ChatterboxTTS.from_pretrained(device=device)
     return _model
 
 

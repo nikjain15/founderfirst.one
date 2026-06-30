@@ -11,6 +11,7 @@ import {
 } from "../lib/supabase";
 import { IconAlert, IconCheck } from "../lib/icons";
 import { SITE } from "@ff/site";
+import { VoiceStudio } from "./VoiceStudio";
 // Repo-root VOICE.md, bundled as a string so the empty-state editor seeds
 // from the canonical file instead of an empty textarea. After v1 is saved
 // the live serving voice is always whatever was last published from here.
@@ -160,7 +161,10 @@ export function ContentVoice() {
   const noVersionsYet = rows.length === 0;
 
   return (
-    <div className="prompt-editor prompt-editor-grid">
+    <>
+      {/* Spoken-voice (audio) studio — Penny's podcast voice, fully tunable. */}
+      <VoiceStudio />
+      <div className="prompt-editor prompt-editor-grid">
       {/* Left: version list (hidden when no versions exist yet) */}
       {!noVersionsYet && (
         <aside>
@@ -409,7 +413,8 @@ export function ContentVoice() {
           </div>
         )}
       </section>
-    </div>
+      </div>
+    </>
   );
 }
 

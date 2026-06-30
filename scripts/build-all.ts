@@ -6,7 +6,9 @@
  *                       + /extension-privacy + /privacy + /terms + llms.txt
  *                       + sitemap.xml + robots.txt   ← the live marketing site
  *   apps/admin (React)→ founderfirst.one/admin/
- *   apps/app (React)  → founderfirst.one/app/  ← unified authed SPA (owner/CPA lenses)
+ *   apps/app (React)  → penny.founderfirst.one  ← unified authed SPA (owner/CPA/staff
+ *                       lenses), deployed by the deploy-penny job. founderfirst.one/app/*
+ *                       is a redirect to it (single canonical home).
  *   apps/demo         → founderfirst.one/penny/demo/
  * (apps/marketing and apps/blog were retired — apps/web fully replaced them.)
  *

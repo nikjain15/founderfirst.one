@@ -41,7 +41,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = sb.auth.onAuthStateChange((_event, next) => {
       setSession(next);
     });
-    return () => sub.subscription.unsubscribe();
+    // bfcache restore (e.g. sign-out then Back) doesn't remount React, so the
+    // in-memory session can go stale. Re-sync from storage on a persisted pageshow
+    // so a signed-out user doesn't see a ghost of the authed shell. No data ever
+    // leaked here (the token is revoked) — this just keeps the UI honest.
+    const onPageShow = (e: PageTransitionEvent): void => {
+      if (e.persisted) {
+        void sb.auth.getSession().then(({ data }) => setSession(data.session));
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      sub.subscription.unsubscribe();
+      window.removeEventListener("pageshow", onPageShow);
+    };
   }, []);
 
   const signOut = async (): Promise<void> => {

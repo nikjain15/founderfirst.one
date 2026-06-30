@@ -1,0 +1,33 @@
+{
+  "owner_a": {
+    "email": "owner-a@isotest.founderfirst.test",
+    "uid": "ade01247-b79a-42de-9fc6-44f63eb83b99"
+  },
+  "owner_b": {
+    "email": "owner-b@isotest.founderfirst.test",
+    "uid": "e1b507dd-7e56-40b2-a3d4-3de3313cde2b"
+  },
+  "cpa": {
+    "email": "cpa@isotest.founderfirst.test",
+    "uid": "8ecf325e-bfce-4c7f-8d8b-8f5dd663693c"
+  },
+  "org_a": "5f71d64f-d3df-4651-9fe8-1b94b6e977f1",
+  "org_a2": "8c372519-d512-4a72-9423-f06288ccc393",
+  "org_b": "fb7761a6-0ba7-4b5b-b298-59ff857e5c98",
+  "firm": "777887e6-b158-4b74-888e-a8c3d38e99fc",
+  "data": {
+    "a_cash": "d6f7c370-cedc-405d-b09d-330f4a814df0",
+    "a_rev": "aaa3dea4-9379-4a7b-bb98-925c532ccf76",
+    "b_cash": "59b1983e-1940-4e6c-b2a5-3a226f0437cf",
+    "b_rev": "4aaef9d5-cda6-484b-9ba8-9ec8583a7e32",
+    "a_entry": "ef990664-f13e-4b9f-a70c-1ecb7baa332e",
+    "b_entry": "32868a5a-4f8c-4247-8d25-abe06d9fa9bb",
+    "b_batch": "d2313a8f-605f-4f90-a1ad-be49a1349873",
+    "ec_a": "b9527854-d6a1-422e-8766-2d1b3ca4d11a",
+    "ec_b": "8e811fd8-330e-4846-90e2-f1c30b013ba9"
+  },
+  "cpa2": {
+    "uid": "2e600fa7-8db8-41fc-af19-ef8c63bed659",
+    "email": "cpa2@isotest.founderfirst.test"
+  }
+}

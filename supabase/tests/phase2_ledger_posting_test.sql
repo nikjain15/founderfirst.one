@@ -46,7 +46,8 @@ insert into client_assignments (engagement_id, user_id, assigned_by) values
 
 insert into org_accounting_settings (org_id, home_currency) values
   ('00000000-0000-0000-0000-0000000000b1', 'USD'),
-  ('00000000-0000-0000-0000-0000000000b2', 'USD');
+  ('00000000-0000-0000-0000-0000000000b2', 'USD')
+  on conflict (org_id) do update set home_currency = excluded.home_currency;
 
 -- chart of accounts (Biz A: cash, revenue, expense; Biz B: cash — for cross-org test)
 insert into ledger_accounts (id, org_id, code, name, type) values

@@ -34,10 +34,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     const sb = getClient();
-    void sb.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
+    void sb.auth
+      .getSession()
+      .then(({ data }) => setSession(data.session))
+      // A rejected session fetch (network/storage failure) must still resolve
+      // loading → unauthenticated, else the app hangs on "Loading…" forever.
+      .catch(() => setSession(null))
+      .finally(() => setLoading(false));
     const { data: sub } = sb.auth.onAuthStateChange((_event, next) => {
       setSession(next);
     });

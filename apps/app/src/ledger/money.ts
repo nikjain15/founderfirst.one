@@ -4,7 +4,7 @@
  * units for the write-path. Pilot magnitudes fit safely in a JS number.
  */
 export function formatMoney(minor: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(undefined, {
     style: "currency",
     currency,
     maximumFractionDigits: 2,
@@ -13,7 +13,7 @@ export function formatMoney(minor: number, currency = "USD"): string {
 
 /** Compact form for headline numbers ("$12,400"), no cents. */
 export function formatMoneyShort(minor: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(undefined, {
     style: "currency",
     currency,
     maximumFractionDigits: 0,

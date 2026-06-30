@@ -1,30 +1,28 @@
--- Period-lock HARDENING — fixes from the [stress:periods] adversarial audit
--- (ARCHITECTURE.md §6.1, §6.2). Three confirmed period-integrity breaks, all in
--- the SECURITY DEFINER write-path. This migration only `create or replace`s
--- ensure_open_period / approve_journal_entry / reverse_journal_entry — it does NOT
--- touch close/reopen_accounting_period or ledger_audit (those belong to the
--- separately-landing audit-trail migration 20260630080000_ledger_audit.sql, which
--- is live on prod but not yet on main — see the PR for that drift flag).
+-- Period-lock HARDENING ([stress:periods] audit; ARCHITECTURE.md §6.1, §6.2).
+-- DEPLOYED to prod ejqsfzggyfsjzrcevlnq on 2026-06-30 via the Management API
+-- (verified live — see docs/stress/periods-2026-06-30/FINDINGS.md §Deploy).
 --
---   F1 (P0) close-vs-post race: post_journal_entry runs on ONE read-committed
---       snapshot and ensure_open_period read the covering period status WITHOUT a
---       row lock, then inserted without re-checking. A close() committing during a
---       concurrent post was invisible to the post, so the entry landed in a
---       now-CLOSED period. Fix: lock the period row FOR SHARE on the read — a
---       concurrent close (which UPDATEs the row) is now mutually exclusive, and
---       the FOR SHARE re-reads the latest committed row so a close that won the
---       race is seen as 'closed' and the post is rejected.
---   F2 (P1) approval back-door: approve_journal_entry had no period check, so an
---       owner could close a period that still held a pending_review entry and then
---       approve it — mutating closed books (pending_review → posted). Fix: refuse
---       to approve an entry whose period is closed.
---   F3 (P1) reverse-after-close bricked: reverse defaulted the correction date to
---       current_date and the UI never passes a date, so once the CURRENT month was
---       closed EVERY reversal failed (the default fell in the closed period),
---       contradicting the documented "the correction lands in an open period"
---       invariant. Fix: on the default path, roll the reversal forward to the
---       first open month so a reversal is never impossible. An explicit caller
---       date is still honored as-is.
+-- Timestamp 160000 (not 100000) so a full migration replay runs this AFTER the
+-- sibling's reverse-lock migration 20260630130000_reverse_lock_double_reversal.sql
+-- (PR [stress:journal]). That migration adds `for update` to reverse_journal_entry
+-- but keeps the old default-date logic; if it ran last it would silently drop the
+-- F3 roll-forward below. This migration carries the COMBINED reverse (their
+-- `for update` + my roll-forward) so the end state is correct whichever lands, in
+-- any order. It only `create or replace`s ensure_open_period / approve_journal_entry
+-- / reverse_journal_entry — it does NOT touch close/reopen or ledger_audit
+-- (20260630080000, prod-only / PR #122 — see FINDINGS F4 drift flag).
+--
+--   F1 (P0) close-vs-post race: post runs on ONE read-committed snapshot and
+--       ensure_open_period read period status WITHOUT a row lock, then inserted
+--       without re-checking → a close committing mid-post landed the entry in a
+--       closed period. Fix: SELECT … FOR SHARE on the covering period.
+--   F2 (P1) approval back-door: approve_journal_entry had no period check, so a
+--       pending_review entry could be approved into a closed period. Fix: refuse.
+--   F3 (P1) reverse-after-close bricked: reverse defaulted to current_date and the
+--       UI passes no date, so closing the current month broke EVERY reversal. Fix:
+--       roll the default forward to the first open month.
+--   (+) reverse_journal_entry also keeps the sibling's `for update` on the original
+--       entry (double-reversal P0) so deploying this never regresses that fix.
 
 -- ── F1: ensure_open_period — lock the period row against a concurrent close ──
 create or replace function ensure_open_period(p_org uuid, p_date date)
@@ -35,12 +33,11 @@ declare
   v_start     date := date_trunc('month', p_date)::date;
   v_end       date := (date_trunc('month', p_date) + interval '1 month - 1 day')::date;
 begin
-  -- FOR SHARE: take a shared row lock on the covering period. close_accounting_period
-  -- UPDATEs status (a FOR NO KEY UPDATE lock) which conflicts with FOR SHARE, so a
-  -- close and an in-flight post are mutually exclusive on this row. If the close
-  -- commits first, FOR SHARE follows the row to its latest version (EvalPlanQual)
-  -- and we read status='closed' → reject. Concurrent posts into the SAME open
-  -- period still proceed in parallel (shared locks don't conflict with each other).
+  -- FOR SHARE: a concurrent close() UPDATEs this row (FOR NO KEY UPDATE), which
+  -- conflicts with FOR SHARE, so close and an in-flight post are mutually exclusive.
+  -- If the close wins, FOR SHARE follows the row to its latest version and reads
+  -- status='closed' → reject. Concurrent posts into the same open period still run
+  -- in parallel (shared locks don't conflict).
   select id, status into v_period_id, v_status
   from accounting_periods
   where org_id = p_org and p_date between period_start and period_end
@@ -77,10 +74,9 @@ begin
   if v_e.status <> 'pending_review' then
     raise exception 'not_pending: entry is not awaiting approval' using errcode = 'restrict_violation';
   end if;
-  -- Approving flips pending_review → posted, which changes the trial balance of the
-  -- entry's period. If that period is closed, the approval would mutate locked
-  -- books — refuse. Lock the period row FOR SHARE to stay consistent with a
-  -- concurrent close. The 'period_closed' message keeps the edge fn's 409 mapping.
+  -- Approving flips pending_review → posted, changing the period's trial balance.
+  -- Refuse if the period is closed (else approval is a back-door into locked books).
+  -- The 'period_closed' message keeps the edge fn's existing 409 mapping.
   select status into v_pstatus from accounting_periods where id = v_e.period_id for share;
   if v_pstatus = 'closed' then
     raise exception 'period_closed: entry % is in a closed period and cannot be approved', p_entry_id
@@ -91,7 +87,7 @@ begin
   return v_e;
 end$$;
 
--- ── F3: reverse_journal_entry — default reversal always lands in an open period ─
+-- ── reverse_journal_entry — COMBINED: FOR UPDATE (sibling P0) + roll-forward (F3) ──
 create or replace function reverse_journal_entry(
   p_actor           uuid,
   p_org             uuid,
@@ -120,21 +116,21 @@ begin
   select * into v_existing from journal_entries where org_id = p_org and idempotency_key = p_idempotency_key;
   if found then return v_existing; end if;
 
-  select * into v_orig from journal_entries where id = p_entry_id and org_id = p_org;
+  -- LOCK the original (sibling reverse-lock fix, 20260630130000): concurrent
+  -- reversals of the same entry serialize so exactly one wins; the loser re-reads
+  -- 'reversed' below and raises already_reversed. Closes the double-reversal P0.
+  select * into v_orig from journal_entries where id = p_entry_id and org_id = p_org for update;
   if not found then raise exception 'not_found: entry % not in org %', p_entry_id, p_org using errcode = 'no_data_found'; end if;
   if v_orig.status = 'reversed' then raise exception 'already_reversed' using errcode = 'restrict_violation'; end if;
   if v_orig.status <> 'posted'  then raise exception 'not_posted: only a posted entry can be reversed' using errcode = 'restrict_violation'; end if;
 
   if p_entry_date is not null then
-    -- Caller chose the correction date; honor it (ensure_open_period rejects a
-    -- closed one).
-    v_date := p_entry_date;
+    v_date := p_entry_date;                       -- caller chose the date; honored as-is
   else
-    -- Default path: a reversal must never be impossible. Start at today and roll
-    -- forward by whole months until we reach a month whose period is OPEN or does
-    -- not exist yet (it will be auto-created open). This keeps the documented
-    -- invariant "the correction lands in an open period" true even when the CPA
-    -- has just closed the current month.
+    -- F3: roll forward from today to the first OPEN (or not-yet-existing → auto-
+    -- created open) month so a reversal is never impossible once the current month
+    -- is closed. Honors the documented invariant "the correction lands in an open
+    -- period." Bounded to 10 years.
     v_probe := current_date;
     loop
       select id, status into v_pid, v_pstatus
@@ -176,5 +172,5 @@ exception
     return v_existing;
 end$$;
 
--- grants unchanged (signatures identical); the create-or-replace preserves the
+-- grants unchanged (identical signatures); create-or-replace preserves the
 -- service_role EXECUTE grants from 20260629125000_phase2_ledger_writepath.sql.

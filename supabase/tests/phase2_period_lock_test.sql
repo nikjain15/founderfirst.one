@@ -9,7 +9,7 @@
 -- stable regardless of when it runs (the auto-created period is "this month").
 
 begin;
-select plan(8);
+select plan(9);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -44,6 +44,13 @@ select like(
   pg_get_functiondef('ensure_open_period(uuid,date)'::regprocedure),
   '%for share%',
   'F1: ensure_open_period locks the covering period FOR SHARE');
+
+-- the combined reverse keeps the sibling's FOR UPDATE on the original entry
+-- (double-reversal P0) so this migration never regresses 20260630130000.
+select like(
+  pg_get_functiondef('reverse_journal_entry(uuid,uuid,uuid,text,date,text)'::regprocedure),
+  '%for update%',
+  'reverse_journal_entry locks the original entry FOR UPDATE (no double-reversal)');
 
 -- CPA posts two pending entries dated THIS month (auto-creates this month, open).
 create temp table _p1 as

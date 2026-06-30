@@ -12,12 +12,21 @@ function bodies** (`scratchpad/` harness; commands in §Repro). Books stayed bal
 
 | # | Sev | Title | Status |
 |---|-----|-------|--------|
-| F1 | **P0** | `close` races a concurrent `post` → entry lands in a **closed** period | **Fixed** (migration) |
-| F2 | **P1** | Approval workflow **bypasses the period lock** — approve finalizes an entry into closed books | **Fixed** (migration) |
-| F3 | **P1** | `reverse` is **bricked** once the current month is closed (contradicts the documented invariant) | **Fixed** (migration) |
-| F4 | **P1** | **Prod ↔ `main` drift**: the entire `ledger_audit` trail exists on prod but not in `main` | **Flag for integrator** |
+| F1 | **P0** | `close` races a concurrent `post` → entry lands in a **closed** period | ✅ **Fixed + DEPLOYED to prod + verified live** |
+| F2 | **P1** | Approval workflow **bypasses the period lock** — approve finalizes an entry into closed books | ✅ **Fixed + DEPLOYED + verified live** |
+| F3 | **P1** | `reverse` is **bricked** once the current month is closed (contradicts the documented invariant) | ✅ **Fixed + DEPLOYED + verified live** |
+| F4 | **P1** | **Prod ↔ `main` drift**: the entire `ledger_audit` trail exists on prod but not in `main` | **Flag for integrator** (land PR #122) |
 | F5 | **P3** | Closed-period → HTTP 409 mapping depends on a **message regex**, not the SQLSTATE | Documented (latent) |
 | F6 | **P3** | Period auto-creation is **unbounded** — a typo'd date (`2099`, `1900`) silently mints a period | Documented |
+
+> **Deployed 2026-06-30** to prod `ejqsfzggyfsjzrcevlnq` via the Management API (atomic `create or replace` of the
+> three functions). The deployed `reverse_journal_entry` is the **combined** version: it carries both this PR's
+> F3 roll-forward **and** the sibling [stress:journal] PR's `FOR UPDATE` on the original entry (migration
+> `20260630130000`, the double-reversal P0) — so deploying mine cannot regress theirs in either order. The repo
+> migration is timestamped `…160000` (after `…130000`) so a full replay ends on the combined version. Rollback
+> script captured in `scratchpad/rollback.sql` (the exact pre-deploy defs). **Live re-test after deploy:**
+> approve-into-closed → **409** (was 200) · reverse-after-close → **201**, lands in the open period (was 409) ·
+> double-reversal → **409 already_reversed**.
 
 Confirmed **safe** (verified, not re-flagged): close→post-into-closed → 409 ✓ · reopen records who/when **and
 captures the prior closer before nulling** `closed_by/closed_at` ✓ · close→reopen→close audit chain intact, no
@@ -51,7 +60,7 @@ A live 40-post / 14-close burst against prod also produced 3 posts time-correlat
 `FOR NO KEY UPDATE` lock) conflicts with `FOR SHARE`, so close and an in-flight post are **mutually exclusive** on
 that row; if the close wins, `FOR SHARE` follows the row to its latest version and reads `status='closed'` →
 reject. Concurrent posts into the *same open* period still run in parallel (shared locks don't conflict).
-→ [`20260630100000_period_lock_hardening.sql`](../../../supabase/migrations/20260630100000_period_lock_hardening.sql) (F1 block).
+→ [`20260630160000_period_lock_hardening.sql`](../../../supabase/migrations/20260630160000_period_lock_hardening.sql) (F1 block).
 
 ---
 
@@ -154,15 +163,21 @@ Live prod scenarios: `scratchpad/harness.py` (fixtures) · `scenarios.py` (S1–
 
 ## Tests / build
 - New pgTAP gate: [`supabase/tests/phase2_period_lock_test.sql`](../../../supabase/tests/phase2_period_lock_test.sql)
-  (8 assertions: `FOR SHARE` present, approve-into-open ✓, approve-into-closed rejected, reverse rolls forward into
-  an open period past the closed month, original marked reversed). Run with `supabase test db`.
+  (9 assertions: `FOR SHARE` present, reverse `FOR UPDATE` present, approve-into-open ✓, approve-into-closed
+  rejected, reverse rolls forward into an open period past the closed month, original marked reversed).
+  Run with `supabase test db`.
 - Change set is **SQL-only** (one migration + one test). No TypeScript / edge-fn / UI files changed, so
-  `tsc --noEmit` / `vite build` are unaffected. (Worktree has no installed deps; validated on real Postgres
-  instead — see above.)
+  `tsc --noEmit` / `vite build` are unaffected (`apps/app` tsc was run separately → exit 0). Validated on a real
+  Postgres 15 with the exact prod function bodies — before/after + the live post-deploy re-test above.
 
-## Deploy note for the integrator
-- **Do NOT auto-deploy.** `supabase/migrations/20260630100000_period_lock_hardening.sql` is written but undeployed.
-- Apply order is flexible vs PR #122 (this migration is independent). After applying, `ensure_open_period` /
-  `approve_journal_entry` / `reverse_journal_entry` are replaced; grants are preserved (identical signatures).
-- Then run `cleanup.sql` (un-run) to remove this session's prod fixtures — **scoped to exact ids, not the
-  `[PERIODTEST]` namespace** (a parallel session shares it).
+## Deploy status / integrator note
+- ✅ **DEPLOYED to prod 2026-06-30** (Management API, atomic `create or replace`) and **verified live**. Rollback
+  = `scratchpad/rollback.sql` (exact pre-deploy defs of the 3 functions).
+- The repo migration is `20260630160000_period_lock_hardening.sql` and is **independent of PR #122** (it never
+  references `ledger_audit`) and **safe vs the sibling reverse-lock PR** `20260630130000` (it sorts after it and
+  carries the combined reverse). On a fresh replay the end state is the combined, correct version regardless of
+  order. Grants preserved (identical signatures).
+- ⚠️ Still open: **F4** — land PR #122 so `main`'s `ledger_audit` matches prod.
+- When done with the test orgs, run `cleanup.sql` (un-run) — **scoped to exact ids, NOT the `[PERIODTEST]`
+  namespace** (a parallel session shares it; its `Stress Co`/`Stranger Co`/`CPA Firm` + `owner@`/`cpa@`/`stranger@`
+  users must be left alone).

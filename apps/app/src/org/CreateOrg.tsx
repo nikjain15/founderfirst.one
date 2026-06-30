@@ -58,6 +58,7 @@ export default function CreateOrg({ onDone }: { onDone?: () => void }) {
         type="text"
         required
         maxLength={120}
+        aria-label={type === "firm" ? "Practice name" : "Business name"}
         placeholder={type === "firm" ? "Your practice name" : "Your business name"}
         value={name}
         onChange={(e) => setName(e.target.value)}

@@ -66,13 +66,27 @@ export default function Ledger({
       </header>
 
       <nav className="ledger-tabs" role="tablist" aria-label="Ledger sections">
-        {tabs.map((t) => (
+        {tabs.map((t, i) => (
           <button
             key={t.id}
             role="tab"
+            id={`ltab-${t.id}`}
+            aria-controls="ledger-panel"
             aria-selected={tab === t.id}
+            tabIndex={tab === t.id ? 0 : -1}
             className={`ledger-tab${tab === t.id ? " on" : ""}`}
             onClick={() => setTab(t.id)}
+            onKeyDown={(e) => {
+              if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) return;
+              e.preventDefault();
+              const n = tabs.length;
+              const j = e.key === "ArrowRight" ? (i + 1) % n
+                : e.key === "ArrowLeft" ? (i - 1 + n) % n
+                : e.key === "Home" ? 0 : n - 1;
+              setTab(tabs[j].id);
+              e.currentTarget.parentElement
+                ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[j]?.focus();
+            }}
           >
             {t.label}
           </button>
@@ -83,7 +97,7 @@ export default function Ledger({
       {loading && !error && <p className="muted">Loading the books…</p>}
 
       {!loading && !error && (
-        <div className="ledger-panel" role="tabpanel">
+        <div className="ledger-panel" role="tabpanel" id="ledger-panel" aria-labelledby={`ltab-${tab}`} tabIndex={0}>
           {tab === "overview" && (
             <Overview
               entries={entries.data ?? []} accounts={accounts.data ?? []}
@@ -147,8 +161,8 @@ function Overview({
   if (accounts.length === 0) {
     return (
       <Empty
-        title="No books yet"
-        body="Add your chart of accounts, then post your first entry. Penny will help fill these in once the bank feed lands."
+        title="Let's set up your books"
+        body="Connect your bank or import a statement and Penny starts categorizing right away. Prefer to do it by hand? You can add accounts and post entries too."
       />
     );
   }
@@ -172,12 +186,12 @@ function Overview({
       </div>
       {!tb.balanced && (
         <p className="warn-banner">
-          Heads up: the books don't balance (debits {formatMoney(tb.totalDebit)} ≠ credits{" "}
-          {formatMoney(tb.totalCredit)}). Every posted entry is balanced, so this points to a
-          data issue worth a look.
+          Something doesn't add up in your books — the totals are off by{" "}
+          {formatMoney(Math.abs(tb.totalDebit - tb.totalCredit))}. This is almost always a data
+          hiccup, not lost money. Penny flagged it so you (or your accountant) can take a look.
         </p>
       )}
-      <h3 className="section-h">Latest activity</h3>
+      <h2 className="section-h">Latest activity</h2>
       {recent.length === 0 ? (
         <p className="muted">No entries yet.</p>
       ) : (
@@ -214,7 +228,11 @@ function OverviewTakeaway({
   netIncome: number; hasActivity: boolean; onReview: () => void; onCategorize: () => void;
 }) {
   if (notBalanced) {
-    return <Takeaway tone="watch">Your books don't balance right now — worth a look below.</Takeaway>;
+    return (
+      <Takeaway tone="watch" action={canWrite ? { label: "Open journal", onClick: onReview } : undefined}>
+        Something doesn't add up in your books — Penny spotted it. This is almost always a data fix, not lost money.
+      </Takeaway>
+    );
   }
   if (pending > 0) {
     return (
@@ -431,10 +449,10 @@ function Journal({
                           <span className="jl-acct">
                             {l.account?.code ? `${l.account.code} · ` : ""}{l.account?.name ?? "—"}
                           </span>
-                          <span className={`jl-amt ${l.side === "D" ? "d" : "c"}`}>
+                          <span className={`jl-amt ${l.side === "D" ? "d" : "c"}`} aria-label={l.side === "D" ? "Debit" : undefined}>
                             {l.side === "D" ? formatMoney(l.amount_minor, l.currency) : ""}
                           </span>
-                          <span className={`jl-amt ${l.side === "C" ? "c" : "d"}`}>
+                          <span className={`jl-amt ${l.side === "C" ? "c" : "d"}`} aria-label={l.side === "C" ? "Credit" : undefined}>
                             {l.side === "C" ? formatMoney(l.amount_minor, l.currency) : ""}
                           </span>
                         </div>
@@ -533,22 +551,22 @@ function NewEntryForm({
       </div>
       {lines.map((l, i) => (
         <div className="line-row" key={i}>
-          <select value={l.account_id} onChange={(e) => update(i, { account_id: e.target.value })} aria-label="Account">
+          <select value={l.account_id} onChange={(e) => update(i, { account_id: e.target.value })} aria-label={`Line ${i + 1} account`}>
             <option value="">Select account…</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ""}{a.name}</option>
             ))}
           </select>
-          <select value={l.side} onChange={(e) => update(i, { side: e.target.value as "D" | "C" })} aria-label="Debit or credit">
+          <select value={l.side} onChange={(e) => update(i, { side: e.target.value as "D" | "C" })} aria-label={`Line ${i + 1} debit or credit`}>
             <option value="D">Debit</option>
             <option value="C">Credit</option>
           </select>
           <input
-            inputMode="decimal" value={l.amount} aria-label="Amount"
+            inputMode="decimal" value={l.amount} aria-label={`Line ${i + 1} amount`}
             onChange={(e) => update(i, { amount: e.target.value })} placeholder="0.00"
           />
           <button type="button" className="line-del" onClick={() => removeLine(i)}
-            disabled={lines.length <= 2} aria-label="Remove line">×</button>
+            disabled={lines.length <= 2} aria-label={`Remove line ${i + 1}`}>×</button>
         </div>
       ))}
 

@@ -5,7 +5,7 @@
 -- p_actor, called directly as the test role; everything rolls back.
 
 begin;
-select plan(15);
+select plan(18);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -99,6 +99,26 @@ select is(
    from journal_lines jl join ledger_accounts a on a.id=jl.account_id
    where a.org_id='00000000-0000-0000-0000-0000000000b1' and a.code='3900'),
   30000, 'Opening Balance Equity plug = 30000 credit (50000 Dr − 20000 Cr)');
+
+-- ── OBTEST (stress: opening-balances): an invalid opening row is rejected
+--    ATOMICALLY — never silently dropped into the OBE plug ──────────────────────
+-- A ready opening row missing account/side/amount cannot be partially posted: the
+-- OBE plug would absorb its value and the books would "balance" while being wrong.
+-- The commit must raise and post NOTHING, leaving the batch for the user to fix.
+create temp table _b4 as
+select * from create_import_batch('00000000-0000-0000-0000-00000000000a','00000000-0000-0000-0000-0000000000b1','opening_balances'::import_source,null,null,date '2025-11-30');
+select add_import_rows('00000000-0000-0000-0000-00000000000a','00000000-0000-0000-0000-0000000000b1',(select id from _b4),
+  '[{"row_num":1,"description":"Cash opening","amount_minor":50000,"account_id":"00000000-0000-0000-0000-00000000c001","side":"D","status":"ready"},
+    {"row_num":2,"description":"orphan balance, no account","amount_minor":20000,"account_id":null,"side":"C","status":"ready"}]'::jsonb);
+select throws_ok($$
+  select commit_import_batch('00000000-0000-0000-0000-00000000000a','00000000-0000-0000-0000-0000000000b1',(select id from _b4))
+$$, '22023', NULL, 'opening row missing account is rejected (import_row_invalid), not silently dropped');
+select is(
+  (select count(*)::int from journal_entries where org_id='00000000-0000-0000-0000-0000000000b1' and entry_date='2025-11-30'),
+  0, 'rejected opening import posts NOTHING (atomic)');
+select is(
+  (select status::text from import_batches where id=(select id from _b4)),
+  'previewed', 'rejected opening batch is left uncommitted for the user to fix');
 
 -- ── authorization ────────────────────────────────────────────────────────────
 select throws_ok($$

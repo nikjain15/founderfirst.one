@@ -34,7 +34,17 @@ force-rolled-back transaction (zero persistence).
 | Cross-tenant connect (B→A) / import (B→A) | **403 forbidden** |
 | IDOR: A imports org A but passes B's `connection_id` | **404 no_active_connection** (conn scoped to org) |
 | Token-exchange failure → persisted `last_error` | sanitized `"xero_token_exchange_failed: 400"`; injected secret-marker code did **not** leak |
+| Token-**refresh** failure (live Intuit, synthetic active conn, expired token) | graceful **502** `qbo_token_refresh_failed: 400`; persisted `last_error` sanitized; **0** import_batches/journal_entries (no orphan) |
+| Failed pull leaves no ledger/staging orphan | confirmed — both imports failed before any post; org row-counts unchanged |
 | `secure_connection_tokens` migration (token column wall) | live + effective (verified via `relacl`/`attacl` + real PostgREST 403) |
+
+### Live confirmation of F2 (no real OAuth needed)
+With a synthetic `active` connection carrying a **bogus token**, `xero-import` hit the real
+Xero API and returned to the client:
+`detail: "xero_api_failed Accounts: 401 {\"Type\":null,\"Title\":\"Unauthorized\",\"Status\":401,\"Detail\":\"AuthenticationUnsuccessful\",...}"`
+— the **deployed** code leaks the raw provider body to the client (the F2 channel; the
+bearer token itself was not echoed by Xero, so no secret leaked *this time*, but the channel
+is real). The fix in this PR makes it status-only (`xero_api_failed Accounts: 401`).
 
 ## Lower-severity (fixed in this PR)
 
@@ -87,9 +97,11 @@ branch (F0), a re-pulled txn with the same `external_id` returns the **same** jo
 
 - Users: `owner-a@synctest.founderfirst.test`, `owner-b@synctest.founderfirst.test`
 - Orgs: ORG_A `3d3bc99a-bd8b-47d4-bf80-80b0afecebcc`, ORG_B `17505c7b-f110-4268-b7c0-a5116ab315d8`
-- **SYNCTEST footprint:** 2 orgs · 2 users · 5 `external_connections` (pending/error, **no
-  tokens** — OAuth not completed) · **0** ledger_accounts / import_batches / journal_entries
-  (all commit/post proofs rolled back → zero ledger impact).
+- **SYNCTEST footprint:** 2 orgs · 2 users · 7 `external_connections` (5 pending/error with
+  **no tokens**; 2 synthetic `active` carrying **bogus** tokens, used to drive the live
+  import-error paths) · **0** ledger_accounts / import_batches / journal_entries (all
+  commit/post proofs rolled back; the live import attempts failed before staging → zero
+  ledger impact). The cleanup deletes all `external_connections` for orgs A/B.
 - Global before/after row-count diff is not meaningful: **parallel stress sessions** mutated
   shared tables concurrently during the run. Footprint above is the precise SYNCTEST-only set.
 - Un-run cleanup: [`docs/stress/SYNCTEST_cleanup.sql`](./SYNCTEST_cleanup.sql).

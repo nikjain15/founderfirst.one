@@ -66,11 +66,23 @@ Deno.serve(async (req) => {
         p_cutover_date: body?.cutover_date ?? null,
       };
       break;
-    case "add_rows":
+    case "add_rows": {
       if (!body?.batch_id || !Array.isArray(body?.rows)) return json({ error: "bad_rows" }, 400);
+      // Same money-precision guard as ledger-entries: a JS-number amount_minor
+      // above 2^53 silently truncates; require a string for exact bigint, and
+      // refuse an unsafe number rather than corrupt the import.
+      const rows: unknown[] = [];
+      for (const r of body.rows as unknown[]) {
+        const a = (r as Record<string, unknown>)?.amount_minor;
+        if (typeof a === "number" && !Number.isSafeInteger(a)) {
+          return json({ error: "amount_too_large: send amount_minor as a string for values beyond 2^53" }, 422);
+        }
+        rows.push(typeof a === "number" ? { ...(r as Record<string, unknown>), amount_minor: String(a) } : r);
+      }
       rpc = "add_import_rows";
-      args = { p_actor: user.id, p_org: orgId, p_batch: body.batch_id, p_rows: body.rows };
+      args = { p_actor: user.id, p_org: orgId, p_batch: body.batch_id, p_rows: rows };
       break;
+    }
     case "commit":
       if (!body?.batch_id) return json({ error: "bad_batch" }, 400);
       rpc = "commit_import_batch";

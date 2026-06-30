@@ -12,12 +12,13 @@ import {
   addImportRows, commitImportBatch, connectProvider, createImportBatch, discardImportBatch,
   importProvider, useConnections, type ExternalProvider, type StagedRow,
 } from "../ledger/api";
-import { parseAmountCell, parseCsv, parseDateCell, type ParsedCsv } from "./csv";
+import { parseAmountCell, parseCsv, parseDateCell, type DateFormat, type ParsedCsv } from "./csv";
 import { formatMoney } from "../ledger/money";
 import type { LedgerAccount } from "../ledger/types";
 
 type Mode = "choose" | "csv" | "opening";
-const today = () => new Date().toISOString().slice(0, 10);
+// Local date (en-CA → YYYY-MM-DD), not UTC — avoids a day-off near midnight/month-end.
+const today = () => new Date().toLocaleDateString("en-CA");
 
 export default function ImportFlow({
   orgId, accounts, onDone,
@@ -63,6 +64,7 @@ function CsvImport({
   const [descCol, setDescCol] = useState<number>(-1);
   const [amtCol, setAmtCol] = useState<number>(-1);
   const [positiveIs, setPositiveIs] = useState<"in" | "out">("in");
+  const [dateFmt, setDateFmt] = useState<DateFormat>("mdy");
   const [bankId, setBankId] = useState("");
   const [contraId, setContraId] = useState("");
   const [busy, setBusy] = useState(false);
@@ -89,14 +91,14 @@ function CsvImport({
   const rows = useMemo(() => {
     if (!csv || dateCol < 0 || amtCol < 0) return [];
     return csv.rows.map((r, i) => {
-      const date = parseDateCell(r[dateCol] ?? "");
+      const date = parseDateCell(r[dateCol] ?? "", dateFmt);
       let amount = parseAmountCell(r[amtCol] ?? "");
       if (amount != null && positiveIs === "out") amount = -amount;
       const description = descCol >= 0 ? (r[descCol] ?? "").trim() : "";
       const valid = Boolean(date) && amount != null && amount !== 0;
       return { row_num: i + 1, raw: Object.fromEntries(csv.headers.map((h, j) => [h, r[j] ?? ""])), date, description, amount, valid };
     });
-  }, [csv, dateCol, descCol, amtCol, positiveIs]);
+  }, [csv, dateCol, descCol, amtCol, positiveIs, dateFmt]);
 
   const readyCount = rows.filter((r) => r.valid).length;
   const canImport = Boolean(bankId && contraId && readyCount > 0 && !busy);
@@ -171,6 +173,12 @@ function CsvImport({
                 <select value={positiveIs} onChange={(e) => setPositiveIs(e.target.value as "in" | "out")}>
                   <option value="in">money in (deposits)</option>
                   <option value="out">money out (withdrawals)</option>
+                </select>
+              </label>
+              <label><span>Date format</span>
+                <select value={dateFmt} onChange={(e) => setDateFmt(e.target.value as DateFormat)}>
+                  <option value="mdy">Month/Day/Year (US)</option>
+                  <option value="dmy">Day/Month/Year (UK/EU)</option>
                 </select>
               </label>
               <label className="grow"><span>Bank account</span>

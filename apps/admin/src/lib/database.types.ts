@@ -50,18 +50,21 @@ export type Database = {
           added_by: string | null
           email: string
           is_super: boolean
+          role: "viewer" | "editor" | "super"
         }
         Insert: {
           added_at?: string
           added_by?: string | null
           email: string
           is_super?: boolean
+          role?: "viewer" | "editor" | "super"
         }
         Update: {
           added_at?: string
           added_by?: string | null
           email?: string
           is_super?: boolean
+          role?: "viewer" | "editor" | "super"
         }
         Relationships: []
       }

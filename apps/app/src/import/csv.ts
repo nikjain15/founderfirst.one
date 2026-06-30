@@ -3,10 +3,15 @@
  * fields, embedded commas/newlines, and "" escapes — enough for bank/QBO/Xero CSV
  * exports. Parsing happens in the browser; only normalized rows reach the server.
  */
+import { decimalToMinor } from "../ledger/money";
+
 export interface ParsedCsv {
   headers: string[];
   rows: string[][];
 }
+
+/** How ambiguous slash/dash dates (e.g. 03/04/2026) should be read. */
+export type DateFormat = "mdy" | "dmy";
 
 export function parseCsv(text: string): ParsedCsv {
   // strip BOM
@@ -46,18 +51,35 @@ export function parseCsv(text: string): ParsedCsv {
   return { headers, rows: records.slice(1) };
 }
 
-/** Parse a date cell from common bank formats → ISO yyyy-mm-dd, or null. */
-export function parseDateCell(v: string): string | null {
+/**
+ * Parse a date cell → ISO yyyy-mm-dd, or null. `fmt` disambiguates slash/dash dates
+ * that could be month-first (US) or day-first (UK/EU/AU). When a value is
+ * self-disambiguating (a part > 12), that wins regardless of `fmt`. Invalid
+ * month/day combinations return null rather than producing a bogus ISO string
+ * (e.g. "13/04/2026" no longer yields "2026-13-04").
+ */
+export function parseDateCell(v: string, fmt: DateFormat = "mdy"): string | null {
   const s = (v ?? "").trim();
   if (!s) return null;
   // already ISO-ish
   const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (iso) return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
-  // m/d/yyyy or m-d-yyyy (US bank default)
-  const us = s.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})$/);
-  if (us) {
-    let [, m, d, y] = us;
+  if (iso) {
+    const mm = +iso[2], dd = +iso[3];
+    if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+    return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
+  }
+  const parts = s.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})$/);
+  if (parts) {
+    let [, a, b, y] = parts;
     if (y.length === 2) y = `20${y}`;
+    const na = +a, nb = +b;
+    let m: string, d: string;
+    if (na > 12 && nb <= 12) { d = a; m = b; }        // first part must be the day
+    else if (nb > 12 && na <= 12) { m = a; d = b; }   // second part must be the day
+    else if (fmt === "dmy") { d = a; m = b; }         // ambiguous → honour fmt
+    else { m = a; d = b; }
+    const mi = +m, di = +d;
+    if (mi < 1 || mi > 12 || di < 1 || di > 31) return null;
     return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
   }
   const t = Date.parse(s);
@@ -65,15 +87,15 @@ export function parseDateCell(v: string): string | null {
   return null;
 }
 
-/** Parse an amount cell ("1,234.56", "(45.00)", "$10") → minor units, or null. */
+/** Parse an amount cell ("1,234.56", "(45.00)", "$10") → minor units, or null.
+ *  Integer-only conversion (no float multiply) via decimalToMinor. */
 export function parseAmountCell(v: string): number | null {
   let s = (v ?? "").trim();
   if (!s) return null;
   let neg = false;
   if (/^\(.*\)$/.test(s)) { neg = true; s = s.slice(1, -1); } // (123) = negative
   s = s.replace(/[^0-9.\-]/g, "");
-  if (s === "" || s === "-" || s === ".") return null;
-  const n = Number(s);
-  if (!Number.isFinite(n)) return null;
-  return Math.round((neg ? -Math.abs(n) : n) * 100);
+  const minor = decimalToMinor(s);
+  if (minor === null) return null;
+  return neg ? -Math.abs(minor) : minor;
 }

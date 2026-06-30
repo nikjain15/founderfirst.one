@@ -40,11 +40,14 @@ export function getClient(): SupabaseClient {
 
 // ---- Admin allow-list ------------------------------------------------------
 
+export type AdminTier = "viewer" | "editor" | "super";
+
 export interface AdminRow {
   email: string;
   added_at: string;
   added_by: string | null;
   is_super: boolean;
+  role: AdminTier;
 }
 
 export async function isAdmin(email: string): Promise<boolean> {
@@ -62,19 +65,19 @@ export async function listAdmins(): Promise<AdminRow[]> {
   const db = getClient();
   const { data, error } = await db
     .from("admins")
-    .select("email, added_at, added_by, is_super")
+    .select("email, added_at, added_by, is_super, role")
     .order("added_at", { ascending: true });
   if (error) throw new Error(`listAdmins: ${error.message}`);
   return (data as AdminRow[]) ?? [];
 }
 
-export async function inviteAdmin(email: string): Promise<{ emailed: boolean }> {
+export async function inviteAdmin(email: string, role: AdminTier = "viewer"): Promise<{ emailed: boolean }> {
   const db = getClient();
   const target = email.trim().toLowerCase();
   const me = (await db.auth.getUser()).data.user?.email ?? null;
   const { error } = await db
     .from("admins")
-    .insert({ email: target, added_by: me });
+    .insert({ email: target, added_by: me, role });
   if (error) throw new Error(error.message);
   // Best-effort welcome email — the new admin gets a "you have access, here's
   // how to sign in" note. A send failure must never fail the add itself.
@@ -89,6 +92,15 @@ export async function inviteAdmin(email: string): Promise<{ emailed: boolean }> 
 export async function removeAdmin(email: string): Promise<void> {
   const db = getClient();
   const { error } = await db.from("admins").delete().eq("email", email);
+  if (error) throw new Error(error.message);
+}
+
+/** Change an admin's tier. Super-only (enforced by the admins_update_super RLS
+ *  policy); editors/viewers get a row-level rejection. Promoting to 'super' is
+ *  therefore only possible for an existing super. */
+export async function setAdminRole(email: string, role: AdminTier): Promise<void> {
+  const db = getClient();
+  const { error } = await db.from("admins").update({ role }).eq("email", email);
   if (error) throw new Error(error.message);
 }
 

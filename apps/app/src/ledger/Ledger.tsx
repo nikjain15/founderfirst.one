@@ -34,7 +34,8 @@ const ALL_TABS: { id: Tab; label: string; writeOnly?: boolean }[] = [
   { id: "periods", label: "Periods" },
 ];
 
-const today = () => new Date().toISOString().slice(0, 10);
+// Local date (en-CA → YYYY-MM-DD), not UTC — avoids a day-off near midnight/month-end.
+const today = () => new Date().toLocaleDateString("en-CA");
 const entryTotal = (e: JournalEntry) =>
   (e.lines ?? []).filter((l) => l.side === "D").reduce((s, l) => s + l.amount_minor, 0);
 

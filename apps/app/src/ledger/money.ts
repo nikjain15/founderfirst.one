@@ -20,11 +20,29 @@ export function formatMoneyShort(minor: number, currency = "USD"): string {
   }).format((minor || 0) / 100);
 }
 
+/**
+ * Convert a cleaned decimal string (digits, optional leading "-", at most one ".")
+ * to integer minor units using INTEGER math only — no float multiply, so values
+ * like "2.675" can't mis-round (ARCHITECTURE.md §6.1, no float in money). Sub-cent
+ * precision (>2 fractional digits) is REJECTED rather than silently rounded.
+ */
+export function decimalToMinor(cleaned: string): number | null {
+  if (!/^-?\d*\.?\d*$/.test(cleaned)) return null; // single sign, single dot
+  const neg = cleaned.startsWith("-");
+  const body = neg ? cleaned.slice(1) : cleaned;
+  const [whole = "", frac = ""] = body.split(".");
+  if (whole === "" && frac === "") return null;
+  if (frac.length > 2) return null; // sub-cent — reject, don't round
+  const w = whole === "" ? 0 : parseInt(whole, 10);
+  const f = frac === "" ? 0 : parseInt(frac.padEnd(2, "0"), 10);
+  if (!Number.isInteger(w) || !Number.isInteger(f)) return null;
+  const minor = w * 100 + f;
+  return neg ? -minor : minor;
+}
+
 /** Parse a typed dollar amount (e.g. "1,234.50") to minor units. null if invalid. */
 export function parseMoneyToMinor(input: string): number | null {
   const cleaned = String(input).replace(/[^0-9.\-]/g, "");
   if (cleaned === "" || cleaned === "-" || cleaned === ".") return null;
-  const n = Number(cleaned);
-  if (!Number.isFinite(n)) return null;
-  return Math.round(n * 100);
+  return decimalToMinor(cleaned);
 }

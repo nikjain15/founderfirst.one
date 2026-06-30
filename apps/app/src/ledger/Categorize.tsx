@@ -47,9 +47,10 @@ export default function Categorize({
         </span>
       </div>
       <ul className="cat-list">
-        {rows.map((e) => (
+        {rows.map((e, i) => (
           <CategorizeRow
             key={e.entry_id} orgId={orgId} canWrite={canWrite} accounts={live} entry={e}
+            autoPropose={i < AUTO_PROPOSE_LIMIT}
             onApproved={() => { refreshUncat(); onChange(); }}
           />
         ))}
@@ -58,24 +59,30 @@ export default function Categorize({
   );
 }
 
+// Only auto-ask Penny for the first N rows on mount; the rest fetch on demand
+// (an "Ask Penny" button), so opening the tab on a fresh multi-hundred-row import
+// doesn't fire hundreds of concurrent LLM calls (#11 — thundering herd / cost).
+const AUTO_PROPOSE_LIMIT = 8;
+
 function signedAmount(e: UncategorizedEntry): number {
   // On the holding line a credit = money in (+), a debit = money out (−).
   return e.side === "C" ? e.amount_minor : -e.amount_minor;
 }
 
 function CategorizeRow({
-  orgId, canWrite, accounts, entry, onApproved,
+  orgId, canWrite, accounts, entry, autoPropose, onApproved,
 }: {
   orgId: string; canWrite: boolean; accounts: LedgerAccount[];
-  entry: UncategorizedEntry; onApproved: () => void;
+  entry: UncategorizedEntry; autoPropose: boolean; onApproved: () => void;
 }) {
   const [chosen, setChosen] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [wanted, setWanted] = useState(autoPropose);
 
   const proposal = useQuery({
     queryKey: ["categorize-propose", orgId, entry.entry_id],
-    enabled: canWrite,
+    enabled: canWrite && wanted,
     staleTime: Infinity,
     retry: false,
     queryFn: () => proposeCategory(orgId, entry.entry_id),
@@ -111,9 +118,14 @@ function CategorizeRow({
       </div>
 
       <div className="cat-propose">
+        {!wanted && canWrite && (
+          <button type="button" className="ghost sm" onClick={() => setWanted(true)}>
+            <span className="p-mark p-mark-sm" aria-hidden="true">P</span> Ask Penny
+          </button>
+        )}
         {proposal.isLoading && <span className="muted sm">Penny is thinking…</span>}
         {proposal.isError && <span className="muted sm">Couldn't reach Penny — pick an account below.</span>}
-        {!proposal.isLoading && !proposal.isError && (
+        {proposal.isSuccess && (
           p ? (
             <span className="penny-suggest">
               <span className="p-mark p-mark-sm" aria-hidden="true">P</span>

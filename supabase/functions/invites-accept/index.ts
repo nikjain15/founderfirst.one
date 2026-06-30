@@ -52,13 +52,19 @@ Deno.serve(async (req) => {
 
   const { data: invite } = await svc
     .from("invites")
-    .select("id,target_org_id,intended_role,intended_access,invited_by,expires_at,accepted_at")
+    .select("id,target_org_id,intended_role,intended_access,invited_by,expires_at,accepted_at,email")
     .eq("token", token)
     .maybeSingle();
   if (!invite) return json({ error: "invalid_token" }, 404);
   if (invite.accepted_at) return json({ error: "already_accepted" }, 409);
   if (new Date(invite.expires_at).getTime() < Date.now()) {
     return json({ error: "expired" }, 410);
+  }
+  // An invite is bound to the email it was issued to. Possession of the token is
+  // not enough — only the named recipient may accept, so a forwarded/leaked link
+  // can't be redeemed by someone else to gain membership/engagement access.
+  if ((user.email ?? "").toLowerCase().trim() !== String(invite.email ?? "").toLowerCase().trim()) {
+    return json({ error: "wrong_recipient" }, 403);
   }
 
   // ── membership invite ──────────────────────────────────────────────

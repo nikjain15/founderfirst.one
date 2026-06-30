@@ -1530,6 +1530,15 @@ export async function setVoiceSynthSettings(s: VoiceSynthSettings): Promise<void
   if (error) throw new Error(`set_voice_synth_settings: ${error.message}`);
 }
 
+/** Render a short sample with the (possibly unsaved) settings → returns an audio URL. */
+export async function previewVoice(s: VoiceSynthSettings): Promise<string> {
+  const { data, error } = await getClient().functions.invoke("content-voice-preview", { body: s });
+  if (error) throw new Error(`previewVoice: ${error.message}`);
+  const url = (data as { audio_url?: string; error?: string } | null);
+  if (!url?.audio_url) throw new Error(url?.error ?? "preview failed");
+  return url.audio_url;
+}
+
 /** Kokoro American + British female voices offered in the studio. */
 export const KOKORO_VOICES: { id: string; label: string }[] = [
   { id: "af_heart", label: "Heart — warm, balanced (American)" },

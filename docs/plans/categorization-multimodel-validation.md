@@ -29,6 +29,31 @@ That is real, free, continuously-arriving accuracy data — per model, per
 use-case, per industry, per org. It is a far stronger signal than model-judges
 grading each other, and it is the spine of everything below.
 
+### 1a. Not all labels are equal — a **CPA's decision outweighs a user's**
+
+The person approving matters. A qualified **CPA** correcting a category is a far
+more authoritative "right answer" than a busy business owner one-tap-accepting a
+suggestion. So labels are **weighted by approver authority**, and a later, more
+authoritative decision **supersedes** an earlier one:
+
+| Event | Label weight | Notes |
+|---|---|---|
+| **CPA** corrects/overrides Penny | **highest (gold)** | the strongest signal we have |
+| CPA accepts Penny's pick as-is | high | confirms correctness |
+| Owner/user corrects Penny | medium | real, but less expert |
+| Owner/user one-tap-accepts | low (could be rubber-stamping) | discount it |
+| **CPA later re-categorizes what a user had accepted** | **gold — and it overrides** the user's earlier label | also a *strong negative*: the model AND the user were both wrong |
+
+Concretely: the scorecard's "accuracy" is a **weighted** accuracy (a model that
+matches the CPA's choice scores higher than one that only matches a rubber-stamp),
+and the ground-truth account for an entry is always the **most authoritative**
+decision on record. When a CPA overrides a user, we (a) re-score every model
+against the CPA's answer, and (b) flag the entry as a "user got it wrong" case —
+useful both for model training and for nudging that user. Approver role is already
+on the record (`recategorize`/`approve` carry the actor; CPA vs. member is known
+via `has_membership_as` / engagement), so this is a weighting on data we already
+capture — no new input from anyone.
+
 ---
 
 ## 2. What already exists (reuse, don't rebuild)
@@ -90,6 +115,33 @@ restriction (D20) that blocks synchronous Anthropic-judges-Anthropic on the edge
 the same constraint the primary does: it may only return an `account_id` from
 *this org's* chart of accounts, and the server rejects anything else
 (`byId.has(...)`). No model — primary or panel — can ever introduce an account.
+
+### 3a. The panel doubles as a **fallback / resilience layer**
+
+The roster isn't only for measurement — it's also how categorization stays up. The
+primary model is served through an **ordered, health-aware fallback chain**: if the
+primary times out / 429s / errors (the `categorize` fn already catches this and
+returns a null proposal today), we transparently fall to the next healthy model in
+the roster instead of giving the user nothing. Because every candidate runs the
+*same* grounded prompt and the *same* server-side validation, any of them is a safe
+substitute. The scorecard's accuracy+latency data orders the chain (best-value
+first), so the fallback is also a *good* model, not just any model. Net: a single
+provider outage degrades to "slightly different model," never to "Penny is down."
+
+## 3b. Why not just default to Haiku? — start even-handed, let data decide
+
+Haiku is only the current model because **Phase 0 deliberately pinned every
+caller's existing model unchanged** (`pinModel`, so answers were provably identical
+during the migration). That's a starting point, **not a verdict** — and hard-coding
+a single default is exactly the assumption this feature exists to remove.
+
+So the roster opens **even-handed**: several *leading models at comparable price &
+latency* run side-by-side from day one (e.g. Claude Haiku, a GPT-class mini, a
+Gemini-class flash, and a strong open model — all reachable through the one
+OpenRouter key). When two models cost about the same, there's no reason to assume
+the incumbent wins — we let **your** data (weighted by CPA authority, §1a) pick the
+winner on *your* transaction distribution. The scorecard is the referee; the
+default falls out of evidence, and it can change as models/prices move.
 
 ---
 
@@ -185,10 +237,12 @@ Net: the dashboard should show **cost going down** while accuracy holds or rises
   `use_case='penny_categorize'`, `role='primary'|'panel'`).
 - **New: `categorization_outcomes`** (small, derived): `(entry_id, org_id,
   proposed_by_model jsonb {model→account_id}, approved_account_id, approved_by,
+  approver_role ('cpa'|'owner'|'member'), label_weight numeric, supersedes_outcome_id,
   approved_at, primary_correct bool, panel_agreement numeric)`. Written by the
-  labeler job when `recategorize_entry` records a human decision. This is what the
-  scorecard reads — it keeps the dashboard fast and keeps the raw `ai_decisions`
-  table as the source of truth.
+  labeler job when `recategorize_entry`/`approve` records a human decision —
+  `approver_role` + `label_weight` implement §1a, and `supersedes_outcome_id` links
+  a CPA override back to the user label it overrides. This is what the scorecard
+  reads — it keeps the dashboard fast and keeps `ai_decisions` as the source of truth.
 - **Selection state** lives in the existing `ai_runtime_inference_config` /
   experiments tables.
 
@@ -214,6 +268,18 @@ honor the same; no new raw-data store beyond the derived (account-id-only)
 - **Phase D (optional, gated) — assisted auto-approve.** For categories where a
   model has sustained ≥ very-high accuracy *and* panel unanimity, offer (opt-in)
   one-tap-bulk or auto-approve with easy undo. Only after the data earns it.
+- **Phase E (long-horizon) — train our own model and switch to it.** Every weighted
+  label (description → correct account, CPA-authoritative) is exactly the training
+  data a small, cheap, *FounderFirst-specific* categorization model needs. The
+  `ai_decisions` retention path already plans for this ("archived de-identified to
+  train our own models", D19/D24). Once volume is sufficient, fine-tune (or train)
+  a model on **our** distribution; if the scorecard shows it beats the general
+  models on accuracy-per-$, the existing routing config switches live traffic to it
+  — same mechanism, no re-architecture. This is the compounding moat: the more we
+  categorize, the better and cheaper our own model gets, and the panel/scorecard is
+  the objective gate that decides when to flip the switch. (Privacy: train only on
+  de-identified, account-id-level labels per the retention policy; never raw memos
+  beyond their retention window. Flag for legal before any training run.)
 
 ---
 

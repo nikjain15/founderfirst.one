@@ -54,7 +54,7 @@ table · (3) the per-feature chats/sessions.
 | 7 | Opening balances import | `OBTEST` | import/ImportFlow (OpeningBalances), commit_import_batch | 2 | 🔵 PR open | [#135](https://github.com/nikjain15/founderfirst.one/pull/135) |
 | 8 | Chart of accounts | `COATEST` | ledger/Ledger (Accounts), ledger-accounts, upsert_ledger_account | 2 | ⬜ | |
 | 9 | Auth, session & routing | `AUTHTEST` | App.tsx, auth/AuthProvider, routes/Login, lib/supabase | 2 | 🔵 PR open | [#133](https://github.com/nikjain15/founderfirst.one/pull/133) |
-| 10 | Invites & engagements | `INVTEST` | org/InviteCpa, routes/Accept, invites + invites-accept (accept_invite RPC) | 3 | ⬜ | |
+| 10 | Invites & engagements | `INVTEST` | org/InviteCpa, routes/Accept, invites + invites-accept (accept_invite RPC) | 3 | 🔵 PR open | [#134](https://github.com/nikjain15/founderfirst.one/pull/134) |
 | 11 | CPA lens / access scope | `CPATEST` | lenses/CpaLens, role/engagement helpers | 3 | ⬜ | |
 | 12 | QBO / Xero connect & sync (human OAuth) | `SYNCTEST` | import/ImportFlow (Connect), qbo-*/xero-* fns, _shared/{qbo,xero}, external_connections | 3 | ⬜ | |
 | 13 | Onboarding & org creation | `ORGTEST` | org/CreateOrg, ActiveOrgProvider, routes/Home, orgs fn | 3 | ⬜ | |

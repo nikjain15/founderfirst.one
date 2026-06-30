@@ -1,0 +1,29 @@
+# Runs the pgTAP suite (supabase/tests/*.sql) against a from-scratch local stack on
+# every PR that touches the schema or functions. The tests assert tenant isolation,
+# ledger balance/idempotency/closed-period, the read_only-CPA write gate, import
+# integrity, and the admin tiers + currency guard — the guarantees that protect
+# CPA trust. They existed but nothing executed them (audit #12); this is the gate.
+# `supabase db start` also replays every migration from zero, which exercises the
+# unique-timestamp guard and catches ordering breakage before a manual prod apply.
+name: db-tests
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/tests/**'
+      - 'supabase/functions/**'
+  workflow_dispatch:
+
+jobs:
+  pgtap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start local Supabase (replays all migrations)
+        run: supabase db start
+      - name: Run pgTAP tests
+        run: supabase test db

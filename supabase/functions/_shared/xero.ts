@@ -55,7 +55,9 @@ export async function exchangeCode(code: string): Promise<XeroTokens> {
     headers: { Authorization: basicAuth(), "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: REDIRECT_URI() }),
   });
-  if (!res.ok) throw new Error(`xero_token_exchange_failed: ${res.status} ${await res.text()}`);
+  // Don't include the provider body — it can echo the auth code / client metadata
+  // and these messages get persisted to external_connections.last_error.
+  if (!res.ok) throw new Error(`xero_token_exchange_failed: ${res.status}`);
   return await res.json();
 }
 
@@ -65,7 +67,7 @@ export async function refreshToken(refresh_token: string): Promise<XeroTokens> {
     headers: { Authorization: basicAuth(), "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ grant_type: "refresh_token", refresh_token }),
   });
-  if (!res.ok) throw new Error(`xero_token_refresh_failed: ${res.status} ${await res.text()}`);
+  if (!res.ok) throw new Error(`xero_token_refresh_failed: ${res.status}`);
   return await res.json();
 }
 

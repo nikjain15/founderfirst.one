@@ -13,9 +13,32 @@ export interface ParsedCsv {
 /** How ambiguous slash/dash dates (e.g. 03/04/2026) should be read. */
 export type DateFormat = "mdy" | "dmy";
 
+/**
+ * Sniff the field delimiter from the header line. Bank/QBO/Xero exports are
+ * usually comma-separated, but EU locales emit semicolons (comma is the decimal
+ * point there) and some tools emit tabs. We count candidates OUTSIDE quotes on
+ * the first line and pick the most frequent; comma wins ties / a single column.
+ * Without this, a `;`-delimited file collapses to one unusable column and the
+ * whole import silently yields zero mappable rows.
+ */
+function detectDelimiter(src: string): string {
+  const counts: Record<string, number> = { ",": 0, ";": 0, "\t": 0 };
+  let inQuotes = false;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (c === '"') { if (inQuotes && src[i + 1] === '"') i++; else inQuotes = !inQuotes; }
+    else if (!inQuotes && (c === "\n" || c === "\r")) break; // header line only
+    else if (!inQuotes && c in counts) counts[c]++;
+  }
+  let best = ",";
+  for (const d of [";", "\t"]) if (counts[d] > counts[best]) best = d;
+  return best;
+}
+
 export function parseCsv(text: string): ParsedCsv {
   // strip BOM
   const src = text.replace(/^﻿/, "");
+  const delim = detectDelimiter(src);
   const records: string[][] = [];
   let field = "";
   let row: string[] = [];
@@ -32,7 +55,7 @@ export function parseCsv(text: string): ParsedCsv {
       }
     } else if (c === '"') {
       inQuotes = true;
-    } else if (c === ",") {
+    } else if (c === delim) {
       row.push(field); field = "";
     } else if (c === "\n" || c === "\r") {
       if (c === "\r" && src[i + 1] === "\n") i++; // CRLF
@@ -52,11 +75,27 @@ export function parseCsv(text: string): ParsedCsv {
 }
 
 /**
+ * True only for a REAL calendar date. A day in 1..31 is not enough: 2026-02-30,
+ * 2026-04-31 and Feb-29 of a non-leap year all pass a naive range check but are
+ * rejected by Postgres `::date` (errcode 22008) — and because the import stages
+ * every row in one INSERT, a single such row would abort the WHOLE batch with an
+ * opaque "date/time field value out of range", even though the preview marked it
+ * ✓. Round-tripping through Date catches these so the row is flagged invalid in
+ * the preview instead of detonating the import. (Verified live: see csv stress PR.)
+ */
+function isRealCalendarDate(y: number, m: number, d: number): boolean {
+  if (m < 1 || m > 12 || d < 1 || d > 31) return false;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
+
+/**
  * Parse a date cell → ISO yyyy-mm-dd, or null. `fmt` disambiguates slash/dash dates
  * that could be month-first (US) or day-first (UK/EU/AU). When a value is
  * self-disambiguating (a part > 12), that wins regardless of `fmt`. Invalid
- * month/day combinations return null rather than producing a bogus ISO string
- * (e.g. "13/04/2026" no longer yields "2026-13-04").
+ * month/day combinations — including impossible calendar dates like "02/30/2026"
+ * — return null rather than producing a bogus ISO string (e.g. "13/04/2026" no
+ * longer yields "2026-13-04", and "02/30/2026" no longer yields "2026-02-30").
  */
 export function parseDateCell(v: string, fmt: DateFormat = "mdy"): string | null {
   const s = (v ?? "").trim();
@@ -65,7 +104,7 @@ export function parseDateCell(v: string, fmt: DateFormat = "mdy"): string | null
   const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (iso) {
     const mm = +iso[2], dd = +iso[3];
-    if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+    if (!isRealCalendarDate(+iso[1], mm, dd)) return null;
     return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
   }
   const parts = s.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})$/);
@@ -79,7 +118,7 @@ export function parseDateCell(v: string, fmt: DateFormat = "mdy"): string | null
     else if (fmt === "dmy") { d = a; m = b; }         // ambiguous → honour fmt
     else { m = a; d = b; }
     const mi = +m, di = +d;
-    if (mi < 1 || mi > 12 || di < 1 || di > 31) return null;
+    if (!isRealCalendarDate(+y, mi, di)) return null;
     return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
   }
   const t = Date.parse(s);

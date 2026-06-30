@@ -109,17 +109,18 @@ function CsvImport({
       const { result: batch } = await createImportBatch({
         org_id: orgId, source: "bank_statement", filename: filename || null, bank_account_id: bankId,
       });
-      const staged: StagedRow[] = rows.map((r) => ({
-        row_num: r.row_num, raw: r.raw,
-        txn_date: r.date, description: r.description, amount_minor: r.amount,
-        account_id: contraId, status: r.valid ? "ready" : "error",
-      }));
-      await addImportRows(orgId, batch.id, staged);
+      // Once the batch exists, discard it on ANY downstream failure (staging OR
+      // commit) so a rejected add_rows can't leave an orphan draft batch behind.
       try {
+        const staged: StagedRow[] = rows.map((r) => ({
+          row_num: r.row_num, raw: r.raw,
+          txn_date: r.date, description: r.description, amount_minor: r.amount,
+          account_id: contraId, status: r.valid ? "ready" : "error",
+        }));
+        await addImportRows(orgId, batch.id, staged);
         await commitImportBatch(orgId, batch.id);
         setDone(readyCount);
       } catch (e) {
-        // commit failed → leave no orphan staging
         await discardImportBatch(orgId, batch.id).catch(() => {});
         throw e;
       }
@@ -247,17 +248,19 @@ function OpeningBalances({
       const { result: batch } = await createImportBatch({
         org_id: orgId, source: "opening_balances", cutover_date: cutover,
       });
-      const staged: StagedRow[] = rows.map((r, i) => ({
-        row_num: i + 1,
-        description: "Opening balance",
-        amount_minor: parsed[i],
-        account_id: r.account_id || null,
-        side: r.side,
-        status: r.account_id && parsed[i] > 0 ? "ready" : "skipped",
-      }));
-      await addImportRows(orgId, batch.id, staged);
-      try { await commitImportBatch(orgId, batch.id); setDone(true); }
-      catch (e) { await discardImportBatch(orgId, batch.id).catch(() => {}); throw e; }
+      try {
+        const staged: StagedRow[] = rows.map((r, i) => ({
+          row_num: i + 1,
+          description: "Opening balance",
+          amount_minor: parsed[i],
+          account_id: r.account_id || null,
+          side: r.side,
+          status: r.account_id && parsed[i] > 0 ? "ready" : "skipped",
+        }));
+        await addImportRows(orgId, batch.id, staged);
+        await commitImportBatch(orgId, batch.id);
+        setDone(true);
+      } catch (e) { await discardImportBatch(orgId, batch.id).catch(() => {}); throw e; }
     } catch (e) {
       setErr((e as Error).message);
     } finally {

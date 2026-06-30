@@ -15,7 +15,8 @@ insert into organizations (id, type, name, created_by) values
   ('00000000-0000-0000-0000-0000000000e1', 'business', 'Biz D', '00000000-0000-0000-0000-0000000000d1');
 insert into memberships (user_id, org_id, role, status) values
   ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000e1', 'owner', 'active');
-insert into org_accounting_settings (org_id, home_currency) values ('00000000-0000-0000-0000-0000000000e1', 'USD');
+-- org_accounting_settings is auto-seeded (home_currency defaults to USD) by the
+-- organizations_seed_settings trigger — do not insert it again (dup pkey).
 insert into ledger_accounts (id, org_id, code, name, type) values
   ('00000000-0000-0000-0000-0000000d0001', '00000000-0000-0000-0000-0000000000e1', '1000', 'Cash',    'asset'),
   ('00000000-0000-0000-0000-0000000d0002', '00000000-0000-0000-0000-0000000000e1', '5100', 'Meals',   'expense');

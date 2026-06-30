@@ -13,7 +13,7 @@ import {
   approveEntry, newIdempotencyKey, postEntry, reverseEntry, setPeriod,
   upsertAccount, useAccounts, useEntries, useLedgerRefresh, usePeriods,
 } from "./api";
-import { balanceSheet, profitAndLoss, trialBalance } from "./reports";
+import { balanceSheet, profitAndLoss, reportCurrencies, trialBalance } from "./reports";
 import { formatMoney, formatMoneyShort, parseMoneyToMinor } from "./money";
 import { ACCOUNT_TYPES } from "./types";
 import ImportFlow from "../import/ImportFlow";
@@ -590,8 +590,19 @@ function NewEntryForm({
 // ── Reports — trial balance / P&L / balance sheet ────────────────────────────
 function Reports({ entries }: { entries: JournalEntry[] }) {
   const [view, setView] = useState<"tb" | "pnl" | "bs">("pnl");
+  // Reports sum a single scalar across all lines — only meaningful in one currency.
+  // If the books ever mix currencies, every total adds unlike units, so warn instead
+  // of implying a tie-out (RPTTEST: multi-currency silent-mixing gap).
+  const currencies = useMemo(() => reportCurrencies(entries), [entries]);
   return (
     <div className="reports">
+      {currencies.length > 1 && (
+        <p className="warn-banner" role="alert">
+          These books mix {currencies.join(", ")}. Totals below add amounts across
+          currencies as if they were one, so they won't tie out — read each currency
+          separately until multi-currency reporting lands.
+        </p>
+      )}
       <div className="seg report-seg">
         <button className={view === "pnl" ? "on" : ""} onClick={() => setView("pnl")}>P&amp;L</button>
         <button className={view === "tb" ? "on" : ""} onClick={() => setView("tb")}>Trial balance</button>
@@ -672,8 +683,17 @@ function BalanceSheetReport({ entries }: { entries: JournalEntry[] }) {
       />
       <div className="report-net">
         <span>Assets = Liabilities + Equity</span>
-        <span className={bs.balanced ? "t-good" : "t-bad"}>{bs.balanced ? "Balanced" : "Out of balance"}</span>
+        <span className={bs.balanced ? "t-good" : "t-bad"}>
+          {bs.balanced ? "Balanced" : `Out of balance by ${formatMoney(Math.abs(bs.offBy))}`}
+        </span>
       </div>
+      {!bs.balanced && (
+        <p className="error sm">
+          Assets {formatMoney(bs.totalAssets)} don't equal liabilities + equity{" "}
+          {formatMoney(bs.totalLiabilities + bs.totalEquity + bs.currentEarnings)}. This is a data
+          issue to fix in the journal, not lost money.
+        </p>
+      )}
     </div>
   );
 }

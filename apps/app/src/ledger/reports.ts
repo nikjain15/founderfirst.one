@@ -21,6 +21,22 @@ export interface AccountBalance {
 
 const inBooks = (e: JournalEntry) => e.status !== "pending_review";
 
+/**
+ * Reports sum `amount_minor` as a single scalar, which is only meaningful when
+ * every in-book line shares one currency. If a ledger ever mixes currencies, the
+ * totals add unlike units (EUR cents + USD cents) and any "balanced" result is
+ * meaningless — so callers must surface a warning rather than imply a tie-out.
+ * Returns the set of distinct currencies seen across in-book lines.
+ */
+export function reportCurrencies(entries: JournalEntry[]): string[] {
+  const set = new Set<string>();
+  for (const e of entries) {
+    if (!inBooks(e)) continue;
+    for (const l of e.lines ?? []) set.add(l.currency || "USD");
+  }
+  return [...set];
+}
+
 /** Net each account's debits/credits across entries matching `dateFilter`. */
 export function accountBalances(
   entries: JournalEntry[],
@@ -113,6 +129,7 @@ export interface BalanceSheet {
   totalEquity: number;
   currentEarnings: number; // income − expense, folded into equity
   balanced: boolean; // assets == liabilities + equity + currentEarnings
+  offBy: number; // signed: assets − (liabilities + equity + currentEarnings); 0 when balanced
 }
 
 /** Balance sheet as of `asOf` (inclusive). Assets debit-normal; L/E credit-normal. */
@@ -148,9 +165,10 @@ export function balanceSheet(entries: JournalEntry[], asOf?: string): BalanceShe
     }
   }
   const currentEarnings = income - expense;
-  const balanced = totalAssets === totalLiabilities + totalEquity + currentEarnings;
+  const offBy = totalAssets - (totalLiabilities + totalEquity + currentEarnings);
+  const balanced = offBy === 0;
   return {
     assets, liabilities, equity,
-    totalAssets, totalLiabilities, totalEquity, currentEarnings, balanced,
+    totalAssets, totalLiabilities, totalEquity, currentEarnings, balanced, offBy,
   };
 }

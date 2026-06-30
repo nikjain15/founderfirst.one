@@ -63,6 +63,36 @@ reversals net to zero, `pending_review` is excluded, integer minor units never d
 - **Accrual vs cash toggle** — single basis only.
 - **Comparative periods / period P&L** — see P3 above.
 
+## Accounting-method & multi-year coverage (follow-up questions)
+
+### Accounting methods supported
+The system is **double-entry, accrual-basis ONLY**. There is no cash-basis view and no basis toggle
+(`grep accrual|cash.basis` → nothing in reports). "Testing all methods" isn't possible because only one
+exists; a cash-basis report would be net-new work, not a test gap.
+
+### Multi-year — DATA triangulates to the cent, PRESENTATION does not (Scenario D, org `529713af…`)
+Seeded 9 entries spanning **2023–2026** (capital + yearly sales/rent). Hand-computed and verified live:
+
+| | 2023 | 2024 | 2025 | 2026 | lifetime |
+|---|---|---|---|---|---|
+| net income (via engine date filter) | $2,000 | $2,500 | $4,000 | $1,200 | **$9,700** |
+
+- **Cross-year reconciliation is exact:** the four yearly nets sum to **$9,700**, equal to the all-time
+  P&L net and to the balance-sheet "current earnings" — to the cent. TB ties ($20,000=$20,000); BS balances
+  ($14,700 assets = $5,000 capital + $9,700 earnings). So the underlying ledger **does** triangulate across years.
+- **But the presentation is wrong for any company older than one year:**
+  - **No per-year view** — the engine *supports* a date filter (used above to get the yearly column) but
+    `Ledger.tsx` never exposes it. The owner only ever sees one lifetime column (same root as the P3 date-filter gap).
+  - **No retained-earnings split** — all four years' profit is lumped into a single "Current earnings" line;
+    a CPA expects "Retained earnings (prior years)" separated from "Net income (this year)".
+  - **No year-end close** — `org_accounting_settings.fiscal_year_start_month` is stored but **ignored** by
+    reports; there are no closing entries rolling net income into retained earnings, and no year roll-forward.
+- **Export:** there is **no report export** (CSV/Excel/PDF) — `grep` finds only the *import* path
+  (`import/csv.ts`, opening-balances). So "exporting multi-year data and triangulating it" cannot be tested —
+  the export feature does not exist yet. (Import does: CSV / bank statement / opening-balances at a cutover.)
+- **Note:** the P0 truncation fix in this PR matters *most* for multi-year companies — they accumulate the
+  most transactions and were the most likely to silently lose their oldest (founding-year) entries.
+
 ## Verified correct (no change needed)
 - **Trial balance ties; Balance sheet balances; P&L net income == BS current earnings** — Scenario A,
   9 entries (capital, credit sale, COGS, rent, accrual, prepayment, AR collection, **+ a reversal**),
@@ -85,28 +115,29 @@ reversals net to zero, `pending_review` is excluded, integer minor units never d
 All fixtures namespaced `[RPTTEST]`; users `…@rpttest.founderfirst.test`. No schema/config/deploy
 changes; everything outside these fixtures was read-only. **Nothing deleted** — see `cleanup.sql` (un-run).
 
-**Orgs created (4):**
+**Orgs created (5):**
 | org_id | name | entries | accounts |
 |---|---|---|---|
 | `a963f241-b1f6-45e1-af67-6a3746055127` | [RPTTEST] Scenario A Co (orphan, empty — first run aborted) | 0 | 0 |
 | `1520f733-9eff-4a34-a87e-caa5869ce18d` | [RPTTEST] Scenario A Co (known seed) | 9 | 9 |
 | `9153e789-106f-40a5-865f-cae2f272734f` | [RPTTEST] Scenario B HighVolume (truncation proof) | 1010 | 2 |
 | `0c055534-11b4-4dc6-bdaa-1ffcd04c2c8e` | [RPTTEST] Scenario C MultiCcy (currency-guard check) | 1 | 2 |
+| `529713af-1625-4d22-8f5b-105eda139809` | [RPTTEST] Scenario D MultiYear (2023–2026 triangulation) | 9 | 4 |
 
-**Auth users created (3):** `owner.a@`, `owner.b@`, `owner.c@` `rpttest.founderfirst.test`.
+**Auth users created (4):** `owner.a@`, `owner.b@`, `owner.c@`, `owner.d@` `rpttest.founderfirst.test`.
 
-**Row-count baseline (what `cleanup.sql` removes; scoped to the 4 test orgs):**
+**Row-count baseline (what `cleanup.sql` removes; scoped to the 5 test orgs):**
 | table | rows |
 |---|---|
-| journal_lines | 2040 |
-| journal_entries | 1020 |
-| accounting_periods | 14 |
-| ledger_accounts | 13 |
-| org_accounting_settings | 4 |
-| memberships | 4 |
-| subscriptions | 4 |
-| organizations | 4 |
-| auth.users | 3 |
+| journal_lines | 2058 |
+| journal_entries | 1029 |
+| accounting_periods | 23 |
+| ledger_accounts | 17 |
+| org_accounting_settings | 5 |
+| memberships | 5 |
+| subscriptions | 5 |
+| organizations | 5 |
+| auth.users | 4 |
 
 Cleanup must bypass the append-only DELETE guards on `journal_entries`/`journal_lines`
 (`set session_replication_role = replica`) — `cleanup.sql` does this, scoped to `'[RPTTEST]%'` orgs

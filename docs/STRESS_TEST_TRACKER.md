@@ -57,7 +57,7 @@ table · (3) the per-feature chats/sessions.
 | 10 | Invites & engagements | `INVTEST` | org/InviteCpa, routes/Accept, invites + invites-accept (accept_invite RPC) | 3 | ⬜ | |
 | 11 | CPA lens / access scope | `CPATEST` | lenses/CpaLens, role/engagement helpers | 3 | ⬜ | |
 | 12 | QBO / Xero connect & sync (human OAuth) | `SYNCTEST` | import/ImportFlow (Connect), qbo-*/xero-* fns, _shared/{qbo,xero}, external_connections | 3 | ⬜ | |
-| 13 | Onboarding & org creation | `ORGTEST` | org/CreateOrg, ActiveOrgProvider, routes/Home, orgs fn | 3 | 🔵 PR open | _PR_LINK_ |
+| 13 | Onboarding & org creation | `ORGTEST` | org/CreateOrg, ActiveOrgProvider, routes/Home, orgs fn | 3 | 🔵 PR open | [#136](https://github.com/nikjain15/founderfirst.one/pull/136) |
 | 14 | Data export & erasure (GDPR) | `GDPRTEST` | org-data fn, ledger_audit | 3 | 🔵 PR open | [#130](https://github.com/nikjain15/founderfirst.one/pull/130) |
 | 15 | Platform-staff / break-glass / admin tiers | `STAFFTEST` | staff/StaffHome, staff/api, phase5 staff, admin_roles_tiers, rpc_editor_gate | 3 | ⬜ | |
 

@@ -5,7 +5,7 @@
  */
 import { useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getClient } from "../lib/supabase";
+import { invoke } from "../ledger/api";
 import { useActiveOrg, type OrgType } from "./ActiveOrgProvider";
 
 export default function CreateOrg({ onDone }: { onDone?: () => void }) {
@@ -20,19 +20,18 @@ export default function CreateOrg({ onDone }: { onDone?: () => void }) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const { data, error: err } = await getClient().functions.invoke("orgs", {
-      body: { type, name: name.trim() },
-    });
-    setBusy(false);
-    if (err) {
-      setError(err.message || "Could not create organization.");
-      return;
+    try {
+      const data = await invoke<{ org?: { id?: string } }>("orgs", { type, name: name.trim() });
+      const newId = data?.org?.id;
+      await qc.invalidateQueries({ queryKey: ["active-org-data"] });
+      if (newId) setActiveOrgId(newId);
+      setName("");
+      onDone?.();
+    } catch (err) {
+      setError((err as Error).message || "Could not create organization.");
+    } finally {
+      setBusy(false);
     }
-    const newId = (data as { org?: { id?: string } } | null)?.org?.id;
-    await qc.invalidateQueries({ queryKey: ["active-org-data"] });
-    if (newId) setActiveOrgId(newId);
-    setName("");
-    onDone?.();
   };
 
   return (

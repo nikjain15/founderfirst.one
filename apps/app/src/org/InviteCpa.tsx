@@ -4,7 +4,7 @@
  * surface the accept link to copy.
  */
 import { useState, type FormEvent } from "react";
-import { getClient } from "../lib/supabase";
+import { invoke } from "../ledger/api";
 
 export default function InviteCpa({ orgId }: { orgId: string }) {
   const [email, setEmail] = useState("");
@@ -18,17 +18,17 @@ export default function InviteCpa({ orgId }: { orgId: string }) {
     setBusy(true);
     setError(null);
     setLink(null);
-    const { data, error: err } = await getClient().functions.invoke("invites", {
-      body: { org_id: orgId, email: email.trim(), kind: "cpa", access },
-    });
-    setBusy(false);
-    if (err) {
-      setError(err.message || "Could not send invite.");
-      return;
+    try {
+      const data = await invoke<{ accept_path?: string }>("invites", {
+        org_id: orgId, email: email.trim(), kind: "cpa", access,
+      });
+      if (data?.accept_path) setLink(window.location.origin + data.accept_path);
+      setEmail("");
+    } catch (err) {
+      setError((err as Error).message || "Could not send invite.");
+    } finally {
+      setBusy(false);
     }
-    const path = (data as { accept_path?: string } | null)?.accept_path;
-    if (path) setLink(window.location.origin + path);
-    setEmail("");
   };
 
   return (

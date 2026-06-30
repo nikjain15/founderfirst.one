@@ -32,7 +32,7 @@ export default function Home() {
         {loading && <p className="muted">Loading your workspaces…</p>}
         {error && <p className="error">Couldn't load your workspaces.</p>}
 
-        {!loading && orgs.length === 0 && (
+        {!loading && !error && orgs.length === 0 && (
           <div className="empty">
             <span className="p-mark p-mark-lg welcome-mark" aria-hidden="true">P</span>
             <h1>Welcome.</h1>

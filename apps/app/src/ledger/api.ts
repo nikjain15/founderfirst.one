@@ -138,7 +138,9 @@ export function useUncategorizedRefresh(orgId: string | undefined) {
 }
 
 // ── write-path (Edge Functions) ──────────────────────────────────────────────
-async function invoke<T = unknown>(name: string, body: Record<string, unknown>): Promise<T> {
+// Exported so every caller surfaces the function's friendly {error} body instead
+// of Supabase's generic "non-2xx status code" message.
+export async function invoke<T = unknown>(name: string, body: Record<string, unknown>): Promise<T> {
   const sb = getClient();
   const { data, error } = await sb.functions.invoke(name, { body });
   if (error) {

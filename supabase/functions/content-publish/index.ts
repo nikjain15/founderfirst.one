@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     const service = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
 
     const { data: item, error: iErr } = await service
-      .from("content_pipeline").select("id, topic, draft_md, audio_url, seo").eq("id", item_id).single();
+      .from("content_pipeline").select("id, topic, draft_md, audio_url, audio_seconds, audio_bytes, seo").eq("id", item_id).single();
     if (iErr || !item) return json({ error: "item not found" }, 404);
     if (!item.draft_md) return json({ error: "no draft — run content-draft first" }, 400);
 
@@ -67,7 +67,8 @@ Deno.serve(async (req) => {
     const slug = (seo.slug || item.topic).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
 
     const body = mdToBlocks(String(item.draft_md));
-    if (item.audio_url) body.unshift({ audio: item.audio_url }); // branded player block at the top
+    // Branded player block at the top; carries duration + size for the podcast feed.
+    if (item.audio_url) body.unshift({ audio: item.audio_url, seconds: item.audio_seconds ?? null, bytes: item.audio_bytes ?? null });
 
     const payload = {
       slug,

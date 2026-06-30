@@ -1,0 +1,94 @@
+---
+import Base from "../../layouts/Base.astro";
+import Nav from "../../components/Nav.astro";
+import Footer from "../../components/Footer.astro";
+import { SITE, PODCAST } from "@ff/site";
+import { getPodcastEpisodes, fmtDuration } from "../../lib/podcast";
+import type { Page } from "@ff/content";
+
+const episodes = await getPodcastEpisodes();
+const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+const page: Page = {
+  slug: "/podcast",
+  surface: "blog",
+  seo: {
+    title: `${PODCAST.title} — Podcast`,
+    description: PODCAST.description,
+    keyFacts: [],
+  },
+  sections: [],
+};
+---
+<Base page={page}>
+  <Nav />
+  <section class="pod-hero">
+    <div class="wrap hero-grid">
+      <div class="hero-art" aria-hidden="true">
+        <span class="mark">P</span>
+      </div>
+      <div>
+        <p class="eyebrow brand">Podcast</p>
+        <h1>{PODCAST.title}</h1>
+        <p class="lede">{PODCAST.description}</p>
+        <div class="subscribe">
+          <a class="sub-btn" href="/podcast/rss.xml" target="_blank" rel="noopener">RSS feed</a>
+          <span class="sub-note">Paste the RSS link into Apple Podcasts, Spotify, or any podcast app to subscribe.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pod-list">
+    <div class="wrap">
+      {episodes.length === 0 ? (
+        <p class="empty">Episodes are on the way — the first one is rendering in Penny's voice.</p>
+      ) : (
+        <div class="ep-list">
+          {episodes.map((e, i) => (
+            <article class="ep">
+              <div class="ep-head">
+                <span class="ep-num">{String(episodes.length - i).padStart(2, "0")}</span>
+                <div class="ep-meta">{fmt(e.date)}{e.seconds ? ` · ${fmtDuration(e.seconds)}` : ""}</div>
+              </div>
+              <h2><a href={e.blogPath}>{e.title}</a></h2>
+              <p class="ep-desc">{e.description}</p>
+              <audio controls preload="none" src={e.audioUrl}></audio>
+              <a class="notes" href={e.blogPath}>Show notes →</a>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+  <Footer />
+</Base>
+<style>
+  .eyebrow { font-size: var(--fs-eyebrow); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--ink-4); font-weight: var(--fw-semibold); }
+  .eyebrow.brand { color: var(--brand); margin-bottom: var(--space-3); }
+  .hero-grid { display: grid; grid-template-columns: minmax(140px, 200px) 1fr; gap: clamp(20px, 4vw, 48px); align-items: center; }
+  .hero-art { aspect-ratio: 1; border-radius: var(--r-card-emph); background: linear-gradient(145deg, var(--brand), var(--brand-tint)); display: grid; place-items: center; box-shadow: var(--shadow-float); }
+  .hero-art .mark { font-family: var(--font-display); font-size: clamp(64px, 12vw, 120px); color: var(--white); font-weight: var(--fw-bold); }
+  h1 { font-size: var(--fs-display-1); line-height: 1.06; letter-spacing: var(--ls-tight); margin-bottom: var(--space-4); }
+  .lede { font-size: var(--fs-body); color: var(--ink-3); line-height: 1.6; max-width: 560px; }
+  .subscribe { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-5); }
+  .sub-btn { background: var(--brand); color: var(--white); border-radius: var(--r-pill); padding: 10px 18px; font-weight: var(--fw-semibold); font-size: var(--fs-data-row); min-height: var(--tap-min); display: inline-flex; align-items: center; }
+  .sub-note { font-size: var(--fs-eyebrow); color: var(--ink-4); max-width: 320px; }
+
+  .ep-list { display: grid; gap: var(--space-5); margin-top: var(--space-6); }
+  .ep { border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); background: var(--white); padding: clamp(20px, 3vw, 32px); display: grid; gap: var(--space-3); }
+  .ep-head { display: flex; align-items: center; gap: var(--space-3); }
+  .ep-num { font-family: var(--font-display); font-size: 18px; color: var(--brand); font-weight: var(--fw-bold); }
+  .ep-meta { font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); color: var(--ink-4); font-weight: var(--fw-semibold); }
+  .ep h2 { font-family: var(--font-display); font-size: clamp(20px, 2.4vw, 26px); line-height: 1.2; }
+  .ep h2 a { color: inherit; }
+  .ep-desc { font-size: var(--fs-data-row); color: var(--ink-3); line-height: 1.6; }
+  .ep audio { width: 100%; margin-top: var(--space-2); }
+  .notes { color: var(--brand); font-weight: var(--fw-medium); font-size: var(--fs-data-row); }
+  .empty { color: var(--ink-3); font-size: var(--fs-body); }
+
+  @media (max-width: 640px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-art { max-width: 180px; }
+  }
+</style>

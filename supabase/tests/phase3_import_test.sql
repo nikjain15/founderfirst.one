@@ -23,7 +23,8 @@ insert into memberships (user_id, org_id, role, status) values
   ('00000000-0000-0000-0000-0000000000a3', '00000000-0000-0000-0000-0000000000f1', 'cpa',        'active');
 
 insert into org_accounting_settings (org_id, home_currency) values
-  ('00000000-0000-0000-0000-0000000000b1', 'USD');
+  ('00000000-0000-0000-0000-0000000000b1', 'USD')
+  on conflict (org_id) do update set home_currency = excluded.home_currency;
 
 insert into ledger_accounts (id, org_id, code, name, type) values
   ('00000000-0000-0000-0000-00000000c001', '00000000-0000-0000-0000-0000000000b1', '1000', 'Cash',     'asset'),

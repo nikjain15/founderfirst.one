@@ -53,7 +53,13 @@ Deno.serve(async (req) => {
     p_period_id: periodId,
   });
   if (error) {
-    const status = error.code === "42501" ? 403 : error.code === "no_data_found" ? 404 : 400;
+    // SQLSTATE → HTTP. The RPCs raise `using errcode = 'no_data_found'`, which
+    // Postgres surfaces as the SQLSTATE 'P0002' (not the literal string), so a
+    // not-found / cross-org period must be matched on 'P0002'. (F7: previously
+    // only the name was checked, so 404s leaked through as 400s.)
+    const status =
+      error.code === "42501" ? 403 :
+      (error.code === "P0002" || error.code === "no_data_found") ? 404 : 400;
     return json({ error: error.message, code: error.code }, status);
   }
   return json({ period: data }, 200);

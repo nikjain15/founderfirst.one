@@ -38,6 +38,16 @@ exact ids below, never the namespace.
 - The bugs found are **period-integrity** breaks (entries finalized into a closed
   period), not arithmetic imbalances — the ledger never went out of balance.
 
-## What was mutated outside my fixtures
-- **Nothing.** No schema/function/config/deploy changes on prod. Everything else
-  was read-only (PostgREST + Management API SQL with a `User-Agent` header).
+## Round 2 (post-deploy) added fixtures
+Expanded testing (edge battery, concurrency burst, negatives, F7 check) created more
+`[PERIODTEST]` orgs/users. The **authoritative, complete list** — verified against the
+live DB — is the IN-lists in `cleanup.sql` (**11 orgs, 14 users**), each scoped by exact
+id. The parallel session's `Stress Co`/`CPA Firm`/`Stranger Co` + `owner@`/`cpa@`/`stranger@`
+are explicitly excluded there.
+
+## What was mutated on prod (the deploy)
+- **Deployed (authorized):** `ensure_open_period` / `approve_journal_entry` /
+  `reverse_journal_entry` (combined) via Management API; `ledger-periods` edge fn v9→v10
+  (F7, `verify_jwt` preserved). Rollback for the RPCs: `scratchpad/rollback.sql`.
+- **Everything else read-only** (PostgREST + Management API SQL with a `User-Agent` header).
+  No config/schema changes beyond the three function bodies + one edge fn.

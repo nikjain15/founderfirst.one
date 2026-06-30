@@ -18,6 +18,7 @@ function bodies** (`scratchpad/` harness; commands in §Repro). Books stayed bal
 | F4 | **P1** | **Prod ↔ `main` drift**: the entire `ledger_audit` trail exists on prod but not in `main` | **Flag for integrator** (land PR #122) |
 | F5 | **P3** | Closed-period → HTTP 409 mapping depends on a **message regex**, not the SQLSTATE | Documented (latent) |
 | F6 | **P3** | Period auto-creation is **unbounded** — a typo'd date (`2099`, `1900`) silently mints a period | Documented |
+| F7 | **P3** | `ledger-periods` returns **HTTP 400 instead of 404** for a not-found / cross-org period (matched the condition *name*, not SQLSTATE `P0002`) | ✅ **Fixed** (edge fn) |
 
 > **Deployed 2026-06-30** to prod `ejqsfzggyfsjzrcevlnq` via the Management API (atomic `create or replace` of the
 > three functions). The deployed `reverse_journal_entry` is the **combined** version: it carries both this PR's
@@ -181,3 +182,52 @@ Live prod scenarios: `scratchpad/harness.py` (fixtures) · `scenarios.py` (S1–
 - When done with the test orgs, run `cleanup.sql` (un-run) — **scoped to exact ids, NOT the `[PERIODTEST]`
   namespace** (a parallel session shares it; its `Stress Co`/`Stranger Co`/`CPA Firm` + `owner@`/`cpa@`/`stranger@`
   users must be left alone).
+
+---
+
+## Round 2 — post-deploy expanded testing (the "fully ready" pass)
+
+After deploying, I ran a deep edge/negative battery against prod on fresh `[PERIODTEST]` fixtures and a definitive
+concurrency proof. **Edge battery 15/17 · negatives 7/7** (the two non-passes are F7 below — wrong status code on
+an already-denied op, not a security hole).
+
+### Definitive F1 proof (commit-timestamp before/after, `scratchpad/toctou_demo.sh`)
+The prod burst's start-timestamp correlation can't distinguish a legal "post-then-close" from an illegal
+"post-into-closed" (both use transaction-*start* times). Re-proved deterministically on a local PG with
+`track_commit_timestamp=on`: hold the period read for 2 s, close during the window, compare **true commit order**:
+```
+UNFIXED: close_commit=…35.420  entry_commit=…36.414  → entry committed INTO a closed period   (BUG)
+FIXED:   entry_commit=…38.746  close_commit=…38.748  → entry committed BEFORE close            (OK)
+```
+The `FOR SHARE` lock makes the close wait (2 ms) for the in-flight post; the post lands in the still-open period
+and the close follows. Matches the lock demo (close blocks 2052 ms vs 59 ms).
+
+### Gaps from Round 1 — now covered
+- **Multi-currency:** *intentionally blocked* — a non-home-currency line is rejected (`currency_unsupported`,
+  single-currency pilot). E1/E2 confirm; this closes the per-currency-balance risk surface entirely.
+- **Period boundaries / calendar:** month-end vs next-month-first land in **different** periods (E4); **leap** Feb
+  2028 period ends `2028-02-29` (E5); **December** period ends `2026-12-31`, year boundary clean (E6).
+- **Reverse roll-forward, multi-state:** explicit closed date → 409 (E7a); default → rolls to an open period
+  (E7b); reverse-a-reversal allowed (E10); a `pending_review` entry **cannot** be reversed (`not_posted`, E14).
+- **Double close / double reopen:** idempotent — stays closed / stays open with `closed_by` null (E8/E9).
+- **Authorization negatives:** stranger close → 403 (E11); read_only CPA post → 403 (E15); **pending** (not
+  active) engagement → 403 (E16); non-existent period → handled (E12, see F7); another org's period → handled
+  (E13, see F7).
+- **Input validation:** single-line → 400 (N1); zero amount → 422 (N2); missing idempotency key → 400 (N3);
+  unbalanced → 422 (N4); approve an already-posted entry → `not_pending` (N5); reverse non-existent → 404 (N6);
+  idempotent replay returns the same entry, no double-post (N7).
+
+### F7 — `ledger-periods` 400-instead-of-404 (P3, fixed)
+Closing a **non-existent** or **cross-org** period returned **400** instead of 404. The RPC raises
+`using errcode = 'no_data_found'`, which Postgres surfaces as **SQLSTATE `P0002`**, but the edge fn matched the
+literal string `"no_data_found"` (never the code), so it fell through to 400. *Not a security issue* — the close
+is correctly denied; only the status code was wrong. **Fix:** match `P0002` (mirrors `ledger-entries`) —
+[`supabase/functions/ledger-periods/index.ts:55`](../../../supabase/functions/ledger-periods/index.ts#L55).
+
+## Still not covered (honest remaining gaps)
+1. **Full UI click-through** (`apps/app` Periods/Journal screens) — verified at the API layer the UI calls, but
+   not by driving the rendered app (needs a running app + authenticated session; the `e2e.yml` harness is the
+   right place). The reverse button's code path (no date passed) is now handled server-side.
+2. **F4 drift** — needs PR #122 landed to `main` (not this session's to merge).
+3. **F5 / F6** — documented, intentionally not fixed (message-regex 409 mapping; unbounded far-date periods).
+4. **Sustained production load** (hundreds of concurrent users) — proven at the lock/serialization level, not load-tested.

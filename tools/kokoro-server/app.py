@@ -134,11 +134,16 @@ def _render_and_store(item_id: str):
         prof = json.loads(_supa("/rest/v1/content_voice_profile?is_active=eq.true&select=voice_a,voice_b,blend,speed,gap_ms,lang,bitrate"))[0]
         sr = SynthRequest(script=[Line(**l) for l in script], **prof)
         mp3 = _render_mp3(sr)  # secret-free core render
+        # Duration for the podcast feed (itunes:duration) + byte size (enclosure length).
+        import io as _io
+        from pydub import AudioSegment
+        seconds = int(round(len(AudioSegment.from_file(_io.BytesIO(mp3), format="mp3")) / 1000))
         path = f"{item_id}/episode.mp3"
         _supa(f"/storage/v1/object/content-audio/{path}", method="PUT", body=mp3, ctype="audio/mpeg")
         url = f"{os.environ['SUPABASE_URL'].rstrip('/')}/storage/v1/object/public/content-audio/{path}"
         _supa(f"/rest/v1/content_pipeline?id=eq.{item_id}", method="PATCH",
-              body=json.dumps({"audio_url": url}).encode(), ctype="application/json")
+              body=json.dumps({"audio_url": url, "audio_seconds": seconds, "audio_bytes": len(mp3)}).encode(),
+              ctype="application/json")
     except Exception as e:  # best-effort; the admin board shows audio_url is still null on failure
         print(f"render_item {item_id} failed: {e}", flush=True)
 

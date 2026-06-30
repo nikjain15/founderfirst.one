@@ -19,8 +19,17 @@ export const BlogBlock = z.union([
   z.object({ callout: z.object({ title: z.string(), text: z.string() }) }),
   z.object({ stats: z.array(z.object({ value: z.string(), label: z.string() })) }),
   z.object({ visual: z.enum(["glance", "operate-vs-penny", "readonly"]) }),
+  // Branded audio player (Penny's spoken voice) — also the podcast episode source.
+  // seconds + bytes power <itunes:duration> + the RSS <enclosure length>.
+  z.object({ audio: z.string(), seconds: z.number().nullable().optional(), bytes: z.number().nullable().optional() }),
 ]);
 export type BlogBlock = z.infer<typeof BlogBlock>;
+
+/** The audio of a post, if it has a player block — this is what makes it a podcast episode. */
+export function postAudio(p: BlogPost): { url: string; seconds: number | null; bytes: number | null } | null {
+  const b = p.body.find((x): x is { audio: string; seconds?: number | null; bytes?: number | null } => "audio" in x);
+  return b ? { url: b.audio, seconds: b.seconds ?? null, bytes: b.bytes ?? null } : null;
+}
 
 export const BlogPost = z.object({
   slug: z.string().min(1),

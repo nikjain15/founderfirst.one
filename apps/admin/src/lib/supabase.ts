@@ -1482,6 +1482,8 @@ export interface ContentPipelineItem extends ContentPipelineRow {
   draft_md: string | null;
   script: unknown;
   audio_url: string | null;
+  audio_seconds: number | null;
+  audio_bytes: number | null;
   seo: unknown;
   promo_schedule_id: string | null;
   created_by: string | null;
@@ -1605,12 +1607,12 @@ export async function draftContentItem(itemId: string): Promise<{ model?: string
   return (data as { model?: string }) ?? {};
 }
 
-/** Step 6 — render the item's audio script to a branded-voice MP3 (Chatterbox → ElevenLabs). */
-export async function generateContentAudio(itemId: string): Promise<{ provider?: string; audio_url?: string }> {
+/** Step 6 — render the item's audio. Kokoro renders async (returns status:"rendering"); audio_url lands when the Fly job finishes. */
+export async function generateContentAudio(itemId: string): Promise<{ provider?: string; audio_url?: string; status?: string }> {
   const db = getClient();
   const { data, error } = await db.functions.invoke("content-audio", { body: { item_id: itemId } });
   if (error) throw new Error(await fnError(error));
-  return (data as { provider?: string; audio_url?: string }) ?? {};
+  return (data as { provider?: string; audio_url?: string; status?: string }) ?? {};
 }
 
 /** Step 8 — publish the item to the blog (+ best-effort promo) and mark it published. */

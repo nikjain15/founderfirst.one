@@ -19,3 +19,24 @@ export const SITE = {
   email: "founder@founderfirst.one",
   discord: "https://discord.gg/DGJdd6AEjH",
 } as const;
+
+/**
+ * Podcast identity — single source for the /podcast page header AND the
+ * /podcast/rss.xml feed (Apple Podcasts / Spotify read these channel tags).
+ * Every published post with an audio block becomes an episode of this show.
+ */
+export const PODCAST = {
+  title: "Penny by FounderFirst",
+  description:
+    "Short, warm explainers on bookkeeping without the busywork — autonomous bookkeeping, clean books, and running a business without the back-office grind. Hosted in Penny's voice.",
+  author: SITE.company,
+  ownerName: SITE.company,
+  ownerEmail: SITE.email,
+  language: "en-us",
+  category: "Business",
+  subcategory: "Entrepreneurship",
+  explicit: false,
+  link: `${SITE.url}/podcast`,
+  feedUrl: `${SITE.url}/podcast/rss.xml`,
+  cover: `${SITE.url}/podcast/cover.png`, // 3000×3000 square (Apple requires 1400–3000px)
+} as const;

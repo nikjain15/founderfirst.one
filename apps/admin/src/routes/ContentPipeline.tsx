@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   listContentPipeline,
@@ -53,16 +53,48 @@ export function ContentPipeline() {
     queryFn: () => listContentPipeline(),
   });
 
+  // Async audio render — Kokoro renders on Fly (~minutes); we poll until audio_url lands.
+  const [renderingItemId, setRenderingItemId] = useState<string | null>(null);
+  const [renderStartMs, setRenderStartMs] = useState<number | null>(null);
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+
   const activeId = selectedId ?? items[0]?.id ?? null;
   const { data: detail } = useQuery({
     queryKey: ["contentPipelineItem", activeId],
     queryFn: () => (activeId ? getContentPipelineItem(activeId) : Promise.resolve(null)),
     enabled: !!activeId,
+    // While an item is rendering audio, poll so the player appears the moment it's ready.
+    refetchInterval: renderingItemId ? 8000 : false,
   });
+
+  // Tick the elapsed clock once a second while rendering.
+  useEffect(() => {
+    if (!renderingItemId) return;
+    const t = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [renderingItemId]);
+
+  // Clear the rendering state once the audio lands for that item.
+  useEffect(() => {
+    if (renderingItemId && detail?.id === renderingItemId && detail?.audio_url) {
+      setRenderingItemId(null);
+      setRenderStartMs(null);
+      setFlash("Audio is ready — in Penny's voice.");
+      void qc.invalidateQueries({ queryKey: ["contentPipeline"] });
+    }
+  }, [renderingItemId, detail?.id, detail?.audio_url, qc]);
+
+  // Rough ETA from the script length (Kokoro on CPU ≈ a few seconds per line + warmup).
+  const scriptLines = Array.isArray((detail?.script as { audio?: unknown[] } | null)?.audio)
+    ? ((detail!.script as { audio: unknown[] }).audio.length) : 0;
+  const etaSec = Math.max(60, 40 + scriptLines * 14);
+  const elapsedSec = renderStartMs ? Math.floor((nowMs - renderStartMs) / 1000) : 0;
+  const isRendering = renderingItemId === detail?.id;
 
   // Brand voice readiness — audio steps are blocked until a reference clip exists.
   const { data: voice } = useQuery({ queryKey: ["activeVoiceProfile"], queryFn: getActiveVoiceProfile });
-  const voiceReady = !!voice?.reference_clip_url;
+  // Kokoro needs no reference clip; only the legacy clone path requires one.
+  const voiceReady = (voice?.engine ?? "kokoro") === "kokoro" || !!voice?.reference_clip_url;
 
   const refresh = async () => {
     await qc.invalidateQueries({ queryKey: ["contentPipelineItem", activeId] });
@@ -83,7 +115,17 @@ export function ContentPipeline() {
 
   const audioMut = useMutation({
     mutationFn: (id: string) => generateContentAudio(id),
-    onSuccess: async (r) => { setError(null); setFlash(`Audio rendered via ${r.provider ?? "TTS"}.`); await refresh(); },
+    onSuccess: async (r, id) => {
+      setError(null);
+      if (r.status === "rendering") {
+        setRenderingItemId(id);
+        setRenderStartMs(Date.now());
+        setFlash("Rendering audio in Penny's voice — this takes a few minutes.");
+      } else {
+        setFlash(`Audio rendered via ${r.provider ?? "TTS"}.`);
+      }
+      await refresh();
+    },
     onError: (e) => setError((e as Error).message),
   });
 
@@ -210,9 +252,25 @@ export function ContentPipeline() {
                   </p>
                 )}
 
-                {detail.audio_url && (
+                {isRendering && (
+                  <div style={{ margin: "12px 0", border: "1px solid var(--brand)", background: "var(--brand-tint, #e9f5ee)", borderRadius: 10, padding: "12px 14px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--fs-data-row)", fontWeight: "var(--fw-semibold)" }}>
+                      <span className="spin" style={{ width: 14, height: 14, border: "2px solid var(--brand)", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block", animation: "ffspin 0.8s linear infinite" }} />
+                      Rendering audio in Penny's voice…
+                    </div>
+                    <div style={{ fontSize: "var(--fs-eyebrow)", color: "var(--ink-3)", marginTop: 6 }}>
+                      {Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, "0")} elapsed · about {Math.ceil(etaSec / 60)} min total. You can leave this page — it keeps rendering.
+                    </div>
+                    <div style={{ height: 6, background: "var(--white)", borderRadius: 999, overflow: "hidden", marginTop: 8 }}>
+                      <div style={{ height: "100%", width: `${Math.min(95, Math.round((elapsedSec / etaSec) * 100))}%`, background: "var(--brand)", transition: "width 1s linear" }} />
+                    </div>
+                    <style>{`@keyframes ffspin { to { transform: rotate(360deg); } }`}</style>
+                  </div>
+                )}
+
+                {detail.audio_url && !isRendering && (
                   <div style={{ margin: "12px 0" }}>
-                    <div className="eyebrow" style={{ marginBottom: 6 }}>Audio</div>
+                    <div className="eyebrow" style={{ marginBottom: 6 }}>Audio{detail.audio_seconds ? ` · ${Math.floor(detail.audio_seconds / 60)}:${String(detail.audio_seconds % 60).padStart(2, "0")}` : ""}</div>
                     <audio controls src={detail.audio_url} style={{ width: "100%" }} />
                   </div>
                 )}
@@ -231,11 +289,11 @@ export function ContentPipeline() {
                   {detail.draft_md && (
                     <button
                       className="btn"
-                      disabled={busy || !voiceReady}
+                      disabled={busy || !voiceReady || isRendering}
                       title={voiceReady ? "" : "Add a brand voice reference clip first"}
                       onClick={() => audioMut.mutate(detail.id)}
                     >
-                      {audioMut.isPending ? "Rendering…" : detail.audio_url ? "Re-render audio" : "Generate audio"}
+                      {isRendering || audioMut.isPending ? "Rendering…" : detail.audio_url ? "Re-render audio" : "Generate audio"}
                     </button>
                   )}
                   {detail.status === "review" && (

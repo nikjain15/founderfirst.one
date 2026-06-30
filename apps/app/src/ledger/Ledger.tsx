@@ -18,6 +18,7 @@ import { formatMoney, formatMoneyShort, parseMoneyToMinor } from "./money";
 import { ACCOUNT_TYPES } from "./types";
 import ImportFlow from "../import/ImportFlow";
 import Categorize from "./Categorize";
+import { Takeaway } from "./Takeaway";
 import type {
   AccountType, AccountingPeriod, DraftLine, JournalEntry, LedgerAccount,
 } from "./types";
@@ -83,7 +84,12 @@ export default function Ledger({
       {!loading && !error && (
         <div className="ledger-panel" role="tabpanel">
           {tab === "overview" && (
-            <Overview entries={entries.data ?? []} accounts={accounts.data ?? []} />
+            <Overview
+              entries={entries.data ?? []} accounts={accounts.data ?? []}
+              canWrite={canWrite}
+              onReview={() => setTab("journal")}
+              onCategorize={() => setTab("categorize")}
+            />
           )}
           {tab === "accounts" && (
             <Accounts
@@ -119,11 +125,22 @@ export default function Ledger({
 }
 
 // ── Overview — plain-language "how's my business" ────────────────────────────
-function Overview({ entries, accounts }: { entries: JournalEntry[]; accounts: LedgerAccount[] }) {
+function Overview({
+  entries, accounts, canWrite, onReview, onCategorize,
+}: {
+  entries: JournalEntry[]; accounts: LedgerAccount[];
+  canWrite: boolean; onReview: () => void; onCategorize: () => void;
+}) {
   const tb = useMemo(() => trialBalance(entries), [entries]);
   const pnl = useMemo(() => profitAndLoss(entries), [entries]);
   const bs = useMemo(() => balanceSheet(entries), [entries]);
   const pending = entries.filter((e) => e.status === "pending_review").length;
+  const uncategorized = useMemo(() => {
+    const u = accounts.find((a) => a.code === "9999" || a.name.toLowerCase() === "uncategorized");
+    if (!u) return 0;
+    return entries.filter((e) => e.status === "posted" && e.source !== "reversal"
+      && (e.lines ?? []).some((l) => l.account_id === u.id)).length;
+  }, [entries, accounts]);
   const recent = entries.slice(0, 5);
 
   if (accounts.length === 0) {
@@ -136,6 +153,16 @@ function Overview({ entries, accounts }: { entries: JournalEntry[]; accounts: Le
   }
   return (
     <div className="overview">
+      <OverviewTakeaway
+        canWrite={canWrite}
+        notBalanced={!tb.balanced}
+        pending={pending}
+        uncategorized={uncategorized}
+        netIncome={pnl.netIncome}
+        hasActivity={pnl.totalIncome !== 0 || pnl.totalExpense !== 0}
+        onReview={onReview}
+        onCategorize={onCategorize}
+      />
       <div className="kpis">
         <Kpi label="Cash & assets" value={formatMoneyShort(bs.totalAssets)} />
         <Kpi label="Net income (all time)" value={formatMoneyShort(pnl.netIncome)}
@@ -174,6 +201,48 @@ function Kpi({ label, value, tone }: { label: string; value: string; tone?: "goo
       <span className="kpi-label">{label}</span>
       <span className={`kpi-value${tone ? ` t-${tone}` : ""}`}>{value}</span>
     </div>
+  );
+}
+
+// The one "so what / now what" line at the top of the Overview — bias toward the
+// most actionable thing first (review → categorize → health), like /admin.
+function OverviewTakeaway({
+  canWrite, notBalanced, pending, uncategorized, netIncome, hasActivity, onReview, onCategorize,
+}: {
+  canWrite: boolean; notBalanced: boolean; pending: number; uncategorized: number;
+  netIncome: number; hasActivity: boolean; onReview: () => void; onCategorize: () => void;
+}) {
+  if (notBalanced) {
+    return <Takeaway tone="watch">Your books don't balance right now — worth a look below.</Takeaway>;
+  }
+  if (pending > 0) {
+    return (
+      <Takeaway tone="watch" action={canWrite ? { label: "Review", onClick: onReview } : undefined}>
+        <strong>{pending}</strong> {pending === 1 ? "entry is" : "entries are"} waiting for your approval.
+      </Takeaway>
+    );
+  }
+  if (uncategorized > 0) {
+    return (
+      <Takeaway tone="watch" action={canWrite ? { label: "Categorize", onClick: onCategorize } : undefined}>
+        Penny has <strong>{uncategorized}</strong> {uncategorized === 1 ? "transaction" : "transactions"} ready to categorize.
+      </Takeaway>
+    );
+  }
+  if (!hasActivity) {
+    return <Takeaway tone="neutral">No activity yet — import your history or post your first entry to get started.</Takeaway>;
+  }
+  if (netIncome < 0) {
+    return (
+      <Takeaway tone="watch">
+        You're spending more than you're earning — net <strong>{formatMoney(netIncome)}</strong> so far.
+      </Takeaway>
+    );
+  }
+  return (
+    <Takeaway tone="good">
+      Net income <strong>{formatMoney(netIncome)}</strong> — your books look healthy. Nothing needs you right now.
+    </Takeaway>
   );
 }
 

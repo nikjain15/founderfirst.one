@@ -34,9 +34,10 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {/* basename follows the build base (Vite BASE_URL): "/app/" for the
-            GitHub-Pages build at founderfirst.one/app/, "/" for the root-hosted
-            Cloudflare-Pages build at penny.founderfirst.one. */}
+        {/* basename follows the build base (Vite BASE_URL). The app's single home
+            is penny.founderfirst.one (base "/"); founderfirst.one/app/* now just
+            redirects there. The base-aware basename is kept so a legacy "/app/"
+            build would still route correctly. */}
         <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "") || "/"}>
           <Routes>
             <Route path="/login" element={<Login />} />

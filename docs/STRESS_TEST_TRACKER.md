@@ -59,7 +59,7 @@ table · (3) the per-feature chats/sessions.
 | 12 | QBO / Xero connect & sync (human OAuth) | `SYNCTEST` | import/ImportFlow (Connect), qbo-*/xero-* fns, _shared/{qbo,xero}, external_connections | 3 | ⬜ | |
 | 13 | Onboarding & org creation | `ORGTEST` | org/CreateOrg, ActiveOrgProvider, routes/Home, orgs fn | 3 | ⬜ | |
 | 14 | Data export & erasure (GDPR) | `GDPRTEST` | org-data fn, ledger_audit | 3 | ⬜ | |
-| 15 | Platform-staff / break-glass / admin tiers | `STAFFTEST` | staff/StaffHome, staff/api, phase5 staff, admin_roles_tiers, rpc_editor_gate | 3 | 🔵 PR open | _see PR `[stress:staff] findings + fixes`_ |
+| 15 | Platform-staff / break-glass / admin tiers | `STAFFTEST` | staff/StaffHome, staff/api, phase5 staff, admin_roles_tiers, rpc_editor_gate | 3 | 🔵 PR open | [#140](https://github.com/nikjain15/founderfirst.one/pull/140) |
 
 **Status legend:** ⬜ not started · 🟡 testing · 🔵 PR open (awaiting integrator) · 🟢 merged + deployed.
 

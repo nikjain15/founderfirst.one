@@ -87,15 +87,40 @@ export function parseDateCell(v: string, fmt: DateFormat = "mdy"): string | null
   return null;
 }
 
-/** Parse an amount cell ("1,234.56", "(45.00)", "$10") → minor units, or null.
- *  Integer-only conversion (no float multiply) via decimalToMinor. */
+/** Parse an amount cell → minor units, or null. Handles US ("1,234.56", "$10",
+ *  "(45.00)") AND European ("1.234,56") notation: when BOTH '.' and ',' appear the
+ *  LAST one is the decimal separator and the other is the thousands grouping. With
+ *  a single separator we keep the US convention (',' = thousands, '.' = decimal),
+ *  so sub-cent values like "1.005" still reject. Integer-only via decimalToMinor. */
 export function parseAmountCell(v: string): number | null {
   let s = (v ?? "").trim();
   if (!s) return null;
   let neg = false;
   if (/^\(.*\)$/.test(s)) { neg = true; s = s.slice(1, -1); } // (123) = negative
-  s = s.replace(/[^0-9.\-]/g, "");
-  const minor = decimalToMinor(s);
+  s = s.replace(/[^0-9.,\-]/g, "");
+  if (s.startsWith("-")) neg = true;
+  s = s.replace(/-/g, "");
+  if (s === "") return null;
+
+  const lastDot = s.lastIndexOf("."), lastComma = s.lastIndexOf(",");
+  let normalized: string;
+  if (lastDot >= 0 && lastComma >= 0) {
+    // both present → the later one is the decimal point, the other is thousands
+    normalized = lastDot > lastComma
+      ? s.split(",").join("")                      // US: 1,234.56
+      : s.split(".").join("").replace(",", ".");   // EU: 1.234,56
+  } else if (lastComma >= 0) {
+    // only comma(s): a single comma with 1-2 trailing digits is a EU decimal
+    // (1234,56); anything else (1,234 / 12,345,678) is thousands grouping.
+    const after = s.length - lastComma - 1;
+    normalized = (s.indexOf(",") === lastComma && after >= 1 && after <= 2)
+      ? s.replace(",", ".")
+      : s.replace(/,/g, "");
+  } else {
+    normalized = s;                                // only dot(s) → US decimal (1.005 still rejects)
+  }
+
+  const minor = decimalToMinor(normalized);
   if (minor === null) return null;
   return neg ? -Math.abs(minor) : minor;
 }

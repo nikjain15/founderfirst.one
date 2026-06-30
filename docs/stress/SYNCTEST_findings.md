@@ -97,6 +97,19 @@ the `DEFAULT 4000` (so 3-arg calls unambiguously hit the 3-arg fn) or rename the
 (`commit_import_batch_chunked`). That 4-arg body also still has the old csv-only branch + no
 dedup, so it must get the F0/F1 fix before anything routes through it.
 
+### 🚨 INTEGRATOR: `commit_import_batch` is being edited by ≥3 parallel sessions
+This function is a collision hotspot. Known concurrent changes:
+- **This PR (#142):** adds the qbo/xero branch (F0) + `ext:` idempotency key (F1) to the 3-arg fn.
+- **OBTEST (PR #135):** rewrites the same 3-arg fn (opening-balance silent-drop fix, migration
+  `20260630160000`) — a plain `create or replace` would **clobber my F0/F1 changes** (or mine
+  clobbers theirs), depending on apply order.
+- **A parallel session:** added the 4-arg `p_limit DEFAULT 4000` overload (the PGRST203 source).
+
+These must be **merged into one `commit_import_batch` body**, not applied independently
+(last-writer-wins silently drops a fix). I deployed my 3-arg change after verifying the live
+body was the clean 075000 version (no clobber at deploy time), but the next session to deploy
+its own copy will regress mine unless reconciled.
+
 ## Hardening notes (not fixed — flagged)
 
 - **Unbounded `amount_minor`.** A near-`bigint`-max value posts and can overflow `bigint`

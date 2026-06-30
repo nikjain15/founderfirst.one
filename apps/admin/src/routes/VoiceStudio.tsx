@@ -3,6 +3,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   getActiveVoiceProfile,
   setVoiceSynthSettings,
+  previewVoice,
   KOKORO_VOICES,
   type VoiceSynthSettings,
 } from "../lib/supabase";
@@ -41,6 +42,7 @@ export function VoiceStudio() {
     }
   }, [profile]);
 
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const saveMut = useMutation({
     mutationFn: () => setVoiceSynthSettings({ ...s, voice_b: s.voice_b || null, engine: "kokoro" }),
     onSuccess: async () => {
@@ -49,6 +51,12 @@ export function VoiceStudio() {
       setError(null);
     },
     onError: (e) => { setError((e as Error).message); setFlash(null); },
+  });
+
+  const previewMut = useMutation({
+    mutationFn: () => previewVoice({ ...s, voice_b: s.voice_b || null }),
+    onSuccess: (url) => { setPreviewUrl(url); setError(null); },
+    onError: (e) => { setError((e as Error).message); setPreviewUrl(null); },
   });
 
   if (isPending) return <div className="empty">Loading voice settings…</div>;
@@ -153,15 +161,23 @@ export function VoiceStudio() {
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8 }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
+        <button className="btn" disabled={previewMut.isPending} onClick={() => previewMut.mutate()}>
+          {previewMut.isPending ? "Rendering…" : "▶ Preview"}
+        </button>
         <button className="btn primary" disabled={!dirty || saveMut.isPending} onClick={() => saveMut.mutate()}>
           {saveMut.isPending ? "Saving…" : "Save voice settings"}
         </button>
         {dirty && <span style={{ fontSize: "var(--fs-eyebrow)", color: "var(--warn)" }}>● Unsaved changes</span>}
         <span style={{ marginLeft: "auto", fontSize: "var(--fs-tiny)", color: "var(--ink-3)" }}>
-          Engine: Kokoro (open, local) · default: Heart 60 / Nova 40, 0.88×
+          Engine: Kokoro (open) · default: Heart 60 / Nova 40, 0.88×
         </span>
       </div>
+      {previewUrl && (
+        <audio controls src={previewUrl} style={{ width: "100%", marginTop: 12 }} autoPlay>
+          your browser does not support audio playback
+        </audio>
+      )}
     </div>
   );
 }

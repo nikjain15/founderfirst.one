@@ -22,6 +22,11 @@ const json = (body: unknown, status = 200) =>
 
 type Line = { speaker: string; text: string };
 
+type VoiceSettings = {
+  engine?: string; voice_a?: string; voice_b?: string | null; blend?: number;
+  speed?: number; gap_ms?: number; lang?: string; bitrate?: string;
+};
+
 async function viaChatterbox(script: Line[], voiceRefUrl: string): Promise<Uint8Array> {
   const server = Deno.env.get("TTS_SERVER_URL"); // e.g. https://founderfirst-tts.fly.dev/synthesize
   if (!server) throw new Error("no_tts_server");
@@ -75,26 +80,46 @@ Deno.serve(async (req) => {
     const script = ((item.script ?? {}) as { audio?: Line[] }).audio ?? [];
     if (!script.length) return json({ error: "no_script — run content-draft first" }, 400);
 
-    // Brand voice must exist (locked reference clip) before any audio can render.
     const { data: voice } = await service.rpc("get_active_voice_profile");
-    const refUrl = (voice as { reference_clip_url?: string } | null)?.reference_clip_url ?? "";
-    if (!refUrl) return json({ error: "no_voice_clip — add a reference clip to the brand voice profile first" }, 409);
+    const v = (voice ?? {}) as VoiceSettings & { reference_clip_url?: string };
+
+    // Kokoro (open, CPU, no reference clip) — a full episode renders in minutes,
+    // longer than an edge function may run, so the Fly service owns the job:
+    // we trigger it and return immediately. It renders + uploads + writes
+    // audio_url; the board polls until it appears.
+    if ((v.engine ?? "kokoro") === "kokoro") {
+      const synthUrl = Deno.env.get("KOKORO_SERVER_URL") ?? "";
+      const renderUrl = synthUrl.replace(/\/synthesize$/, "/render_item");
+      if (!renderUrl) return json({ error: "no_kokoro_server" }, 500);
+      const res = await fetch(renderUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(Deno.env.get("KOKORO_SERVER_SECRET") ? { "x-kokoro-secret": Deno.env.get("KOKORO_SERVER_SECRET")! } : {}) },
+        body: JSON.stringify({ item_id }),
+      });
+      if (!res.ok) return json({ error: `kokoro_trigger ${res.status}: ${await res.text().catch(() => "")}` }, 502);
+      return json({ ok: true, status: "rendering", item_id, provider: "kokoro" });
+    }
 
     let bytes: Uint8Array;
     let provider: string;
-    try {
-      bytes = await viaChatterbox(script, refUrl);
-      provider = "chatterbox";
-    } catch (primaryErr) {
+    {
+      // Legacy clone path: Chatterbox primary, ElevenLabs fallback. Needs a reference clip.
+      const refUrl = v.reference_clip_url ?? "";
+      if (!refUrl) return json({ error: "no_voice_clip — add a reference clip to the brand voice profile first" }, 409);
       try {
-        bytes = await viaElevenLabs(script);
-        provider = "elevenlabs";
-      } catch (fallbackErr) {
-        return json({
-          error: "tts_failed",
-          primary: primaryErr instanceof Error ? primaryErr.message : String(primaryErr),
-          fallback: fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr),
-        }, 502);
+        bytes = await viaChatterbox(script, refUrl);
+        provider = "chatterbox";
+      } catch (primaryErr) {
+        try {
+          bytes = await viaElevenLabs(script);
+          provider = "elevenlabs";
+        } catch (fallbackErr) {
+          return json({
+            error: "tts_failed",
+            primary: primaryErr instanceof Error ? primaryErr.message : String(primaryErr),
+            fallback: fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr),
+          }, 502);
+        }
       }
     }
 

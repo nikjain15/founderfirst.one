@@ -135,7 +135,7 @@ function CsvImport({
       <div className="import-flow">
         <div className="import-done">
           <h3>Imported {done} {done === 1 ? "transaction" : "transactions"}.</h3>
-          <p className="muted">They're posted against your bank account and the contra you chose — re-categorize any of them from the Journal.</p>
+          <p className="muted">They're in. Penny will help you sort each one into the right category — review or adjust any of them anytime from the Journal.</p>
           <button onClick={onDone}>Back to the books</button>
         </div>
       </div>
@@ -159,13 +159,13 @@ function CsvImport({
           <div className="ledger-form">
             <div className="form-row">
               <label><span>Date column</span>
-                <ColSelect headers={csv.headers} value={dateCol} onChange={setDateCol} />
+                <ColSelect headers={csv.headers} value={dateCol} onChange={setDateCol} label="Date column" />
               </label>
               <label><span>Description column</span>
-                <ColSelect headers={csv.headers} value={descCol} onChange={setDescCol} allowNone />
+                <ColSelect headers={csv.headers} value={descCol} onChange={setDescCol} allowNone label="Description column" />
               </label>
               <label><span>Amount column</span>
-                <ColSelect headers={csv.headers} value={amtCol} onChange={setAmtCol} />
+                <ColSelect headers={csv.headers} value={amtCol} onChange={setAmtCol} label="Amount column" />
               </label>
             </div>
             <div className="form-row">
@@ -184,8 +184,8 @@ function CsvImport({
               <label className="grow"><span>Bank account</span>
                 <AccountSelect accounts={accounts} value={bankId} onChange={setBankId} filterType="asset" />
               </label>
-              <label className="grow"><span>Post the other side to</span>
-                <AccountSelect accounts={accounts} value={contraId} onChange={setContraId} />
+              <label className="grow"><span>Where should these go by default?</span>
+                <AccountSelect accounts={accounts} value={contraId} onChange={setContraId} label="Default category for imported transactions" />
               </label>
             </div>
           </div>
@@ -269,8 +269,8 @@ function OpeningBalances({
     return (
       <div className="import-flow">
         <div className="import-done">
-          <h3>Opening balances posted.</h3>
-          <p className="muted">Your balance sheet is correct as of {cutover}. Any imbalance was plugged to Opening Balance Equity.</p>
+          <h3>Opening balances saved.</h3>
+          <p className="muted">Your starting balances are in as of {cutover}. Anything that didn't add up was set aside in an opening-balance account your accountant can review.</p>
           <button onClick={onDone}>Back to the books</button>
         </div>
       </div>
@@ -292,19 +292,19 @@ function OpeningBalances({
         <div className="lines-head ob-head"><span>Account</span><span>Dr/Cr</span><span>Balance</span><span /></div>
         {rows.map((r, i) => (
           <div className="line-row ob-row" key={i}>
-            <AccountSelect accounts={accounts} value={r.account_id} onChange={(v) => update(i, { account_id: v })} />
-            <select value={r.side} onChange={(e) => update(i, { side: e.target.value as "D" | "C" })} aria-label="Debit or credit">
+            <AccountSelect accounts={accounts} value={r.account_id} onChange={(v) => update(i, { account_id: v })} label={`Row ${i + 1} account`} />
+            <select value={r.side} onChange={(e) => update(i, { side: e.target.value as "D" | "C" })} aria-label={`Row ${i + 1} debit or credit`}>
               <option value="D">Debit</option><option value="C">Credit</option>
             </select>
-            <input inputMode="decimal" value={r.amount} onChange={(e) => update(i, { amount: e.target.value })} placeholder="0.00" aria-label="Balance" />
-            <button type="button" className="line-del" onClick={() => removeRow(i)} disabled={rows.length <= 1} aria-label="Remove">×</button>
+            <input inputMode="decimal" value={r.amount} onChange={(e) => update(i, { amount: e.target.value })} placeholder="0.00" aria-label={`Row ${i + 1} balance`} />
+            <button type="button" className="line-del" onClick={() => removeRow(i)} disabled={rows.length <= 1} aria-label={`Remove row ${i + 1}`}>×</button>
           </div>
         ))}
         <div className="entry-foot">
           <button type="button" className="ghost sm" onClick={addRow}>+ Add account</button>
           <span className="balance-indicator">
-            Dr {formatMoney(debit)} · Cr {formatMoney(credit)}
-            {plug !== 0 && ` · plug ${formatMoney(Math.abs(plug))} ${plug > 0 ? "Cr" : "Dr"}`}
+            Debits {formatMoney(debit)} · Credits {formatMoney(credit)}
+            {plug !== 0 && ` · we'll balance ${formatMoney(Math.abs(plug))} into an opening-balance account`}
           </span>
         </div>
       </div>
@@ -379,12 +379,12 @@ function ConnectSoftware({ orgId, onImported }: { orgId: string; onImported: () 
 
 // ── small selects ─────────────────────────────────────────────────────────────
 function ColSelect({
-  headers, value, onChange, allowNone,
+  headers, value, onChange, allowNone, label,
 }: {
-  headers: string[]; value: number; onChange: (v: number) => void; allowNone?: boolean;
+  headers: string[]; value: number; onChange: (v: number) => void; allowNone?: boolean; label?: string;
 }) {
   return (
-    <select value={value} onChange={(e) => onChange(Number(e.target.value))}>
+    <select value={value} onChange={(e) => onChange(Number(e.target.value))} aria-label={label}>
       {allowNone && <option value={-1}>— none —</option>}
       {!allowNone && value < 0 && <option value={-1}>Select…</option>}
       {headers.map((h, i) => <option key={i} value={i}>{h || `Column ${i + 1}`}</option>)}
@@ -393,13 +393,13 @@ function ColSelect({
 }
 
 function AccountSelect({
-  accounts, value, onChange, filterType,
+  accounts, value, onChange, filterType, label,
 }: {
-  accounts: LedgerAccount[]; value: string; onChange: (v: string) => void; filterType?: LedgerAccount["type"];
+  accounts: LedgerAccount[]; value: string; onChange: (v: string) => void; filterType?: LedgerAccount["type"]; label?: string;
 }) {
   const opts = filterType ? accounts.filter((a) => a.type === filterType) : accounts;
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} aria-label="Account">
+    <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label ?? "Account"}>
       <option value="">Select account…</option>
       {opts.map((a) => <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ""}{a.name}</option>)}
     </select>

@@ -10,6 +10,7 @@ import { useActiveOrg } from "../org/ActiveOrgProvider";
 import CreateOrg from "../org/CreateOrg";
 import OwnerLens from "../lenses/OwnerLens";
 import CpaLens from "../lenses/CpaLens";
+import { SITE } from "@ff/site";
 
 export default function Home() {
   const { loading, error, orgs, activeOrg, roleInfo } = useActiveOrg();
@@ -30,7 +31,11 @@ export default function Home() {
       <Topbar />
       <main className="workspace">
         {loading && <p className="muted">Loading your workspaces…</p>}
-        {error && <p className="error">Couldn't load your workspaces.</p>}
+        {error && (
+          <p className="error" role="alert">
+            We couldn't load your workspaces just now — please refresh. If it keeps happening, email {SITE.email}.
+          </p>
+        )}
 
         {!loading && !error && orgs.length === 0 && (
           <div className="empty">
@@ -48,7 +53,10 @@ export default function Home() {
           <CpaLens org={activeOrg} roleInfo={roleInfo} />
         )}
         {activeOrg && !roleInfo && (
-          <p className="muted">You don't have access to this organization.</p>
+          <p className="muted">
+            You're not currently on this organization's books — you may have left it, or an invite was revoked.
+            Switch to one of yours above, or ask the owner to re-invite you.
+          </p>
         )}
 
         {orgs.length > 0 && (

@@ -45,11 +45,13 @@ export default function Login() {
         ) : (
           <form onSubmit={submit}>
             <h1>Sign in</h1>
-            <p className="muted">We'll email you a one-time link.</p>
+            <p className="muted">Penny's keeping your books — sign in to pick up where you left off. We'll email you a one-time link.</p>
             <input
               type="email"
               required
               autoFocus
+              autoComplete="email"
+              aria-label="Email address"
               placeholder="you@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}

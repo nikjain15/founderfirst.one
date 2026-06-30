@@ -12,13 +12,14 @@
   --brand-hover:  #2a7142;
   --brand-soft:   #c9e7d2;   /* soft-green fills, accent strips */
   --brand-tint:   #e9f5ee;   /* faint green wash */
+  --brand-strong: #1f6b3a;   /* darker emerald for text ON --brand-tint (WCAG AA 4.5:1) */
 
   /* -- Color: ink scale + surfaces ------------------------------------ */
   /* Neutrals carry the new brand: navy-slate ink on a cream paper field.
      Spacing / radii / density tokens are unchanged — admin stays compact. */
   --ink:        #28323f;   /* navy-slate (was near-black) */
   --ink-2:      #3d4651;
-  --ink-3:      #67707b;
+  --ink-3:      #5b636e;   /* muted body text — darkened to clear WCAG AA 4.5:1 on cream */
   --ink-4:      #97a0aa;
   --line:       #e6e0d3;   /* warm border */
   --line-2:     #efebe0;
@@ -30,8 +31,10 @@
   --sage:       var(--brand);   /* active nav/tab → brand green */
   --income:     #1A9E6A;   /* success, positive, up, fresh, resolved */
   --income-bg:  #f0faf5;
+  --income-strong: #157a52;  /* darker green for text ON --income-bg (WCAG AA 4.5:1) */
   --amber:      #C97D1A;   /* warning, aging, needs-attention */
   --amber-bg:   #fdf8f0;
+  --amber-strong: #8a5310;   /* darker amber for text ON --amber-bg (WCAG AA 4.5:1) */
   --expense-bg: #fdf8f0;   /* alias of --amber-bg, for approval-card */
   --error:      #b2291e;   /* error, down, stale, destructive */
   --error-bg:   #fdf2f1;

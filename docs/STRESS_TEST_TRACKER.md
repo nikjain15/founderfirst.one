@@ -56,7 +56,7 @@ table · (3) the per-feature chats/sessions.
 | 9 | Auth, session & routing | `AUTHTEST` | App.tsx, auth/AuthProvider, routes/Login, lib/supabase | 2 | 🔵 PR open | [#133](https://github.com/nikjain15/founderfirst.one/pull/133) |
 | 10 | Invites & engagements | `INVTEST` | org/InviteCpa, routes/Accept, invites + invites-accept (accept_invite RPC) | 3 | 🔵 PR open | [#134](https://github.com/nikjain15/founderfirst.one/pull/134) |
 | 11 | CPA lens / access scope | `CPATEST` | lenses/CpaLens, role/engagement helpers | 3 | ⬜ | |
-| 12 | QBO / Xero connect & sync (human OAuth) | `SYNCTEST` | import/ImportFlow (Connect), qbo-*/xero-* fns, _shared/{qbo,xero}, external_connections | 3 | ⬜ | |
+| 12 | QBO / Xero connect & sync (human OAuth) | `SYNCTEST` | import/ImportFlow (Connect), qbo-*/xero-* fns, _shared/{qbo,xero}, external_connections | 3 | 🔵 PR open | [#142](https://github.com/nikjain15/founderfirst.one/pull/142) |
 | 13 | Onboarding & org creation | `ORGTEST` | org/CreateOrg, ActiveOrgProvider, routes/Home, orgs fn | 3 | ⬜ | |
 | 14 | Data export & erasure (GDPR) | `GDPRTEST` | org-data fn, ledger_audit | 3 | 🔵 PR open | [#130](https://github.com/nikjain15/founderfirst.one/pull/130) |
 | 15 | Platform-staff / break-glass / admin tiers | `STAFFTEST` | staff/StaffHome, staff/api, phase5 staff, admin_roles_tiers, rpc_editor_gate | 3 | ⬜ | |

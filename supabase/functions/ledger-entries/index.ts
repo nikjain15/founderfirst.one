@@ -41,6 +41,32 @@ function statusForPgError(code?: string, message?: string): number {
   return 400;
 }
 
+// Normalize each line's amount_minor so the bigint reaches Postgres EXACTLY.
+// A string integer is passed through as a string (the RPC's `->>'amount_minor'`
+// preserves it); a JS number must be a safe integer or we refuse (never truncate).
+function normalizeAmounts(lines: unknown[]): { ok: true; lines: unknown[] } | { ok: false; error: string } {
+  const out: unknown[] = [];
+  for (const l of lines) {
+    if (l && typeof l === "object") {
+      const a = (l as Record<string, unknown>).amount_minor;
+      if (typeof a === "string") {
+        if (!/^-?\d+$/.test(a)) return { ok: false, error: "bad_amount: amount_minor string must be an integer in minor units" };
+        out.push(l);
+        continue;
+      }
+      if (typeof a === "number") {
+        if (!Number.isSafeInteger(a)) {
+          return { ok: false, error: "amount_too_large: send amount_minor as a string for values beyond 2^53 (no silent precision loss)" };
+        }
+        out.push({ ...(l as Record<string, unknown>), amount_minor: String(a) });
+        continue;
+      }
+    }
+    out.push(l);
+  }
+  return { ok: true, lines: out };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -79,12 +105,18 @@ Deno.serve(async (req) => {
   if (!idemKey) return json({ error: "missing_idempotency_key" }, 400);
   if (!Array.isArray(lines) || lines.length < 2) return json({ error: "bad_lines" }, 400);
 
+  // Money precision guard. JSON numbers parse as JS doubles, so an amount_minor
+  // above 2^53 silently truncates (E2E B3-big). Accept a string for exact bigint
+  // values; reject any NUMBER that isn't a safe integer rather than corrupt it.
+  const norm = normalizeAmounts(lines);
+  if (!norm.ok) return json({ error: norm.error }, 422);
+
   const { data, error } = await svc.rpc("post_journal_entry", {
     p_actor: user.id,
     p_org: orgId,
     p_entry_date: entryDate,
     p_idempotency_key: idemKey,
-    p_lines: lines,
+    p_lines: norm.lines,
     p_source: body?.source ?? "manual",
     p_source_ref: body?.source_ref ?? null,
     p_memo: body?.memo ?? null,

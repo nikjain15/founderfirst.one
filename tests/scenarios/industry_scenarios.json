@@ -1,0 +1,3082 @@
+{
+  "scenarios": [
+    {
+      "sector": "restaurant",
+      "business_name": "[E2E] Blue Door Bistro LLC",
+      "narrative": "One month of operations for a small bistro, exercising food COGS from inventory, sales tax payable, tips payable to staff, credit-card processing fees, and payroll with withholding liabilities.",
+      "concepts": [
+        "COGS/inventory",
+        "sales tax payable",
+        "tips payable",
+        "payroll + withholding",
+        "credit-card fees"
+      ],
+      "accounts": [
+        {
+          "key": "cash",
+          "name": "Cash - Operating",
+          "type": "asset",
+          "code": "1000"
+        },
+        {
+          "key": "food_inventory",
+          "name": "Food Inventory",
+          "type": "asset",
+          "code": "1200"
+        },
+        {
+          "key": "sales_food",
+          "name": "Food Sales",
+          "type": "income",
+          "code": "4000"
+        },
+        {
+          "key": "sales_tax_payable",
+          "name": "Sales Tax Payable",
+          "type": "liability",
+          "code": "2100"
+        },
+        {
+          "key": "tips_payable",
+          "name": "Tips Payable",
+          "type": "liability",
+          "code": "2200"
+        },
+        {
+          "key": "payroll_tax_payable",
+          "name": "Payroll Tax Withholding Payable",
+          "type": "liability",
+          "code": "2300"
+        },
+        {
+          "key": "cogs",
+          "name": "Cost of Goods Sold - Food",
+          "type": "expense",
+          "code": "5000"
+        },
+        {
+          "key": "wages_expense",
+          "name": "Wages Expense",
+          "type": "expense",
+          "code": "6000"
+        },
+        {
+          "key": "cc_fees",
+          "name": "Credit Card Processing Fees",
+          "type": "expense",
+          "code": "6100"
+        },
+        {
+          "key": "rent_expense",
+          "name": "Rent Expense",
+          "type": "expense",
+          "code": "6200"
+        },
+        {
+          "key": "owner_capital",
+          "name": "Owner Capital",
+          "type": "equity",
+          "code": "3000"
+        }
+      ],
+      "entries": [
+        {
+          "date": "2026-03-01",
+          "memo": "Owner capital injection",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 5000000,
+              "side": "D"
+            },
+            {
+              "acct": "owner_capital",
+              "amount": 5000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-02",
+          "memo": "Pay March rent",
+          "lines": [
+            {
+              "acct": "rent_expense",
+              "amount": 600000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 600000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-03",
+          "memo": "Purchase food inventory (cash)",
+          "lines": [
+            {
+              "acct": "food_inventory",
+              "amount": 1200000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 1200000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-10",
+          "memo": "Purchase additional food inventory (cash)",
+          "lines": [
+            {
+              "acct": "food_inventory",
+              "amount": 800000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 800000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-15",
+          "memo": "Card sales week 2: food + 8% sales tax + tips collected",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 1188000,
+              "side": "D"
+            },
+            {
+              "acct": "sales_food",
+              "amount": 1000000,
+              "side": "C"
+            },
+            {
+              "acct": "sales_tax_payable",
+              "amount": 80000,
+              "side": "C"
+            },
+            {
+              "acct": "tips_payable",
+              "amount": 108000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-15",
+          "memo": "Credit card processing fee on week 2 sales (3% of 1,188,000)",
+          "lines": [
+            {
+              "acct": "cc_fees",
+              "amount": 35640,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 35640,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-15",
+          "memo": "Record COGS for week 2 food sales",
+          "lines": [
+            {
+              "acct": "cogs",
+              "amount": 350000,
+              "side": "D"
+            },
+            {
+              "acct": "food_inventory",
+              "amount": 350000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-22",
+          "memo": "Card sales week 3: food + 8% sales tax + tips collected",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 1426000,
+              "side": "D"
+            },
+            {
+              "acct": "sales_food",
+              "amount": 1200000,
+              "side": "C"
+            },
+            {
+              "acct": "sales_tax_payable",
+              "amount": 96000,
+              "side": "C"
+            },
+            {
+              "acct": "tips_payable",
+              "amount": 130000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-22",
+          "memo": "Credit card processing fee on week 3 sales (3% of 1,426,000)",
+          "lines": [
+            {
+              "acct": "cc_fees",
+              "amount": 42780,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 42780,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-22",
+          "memo": "Record COGS for week 3 food sales",
+          "lines": [
+            {
+              "acct": "cogs",
+              "amount": 420000,
+              "side": "D"
+            },
+            {
+              "acct": "food_inventory",
+              "amount": 420000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-25",
+          "memo": "Payout tips to staff",
+          "lines": [
+            {
+              "acct": "tips_payable",
+              "amount": 238000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 238000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-28",
+          "memo": "Run payroll: gross wages, withhold taxes, net to staff",
+          "lines": [
+            {
+              "acct": "wages_expense",
+              "amount": 900000,
+              "side": "D"
+            },
+            {
+              "acct": "payroll_tax_payable",
+              "amount": 200000,
+              "side": "C"
+            },
+            {
+              "acct": "cash",
+              "amount": 700000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-30",
+          "memo": "Remit collected sales tax to state",
+          "lines": [
+            {
+              "acct": "sales_tax_payable",
+              "amount": 176000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 176000,
+              "side": "C"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "trial_balance_balanced": true,
+        "total_debits_minor": 12376420,
+        "total_income_minor": 2200000,
+        "total_expense_minor": 2348420,
+        "net_income_minor": -148420,
+        "total_assets_minor": 5051580,
+        "total_liabilities_minor": 200000,
+        "total_equity_minor": 5000000,
+        "balance_sheet_identity": true,
+        "account_net_minor": {
+          "cash": 3821580,
+          "food_inventory": 1230000,
+          "sales_food": -2200000,
+          "sales_tax_payable": 0,
+          "tips_payable": 0,
+          "payroll_tax_payable": -200000,
+          "cogs": 770000,
+          "wages_expense": 900000,
+          "cc_fees": 78420,
+          "rent_expense": 600000,
+          "owner_capital": -5000000
+        }
+      }
+    },
+    {
+      "sector": "saas",
+      "business_name": "[E2E] Cobalt Metrics Inc",
+      "narrative": "One month for a B2B SaaS startup: annual prepaid plans booked to deferred revenue and recognized monthly, monthly subscription revenue, hosting COGS, R&D payroll, and an accrued expense.",
+      "concepts": [
+        "deferred revenue recognition",
+        "subscription revenue",
+        "hosting COGS",
+        "R&D payroll",
+        "accrued expense"
+      ],
+      "accounts": [
+        {
+          "key": "cash",
+          "name": "Cash - Operating",
+          "type": "asset",
+          "code": "1000"
+        },
+        {
+          "key": "accounts_receivable",
+          "name": "Accounts Receivable",
+          "type": "asset",
+          "code": "1100"
+        },
+        {
+          "key": "deferred_revenue",
+          "name": "Deferred Revenue",
+          "type": "liability",
+          "code": "2400"
+        },
+        {
+          "key": "accrued_expenses",
+          "name": "Accrued Expenses",
+          "type": "liability",
+          "code": "2500"
+        },
+        {
+          "key": "subscription_revenue",
+          "name": "Subscription Revenue",
+          "type": "income",
+          "code": "4000"
+        },
+        {
+          "key": "hosting_cogs",
+          "name": "Hosting Cost of Revenue",
+          "type": "expense",
+          "code": "5000"
+        },
+        {
+          "key": "rd_payroll",
+          "name": "R&D Payroll Expense",
+          "type": "expense",
+          "code": "6000"
+        },
+        {
+          "key": "marketing_expense",
+          "name": "Marketing Expense",
+          "type": "expense",
+          "code": "6100"
+        },
+        {
+          "key": "common_stock",
+          "name": "Common Stock",
+          "type": "equity",
+          "code": "3000"
+        }
+      ],
+      "entries": [
+        {
+          "date": "2026-03-01",
+          "memo": "Founders contribute capital",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 10000000,
+              "side": "D"
+            },
+            {
+              "acct": "common_stock",
+              "amount": 10000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-02",
+          "memo": "Customer A prepays annual plan (cash)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 1200000,
+              "side": "D"
+            },
+            {
+              "acct": "deferred_revenue",
+              "amount": 1200000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-02",
+          "memo": "Customer B prepays annual plan (cash)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 2400000,
+              "side": "D"
+            },
+            {
+              "acct": "deferred_revenue",
+              "amount": 2400000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-05",
+          "memo": "Bill monthly subscriptions on account",
+          "lines": [
+            {
+              "acct": "accounts_receivable",
+              "amount": 1800000,
+              "side": "D"
+            },
+            {
+              "acct": "subscription_revenue",
+              "amount": 1800000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-20",
+          "memo": "Collect part of monthly invoices",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 1500000,
+              "side": "D"
+            },
+            {
+              "acct": "accounts_receivable",
+              "amount": 1500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-28",
+          "memo": "R&D payroll (cash)",
+          "lines": [
+            {
+              "acct": "rd_payroll",
+              "amount": 2200000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 2200000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-28",
+          "memo": "Hosting cost of revenue (cash)",
+          "lines": [
+            {
+              "acct": "hosting_cogs",
+              "amount": 300000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 300000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-29",
+          "memo": "Marketing spend (cash)",
+          "lines": [
+            {
+              "acct": "marketing_expense",
+              "amount": 500000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-31",
+          "memo": "Recognize 1 month of Customer A annual plan (1,200,000/12)",
+          "lines": [
+            {
+              "acct": "deferred_revenue",
+              "amount": 100000,
+              "side": "D"
+            },
+            {
+              "acct": "subscription_revenue",
+              "amount": 100000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-31",
+          "memo": "Recognize 1 month of Customer B annual plan (2,400,000/12)",
+          "lines": [
+            {
+              "acct": "deferred_revenue",
+              "amount": 200000,
+              "side": "D"
+            },
+            {
+              "acct": "subscription_revenue",
+              "amount": 200000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-31",
+          "memo": "Accrue unpaid March infrastructure invoice",
+          "lines": [
+            {
+              "acct": "hosting_cogs",
+              "amount": 150000,
+              "side": "D"
+            },
+            {
+              "acct": "accrued_expenses",
+              "amount": 150000,
+              "side": "C"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "trial_balance_balanced": true,
+        "total_debits_minor": 20350000,
+        "total_income_minor": 2100000,
+        "total_expense_minor": 3150000,
+        "net_income_minor": -1050000,
+        "total_assets_minor": 12400000,
+        "total_liabilities_minor": 3450000,
+        "total_equity_minor": 10000000,
+        "balance_sheet_identity": true,
+        "account_net_minor": {
+          "cash": 12100000,
+          "accounts_receivable": 300000,
+          "deferred_revenue": -3300000,
+          "accrued_expenses": -150000,
+          "subscription_revenue": -2100000,
+          "hosting_cogs": 450000,
+          "rd_payroll": 2200000,
+          "marketing_expense": 500000,
+          "common_stock": -10000000
+        }
+      }
+    },
+    {
+      "sector": "ecommerce_retail",
+      "business_name": "[E2E] Harbor Goods Co",
+      "narrative": "One month for an online retailer: inventory purchases and COGS on sale, merchant processing fees, shipping income vs shipping expense, multi-state sales tax payable, customer refunds (contra-revenue), and gift-card liability.",
+      "concepts": [
+        "inventory + COGS",
+        "merchant fees",
+        "shipping income vs expense",
+        "multi-state sales tax",
+        "refunds (contra-revenue)",
+        "gift-card liability"
+      ],
+      "accounts": [
+        {
+          "key": "cash",
+          "name": "Cash - Operating",
+          "type": "asset",
+          "code": "1000"
+        },
+        {
+          "key": "inventory",
+          "name": "Merchandise Inventory",
+          "type": "asset",
+          "code": "1200"
+        },
+        {
+          "key": "sales",
+          "name": "Product Sales",
+          "type": "income",
+          "code": "4000"
+        },
+        {
+          "key": "shipping_income",
+          "name": "Shipping Income",
+          "type": "income",
+          "code": "4100"
+        },
+        {
+          "key": "refunds",
+          "name": "Sales Refunds & Returns (contra)",
+          "type": "income",
+          "code": "4900"
+        },
+        {
+          "key": "sales_tax_payable",
+          "name": "Sales Tax Payable",
+          "type": "liability",
+          "code": "2100"
+        },
+        {
+          "key": "gift_card_liability",
+          "name": "Gift Card Liability",
+          "type": "liability",
+          "code": "2600"
+        },
+        {
+          "key": "cogs",
+          "name": "Cost of Goods Sold",
+          "type": "expense",
+          "code": "5000"
+        },
+        {
+          "key": "merchant_fees",
+          "name": "Merchant Processing Fees",
+          "type": "expense",
+          "code": "6100"
+        },
+        {
+          "key": "shipping_expense",
+          "name": "Shipping Expense",
+          "type": "expense",
+          "code": "6200"
+        },
+        {
+          "key": "owner_capital",
+          "name": "Owner Capital",
+          "type": "equity",
+          "code": "3000"
+        }
+      ],
+      "entries": [
+        {
+          "date": "2026-03-01",
+          "memo": "Owner capital injection",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 4000000,
+              "side": "D"
+            },
+            {
+              "acct": "owner_capital",
+              "amount": 4000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-03",
+          "memo": "Purchase merchandise inventory (cash)",
+          "lines": [
+            {
+              "acct": "inventory",
+              "amount": 2500000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 2500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-08",
+          "memo": "Sell gift cards (cash, unredeemed liability)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 300000,
+              "side": "D"
+            },
+            {
+              "acct": "gift_card_liability",
+              "amount": 300000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-12",
+          "memo": "Online sales: product + shipping + sales tax (CA 9%) collected by card",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 1830000,
+              "side": "D"
+            },
+            {
+              "acct": "sales",
+              "amount": 1500000,
+              "side": "C"
+            },
+            {
+              "acct": "shipping_income",
+              "amount": 150000,
+              "side": "C"
+            },
+            {
+              "acct": "sales_tax_payable",
+              "amount": 180000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-12",
+          "memo": "Merchant processing fee on week sales (2.9% of 1,830,000 = 53,070)",
+          "lines": [
+            {
+              "acct": "merchant_fees",
+              "amount": 53070,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 53070,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-12",
+          "memo": "COGS on week sales",
+          "lines": [
+            {
+              "acct": "cogs",
+              "amount": 750000,
+              "side": "D"
+            },
+            {
+              "acct": "inventory",
+              "amount": 750000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-12",
+          "memo": "Pay carrier for shipping labels",
+          "lines": [
+            {
+              "acct": "shipping_expense",
+              "amount": 120000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 120000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-20",
+          "memo": "Online sales: product + shipping + sales tax (TX 8.25%) collected by card",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 2398000,
+              "side": "D"
+            },
+            {
+              "acct": "sales",
+              "amount": 2000000,
+              "side": "C"
+            },
+            {
+              "acct": "shipping_income",
+              "amount": 233000,
+              "side": "C"
+            },
+            {
+              "acct": "sales_tax_payable",
+              "amount": 165000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-20",
+          "memo": "Merchant processing fee on week sales (2.9% of 2,398,000 = 69,542)",
+          "lines": [
+            {
+              "acct": "merchant_fees",
+              "amount": 69542,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 69542,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-20",
+          "memo": "COGS on week sales",
+          "lines": [
+            {
+              "acct": "cogs",
+              "amount": 1000000,
+              "side": "D"
+            },
+            {
+              "acct": "inventory",
+              "amount": 1000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-20",
+          "memo": "Pay carrier for shipping labels",
+          "lines": [
+            {
+              "acct": "shipping_expense",
+              "amount": 160000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 160000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-25",
+          "memo": "Customer refund of product (reverse sale + tax, restock not modeled)",
+          "lines": [
+            {
+              "acct": "refunds",
+              "amount": 200000,
+              "side": "D"
+            },
+            {
+              "acct": "sales_tax_payable",
+              "amount": 18000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 218000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-26",
+          "memo": "Restock returned merchandise into inventory at cost",
+          "lines": [
+            {
+              "acct": "inventory",
+              "amount": 100000,
+              "side": "D"
+            },
+            {
+              "acct": "cogs",
+              "amount": 100000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-28",
+          "memo": "Redeem gift cards for product sale",
+          "lines": [
+            {
+              "acct": "gift_card_liability",
+              "amount": 120000,
+              "side": "D"
+            },
+            {
+              "acct": "sales",
+              "amount": 120000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-28",
+          "memo": "COGS on gift-card redemption sale",
+          "lines": [
+            {
+              "acct": "cogs",
+              "amount": 60000,
+              "side": "D"
+            },
+            {
+              "acct": "inventory",
+              "amount": 60000,
+              "side": "C"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "trial_balance_balanced": true,
+        "total_debits_minor": 13678612,
+        "total_income_minor": 3803000,
+        "total_expense_minor": 2112612,
+        "net_income_minor": 1690388,
+        "total_assets_minor": 6197388,
+        "total_liabilities_minor": 507000,
+        "total_equity_minor": 4000000,
+        "balance_sheet_identity": true,
+        "account_net_minor": {
+          "cash": 5407388,
+          "inventory": 790000,
+          "sales": -3620000,
+          "shipping_income": -383000,
+          "refunds": 200000,
+          "sales_tax_payable": -327000,
+          "gift_card_liability": -180000,
+          "cogs": 1710000,
+          "merchant_fees": 122612,
+          "shipping_expense": 280000,
+          "owner_capital": -4000000
+        }
+      }
+    },
+    {
+      "sector": "construction_contractor",
+      "business_name": "[E2E] Granite Ridge Builders LLC",
+      "narrative": "One month for a general contractor: a customer deposit, job-cost materials and subcontractor costs (AP) flowing into work-in-progress, progress billings with retainage payable held back, and an equipment purchase.",
+      "concepts": [
+        "work-in-progress",
+        "progress billings + retainage payable",
+        "subcontractor AP",
+        "customer deposits",
+        "equipment purchase",
+        "AP partial payment"
+      ],
+      "accounts": [
+        {
+          "key": "cash",
+          "name": "Cash - Operating",
+          "type": "asset",
+          "code": "1000"
+        },
+        {
+          "key": "accounts_receivable",
+          "name": "Accounts Receivable",
+          "type": "asset",
+          "code": "1100"
+        },
+        {
+          "key": "wip",
+          "name": "Work in Progress",
+          "type": "asset",
+          "code": "1300"
+        },
+        {
+          "key": "equipment",
+          "name": "Equipment",
+          "type": "asset",
+          "code": "1500"
+        },
+        {
+          "key": "accounts_payable",
+          "name": "Accounts Payable",
+          "type": "liability",
+          "code": "2000"
+        },
+        {
+          "key": "customer_deposits",
+          "name": "Customer Deposits",
+          "type": "liability",
+          "code": "2700"
+        },
+        {
+          "key": "retainage_payable",
+          "name": "Retainage Payable",
+          "type": "liability",
+          "code": "2800"
+        },
+        {
+          "key": "contract_revenue",
+          "name": "Contract Revenue",
+          "type": "income",
+          "code": "4000"
+        },
+        {
+          "key": "job_costs",
+          "name": "Job Cost of Revenue",
+          "type": "expense",
+          "code": "5000"
+        },
+        {
+          "key": "owner_capital",
+          "name": "Owner Capital",
+          "type": "equity",
+          "code": "3000"
+        }
+      ],
+      "entries": [
+        {
+          "date": "2026-03-01",
+          "memo": "Owner capital injection",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 6000000,
+              "side": "D"
+            },
+            {
+              "acct": "owner_capital",
+              "amount": 6000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-02",
+          "memo": "Receive customer deposit on new job",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 2000000,
+              "side": "D"
+            },
+            {
+              "acct": "customer_deposits",
+              "amount": 2000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-04",
+          "memo": "Purchase equipment (cash)",
+          "lines": [
+            {
+              "acct": "equipment",
+              "amount": 1500000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 1500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-06",
+          "memo": "Job materials purchased on account into WIP",
+          "lines": [
+            {
+              "acct": "wip",
+              "amount": 1800000,
+              "side": "D"
+            },
+            {
+              "acct": "accounts_payable",
+              "amount": 1800000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-10",
+          "memo": "Subcontractor costs on account into WIP",
+          "lines": [
+            {
+              "acct": "wip",
+              "amount": 2200000,
+              "side": "D"
+            },
+            {
+              "acct": "accounts_payable",
+              "amount": 2200000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-15",
+          "memo": "Partial payment to suppliers/subs (AP)",
+          "lines": [
+            {
+              "acct": "accounts_payable",
+              "amount": 2500000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 2500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-20",
+          "memo": "Progress billing: AR + 10% retainage held by customer",
+          "lines": [
+            {
+              "acct": "accounts_receivable",
+              "amount": 4500000,
+              "side": "D"
+            },
+            {
+              "acct": "retainage_payable",
+              "amount": 500000,
+              "side": "D"
+            },
+            {
+              "acct": "contract_revenue",
+              "amount": 5000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-20",
+          "memo": "Recognize job costs from WIP for billed work",
+          "lines": [
+            {
+              "acct": "job_costs",
+              "amount": 3500000,
+              "side": "D"
+            },
+            {
+              "acct": "wip",
+              "amount": 3500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-22",
+          "memo": "Apply customer deposit against progress billing AR",
+          "lines": [
+            {
+              "acct": "customer_deposits",
+              "amount": 2000000,
+              "side": "D"
+            },
+            {
+              "acct": "accounts_receivable",
+              "amount": 2000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-28",
+          "memo": "Collect remaining billed AR (cash)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 2000000,
+              "side": "D"
+            },
+            {
+              "acct": "accounts_receivable",
+              "amount": 2000000,
+              "side": "C"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "trial_balance_balanced": true,
+        "total_debits_minor": 28500000,
+        "total_income_minor": 5000000,
+        "total_expense_minor": 3500000,
+        "net_income_minor": 1500000,
+        "total_assets_minor": 8500000,
+        "total_liabilities_minor": 1000000,
+        "total_equity_minor": 6000000,
+        "balance_sheet_identity": true,
+        "account_net_minor": {
+          "cash": 6000000,
+          "accounts_receivable": 500000,
+          "wip": 500000,
+          "equipment": 1500000,
+          "accounts_payable": -1500000,
+          "customer_deposits": 0,
+          "retainage_payable": 500000,
+          "contract_revenue": -5000000,
+          "job_costs": 3500000,
+          "owner_capital": -6000000
+        }
+      }
+    },
+    {
+      "sector": "professional_services",
+      "business_name": "[E2E] Meridian Advisory Group LLC",
+      "narrative": "One month for a consulting firm: unbilled accrued revenue recognized then billed to AR, AR collections, owner draws (contra-equity), prepaid insurance amortization, and software subscription expense.",
+      "concepts": [
+        "unbilled AR / accrued revenue",
+        "AR billings + collections",
+        "owner draw (contra-equity)",
+        "prepaid insurance amortization",
+        "software expense"
+      ],
+      "accounts": [
+        {
+          "key": "cash",
+          "name": "Cash - Operating",
+          "type": "asset",
+          "code": "1000"
+        },
+        {
+          "key": "accounts_receivable",
+          "name": "Accounts Receivable",
+          "type": "asset",
+          "code": "1100"
+        },
+        {
+          "key": "unbilled_ar",
+          "name": "Unbilled Receivable",
+          "type": "asset",
+          "code": "1150"
+        },
+        {
+          "key": "prepaid_insurance",
+          "name": "Prepaid Insurance",
+          "type": "asset",
+          "code": "1400"
+        },
+        {
+          "key": "service_revenue",
+          "name": "Consulting Revenue",
+          "type": "income",
+          "code": "4000"
+        },
+        {
+          "key": "insurance_expense",
+          "name": "Insurance Expense",
+          "type": "expense",
+          "code": "6000"
+        },
+        {
+          "key": "software_expense",
+          "name": "Software Subscriptions",
+          "type": "expense",
+          "code": "6100"
+        },
+        {
+          "key": "wages_expense",
+          "name": "Wages Expense",
+          "type": "expense",
+          "code": "6200"
+        },
+        {
+          "key": "owner_capital",
+          "name": "Owner Capital",
+          "type": "equity",
+          "code": "3000"
+        },
+        {
+          "key": "owner_draws",
+          "name": "Owner Draws (contra-equity)",
+          "type": "equity",
+          "code": "3100"
+        }
+      ],
+      "entries": [
+        {
+          "date": "2026-03-01",
+          "memo": "Owner capital injection",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 3000000,
+              "side": "D"
+            },
+            {
+              "acct": "owner_capital",
+              "amount": 3000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-01",
+          "memo": "Prepay 6 months insurance (cash)",
+          "lines": [
+            {
+              "acct": "prepaid_insurance",
+              "amount": 720000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 720000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-10",
+          "memo": "Accrue unbilled consulting revenue (work performed, not yet invoiced)",
+          "lines": [
+            {
+              "acct": "unbilled_ar",
+              "amount": 1500000,
+              "side": "D"
+            },
+            {
+              "acct": "service_revenue",
+              "amount": 1500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-15",
+          "memo": "Bill clients: convert unbilled to AR",
+          "lines": [
+            {
+              "acct": "accounts_receivable",
+              "amount": 1500000,
+              "side": "D"
+            },
+            {
+              "acct": "unbilled_ar",
+              "amount": 1500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-18",
+          "memo": "Additional consulting billed directly to AR",
+          "lines": [
+            {
+              "acct": "accounts_receivable",
+              "amount": 2000000,
+              "side": "D"
+            },
+            {
+              "acct": "service_revenue",
+              "amount": 2000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-24",
+          "memo": "Collect AR (cash)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 2800000,
+              "side": "D"
+            },
+            {
+              "acct": "accounts_receivable",
+              "amount": 2800000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-26",
+          "memo": "Pay staff wages (cash)",
+          "lines": [
+            {
+              "acct": "wages_expense",
+              "amount": 1200000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 1200000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-27",
+          "memo": "Software subscriptions (cash)",
+          "lines": [
+            {
+              "acct": "software_expense",
+              "amount": 90000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 90000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-30",
+          "memo": "Owner draw (cash withdrawal)",
+          "lines": [
+            {
+              "acct": "owner_draws",
+              "amount": 500000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-31",
+          "memo": "Amortize 1 month prepaid insurance (720,000/6)",
+          "lines": [
+            {
+              "acct": "insurance_expense",
+              "amount": 120000,
+              "side": "D"
+            },
+            {
+              "acct": "prepaid_insurance",
+              "amount": 120000,
+              "side": "C"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "trial_balance_balanced": true,
+        "total_debits_minor": 13430000,
+        "total_income_minor": 3500000,
+        "total_expense_minor": 1410000,
+        "net_income_minor": 2090000,
+        "total_assets_minor": 4590000,
+        "total_liabilities_minor": 0,
+        "total_equity_minor": 2500000,
+        "balance_sheet_identity": true,
+        "account_net_minor": {
+          "cash": 3290000,
+          "accounts_receivable": 700000,
+          "unbilled_ar": 0,
+          "prepaid_insurance": 600000,
+          "service_revenue": -3500000,
+          "insurance_expense": 120000,
+          "software_expense": 90000,
+          "wages_expense": 1200000,
+          "owner_capital": -3000000,
+          "owner_draws": 500000
+        }
+      }
+    },
+    {
+      "sector": "nonprofit",
+      "business_name": "[E2E] Open Hands Community Fund",
+      "narrative": "One month for a nonprofit: unrestricted donations, restricted grant revenue, a deferred (conditional) grant liability later recognized, and program vs admin expenses, tracking restricted and unrestricted net assets as equity.",
+      "concepts": [
+        "restricted vs unrestricted net assets",
+        "grant revenue",
+        "donations",
+        "program vs admin expense",
+        "deferred grant liability"
+      ],
+      "accounts": [
+        {
+          "key": "cash",
+          "name": "Cash",
+          "type": "asset",
+          "code": "1000"
+        },
+        {
+          "key": "grants_receivable",
+          "name": "Grants Receivable",
+          "type": "asset",
+          "code": "1100"
+        },
+        {
+          "key": "deferred_grant",
+          "name": "Deferred (Conditional) Grant Liability",
+          "type": "liability",
+          "code": "2400"
+        },
+        {
+          "key": "accounts_payable",
+          "name": "Accounts Payable",
+          "type": "liability",
+          "code": "2000"
+        },
+        {
+          "key": "donation_revenue",
+          "name": "Donation Revenue - Unrestricted",
+          "type": "income",
+          "code": "4000"
+        },
+        {
+          "key": "grant_revenue",
+          "name": "Grant Revenue - Restricted",
+          "type": "income",
+          "code": "4100"
+        },
+        {
+          "key": "program_expense",
+          "name": "Program Services Expense",
+          "type": "expense",
+          "code": "5000"
+        },
+        {
+          "key": "admin_expense",
+          "name": "Management & Admin Expense",
+          "type": "expense",
+          "code": "6000"
+        },
+        {
+          "key": "net_assets_unrestricted",
+          "name": "Net Assets - Unrestricted",
+          "type": "equity",
+          "code": "3000"
+        },
+        {
+          "key": "net_assets_restricted",
+          "name": "Net Assets - Restricted",
+          "type": "equity",
+          "code": "3100"
+        }
+      ],
+      "entries": [
+        {
+          "date": "2026-03-01",
+          "memo": "Opening unrestricted net assets (cash on hand)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 2000000,
+              "side": "D"
+            },
+            {
+              "acct": "net_assets_unrestricted",
+              "amount": 2000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-01",
+          "memo": "Opening restricted net assets (cash restricted for program)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 1000000,
+              "side": "D"
+            },
+            {
+              "acct": "net_assets_restricted",
+              "amount": 1000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-05",
+          "memo": "Unrestricted cash donations received",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 1500000,
+              "side": "D"
+            },
+            {
+              "acct": "donation_revenue",
+              "amount": 1500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-08",
+          "memo": "Conditional grant advance received (conditions unmet -> deferred)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 2400000,
+              "side": "D"
+            },
+            {
+              "acct": "deferred_grant",
+              "amount": 2400000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-12",
+          "memo": "Unconditional grant award receivable",
+          "lines": [
+            {
+              "acct": "grants_receivable",
+              "amount": 1800000,
+              "side": "D"
+            },
+            {
+              "acct": "grant_revenue",
+              "amount": 1800000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-20",
+          "memo": "Collect grant receivable (cash)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 1800000,
+              "side": "D"
+            },
+            {
+              "acct": "grants_receivable",
+              "amount": 1800000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-25",
+          "memo": "Program services costs (cash)",
+          "lines": [
+            {
+              "acct": "program_expense",
+              "amount": 2600000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 2600000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-27",
+          "memo": "Admin costs incurred on account",
+          "lines": [
+            {
+              "acct": "admin_expense",
+              "amount": 400000,
+              "side": "D"
+            },
+            {
+              "acct": "accounts_payable",
+              "amount": 400000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-31",
+          "memo": "Conditions met: recognize portion of deferred grant as revenue",
+          "lines": [
+            {
+              "acct": "deferred_grant",
+              "amount": 1200000,
+              "side": "D"
+            },
+            {
+              "acct": "grant_revenue",
+              "amount": 1200000,
+              "side": "C"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "trial_balance_balanced": true,
+        "total_debits_minor": 14700000,
+        "total_income_minor": 4500000,
+        "total_expense_minor": 3000000,
+        "net_income_minor": 1500000,
+        "total_assets_minor": 6100000,
+        "total_liabilities_minor": 1600000,
+        "total_equity_minor": 3000000,
+        "balance_sheet_identity": true,
+        "account_net_minor": {
+          "cash": 6100000,
+          "grants_receivable": 0,
+          "deferred_grant": -1200000,
+          "accounts_payable": -400000,
+          "donation_revenue": -1500000,
+          "grant_revenue": -3000000,
+          "program_expense": 2600000,
+          "admin_expense": 400000,
+          "net_assets_unrestricted": -2000000,
+          "net_assets_restricted": -1000000
+        }
+      }
+    },
+    {
+      "sector": "real_estate_rental",
+      "business_name": "[E2E] Cedar Lane Holdings LLC",
+      "narrative": "One month for a residential rental: rental income, a tenant security deposit held as a liability, a mortgage payment split into interest expense and principal reduction, straight-line building depreciation via accumulated depreciation, property tax and repairs.",
+      "concepts": [
+        "rental income",
+        "security deposits (liability)",
+        "mortgage interest vs principal split",
+        "accumulated depreciation (contra-asset)",
+        "property tax + repairs"
+      ],
+      "accounts": [
+        {
+          "key": "cash",
+          "name": "Cash - Operating",
+          "type": "asset",
+          "code": "1000"
+        },
+        {
+          "key": "building",
+          "name": "Building",
+          "type": "asset",
+          "code": "1500"
+        },
+        {
+          "key": "accum_depreciation",
+          "name": "Accumulated Depreciation - Building (contra)",
+          "type": "asset",
+          "code": "1590"
+        },
+        {
+          "key": "mortgage_payable",
+          "name": "Mortgage Payable",
+          "type": "liability",
+          "code": "2900"
+        },
+        {
+          "key": "security_deposits",
+          "name": "Tenant Security Deposits Held",
+          "type": "liability",
+          "code": "2700"
+        },
+        {
+          "key": "rental_income",
+          "name": "Rental Income",
+          "type": "income",
+          "code": "4000"
+        },
+        {
+          "key": "interest_expense",
+          "name": "Mortgage Interest Expense",
+          "type": "expense",
+          "code": "6000"
+        },
+        {
+          "key": "depreciation_expense",
+          "name": "Depreciation Expense",
+          "type": "expense",
+          "code": "6100"
+        },
+        {
+          "key": "property_tax_expense",
+          "name": "Property Tax Expense",
+          "type": "expense",
+          "code": "6200"
+        },
+        {
+          "key": "repairs_expense",
+          "name": "Repairs & Maintenance",
+          "type": "expense",
+          "code": "6300"
+        },
+        {
+          "key": "owner_capital",
+          "name": "Owner Capital",
+          "type": "equity",
+          "code": "3000"
+        }
+      ],
+      "entries": [
+        {
+          "date": "2026-03-01",
+          "memo": "Owner contributes building (financed) and capital",
+          "lines": [
+            {
+              "acct": "building",
+              "amount": 36000000,
+              "side": "D"
+            },
+            {
+              "acct": "mortgage_payable",
+              "amount": 30000000,
+              "side": "C"
+            },
+            {
+              "acct": "owner_capital",
+              "amount": 6000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-01",
+          "memo": "Opening operating cash from owner",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 2000000,
+              "side": "D"
+            },
+            {
+              "acct": "owner_capital",
+              "amount": 2000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-02",
+          "memo": "Collect first month rent",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 450000,
+              "side": "D"
+            },
+            {
+              "acct": "rental_income",
+              "amount": 450000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-02",
+          "memo": "Collect tenant security deposit (held in trust)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 450000,
+              "side": "D"
+            },
+            {
+              "acct": "security_deposits",
+              "amount": 450000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-15",
+          "memo": "Mortgage payment: interest expense + principal reduction",
+          "lines": [
+            {
+              "acct": "interest_expense",
+              "amount": 150000,
+              "side": "D"
+            },
+            {
+              "acct": "mortgage_payable",
+              "amount": 50000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 200000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-20",
+          "memo": "Pay property tax (cash)",
+          "lines": [
+            {
+              "acct": "property_tax_expense",
+              "amount": 120000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 120000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-22",
+          "memo": "Pay repairs (cash)",
+          "lines": [
+            {
+              "acct": "repairs_expense",
+              "amount": 80000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 80000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-31",
+          "memo": "Record monthly building depreciation (straight-line)",
+          "lines": [
+            {
+              "acct": "depreciation_expense",
+              "amount": 100000,
+              "side": "D"
+            },
+            {
+              "acct": "accum_depreciation",
+              "amount": 100000,
+              "side": "C"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "trial_balance_balanced": true,
+        "total_debits_minor": 39400000,
+        "total_income_minor": 450000,
+        "total_expense_minor": 450000,
+        "net_income_minor": 0,
+        "total_assets_minor": 38400000,
+        "total_liabilities_minor": 30400000,
+        "total_equity_minor": 8000000,
+        "balance_sheet_identity": true,
+        "account_net_minor": {
+          "cash": 2500000,
+          "building": 36000000,
+          "accum_depreciation": -100000,
+          "mortgage_payable": -29950000,
+          "security_deposits": -450000,
+          "rental_income": -450000,
+          "interest_expense": 150000,
+          "depreciation_expense": 100000,
+          "property_tax_expense": 120000,
+          "repairs_expense": 80000,
+          "owner_capital": -8000000
+        }
+      }
+    },
+    {
+      "sector": "freelancer",
+      "business_name": "[E2E] Jordan Reyes Design (Sole Prop)",
+      "narrative": "One month for a solo freelancer on a near-cash basis: 1099 service income, home-office and equipment purchases, supplies and mileage, an estimated quarterly tax payment treated as an owner draw, and a small owner draw.",
+      "concepts": [
+        "service income / 1099",
+        "equipment + home office",
+        "supplies / mileage",
+        "estimated tax payment (owner draw)",
+        "owner draw (contra-equity)"
+      ],
+      "accounts": [
+        {
+          "key": "cash",
+          "name": "Cash - Business",
+          "type": "asset",
+          "code": "1000"
+        },
+        {
+          "key": "equipment",
+          "name": "Equipment",
+          "type": "asset",
+          "code": "1500"
+        },
+        {
+          "key": "service_income",
+          "name": "Freelance Service Income",
+          "type": "income",
+          "code": "4000"
+        },
+        {
+          "key": "home_office_expense",
+          "name": "Home Office Expense",
+          "type": "expense",
+          "code": "6000"
+        },
+        {
+          "key": "supplies_expense",
+          "name": "Supplies Expense",
+          "type": "expense",
+          "code": "6100"
+        },
+        {
+          "key": "mileage_expense",
+          "name": "Vehicle / Mileage Expense",
+          "type": "expense",
+          "code": "6200"
+        },
+        {
+          "key": "software_expense",
+          "name": "Software Expense",
+          "type": "expense",
+          "code": "6300"
+        },
+        {
+          "key": "owner_capital",
+          "name": "Owner Capital",
+          "type": "equity",
+          "code": "3000"
+        },
+        {
+          "key": "owner_draws",
+          "name": "Owner Draws (contra-equity)",
+          "type": "equity",
+          "code": "3100"
+        }
+      ],
+      "entries": [
+        {
+          "date": "2026-03-01",
+          "memo": "Opening owner capital (cash)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 1500000,
+              "side": "D"
+            },
+            {
+              "acct": "owner_capital",
+              "amount": 1500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-04",
+          "memo": "Buy laptop / equipment (cash)",
+          "lines": [
+            {
+              "acct": "equipment",
+              "amount": 250000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 250000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-08",
+          "memo": "Client 1099 project payment received (cash)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 800000,
+              "side": "D"
+            },
+            {
+              "acct": "service_income",
+              "amount": 800000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-18",
+          "memo": "Client 1099 project payment received (cash)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 1100000,
+              "side": "D"
+            },
+            {
+              "acct": "service_income",
+              "amount": 1100000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-12",
+          "memo": "Home office expense (cash)",
+          "lines": [
+            {
+              "acct": "home_office_expense",
+              "amount": 90000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 90000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-14",
+          "memo": "Supplies (cash)",
+          "lines": [
+            {
+              "acct": "supplies_expense",
+              "amount": 45000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 45000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-16",
+          "memo": "Mileage reimbursable expense (cash)",
+          "lines": [
+            {
+              "acct": "mileage_expense",
+              "amount": 30000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 30000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-20",
+          "memo": "Software subscriptions (cash)",
+          "lines": [
+            {
+              "acct": "software_expense",
+              "amount": 60000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 60000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-25",
+          "memo": "Estimated quarterly tax payment (treated as owner draw)",
+          "lines": [
+            {
+              "acct": "owner_draws",
+              "amount": 400000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 400000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-30",
+          "memo": "Owner personal draw (cash)",
+          "lines": [
+            {
+              "acct": "owner_draws",
+              "amount": 300000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 300000,
+              "side": "C"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "trial_balance_balanced": true,
+        "total_debits_minor": 4575000,
+        "total_income_minor": 1900000,
+        "total_expense_minor": 225000,
+        "net_income_minor": 1675000,
+        "total_assets_minor": 2475000,
+        "total_liabilities_minor": 0,
+        "total_equity_minor": 800000,
+        "balance_sheet_identity": true,
+        "account_net_minor": {
+          "cash": 2225000,
+          "equipment": 250000,
+          "service_income": -1900000,
+          "home_office_expense": 90000,
+          "supplies_expense": 45000,
+          "mileage_expense": 30000,
+          "software_expense": 60000,
+          "owner_capital": -1500000,
+          "owner_draws": 700000
+        }
+      }
+    },
+    {
+      "sector": "agency",
+      "business_name": "[E2E] Northwind Creative Agency LLC",
+      "narrative": "One month for a marketing agency: pass-through media spend billed to clients (AP to vendor, AR to client), retainer collected to deferred revenue then recognized, contractor payments, multiple unpaid client invoices (AR aging) with one partial payment, and an owner distribution.",
+      "concepts": [
+        "pass-through media (AP + AR)",
+        "retainer deferred revenue",
+        "contractor payments",
+        "AR aging + partial payment",
+        "owner distribution"
+      ],
+      "accounts": [
+        {
+          "key": "cash",
+          "name": "Cash - Operating",
+          "type": "asset",
+          "code": "1000"
+        },
+        {
+          "key": "accounts_receivable",
+          "name": "Accounts Receivable",
+          "type": "asset",
+          "code": "1100"
+        },
+        {
+          "key": "accounts_payable",
+          "name": "Accounts Payable",
+          "type": "liability",
+          "code": "2000"
+        },
+        {
+          "key": "deferred_revenue",
+          "name": "Deferred Revenue (Retainers)",
+          "type": "liability",
+          "code": "2400"
+        },
+        {
+          "key": "service_revenue",
+          "name": "Agency Service Revenue",
+          "type": "income",
+          "code": "4000"
+        },
+        {
+          "key": "media_revenue",
+          "name": "Media Pass-through Revenue",
+          "type": "income",
+          "code": "4100"
+        },
+        {
+          "key": "media_cost",
+          "name": "Media Cost of Revenue",
+          "type": "expense",
+          "code": "5000"
+        },
+        {
+          "key": "contractor_expense",
+          "name": "Contractor Expense",
+          "type": "expense",
+          "code": "6000"
+        },
+        {
+          "key": "owner_capital",
+          "name": "Owner Capital",
+          "type": "equity",
+          "code": "3000"
+        },
+        {
+          "key": "owner_distributions",
+          "name": "Owner Distributions (contra-equity)",
+          "type": "equity",
+          "code": "3100"
+        }
+      ],
+      "entries": [
+        {
+          "date": "2026-03-01",
+          "memo": "Owner capital injection",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 2500000,
+              "side": "D"
+            },
+            {
+              "acct": "owner_capital",
+              "amount": 2500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-03",
+          "memo": "Collect quarterly retainer (deferred until earned)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 3000000,
+              "side": "D"
+            },
+            {
+              "acct": "deferred_revenue",
+              "amount": 3000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-06",
+          "memo": "Vendor media buy on account (pass-through cost)",
+          "lines": [
+            {
+              "acct": "media_cost",
+              "amount": 4000000,
+              "side": "D"
+            },
+            {
+              "acct": "accounts_payable",
+              "amount": 4000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-06",
+          "memo": "Bill client for pass-through media + markup",
+          "lines": [
+            {
+              "acct": "accounts_receivable",
+              "amount": 4400000,
+              "side": "D"
+            },
+            {
+              "acct": "media_revenue",
+              "amount": 4400000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-10",
+          "memo": "Bill Client B project (on account)",
+          "lines": [
+            {
+              "acct": "accounts_receivable",
+              "amount": 1500000,
+              "side": "D"
+            },
+            {
+              "acct": "service_revenue",
+              "amount": 1500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-12",
+          "memo": "Bill Client C project (on account)",
+          "lines": [
+            {
+              "acct": "accounts_receivable",
+              "amount": 900000,
+              "side": "D"
+            },
+            {
+              "acct": "service_revenue",
+              "amount": 900000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-18",
+          "memo": "Pay vendor for media buy (AP)",
+          "lines": [
+            {
+              "acct": "accounts_payable",
+              "amount": 4000000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 4000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-20",
+          "memo": "Pay contractors (cash)",
+          "lines": [
+            {
+              "acct": "contractor_expense",
+              "amount": 1200000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 1200000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-24",
+          "memo": "Partial collection on media AR invoice",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 4400000,
+              "side": "D"
+            },
+            {
+              "acct": "accounts_receivable",
+              "amount": 4400000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-26",
+          "memo": "Partial collection on Client B invoice",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 1000000,
+              "side": "D"
+            },
+            {
+              "acct": "accounts_receivable",
+              "amount": 1000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-31",
+          "memo": "Recognize earned portion of retainer",
+          "lines": [
+            {
+              "acct": "deferred_revenue",
+              "amount": 1000000,
+              "side": "D"
+            },
+            {
+              "acct": "service_revenue",
+              "amount": 1000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-31",
+          "memo": "Owner distribution (cash)",
+          "lines": [
+            {
+              "acct": "owner_distributions",
+              "amount": 600000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 600000,
+              "side": "C"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "trial_balance_balanced": true,
+        "total_debits_minor": 28500000,
+        "total_income_minor": 7800000,
+        "total_expense_minor": 5200000,
+        "net_income_minor": 2600000,
+        "total_assets_minor": 6500000,
+        "total_liabilities_minor": 2000000,
+        "total_equity_minor": 1900000,
+        "balance_sheet_identity": true,
+        "account_net_minor": {
+          "cash": 5100000,
+          "accounts_receivable": 1400000,
+          "accounts_payable": 0,
+          "deferred_revenue": -2000000,
+          "service_revenue": -3400000,
+          "media_revenue": -4400000,
+          "media_cost": 4000000,
+          "contractor_expense": 1200000,
+          "owner_capital": -2500000,
+          "owner_distributions": 600000
+        }
+      }
+    },
+    {
+      "sector": "healthcare_clinic",
+      "business_name": "[E2E] Lakeside Family Clinic PC",
+      "narrative": "One month for a medical clinic: gross charges to insurance AR and patient AR, contractual adjustments as contra-revenue, supplies inventory consumed, equipment with depreciation, payroll with withholding, and a deferred patient credit (prepaid copay) liability.",
+      "concepts": [
+        "insurance AR + patient AR",
+        "contractual adjustments (contra-revenue)",
+        "supplies inventory",
+        "equipment + depreciation",
+        "payroll + withholding",
+        "deferred patient credit (liability)"
+      ],
+      "accounts": [
+        {
+          "key": "cash",
+          "name": "Cash - Operating",
+          "type": "asset",
+          "code": "1000"
+        },
+        {
+          "key": "insurance_ar",
+          "name": "Insurance Accounts Receivable",
+          "type": "asset",
+          "code": "1100"
+        },
+        {
+          "key": "patient_ar",
+          "name": "Patient Accounts Receivable",
+          "type": "asset",
+          "code": "1110"
+        },
+        {
+          "key": "supplies_inventory",
+          "name": "Medical Supplies Inventory",
+          "type": "asset",
+          "code": "1200"
+        },
+        {
+          "key": "equipment",
+          "name": "Medical Equipment",
+          "type": "asset",
+          "code": "1500"
+        },
+        {
+          "key": "accum_depreciation",
+          "name": "Accumulated Depreciation (contra)",
+          "type": "asset",
+          "code": "1590"
+        },
+        {
+          "key": "patient_credits",
+          "name": "Deferred Patient Credits",
+          "type": "liability",
+          "code": "2700"
+        },
+        {
+          "key": "payroll_tax_payable",
+          "name": "Payroll Withholding Payable",
+          "type": "liability",
+          "code": "2300"
+        },
+        {
+          "key": "patient_revenue",
+          "name": "Patient Service Revenue",
+          "type": "income",
+          "code": "4000"
+        },
+        {
+          "key": "contractual_adjustments",
+          "name": "Contractual Adjustments (contra-revenue)",
+          "type": "income",
+          "code": "4900"
+        },
+        {
+          "key": "supplies_expense",
+          "name": "Medical Supplies Expense",
+          "type": "expense",
+          "code": "5000"
+        },
+        {
+          "key": "wages_expense",
+          "name": "Wages Expense",
+          "type": "expense",
+          "code": "6000"
+        },
+        {
+          "key": "depreciation_expense",
+          "name": "Depreciation Expense",
+          "type": "expense",
+          "code": "6100"
+        },
+        {
+          "key": "owner_capital",
+          "name": "Owner Capital",
+          "type": "equity",
+          "code": "3000"
+        }
+      ],
+      "entries": [
+        {
+          "date": "2026-03-01",
+          "memo": "Owner capital injection",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 5000000,
+              "side": "D"
+            },
+            {
+              "acct": "owner_capital",
+              "amount": 5000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-01",
+          "memo": "Purchase medical equipment (cash)",
+          "lines": [
+            {
+              "acct": "equipment",
+              "amount": 2400000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 2400000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-02",
+          "memo": "Purchase medical supplies inventory (cash)",
+          "lines": [
+            {
+              "acct": "supplies_inventory",
+              "amount": 600000,
+              "side": "D"
+            },
+            {
+              "acct": "cash",
+              "amount": 600000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-03",
+          "memo": "Patient prepays package (deferred credit)",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 300000,
+              "side": "D"
+            },
+            {
+              "acct": "patient_credits",
+              "amount": 300000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-10",
+          "memo": "Gross patient charges billed to insurance and patients",
+          "lines": [
+            {
+              "acct": "insurance_ar",
+              "amount": 4000000,
+              "side": "D"
+            },
+            {
+              "acct": "patient_ar",
+              "amount": 1000000,
+              "side": "D"
+            },
+            {
+              "acct": "patient_revenue",
+              "amount": 5000000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-12",
+          "memo": "Contractual adjustment (insurance allowed less than billed)",
+          "lines": [
+            {
+              "acct": "contractual_adjustments",
+              "amount": 1500000,
+              "side": "D"
+            },
+            {
+              "acct": "insurance_ar",
+              "amount": 1500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-20",
+          "memo": "Insurance pays allowed amount",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 2500000,
+              "side": "D"
+            },
+            {
+              "acct": "insurance_ar",
+              "amount": 2500000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-22",
+          "memo": "Patient pays balance",
+          "lines": [
+            {
+              "acct": "cash",
+              "amount": 700000,
+              "side": "D"
+            },
+            {
+              "acct": "patient_ar",
+              "amount": 700000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-24",
+          "memo": "Apply patient deferred credit against patient AR",
+          "lines": [
+            {
+              "acct": "patient_credits",
+              "amount": 200000,
+              "side": "D"
+            },
+            {
+              "acct": "patient_ar",
+              "amount": 200000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-28",
+          "memo": "Run payroll: gross wages, withhold, net cash",
+          "lines": [
+            {
+              "acct": "wages_expense",
+              "amount": 1500000,
+              "side": "D"
+            },
+            {
+              "acct": "payroll_tax_payable",
+              "amount": 300000,
+              "side": "C"
+            },
+            {
+              "acct": "cash",
+              "amount": 1200000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-31",
+          "memo": "Consume medical supplies (inventory to expense)",
+          "lines": [
+            {
+              "acct": "supplies_expense",
+              "amount": 350000,
+              "side": "D"
+            },
+            {
+              "acct": "supplies_inventory",
+              "amount": 350000,
+              "side": "C"
+            }
+          ]
+        },
+        {
+          "date": "2026-03-31",
+          "memo": "Record equipment depreciation",
+          "lines": [
+            {
+              "acct": "depreciation_expense",
+              "amount": 40000,
+              "side": "D"
+            },
+            {
+              "acct": "accum_depreciation",
+              "amount": 40000,
+              "side": "C"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "trial_balance_balanced": true,
+        "total_debits_minor": 20090000,
+        "total_income_minor": 3500000,
+        "total_expense_minor": 1890000,
+        "net_income_minor": 1610000,
+        "total_assets_minor": 7010000,
+        "total_liabilities_minor": 400000,
+        "total_equity_minor": 5000000,
+        "balance_sheet_identity": true,
+        "account_net_minor": {
+          "cash": 4300000,
+          "insurance_ar": 0,
+          "patient_ar": 100000,
+          "supplies_inventory": 250000,
+          "equipment": 2400000,
+          "accum_depreciation": -40000,
+          "patient_credits": -100000,
+          "payroll_tax_payable": -300000,
+          "patient_revenue": -5000000,
+          "contractual_adjustments": 1500000,
+          "supplies_expense": 350000,
+          "wages_expense": 1500000,
+          "depreciation_expense": 40000,
+          "owner_capital": -5000000
+        }
+      }
+    }
+  ],
+  "adversarial": [
+    {
+      "desc": "unbalanced two-line entry (debit > credit)",
+      "lines": [
+        {
+          "acct": "cash",
+          "amount": 1000,
+          "side": "D"
+        },
+        {
+          "acct": "sales",
+          "amount": 900,
+          "side": "C"
+        }
+      ],
+      "expect": "reject"
+    },
+    {
+      "desc": "unbalanced two-line entry (credit > debit)",
+      "lines": [
+        {
+          "acct": "cash",
+          "amount": 500,
+          "side": "D"
+        },
+        {
+          "acct": "sales",
+          "amount": 700,
+          "side": "C"
+        }
+      ],
+      "expect": "reject"
+    },
+    {
+      "desc": "zero amount line",
+      "lines": [
+        {
+          "acct": "cash",
+          "amount": 0,
+          "side": "D"
+        },
+        {
+          "acct": "sales",
+          "amount": 0,
+          "side": "C"
+        }
+      ],
+      "expect": "reject"
+    },
+    {
+      "desc": "negative amount line",
+      "lines": [
+        {
+          "acct": "cash",
+          "amount": -1000,
+          "side": "D"
+        },
+        {
+          "acct": "sales",
+          "amount": -1000,
+          "side": "C"
+        }
+      ],
+      "expect": "reject"
+    },
+    {
+      "desc": "single line entry (cannot balance)",
+      "lines": [
+        {
+          "acct": "cash",
+          "amount": 1000,
+          "side": "D"
+        }
+      ],
+      "expect": "reject"
+    },
+    {
+      "desc": "three-line unbalanced entry",
+      "lines": [
+        {
+          "acct": "cash",
+          "amount": 1000,
+          "side": "D"
+        },
+        {
+          "acct": "sales",
+          "amount": 600,
+          "side": "C"
+        },
+        {
+          "acct": "sales",
+          "amount": 300,
+          "side": "C"
+        }
+      ],
+      "expect": "reject"
+    },
+    {
+      "desc": "non-integer cents (1.5)",
+      "lines": [
+        {
+          "acct": "cash",
+          "amount": 1.5,
+          "side": "D"
+        },
+        {
+          "acct": "sales",
+          "amount": 1.5,
+          "side": "C"
+        }
+      ],
+      "expect": "reject"
+    },
+    {
+      "desc": "all debits, no credit side",
+      "lines": [
+        {
+          "acct": "cash",
+          "amount": 1000,
+          "side": "D"
+        },
+        {
+          "acct": "sales",
+          "amount": 1000,
+          "side": "D"
+        }
+      ],
+      "expect": "reject"
+    },
+    {
+      "desc": "all credits, no debit side",
+      "lines": [
+        {
+          "acct": "cash",
+          "amount": 1000,
+          "side": "C"
+        },
+        {
+          "acct": "sales",
+          "amount": 1000,
+          "side": "C"
+        }
+      ],
+      "expect": "reject"
+    },
+    {
+      "desc": "invalid side value",
+      "lines": [
+        {
+          "acct": "cash",
+          "amount": 1000,
+          "side": "X"
+        },
+        {
+          "acct": "sales",
+          "amount": 1000,
+          "side": "C"
+        }
+      ],
+      "expect": "reject"
+    },
+    {
+      "desc": "empty lines array",
+      "lines": [],
+      "expect": "reject"
+    },
+    {
+      "desc": "null amount",
+      "lines": [
+        {
+          "acct": "cash",
+          "amount": null,
+          "side": "D"
+        },
+        {
+          "acct": "sales",
+          "amount": 1000,
+          "side": "C"
+        }
+      ],
+      "expect": "reject"
+    },
+    {
+      "desc": "string amount instead of integer",
+      "lines": [
+        {
+          "acct": "cash",
+          "amount": "1000",
+          "side": "D"
+        },
+        {
+          "acct": "sales",
+          "amount": 1000,
+          "side": "C"
+        }
+      ],
+      "expect": "reject"
+    },
+    {
+      "desc": "off-by-one-cent imbalance",
+      "lines": [
+        {
+          "acct": "cash",
+          "amount": 100001,
+          "side": "D"
+        },
+        {
+          "acct": "sales",
+          "amount": 100000,
+          "side": "C"
+        }
+      ],
+      "expect": "reject"
+    }
+  ]
+}

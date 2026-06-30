@@ -202,6 +202,40 @@ export const upsertAccount = (input: {
 export const setPeriod = (org_id: string, period_id: string, action: "close" | "reopen") =>
   invoke<{ period: AccountingPeriod }>("ledger-periods", { org_id, period_id, action });
 
+// ── org accounting settings (owner control: CPA approval gate) ───────────────
+export interface OrgAccountingSettings {
+  org_id: string;
+  cpa_posts_require_approval: boolean;
+  home_currency: string;
+  fiscal_year_start_month: number;
+}
+
+/** The owner's accounting settings for an org (RLS-readable to anyone who can
+ *  access the org; only the owner may write via setOrgSettings). */
+export function useOrgSettings(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["org-settings", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<OrgAccountingSettings | null> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("org_accounting_settings")
+        .select("org_id,cpa_posts_require_approval,home_currency,fiscal_year_start_month")
+        .eq("org_id", orgId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as OrgAccountingSettings | null;
+    },
+  });
+}
+
+export const setOrgSettings = (input: {
+  org_id: string;
+  cpa_posts_require_approval?: boolean;
+  home_currency?: string;
+  fiscal_year_start_month?: number;
+}) => invoke<{ settings: OrgAccountingSettings }>("org-settings", { op: "set", ...input });
+
 // ── history import (Phase 3) ──────────────────────────────────────────────────
 export type ImportSource = "csv" | "bank_statement" | "trial_balance" | "opening_balances";
 

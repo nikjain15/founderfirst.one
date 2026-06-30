@@ -43,7 +43,27 @@ const DIST = resolve(ROOT, "dist");
 const WEB_DIST = resolve(ROOT, "apps/web/dist");
 const DEMO_DIST = resolve(ROOT, "apps/demo/dist");
 const ADMIN_DIST = resolve(ROOT, "apps/admin/dist");
-const APP_DIST = resolve(ROOT, "apps/app/dist");
+// apps/app is no longer assembled into dist/ — its single home is
+// penny.founderfirst.one (deployed by the deploy-penny job). /app/* redirects there.
+
+// Path-preserving client-side redirect served at /app/* (GH Pages can't 301).
+// Carries the path after /app plus query + hash to penny.founderfirst.one.
+const PENNY_REDIRECT_HTML = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Penny — penny.founderfirst.one</title>
+  <meta name="robots" content="noindex,follow" />
+  <link rel="canonical" href="https://penny.founderfirst.one/" />
+  <script>
+    var rest = location.pathname.replace(/^\\/app\\/?/, "");
+    location.replace("https://penny.founderfirst.one/" + rest + location.search + location.hash);
+  </script>
+  <meta http-equiv="refresh" content="0; url=https://penny.founderfirst.one/" />
+</head>
+<body><p>Penny has moved to <a href="https://penny.founderfirst.one/">penny.founderfirst.one</a>…</p></body>
+</html>
+`;
 
 function step(label: string): void {
   console.info(`\n▸ ${label}`);
@@ -91,8 +111,10 @@ function main(): void {
   step("Building admin app");
   run("pnpm --filter @ff/admin build");
 
-  step("Building unified app (apps/app — authed owner/CPA lenses)");
-  run("pnpm --filter @ff/app build");
+  // The unified app (apps/app) is NOT built into dist/ anymore — its single home
+  // is penny.founderfirst.one (Cloudflare Pages, deployed by the deploy-penny job
+  // in pages.yml). founderfirst.one/app/ now just redirects there (below), so the
+  // app has exactly one canonical URL.
 
   step("Wiping dist/");
   rmSync(DIST, { recursive: true, force: true });
@@ -139,16 +161,18 @@ function main(): void {
     cpSync(resolve(adminOut, "index.html"), resolve(adminOut, route, "index.html"));
   }
 
-  step("Copying app → dist/app/");
+  step("Writing /app/* → penny.founderfirst.one redirects (single canonical home)");
+  // The app lives at penny.founderfirst.one now. Keep /app/* working as a
+  // path-preserving redirect so old links, bookmarks, and any in-flight OAuth/
+  // magic-link landings don't 404. GH Pages can't 301, so each stub redirects
+  // client-side, carrying the path after /app, plus query + hash. One stub per
+  // URL-reachable route (GH Pages has no per-dir 404 fallback).
   const appOut = resolve(DIST, "app");
-  copyDir(APP_DIST, appOut);
-  // SPA fallback for the unified app's URL-reachable routes (BrowserRouter
-  // basename="/app"). Keep in sync with the top-level <Route path> entries in
-  // apps/app/src/App.tsx. The catch-all (*) redirects client-side to "/".
-  const APP_ROUTES = ["login", "accept", "staff"];
+  const APP_ROUTES = ["", "login", "accept", "staff"];
   for (const route of APP_ROUTES) {
-    mkdirSync(resolve(appOut, route), { recursive: true });
-    cpSync(resolve(appOut, "index.html"), resolve(appOut, route, "index.html"));
+    const dir = route ? resolve(appOut, route) : appOut;
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(resolve(dir, "index.html"), PENNY_REDIRECT_HTML, "utf8");
   }
 
   step("Copying penny demo → dist/penny/demo/");

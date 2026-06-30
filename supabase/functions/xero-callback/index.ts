@@ -15,7 +15,7 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // Supabase's function gateway force-rewrites any text/html body to text/plain
 // (anti-phishing sandbox), so an HTML page rendered from *.supabase.co shows raw
 // source. Redirect to the app domain — which can render — instead.
-const APP_BASE = Deno.env.get("APP_BASE_URL") ?? "https://founderfirst.one/app/";
+const APP_BASE = Deno.env.get("APP_BASE_URL") ?? "https://penny.founderfirst.one/";
 
 /** 302 back to the app with a connection result the UI can surface. */
 function back(params: Record<string, string>): Response {

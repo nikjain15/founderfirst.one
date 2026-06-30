@@ -116,7 +116,23 @@ Deno.serve(async (req) => {
       .update({ status: "published", published_ref: blogPath, promo_schedule_id: promo.id ?? null }).eq("id", item_id);
     if (wErr) return json({ error: wErr.message }, 500);
 
-    return json({ ok: true, item_id, blog_path: blogPath, version_id: versionId, promo });
+    // Best-effort: trigger a static site rebuild so the new post/episode goes live
+    // without a code push. No-op unless GH_DISPATCH_TOKEN is configured.
+    let rebuild = false;
+    const ghToken = Deno.env.get("GH_DISPATCH_TOKEN");
+    if (ghToken) {
+      const repo = Deno.env.get("GH_DISPATCH_REPO") ?? "nikjain15/founderfirst.one";
+      try {
+        const r = await fetch(`https://api.github.com/repos/${repo}/dispatches`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${ghToken}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "founderfirst-content-publish" },
+          body: JSON.stringify({ event_type: "content-published", client_payload: { slug } }),
+        });
+        rebuild = r.ok;
+      } catch { rebuild = false; }
+    }
+
+    return json({ ok: true, item_id, blog_path: blogPath, version_id: versionId, promo, rebuild });
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
   }

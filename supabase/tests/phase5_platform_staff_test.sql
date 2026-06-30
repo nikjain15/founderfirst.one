@@ -4,19 +4,24 @@
 -- rolls back.
 
 begin;
-select plan(14);
+select plan(17);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
   ('00000000-0000-0000-0000-00000000a1a1', 'staffuser@test.dev',  'authenticated', 'authenticated'),
-  ('00000000-0000-0000-0000-00000000a2a2', 'outsider@test.dev',   'authenticated', 'authenticated');
+  ('00000000-0000-0000-0000-00000000a2a2', 'outsider@test.dev',   'authenticated', 'authenticated'),
+  ('00000000-0000-0000-0000-00000000a3a3', 'viewerstaff@test.dev','authenticated', 'authenticated');
 
 insert into organizations (id, type, name, created_by) values
   ('00000000-0000-0000-0000-0000000000b1', 'business', 'Tenant Co', '00000000-0000-0000-0000-00000000a2a2');
 
--- adding to admins should sync into platform_staff via trigger
-insert into admins (email, is_super, added_by, added_at) values
-  ('staffuser@test.dev', false, 'seed', now());
+-- adding to admins should sync into platform_staff via trigger. staffuser is an
+-- EDITOR (break-glass OPEN now requires editor/super — a privilege-expanding
+-- action). viewerstaff is a read-only VIEWER admin: platform staff for the
+-- directory, but must NOT be able to open break-glass.
+insert into admins (email, is_super, role, added_by, added_at) values
+  ('staffuser@test.dev',   false, 'editor', 'seed', now()),
+  ('viewerstaff@test.dev', false, 'viewer', 'seed', now());
 
 select is(
   (select count(*)::int from platform_staff ps join auth.users u on u.id = ps.user_id
@@ -33,7 +38,17 @@ select ok(not is_platform_staff(),   'a non-admin email is NOT platform staff');
 select throws_ok($$ select open_break_glass('00000000-0000-0000-0000-0000000000b1','snooping') $$,
   '42501', NULL, 'a non-staff user cannot open break-glass');
 
--- ── open break-glass (as staff) ─────────────────────────────────────────────
+-- ── a VIEWER admin is read-only: staff for the directory, but cannot OPEN ────
+-- break-glass (the privilege-expanding action is editor/super only). Regression
+-- guard for [stress:staff]: pre-fix a viewer could open a window and read any
+-- tenant's full books.
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-00000000a3a3","email":"viewerstaff@test.dev","role":"authenticated"}';
+select ok(is_platform_staff(),         'a viewer admin IS platform staff (sees the directory)');
+select ok(not is_admin_editor(),       'a viewer admin is NOT an editor');
+select throws_ok($$ select open_break_glass('00000000-0000-0000-0000-0000000000b1','viewer peeking') $$,
+  '42501', NULL, 'a VIEWER admin cannot open break-glass (editor/super only)');
+
+-- ── open break-glass (as an EDITOR staff member) ────────────────────────────
 set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-00000000a1a1","email":"staffuser@test.dev","role":"authenticated"}';
 select throws_ok($$ select open_break_glass('00000000-0000-0000-0000-0000000000b1','') $$,
   '22023', NULL, 'a reason is required to open break-glass');
@@ -57,7 +72,9 @@ select ok(staff_can_access_org('00000000-0000-0000-0000-0000000000b1'), 'access 
 select is((select closed_at is not null from close_break_glass((select id from _g))), true, 'close sets closed_at');
 select ok(not staff_can_access_org('00000000-0000-0000-0000-0000000000b1'), 'no access after close');
 select is(
-  (select count(*)::int from admin_audit where action = 'break_glass.close'),
+  (select count(*)::int from admin_audit
+     where action = 'break_glass.close'
+       and payload->>'grant_id' = (select id::text from _g)),
   1, 'closing break-glass is audited');
 
 select * from finish();

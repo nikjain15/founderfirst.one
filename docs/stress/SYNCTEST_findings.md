@@ -97,18 +97,22 @@ the `DEFAULT 4000` (so 3-arg calls unambiguously hit the 3-arg fn) or rename the
 (`commit_import_batch_chunked`). That 4-arg body also still has the old csv-only branch + no
 dedup, so it must get the F0/F1 fix before anything routes through it.
 
-### 🚨 INTEGRATOR: `commit_import_batch` is being edited by ≥3 parallel sessions
-This function is a collision hotspot. Known concurrent changes:
-- **This PR (#142):** adds the qbo/xero branch (F0) + `ext:` idempotency key (F1) to the 3-arg fn.
-- **OBTEST (PR #135):** rewrites the same 3-arg fn (opening-balance silent-drop fix, migration
-  `20260630160000`) — a plain `create or replace` would **clobber my F0/F1 changes** (or mine
-  clobbers theirs), depending on apply order.
-- **A parallel session:** added the 4-arg `p_limit DEFAULT 4000` overload (the PGRST203 source).
+### ✅ RESOLVED: `commit_import_batch` overload reconciled + PGRST203 fixed
+`commit_import_batch` was a collision hotspot across ≥3 sessions:
+- **This PR (#142):** F0 qbo/xero branch + F1 `ext:` dedup key.
+- **A parallel session:** 4-arg `p_limit DEFAULT 4000` overload (chunked commit + per-row
+  error isolation) — but missing F0/F1, and its DEFAULT caused PGRST203 ambiguity.
+- **OBTEST (PR #135):** an opening-balance fix to the same function.
 
-These must be **merged into one `commit_import_batch` body**, not applied independently
-(last-writer-wins silently drops a fix). I deployed my 3-arg change after verifying the live
-body was the clean 075000 version (no clobber at deploy time), but the next session to deploy
-its own copy will regress mine unless reconciled.
+**Reconciled in migration `20260630171500_commit_import_batch_reconcile.sql` (DEPLOYED):**
+- The 4-arg is now the SINGLE implementation = the parallel session's chunking + per-row
+  isolation **merged with** F0 + F1.
+- The DEFAULT is removed and the 3-arg is a thin wrapper (`… , 2147483647`) → a 3-arg call is
+  unambiguous. **PGRST203 gone** (verified: direct 3-arg RPC now returns a normal error).
+- Verified live (rolled back): two QBO batches commit; a re-pulled txn posts **once** (3
+  entries not 4); books tie.
+- ⚠ **OBTEST PR #135** must merge its opening-balance preference INTO this one body (the
+  opening branch here is the parallel session's version, kept verbatim) — not as a new overload.
 
 ## Hardening notes (not fixed — flagged)
 

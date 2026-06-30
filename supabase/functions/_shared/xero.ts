@@ -118,11 +118,16 @@ export function toMinor(n: number | string | undefined, factor = 100): number {
   return Math.round((Number.isFinite(v) ? v : 0) * factor);
 }
 
-/** Xero's "/Date(1612137600000+0000)/" or ISO → yyyy-mm-dd. */
+/** Xero's "/Date(1612137600000+0000)/" or ISO → yyyy-mm-dd, or null if unparseable.
+ *  Guards against out-of-range epochs (a malformed "/Date(9999…)/" otherwise makes
+ *  `new Date(...).toISOString()` THROW "Invalid time value", which would abort the
+ *  whole transaction pull instead of just skipping the one bad row). */
 export function xeroDate(s: string | undefined): string | null {
   if (!s) return null;
-  const m = String(s).match(/\/Date\((\d+)/);
-  if (m) return new Date(Number(m[1])).toISOString().slice(0, 10);
-  const t = Date.parse(s);
-  return Number.isNaN(t) ? null : new Date(t).toISOString().slice(0, 10);
+  const m = String(s).match(/\/Date\((-?\d+)/);
+  const t = m ? Number(m[1]) : Date.parse(s);
+  if (!Number.isFinite(t)) return null;
+  const d = new Date(t);
+  if (Number.isNaN(d.getTime())) return null;       // out-of-range epoch → skip, don't throw
+  return d.toISOString().slice(0, 10);
 }

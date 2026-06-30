@@ -61,7 +61,47 @@ is real). The fix in this PR makes it status-only (`xero_api_failed Accounts: 40
 - **F5 (P4) — stale scope copy.** xero-import referenced the old `accounting.transactions`
   scope; the app uses `accounting.banktransactions.read`. → corrected.
 
+## Scale + messy-data assault (30-Jun, "think crazy")
+
+Drove the real ledger posting path (`post_journal_entry`, what the fixed commit loops over)
+on prod inside rolled-back transactions — a 100-year-old company with filthy data.
+
+- **40,000 transactions spanning a full 100 years** (1925→2025), with duplicates, null dates,
+  zero amounts, unicode/emoji/RTL memos, self-referencing accounts, and ¥900-trillion "huge"
+  amounts: **books tied to the cent** (Σdebits == Σcredits = 3,600,019,038,174,123),
+  **1,200 monthly periods** auto-created with no failure, 91 broken rows skipped gracefully,
+  duplicates collapsed by the new `ext:` key, **no overflow**, ~1.04 ms/row (linear, no
+  degradation). 5k calibration: same ties, 165 periods, 1.79 ms/row.
+- **Pathological single values:** year 9999, year 0001, `bigint`-max amount, 100k-char memo,
+  emoji/RTL, and a **SQL-injection memo** (`');drop table journal_entries;--`) all post or
+  fail per-row gracefully — **the books stay balanced**, injection is neutralised
+  (parameterised). The invalid `1900-02-29` leap date is caught per-row, not a crash.
+- **Connector transform fuzz** (`supabase/functions/_shared/connectors_test.ts`, 4 Deno tests,
+  28 assertions): garbage into `toMinor`/`xeroDate`/`minorFactor`/account-mapping never throws
+  or returns NaN.
+
+### F8 (P3) — malformed Xero `/Date(…)/` crashed the whole pull → FIXED
+The fuzz found that `xeroDate("/Date(99999999999999999999)/")` **threw** "Invalid time value"
+(`new Date(hugeEpoch).toISOString()`), and since `xeroDate` runs inside the transaction loop,
+**one bad date from Xero aborted the entire transaction import**. Fixed: out-of-range/garbage
+epochs now return `null` (→ the single row is skipped, not the whole pull). Deployed.
+
+### ⚠ NEW prod finding (P1, parallel-session collision) — `commit_import_batch` overload is ambiguous
+A parallel session added `commit_import_batch(p_actor, p_org, p_batch, p_limit integer DEFAULT
+4000)`. Because `p_limit` has a **default**, a 3-arg call matches **both** overloads →
+PostgREST returns **`PGRST203` "Could not choose the best candidate"** (HTTP 300) — reproduced
+live for **both** anon+JWT and service-role direct RPC. The production `imports` edge fn (via
+supabase-js) currently resolves it consistently (3/3), so imports aren't *down* — but this is a
+fragile latent break on a core path. **Recommend** the overload's owner/integrator either drop
+the `DEFAULT 4000` (so 3-arg calls unambiguously hit the 3-arg fn) or rename the 4-arg
+(`commit_import_batch_chunked`). That 4-arg body also still has the old csv-only branch + no
+dedup, so it must get the F0/F1 fix before anything routes through it.
+
 ## Hardening notes (not fixed — flagged)
+
+- **Unbounded `amount_minor`.** A near-`bigint`-max value posts and can overflow `bigint`
+  aggregations in reports (trial balance / account totals). Wildly unrealistic ($92
+  quadrillion), but a sane upper-bound validation in `post_journal_entry` would harden it.
 
 - **F6 (P4) — OAuth `state` never expires and is not cleared on the error path.** Verified
   live: after a failed token exchange the connection keeps `status='error'` *and* its

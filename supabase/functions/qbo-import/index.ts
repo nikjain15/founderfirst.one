@@ -10,7 +10,9 @@
  * skips the rest. Validate against a sandbox company before GA.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { refreshToken, qboQuery, mapQboAccountType, toMinor } from "../_shared/qbo.ts";
+import { refreshToken, qboQuery, mapQboAccountType, toMinor, minorFactor } from "../_shared/qbo.ts";
+
+const PURCHASE_CAP = 500, DEPOSIT_CAP = 500; // QBO maxresults per query (see toward GA: paginate)
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -67,6 +69,23 @@ Deno.serve(async (req) => {
   }
   const realm = conn.realm_id as string;
 
+  // Scale amounts by the org's home-currency exponent (JPY/KRW=×1, most=×100).
+  const { data: oas } = await svc.from("org_accounting_settings").select("home_currency").eq("org_id", orgId).maybeSingle();
+  const factor = minorFactor((oas as { home_currency?: string } | null)?.home_currency ?? "USD");
+
+  // Dedup: provider txns already imported (committed) for this org must not re-post
+  // on a second pull. The DB also enforces this via a stable idempotency key, but we
+  // pre-mark known txns 'skipped' so the preview is honest. Tolerate a pre-migration
+  // schema (external_id absent) by degrading to no pre-skip — the DB key still guards.
+  const seen = new Set<string>();
+  try {
+    const { data: prior } = await svc.from("import_rows")
+      .select("external_id, import_batches!inner(org_id, source, status)")
+      .eq("import_batches.org_id", orgId).eq("import_batches.source", "qbo")
+      .eq("import_batches.status", "committed").not("external_id", "is", null);
+    for (const r of (prior ?? []) as { external_id: string }[]) if (r.external_id) seen.add(r.external_id);
+  } catch { /* external_id column not yet deployed — DB idempotency key still protects */ }
+
   try {
     // 1. chart of accounts → upsert; map QBO account Id → our ledger id
     const acctResp = await qboQuery(realm, "select * from Account maxresults 1000", access);
@@ -85,23 +104,29 @@ Deno.serve(async (req) => {
     }
 
     // 2. transactions: Purchases (out) + Deposits (in)
-    const purchases: QboTxn[] = (await qboQuery(realm, "select * from Purchase maxresults 500", access))?.QueryResponse?.Purchase ?? [];
-    const deposits: QboTxn[] = (await qboQuery(realm, "select * from Deposit maxresults 500", access))?.QueryResponse?.Deposit ?? [];
+    const purchases: QboTxn[] = (await qboQuery(realm, `select * from Purchase maxresults ${PURCHASE_CAP}`, access))?.QueryResponse?.Purchase ?? [];
+    const deposits: QboTxn[] = (await qboQuery(realm, `select * from Deposit maxresults ${DEPOSIT_CAP}`, access))?.QueryResponse?.Deposit ?? [];
+    const truncated = purchases.length >= PURCHASE_CAP || deposits.length >= DEPOSIT_CAP;
     for (const p of purchases) { const b = p.AccountRef?.value; if (b) bankCount.set(b, (bankCount.get(b) ?? 0) + 1); }
     for (const d of deposits) { const b = d.DepositToAccountRef?.value; if (b) bankCount.set(b, (bankCount.get(b) ?? 0) + 1); }
     const primaryBankQboId = [...bankCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
     const bankId = primaryBankQboId ? qboIdToOurId.get(primaryBankQboId) : undefined;
 
     const rows: Record<string, unknown>[] = [];
-    let n = 0;
+    let n = 0, skippedDup = 0;
     const stage = (t: QboTxn, sign: 1 | -1, bankQboId: string | undefined, contraQboId: string | undefined, desc: string) => {
       const onPrimary = bankQboId === primaryBankQboId;
       const contraId = contraQboId ? qboIdToOurId.get(contraQboId) : undefined;
+      const externalId = `${t.Id ?? ""}`;
+      const isDup = externalId !== "" && seen.has(externalId);
+      if (isDup) skippedDup++;
       rows.push({
-        row_num: ++n, raw: t as unknown as Record<string, unknown>,
+        row_num: ++n, raw: t as unknown as Record<string, unknown>, external_id: externalId || null,
         txn_date: t.TxnDate ?? null, description: desc,
-        amount_minor: sign * toMinor(t.TotalAmt), account_id: contraId ?? null,
-        status: onPrimary && contraId && t.TxnDate ? "ready" : "skipped",
+        amount_minor: sign * toMinor(t.TotalAmt, factor), account_id: contraId ?? null,
+        // already-imported provider txns are skipped (not re-posted); the DB stable
+        // idempotency key is the authoritative guard if two batches are committed.
+        status: isDup ? "skipped" : (onPrimary && contraId && t.TxnDate ? "ready" : "skipped"),
       });
     };
     for (const p of purchases)
@@ -123,7 +148,11 @@ Deno.serve(async (req) => {
     return json({
       batch_id: batchId, accounts: upserted, rows: rows.length,
       ready: rows.filter((r) => r.status === "ready").length,
-      note: "Accounts imported. Transactions on the primary bank account are staged for preview; review and commit in the Import tab.",
+      skipped_duplicates: skippedDup,
+      truncated,
+      note: "Accounts imported. Transactions on the primary bank account are staged for preview; review and commit in the Import tab."
+        + (skippedDup > 0 ? ` ${skippedDup} already-imported transaction(s) were skipped.` : "")
+        + (truncated ? " Note: this pull hit the per-query cap, so older transactions may not be included yet." : ""),
     }, 200);
   } catch (e) {
     return json({ error: "import_failed", detail: (e as Error).message }, 502);

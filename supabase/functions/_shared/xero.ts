@@ -82,7 +82,9 @@ export async function xeroGet(path: string, access_token: string, tenantId: stri
   const res = await fetch(`${XERO_API}/${path}`, {
     headers: { Authorization: `Bearer ${access_token}`, "Xero-tenant-id": tenantId, Accept: "application/json" },
   });
-  if (!res.ok) throw new Error(`xero_api_failed ${path}: ${res.status} ${await res.text()}`);
+  // Status only — never the provider body (it surfaces to the client `detail`/`note`
+  // and persists to last_error). Keep the endpoint path (no secrets) for triage.
+  if (!res.ok) throw new Error(`xero_api_failed ${path}: ${res.status}`);
   return await res.json();
 }
 
@@ -98,10 +100,22 @@ export function mapXeroAccountType(klass: string): "asset" | "liability" | "equi
   }
 }
 
-/** Money string ("123.45") → integer minor units. */
-export function toMinor(n: number | string | undefined): number {
+// Minor-unit scale by ISO-4217 exponent. JPY/KRW have 0 decimals (×1), most 2
+// (×100), a few Gulf currencies 3 (×1000). A hardcoded ×100 inflated 0-decimal
+// currencies 100×. Mirrors _shared/qbo.ts.
+const ZERO_DECIMAL = new Set(["BIF","CLP","DJF","GNF","ISK","JPY","KMF","KRW","PYG","RWF","UGX","VND","VUV","XAF","XOF","XPF"]);
+const THREE_DECIMAL = new Set(["BHD","IQD","JOD","KWD","LYD","OMR","TND"]);
+export function minorFactor(currency: string | undefined): number {
+  const c = (currency ?? "USD").toUpperCase();
+  if (ZERO_DECIMAL.has(c)) return 1;
+  if (THREE_DECIMAL.has(c)) return 1000;
+  return 100;
+}
+
+/** Money string ("123.45") → integer minor units, scaled by the currency factor. */
+export function toMinor(n: number | string | undefined, factor = 100): number {
   const v = typeof n === "string" ? Number(n) : (n ?? 0);
-  return Math.round((Number.isFinite(v) ? v : 0) * 100);
+  return Math.round((Number.isFinite(v) ? v : 0) * factor);
 }
 
 /** Xero's "/Date(1612137600000+0000)/" or ISO → yyyy-mm-dd. */

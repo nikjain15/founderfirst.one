@@ -53,7 +53,10 @@ export async function refreshToken(refresh_token: string): Promise<QboTokens> {
 export async function qboQuery(realmId: string, query: string, access_token: string): Promise<any> {
   const url = `${API_BASE()}/v3/company/${realmId}/query?query=${encodeURIComponent(query)}&minorversion=70`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${access_token}`, Accept: "application/json" } });
-  if (!res.ok) throw new Error(`qbo_query_failed: ${res.status} ${await res.text()}`);
+  // Status only — never the provider body. The response can echo the request
+  // (incl. the bearer token in some gateways) and these messages surface to the
+  // client (`detail`) and persist to external_connections.last_error.
+  if (!res.ok) throw new Error(`qbo_query_failed: ${res.status}`);
   return await res.json();
 }
 
@@ -68,7 +71,20 @@ export function mapQboAccountType(classification: string): "asset" | "liability"
   }
 }
 
-export function toMinor(n: number | string | undefined): number {
+// Minor-unit scale by ISO-4217 exponent. The ledger stores amount_minor per the
+// home currency's smallest unit — JPY/KRW have 0 decimals (×1), most have 2 (×100),
+// a few Gulf currencies 3 (×1000). A hardcoded ×100 inflated JPY 100× (the entry
+// still *balances* per-currency, but every figure is 100× too large).
+const ZERO_DECIMAL = new Set(["BIF","CLP","DJF","GNF","ISK","JPY","KMF","KRW","PYG","RWF","UGX","VND","VUV","XAF","XOF","XPF"]);
+const THREE_DECIMAL = new Set(["BHD","IQD","JOD","KWD","LYD","OMR","TND"]);
+export function minorFactor(currency: string | undefined): number {
+  const c = (currency ?? "USD").toUpperCase();
+  if (ZERO_DECIMAL.has(c)) return 1;
+  if (THREE_DECIMAL.has(c)) return 1000;
+  return 100;
+}
+
+export function toMinor(n: number | string | undefined, factor = 100): number {
   const v = typeof n === "string" ? Number(n) : (n ?? 0);
-  return Math.round((Number.isFinite(v) ? v : 0) * 100);
+  return Math.round((Number.isFinite(v) ? v : 0) * factor);
 }

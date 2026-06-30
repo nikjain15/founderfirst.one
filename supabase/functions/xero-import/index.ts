@@ -10,7 +10,9 @@
  * best-effort first pass — validate against a real sandbox pull before GA.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { refreshToken, xeroGet, mapXeroAccountType, toMinor, xeroDate } from "../_shared/xero.ts";
+import { refreshToken, xeroGet, mapXeroAccountType, toMinor, minorFactor, xeroDate } from "../_shared/xero.ts";
+
+const PAGE_CAP = 20; // BankTransactions pages pulled per import (×100 = ~2000 txns)
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -72,6 +74,22 @@ Deno.serve(async (req) => {
   }
   const tenant = conn.realm_id as string;
 
+  // Scale amounts by the org's home-currency exponent (JPY/KRW=×1, most=×100).
+  const { data: oas } = await svc.from("org_accounting_settings").select("home_currency").eq("org_id", orgId).maybeSingle();
+  const factor = minorFactor((oas as { home_currency?: string } | null)?.home_currency ?? "USD");
+
+  // Dedup against already-committed Xero txns for this org (UX pre-skip; the DB
+  // stable idempotency key is the authoritative double-post guard). Degrade
+  // gracefully if external_id isn't deployed yet.
+  const seen = new Set<string>();
+  try {
+    const { data: prior } = await svc.from("import_rows")
+      .select("external_id, import_batches!inner(org_id, source, status)")
+      .eq("import_batches.org_id", orgId).eq("import_batches.source", "xero")
+      .eq("import_batches.status", "committed").not("external_id", "is", null);
+    for (const r of (prior ?? []) as { external_id: string }[]) if (r.external_id) seen.add(r.external_id);
+  } catch { /* external_id column not yet deployed — DB idempotency key still protects */ }
+
   try {
     // 1. chart of accounts → upsert; build code → ledger account id map
     const acctResp = await xeroGet("Accounts", access, tenant) as { Accounts?: XeroAccount[] };
@@ -93,10 +111,11 @@ Deno.serve(async (req) => {
     //    Gracefully skip if the app lacks the accounting.transactions scope — the
     //    CoA import (above) still succeeds; transactions need that scope enabled.
     const rows: Record<string, unknown>[] = [];
-    let rowNum = 0;
+    let rowNum = 0, skippedDup = 0;
     let txnNote = "";
+    let truncated = false;
     try {
-      for (let pageNum = 1; pageNum <= 20; pageNum++) {
+      for (let pageNum = 1; pageNum <= PAGE_CAP; pageNum++) {
         const txnResp = await xeroGet(`BankTransactions?page=${pageNum}`, access, tenant) as { BankTransactions?: XeroBankTxn[] };
         const txns = txnResp.BankTransactions ?? [];
         if (txns.length === 0) break;
@@ -104,20 +123,26 @@ Deno.serve(async (req) => {
           const sign = (t.Type ?? "").toUpperCase().startsWith("RECEIVE") ? 1 : -1; // RECEIVE = into bank
           const contraCode = t.LineItems?.[0]?.AccountCode ?? null;
           const contraId = contraCode ? codeToId.get(contraCode) : undefined;
+          const externalId = `${t.BankTransactionID ?? ""}`;
+          const isDup = externalId !== "" && seen.has(externalId);
+          if (isDup) skippedDup++;
           rows.push({
             row_num: ++rowNum,
-            raw: t as unknown as Record<string, unknown>,
+            raw: t as unknown as Record<string, unknown>, external_id: externalId || null,
             txn_date: xeroDate(t.Date),
             description: t.Contact?.Name ?? t.Reference ?? t.LineItems?.[0]?.Description ?? "Xero transaction",
-            amount_minor: sign * toMinor(t.Total),
+            amount_minor: sign * toMinor(t.Total, factor),
             account_id: contraId ?? null,
-            status: contraId && t.Date && t.Total ? "ready" : "error",
+            status: isDup ? "skipped" : (contraId && t.Date && t.Total ? "ready" : "error"),
           });
         }
         if (txns.length < 100) break;
+        if (pageNum === PAGE_CAP) truncated = true; // more pages may remain, unpulled
       }
     } catch (e) {
-      txnNote = ` Transactions skipped (${(e as Error).message.includes("403") ? "accounting.transactions scope not enabled on the Xero app" : (e as Error).message}).`;
+      // The scope this app uses is accounting.banktransactions.read; a 403 means it
+      // isn't enabled on the Xero app. Never echo the provider body (already status-only).
+      txnNote = ` Transactions skipped (${(e as Error).message.includes("403") ? "accounting.banktransactions.read scope not enabled on the Xero app" : (e as Error).message}).`;
     }
 
     const bankId = bankCode ? codeToId.get(bankCode) : undefined;
@@ -136,8 +161,12 @@ Deno.serve(async (req) => {
     return json({
       batch_id: batchId, accounts: upserted, rows: rows.length,
       ready: rows.filter((r) => r.status === "ready").length,
+      skipped_duplicates: skippedDup,
+      truncated,
       note: `Imported ${upserted} accounts.` +
-        (rows.length ? ` ${rows.length} transactions staged — review and commit in the Import tab.` : txnNote),
+        (rows.length ? ` ${rows.length} transactions staged — review and commit in the Import tab.` : txnNote) +
+        (skippedDup > 0 ? ` ${skippedDup} already-imported transaction(s) were skipped.` : "") +
+        (truncated ? " Note: more history remains beyond this pull — run it again to continue." : ""),
     }, 200);
   } catch (e) {
     return json({ error: "import_failed", detail: (e as Error).message }, 502);

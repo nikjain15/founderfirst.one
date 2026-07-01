@@ -3,6 +3,8 @@
 **One brand. One voice. One rhythm.** This is how every FounderFirst surface speaks — marketing site, Penny in the product, the chatbot on founderfirst.one, the support bot, the Discord bot, and any future surface.
 
 > **Building a blog post?** This file governs the *words*; [apps/web/BLOG_PRINCIPLES.md](apps/web/BLOG_PRINCIPLES.md) governs the *shape* (structure, hero visual, layout, SEO/GEO, publishing). Read both.
+>
+> **Producing a podcast episode?** This file still governs the words; [apps/web/PODCAST_PRINCIPLES.md](apps/web/PODCAST_PRINCIPLES.md) adds the podcast layer (two-host script rules, guest persona from Signals, ElevenLabs voices/settings, the player hero, publishing). Read both.
 
 ---
 

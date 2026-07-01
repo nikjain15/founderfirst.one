@@ -80,6 +80,8 @@ The mission is simple: give business owners the back-office support that used to
 
 **Blog** — every blog post follows [apps/web/BLOG_PRINCIPLES.md](apps/web/BLOG_PRINCIPLES.md): DB-first publishing, typed content blocks, a unique on-topic hero per post, uniform `/blog` layout, [VOICE.md](VOICE.md) tone, and the SEO/GEO + ship checklist. Read it before adding or editing a post.
 
+**Podcast** — *Penny by FounderFirst* episodes follow [apps/web/PODCAST_PRINCIPLES.md](apps/web/PODCAST_PRINCIPLES.md): the one playbook for voice/script (two hosts, guest persona from Signals, educational-first — the guest never sells), audio (ElevenLabs v3 — Penny = Matilda, guest = George), website (the `Podcast`-tagged post with the `PennyPodcast` inline-player hero), and the end-to-end publish flow. Read it before producing an episode.
+
 ---
 
 *© 2026 FounderFirst. All rights reserved.*

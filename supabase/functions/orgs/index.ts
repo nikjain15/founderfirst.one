@@ -6,9 +6,12 @@
  * Backbone tables are RLS-locked against client writes (no_client_write), so org
  * creation must go through this service-role function. It:
  *   1. verifies the caller's JWT → auth.uid()
- *   2. inserts organizations(type, name, created_by = caller)
- *   3. inserts the caller's membership (owner for a business, firm_admin for a firm)
- *   4. inserts a pilot_free subscription (entitlement stub — §6b)
+ *   2. validates + sanitizes the name, validates the type
+ *   3. calls create_org_atomic(user, type, name) — ONE transaction that inserts the
+ *      org + the caller's membership (owner|firm_admin) + a pilot_free subscription,
+ *      with the settings trigger firing on the org insert. All-or-nothing, so a
+ *      partial failure can never leave an orphan org / membership-less / entitlement-
+ *      less org behind (it also caps per-user org count and dedupes double-submits).
  *
  * The membership is what grants the caller access (RLS has_membership), so this is
  * the only way a user gets into a new org — consistent with "accepting/creating is
@@ -29,6 +32,18 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
+// Strip control / zero-width / bidi-override chars so a name can't smuggle invisible
+// or direction-flipping characters into the org switcher (display spoofing): C0/C1
+// controls, zero-width + bidi marks, embeddings/overrides, isolates, and the BOM.
+// Visible content — including emoji — is preserved. Then collapse whitespace + trim.
+const UNSAFE_NAME_CHARS = new RegExp(
+  "[\\u0000-\\u001F\\u007F-\\u009F\\u200B-\\u200F\\u202A-\\u202E\\u2066-\\u2069\\uFEFF]",
+  "g",
+);
+function sanitizeOrgName(raw: string): string {
+  return raw.replace(UNSAFE_NAME_CHARS, "").replace(/\s+/g, " ").trim();
+}
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -47,28 +62,28 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => ({}));
   const type = body?.type;
-  const name = String(body?.name ?? "").trim();
+  // Reject non-string names outright — String(...) used to coerce {}, [], numbers
+  // into junk org names ("[object Object]", "1,2,3", "12345") that all passed.
+  if (typeof body?.name !== "string") return json({ error: "bad_name" }, 400);
+  const name = sanitizeOrgName(body.name);
   if (type !== "business" && type !== "firm") return json({ error: "bad_type" }, 400);
   if (name.length < 1 || name.length > 120) return json({ error: "bad_name" }, 400);
 
-  const { data: org, error: orgErr } = await svc
-    .from("organizations")
-    .insert({ type, name, created_by: user.id })
+  // One transaction: org + membership + subscription (+ settings trigger). Atomic,
+  // capped, and double-submit-deduped — see 20260630130000_org_create_atomic.sql.
+  const { data: org, error: rpcErr } = await svc
+    .rpc("create_org_atomic", { p_user: user.id, p_type: type, p_name: name })
     .select("id,name,type")
     .single();
-  if (orgErr || !org) return json({ error: "create_failed", detail: orgErr?.message }, 400);
 
-  const role = type === "firm" ? "firm_admin" : "owner";
-  const { error: memErr } = await svc
-    .from("memberships")
-    .insert({ user_id: user.id, org_id: org.id, role, status: "active" });
-  if (memErr) {
-    // best-effort rollback so a retry isn't blocked by an orphan org
-    await svc.from("organizations").delete().eq("id", org.id);
-    return json({ error: "membership_failed", detail: memErr.message }, 400);
+  if (rpcErr || !org) {
+    const msg = rpcErr?.message ?? "";
+    if (msg.includes("org_limit_reached")) return json({ error: "org_limit_reached" }, 429);
+    if (msg.includes("bad_name")) return json({ error: "bad_name" }, 400);
+    if (msg.includes("bad_type")) return json({ error: "bad_type" }, 400);
+    if (msg.includes("unauthorized")) return json({ error: "unauthorized" }, 401);
+    return json({ error: "create_failed", detail: msg }, 400);
   }
-
-  await svc.from("subscriptions").insert({ billable_org_id: org.id, plan: "pilot_free" });
 
   return json({ org }, 201);
 });

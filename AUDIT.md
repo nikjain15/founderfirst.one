@@ -204,9 +204,9 @@ integrator merges in waves. Baseline = `main` after pre-onboarding #1–#15.
 | # | Feature | P0 | P1 | Headline finding | Status | PR |
 |---|---|----|----|---|---|---|
 | 1 | Tenant isolation / RLS / IDOR | 1 | 1 | 22 `p_actor`-first SECURITY DEFINER RPCs were EXECUTE-granted to anon+authenticated → forge `p_actor`, write any tenant. Revoked to service_role. | 🟢 | [#138](../../pull/138) |
-| 2 | Journal entries & reversals | 1 | 0 | `reverse_journal_entry` lock-free TOCTOU → concurrent reversals over-cancel balances; **TB still ties = silent**. 14 API calls → 10 reversals live. `FOR UPDATE` + unique index. | 🔵 → #156 | [#139](../../pull/139) |
+| 2 | Journal entries & reversals | 1 | 0 | `reverse_journal_entry` lock-free TOCTOU → concurrent reversals over-cancel balances; **TB still ties = silent**. 14 API calls → 10 reversals live. `FOR UPDATE` + unique index. | 🟢 #156 | [#139](../../pull/139) |
 | 3 | Financial reports tie-out | 1 | 0 | `useEntries` had no pagination + prod `max_rows=1000` → orgs >1000 entries silently dropped oldest; reports tied but WRONG. `.range()` paging. | 🟢 | [#129](../../pull/129) |
-| 4 | Accounting periods | 1 | 2 | close-vs-post TOCTOU lands entry in closed period (`FOR SHARE`); approve-into-closed back-door; reverse bricked after close. | 🔵 → #156 | [#131](../../pull/131) |
+| 4 | Accounting periods | 1 | 2 | close-vs-post TOCTOU lands entry in closed period (`FOR SHARE`); approve-into-closed back-door; reverse bricked after close. | 🟢 #156 | [#131](../../pull/131) |
 | 5 | Categorization + CPA feedback | 2 | 1 | double-reversal + double-categorize races; LIKE-wildcard rule poisoning (`a%z`→"alcatraz"@100%, fixed w/ ESCAPE). | 🟢 | [#132](../../pull/132) |
 | 6 | CSV / bank import | 0 | 1 | one impossible calendar date (`02/30`) aborts the whole batch — 0 of N rows stage. Calendar validation + delimiter auto-detect. | 🔵 partial | [#143](../../pull/143) |
 | 7 | Opening balances import | 0 | 1 | opening-balance row missing an account silently folds into the OBE plug → "balanced" but wrong, success shown. | 🟢 | [#135](../../pull/135) |
@@ -220,7 +220,7 @@ integrator merges in waves. Baseline = `main` after pre-onboarding #1–#15.
 | 15 | Platform-staff / break-glass | 0 | 1 | `open_break_glass` not gated on editor tier. Gated + audit-logged. | 🟢 | [#140](../../pull/140) |
 
 **Totals:** 8 P0, ~19 P1 confirmed and fixed. 12/15 fully closed (live + on `main`);
-2 (#131, #139) live-on-prod captured onto `main` by **[#156](../../pull/156)**; 1 (#143)
+2 (#131, #139) captured onto `main` + prod-reconciled by **[#156](../../pull/156)**; 1 (#143)
 partially landed.
 
 ### Cross-cutting themes (graduated into LEARNINGS.md)

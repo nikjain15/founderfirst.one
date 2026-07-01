@@ -115,9 +115,9 @@ approval. That is the point.
 | # | Feature | TAG | Key files | Wave | Status | PR |
 |---|---|---|---|---|---|---|
 | 1 | Tenant isolation / RLS / IDOR | `ISOTEST` | org/ActiveOrgProvider, all supabase/functions, phase0 backbone | 1 | 🟢 deployed + captured on main (`20260701000000`) via #151 | [#138](../../pull/138) |
-| 2 | Journal entries & reversals | `JETEST` | ledger/{Ledger,api,money}, ledger-entries, ledger-reverse, phase2 writepath | 1 | 🔵 **P0 fix live on prod** (combined w/ #131 wave) but NOT captured on main — merge to close drift; unique index blocked on `[JETEST]/[CATTEST]` dup purge | [#139](../../pull/139) |
+| 2 | Journal entries & reversals | `JETEST` | ledger/{Ledger,api,money}, ledger-entries, ledger-reverse, phase2 writepath | 1 | 🟢 captured on main + prod-reconciled via **#156** (`FOR UPDATE` lock + unique index live; `[JETEST]/[CATTEST]` dups purged) | [#139](../../pull/139) |
 | 3 | Financial reports tie-out | `RPTTEST` | ledger/reports.ts, ledger/Ledger.tsx | 1 | 🟢 merged (1000-row truncation fix, `.range()` paging) | [#129](../../pull/129) |
-| 4 | Accounting periods | `PERIODTEST` | ledger/Ledger.tsx, ledger-periods, writepath (close/reopen) | 1 | 🔵 **F1–F3 deployed + verified on prod** but NOT captured on main (no `FOR SHARE` migration in repo) — merge to close drift; F4 resolved by #122 merge | [#131](../../pull/131) |
+| 4 | Accounting periods | `PERIODTEST` | ledger/Ledger.tsx, ledger-periods, writepath (close/reopen) | 1 | 🟢 F1–F3 captured on main + prod-reconciled via **#156** (`FOR SHARE` + F2 guard restored on prod); F4 resolved by #122 | [#131](../../pull/131) |
 | 5 | Categorization + CPA feedback | `CATTEST` | ledger/Categorize, categorize fn, phase4 categorization+uncategorized | 1 | 🟢 merged; prod state captured via #148 reconcile | [#132](../../pull/132) |
 | 6 | CSV / bank-statement import | `CSVTEST` | import/{ImportFlow,csv}, imports fn, phase3 import_batches | 2 | 🔵 F1 (calendar dates) + F2 (orphan batch) landed via #144; **left:** F3 delimiter auto-detect, `safe_to_date` migration, F4 re-import dedup (product decision) | [#143](../../pull/143) |
 | 7 | Opening balances import | `OBTEST` | import/ImportFlow (OpeningBalances), commit_import_batch | 2 | 🟢 deployed via #149 fold + #153 client | [#135](../../pull/135) |
@@ -136,29 +136,27 @@ approval. That is the point.
 
 ## Where we stand — snapshot 1 Jul 2026
 
-**All 15 features tested. 12 of 15 fully closed (fixes live on prod AND captured on `main`).**
-Reconcile wave #148/#149/#151/#153 captured prod drift into repo migrations
-(`20260701200000`–`20260701230000`) and deployed the remaining client fixes.
+**All 15 features tested. 14 of 15 fully closed (fixes live on prod AND captured on `main`).**
+Reconcile wave #148/#149/#151/#153 captured most prod drift; **#156 (2 Jul) closed the
+last two** — #131 (periods) + #139 (journal) are now on `main` AND prod-reconciled
+(`FOR SHARE`/`FOR UPDATE` + F2 guard restored on prod, unique index live, stress dups purged).
 
-### Open work (3 PRs + hygiene)
+### Open work
 
-1. **[#131 periods](../../pull/131) — merge to `main`.** The period-lock fixes (close-vs-post
-   TOCTOU `FOR SHARE`, approve-into-closed, reverse-after-close) are **live on prod** but the
-   migration was never merged — a fresh `db push` from `main` would **regress a P0**.
-   ⚠️ Timestamp collision: its `20260630100000` is now taken by `org_settings_seed` — renumber
-   on rebase.
-2. **[#139 journal](../../pull/139) — merge to `main`.** Same story: the `reverse_journal_entry`
-   `FOR UPDATE` lock is live on prod (deployed combined with the #131 wave) but not in the repo.
-   Its `20260630130000` collides with `account_parent_cycle_guard` — renumber. The
-   defense-in-depth **unique index is NOT deployed** — purge `[JETEST]`/`[CATTEST]` duplicate
-   reversals first (dup scan query in the PR body).
-3. **[#143 csv](../../pull/143) — partial.** F1 (impossible-date) + F2 (orphan draft batch)
+1. **[#143 csv](../../pull/143) — partial.** F1 (impossible-date) + F2 (orphan draft batch)
    already landed on `main` via #144. Still open: **F3** delimiter auto-detect (`;`/tab EU
    exports import nothing), the `safe_to_date` defense-in-depth migration (write-don't-deploy),
    and **F4** re-import double-post dedup — a **product decision** for Nik.
+2. **Migration-ledger drift (new, found during #156).** 4 more prod↔main mismatches unrelated
+   to #131/#139: 3 prod-only migrations with no repo file (`sync_provider_commit_and_dedup`,
+   `commit_import_batch_reconcile`, `sig_empty_item_guard`) + `stress_categorize_concurrency_poisoning`
+   in repo but not marked applied on prod. A fresh clean-DB rebuild would miss the prod-only
+   three. Reconcile before any `db push` from a clean state. (Chip filed.)
+3. **`db-tests` CI gate is red on every branch** (pre-existing): `phase3/phase4` `external_id`
+   drift + `phase5` break-glass seed gaps. It can't catch DB regressions until fixed. (Chip filed.)
 4. **Test-data cleanup.** Every session left an **un-run** `cleanup.sql` + manifest under
-   `docs/stress/<feature>/` — stress fixtures are still in prod. Run them (scoped to exact
-   namespaced ids) once #131/#139 land.
+   `docs/stress/<feature>/` — stress fixtures are still in prod (the [JETEST]/[CATTEST]
+   reversal dups were purged by #156; the rest remain). Run them scoped to exact namespaced ids.
 
 ### Known gaps / not covered
 

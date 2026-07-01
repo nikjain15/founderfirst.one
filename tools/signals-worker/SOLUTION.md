@@ -1,7 +1,7 @@
 # Signals — Solution Design
 
 > Social listening + outreach for FounderFirst. This is the source-of-truth design
-> doc. The **strategy** (the "what/why") lives in `SOCIAL_LISTENING_STRATEGY.md`;
+> doc. The **strategy** (the "what/why") lives in [STRATEGY.md](STRATEGY.md);
 > this doc is the **how**. Update this as decisions change.
 
 **Admin tab:** `Signals` · **Route:** `/admin/signals`

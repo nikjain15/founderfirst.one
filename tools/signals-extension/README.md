@@ -3,7 +3,7 @@
 Internal, unpacked Chrome extension. Select a post's text on **any site**,
 right-click → **Capture to FounderFirst Signals**, and it's sent into
 FounderFirst Signals via the `listening-intake` edge function. Part of the
-Signals system — see `SIGNALS_SOLUTION.md`.
+Signals system — see [../signals-worker/SOLUTION.md](../signals-worker/SOLUTION.md).
 
 ## Load it (unpacked)
 

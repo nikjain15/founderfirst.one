@@ -1,10 +1,10 @@
 # FounderFirst — audit rubric
 
 The concrete sub-attributes each `/audit` dimension checks, tailored to this
-repo (Vite marketing, React admin SPA, VitePress blog, Preact Penny widget,
-Supabase + edge functions, Cloudflare Worker, Fly Discord bridge, Signals
-worker). This is the **what to check**; `.claude/commands/audit.md` is the
-**how to run**. Every finding is `file:line` + why + fix, severitied P0/P1/P2.
+repo (Astro marketing site `apps/web`, React admin SPA, unified authed app
+`apps/app`, Preact Penny widget, Supabase + edge functions, Cloudflare Worker,
+Fly Discord bridge, Signals worker). This is the **what to check**;
+`.claude/commands/audit.md` is the **how to run**. Every finding is `file:line` + why + fix, severitied P0/P1/P2.
 
 **Severity key:** P0 = broken, security hole, data loss, or silent failure ·
 P1 = guideline breach / UX regression / real risk · P2 = polish.

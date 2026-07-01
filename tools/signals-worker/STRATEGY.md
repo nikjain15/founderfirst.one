@@ -196,7 +196,7 @@ GOAL
 Build a near-real-time pipeline that finds founders/small-business owners voicing
 bookkeeping/accounting pain on social media, scores them for intent, surfaces them as
 leads in the admin CRM, and drafts problem-driven, human-approved outreach. Full
-strategy is in SOCIAL_LISTENING_STRATEGY.md (read it).
+strategy is in tools/signals-worker/STRATEGY.md — this file (read it).
 
 WHAT TO BUILD (two intake pipes, one engine)
 1. Automated collection from a usage-based provider (API Direct — pay-per-request,

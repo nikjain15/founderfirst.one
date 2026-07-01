@@ -6,6 +6,7 @@ import { ActiveOrgProvider } from "./org/ActiveOrgProvider";
 import { AppErrorBoundary } from "./lib/ErrorBoundary";
 import Login from "./routes/Login";
 import Home from "./routes/Home";
+import Settings from "./routes/Settings";
 import Accept from "./routes/Accept";
 import StaffHome from "./staff/StaffHome";
 import { useIsPlatformStaff } from "./staff/api";
@@ -103,6 +104,16 @@ function AppRoutes() {
             <RequireAuth>
               <ActiveOrgProvider>
                 <Home />
+              </ActiveOrgProvider>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <RequireAuth>
+              <ActiveOrgProvider>
+                <Settings />
               </ActiveOrgProvider>
             </RequireAuth>
           }

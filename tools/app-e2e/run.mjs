@@ -5,12 +5,12 @@
  * is built with VITE_E2E=1 + a throwaway test account's creds, so it auto-signs-in
  * (apps/app/src/lib/devAuth.ts) with a REAL session. We then drive the real authed
  * UI headlessly and, for the owner's key surfaces (Overview · Categorize · Journal ·
- * Import):
+ * Import — Journal/Import reached via the Books sub-tabs):
  *   1. assert the app renders past the login wall,
- *   2. assert each tab's panel renders (regression net for the screens themselves),
- *   3. assert NO horizontal overflow at mobile width — scrollWidth ≤ clientWidth —
- *      the invariant from apps/admin/RESPONSIVE.md (a clipped column or a fixed-px
- *      grid that overruns 390px fails the gate),
+ *   2. assert each screen's panel renders (regression net for the screens themselves),
+ *   3. assert NO horizontal overflow across the FULL width ladder (320 → 1920,
+ *      apps/admin/RESPONSIVE.md) — a clipped column or a fixed-px grid that overruns
+ *      any device width fails the gate, so "responsive across all devices" is enforced,
  *   4. screenshot every screen at desktop AND mobile for the CI artifact.
  *
  * It deliberately does NOT approve categories or import a file — those mutate the
@@ -31,8 +31,12 @@ import { chromium } from "playwright";
 const ROOT = resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const DIST = resolve(ROOT, "apps/app/dist");      // vite build output (base = /app/)
 const ARTIFACTS = resolve(fileURLToPath(new URL("./artifacts/", import.meta.url)));
-const MOBILE = { width: 390, height: 844 };        // iPhone-class; on the width ladder
+const MOBILE = { width: 390, height: 844 };        // iPhone-class; for the mobile screenshot
 const DESKTOP = { width: 1280, height: 900 };
+// The full width ladder from apps/admin/RESPONSIVE.md — every app screen is
+// asserted overflow-free at each of these, so "responsive across all devices"
+// is an enforced gate, not a one-off manual check.
+const LADDER = [320, 360, 375, 414, 480, 540, 640, 768, 834, 1024, 1280, 1440, 1920];
 
 const MIME = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
@@ -72,33 +76,48 @@ const consoleErrors = [];
 page.on("console", (m) => { if (m.type() === "error") { consoleErrors.push(m.text()); console.log("  [browser error]", m.text()); } });
 page.on("pageerror", (e) => { consoleErrors.push(String(e)); console.log("  [page error]", String(e)); });
 
-// The ledger tabs (apps/app Ledger.tsx) — stable ids we can drive directly.
-// writeOnly tabs (categorize/import) render only for an owner with write access.
-const TABS = [
-  { id: "overview",   label: "Overview",   writeOnly: false },
-  { id: "categorize", label: "Categorize", writeOnly: true  },
-  { id: "journal",    label: "Journal",    writeOnly: false },
-  { id: "import",     label: "Import",     writeOnly: true  },
+// The ledger IA (apps/app Ledger.tsx): 4 main tabs (#ltab-*), with the double-entry
+// mechanics under Books as sub-tabs (#lsub-*). writeOnly screens (categorize/import)
+// render only for an owner with write access. Journal/Import live under Books.
+const SCREENS = [
+  { key: "overview",   label: "Overview",   main: "overview" },
+  { key: "categorize", label: "Categorize", main: "categorize", writeOnly: true },
+  { key: "journal",    label: "Journal",    main: "books", sub: "journal" },
+  { key: "import",     label: "Import",     main: "books", sub: "import", writeOnly: true },
 ];
 
-/** Click a ledger tab by id and wait for its panel; returns false if the tab is absent. */
-async function openTab(id) {
-  const tab = page.locator(`#ltab-${id}`);
-  if (!(await tab.count().catch(() => 0))) return false;
-  await tab.click().catch(() => {});
+/** Open a screen (main tab, then Books sub-tab if any). Returns false if absent. */
+async function openScreen(s) {
+  const mainTab = page.locator(`#ltab-${s.main}`);
+  if (!(await mainTab.count().catch(() => 0))) return false;
+  await mainTab.click().catch(() => {});
   await page.locator("#ledger-panel").waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
-  await page.waitForTimeout(600);
+  if (s.sub) {
+    const subTab = page.locator(`#lsub-${s.sub}`);
+    if (!(await subTab.count().catch(() => 0))) return false;
+    await subTab.click().catch(() => {});
+    await page.waitForTimeout(400);
+  }
+  await page.waitForTimeout(500);
   return true;
 }
 
-/** The RESPONSIVE.md invariant: content must not overflow the viewport horizontally. */
-async function assertNoOverflow(where) {
-  const bad = await page.evaluate(() => {
-    const el = document.documentElement;
-    return el.scrollWidth > el.clientWidth + 1 ? { sw: el.scrollWidth, cw: el.clientWidth } : null;
-  });
-  if (bad) fail(`horizontal overflow at ${where} — scrollWidth ${bad.sw} > clientWidth ${bad.cw}`);
-  else ok(`no horizontal overflow at ${where}`);
+/** The RESPONSIVE.md invariant across the FULL width ladder: the current screen
+ *  must not overflow the viewport horizontally at any device width. One line per
+ *  screen; names the offending widths if any. */
+async function sweepWidths(label) {
+  const bad = [];
+  for (const w of LADDER) {
+    await page.setViewportSize({ width: w, height: 900 });
+    await page.waitForTimeout(120);
+    const over = await page.evaluate(() => {
+      const el = document.documentElement;
+      return el.scrollWidth > el.clientWidth + 1 ? el.scrollWidth : 0;
+    });
+    if (over) bad.push(`${w}px→${over}`);
+  }
+  if (bad.length) fail(`${label}: horizontal overflow at ${bad.join(", ")}`);
+  else ok(`${label}: no overflow across ${LADDER.length} widths (${LADDER[0]}–${LADDER[LADDER.length - 1]}px)`);
 }
 
 try {
@@ -128,28 +147,22 @@ try {
   } else {
     ok("owner ledger loaded (org present)");
 
-    // ── Desktop: each key screen renders ──────────────────────────────────────
-    for (const t of TABS) {
-      const opened = await openTab(t.id);
-      if (opened) {
-        await page.screenshot({ path: join(ARTIFACTS, `desktop-${t.id}.png`), fullPage: true });
-        ok(`${t.label} renders (desktop)`);
-      } else if (t.writeOnly) {
-        fail(`${t.label} tab missing — the E2E account must be an OWNER (write access) to test it`);
-      } else {
-        fail(`${t.label} tab missing unexpectedly`);
+    // ── Each key screen: renders + overflow-free across the FULL width ladder,
+    //    with desktop + mobile screenshots for the CI artifact. ────────────────
+    for (const s of SCREENS) {
+      await page.setViewportSize(DESKTOP);
+      await page.waitForTimeout(200);
+      const opened = await openScreen(s);
+      if (!opened) {
+        fail(`${s.label} missing${s.writeOnly ? " — the E2E account must be an OWNER (write access) to test it" : " unexpectedly"}`);
+        continue;
       }
-    }
-
-    // ── Mobile: same screens, plus the no-overflow invariant ──────────────────
-    await page.setViewportSize(MOBILE);
-    await page.waitForTimeout(400);
-    await assertNoOverflow("mobile / topbar");
-    for (const t of TABS) {
-      if (await openTab(t.id)) {
-        await assertNoOverflow(`mobile / ${t.label}`);
-        await page.screenshot({ path: join(ARTIFACTS, `mobile-${t.id}.png`), fullPage: true });
-      }
+      ok(`${s.label} renders`);
+      await page.screenshot({ path: join(ARTIFACTS, `desktop-${s.key}.png`), fullPage: true });
+      await sweepWidths(s.label);                 // 320 → 1920, every ladder width
+      await page.setViewportSize(MOBILE);
+      await page.waitForTimeout(150);
+      await page.screenshot({ path: join(ARTIFACTS, `mobile-${s.key}.png`), fullPage: true });
     }
   }
   }

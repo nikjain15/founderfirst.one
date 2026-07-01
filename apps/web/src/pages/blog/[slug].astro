@@ -15,6 +15,8 @@ export async function getStaticPaths() {
 }
 const { post } = Astro.props;
 const site = SITE.url;
+const isPodcast = post.tag === "Podcast";
+const episodeAudio = (post.body as any[]).find((b) => b?.audio)?.audio ?? "";
 
 const page: Page = {
   slug: `/blog/${post.slug}`,
@@ -44,12 +46,12 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
     <div class="wrap hero-grid">
       <div class="hero-copy">
         <a class="back" href="/blog/">← All articles</a>
-        <p class="eyebrow brand">{post.tag} · {post.readMins} min read · {fmt(post.date)}</p>
+        <p class="eyebrow brand">{post.tag} · {post.readMins} min {isPodcast ? "listen" : "read"} · {fmt(post.date)}</p>
         <h1>{post.title}</h1>
-        <p class="lede">{post.description}</p>
+        {!isPodcast && <p class="lede">{post.description}</p>}
       </div>
-      <div class="hero-visual">{post.tag === "Podcast"
-        ? <PennyPodcast mins={post.readMins} />
+      <div class="hero-visual">{isPodcast
+        ? <PennyPodcast mins={post.readMins} src={episodeAudio} />
         : (post.hero === "safe" ? <PennySafe /> : <PennyGlance />)}</div>
     </div>
   </header>
@@ -60,6 +62,8 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
         <div class="eyebrow brand">Key takeaways</div>
         <ul>{post.takeaways.map((t) => <li>{t}</li>)}</ul>
       </aside>
+
+      {isPodcast && <p class="episode-summary">{post.description}</p>}
 
       <div class="body">
         {post.body.map((b: any) => (
@@ -74,12 +78,12 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
               <div class="stat"><div class="s-val">{s.value}</div><div class="s-label">{s.label}</div></div>
             ))}</div>
           ) :
-          b.audio ? (
+          b.audio ? (isPodcast ? null : (
             <figure class="audio-card">
               <figcaption class="audio-cap"><span class="audio-mark" aria-hidden="true">▶</span> Listen — read in Penny's voice</figcaption>
               <audio controls preload="none" src={b.audio}></audio>
             </figure>
-          ) :
+          )) :
           b.visual === "glance" ? <figure class="fig"><PennyGlance /><figcaption>What you see when Penny categorizes a transaction.</figcaption></figure> :
           b.visual === "operate-vs-penny" ? (
             <div class="vs">
@@ -127,6 +131,8 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
   .takeaways ul { list-style: none; display: grid; gap: var(--space-2); }
   .takeaways li { position: relative; padding-left: var(--space-6); font-size: var(--fs-data-row); color: var(--ink-2); line-height: 1.5; }
   .takeaways li::before { content: "✓"; position: absolute; left: 0; color: var(--brand); font-weight: var(--fw-bold); }
+  /* Episode summary — repositioned under the takeaways on podcast posts. */
+  .episode-summary { font-size: clamp(18px, 2vw, 21px); color: var(--ink-2); line-height: 1.65; margin-bottom: var(--space-10); }
 
   .body h2 { font-family: var(--font-display); font-size: var(--fs-h3); margin: var(--space-10) 0 var(--space-3); }
   .body p { font-size: var(--fs-body); color: var(--ink-2); line-height: 1.75; margin-bottom: var(--space-4); }

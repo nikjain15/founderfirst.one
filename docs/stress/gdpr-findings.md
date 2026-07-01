@@ -104,9 +104,44 @@ cross-tenant leak, erasure + audit + retention all correct.**
 No migration changed. No `apps/app` source changed (app tsc/build identical to `main`).
 `deno check supabase/functions/org-data/index.ts` passes.
 
+## Deploy + post-deploy verification (2026-06-30)
+
+The `org-data` edge function was **deployed to prod** (`supabase functions deploy org-data`)
+— it is self-contained (reads existing tables, no migration dependency), so it ships
+independently of the migration wave. Verified live against prod:
+
+- **F1 fix confirmed live:** export of the 1,500-row fixture now returns **1500/1500**
+  `import_rows` (was 1000). No token leak; `accounting_settings` present.
+- **Scale:** grew the fixture to **3,500 rows** (4 export pages) → complete in ~3.0s.
+  Residual note: paging is linear, so a *very* large org (tens of thousands of rows) could
+  approach the edge-function time budget — a streaming/async export is the future-proofing
+  (enhancement, not a break).
+
+### ⚠️ Two things the integrator must action
+1. **PR #130 is NOT merged, but the function IS deployed** → prod runs code that isn't on
+   `main` yet. Merge #130 once CI is green to remove the drift.
+2. **`main` is currently red for an unrelated reason:** a migration merged by another stress
+   session (between auth #133 / invites #134 / categorize / reconcile #148) has a SQL
+   `syntax error at or near "revoke"` that breaks the pgtap migration-replay for *every*
+   open PR (and a clean prod rebuild). Not from this PR. Needs a fix on `main`.
+
+## Previously-untested scenarios — now covered
+
+- **View-only accountant [PASS]:** set up a firm with a read-only engagement on the org.
+  Read-only CPA **exported** the full books (200, 1500 rows, no token leak) but was
+  **blocked from erasing** (403). Upgrading the engagement to `access='full'` then let the
+  CPA erase (200). Confirms `export`=read-gated, `disconnect`=write-gated.
+- **Large business [PASS w/ note]:** export complete at 3,500 rows / 4 pages in ~3s (above).
+- **Penny/Discord conversation erasure [GAP — needs building]:** the privacy policy promises
+  export/deletion of Penny conversations, but there is **no self-serve erasure endpoint** for
+  the `discord_dm_memory` / conversation tables — only the manual `founder@` email path.
+  Tracked as task_91171681. Out of `org-data`'s scope; flagged for a dedicated build.
+
 ## Fixture manifest (for cleanup — see `gdprtest_cleanup.sql`, UN-RUN)
-- Users: `owner@gdprtest.founderfirst.test`, `outsider@gdprtest.founderfirst.test`
-- Orgs: `[GDPRTEST] Org A` / `Org B` (duplicated by a re-run — all namespaced)
+- Users: `owner@`, `outsider@`, `cpa@` `gdprtest.founderfirst.test`
+- Orgs: `[GDPRTEST] Org A` / `Org B` (duplicated by a re-run — all namespaced) + `[GDPRTEST] CPA Firm`
+- CPA test: 1 firm + 1 engagement (Org A) — cleanup deletes engagements before orgs (no cascade)
+- Scale test: the trunc batch grown to 3,500 `import_rows`
 - Per-org: memberships, `pilot_free` subscriptions, 1 surviving `external_connections`
   (`connA2`, qbo), 1 `import_batches` + 1,500 `import_rows` (truncation fixture),
   1 `ledger_audit` (the disconnect of `connA`, which T4 deleted as the feature under test).

@@ -1,0 +1,79 @@
+name: App E2E
+
+# Authenticated screen-test for the Penny app (apps/app) — the durable regression
+# net for the import + categorize screens. The app is built with VITE_E2E=1 plus a
+# throwaway test user's credentials, so it auto-signs-in with a REAL session
+# (apps/app/src/auth/devAuth.ts); we then drive the authed Ledger headlessly and
+# assert the Import (CSV + Connect QuickBooks/Xero) and Categorize surfaces render.
+# This is how authed app flows get verified without a human + magic link, in a
+# clean cloud environment (sidestepping any broken local toolchain).
+#
+# Required CI config (Settings → Secrets and variables → Actions):
+#   secrets.E2E_APP_EMAIL     — a throwaway Supabase user that is an active member
+#                               of a test org with a chart of accounts. NOT a real
+#                               person's account. (Password auth enabled.)
+#   secrets.E2E_APP_PASSWORD  — that user's password.
+#   secrets.VITE_SUPABASE_ANON_KEY, vars.VITE_SUPABASE_URL — same as other workflows.
+#
+# Until E2E_APP_EMAIL is set the job SKIPS the screen-test (with a loud notice) so
+# it never blocks PRs before the secret is added. Once set, it runs on every push.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  app-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Detect E2E credentials
+        id: creds
+        run: |
+          if [ -n "${{ secrets.E2E_APP_EMAIL }}" ] && [ -n "${{ secrets.E2E_APP_PASSWORD }}" ]; then
+            echo "has=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "has=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=App E2E skipped::Set E2E_APP_EMAIL + E2E_APP_PASSWORD secrets to enable the import/categorize screen-test."
+          fi
+
+      - name: Install
+        if: steps.creds.outputs.has == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        if: steps.creds.outputs.has == 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build app with E2E auto-login
+        if: steps.creds.outputs.has == 'true'
+        env:
+          VITE_SUPABASE_URL:      ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_E2E:               "1"
+          VITE_DEV_APP_EMAIL:     ${{ secrets.E2E_APP_EMAIL }}
+          VITE_DEV_APP_PASSWORD:  ${{ secrets.E2E_APP_PASSWORD }}
+        run: pnpm --filter @ff/app build
+
+      - name: App E2E screen-test
+        if: steps.creds.outputs.has == 'true'
+        run: node tools/app-e2e/run.mjs
+
+      - name: Upload screenshots
+        if: always() && steps.creds.outputs.has == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-e2e-screenshots
+          path: tools/app-e2e/artifacts/
+          if-no-files-found: ignore

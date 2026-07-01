@@ -7,6 +7,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session } from "@supabase/supabase-js";
 import { getClient } from "../lib/supabase";
 import { hasSupabase } from "../lib/env";
+import { DEV_AUTO_LOGIN, devAutoSignIn } from "./devAuth";
 
 interface AuthState {
   session: Session | null;
@@ -34,8 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     const sb = getClient();
-    void sb.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    void sb.auth.getSession().then(async ({ data }) => {
+      // E2E/dev only: if there's no session yet and the dev-auth channel is open
+      // (VITE_E2E=1 + creds), sign in with a throwaway test user so CI can drive
+      // the authed app. onAuthStateChange sets the session. Dead code in prod.
+      if (!data.session && DEV_AUTO_LOGIN) await devAutoSignIn(sb);
+      else setSession(data.session);
       setLoading(false);
     });
     const { data: sub } = sb.auth.onAuthStateChange((_event, next) => {

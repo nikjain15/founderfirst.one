@@ -356,7 +356,22 @@ routing to it via the same config. The general-model panel then becomes the benc
 + fallback that keeps it honest. The compounding moat: every approval makes the next
 categorization cheaper and more accurate.
 
+### 11e. Budget — $50/month, soft (owner decision)
+The background validation panel has a **$50/month ceiling**. It is **soft**: we
+**surface running spend** in the admin (a gauge: spend vs. ceiling, %) and **fire a
+one-time admin alert on crossing** so the owner can raise it — we **never hard-stop**
+categorization. Mechanics (`20260701130000_categorization_budget.sql`):
+- Panel calls record under `use_case = 'penny_categorize_panel'` (separable from the
+  live answer's `penny_categorize`); spend = `sum(ai_decisions.cost_usd)` this month.
+- `categorization_budget.monthly_ceiling_usd` (default 50.00) is the admin-editable
+  single source of truth — not hardcoded.
+- `check_categorization_budget()` (called hourly by `email-dispatch`) records ONE
+  alert row per month on crossing and returns the gauge state; the admin shows spend,
+  the email job sends the alert on `newly_alerted = true`. Panel sampling (§6) is
+  tuned so expected spend stays well under $50 at pilot volume.
+
 ---
 
 *Builds on `docs/plans/ai-quality-cost-layer-plan.html`. Design only — Phase A
-(shadow panel + `categorization_outcomes` + admin scorecard) is the first build.*
+(shadow panel + `categorization_outcomes` + budget/alert + admin scorecard) is the
+first build. Budget: $50/mo soft (owner).*

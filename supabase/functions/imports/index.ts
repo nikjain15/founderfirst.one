@@ -53,6 +53,25 @@ Deno.serve(async (req) => {
   const orgId = String(body?.org_id ?? "");
   if (!orgId) return json({ error: "bad_org" }, 400);
 
+  // ── commit: CHUNKED + non-silent (posted / errors / duplicates) ─────────────
+  if (op === "commit") {
+    if (!body?.batch_id) return json({ error: "bad_batch" }, 400);
+    const batchId = String(body.batch_id);
+    let result: unknown = null;
+    for (let guard = 0; guard < 1000; guard++) {
+      const { data, error } = await svc.rpc("commit_import_batch", {
+        p_actor: user.id, p_org: orgId, p_batch: batchId, p_limit: 4000,
+      });
+      if (error) return json({ error: error.message, code: error.code }, statusForPgError(error.code, error.message));
+      result = data;
+      if ((data as { status?: string })?.status === "committed") break;
+    }
+    const head = (status: string) =>
+      svc.from("import_rows").select("row_num", { count: "exact", head: true }).eq("batch_id", batchId).eq("status", status);
+    const [{ count: posted }, { count: errors }, { count: duplicates }] = await Promise.all([head("posted"), head("error"), head("skipped")]);
+    return json({ result, posted: posted ?? 0, errors: errors ?? 0, duplicates: duplicates ?? 0 }, 200);
+  }
+
   let rpc: string;
   let args: Record<string, unknown>;
   switch (op) {
@@ -66,7 +85,8 @@ Deno.serve(async (req) => {
         p_cutover_date: body?.cutover_date ?? null,
       };
       break;
-    case "add_rows": {
+    case "add_rows":
+    case "append_rows": {   // append_rows = insert-only, so a large file stages across several calls
       if (!body?.batch_id || !Array.isArray(body?.rows)) return json({ error: "bad_rows" }, 400);
       // Same money-precision guard as ledger-entries: a JS-number amount_minor
       // above 2^53 silently truncates; require a string for exact bigint, and
@@ -79,7 +99,7 @@ Deno.serve(async (req) => {
         }
         rows.push(typeof a === "number" ? { ...(r as Record<string, unknown>), amount_minor: String(a) } : r);
       }
-      rpc = "add_import_rows";
+      rpc = op === "append_rows" ? "append_import_rows" : "add_import_rows";
       args = { p_actor: user.id, p_org: orgId, p_batch: body.batch_id, p_rows: rows };
       break;
     }

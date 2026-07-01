@@ -44,16 +44,16 @@ insert into ledger_accounts (id, org_id, code, name, type) values
   ('00000000-0000-0000-0000-00000000d1c2', '00000000-0000-0000-0000-00000000d1b1', '4000', 'Revenue', 'income');
 
 -- ── F1: the period read takes a FOR SHARE row lock (close-vs-post race fix) ───
-select like(
-  pg_get_functiondef('ensure_open_period(uuid,date)'::regprocedure),
-  '%for share%',
+select matches(
+  lower(pg_get_functiondef('ensure_open_period(uuid,date)'::regprocedure)),
+  'for share',
   'F1: ensure_open_period locks the covering period FOR SHARE');
 
 -- the combined reverse keeps the sibling's FOR UPDATE on the original entry
 -- (double-reversal P0) so this migration never regresses 20260630130000.
-select like(
-  pg_get_functiondef('reverse_journal_entry(uuid,uuid,uuid,text,date,text)'::regprocedure),
-  '%for update%',
+select matches(
+  lower(pg_get_functiondef('reverse_journal_entry(uuid,uuid,uuid,text,date,text)'::regprocedure)),
+  'for update',
   'reverse_journal_entry locks the original entry FOR UPDATE (no double-reversal)');
 
 -- CPA posts two pending entries dated THIS month (auto-creates this month, open).

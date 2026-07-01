@@ -40,11 +40,12 @@ const entryTotal = (e: JournalEntry) =>
   (e.lines ?? []).filter((l) => l.side === "D").reduce((s, l) => s + l.amount_minor, 0);
 
 export default function Ledger({
-  org, canWrite, defaultTab = "overview",
+  org, canWrite, defaultTab = "overview", eyebrow,
 }: {
   org: { id: string; name: string };
   canWrite: boolean;
   defaultTab?: Tab;
+  eyebrow?: string;
 }) {
   const [tab, setTab] = useState<Tab>(defaultTab);
   const tabs = ALL_TABS.filter((t) => !t.writeOnly || canWrite);
@@ -59,7 +60,8 @@ export default function Ledger({
   return (
     <section className="lens ledger">
       <header className="ledger-head">
-        <h1>{org.name}</h1>
+        {eyebrow && <p className="eyebrow lens-eyebrow">{eyebrow}</p>}
+        <h1 className="page-title">{org.name}</h1>
         {!canWrite && (
           <span className="readonly-chip">Read-only — posting disabled</span>
         )}

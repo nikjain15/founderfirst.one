@@ -45,7 +45,7 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
   <header class="post-hero">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <a class="back" href="/blog/">← All articles</a>
+        <a class="back" href={isPodcast ? "/podcast/" : "/blog/"}>{isPodcast ? "← All episodes" : "← All articles"}</a>
         <p class="eyebrow brand">{post.tag} · {post.readMins} min {isPodcast ? "listen" : "read"} · {fmt(post.date)}</p>
         <h1>{post.title}</h1>
         {!isPodcast && <p class="lede">{post.description}</p>}

@@ -4,6 +4,7 @@
 import type { Org, RoleInfo } from "../org/ActiveOrgProvider";
 import Ledger from "../ledger/Ledger";
 import InviteCpa from "../org/InviteCpa";
+import ApprovalSetting from "../org/ApprovalSetting";
 
 export default function OwnerLens({ org, roleInfo }: { org: Org; roleInfo: RoleInfo }) {
   return (
@@ -11,6 +12,7 @@ export default function OwnerLens({ org, roleInfo }: { org: Org; roleInfo: RoleI
       <Ledger org={org} canWrite={roleInfo.canWrite} defaultTab="overview" />
       <div className="lens-aside">
         <InviteCpa orgId={org.id} />
+        <ApprovalSetting orgId={org.id} />
       </div>
     </>
   );

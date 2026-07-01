@@ -1,0 +1,39 @@
+---
+// Podcast episode hero — a professional "now playing" artwork card
+// (show branding + audio waveform + listen affordance). Used on podcast blog
+// posts instead of the product-demo visual. On-brand: uses design tokens only.
+interface Props { mins?: number }
+const { mins = 9 } = Astro.props;
+// Static waveform envelope — deterministic, reads as a real audio clip.
+const bars = [26, 44, 62, 40, 78, 54, 92, 48, 70, 34, 84, 58, 100, 52, 74, 42, 88, 60, 80, 46, 66, 32, 90, 56, 72, 38, 82, 50, 64, 30];
+---
+<div class="pa">
+  <div class="pa-head">
+    <div class="pa-mark" aria-hidden="true"><span>P</span></div>
+    <div class="pa-show">
+      <span class="s1">Podcast</span>
+      <span class="s2">Penny by FounderFirst</span>
+    </div>
+  </div>
+  <div class="pa-wave" aria-hidden="true">
+    {bars.map((h) => <i style={`height:${h}%`}></i>)}
+  </div>
+  <div class="pa-foot">
+    <span class="pa-play" aria-hidden="true">►</span>
+    <span class="pa-meta">Listen in Penny's voice · {mins} min</span>
+  </div>
+</div>
+<style>
+  .pa { width: min(100%, 380px); border-radius: var(--r-card-emph); background: linear-gradient(160deg, var(--brand), var(--brand-strong)); color: var(--white); padding: clamp(22px, 3vw, 30px); box-shadow: var(--shadow-float); display: grid; gap: clamp(18px, 3vw, 26px); }
+  .pa-head { display: flex; align-items: center; gap: 12px; }
+  .pa-mark { width: 46px; height: 46px; border-radius: 50%; background: rgba(255, 255, 255, 0.16); display: grid; place-items: center; flex: none; }
+  .pa-mark span { font-family: Georgia, serif; font-style: italic; font-weight: var(--fw-bold); font-size: 24px; padding-bottom: 2px; }
+  .pa-show { display: grid; gap: 2px; }
+  .pa-show .s1 { font-size: var(--fs-eyebrow); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; opacity: 0.82; }
+  .pa-show .s2 { font-family: var(--font-display); font-size: 17px; line-height: 1.1; }
+  .pa-wave { display: flex; align-items: center; gap: 3px; height: 66px; }
+  .pa-wave i { flex: 1; min-width: 2px; background: rgba(255, 255, 255, 0.5); border-radius: 999px; }
+  .pa-foot { display: flex; align-items: center; gap: 12px; }
+  .pa-play { width: 40px; height: 40px; border-radius: 50%; background: var(--white); color: var(--brand); display: grid; place-items: center; font-size: 13px; flex: none; }
+  .pa-meta { font-size: var(--fs-data-row); opacity: 0.95; }
+</style>

@@ -215,6 +215,99 @@ as unstyled run-together text on prod. It went unnoticed until a user reported i
   against the stale local tree was misleading. `git fetch` and compare against
   `origin/main` before concluding what's deployed.
 
+## 15. Read-then-write RPCs need a row lock, or concurrency corrupts silently.
+
+**What happened:** The feature stress sweep found the *same* bug shape in four
+SECURITY DEFINER functions — `reverse_journal_entry`, `recategorize_entry`,
+`approve_journal_entry`, and the close-vs-post path. Each did a lock-free
+`SELECT … INTO v_row` then mutated based on what it read. Two concurrent calls with
+distinct idempotency keys (two tabs, a network retry, two CPAs) both read the stale
+`posted` state and both acted: one entry got reversed 10 times from 14 API calls,
+live on prod.
+
+**Rules:**
+- Any RPC that reads a row and then writes based on that read must take
+  **`SELECT … FOR UPDATE`** (or `FOR SHARE` when you only need to block a specific
+  conflicting writer, as `ensure_open_period` does against `close`). The check and
+  the mutation must be in the same lock scope.
+- Idempotency keys do **not** prevent this — distinct keys are exactly the concurrent
+  case that slips through. Idempotency dedupes *retries of the same logical call*, not
+  *two different calls racing the same row*.
+- Add **defense-in-depth at the storage layer** where the invariant allows it (e.g.
+  the partial unique index `(org_id, reverses_id)` making a second reversal of any
+  original impossible regardless of the function). A lock protects the hot path; a
+  constraint protects against the lock ever being wrong.
+- When you fix one instance of a recurring shape, **grep for the shape** and fix all
+  of them in the same wave — the reverse fix shipped while `approve` still had the bug.
+
+## 16. "The trial balance still ties" does not mean the data is correct.
+
+**What happened:** Every ledger P0 in the stress sweep (double-reversal,
+double-categorize, close-vs-post) left `Σdebits = Σcredits` intact to the cent while
+the underlying entries were wrong — an entry reversed twice nets its account to the
+*negative* of the original, but each reversal is itself balanced, so the org-level
+tie-out check sees nothing. The corruption was invisible to the one check we trusted.
+
+**Rule:** a balanced trial balance is necessary but **not sufficient** evidence of
+correctness. Verify the specific invariant the operation is supposed to preserve —
+entry count delta (no double-post), one-reversal-per-original, category actually
+changed once — not just that the books still balance. Silent-but-balanced is the most
+dangerous failure mode because it passes the obvious test.
+
+## 17. A fix deployed to prod but not merged to `main` is a loaded gun.
+
+**What happened:** The period-lock (#131) and double-reversal (#139) fixes were
+deployed straight to prod during stress testing (Nik authorized the hotfix) but their
+migrations were never merged — timestamp collisions left them out of `main`. For two
+days, `main` did not contain two live P0 fixes. A routine `supabase db push` from
+`main` would have silently **re-deployed the vulnerable function bodies** over the
+fixed ones. Worse, a later combined deploy of `approve_journal_entry` from a different
+lineage **clobbered** #131's period-closed guard on prod.
+
+**Rules:**
+- **Builders never deploy; only the integrator deploys, and only from `main`.** If a
+  fix must hotfix prod during testing, opening the PR that lands it on `main` is part
+  of the *same* unit of work, not a follow-up.
+- When you must deploy ahead of merge, **capture the exact live body back into a repo
+  migration immediately** (`pg_get_functiondef`), and reconcile before the next
+  `db push`. Prod and `main` drifting apart is the default outcome of overlapping
+  sessions, not an exception — assume it and check (`pg_get_functiondef` vs. the repo).
+- **Before deploying a function, snapshot the current prod body.** When sessions
+  overlap, the body you're about to overwrite may itself contain another session's
+  unmerged fix (this is exactly how the F2 guard got clobbered).
+
+## 18. Any query that feeds a report or export must paginate.
+
+**What happened:** `useEntries` fetched ledger rows with no pagination; prod PostgREST
+caps a response at `max_rows=1000`. Orgs with >1000 entries silently lost their oldest
+rows — the P&L / balance sheet still *tied* (rule 16 again) but showed the wrong
+numbers. The GDPR export had the identical bug (truncated at 1000).
+
+**Rule:** a `select` whose result is summed, reported, or exported must page through
+**all** rows (`.range()` loop until exhausted), never rely on the default cap. Grep for
+report/export-feeding selects when you touch that layer; the truncation is invisible
+until an org crosses the limit.
+
+## 19. Don't spawn a session per unit of work — orchestrate one run over many.
+
+**What happened:** The stress program ran as ~15 separate long-lived sessions, one per
+feature. It worked, but the *coordination* cost fell on the human: 15 PRs to track,
+overlapping fixes to dedupe by hand (#132 and #139 fixed the same reverse P0 twice),
+prod↔main drift to reconcile after the fact, and status scattered across chats until it
+felt "lost." The failure wasn't the testing — it was that no single artifact owned the
+whole run.
+
+**Rules:**
+- Prefer **one orchestrating session that fans out subagents/worktrees** over N
+  independent sessions. The orchestrator holds the work-list, dedupes claims, sequences
+  merges, and owns one status artifact. See the operating model in
+  [docs/STRESS_TEST_TRACKER.md](docs/STRESS_TEST_TRACKER.md) → "Operating model".
+- **One source of truth for run status** (a committed board + AUDIT.md ledger), updated
+  as work lands — not reconstructed from memory afterward.
+- **Every autonomous session has a hard timeout, a single task, and exits by opening a
+  PR or a blocked-report** — never by committing to `main`, never by running open-ended
+  (the 9×/night hardening cron leaked sessions → SIGBUS; see memory).
+
 ---
 
 *Add a numbered rule above when a mistake teaches a lesson worth not repeating.*
@@ -226,4 +319,18 @@ a short summary, and one line per P0/P1 marked **fixed** or **deferred**. When a
 issue here keeps recurring, graduate it into a numbered rule above — that is how
 we stop repeating it. The command lives at `.claude/commands/audit.md`.
 
-_No audits logged yet — the first `/audit` run writes here._
+### 30 Jun – 2 Jul 2026 · Feature stress-test sweep (baseline: `main` post-#122)
+15 features adversarially stress-tested on live prod. Full ledger with per-feature
+findings + coverage gaps: **[AUDIT.md](AUDIT.md) → Audit ledger**. Summary: **8 P0,
+~19 P1** confirmed and fixed; 12/15 closed on `main`, #131 + #139 captured by #156,
+#143 partial.
+
+P0s (all fixed): forged-`p_actor` cross-tenant RPC writes (#138) · concurrent
+double-reversal balance corruption (#139) · report truncation at 1000 rows (#129) ·
+close-vs-post period-lock TOCTOU (#131) · double-reversal + double-categorize races
+(#132) · QBO/Xero provider-commit dead-on-arrival (#142). Four cross-cutting themes
+graduated into rules **15–18** above; the operating lesson into rule **19**.
+
+**Deferred (standing coverage gaps, see AUDIT.md):** multi-currency, UI click-through,
+isolation F3 (`can_access_org` seqscan DoS), CSV F4 re-import dedup (product decision),
+load/volume testing.

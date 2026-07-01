@@ -22,7 +22,7 @@ export default function Home() {
     const pending = localStorage.getItem("ff.pendingInvite");
     if (pending) {
       localStorage.removeItem("ff.pendingInvite");
-      nav(`/accept?token=${pending}`, { replace: true });
+      nav(`/accept?token=${encodeURIComponent(pending)}`, { replace: true });
     }
   }, [nav]);
 

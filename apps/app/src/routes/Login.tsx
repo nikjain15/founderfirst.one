@@ -21,8 +21,10 @@ export default function Login() {
     }
     setBusy(true);
     setError(null);
+    // Trim stray whitespace — a leading/trailing space otherwise sends to an
+    // address that never receives the link, with no feedback to the user.
     const { error: err } = await getClient().auth.signInWithOtp({
-      email,
+      email: email.trim(),
       // base-aware: "/app/" on founderfirst.one/app/, "/" on penny.founderfirst.one
       options: { emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}` },
     });

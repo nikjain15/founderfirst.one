@@ -37,3 +37,25 @@ p {
   text-transform: uppercase;
   color: var(--ink-3);
 }
+
+/* Page header — the canonical eyebrow → title → sub rhythm for EVERY authed
+   surface (admin, app, future). Lead a page with `.eyebrow` + `.page-title`
+   (+ optional `.page-sub`) instead of a raw <h1>, so headings stay the same
+   restrained scale platform-wide (a raw <h1> is billboard-sized: up to 64px).
+   Canonical here — do not redefine per app. See README "Section & layout". */
+.page-title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tighter);
+  line-height: 1.06;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+.page-sub {
+  font-size: var(--fs-ui);
+  line-height: 1.6;
+  color: var(--ink-3);
+  max-width: 60ch;
+  margin: 0 0 28px;
+}

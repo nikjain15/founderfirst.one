@@ -1,15 +1,24 @@
 /**
- * app-e2e/run.mjs — authenticated smoke test for the unified app (apps/app).
+ * app-e2e/run.mjs — authenticated smoke + responsive test for the unified app (apps/app).
  *
  * The durable answer to "the categorize/import screens have no UI test". The app
  * is built with VITE_E2E=1 + a throwaway test account's creds, so it auto-signs-in
  * (apps/app/src/lib/devAuth.ts) with a REAL session. We then drive the real authed
- * UI headlessly, assert it renders past the login wall, reach the ledger /
- * Categorize surface, and screenshot it for the CI artifact.
+ * UI headlessly and, for the owner's key surfaces (Overview · Categorize · Journal ·
+ * Import):
+ *   1. assert the app renders past the login wall,
+ *   2. assert each tab's panel renders (regression net for the screens themselves),
+ *   3. assert NO horizontal overflow at mobile width — scrollWidth ≤ clientWidth —
+ *      the invariant from apps/admin/RESPONSIVE.md (a clipped column or a fixed-px
+ *      grid that overruns 390px fails the gate),
+ *   4. screenshot every screen at desktop AND mobile for the CI artifact.
  *
- * It deliberately does NOT approve categories or import files — those mutate the
+ * It deliberately does NOT approve categories or import a file — those mutate the
  * ledger and spend AI tokens, which would make the gate flaky. This proves auth +
- * the screens render (the regression net). Exits non-zero on any failed assertion.
+ * render + responsive (the regression net). Exits non-zero on any failed assertion.
+ *
+ * The test account must be an org OWNER with a seeded org (owner sees the write-only
+ * Categorize + Import tabs). See tools/app-e2e/README.md.
  *
  * Usage: pnpm --dir apps/app build   (with VITE_E2E + creds)  then  node tools/app-e2e/run.mjs
  */
@@ -22,6 +31,8 @@ import { chromium } from "playwright";
 const ROOT = resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const DIST = resolve(ROOT, "apps/app/dist");      // vite build output (base = /app/)
 const ARTIFACTS = resolve(fileURLToPath(new URL("./artifacts/", import.meta.url)));
+const MOBILE = { width: 390, height: 844 };        // iPhone-class; on the width ladder
+const DESKTOP = { width: 1280, height: 900 };
 
 const MIME = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
@@ -56,41 +67,94 @@ const { server, port } = await startServer();
 await mkdir(ARTIFACTS, { recursive: true });
 const base = `http://127.0.0.1:${port}/app/`;
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-page.on("console", (m) => { if (m.type() === "error") console.log("  [browser error]", m.text()); });
+const page = await browser.newPage({ viewport: DESKTOP });
+const consoleErrors = [];
+page.on("console", (m) => { if (m.type() === "error") { consoleErrors.push(m.text()); console.log("  [browser error]", m.text()); } });
+page.on("pageerror", (e) => { consoleErrors.push(String(e)); console.log("  [page error]", String(e)); });
+
+// The ledger tabs (apps/app Ledger.tsx) — stable ids we can drive directly.
+// writeOnly tabs (categorize/import) render only for an owner with write access.
+const TABS = [
+  { id: "overview",   label: "Overview",   writeOnly: false },
+  { id: "categorize", label: "Categorize", writeOnly: true  },
+  { id: "journal",    label: "Journal",    writeOnly: false },
+  { id: "import",     label: "Import",     writeOnly: true  },
+];
+
+/** Click a ledger tab by id and wait for its panel; returns false if the tab is absent. */
+async function openTab(id) {
+  const tab = page.locator(`#ltab-${id}`);
+  if (!(await tab.count().catch(() => 0))) return false;
+  await tab.click().catch(() => {});
+  await page.locator("#ledger-panel").waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+  await page.waitForTimeout(600);
+  return true;
+}
+
+/** The RESPONSIVE.md invariant: content must not overflow the viewport horizontally. */
+async function assertNoOverflow(where) {
+  const bad = await page.evaluate(() => {
+    const el = document.documentElement;
+    return el.scrollWidth > el.clientWidth + 1 ? { sw: el.scrollWidth, cw: el.clientWidth } : null;
+  });
+  if (bad) fail(`horizontal overflow at ${where} — scrollWidth ${bad.sw} > clientWidth ${bad.cw}`);
+  else ok(`no horizontal overflow at ${where}`);
+}
 
 try {
   await page.goto(base, { waitUntil: "networkidle", timeout: 60_000 });
-  // devAuth signs in → wait for the app to leave the login wall.
-  await page.waitForFunction(() => {
-    const t = document.body.innerText || "";
-    return t.length > 0 && !/magic link|check your (e-?mail|inbox)|sign in to/i.test(t);
-  }, { timeout: 45_000 }).catch(() => {});
-  await page.waitForTimeout(2500);
-  await page.screenshot({ path: join(ARTIFACTS, "01-home.png"), fullPage: true });
 
-  const bodyText = await page.evaluate(() => document.body.innerText || "");
-  if (/sign in|magic link|check your inbox/i.test(bodyText) && !/categor|ledger|uncategor|demo co/i.test(bodyText)) {
-    fail("still on the login wall — devAuth did not sign in (check E2E_APP_* secrets)");
+  // devAuth signs in → resolve as soon as EITHER the authed shell (.topbar) or the
+  // login wall (.auth-card) appears, so both outcomes are fast.
+  await Promise.race([
+    page.locator(".topbar .brand").waitFor({ state: "visible", timeout: 45_000 }).catch(() => {}),
+    page.locator(".auth-card").waitFor({ state: "visible", timeout: 45_000 }).catch(() => {}),
+  ]);
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: join(ARTIFACTS, "01-home-desktop.png"), fullPage: true });
+
+  // Positive check: the authed shell renders the top bar; the login wall does not.
+  const authed = await page.locator(".topbar").count().catch(() => 0);
+  if (!authed) {
+    fail("still on the login wall — devAuth did not sign in (check E2E_APP_* secrets + password auth enabled on the account)");
   } else {
     ok("authed app rendered past the login wall");
+
+  // The owner lens must have loaded an org (the ledger tablist). No org → the test
+  // account isn't a seeded owner; say so loudly rather than screenshotting an empty state.
+  const hasLedger = await page.locator(".ledger-tabs").count().catch(() => 0);
+  if (!hasLedger) {
+    fail("no ledger tabs — the test account has no org. Seed an org owned by the E2E account (see README).");
+  } else {
+    ok("owner ledger loaded (org present)");
+
+    // ── Desktop: each key screen renders ──────────────────────────────────────
+    for (const t of TABS) {
+      const opened = await openTab(t.id);
+      if (opened) {
+        await page.screenshot({ path: join(ARTIFACTS, `desktop-${t.id}.png`), fullPage: true });
+        ok(`${t.label} renders (desktop)`);
+      } else if (t.writeOnly) {
+        fail(`${t.label} tab missing — the E2E account must be an OWNER (write access) to test it`);
+      } else {
+        fail(`${t.label} tab missing unexpectedly`);
+      }
+    }
+
+    // ── Mobile: same screens, plus the no-overflow invariant ──────────────────
+    await page.setViewportSize(MOBILE);
+    await page.waitForTimeout(400);
+    await assertNoOverflow("mobile / topbar");
+    for (const t of TABS) {
+      if (await openTab(t.id)) {
+        await assertNoOverflow(`mobile / ${t.label}`);
+        await page.screenshot({ path: join(ARTIFACTS, `mobile-${t.id}.png`), fullPage: true });
+      }
+    }
+  }
   }
 
-  // Best-effort: open the org, then reach a Categorize / ledger surface.
-  for (const sel of ['text=/E2E Demo Co/i', 'text=/Open|View|Books|Ledger/i']) {
-    const el = page.locator(sel).first();
-    if (await el.count().catch(() => 0)) { await el.click().catch(() => {}); await page.waitForTimeout(1500); break; }
-  }
-  const cat = page.locator('text=/Categor/i').first();
-  if (await cat.count().catch(() => 0)) {
-    await cat.click().catch(() => {});
-    await page.waitForTimeout(2500);
-    await page.screenshot({ path: join(ARTIFACTS, "02-categorize.png"), fullPage: true });
-    ok("reached the Categorize surface");
-  } else {
-    await page.screenshot({ path: join(ARTIFACTS, "02-ledger.png"), fullPage: true });
-    console.log("ℹ️ Categorize tab not auto-found; captured the authed ledger view instead");
-  }
+  if (consoleErrors.length) console.log(`\nℹ️ ${consoleErrors.length} browser console error(s) logged above (not gating).`);
 } catch (e) {
   fail("e2e run threw: " + (e?.message || e));
   await page.screenshot({ path: join(ARTIFACTS, "99-error.png"), fullPage: true }).catch(() => {});

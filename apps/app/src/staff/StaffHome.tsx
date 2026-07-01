@@ -50,7 +50,8 @@ export default function StaffHome({ isStaff }: { isStaff: boolean }) {
       <main className="workspace">
         <section className="lens staff">
           <header className="ledger-head">
-            <h1>Platform console</h1>
+            <p className="eyebrow lens-eyebrow">{SITE.company}</p>
+            <h1 className="page-title">Platform console</h1>
             <span className="readonly-chip staff-chip">Staff · break-glass audited</span>
           </header>
 

@@ -11,12 +11,17 @@ export function formatMoney(minor: number, currency = "USD"): string {
   }).format((minor || 0) / 100);
 }
 
-/** Compact form for headline numbers ("$12,400"), no cents. */
+/**
+ * Compact form for headline numbers on KPI tiles: "$12K", "$1.5M", "$1.8T".
+ * Uses compact notation so a large (but valid) balance can't overrun its tile
+ * and push the page wide on mobile — the RESPONSIVE.md no-overflow invariant.
+ */
 export function formatMoneyShort(minor: number, currency = "USD"): string {
   return new Intl.NumberFormat(undefined, {
     style: "currency",
     currency,
-    maximumFractionDigits: 0,
+    notation: "compact",
+    maximumFractionDigits: 1,
   }).format((minor || 0) / 100);
 }
 

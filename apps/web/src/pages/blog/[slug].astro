@@ -128,8 +128,8 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
   .post .wrap { max-width: 720px; }
   .takeaways { background: var(--white); border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-10); }
   .takeaways .eyebrow.brand { margin-bottom: var(--space-3); }
-  .takeaways ul { list-style: none; display: grid; gap: var(--space-3); }
-  .takeaways li { display: flex; align-items: baseline; gap: 10px; font-size: var(--fs-h3); color: var(--ink-2); line-height: 1.55; }
+  .takeaways ul { list-style: none; display: grid; gap: var(--space-3); padding: 0; margin: 0; }
+  .takeaways li { display: flex; align-items: baseline; gap: 10px; font-size: var(--fs-body); color: var(--ink-2); line-height: 1.6; }
   .takeaways li::before { content: "✓"; color: var(--brand); font-weight: var(--fw-bold); flex: none; }
   /* Episode summary — repositioned under the takeaways on podcast posts. */
   .episode-summary { font-size: clamp(18px, 2vw, 21px); color: var(--ink-2); line-height: 1.65; margin-bottom: var(--space-10); }

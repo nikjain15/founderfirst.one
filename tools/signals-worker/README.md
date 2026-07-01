@@ -40,6 +40,20 @@ journalctl -u signals-worker -f
 > larger score model without bumping the VM. To choose the score model, run the
 > eval described in `SIGNALS_SOLUTION.md` §8 and set `OLLAMA_SCORE_MODEL`.
 
+## Deploying changes to the live host
+
+The worker isn't in CI — it runs from `~/signals-worker` under launchd
+(`one.founderfirst.signals-worker`). To ship changes, run:
+
+```bash
+./tools/signals-worker/deploy.sh
+```
+
+It syntax-checks, copies the worker files (index/brain/optimizer/providers),
+reinstalls deps only if `package.json` changed, appends the sha to
+`~/signals-worker/DEPLOYED`, and restarts the service. Logs live in
+`~/Library/Logs/founderfirst/signals-worker.{log,err}`.
+
 ## Tuning
 
 All thresholds are env vars (`.env`): `REL_THRESHOLD`, `INTENT_THRESHOLD`,

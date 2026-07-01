@@ -13,7 +13,7 @@
  * See SIGNALS_SOLUTION.md. Autonomy = hybrid (auto-retire, propose-adds).
  */
 
-import { generate, brainConfig } from "./brain.mjs";
+import { generate, DRAFT_REFUSAL_RE } from "./brain.mjs";
 import { searchApiDirect } from "./providers/apidirect.mjs";
 
 const WINDOW_DAYS   = 7;
@@ -100,6 +100,41 @@ function painThemes(items, topK = 8) {
   }
   return [...tally.entries()].sort((a, b) => b[1] - a[1]).slice(0, topK)
     .map(([tag, count]) => ({ tag, count }));
+}
+
+// ---- anomaly scan (garbage-in / garbage-out detection) ----------------------
+// Flags patterns that historically meant a pipeline bug rather than real leads:
+// clusters of identical score signatures, high intent on near-empty text, and
+// saved drafts that read like model refusals (the empty-facebook-items incident,
+// 1 Jul 2026). Surfaced in the daily Brain report so a human sees it within a
+// day instead of by stumbling on a polluted Leads view.
+const THIN_TEXT_CHARS = 40;
+const CLUSTER_FLAG_N  = 8;
+
+function anomalyScan(items, drafts, settings) {
+  const out = [];
+  const clusters = new Map();
+  let thin = 0;
+  for (const it of items) {
+    const sc = scoreOf(it);
+    if (!sc || sc.intent == null || sc.intent < settings.intent_threshold) continue;
+    if (`${it.title ?? ""}${it.body ?? ""}`.trim().length < THIN_TEXT_CHARS) thin++;
+    const key = `${sc.intent}|${[...(sc.pain_tags ?? [])].sort().join(",")}`;
+    clusters.set(key, (clusters.get(key) ?? 0) + 1);
+  }
+  for (const [key, n] of clusters) {
+    if (n < CLUSTER_FLAG_N) continue;
+    const [intent, tags] = key.split("|");
+    out.push(`${n} high-intent items share an IDENTICAL score signature (intent=${intent}, tags=[${tags}]) — real posts vary; check the Feed for a scoring bug.`);
+  }
+  if (thin > 0) {
+    out.push(`${thin} item(s) scored intent >= ${settings.intent_threshold} with under ${THIN_TEXT_CHARS} chars of text — the content guard may have a gap.`);
+  }
+  const refusals = drafts.filter((d) => d.draft && DRAFT_REFUSAL_RE.test(d.draft)).length;
+  if (refusals > 0) {
+    out.push(`${refusals} saved lead draft(s) read like model refusals — drafting is seeing empty or garbage input.`);
+  }
+  return out;
 }
 
 // near-miss threshold suggestions (suggest only, never applied)
@@ -214,6 +249,11 @@ Propose ${MAX_PROPOSALS + 6} NEW phrases we are not already using.`;
   // 6. threshold suggestions (never applied).
   const suggestions = thresholdSuggestions(items, settings);
 
+  // 6b. anomaly scan — pipeline-health flags for the Brain report.
+  const drafts = await fetchRecentDrafts(db, since);
+  const anomalies = anomalyScan(items, drafts, settings);
+  for (const a of anomalies) log(`ANOMALY: ${a}`);
+
   // 7. REPORT — save to sig_settings (the Brain summary).
   const report = {
     ran_at: new Date().toISOString(),
@@ -223,8 +263,10 @@ Propose ${MAX_PROPOSALS + 6} NEW phrases we are not already using.`;
     proposed,
     pain_themes: themes,
     threshold_suggestions: suggestions,
+    anomalies,
     leaderboard: leaderboard.slice(0, 12),
-    summary: `Analyzed ${items.length} posts. Retired ${disabled.length} dead source(s), proposed ${proposed.length} new quer${proposed.length === 1 ? "y" : "ies"} for review. Top pain: ${themes.slice(0, 3).map((t) => t.tag).join(", ") || "n/a"}.`,
+    summary: `Analyzed ${items.length} posts. Retired ${disabled.length} dead source(s), proposed ${proposed.length} new quer${proposed.length === 1 ? "y" : "ies"} for review. Top pain: ${themes.slice(0, 3).map((t) => t.tag).join(", ") || "n/a"}.`
+      + (anomalies.length ? ` ⚠️ ${anomalies.length} pipeline anomaly flag(s) — see anomalies.` : ""),
   };
   await db.from("sig_settings").upsert({ key: SETTINGS_KEY, value: report, updated_at: new Date().toISOString(), updated_by: "optimizer" });
   log(report.summary);
@@ -237,7 +279,7 @@ async function fetchAllItemsFull(db, sinceISO) {
   for (let from = 0; ; from += 1000) {
     const { data, error } = await db
       .from("sig_items")
-      .select("source_id,status,sig_scores(relevance,intent,geo,role,pain_tags),sig_leads(stage)")
+      .select("source_id,status,title,body,sig_scores(relevance,intent,geo,role,pain_tags),sig_leads(stage)")
       .gte("captured_at", sinceISO)
       .range(from, from + 999);
     if (error) throw new Error(`stats fetch: ${error.message}`);
@@ -245,6 +287,18 @@ async function fetchAllItemsFull(db, sinceISO) {
     if (!data || data.length < 1000) break;
   }
   return out;
+}
+
+// Recent saved drafts, for the refusal anomaly check. Leads are low-volume.
+async function fetchRecentDrafts(db, sinceISO) {
+  const { data, error } = await db
+    .from("sig_leads")
+    .select("id,draft")
+    .gte("created_at", sinceISO)
+    .not("draft", "is", null)
+    .limit(1000);
+  if (error) { console.warn(`[optimizer] drafts fetch: ${error.message}`); return []; }
+  return data ?? [];
 }
 
 // Source ids that have EVER produced a lead that replied or won (all time).

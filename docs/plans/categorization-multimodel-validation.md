@@ -310,5 +310,53 @@ honor the same; no new raw-data store beyond the derived (account-id-only)
 
 ---
 
-*Builds on `docs/plans/ai-quality-cost-layer-plan.html`. No code in this doc —
-review, then we cut Phase A.*
+## 11. Refinements (decided)
+
+### 11a. CPA corrections outweigh owner corrections (label authority)
+Not every human label is equal. A **CPA** is a trained reviewer; a business owner
+guesses more often. So when we score a model against "what the human chose," we
+**weight the label by the approver's authority**:
+
+| Approver | Label weight | Rationale |
+|---|---|---|
+| CPA (full-access engagement) | **1.0 — gold** | Professional judgment; strongest signal. |
+| Owner / business member | **0.6 — silver** | Real but noisier. |
+| Auto-rule (no human) | 0 for scoring | Not a fresh human judgment. |
+
+- **Supersede:** if a CPA later re-categorizes something an owner accepted, the
+  **CPA's account becomes the truth** and the owner's label flips to a *negative*
+  signal (model *and* owner were both wrong → strong learning).
+- The scorecard shows accuracy **raw and CPA-weighted**; model **selection uses the
+  CPA-weighted** number — optimize for what a professional accepts, not a rushed
+  rubber-stamp.
+- `categorization_outcomes` stores `approver_role` + `label_weight` + `superseded_by`.
+
+### 11b. The panel is also the fallback chain (resilience, not just measurement)
+The multi-model panel doubles as **high availability**. Routing holds an ordered,
+health-aware **fallback chain** (OpenRouter, one API): primary down / 429 / timeout →
+the next-cheapest *healthy* model answers; the user never sees an outage. The
+scorecard's accuracy+latency data *orders* the chain — fallbacks ranked by proven
+quality-per-$, not guessed.
+
+### 11c. Why not just default to Haiku — start even-handed, let data decide
+Haiku is only today's pin because Phase 0 froze every caller's existing model
+unchanged. It's a **starting point, not a verdict.** From day one the shadow panel
+runs **several leading models of comparable price/latency side-by-side** (a candidate
+list, no favourite), and the scorecard picks the winner on *our* transactions. If a
+same-priced model beats Haiku on accuracy-per-$, it wins automatically — no code
+change. We commit to *even-handed measurement*, not to any vendor.
+
+### 11d. Endgame — train our own model on the accumulated labels
+Categorization generates the **ideal training set**: `(description → correct
+account)`, CPA-weighted, domain-specific, arriving continuously (the `ai_decisions`
+retention path already plans de-identified archival "to train our own models"). Once
+volume allows, **Phase E**: fine-tune a small/own model on this corpus — it should
+beat general models *on our distribution* at a fraction of the cost — and switch
+routing to it via the same config. The general-model panel then becomes the benchmark
++ fallback that keeps it honest. The compounding moat: every approval makes the next
+categorization cheaper and more accurate.
+
+---
+
+*Builds on `docs/plans/ai-quality-cost-layer-plan.html`. Design only — Phase A
+(shadow panel + `categorization_outcomes` + admin scorecard) is the first build.*

@@ -5,7 +5,7 @@
 --   • ledger_audit is append-only & read-isolated to the org — posted-entry / disconnect
 --     trail is retained and a client can never forge or read another org's audit.
 begin;
-select plan(9);
+select plan(10);
 
 insert into auth.users (id, email, aud, role) values
   ('0d000000-0000-0000-0000-0000000000a1', 'ownerA@gdpr.dev', 'authenticated', 'authenticated'),

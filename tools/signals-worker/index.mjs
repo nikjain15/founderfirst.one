@@ -18,7 +18,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { embed, score, draft, brainConfig } from "./brain.mjs";
+import { embed, score, draft, validateDraft, brainConfig } from "./brain.mjs";
 import { searchApiDirect } from "./providers/apidirect.mjs";
 import { maybeRunOptimizer, runOptimizer } from "./optimizer.mjs";
 
@@ -136,6 +136,17 @@ async function embedPendingExamples() {
 
 async function processItem(item, painKeywords, excludeKeywords, settings) {
   const text = [item.title, item.body].filter(Boolean).join("\n\n");
+
+  // 0a. No content, nothing to judge: some sources (facebook via API Direct)
+  // return posts with an empty title AND snippet. Scoring metadata alone makes
+  // the local model hallucinate stock tags at high intent, and the draft model
+  // has no post to reference — so archive before any model sees it.
+  if (!text.trim()) {
+    await submit(item.id, null, 0, [], null, false, "unknown", "other");
+    console.log(`archived ${item.id} (empty: no title/body)`);
+    return;
+  }
+
   const lower = text.toLowerCase();
   const keywordHit = painKeywords.some((kw) => lower.includes(kw));
 
@@ -205,6 +216,13 @@ async function processItem(item, painKeywords, excludeKeywords, settings) {
         voice,
         persona,
       );
+      // Sanity gate: a rejected draft is never saved — the lead stays at 'new'
+      // (the manual-drafting queue) instead of carrying a refusal or filler.
+      const check = validateDraft(message, text);
+      if (!check.ok) {
+        console.warn(`draft rejected for ${leadId} (${check.reason}) — lead left at 'new' for manual drafting`);
+        return;
+      }
       const { error } = await db.rpc("sig_set_lead_draft", {
         p_lead_id: leadId, p_draft: message, p_model: brainConfig.draftModel,
       });

@@ -16,8 +16,6 @@ AS $function$
               escape '\') )
    order by (match_type = 'description_exact') desc, length(match_value) desc, times_applied desc, created_at asc
    limit 1;
-$function$
-
-
+$function$;
 revoke all on function match_categorization_rule(uuid,text) from public;
 grant execute on function match_categorization_rule(uuid,text) to service_role;

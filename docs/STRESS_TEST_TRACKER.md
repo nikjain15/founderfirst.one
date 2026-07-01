@@ -1,12 +1,81 @@
-# FounderFirst — feature stress-test program (tracker + operating rules)
+# FounderFirst — feature stress-test program (tracker + operating model)
 
-One **session per feature**, each in its own git worktree, that adversarially stress-tests
-the feature on live prod, then **fixes the breaks and opens a PR** (does NOT merge). The
-**integrator** (main session) reviews each PR, sequences merges so shared files don't
-collide, verifies, and deploys in waves.
+The durable audit **ledger** (findings, per-feature, coverage gaps) lives in
+[AUDIT.md](../AUDIT.md) → "Audit ledger". This file is the **operating model + working
+board**: how we run an audit and where each run currently stands.
 
-**Track status three ways:** (1) GitHub → Pull Requests filtered `[stress:` · (2) this
-table · (3) the per-feature chats/sessions.
+**Track status two ways:** (1) this board (Tracker table below) · (2) GitHub → PRs
+filtered `[stress:` / `[reconcile]`. Status is owned here, not reconstructed from chats.
+
+---
+
+## Operating model — how we run audits going forward (READ THIS FIRST)
+
+**v1 (what we ran 30 Jun): 15 parallel sessions, one per feature.** It found real P0s,
+but coordination fell on the human — 15 PRs to track, two sessions fixed the same P0
+twice (#132/#139), prod↔main drift went unreconciled, status scattered until it felt
+lost. See LEARNINGS #19.
+
+**v2 (what we run now): ONE orchestrator that fans out subagents/worktrees.** The human
+approves at three points only; everything else is the loop's job.
+
+```
+        ┌──────────────────────────────────────────────┐
+        │  INTEGRATOR  (one session — this session)     │
+        │  owns BACKLOG/board, dedupes claims,          │
+        │  sequences merges, deploys, verifies, reports │
+        └───────────────┬──────────────────────────────┘
+          fan out (Workflow / Agent, ≤ N concurrent, worktree-isolated)
+        ┌───────┴───────┬───────────────┬───────────────┐
+     Finder×k        Verifier×k       Fixer            (read-only unless Fixer)
+   probe feature   adversarially   fix in worktree,
+   (neg/edge/       refute each     tsc+build+tests,
+    concurrency/    finding         write-don't-deploy
+    security)       (majority       migrations, PR
+                    kills it)
+```
+
+**The loop, one feature at a time or fanned across many:**
+1. **Finder** (read-only subagent) probes the feature per the COMMON RULES below →
+   ranked findings with `file:line` + repro. Never mutates prod schema/fns.
+2. **Verifier** (independent subagent, prompted to *refute*) adversarially checks each
+   finding; majority-refute kills it. This is what stops plausible-but-wrong findings.
+3. **Fixer** (worktree-isolated) fixes confirmed breaks, adds tests, `tsc`+build green,
+   writes migrations **but does not deploy**, opens a PR.
+4. **Integrator** (this session, human-checkpointed) reviews, sequences merges across
+   shared files, deploys migrations-then-functions in one wave, **verifies from the
+   system** (re-query / logs), updates AUDIT.md + this board, files follow-ups.
+
+**Why this beats v1:** one artifact owns status; claims are deduped before work starts;
+the verify step is built-in, not hoped-for; the integrator is the single deploy choke
+point so prod↔main can't drift; the human sees one queue, not 15 chats.
+
+### The three (and only three) human checkpoints
+1. **Merge/deploy wave** — approve or run the integrator's batched merge+deploy. Can
+   graduate to standing authorization once the loop earns trust (rollback always one
+   step away). This is the irreducible prod gate (LEARNINGS #4, #5, #17).
+2. **`decision-needed` items** — genuine product calls (e.g. CSV re-import dedup policy),
+   surfaced by the integrator, never guessed by a builder.
+3. **OAuth / consents / spend** — Plaid signup, Xero re-consent, paid keys (LEARNINGS #10).
+
+Everything else — probing, verifying, fixing, testing, re-querying — runs without
+approval. That is the point.
+
+### How to physically launch it
+- **Interactive / on-demand (this is the default):** the integrator session uses the
+  **Workflow** tool to fan out finder→verifier→fixer stages (pipeline by default), or
+  spawns **Agent** subagents with `isolation: "worktree"` for parallel fixes. One session,
+  many agents — not many sessions.
+- **Scheduled / overnight:** one `/schedule` routine per role (builder 22:00, red-team
+  02:00, integrator 08:30, retro Sun) — full prompt packs and cadence in
+  [FULL_BOOKKEEPING_ROADMAP.md](plans/FULL_BOOKKEEPING_ROADMAP.md) §4. Each routine has a
+  **hard timeout, a single task, and exits by opening a PR or a blocked-report** — never
+  commits to `main`, never runs open-ended (the 9×/night cron that leaked sessions →
+  SIGBUS is why; LEARNINGS #19).
+- **Fuel:** every feature/audit target is a spec card in
+  [FULL_BOOKKEEPING_ROADMAP.md](plans/FULL_BOOKKEEPING_ROADMAP.md) §4.3 (or a row in the
+  Tracker below for bug-hunt audits). A card with `decision-needed` is skipped by builders
+  and surfaced to the human.
 
 ---
 

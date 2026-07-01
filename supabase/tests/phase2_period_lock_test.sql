@@ -1,5 +1,5 @@
 -- Period-lock HARDENING gate ([stress:periods] audit; ARCHITECTURE.md §6.2).
--- Guards the three fixes in 20260630100000_period_lock_hardening.sql:
+-- Guards the three fixes in 20260702000000_reconcile_period_journal_locks.sql:
 --   F1 ensure_open_period takes a FOR SHARE row lock (close-vs-post race).
 --   F2 approve_journal_entry refuses to finalize an entry into a CLOSED period.
 --   F3 reverse_journal_entry's default path rolls forward to an OPEN period so a
@@ -32,8 +32,12 @@ insert into client_assignments (engagement_id, user_id, assigned_by) values
   ('00000000-0000-0000-0000-00000000d1e1', '00000000-0000-0000-0000-00000000d1a2', '00000000-0000-0000-0000-00000000d1a1');
 
 -- approval required so the CPA's posts land pending_review
+-- (org creation auto-seeds a settings row, so upsert rather than insert)
 insert into org_accounting_settings (org_id, home_currency, cpa_posts_require_approval) values
-  ('00000000-0000-0000-0000-00000000d1b1', 'USD', true);
+  ('00000000-0000-0000-0000-00000000d1b1', 'USD', true)
+  on conflict (org_id) do update set
+    home_currency = excluded.home_currency,
+    cpa_posts_require_approval = excluded.cpa_posts_require_approval;
 
 insert into ledger_accounts (id, org_id, code, name, type) values
   ('00000000-0000-0000-0000-00000000d1c1', '00000000-0000-0000-0000-00000000d1b1', '1000', 'Cash',    'asset'),

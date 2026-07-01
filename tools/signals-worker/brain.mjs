@@ -135,6 +135,9 @@ Rules:
 // from the shared voice, the surface-specific job from the persona.
 export async function draft({ post, painTags, competitor }, voiceBody, personaBody) {
   if (!cfg.anthropicKey) throw new Error("draft: ANTHROPIC_API_KEY not set");
+  // Never draft from metadata alone — with no post text the model can only
+  // refuse (and that refusal would be saved as the lead's outreach draft).
+  if (!post || !post.trim()) throw new Error("draft: item has no post text");
 
   const voicePreface = voiceBody
     ? `# FounderFirst Voice — canonical (applies to every surface)\n\n${voiceBody}\n\n---\n\n`

@@ -109,6 +109,57 @@ export async function score(item) {
   return { intent, pain_tags, competitor, geo, role, contact_name, contact_company };
 }
 
+// ---- Draft sanity gate -------------------------------------------------------
+
+/**
+ * A saved draft must read like a reply to THIS post. Refusals ("I don't have
+ * the actual post text…"), meta-requests for more context, and length
+ * blow-outs are all model failures, not outreach — validateDraft() rejects
+ * them before they reach sig_set_lead_draft, and the lead stays at 'new'
+ * (the manual-drafting queue) instead of carrying a poisoned draft.
+ */
+export const DRAFT_REFUSAL_RE = new RegExp(
+  [
+    String.raw`\bI (don'?t|do not|can'?t|cannot) (have|see|find|access|reference)\b`,
+    String.raw`\b(could|can) you (share|paste|provide|send)\b`,
+    String.raw`\bplease (share|paste|provide) (the|their|what)\b`,
+    String.raw`\bpaste (the|what|their)\b`,
+    String.raw`\bI need (the|more|additional) (actual |specific )?(post|text|details|context|content)\b`,
+    String.raw`\bthere('?s| is) no (post|text|content)\b`,
+    String.raw`\bonce you (share|paste|provide)\b`,
+    String.raw`\bas an AI\b`,
+    String.raw`\[insert`,
+  ].join("|"),
+  "i",
+);
+
+const DRAFT_STOPWORDS = new Set([
+  "about","after","again","their","there","these","those","would","could",
+  "should","which","while","being","doing","going","really","because","where",
+  "every","other","since","still","thing","things","business","bookkeeping",
+]);
+
+export function validateDraft(text, post) {
+  const t = (text ?? "").trim();
+  if (!t) return { ok: false, reason: "empty" };
+  if (DRAFT_REFUSAL_RE.test(t)) return { ok: false, reason: "refusal/meta-request" };
+  const words = t.split(/\s+/).length;
+  if (words < 8) return { ok: false, reason: `too short (${words} words)` };
+  if (words > 160) return { ok: false, reason: `too long (${words} words)` };
+
+  // Reference check: the persona demands a specific detail from the post. When
+  // the post has enough distinctive words, the draft must reuse at least one
+  // (generic filler like "business"/"bookkeeping" doesn't count).
+  const contentWords = (s) => [
+    ...new Set((s.toLowerCase().match(/[a-z][a-z'-]{4,}/g) ?? []).filter((w) => !DRAFT_STOPWORDS.has(w))),
+  ];
+  const postWords = new Set(contentWords(post ?? ""));
+  if (postWords.size >= 6 && !contentWords(t).some((w) => postWords.has(w))) {
+    return { ok: false, reason: "no reference to the post" };
+  }
+  return { ok: true };
+}
+
 // ---- Outreach drafting (managed — Anthropic) -------------------------------
 
 /**

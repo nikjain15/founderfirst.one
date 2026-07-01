@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useActiveOrg } from "../org/ActiveOrgProvider";
 import { useIsPlatformStaff } from "../staff/api";
 import AccountMenu from "./AccountMenu";
+import OrgSwitcher from "./OrgSwitcher";
 import { SITE } from "@ff/site";
 
 export default function Topbar() {
@@ -25,20 +26,7 @@ export default function Topbar() {
           Penny
         </Link>
 
-        {orgs.length > 0 && (
-          <select
-            className="org-switcher"
-            value={activeOrg?.id ?? ""}
-            onChange={(e) => setActiveOrgId(e.target.value)}
-            aria-label="Active organization"
-          >
-            {orgs.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.name} · {o.type}
-              </option>
-            ))}
-          </select>
-        )}
+        <OrgSwitcher orgs={orgs} activeOrg={activeOrg} onSelect={setActiveOrgId} />
 
         <span className="spacer" />
 

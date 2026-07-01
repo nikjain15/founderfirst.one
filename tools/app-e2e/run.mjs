@@ -72,22 +72,29 @@ const consoleErrors = [];
 page.on("console", (m) => { if (m.type() === "error") { consoleErrors.push(m.text()); console.log("  [browser error]", m.text()); } });
 page.on("pageerror", (e) => { consoleErrors.push(String(e)); console.log("  [page error]", String(e)); });
 
-// The ledger tabs (apps/app Ledger.tsx) — stable ids we can drive directly.
-// writeOnly tabs (categorize/import) render only for an owner with write access.
-const TABS = [
-  { id: "overview",   label: "Overview",   writeOnly: false },
-  { id: "categorize", label: "Categorize", writeOnly: true  },
-  { id: "journal",    label: "Journal",    writeOnly: false },
-  { id: "import",     label: "Import",     writeOnly: true  },
+// The ledger IA (apps/app Ledger.tsx): 4 main tabs (#ltab-*), with the double-entry
+// mechanics under Books as sub-tabs (#lsub-*). writeOnly screens (categorize/import)
+// render only for an owner with write access. Journal/Import live under Books.
+const SCREENS = [
+  { key: "overview",   label: "Overview",   main: "overview" },
+  { key: "categorize", label: "Categorize", main: "categorize", writeOnly: true },
+  { key: "journal",    label: "Journal",    main: "books", sub: "journal" },
+  { key: "import",     label: "Import",     main: "books", sub: "import", writeOnly: true },
 ];
 
-/** Click a ledger tab by id and wait for its panel; returns false if the tab is absent. */
-async function openTab(id) {
-  const tab = page.locator(`#ltab-${id}`);
-  if (!(await tab.count().catch(() => 0))) return false;
-  await tab.click().catch(() => {});
+/** Open a screen (main tab, then Books sub-tab if any). Returns false if absent. */
+async function openScreen(s) {
+  const mainTab = page.locator(`#ltab-${s.main}`);
+  if (!(await mainTab.count().catch(() => 0))) return false;
+  await mainTab.click().catch(() => {});
   await page.locator("#ledger-panel").waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
-  await page.waitForTimeout(600);
+  if (s.sub) {
+    const subTab = page.locator(`#lsub-${s.sub}`);
+    if (!(await subTab.count().catch(() => 0))) return false;
+    await subTab.click().catch(() => {});
+    await page.waitForTimeout(400);
+  }
+  await page.waitForTimeout(500);
   return true;
 }
 
@@ -129,15 +136,15 @@ try {
     ok("owner ledger loaded (org present)");
 
     // ── Desktop: each key screen renders ──────────────────────────────────────
-    for (const t of TABS) {
-      const opened = await openTab(t.id);
+    for (const s of SCREENS) {
+      const opened = await openScreen(s);
       if (opened) {
-        await page.screenshot({ path: join(ARTIFACTS, `desktop-${t.id}.png`), fullPage: true });
-        ok(`${t.label} renders (desktop)`);
-      } else if (t.writeOnly) {
-        fail(`${t.label} tab missing — the E2E account must be an OWNER (write access) to test it`);
+        await page.screenshot({ path: join(ARTIFACTS, `desktop-${s.key}.png`), fullPage: true });
+        ok(`${s.label} renders (desktop)`);
+      } else if (s.writeOnly) {
+        fail(`${s.label} missing — the E2E account must be an OWNER (write access) to test it`);
       } else {
-        fail(`${t.label} tab missing unexpectedly`);
+        fail(`${s.label} missing unexpectedly`);
       }
     }
 
@@ -145,10 +152,10 @@ try {
     await page.setViewportSize(MOBILE);
     await page.waitForTimeout(400);
     await assertNoOverflow("mobile / topbar");
-    for (const t of TABS) {
-      if (await openTab(t.id)) {
-        await assertNoOverflow(`mobile / ${t.label}`);
-        await page.screenshot({ path: join(ARTIFACTS, `mobile-${t.id}.png`), fullPage: true });
+    for (const s of SCREENS) {
+      if (await openScreen(s)) {
+        await assertNoOverflow(`mobile / ${s.label}`);
+        await page.screenshot({ path: join(ARTIFACTS, `mobile-${s.key}.png`), fullPage: true });
       }
     }
   }

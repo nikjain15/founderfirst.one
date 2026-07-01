@@ -47,7 +47,9 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
         <h1>{post.title}</h1>
         <p class="lede">{post.description}</p>
       </div>
-      <div class="hero-visual">{post.hero === "safe" ? <PennySafe /> : <PennyGlance />}</div>
+      <div class="hero-visual">{post.tag === "Podcast"
+        ? <div class="pod-mark" aria-hidden="true"><span>P</span></div>
+        : (post.hero === "safe" ? <PennySafe /> : <PennyGlance />)}</div>
     </div>
   </header>
 
@@ -116,6 +118,9 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: 
   h1 { font-size: var(--fs-display-1); line-height: 1.08; letter-spacing: var(--ls-tight); margin-bottom: var(--space-4); }
   .hero-copy .lede { font-size: var(--fs-body); color: var(--ink-2); line-height: 1.6; }
   .hero-visual { display: flex; justify-content: center; }
+  /* Podcast episodes use the round Penny mark, not the product-demo visual. */
+  .pod-mark { width: clamp(140px, 22vw, 220px); aspect-ratio: 1; border-radius: 50%; background: linear-gradient(145deg, var(--brand), var(--brand-strong)); display: grid; place-items: center; box-shadow: var(--shadow-float); }
+  .pod-mark span { font-family: Georgia, serif; font-style: italic; font-weight: var(--fw-bold); font-size: clamp(72px, 14vw, 130px); color: var(--white); padding-bottom: 6px; }
 
   .post { padding-block: clamp(32px, 5vw, 64px); }
   .post .wrap { max-width: 720px; }

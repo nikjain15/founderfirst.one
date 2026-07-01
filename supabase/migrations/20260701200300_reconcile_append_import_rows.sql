@@ -38,8 +38,6 @@ begin
 
   update import_batches set status = 'previewed' where id = p_batch and status = 'draft';
   return v_n;
-end$function$
-
-
+end$function$;
 revoke all on function append_import_rows(uuid,uuid,uuid,jsonb) from public;
 grant execute on function append_import_rows(uuid,uuid,uuid,jsonb) to service_role;

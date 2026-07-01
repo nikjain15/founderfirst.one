@@ -131,8 +131,6 @@ begin
   update import_batches set status = 'committed', committed_by = p_actor, committed_at = now()
     where id = p_batch returning * into v_b;
   return v_b;
-end$function$
-
-
+end$function$;
 revoke all on function commit_import_batch(uuid,uuid,uuid,integer) from public;
 grant execute on function commit_import_batch(uuid,uuid,uuid,integer) to service_role;

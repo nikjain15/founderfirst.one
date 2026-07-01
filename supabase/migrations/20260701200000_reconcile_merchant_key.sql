@@ -22,8 +22,6 @@ AS $function$
            else key
          end
   from toks;
-$function$
-
-
+$function$;
 revoke all on function merchant_key(text) from public;
 grant execute on function merchant_key(text) to service_role;

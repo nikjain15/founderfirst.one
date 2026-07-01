@@ -82,8 +82,6 @@ begin
                                'repost_id', v_new.id, 'correction_date', v_corr_date,
                                'into_open_period', coalesce(v_orig_closed, false)));
   return v_new;
-end$function$
-
-
+end$function$;
 revoke all on function recategorize_entry(uuid,uuid,uuid,uuid,uuid,text,boolean,text,cat_match_type) from public;
 grant execute on function recategorize_entry(uuid,uuid,uuid,uuid,uuid,text,boolean,text,cat_match_type) to service_role;

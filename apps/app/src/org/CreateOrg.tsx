@@ -3,10 +3,20 @@
  * the membership exists, so the new org appears in the RLS-scoped switcher; we
  * refetch and make it active. (ARCHITECTURE.md §B2.1 US1/US2/US3.)
  */
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "../ledger/api";
 import { useActiveOrg, type OrgType } from "./ActiveOrgProvider";
+
+// Map the function's machine error codes to plain-language messages.
+function friendlyError(message: string): string {
+  if (message.includes("org_limit_reached")) {
+    return "You've reached the limit on organizations. Contact us if you need more.";
+  }
+  if (message.includes("bad_name")) return "Please enter a name (up to 120 characters).";
+  if (message.includes("bad_type")) return "Please choose a business or a CPA practice.";
+  return message || "Could not create organization.";
+}
 
 export default function CreateOrg({ onDone }: { onDone?: () => void }) {
   const qc = useQueryClient();
@@ -15,22 +25,31 @@ export default function CreateOrg({ onDone }: { onDone?: () => void }) {
   const [type, setType] = useState<OrgType>("business");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Hard guard against a second submit slipping through before `busy` re-renders
+  // (Enter + click, fast double-click). The server also dedupes, but this stops the
+  // duplicate request leaving the client at all.
+  const inFlight = useRef(false);
 
   const submit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
+    if (inFlight.current || busy) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    inFlight.current = true;
     setBusy(true);
     setError(null);
     try {
-      const data = await invoke<{ org?: { id?: string } }>("orgs", { type, name: name.trim() });
+      const data = await invoke<{ org?: { id?: string } }>("orgs", { type, name: trimmed });
       const newId = data?.org?.id;
       await qc.invalidateQueries({ queryKey: ["active-org-data"] });
       if (newId) setActiveOrgId(newId);
       setName("");
       onDone?.();
     } catch (err) {
-      setError((err as Error).message || "Could not create organization.");
+      setError(friendlyError((err as Error).message ?? ""));
     } finally {
       setBusy(false);
+      inFlight.current = false;
     }
   };
 

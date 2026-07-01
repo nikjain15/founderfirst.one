@@ -119,10 +119,10 @@ a.ghost, a.ghost:visited { color: var(--ink-2); }
   .topbar-inner { flex-wrap: wrap; }
   .org-switcher { max-width: 14rem; }
 }
+/* Brand wordmark — sans (Inter), like admin's brand; the P-mark carries the identity. */
 .topbar .brand {
   display: inline-flex; align-items: center; gap: 0.5rem;
-  font-family: var(--font-display); font-weight: var(--fw-bold); font-size: var(--fs-body);
-  letter-spacing: var(--ls-tight);
+  font-weight: var(--fw-bold); font-size: var(--fs-body); letter-spacing: -0.01em;
 }
 .topbar .spacer { flex: 1; }
 .org-switcher {
@@ -142,7 +142,7 @@ a.ghost, a.ghost:visited { color: var(--ink-2); }
 }
 .empty { text-align: center; max-width: 34rem; margin: 3.5rem auto 0; }
 .empty .welcome-mark { margin: 0 auto 1.1rem; }
-.empty h1 { font-size: var(--fs-h2); letter-spacing: var(--ls-tighter); line-height: 1.06; margin: 0 0 0.5rem; }
+.empty .page-title { margin: 0 0 0.5rem; }
 
 /* ── role / lens ─────────────────────────────────────────────── */
 .role-pill {
@@ -159,9 +159,11 @@ a.ghost, a.ghost:visited { color: var(--ink-2); }
 .role-pill.role-cpa { background: var(--brand-soft); color: var(--ink-2); border-color: transparent; }
 
 .lens { width: min(100%, var(--page-max, 60rem)); }
-/* Page heading — mirrors admin's .page-title scale (was --fs-h1 → up to 64px,
-   which read much larger than the rest of the platform). */
-.lens h1 { font-size: var(--fs-h2); letter-spacing: var(--ls-tighter); line-height: 1.06; margin: 0 0 0.25rem; }
+/* Headings use the shared `.page-title` (design-system typography.css) — the one
+   canonical page-heading scale for the whole platform. Here we only tune the
+   in-flex spacing + the eyebrow that leads it (admin's eyebrow → title rhythm). */
+.lens .page-title { margin: 0 0 0.25rem; }
+.lens-eyebrow { flex-basis: 100%; margin: 0 0 0.3rem; }
 .readonly-note {
   margin-top: 1rem;
   padding: 0.6rem 0.8rem;

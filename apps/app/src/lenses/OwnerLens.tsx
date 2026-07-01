@@ -8,7 +8,7 @@ import InviteCpa from "../org/InviteCpa";
 export default function OwnerLens({ org, roleInfo }: { org: Org; roleInfo: RoleInfo }) {
   return (
     <>
-      <Ledger org={org} canWrite={roleInfo.canWrite} defaultTab="overview" />
+      <Ledger org={org} canWrite={roleInfo.canWrite} defaultTab="overview" eyebrow="Your books" />
       <div className="lens-aside">
         <InviteCpa orgId={org.id} />
       </div>

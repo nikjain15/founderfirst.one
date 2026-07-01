@@ -14,7 +14,7 @@
 -- into temp tables; assertions run against them. Everything rolls back.
 
 begin;
-select plan(21);
+select plan(24);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -233,6 +233,24 @@ select throws_ok($$
     p_org   => '00000000-0000-0000-0000-0000000000b1',
     p_entry_id => (select id from _ap2))
 $$, '42501', NULL, 'a CPA cannot self-approve their own pending entry');
+
+-- ── 22–24. concurrent double-reversal P0: the original is row-locked ─────────
+-- True concurrency can't run inside one rolled-back txn, so assert the structural
+-- guarantees that close the race (regression guard for [stress:journal]): both
+-- read→mutate write paths take `for update` on the original, and a partial unique
+-- index makes a second reversal of any original impossible at the storage layer.
+select matches(
+  (select lower(prosrc) from pg_proc where proname = 'reverse_journal_entry'),
+  'for update',
+  'reverse_journal_entry locks the original (no double-reversal TOCTOU)');
+select matches(
+  (select lower(prosrc) from pg_proc where proname = 'approve_journal_entry'),
+  'for update',
+  'approve_journal_entry locks the entry it approves');
+select ok(
+  exists (select 1 from pg_indexes
+          where indexname = 'journal_entries_one_reversal_per_original'),
+  'partial unique index enforces at most one reversal per original');
 
 select * from finish();
 rollback;

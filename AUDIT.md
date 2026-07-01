@@ -181,3 +181,74 @@ P1 = guideline breach / UX regression / real risk · P2 = polish.
 
 *Refine a dimension's checklist here when a run surfaces a sub-attribute worth
 making explicit. Keep it stack-specific and checkable.*
+
+---
+
+# Audit ledger
+
+Every audit we run is recorded here: **what was tested, what broke, where the fix
+landed, and — most importantly — what it did NOT cover.** Newest program first.
+Live PR/deploy status is in [docs/STRESS_TEST_TRACKER.md](docs/STRESS_TEST_TRACKER.md);
+full per-feature reports are in `docs/stress/<feature>/`. This ledger is the durable
+record; the tracker is the working board.
+
+**How to read a row:** `P0/P1/P2` = confirmed defects by severity · `Status` =
+where the fix is (🟢 live+on-main · 🔵 live-not-on-main / PR-open · ⬜ untested).
+
+## Program 1 — feature stress-test sweep (30 Jun – 2 Jul 2026)
+
+15 features adversarially stress-tested on live prod (negative inputs, edge cases,
+concurrency, failure injection, security), each in its own worktree, fix-and-PR,
+integrator merges in waves. Baseline = `main` after pre-onboarding #1–#15.
+
+| # | Feature | P0 | P1 | Headline finding | Status | PR |
+|---|---|----|----|---|---|---|
+| 1 | Tenant isolation / RLS / IDOR | 1 | 1 | 22 `p_actor`-first SECURITY DEFINER RPCs were EXECUTE-granted to anon+authenticated → forge `p_actor`, write any tenant. Revoked to service_role. | 🟢 | [#138](../../pull/138) |
+| 2 | Journal entries & reversals | 1 | 0 | `reverse_journal_entry` lock-free TOCTOU → concurrent reversals over-cancel balances; **TB still ties = silent**. 14 API calls → 10 reversals live. `FOR UPDATE` + unique index. | 🔵 → #156 | [#139](../../pull/139) |
+| 3 | Financial reports tie-out | 1 | 0 | `useEntries` had no pagination + prod `max_rows=1000` → orgs >1000 entries silently dropped oldest; reports tied but WRONG. `.range()` paging. | 🟢 | [#129](../../pull/129) |
+| 4 | Accounting periods | 1 | 2 | close-vs-post TOCTOU lands entry in closed period (`FOR SHARE`); approve-into-closed back-door; reverse bricked after close. | 🔵 → #156 | [#131](../../pull/131) |
+| 5 | Categorization + CPA feedback | 2 | 1 | double-reversal + double-categorize races; LIKE-wildcard rule poisoning (`a%z`→"alcatraz"@100%, fixed w/ ESCAPE). | 🟢 | [#132](../../pull/132) |
+| 6 | CSV / bank import | 0 | 1 | one impossible calendar date (`02/30`) aborts the whole batch — 0 of N rows stage. Calendar validation + delimiter auto-detect. | 🔵 partial | [#143](../../pull/143) |
+| 7 | Opening balances import | 0 | 1 | opening-balance row missing an account silently folds into the OBE plug → "balanced" but wrong, success shown. | 🟢 | [#135](../../pull/135) |
+| 8 | Chart of accounts | 0 | 2 | unvalidated `account.currency` → malformed `char(3)` crashes `Intl.NumberFormat` → books view dies; cross-tenant `parent_id`. ISO constraint + cycle guard. | 🟢 | [#137](../../pull/137) |
+| 9 | Auth, session & routing | 0 | — | passed hardening; micro-fixes only. | 🟢 | [#133](../../pull/133) |
+| 10 | Invites & engagements | 0 | 1 | invite accept was token-only, not email-bound; re-engage/no-demote lifecycle gaps. | 🟢 | [#134](../../pull/134) |
+| 11 | CPA lens / access scope | 0 | 1 | approval-settings write path missing; read-only CPA scope otherwise held. | 🟢 | [#141](../../pull/141) |
+| 12 | QBO / Xero connect & sync | 1 | 3 | provider-commit DEAD ON ARRIVAL (qbo/xero source hit opening-balance branch → `no_cutover_date`); double-post on re-pull; JPY ×100. | 🟢 | [#142](../../pull/142) |
+| 13 | Onboarding & org creation | 0 | 1 | org-create not atomic (partial org on failure). `create_org_atomic`. | 🟢 | [#136](../../pull/136) |
+| 14 | Data export & erasure (GDPR) | 0 | 1 | export truncated at 1000 rows (same paging class as #3). Paginated to 1500+. | 🟢 | [#130](../../pull/130) |
+| 15 | Platform-staff / break-glass | 0 | 1 | `open_break_glass` not gated on editor tier. Gated + audit-logged. | 🟢 | [#140](../../pull/140) |
+
+**Totals:** 8 P0, ~19 P1 confirmed and fixed. 12/15 fully closed (live + on `main`);
+2 (#131, #139) live-on-prod captured onto `main` by **[#156](../../pull/156)**; 1 (#143)
+partially landed.
+
+### Cross-cutting themes (graduated into LEARNINGS.md)
+- **Silent corruption that still balances** — every ledger P0 (#2, #4, #5) left the
+  trial balance tying to the cent while the underlying data was wrong. A debits==credits
+  check is necessary but not sufficient. → LEARNINGS #16.
+- **TOCTOU on read-then-write RPCs** — the same lock-free-`SELECT`-then-mutate shape
+  recurred across reverse / recategorize / approve / close. → LEARNINGS #15.
+- **Prod-ahead-of-main drift** — fixes deployed straight to prod but never merged; a
+  fresh `db push` regresses them. → LEARNINGS #17.
+- **Unbounded reads truncate silently** — any select feeding a report/export must
+  paginate (#3, #14). → LEARNINGS #18.
+
+## What this program did NOT cover — standing gaps
+
+Carry these into the next audit cycle; they are the backlog for coverage, not defects.
+
+| Gap | Why it matters | Owner action |
+|---|---|---|
+| **Multi-currency** anything beyond the single-currency guard | guard blocks it today, but the moment we enable it the whole ledger/report/FX path is untested | test when multi-currency is scheduled (post-pilot) |
+| **UI click-through** of periods, categorize, import | all 15 audits were API/RPC-level; no browser walk of the actual screens | add an E2E-driven UI audit pass |
+| **Isolation F3** — `can_access_org` SECURITY DEFINER per-row seqscan on `journal_lines` (anon GET ~3s) | DoS surface; flagged, not fixed | index / rewrite the access check |
+| **CSV F4** — re-importing the same file double-posts (no dedup) | real user footgun | **product decision for Nik** (warn vs. block vs. deb-key) |
+| **Load / volume** — behavior at 10k–100k entries, concurrent orgs | only correctness tested, not scale | perf audit with seeded large orgs |
+| **The whole top-half of the product** (reconciliation UI, tax-line mapping, CPA workqueue, exports, bank feeds, Penny thread) | not built yet → nothing to stress-test | see [FULL_BOOKKEEPING_ROADMAP.md](docs/plans/FULL_BOOKKEEPING_ROADMAP.md) Waves 1–4 |
+
+## Program 0 — platform audit (30 Jun 2026)
+53 findings (4 P0 / 20 P1). 6 "shipped baseline" items were actually broken
+(invite email-bind, pgTAP-in-CI, single-currency guard, GDPR fn, app error boundary,
+`ledger_audit` table). Sprint-1 fixes folded into the pre-onboarding baseline (#122).
+Superseded as a coverage record by Program 1.

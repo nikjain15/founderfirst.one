@@ -74,7 +74,23 @@ button {
 }
 button:hover:not(:disabled) { background: var(--brand-hover); }
 button:disabled { opacity: 0.5; cursor: default; }
-button.ghost { background: transparent; color: var(--ink-2); border-color: var(--line); }
+
+/* Ghost (secondary) — works on <button> AND <a>/<Link> alike, so a link styled
+   as a button (`className="ghost"`) reads as one instead of a raw blue link.
+   Self-contained: anchors don't inherit the base button box, so restate it. */
+.ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  min-height: var(--tap-min, 44px);
+  padding: 0.5rem 1rem;
+  font-size: var(--fs-ui); font-weight: var(--fw-semibold);
+  background: transparent; color: var(--ink-2);
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-pill);
+  text-decoration: none; cursor: pointer; white-space: nowrap;
+}
+/* Ghost stays ghost on hover (the base button:hover would flood it with --brand). */
+.ghost:hover:not(:disabled),
+button.ghost:hover:not(:disabled) { background: var(--brand-soft); color: var(--ink); }
+a.ghost, a.ghost:visited { color: var(--ink-2); }
 
 /* Connect-software (import) layout — was unstyled, fell back to block stacking. */
 .connect-row { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
@@ -248,11 +264,12 @@ button.ghost.sm, .ghost.sm {
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 0.75rem; }
 .kpi {
   display: flex; flex-direction: column; gap: 0.2rem;
+  min-width: 0; /* let the tile shrink below its content so a long value can't widen the grid track */
   padding: var(--pad-card); border: var(--bw-hair) solid var(--line);
   border-radius: var(--r-card); background: var(--white); box-shadow: var(--shadow-card);
 }
 .kpi-label { font-size: var(--fs-micro); color: var(--ink-3); text-transform: uppercase; letter-spacing: var(--ls-chip); }
-.kpi-value { font-size: var(--fs-kpi); font-weight: var(--fw-bold); }
+.kpi-value { font-size: var(--fs-kpi); font-weight: var(--fw-bold); overflow-wrap: anywhere; }
 .t-good { color: var(--income-strong); } .t-bad { color: var(--error); } .t-warn { color: var(--amber-strong); }
 .warn-banner {
   padding: 0.6rem 0.8rem; border-radius: var(--r-card);
@@ -396,7 +413,9 @@ button.ghost.sm, .ghost.sm {
 .ledger-empty h3 { margin: 0 0 0.3rem; font-size: var(--fs-h3); }
 
 @media (max-width: 640px) {
-  .je-row { grid-template-columns: 1fr auto 1.2rem; }
+  /* Date hides on mobile, leaving memo · status · amount · caret — 4 tracks.
+     (The old 3-track template dropped the amount into the caret cell → clipped.) */
+  .je-row { grid-template-columns: minmax(0, 1fr) auto auto 1.2rem; column-gap: 0.4rem; }
   .je-row .je-date { display: none; }
   .je-line { grid-template-columns: 1fr 6rem 6rem; font-size: var(--fs-ui); }
   .report-table.tb .report-row, .report-table.tb .report-head { grid-template-columns: minmax(0, 1fr) 5.5rem 5.5rem; }

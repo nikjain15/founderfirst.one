@@ -359,9 +359,12 @@ export const discardImportBatch = (org_id: string, batch_id: string) =>
 
 // ── external accounting connections (QBO/Xero) ────────────────────────────────
 export type ExternalProvider = "qbo" | "xero";
+// Plaid is a bank-feed connection (link-token flow, not OAuth redirect); it shares
+// the external_connections table but not the ${provider}-connect/-import fns.
+export type ConnectionProvider = ExternalProvider | "plaid";
 export interface ExternalConnection {
   id: string;
-  provider: ExternalProvider;
+  provider: ConnectionProvider;
   tenant_name: string | null;
   status: "pending" | "active" | "revoked" | "error";
 }
@@ -390,6 +393,67 @@ export const importProvider = (provider: ExternalProvider, org_id: string, conne
   invoke<{ batch_id: string; accounts: number; rows: number; ready: number }>(
     `${provider}-import`, { org_id, connection_id },
   );
+
+// ── W2.2 provider migration (one-click, with history) ─────────────────────────
+export interface ProviderTbRow { name: string; debit_minor: number; credit_minor: number; }
+export interface ProviderMigration {
+  id: string;
+  org_id: string;
+  connection_id: string;
+  provider: ExternalProvider;
+  status: "pulling" | "review" | "committed" | "discarded";
+  cutover_date: string | null;
+  batch_ids: string[];
+  accounts: number;
+  txn_count: number;
+  provider_tb: ProviderTbRow[];
+  provider_tb_as_of: string | null;
+}
+
+/** Kick off a full historical pull: CoA + every txn → per-year batches + QBO TB snapshot. */
+export const migrateProvider = (provider: ExternalProvider, org_id: string, connection_id: string) =>
+  invoke<{
+    migration_id: string; batch_ids: string[]; accounts: number; txn_count: number;
+    years: string[]; provider_tb_rows: number; provider_tb_as_of: string | null;
+  }>(`${provider}-import`, { org_id, connection_id, historical: true });
+
+/** The migration records for an org (RLS-readable). Newest first. */
+export function useProviderMigrations(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["provider-migrations", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<ProviderMigration[]> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("provider_migrations")
+        .select("id,org_id,connection_id,provider,status,cutover_date,batch_ids,accounts,txn_count,provider_tb,provider_tb_as_of")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as ProviderMigration[];
+    },
+  });
+}
+
+/** Confirm the migration's cutover date (stamps every batch + marks committed). */
+export const setMigrationCutover = (org_id: string, migration_id: string, cutover_date: string) =>
+  invoke<{ migration: ProviderMigration }>("imports", { op: "migration_cutover", org_id, migration_id, cutover_date });
+
+// ── Plaid bank feeds (W2.3) ───────────────────────────────────────────────────
+// The access token never touches the client: link-token → open Plaid Link →
+// exchange the public_token server-side (stores the connection + initial sync).
+export interface PlaidSyncResult { added: number; modified: number; removed: number; skipped: number; }
+
+export const plaidLinkToken = (org_id: string) =>
+  invoke<{ link_token: string; expiration: string }>("plaid-link-token", { org_id });
+
+export const plaidExchange = (org_id: string, public_token: string) =>
+  invoke<PlaidSyncResult & { connection_id: string; tenant_name: string | null }>(
+    "plaid-exchange", { org_id, public_token },
+  );
+
+export const plaidSync = (org_id: string, connection_id: string) =>
+  invoke<PlaidSyncResult>("plaid-sync", { org_id, connection_id });
 
 // ── report exports (W1.2) ─────────────────────────────────────────────────────
 // The file is built + downloaded client-side (export.ts); this records ONE audit
@@ -575,6 +639,96 @@ export function useReconciliationRefresh(orgId: string | undefined) {
   const qc = useQueryClient();
   return () => {
     for (const key of ["reconciliation-sessions", "reconciliation-matches", "statement-rows"]) {
+      void qc.invalidateQueries({ queryKey: [key, orgId] });
+    }
+  };
+}
+
+// ── catch-up mode (W2.1) ──────────────────────────────────────────────────────
+// The guided multi-year flow ORCHESTRATES import / categorize / reconcile / export
+// (all reused above); these calls are the catch-up-specific write-path. Reads
+// (progress, plan) and writes (set_plan, batch_approve) go through the `catch-up`
+// edge fn → the service_role-only, audited RPCs (progress reads under the same fn).
+
+/** One backlog year's progress, derived from the ledger (no denormalized status). */
+export interface CatchUpYear {
+  year: number;
+  entries: number;
+  uncategorized: number;
+  reconciled_sessions: number;
+  done: boolean;
+}
+
+/** Flat-per-year packaging for a catch-up (the model behind "priced per year"). */
+export interface CatchUpPlan {
+  org_id: string;
+  fee_per_year_minor: number;
+  currency: string;
+  backlog_years: number[];
+  fee_total_minor: number;
+  status: "draft" | "active" | "complete";
+}
+
+/** One bulk-approve item — the owner accepting Penny's high-confidence pick. */
+export interface BatchApproveItem {
+  entry_id: string;
+  to_account_id: string;
+  confidence: number;
+  learn_value?: string | null;
+}
+
+export interface BatchApproveResult {
+  approved: number;
+  skipped: number;
+  failed: number;
+  results: { entry_id: string; status: "approved" | "skipped" | "failed"; detail?: string }[];
+}
+
+/** The catch-up plan for an org (RLS-readable to anyone who can access the org). */
+export function useCatchUpPlan(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["catch-up-plan", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<CatchUpPlan | null> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("catch_up_plans")
+        .select("org_id,fee_per_year_minor,currency,backlog_years,fee_total_minor,status")
+        .eq("org_id", orgId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as CatchUpPlan | null;
+    },
+  });
+}
+
+/** Per-year progress meter (uncategorized / reconciled counts, done flag). */
+export function useCatchUpProgress(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["catch-up-progress", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<CatchUpYear[]> => {
+      const { years } = await invoke<{ years: CatchUpYear[] }>("catch-up", { op: "progress", org_id: orgId });
+      return years ?? [];
+    },
+  });
+}
+
+/** Set the flat-per-year packaging for this catch-up. */
+export const setCatchUpPlan = (input: {
+  org_id: string; fee_per_year_minor: number; backlog_years: number[]; currency?: string;
+}) => invoke<{ plan: CatchUpPlan }>("catch-up", { op: "set_plan", ...input });
+
+/** Bulk-approve high-confidence picks in one action (low-confidence → skipped). */
+export const batchApproveCatchUp = (org_id: string, items: BatchApproveItem[]) =>
+  invoke<BatchApproveResult>("catch-up", { op: "batch_approve", org_id, items });
+
+/** Invalidate catch-up + downstream ledger queries after a batch approve. */
+export function useCatchUpRefresh(orgId: string | undefined) {
+  const qc = useQueryClient();
+  return () => {
+    for (const key of ["catch-up-progress", "catch-up-plan", "uncategorized",
+      "ledger-entries", "learned-rules"]) {
       void qc.invalidateQueries({ queryKey: [key, orgId] });
     }
   };

@@ -10,7 +10,7 @@
 -- Everything rolls back.
 
 begin;
-select plan(13);
+select plan(15);
 
 -- ── fixtures: owner + a non-member; one business org ─────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -29,6 +29,13 @@ insert into ledger_accounts (id, org_id, code, name, type) values
   ('00000000-0000-0000-0000-00000000c101', '00000000-0000-0000-0000-00000000c0b1', '1000', 'Cash',          'asset'),
   ('00000000-0000-0000-0000-00000000c102', '00000000-0000-0000-0000-00000000c0b1', '9999', 'Uncategorized', 'expense'),
   ('00000000-0000-0000-0000-00000000c103', '00000000-0000-0000-0000-00000000c0b1', '5100', 'Software',      'expense');
+
+-- A learned rule "adobe" → Software. The trust gate is SERVER-AUTHORITATIVE: a pick
+-- bulk-posts only when the server re-derives it (this rule matching the entry's own
+-- memo to the SAME account), NOT because the client labeled it high-confidence.
+insert into categorization_rules (org_id, match_type, match_value, account_id, source, created_by) values
+  ('00000000-0000-0000-0000-00000000c0b1', 'description_contains', 'adobe',
+   '00000000-0000-0000-0000-00000000c103', 'human', '00000000-0000-0000-0000-00000000c0aa');
 
 -- three uncategorized expenses across two backlog years (2023 ×2, 2024 ×1).
 create temp table _e23a as select * from post_journal_entry(
@@ -88,6 +95,22 @@ select ok(
   (select count(*)::int from ledger_audit
      where org_id = '00000000-0000-0000-0000-00000000c0b1' and action = 'entry.recategorize') >= 1,
   'the per-entry recategorize is audit-logged too');
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- TRUST-TIER BYPASS (crown jewel): a SPOOFED client confidence must NOT auto-post.
+-- _e23b ("MYSTERY CHARGE") matches no learned rule, so the server cannot confirm it
+-- as high-confidence. A malicious client labels it confidence 0.99 anyway. The gate
+-- must REFUSE it (server-authoritative, not client-trusting) → skipped, still on
+-- Uncategorized. If the gate trusted the client number, this would silently post.
+create temp table _spoof as select catch_up_batch_approve(
+  '00000000-0000-0000-0000-00000000c0aa', '00000000-0000-0000-0000-00000000c0b1',
+  jsonb_build_array(jsonb_build_object('entry_id', (select id from _e23b),
+    'to_account_id', '00000000-0000-0000-0000-00000000c103', 'confidence', 0.99, 'learn_value', 'mystery'))
+) as r;
+select is(((select r from _spoof) ->> 'approved')::int, 0,
+  'a spoofed high client-confidence with no server-confirmed rule is NOT bulk-approved');
+select is((select status::text from journal_entries where id = (select id from _e23b)), 'posted',
+  'the spoofed entry stays untouched on Uncategorized (trust-tier bypass refused)');
 
 -- a non-member cannot batch-approve.
 select throws_ok($$

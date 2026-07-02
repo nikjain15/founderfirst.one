@@ -478,6 +478,52 @@ export const COPY = {
     xero: "Xero",
   },
 
+  // ── W2.2 one-click migration (QBO history + trial-balance comparison) ───────
+  migration: {
+    heading: "Bring your full history over",
+    lead:
+      "Pull every account and transaction from QuickBooks, then check the numbers side by side before anything posts.",
+    migrateButton: (label: string) => `Migrate everything from ${label}`,
+    migrating: "Pulling your history…",
+    pulledSummary: (accounts: number, txns: number, years: number) =>
+      `Pulled ${accounts} accounts and ${txns} transactions across ${years} ${years === 1 ? "year" : "years"}.`,
+    reviewHeading: "Review and confirm",
+    step1: "1 · Account mapping",
+    step1Body: "Each QuickBooks account was matched to one in your books. Rename or recategorize any before you post.",
+    step2: "2 · Post the history",
+    step2Body: "Post each year's transactions. Re-running is safe — anything already imported is skipped, never doubled.",
+    step3: "3 · Compare trial balances",
+    step3Body: "Line up your new trial balance against QuickBooks' own, account by account. Any difference is shown, never hidden.",
+    step4: "4 · Set your cutover date",
+    step4Body: "The date your books officially start in the new system.",
+    postYear: (year: string) => `Post ${year}`,
+    posting: "Posting…",
+    posted: (n: number) => `${n} posted`,
+    duplicatesSkipped: (n: number) => `${n} already imported (skipped)`,
+    errorsCount: (n: number) => `${n} need attention`,
+    // Trial-balance comparison
+    tbHeading: "Trial balance — you vs QuickBooks",
+    tbAsOf: (date: string) => `QuickBooks trial balance as of ${date}`,
+    tbNoSnapshot: "QuickBooks didn't return a trial balance to compare against — check the numbers in the Reports tab.",
+    tbColAccount: "Account",
+    tbColProvider: "QuickBooks",
+    tbColLedger: "Your books",
+    tbColDiff: "Difference",
+    tbTies: "Every account ties to the cent. Your books match QuickBooks exactly.",
+    tbVariance: (amount: string) => `${amount} of differences to explain across the accounts below.`,
+    tbProviderOnly: "Only in QuickBooks",
+    tbLedgerOnly: "Only in your books",
+    tbRefresh: "Refresh comparison",
+    // Cutover
+    cutoverLabel: "Cutover date",
+    cutoverHelp: "Your books start here. Everything before it came from QuickBooks.",
+    confirmCutover: "Confirm cutover date",
+    savingCutover: "Saving…",
+    doneTitle: "Migration complete.",
+    doneBody: (date: string) => `Your history is in and your books start ${date}. Penny will help you keep them tidy from here.`,
+    errorGeneric: "Something went wrong — reload and try again.",
+  },
+
   // ── Account type labels (owner-facing chart-of-accounts groupings) ─────────
   // Keys mirror the AccountType union in ledger/types.ts.
   accountTypes: {

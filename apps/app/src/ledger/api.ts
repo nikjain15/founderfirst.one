@@ -391,6 +391,51 @@ export const importProvider = (provider: ExternalProvider, org_id: string, conne
     `${provider}-import`, { org_id, connection_id },
   );
 
+// ── W2.2 provider migration (one-click, with history) ─────────────────────────
+export interface ProviderTbRow { name: string; debit_minor: number; credit_minor: number; }
+export interface ProviderMigration {
+  id: string;
+  org_id: string;
+  connection_id: string;
+  provider: ExternalProvider;
+  status: "pulling" | "review" | "committed" | "discarded";
+  cutover_date: string | null;
+  batch_ids: string[];
+  accounts: number;
+  txn_count: number;
+  provider_tb: ProviderTbRow[];
+  provider_tb_as_of: string | null;
+}
+
+/** Kick off a full historical pull: CoA + every txn → per-year batches + QBO TB snapshot. */
+export const migrateProvider = (provider: ExternalProvider, org_id: string, connection_id: string) =>
+  invoke<{
+    migration_id: string; batch_ids: string[]; accounts: number; txn_count: number;
+    years: string[]; provider_tb_rows: number; provider_tb_as_of: string | null;
+  }>(`${provider}-import`, { org_id, connection_id, historical: true });
+
+/** The migration records for an org (RLS-readable). Newest first. */
+export function useProviderMigrations(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["provider-migrations", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<ProviderMigration[]> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("provider_migrations")
+        .select("id,org_id,connection_id,provider,status,cutover_date,batch_ids,accounts,txn_count,provider_tb,provider_tb_as_of")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as ProviderMigration[];
+    },
+  });
+}
+
+/** Confirm the migration's cutover date (stamps every batch + marks committed). */
+export const setMigrationCutover = (org_id: string, migration_id: string, cutover_date: string) =>
+  invoke<{ migration: ProviderMigration }>("imports", { op: "migration_cutover", org_id, migration_id, cutover_date });
+
 // ── report exports (W1.2) ─────────────────────────────────────────────────────
 // The file is built + downloaded client-side (export.ts); this records ONE audit
 // row per export (who / which report / period / when). Fire-and-forget from the

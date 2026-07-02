@@ -1,0 +1,15 @@
+-- Shared local seed — applied by `supabase db reset` after every migration.
+--
+-- REG-1 (regression pack) intentionally keeps this MINIMAL. Every regression
+-- scenario creates its own namespaced fixtures in-suite (inside a BEGIN…ROLLBACK
+-- transaction) and tears them down, so tests never depend on shared seed rows and
+-- can't collide. This file exists so:
+--   1. `supabase db reset` has a defined, deterministic base (no accidental prod
+--      dump — this is NEVER seeded from production, per LEARNINGS.md rule 4).
+--   2. Future scenarios / local manual QA have one obvious place to add stable
+--      reference data. Add rows here ONLY if they are safe to exist in every test
+--      run (idempotent, namespaced, non-conflicting).
+--
+-- Keep it empty of fixtures for now; the pgTAP suite is self-seeding.
+
+-- (intentionally no seed rows — see note above)

@@ -67,7 +67,7 @@ touches: supabase/tests, apps/app tests, .github/workflows (SHARED CI — declar
 decision-needed: none
 
 ## IA-1 · Owner lens nav restructure (APP_PRINCIPLES Phase 1)
-status: unclaimed  ← LAND FIRST among app-UI cards (touches the shared files everything builds into)
+status: pr:#174  ← LAND FIRST among app-UI cards (touches the shared files everything builds into)
 goal: owner navigates by plain-language jobs: Home · Review · Reports · Connections +
   de-emphasized Advanced (Journal · CoA · Periods); "+ New organization" → org switcher.
 workflow: owner · "find anything I need" · any job reachable in ≤2 taps from Home; zero
@@ -94,7 +94,7 @@ status: **DEFERRED until after Wave 1 ships (Nik, 3 Jul)** — do not card the m
 decision-needed: none until Wave 1 closes (then: Nik approves the migration plan)
 
 ## CENTRAL-1 · Centralize apps/app copy, Penny language, and behavior thresholds
-status: unclaimed
+status: pr:#176 (stacked on #174/IA-1)
 blocked-by: IA-1 (do the copy sweep once, on the NEW nav, not twice)
 goal: change voice/copy/thresholds without code changes (standing principle #3) — the three
   ❌ rows in the roadmap registry.
@@ -116,7 +116,7 @@ touches: apps/app broadly (SHARED — sequence right after IA-1, before feature 
 decision-needed: none
 
 ## CENTRAL-2 · Knowledge kernel schema + seeds (entities · sectors · filing calendar · vendor priors · connector registry)
-status: unclaimed
+status: pr:#177 (schema + idempotent loader + seeds + one consumer + 3 CI gates + pgTAP)
 blocked-by: — (schema card; W1.3-B, W2.4, W3.3 BUILD AGAINST these tables — land the schema
   before those cards start, or they'll each invent their own)
 scope note (Nik, 3 Jul, LOCKED): the seed TARGET is **every sector/persona we build ×

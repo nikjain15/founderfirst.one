@@ -1,0 +1,40 @@
+{
+  "jurisdiction": "US-CA",
+  "form_code": "CA_565",
+  "entity_type": "partnership",
+  "tax_year": 2025,
+  "name": "California Form 565 — Partnership Return of Income",
+  "citation": "https://www.ftb.ca.gov/forms/2025/2025-565-instructions.html",
+  "effective_from": "2025-01-01",
+  "params": { "balance_sheet_required": true, "note": "State proof: a US-<STATE> jurisdiction + a form seed file maps a state return with ZERO engine code change (research: states extensible by seed alone)." },
+  "lines": [
+    { "line_key": "gross_receipts", "line_code": "1a", "label": "Gross receipts or sales", "section": "income", "kind": "amount", "sort": 10 },
+    { "line_key": "other_income", "line_code": "5", "label": "Other income (loss)", "section": "income", "kind": "amount", "sort": 30 },
+    { "line_key": "cogs_purchases", "line_code": "3560·2", "label": "Purchases (Cost of Goods Sold, form 3560)", "section": "cogs", "kind": "amount", "sort": 42 },
+    { "line_key": "salaries_wages", "line_code": "10", "label": "Salaries and wages (non-partner)", "section": "deductions", "kind": "amount", "sort": 90 },
+    { "line_key": "guaranteed_payments", "line_code": "11", "label": "Guaranteed payments to partners", "section": "deductions", "kind": "amount", "sort": 100 },
+    { "line_key": "rent", "line_code": "13", "label": "Rent", "section": "deductions", "kind": "amount", "sort": 130 },
+    { "line_key": "taxes_licenses", "line_code": "14", "label": "Taxes and licenses", "section": "deductions", "kind": "amount", "sort": 140 },
+    { "line_key": "interest", "line_code": "15", "label": "Interest", "section": "deductions", "kind": "amount", "sort": 150 },
+    { "line_key": "meals", "line_code": "20·meals", "label": "Deductible meals", "section": "deductions", "kind": "amount", "deductible_pct": 50, "sort": 195 },
+    { "line_key": "other_deductions", "line_code": "20", "label": "Other deductions (attached statement)", "section": "deductions", "kind": "amount", "sort": 200 },
+    { "line_key": "sch_l_cash", "line_code": "L·1", "label": "Cash", "section": "balance_sheet", "kind": "amount", "sort": 300 },
+    { "line_key": "sch_l_other_assets", "line_code": "L·13", "label": "Other assets", "section": "balance_sheet", "kind": "amount", "sort": 340 },
+    { "line_key": "sch_l_other_liabilities", "line_code": "L·17", "label": "Other current liabilities", "section": "balance_sheet", "kind": "amount", "sort": 360 },
+    { "line_key": "sch_l_partners_capital", "line_code": "L·21", "label": "Partners' capital accounts", "section": "balance_sheet", "kind": "amount", "sort": 370 }
+  ],
+  "rules": [
+    { "priority": 10, "match_kind": "account_code_range", "match_value": "4000-4099", "line_key": "gross_receipts" },
+    { "priority": 10, "match_kind": "account_code_range", "match_value": "5000-5999", "line_key": "cogs_purchases" },
+    { "priority": 20, "match_kind": "account_tag", "match_value": "guaranteed_payment", "line_key": "guaranteed_payments" },
+    { "priority": 20, "match_kind": "account_tag", "match_value": "meals", "line_key": "meals" },
+    { "priority": 30, "match_kind": "account_name_pattern", "match_value": "%rent%", "line_key": "rent" },
+    { "priority": 30, "match_kind": "account_name_pattern", "match_value": "%interest%", "line_key": "interest" },
+    { "priority": 30, "match_kind": "account_name_pattern", "match_value": "%wage%", "line_key": "salaries_wages" },
+    { "priority": 40, "match_kind": "account_type", "match_value": "income", "line_key": "gross_receipts" },
+    { "priority": 40, "match_kind": "account_type", "match_value": "expense", "line_key": "other_deductions" },
+    { "priority": 40, "match_kind": "account_type", "match_value": "asset", "line_key": "sch_l_other_assets" },
+    { "priority": 40, "match_kind": "account_type", "match_value": "liability", "line_key": "sch_l_other_liabilities" },
+    { "priority": 40, "match_kind": "account_type", "match_value": "equity", "line_key": "sch_l_partners_capital" }
+  ]
+}

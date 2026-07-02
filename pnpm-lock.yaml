@@ -66,6 +66,9 @@ importers:
       vite:
         specifier: ^5.2.0
         version: 5.4.21(@types/node@25.6.0)
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@25.6.0)
 
   apps/app:
     dependencies:

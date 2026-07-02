@@ -237,6 +237,49 @@ pgTAP suite, a lint script) so the class can't recur silently. The sweep-1
 examples: pagination (#18) → Vitest in `apps/app`; timestamp collisions →
 `unique-timestamps` CI; tenant predicate → `check:tenant`.
 
+## Program 2 — Wave 1 (full-bookkeeping loop, 2 Jul 2026)
+
+The build loop's first wave: the top-half of the product ([FULL_BOOKKEEPING_ROADMAP.md](plans/FULL_BOOKKEEPING_ROADMAP.md)
+Wave 1 + the CENTRAL/LOOP/REG infra cards in [plans/BACKLOG.md](plans/BACKLOG.md)), composed onto
+`loop/wave1-integration` (draft PR #185). 12 new surfaces shipped. Each landed with a happy-path /
+acceptance test **and a per-PR adversarial red-team pass** (all 13 Wave-1 defects were red-teamed and
+fixed before merge), but **not yet a dedicated post-merge stress pass** — so every row below is
+⬜ by this program's rule (a row leaves ⬜ only via the formal adversarial stress program, § The loop
+step 4), with the per-PR red-team noted. All 12 are queued in
+[STRESS_TEST_TRACKER.md](STRESS_TEST_TRACKER.md).
+
+**How to read a row:** `Test` = the permanent happy-path/acceptance test that ships with the surface ·
+`Status` = ⬜ untested-by-the-formal-stress-program (red-team pass done per PR, dedicated stress pass
+pending) · 🔵 live-not-on-main / PR-open · 🟢 live+on-main.
+
+| # | Surface | Permanent test | Status |
+|---|---|---|---|
+| LOOP-1 | Build dashboard (/admin → Build tab) | `loop_build_dashboard_test.sql` + `apps/admin/src/lib/loopStatus.test.ts` | ⬜ red-teamed; stress-pass pending |
+| REG-1 | Regression scenario pack v1 (back-fills the 15 stress features) | `regression_pack_test.sql` (+ `regression_coa_integrity_test.sql`) | ⬜ red-teamed; stress-pass pending |
+| IA-1 | Owner lens nav restructure (Home · Review · Reports · Connections + Advanced) | `apps/app/src/ledger/nav.test.ts` + app-e2e nav walk | ⬜ red-teamed; stress-pass pending |
+| CENTRAL-1 | Centralized apps/app copy · Penny 'app' persona · behavior thresholds | `central1_persona_config_test.sql` + CI grep/gate scripts | ⬜ red-teamed; stress-pass pending |
+| CENTRAL-2 | Knowledge kernel schema + seeds (entities · industries · filing calendar · vendor priors · connector registry) | `central2_knowledge_kernel_test.sql` | ⬜ red-teamed; stress-pass pending |
+| W1.2 | Report exports (TB / P&L / BS / GL detail → CSV + PDF) | `apps/app/src/ledger/export.test.ts` + app-e2e download | ⬜ red-teamed; stress-pass pending |
+| W1.6 | Learned-rules management UI | `w16_learned_rules_test.sql` | ⬜ red-teamed; stress-pass pending |
+| W1.4 | CPA Practice home — ranked cross-client workqueue | `w1_4_cpa_practice_queue_test.sql` | ⬜ red-teamed; stress-pass pending |
+| W1.5 | CPA collaboration primitives (flag · note · add-txn · reclass suggestion) | `w1_5_cpa_collaboration_test.sql` | ⬜ red-teamed; stress-pass pending |
+| W1.1 | Bank reconciliation (new `reconciliations` schema; match against `import_rows`) | `w1_1_reconciliation_test.sql` | ⬜ red-teamed; stress-pass pending |
+| W1.3-B | Tax mapping engine (data-driven jurisdiction × form × line, CPA-lens-gated) | `tax_mapping_engine_test.sql` | ⬜ red-teamed; stress-pass pending |
+| W1.3-C | Fixed-asset / depreciation subledger (Penny computes depreciation) | `fixed_asset_depreciation_test.sql` | ⬜ red-teamed; stress-pass pending |
+
+**Coverage delta:** +12 ledger rows, all ⬜ (baseline + per-PR red-team, formal stress pass pending).
+Wave 1 **invalidates the standing "whole top-half not built yet" gap** from Program 1 — reconciliation,
+tax-line mapping, CPA workqueue, exports, and depreciation now exist and are stress-queued (see the
+refreshed NOT-covered table below). Migrations for these surfaces are **write-don't-deploy** (per BACKLOG
+rules) — the ledger records the surface, not a prod deploy.
+
+### P2 advisory items from the Wave-1 red-team (tracked gaps, not blockers)
+- **Depreciation (W1.3-C)** — TS-preview can under-depreciate vs. the DB raise in edge cases (preview ≠
+  authoritative DB computation); disposal-convention book-value vs. default-convention mismatch. Track
+  toward the W1.3-C stress pass.
+- **CPA collaboration UI (W1.5)** — CollabUI missing some `aria-` labels (accessibility polish). Track
+  toward the W1.5 stress pass / next `/audit` a11y dimension.
+
 ## Program 1 — feature stress-test sweep (30 Jun – 2 Jul 2026)
 
 15 features adversarially stress-tested on live prod (negative inputs, edge cases,
@@ -287,7 +330,10 @@ Carry these into the next audit cycle; they are the backlog for coverage, not de
 | **Isolation F3** — `can_access_org` SECURITY DEFINER per-row seqscan on `journal_lines` (anon GET ~3s) | DoS surface; flagged, not fixed | index / rewrite the access check |
 | **CSV F4** — re-importing the same file double-posts (no dedup) | real user footgun | **product decision for Nik** (warn vs. block vs. deb-key) |
 | **Load / volume** — behavior at 10k–100k entries, concurrent orgs | only correctness tested, not scale | perf audit with seeded large orgs |
-| **The whole top-half of the product** (reconciliation UI, tax-line mapping, CPA workqueue, exports, bank feeds, Penny thread) | not built yet → nothing to stress-test | see [FULL_BOOKKEEPING_ROADMAP.md](docs/plans/FULL_BOOKKEEPING_ROADMAP.md) Waves 1–4 |
+| ~~**The whole top-half of the product**~~ — reconciliation UI, tax-line mapping, CPA workqueue, exports, depreciation | **BUILT in Wave 1** (Program 2 above); no longer "not built yet" | now ⬜ ledger rows, per-PR red-teamed, **stress-pass pending** — scheduled in [STRESS_TEST_TRACKER.md](STRESS_TEST_TRACKER.md) |
+| **Wave 2 not built** — catch-up mode (W2.1), QBO one-click migration (W2.2), Plaid bank feeds (W2.3), Penny in-app thread + trust-tiered cards (W3.x) | genuinely not built yet → nothing to stress-test | see [FULL_BOOKKEEPING_ROADMAP.md](plans/FULL_BOOKKEEPING_ROADMAP.md) Waves 2–4 |
+| **W1.3-B CPA mapping-edit UI deferred** | the tax-mapping *engine* shipped (W1.3-B); the CPA per-account mapping-edit *UI* was deferred | build + stress the edit UI when carded |
+| **Disposal JE (W1.3-C)** — fixed-asset disposal journal-entry path, if still open | disposal-convention book-vs-default mismatch flagged (P2 above); the disposal JE itself is thin | close under the W1.3-C stress pass |
 
 ## Program 0 — platform audit (30 Jun 2026)
 53 findings (4 P0 / 20 P1). 6 "shipped baseline" items were actually broken

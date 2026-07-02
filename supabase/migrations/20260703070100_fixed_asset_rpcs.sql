@@ -303,6 +303,7 @@ declare
   v_book_acc     bigint := 0;
   v_tax_acc      bigint := 0;
   v_rows         int := 0;
+  v_last_stored  int := null;   -- tax_year of the last line we wrote (for the true-up sweep)
 begin
   if not can_write_org_as(p_actor, p_org) then
     raise exception 'not authorized to compute depreciation for org %', p_org using errcode = '42501';
@@ -342,7 +343,26 @@ begin
           tax_accumulated_minor   = excluded.tax_accumulated_minor,
           computed_at = now();
     v_rows := v_rows + 1;
+    v_last_stored := v_yr;
   end loop;
+
+  -- FINAL-YEAR TRUE-UP (crown-jewel invariant): per-year floor() rounding leaves a
+  -- few cents of basis un-recovered across the asset's life — MACRS/SL must recover
+  -- EXACTLY cost (tax) / cost-salvage (book), or the book-vs-tax temporary difference
+  -- never nets to zero and the register drifts from the ledger. The recovery-schedule
+  -- convention sweeps the residual into the final recovery year; do the same here so
+  -- tax_accumulated == cost and book_accumulated == (cost - salvage) to the cent.
+  if v_last_stored is not null then
+    update public.depreciation_schedule_lines
+       set tax_depreciation_minor = tax_depreciation_minor + (a.cost_minor - v_tax_acc),
+           book_depreciation_minor = book_depreciation_minor + ((a.cost_minor - a.salvage_minor) - v_book_acc),
+           tax_accumulated_minor  = a.cost_minor,
+           book_accumulated_minor = (a.cost_minor - a.salvage_minor),
+           computed_at = now()
+     where asset_id = p_asset_id and tax_year = v_last_stored;
+    v_tax_acc  := a.cost_minor;
+    v_book_acc := a.cost_minor - a.salvage_minor;
+  end if;
 
   insert into public.ledger_audit (org_id, actor, action, target_type, target_id, detail)
   values (p_org, p_actor, 'asset.compute_schedule', 'fixed_asset', p_asset_id,

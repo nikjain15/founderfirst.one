@@ -20,7 +20,7 @@
 -- Runs in a transaction and rolls back.
 
 begin;
-select plan(26);
+select plan(29);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -190,6 +190,25 @@ select throws_ok($$
   select register_fixed_asset('80000000-0000-0000-0000-000000000009','80000000-0000-0000-0000-0000000000a0',
     'Sneaky','computers', 100000, '2025-06-15')
 $$, '42501', NULL, 'a non-member cannot register an asset in another org');
+
+-- ── EFFECTIVE-DATING INTEGRITY on the MACRS % law table (CENTRAL-2 overlap P0) ──
+-- macrs_tax_depreciation_for_year picks ONE % via `order by effective_from desc
+-- limit 1`; the table must make two OVERLAPPING active rows for the same key
+-- impossible (the same guard asset_classes carries), or the lookup is non-deterministic.
+select has_index('public', 'macrs_percentages', 'macrs_percentages_one_active',
+  'macrs_percentages has a one-active partial-unique index');
+-- a second, OPEN-ENDED active row for an already-active (5yr,HY,200DB,yr1) key must be rejected
+select throws_ok($$
+  insert into public.macrs_percentages
+    (jurisdiction_code, recovery_period, convention, macrs_method, year_index, percentage, effective_from, citation)
+  values ('US-FED', 5, 'half_year', '200DB', 1, 19.00, '2030-01-01', 'bogus overlap')
+$$, NULL, NULL, 'a second overlapping ACTIVE macrs % row is rejected (no_overlap EXCLUDE)');
+-- exactly one active % resolves for the seeded key
+select is(
+  (select count(*)::int from public.macrs_percentages
+    where jurisdiction_code='US-FED' and recovery_period=5 and convention='half_year'
+      and macrs_method='200DB' and year_index=1 and is_active and effective_to is null),
+  1, 'exactly one active MACRS % in force for (5yr, HY, 200DB, yr1)');
 
 select * from finish();
 rollback;

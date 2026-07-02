@@ -17,7 +17,7 @@
 -- Runs in a transaction and rolls back.
 
 begin;
-select plan(28);
+select plan(31);
 
 -- ── fixtures: jurisdiction, a form@2025, lines, rules, org, accounts ─────────
 insert into auth.users (id, email, aud, role) values
@@ -137,6 +137,21 @@ select throws_ok($$
     '70000000-0000-0000-0000-0000000000a0', '70000000-0000-0000-0000-0000000000c4',
     'SCH_C', 'meals', null, 'owner tries');
 $$, '42501', NULL, 'an owner (no engagement) is BLOCKED from editing mappings');
+
+-- ── 5b. INTEGRITY: an override may NOT point at a line the form doesn't define ─
+-- (research §B) A bad line_key would make resolve_account_tax_lines report the
+-- account as 'override'/mapped while mapReturn() finds no such line and drops it
+-- into UNMAPPED — the two sources of truth disagree (OBTEST silent-drop class).
+select throws_ok($$
+  select set_account_tax_line('70000000-0000-0000-0000-000000000002',
+    '70000000-0000-0000-0000-0000000000a0', '70000000-0000-0000-0000-0000000000c4',
+    'SCH_C', 'not_a_real_line', null, 'typo / cross-form line');
+$$, '23514', NULL, 'override at a non-existent line_key is REJECTED (integrity)');
+-- and the good override from step 4 is untouched (still advertising)
+select is(
+  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','US-FED','SCH_C',2025)
+    where account_id = '70000000-0000-0000-0000-0000000000c4'),
+  'advertising', 'a rejected bad override leaves the prior valid mapping intact');
 
 -- ── 6. effective-dating: supersede + old/new law (§B.0.2, CENTRAL-2 idiom) ────
 -- supersede the 2025 Sch C mid-year (meals % change scenario). New row from 2025-07-01.

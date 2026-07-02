@@ -39,6 +39,53 @@ async function plaid<T = Record<string, unknown>>(path: string, body: Record<str
   return json as T;
 }
 
+// ── Webhook JWT verification (Plaid signs each webhook; header Plaid-Verification).
+// Plaid signs with ES256; the kid → key comes from /webhook_verification_key/get.
+// The JWT payload carries request_body_sha256; we recompute it over the RAW body
+// and compare, so a forged body (even with a stale-but-valid JWT) is rejected.
+// Returns true only if signature + body hash + freshness all check out.
+const b64urlToBytes = (s: string): Uint8Array => {
+  const pad = s.length % 4 === 0 ? "" : "=".repeat(4 - (s.length % 4));
+  const b = atob(s.replace(/-/g, "+").replace(/_/g, "/") + pad);
+  const out = new Uint8Array(b.length);
+  for (let i = 0; i < b.length; i++) out[i] = b.charCodeAt(i);
+  return out;
+};
+const sha256Hex = async (s: string): Promise<string> => {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, "0")).join("");
+};
+
+const getWebhookVerificationKey = (keyId: string) =>
+  plaid<{ key: JsonWebKey & { alg?: string; expired_at?: string | null } }>(
+    "/webhook_verification_key/get", { key_id: keyId },
+  );
+
+export async function verifyPlaidJwt(jwt: string, rawBody: string): Promise<boolean> {
+  const parts = jwt.split(".");
+  if (parts.length !== 3) return false;
+  const header = JSON.parse(new TextDecoder().decode(b64urlToBytes(parts[0]))) as { alg?: string; kid?: string };
+  if (header.alg !== "ES256" || !header.kid) return false;   // reject alg-confusion / unsigned
+
+  const { key } = await getWebhookVerificationKey(header.kid);
+  const pub = await crypto.subtle.importKey(
+    "jwk", { ...key, alg: undefined } as JsonWebKey,
+    { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"],
+  );
+  const sig = b64urlToBytes(parts[2]);
+  const signed = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
+  const okSig = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, pub, sig, signed);
+  if (!okSig) return false;
+
+  const payload = JSON.parse(new TextDecoder().decode(b64urlToBytes(parts[1]))) as
+    { request_body_sha256?: string; iat?: number };
+  // freshness: reject JWTs older than 5 min (replay window per Plaid guidance).
+  if (typeof payload.iat === "number" && Date.now() / 1000 - payload.iat > 300) return false;
+  const bodyHash = await sha256Hex(rawBody);
+  return typeof payload.request_body_sha256 === "string" &&
+    payload.request_body_sha256 === bodyHash;
+}
+
 export const createLinkToken = (userId: string) =>
   plaid<{ link_token: string; expiration: string }>("/link/token/create", {
     user: { client_user_id: userId },

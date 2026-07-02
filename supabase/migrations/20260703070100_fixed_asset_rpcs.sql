@@ -487,9 +487,11 @@ grant execute on function public.draft_depreciation_m1(uuid,uuid,uuid,int) to se
 -- ── dispose an asset — compute gain/loss, update subledger + book ─────────────
 -- Book basis = cost - book accumulated depreciation (from the schedule). gain/loss
 -- = proceeds - book basis. Marks the asset disposed; records the disposal row.
--- (The disposal JE — remove asset, clear accumulated, book gain/loss — is posted
--- via the same post_journal_entry path when accounts are wired; here we compute +
--- record and post if wired.) Audit-logged.
+-- NOTE: this FIRST-CUT version records the subledger row but posts NO journal entry
+-- (the asset cost + accumulated contra would stay on the books — TB ties but wrong).
+-- It is SUPERSEDED by the CREATE OR REPLACE in 20260703070200, which adds the
+-- disposal-year convention, §1245/§1250 recapture, AND posts the balanced book
+-- removal JE via post_journal_entry. Do not rely on the definition below.
 create or replace function public.dispose_fixed_asset(
   p_actor uuid, p_org uuid, p_asset_id uuid, p_disposal_date date,
   p_proceeds_minor bigint default 0, p_note text default null,

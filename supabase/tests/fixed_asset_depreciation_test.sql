@@ -14,13 +14,16 @@
 --      approval makes it count in tax_m1_summary — proves asset → schedule → M-1.
 --   7. POSTING: book depreciation posts a BALANCED JE (Dr expense / Cr accumulated)
 --      via post_journal_entry; PERIOD-LOCK is respected (a closed Dec period refuses).
---   8. DISPOSAL: gain/loss = proceeds - net book value, computed + recorded.
+--   8. DISPOSAL: gain/loss = proceeds - net book value, computed + recorded, AND a
+--      BALANCED book removal JE is POSTED (Cr asset cost / Dr accumulated / Dr cash /
+--      Cr-or-Dr gain-loss) via post_journal_entry — period-lock respected, idempotent
+--      per asset, gain/loss lands on p_gain_loss_account_id. (P1: was subledger-only.)
 --   9. ROLE / TENANT GATES (ISOTEST): the p_actor-first write RPCs are EXECUTE-
 --      granted only to service_role; cross-tenant register is refused.
 -- Runs in a transaction and rolls back.
 
 begin;
-select plan(39);
+select plan(47);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -43,10 +46,14 @@ insert into org_accounting_settings (org_id, home_currency, cpa_posts_require_ap
   on conflict (org_id) do update set home_currency = excluded.home_currency,
     cpa_posts_require_approval = excluded.cpa_posts_require_approval;
 
--- ledger accounts for posting (expense + contra-asset accumulated)
+-- ledger accounts for posting (expense + contra-asset accumulated + asset cost +
+-- disposal gain/loss + cash for proceeds — the disposal removal JE needs all of these)
 insert into ledger_accounts (id, org_id, code, name, type) values
   ('80000000-0000-0000-0000-0000000000c1', '80000000-0000-0000-0000-0000000000a0', '7300', 'Depreciation expense',        'expense'),
-  ('80000000-0000-0000-0000-0000000000c2', '80000000-0000-0000-0000-0000000000a0', '1590', 'Accumulated depreciation',    'asset');
+  ('80000000-0000-0000-0000-0000000000c2', '80000000-0000-0000-0000-0000000000a0', '1590', 'Accumulated depreciation',    'asset'),
+  ('80000000-0000-0000-0000-0000000000c3', '80000000-0000-0000-0000-0000000000a0', '1500', 'Fixed assets — cost',         'asset'),
+  ('80000000-0000-0000-0000-0000000000c4', '80000000-0000-0000-0000-0000000000a0', '4900', 'Gain/loss on disposal',       'income'),
+  ('80000000-0000-0000-0000-0000000000c5', '80000000-0000-0000-0000-0000000000a0', '1000', 'Cash',                        'asset');
 
 -- LAW DATA: a 5-year 200DB half-year class in force from 2025 (no §179/bonus here to
 -- isolate the MACRS golden numbers), plus its published percentage table.
@@ -79,6 +86,7 @@ select register_fixed_asset(
   p_name  => 'MacBook Pro', p_class_key => 'computers', p_jurisdiction_code => 'ZZ-DEPR',
   p_cost_minor => 1000000, p_in_service_date => '2025-06-15',
   p_book_life_years => 5, p_book_convention => 'half_year',
+  p_asset_account_id => '80000000-0000-0000-0000-0000000000c3',
   p_expense_account_id => '80000000-0000-0000-0000-0000000000c1',
   p_accumulated_account_id => '80000000-0000-0000-0000-0000000000c2'
 ) as id;
@@ -182,7 +190,9 @@ $$, '23001', NULL, 'posting depreciation into a CLOSED period is refused (period
 create temp table _disp as
 select dispose_fixed_asset(
   '80000000-0000-0000-0000-000000000001', '80000000-0000-0000-0000-0000000000a0', (select id from _asset),
-  '2026-03-01', 950000, 'sold'
+  '2026-03-01', 950000, 'sold',
+  '80000000-0000-0000-0000-0000000000c4',   -- gain/loss account
+  '80000000-0000-0000-0000-0000000000c5'    -- proceeds (cash) account
 ) as id;
 select is((select book_basis_minor from asset_disposals where id = (select id from _disp)), 800000::bigint,
   'disposal BOOK basis = cost $10,000 - book acc $2,000 (½ book in disposal yr) = $8,000');
@@ -198,6 +208,64 @@ select is((select recapture_section from asset_disposals where id = (select id f
   'personal property recapture flagged §1245');
 select is((select status from fixed_assets where id = (select id from _asset)), 'disposed',
   'asset marked disposed');
+
+-- ── 8b. the disposal posts a BALANCED book removal JE (the P1 fix) ────────────
+-- The disposal must post a JE, not just record the subledger row (TB-ties-but-wrong).
+select isnt((select posted_entry_id from asset_disposals where id = (select id from _disp)), NULL,
+  'disposal recorded a posted journal entry (a JE was posted, not just subledger)');
+-- (1)+(3) the JE balances: sum debits == sum credits
+select is(
+  (select sum(case when side='D' then amount_minor else 0 end) from journal_lines
+     where entry_id = (select posted_entry_id from asset_disposals where id = (select id from _disp))),
+  (select sum(case when side='C' then amount_minor else 0 end) from journal_lines
+     where entry_id = (select posted_entry_id from asset_disposals where id = (select id from _disp))),
+  'disposal JE is balanced (debits = credits)');
+-- (1) the asset cost is removed: Cr the fixed-asset (cost) account for full cost $10,000
+select is(
+  (select amount_minor from journal_lines
+     where entry_id = (select posted_entry_id from asset_disposals where id = (select id from _disp))
+       and account_id = '80000000-0000-0000-0000-0000000000c3' and side='C'),
+  1000000::bigint, 'disposal JE credits the asset cost account for the full $10,000 cost');
+-- (1) accumulated depreciation cleared: Dr the accumulated contra for book acc $2,000
+select is(
+  (select amount_minor from journal_lines
+     where entry_id = (select posted_entry_id from asset_disposals where id = (select id from _disp))
+       and account_id = '80000000-0000-0000-0000-0000000000c2' and side='D'),
+  200000::bigint, 'disposal JE debits accumulated depreciation for the $2,000 book accumulated');
+-- (2) the BOOK gain ($1,500) hits the gain/loss account, credited (a gain)
+select is(
+  (select amount_minor from journal_lines
+     where entry_id = (select posted_entry_id from asset_disposals where id = (select id from _disp))
+       and account_id = '80000000-0000-0000-0000-0000000000c4' and side='C'),
+  150000::bigint, 'disposal JE credits the gain/loss account with the $1,500 BOOK gain');
+-- (5) idempotent: a second dispose call does NOT post a second JE (returns same disposal)
+select is(
+  (select count(*)::int from journal_entries where org_id = '80000000-0000-0000-0000-0000000000a0'
+     and idempotency_key = 'dispose:' || (select id from _asset)::text),
+  1, 'exactly one disposal JE exists for the asset (idempotency key dispose:<asset_id>)');
+-- (the status guard already refuses a second dispose — prove it raises)
+select throws_ok($$
+  select dispose_fixed_asset('80000000-0000-0000-0000-000000000001','80000000-0000-0000-0000-0000000000a0',
+    (select id from _asset), '2026-04-01', 100000, 'again',
+    '80000000-0000-0000-0000-0000000000c4', '80000000-0000-0000-0000-0000000000c5')
+$$, NULL, NULL, 'double-dispose is refused (asset already disposed)');
+
+-- ── 8c. disposal into a CLOSED period is refused (period-lock via post_journal_entry) ─
+-- Register + dispose a fresh asset into the closed Dec-2025 period; ensure_open_period
+-- inside post_journal_entry must reject it (no removal JE lands in a locked period).
+create temp table _asset3 as
+select register_fixed_asset(
+  '80000000-0000-0000-0000-000000000001','80000000-0000-0000-0000-0000000000a0',
+  'Third laptop','computers', 400000, '2025-06-15', 'ZZ-DEPR', 0, 'straight_line', 5, 'half_year',
+  0, false, '80000000-0000-0000-0000-0000000000c3',
+  '80000000-0000-0000-0000-0000000000c1', '80000000-0000-0000-0000-0000000000c2'
+) as id;
+select compute_depreciation_schedule('80000000-0000-0000-0000-000000000001','80000000-0000-0000-0000-0000000000a0',(select id from _asset3));
+select throws_ok($$
+  select dispose_fixed_asset('80000000-0000-0000-0000-000000000001','80000000-0000-0000-0000-0000000000a0',
+    (select id from _asset3), '2025-12-20', 300000, 'sold into closed period',
+    '80000000-0000-0000-0000-0000000000c4', '80000000-0000-0000-0000-0000000000c5')
+$$, '23001', NULL, 'disposal into a CLOSED period is refused (period-lock respected)');
 
 -- ── 9. role / tenant gates (ISOTEST) ─────────────────────────────────────────
 -- the write RPCs are service_role EXECUTE only (not authenticated/anon)

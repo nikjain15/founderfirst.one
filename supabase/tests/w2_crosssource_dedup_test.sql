@@ -9,7 +9,22 @@
 -- Scenario ids: XSRC-CSV-THEN-PLAID, XSRC-REPLAY, XSRC-TWO-DISTINCT, XSRC-REVERSAL.
 
 begin;
-select plan(17);
+select plan(19);
+
+-- ── XSRC-CONCURRENCY (red-team): the cross-source dedup is a read-then-write with
+-- NO unique(org,bank,content_hash) backstop, so two ingest paths racing the SAME
+-- real txn from DIFFERENT sources could both pass find_crosssource_dup and both
+-- post. Both paths MUST take the SAME (org,bank_account) txn-advisory lock so the
+-- find→post→record window is serialized. Assert the lock is present in both fn
+-- bodies with the identical key expression. Fails before the backstop, passes after.
+select matches(
+  pg_get_functiondef('commit_import_batch(uuid,uuid,uuid,integer)'::regprocedure),
+  'pg_advisory_xact_lock\(hashtextextended\(.*v_bank.*, 42\)\)',
+  'XSRC-CONCURRENCY: commit_import_batch serializes ingest on the (org,bank) advisory lock');
+select matches(
+  pg_get_functiondef('plaid_ingest_transactions(uuid,uuid,uuid,jsonb,jsonb,jsonb)'::regprocedure),
+  'pg_advisory_xact_lock\(hashtextextended\(.*v_bank.*, 42\)\)',
+  'XSRC-CONCURRENCY: plaid_ingest_transactions takes the SAME (org,bank) advisory lock');
 
 -- ── fixtures: one business (owner), a bank account, a Plaid connection ────────
 insert into auth.users (id, email, aud, role) values

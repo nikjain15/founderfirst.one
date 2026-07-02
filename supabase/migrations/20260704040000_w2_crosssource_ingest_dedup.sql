@@ -179,6 +179,18 @@ begin
   if v_b.source in ('csv', 'bank_statement', 'qbo', 'xero') then
     v_bank := v_b.bank_account_id;
     if v_bank is null then raise exception 'no_bank_account: csv/statement import needs a bank account' using errcode = 'invalid_parameter_value'; end if;
+    -- CROSS-SOURCE serialization (concurrency backstop): the cross-source dedup is a
+    -- read-then-write (find_crosssource_dup → post → record_ingest_content) with NO
+    -- unique constraint on (org,bank,content_hash) — a same-content row from a
+    -- DIFFERENT source uses a different idempotency_key, so the unique(org_id,
+    -- idempotency_key) that saves the SAME-source path does NOT catch it. Without a
+    -- guard, a CSV commit racing a Plaid sync of the SAME real txn both pass the find
+    -- (neither committed yet) and both post → the exact double-post this migration
+    -- prevents, resurrected under concurrency. A txn-scoped advisory lock keyed on
+    -- (org,bank_account) serializes the two ingest paths for that account so
+    -- find+post+record is atomic; it auto-releases at commit and only contends when
+    -- two writers touch the SAME account at once. (Same key used in plaid_ingest.)
+    perform pg_advisory_xact_lock(hashtextextended(p_org::text || ':' || v_bank::text, 42));
     for v_row in select * from import_rows where batch_id = p_batch and status = 'ready' order by row_num limit greatest(p_limit, 1) loop
       if coalesce(v_row.amount_minor,0) = 0 or v_row.txn_date is null then
         update import_rows set status = 'error', error = 'missing date / amount' where id = v_row.id;
@@ -325,6 +337,15 @@ begin
     update external_connections set account_id = v_bank where id = p_conn;
   end if;
   v_uncat := resolve_uncategorized_account(p_actor, p_org);
+
+  -- CROSS-SOURCE serialization (concurrency backstop): mirror commit_import_batch —
+  -- serialize this sync against a concurrent CSV/QBO/Xero commit for the SAME
+  -- (org,bank_account) so the find_crosssource_dup → post → record window is atomic.
+  -- The (org,bank) advisory lock is the ONLY thing preventing a race double-post: the
+  -- two sources use different idempotency_keys, so unique(org_id,idempotency_key) does
+  -- not catch a cross-source collision. Auto-releases at txn end. MUST use the SAME
+  -- key expression as commit_import_batch or the two paths won't mutually exclude.
+  perform pg_advisory_xact_lock(hashtextextended(p_org::text || ':' || v_bank::text, 42));
 
   -- ADD: a new transaction. Same-source replay guard, then CROSS-SOURCE guard.
   for v_txn in select * from jsonb_array_elements(coalesce(p_added, '[]'::jsonb)) loop

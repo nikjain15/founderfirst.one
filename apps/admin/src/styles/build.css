@@ -1,0 +1,136 @@
+/* Build dashboard (LOOP-1) — waiting-on-Nik, now-running, status tiles, log.
+   Tokens only; traffic-lit like Quality (live = income, dead = error, warn = amber). */
+
+.build-clear {
+  font-size: var(--fs-data-row);
+  color: var(--ink-3);
+}
+
+/* --- Card lists (waiting + running) --------------------------------------- */
+.build-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: var(--space-3);
+}
+.build-card {
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: var(--r-card);
+  background: var(--white);
+  padding: var(--space-4);
+}
+.build-card-live { border-left-color: var(--income); }
+.build-card-dead { border-left-color: var(--error); }
+.build-card-wait { border-left-color: var(--amber); }
+
+.build-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.build-card-card {
+  font-weight: var(--fw-semibold);
+  color: var(--ink-2);
+}
+.build-card-detail {
+  margin-top: var(--space-2);
+  font-size: var(--fs-data-row);
+  color: var(--ink-2);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.build-card-foot {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--fs-eyebrow);
+  color: var(--ink-3);
+}
+
+/* --- Pills ---------------------------------------------------------------- */
+.build-pill {
+  font-size: var(--fs-eyebrow);
+  font-weight: var(--fw-semibold);
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.build-pill.live { color: var(--income); border-color: var(--income-bg); background: var(--income-bg); }
+.build-pill.dead { color: var(--error);  border-color: var(--error-bg);  background: var(--error-bg); }
+.build-pill.warn { color: var(--amber);  border-color: var(--amber-bg);  background: var(--amber-bg); }
+
+/* Monospace-ish session tag chip. */
+.build-tag {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--fs-tiny);
+  color: var(--ink-3);
+}
+.build-card-role { text-transform: uppercase; letter-spacing: 0.04em; }
+.build-card-beat { margin-left: auto; }
+
+/* --- Status tiles --------------------------------------------------------- */
+.build-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 120px), 1fr));
+  gap: var(--space-3);
+}
+.build-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: var(--tap-min);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--white);
+}
+.build-tile-num {
+  font-size: var(--fs-card-value);
+  font-weight: var(--fw-bold);
+  line-height: 1;
+}
+.build-tile-label {
+  font-size: var(--fs-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+.build-tile-live .build-tile-num { color: var(--income); }
+.build-tile-dead .build-tile-num { color: var(--error); }
+.build-tile-warn .build-tile-num { color: var(--amber); }
+.build-tile-done .build-tile-num { color: var(--ink-3); }
+
+/* --- Activity log --------------------------------------------------------- */
+.build-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.build-log-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-data-row);
+}
+.build-log-time {
+  font-size: var(--fs-tiny);
+  color: var(--ink-4);
+  min-width: 64px;
+}
+.build-log-msg {
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}

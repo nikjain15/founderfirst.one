@@ -333,6 +333,19 @@ data untouched, branch list now empty.
   intentionally OFF** (re-enable only via Dashboard → Settings → Integrations → GitHub →
   Branching, if the manual-migration workflow ever changes).
 
+**Same class, second instance (2 Jul 2026):** a red **"Workers Builds: penny-proxy"**
+check fired on every PR. `penny-proxy` was an **orphaned Cloudflare Worker** left over
+from the ~2-months-prior app (its Workers Build was git-connected to this repo with
+Root directory `/` + Deploy `npx wrangler deploy` + watch paths `*`, but the repo root
+has no wrangler config — the only worker here is `penny-site-bubble` in
+`site-bubble/worker/`, deployed by `deploy-worker.yml`). So it failed on every push.
+Verified dead in the dashboard (no custom domains/routes, 0 req/sec, last real deploy
+2 months ago) and **deleted the Worker**. **Current state: `penny-proxy` Worker no
+longer exists**; the only Cloudflare Worker for this repo is `penny-site-bubble`
+(GitHub-Actions-deployed), plus the `penny` Pages project (Actions-deployed too). If a
+Cloudflare build check ever reappears, check Workers & Pages → the service → Settings →
+Build for a stray git connection.
+
 ---
 
 *Add a numbered rule above when a mistake teaches a lesson worth not repeating.*

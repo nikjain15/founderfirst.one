@@ -9,12 +9,35 @@ Signals system — see `SIGNALS_SOLUTION.md`.
 
 1. Embeds any new ICP reference examples (`nomic-embed-text`).
 2. Claims a batch of `pending` items (atomic — flips them to `scoring`).
-3. Per item: keyword prefilter → embed + relevance (cosine vs ICP set) → LLM
-   intent score (`gemma2:2b`) → promote or archive.
+3. Per item: **empty-content guard** (no title AND no body → archived with
+   intent 0, no model ever called) → exclude-keyword prefilter → embed +
+   relevance (cosine vs ICP set) → LLM intent score (`OLLAMA_SCORE_MODEL`;
+   the live host runs `qwen2.5:7b-instruct-q4_K_M`) → promote or archive.
 4. Promoted leads get a brand-voice outreach draft (Anthropic, using the live
-   `VOICE.md` via `get_live_voice`).
+   `VOICE.md` via `get_live_voice`). Every draft passes `validateDraft()`
+   (brain.mjs) before being saved — refusals/meta-requests, length blow-outs,
+   and drafts that don't reference the post are rejected, and the lead stays
+   at `new` (the manual-drafting queue).
+5. Once per 24h the optimizer runs, including an **anomaly scan** that flags
+   pipeline-health problems in the Brain report: identical score-signature
+   clusters, high intent on near-empty text, refusal-looking saved drafts.
 
-## Setup on the VM (Lima, aarch64, 4 GiB, CPU-only)
+The database backstops the worker: `sig_submit_score` clamps items with no
+title+body (intent 0, never promoted) and `sig_set_lead_draft` raises on empty
+or refusal-looking drafts — so even a stale or buggy worker deploy can't
+pollute the Leads view (migrations `20260701153000` + `20260701170000`).
+
+## Where it actually runs (live)
+
+> **Status:** the live worker runs on the Mac host at `~/signals-worker` under
+> launchd (`one.founderfirst.signals-worker`), NOT on a VM. Score model on the
+> host is `qwen2.5:7b-instruct-q4_K_M` via `OLLAMA_SCORE_MODEL` in `.env`
+> (the `gemma2:2b` below is the small-VM default). Logs:
+> `~/Library/Logs/founderfirst/signals-worker.{log,err}`. Deploy changes with
+> `./deploy.sh` (next section). The VM instructions below are kept for
+> reference / rebuilds.
+
+## Setup on a VM (Lima, aarch64, 4 GiB, CPU-only) — reference
 
 ```bash
 # 1. Install Ollama + pull the models (small, CPU-friendly)

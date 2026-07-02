@@ -71,10 +71,14 @@ added only after the loop is proven.
                                                                     │  status='pending'
                        VM PULL-WORKER  (always-on service, no inbound ports)
                        claim_pending_items() ───────────────────────┤
+                         0. empty-content guard (no title+body → archive,
+                            no model call)                           │
                          1. keyword prefilter (drop noise)           │
                          2. embed → pgvector cosine vs ICP refs → relevance
-                         3. Ollama gemma2:2b → {intent, pain_tags, competitor}
+                         3. Ollama score model → {intent, pain_tags, competitor}
                          4. promote → lead; draft via HOSTED AI + get_live_voice()
+                            → validateDraft() gate (refusal/length/must
+                              reference the post; reject → lead stays 'new')
                        submit_score() / promote_to_lead() ──────────► writes back
                                                                     │
                                                                     ▼
@@ -115,12 +119,35 @@ intake. Swapping or adding a provider = writing one new mapper. No lock-in.
 ```
 interface Brain {
   embed(text): vector            // nomic-embed-text (local)
-  score(item): { intent, pain_tags, competitor }   // gemma2:2b (local)
+  score(item): { intent, pain_tags, competitor }   // Ollama, local (live: qwen2.5:7b)
   draft(lead, voice): string     // hosted AI (Anthropic key we already use)
 }
 ```
 `OllamaBrain` is the default for embed/score; drafting uses the managed call. Bumping
 the VM to 8 GiB later lets drafting move local with a one-line swap.
+
+### Quality guards (added 1 Jul 2026, PR #157)
+
+Garbage-in produced garbage-out once (empty facebook items → hallucinated
+intent=85 → refusal text saved as drafts), so the pipeline now defends itself
+at four layers — each independent, so a bug in one can't reach the Leads view:
+
+1. **Worker, pre-score** — items with no title AND no body are archived before
+   any model call (`processItem`, index.mjs).
+2. **Worker, pre-save** — `validateDraft()` (brain.mjs) rejects drafts that are
+   refusals/meta-requests, out of length bounds, or don't reference the post;
+   the lead stays at `new` (the manual-drafting queue).
+3. **DB backstops** — `sig_submit_score` clamps empty items (intent 0, never
+   promoted; migration `20260701153000`); `sig_set_lead_draft` raises on empty
+   or refusal-looking drafts (migration `20260701170000`). No caller — stale
+   worker, ad-hoc script — can bypass these.
+4. **Daily anomaly scan** — the optimizer's Brain report flags identical
+   score-signature clusters, high intent on <40-char text, and refusal-looking
+   saved drafts, so the next new failure mode surfaces within a day instead of
+   by someone stumbling on a polluted Leads view.
+
+Worker deploys are one command (`tools/signals-worker/deploy.sh` — see the
+worker README), which keeps the live host and `main` from drifting.
 
 ---
 

@@ -10,7 +10,7 @@
 -- Everything rolls back.
 
 begin;
-select plan(14);
+select plan(13);
 
 -- ── fixtures: owner + a non-member; one business org ─────────────────────────
 insert into auth.users (id, email, aud, role) values

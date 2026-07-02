@@ -120,3 +120,11 @@ is audited, but the path mutates nothing in the books.
 **Re-run.** `pnpm --dir apps/app test` (unit) and the App E2E workflow
 (`.github/workflows/app-e2e.yml`, drives the real authed Reports tab and captures
 the download). No prod fixtures — the unit seed is the RPTTEST Scenario A seed.
+
+---
+
+## W1.6 learned-rules management (merged in — consolidated from docs/SCENARIOS.md)
+
+| Scenario id | Feature / finding | Scenario file(s) | Proves | Status |
+|---|---|---|---|---|
+| W1.6-RULEDEL | W1.6 learned-rules management (delete) | `supabase/tests/w16_learned_rules_test.sql` · `apps/app/src/ledger/nav.test.ts` (learned-rules nav) · `apps/app/src/ledger/learnedRules.test.ts` | Owner/full-CPA can delete a learned rule (soft-deactivate, audit-logged); a deleted rule stops being proposed; non-writers (read_only CPA) are forbidden; Rules reachable in ≤3 taps (Categorize/Advanced → Rules → delete); a CAT-F4-poisoned `%` rule is deletable by id and then dead | ✅ landed w/ W1.6 |

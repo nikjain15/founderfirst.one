@@ -4,7 +4,7 @@
 -- Scenario ids: W2.3-LINK, W2.3-REPLAY, W2.3-REMOVED.  Run: `supabase test db`.
 
 begin;
-select plan(16);
+select plan(17);
 
 -- ── fixtures: one business (owner), a Plaid connection, plus a second org ─────
 insert into auth.users (id, email, aud, role) values

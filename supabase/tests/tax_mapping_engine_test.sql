@@ -7,7 +7,7 @@
 --   3. RESOLUTION precedence (§B.2): CPA override > seed rule (by priority) >
 --      UNMAPPED. An account with no rule stays UNMAPPED (never silently dropped).
 --   4. EXTENSIBILITY: a SECOND jurisdiction/entity/form maps by seed rows alone,
---      zero code change (a CA-FED T2125-shaped fixture resolves).
+--      zero code change (a ZZ-CATEST T2125-shaped fixture resolves).
 --   5. M-1 draft/approve: draft_tax_adjustment inserts a PROPOSAL; only
 --      approve_tax_adjustment (CPA-gated) makes it 'approved'; tax_m1_summary
 --      counts approved only — a proposal never reaches the return.
@@ -29,11 +29,11 @@ insert into public.entity_types (key, label, description, owner_draw_treatment)
   on conflict (key) do nothing;
 
 insert into public.tax_jurisdictions (code, name, country_code, currency) values
-  ('US-FED', 'US Federal', 'US', 'USD') on conflict (code) do nothing;
+  ('ZZ-TEST', 'US Federal', 'US', 'USD') on conflict (code) do nothing;
 
 -- the form in force from 2025-01-01
 insert into public.tax_forms (id, jurisdiction_code, form_code, entity_type, tax_year, name, effective_from, citation)
-values ('70000000-0000-0000-0000-0000000000f1', 'US-FED', 'SCH_C', 'sole_prop', 2025,
+values ('70000000-0000-0000-0000-0000000000f1', 'ZZ-TEST', 'SCH_C', 'sole_prop', 2025,
         'Schedule C', '2025-01-01', 'https://irs.gov/schc');
 
 insert into public.tax_form_lines (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct) values
@@ -79,22 +79,22 @@ select has_column('public', 'ledger_accounts', 'tags', 'ledger_accounts.tags add
 -- ── 2. resolution precedence (§B.2) ──────────────────────────────────────────
 -- meals account resolves via TAG rule (priority 20)
 select is(
-  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','US-FED','SCH_C',2025)
+  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','ZZ-TEST','SCH_C',2025)
     where account_id = '70000000-0000-0000-0000-0000000000c3'),
   'meals', 'tag rule (pri 20) maps the meals account');
 -- advertising via NAME rule (priority 30)
 select is(
-  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','US-FED','SCH_C',2025)
+  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','ZZ-TEST','SCH_C',2025)
     where account_id = '70000000-0000-0000-0000-0000000000c2'),
   'advertising', 'name-pattern rule (pri 30) maps advertising');
 -- Sales via TYPE fallback (priority 40, income)
 select is(
-  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','US-FED','SCH_C',2025)
+  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','ZZ-TEST','SCH_C',2025)
     where account_id = '70000000-0000-0000-0000-0000000000c1'),
   'gross_receipts', 'type-fallback (pri 40, income) maps Sales');
 -- Misc expense via TYPE fallback (priority 40, expense) → other_expenses (Sch C catch-all)
 select is(
-  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','US-FED','SCH_C',2025)
+  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','ZZ-TEST','SCH_C',2025)
     where account_id = '70000000-0000-0000-0000-0000000000c4'),
   'other_expenses', 'type-fallback (pri 40, expense) maps Misc to other_expenses');
 
@@ -103,11 +103,11 @@ select is(
 insert into ledger_accounts (id, org_id, code, name, type) values
   ('70000000-0000-0000-0000-0000000000c5', '70000000-0000-0000-0000-0000000000a0', '3000', 'Owner Draw', 'equity');
 select is(
-  (select resolved_by from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','US-FED','SCH_C',2025)
+  (select resolved_by from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','ZZ-TEST','SCH_C',2025)
     where account_id = '70000000-0000-0000-0000-0000000000c5'),
   'unmapped', 'an account with no matching rule stays UNMAPPED (not dropped)');
 select is(
-  (select count(*)::int from tax_unmapped_accounts('70000000-0000-0000-0000-0000000000a0','US-FED','SCH_C',2025)),
+  (select count(*)::int from tax_unmapped_accounts('70000000-0000-0000-0000-0000000000a0','ZZ-TEST','SCH_C',2025)),
   1, 'the unmapped preflight surfaces exactly the one unmapped account (package gate)');
 
 -- ── 4. CPA override wins over seed rule (§B.2.1) ─────────────────────────────
@@ -118,11 +118,11 @@ select lives_ok($$
     'SCH_C', 'advertising', null, 'CPA reclass');
 $$, 'CPA (firm member, full engagement) may set an override');
 select is(
-  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','US-FED','SCH_C',2025)
+  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','ZZ-TEST','SCH_C',2025)
     where account_id = '70000000-0000-0000-0000-0000000000c4'),
   'advertising', 'CPA override wins over the seed type-fallback rule');
 select is(
-  (select resolved_by from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','US-FED','SCH_C',2025)
+  (select resolved_by from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','ZZ-TEST','SCH_C',2025)
     where account_id = '70000000-0000-0000-0000-0000000000c4'),
   'override', 'resolution reports resolved_by=override for explainability');
 -- audit-logged
@@ -149,33 +149,33 @@ select throws_ok($$
 $$, '23514', NULL, 'override at a non-existent line_key is REJECTED (integrity)');
 -- and the good override from step 4 is untouched (still advertising)
 select is(
-  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','US-FED','SCH_C',2025)
+  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','ZZ-TEST','SCH_C',2025)
     where account_id = '70000000-0000-0000-0000-0000000000c4'),
   'advertising', 'a rejected bad override leaves the prior valid mapping intact');
 
 -- ── 6. effective-dating: supersede + old/new law (§B.0.2, CENTRAL-2 idiom) ────
 -- supersede the 2025 Sch C mid-year (meals % change scenario). New row from 2025-07-01.
 select lives_ok($$
-  select supersede_tax_form('US-FED','SCH_C','sole_prop',2025, date '2025-07-01',
+  select supersede_tax_form('ZZ-TEST','SCH_C','sole_prop',2025, date '2025-07-01',
     'Schedule C (rev)', '{}'::jsonb, 'https://irs.gov/schc-rev');
 $$, 'supersede_tax_form closes the old row and opens a new one atomically');
 select is(
-  (select count(*)::int from tax_forms where jurisdiction_code='US-FED' and form_code='SCH_C'
+  (select count(*)::int from tax_forms where jurisdiction_code='ZZ-TEST' and form_code='SCH_C'
      and tax_year=2025 and effective_to is null and is_active),
   1, 'exactly ONE active (open) form row after supersede (one-active invariant)');
 -- old period resolves the ORIGINAL row; new period the superseding one
 select is(
-  (select name from tax_form_in_force('US-FED','SCH_C',2025, date '2025-03-01')),
+  (select name from tax_form_in_force('ZZ-TEST','SCH_C',2025, date '2025-03-01')),
   'Schedule C', 'as-of a March date returns the ORIGINAL form (old law)');
 select is(
-  (select name from tax_form_in_force('US-FED','SCH_C',2025, date '2025-09-01')),
+  (select name from tax_form_in_force('ZZ-TEST','SCH_C',2025, date '2025-09-01')),
   'Schedule C (rev)', 'as-of a September date returns the SUPERSEDING form (new law)');
 -- the no-overlap EXCLUDE + one-active partial-unique make an overlapping active
 -- window impossible. Either guard may fire first (unique 23505 or exclusion 23P01);
 -- both mean "rejected". throws_ok with NULL sqlstate asserts it raises at all.
 select throws_ok($$
   insert into tax_forms (jurisdiction_code, form_code, entity_type, tax_year, name, effective_from, citation)
-  values ('US-FED','SCH_C','sole_prop',2025,'dup','2025-08-01','x');
+  values ('ZZ-TEST','SCH_C','sole_prop',2025,'dup','2025-08-01','x');
 $$, NULL, 'an overlapping active form window is rejected (EXCLUDE / one-active guard)');
 
 -- ── 7. M-1 draft → approve (§B.0.5): proposal never auto-files ────────────────
@@ -229,9 +229,9 @@ select is(
 insert into public.entity_types (key, label, description, owner_draw_treatment)
   values ('sole_prop', 'Sole prop', 'x', 'equity_distribution') on conflict (key) do nothing;
 insert into public.tax_jurisdictions (code, name, country_code, currency) values
-  ('CA-FED', 'Canada CRA', 'CA', 'CAD') on conflict (code) do nothing;
+  ('ZZ-CATEST', 'Canada CRA', 'CA', 'CAD') on conflict (code) do nothing;
 insert into public.tax_forms (id, jurisdiction_code, form_code, entity_type, tax_year, name, effective_from, citation)
-  values ('70000000-0000-0000-0000-0000000000f2', 'CA-FED', 'T2125', 'sole_prop', 2025, 'T2125', '2025-01-01', 'https://cra/t2125');
+  values ('70000000-0000-0000-0000-0000000000f2', 'ZZ-CATEST', 'T2125', 'sole_prop', 2025, 'T2125', '2025-01-01', 'https://cra/t2125');
 insert into public.tax_form_lines (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct) values
   ('70000000-0000-0000-0000-0000000000f2', 'meals',          '8523', 'Meals',    'deductions', 51, 'amount', 50),
   ('70000000-0000-0000-0000-0000000000f2', 'other_expenses', '9270', 'Other',    'deductions', 69, 'amount', null),
@@ -242,11 +242,11 @@ insert into public.tax_mapping_rules (form_id, priority, match_kind, match_value
   ('70000000-0000-0000-0000-0000000000f2', 40, 'account_type', 'income',  'gross_sales');
 -- the SAME resolver maps the org's accounts against the Canadian form — no code change.
 select is(
-  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','CA-FED','T2125',2025)
+  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','ZZ-CATEST','T2125',2025)
     where account_id = '70000000-0000-0000-0000-0000000000c3'),
-  'meals', 'a SECOND jurisdiction (CA-FED T2125) maps by seed rows alone — zero code change (§B.8)');
+  'meals', 'a SECOND jurisdiction (ZZ-CATEST T2125) maps by seed rows alone — zero code change (§B.8)');
 select is(
-  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','CA-FED','T2125',2025)
+  (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','ZZ-CATEST','T2125',2025)
     where account_id = '70000000-0000-0000-0000-0000000000c1'),
   'gross_sales', 'the Canadian income fallback resolves through the same engine');
 

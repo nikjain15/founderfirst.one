@@ -415,6 +415,48 @@ export const COPY = {
     accounts: "Accounts",
     import: "Import",
   },
+
+  // ── CPA Practice home (card W1.4) ──────────────────────────────────────────
+  // The firm-level landing: one ranked list of what needs the CPA across every
+  // client. VOICE.md — plain, calm, action-first; no exclamation marks.
+  practice: {
+    eyebrow: "Practice",
+    title: "What needs you",
+    loading: "Loading your clients' books…",
+    loadError: "Couldn't load your practice queue. Try again.",
+    allClearTitle: "All caught up",
+    allClearBody:
+      "Nothing needs you across your clients right now. New items land here as they come in.",
+    noClientsTitle: "No clients yet",
+    noClientsBody:
+      "Add your first client from the switcher above and their work will show up here.",
+    // Section headers
+    queueHeading: "Across your clients",
+    clientsHeading: "Clients",
+    resolvedHeading: (n: number) => `All clear (${n})`,
+    // Item-kind labels (the row's action word — data label, ordered by urgency)
+    kind: {
+      pending_review: "Waiting for approval",
+      uncategorized: "Needs a category",
+      unreconciled: "Import to reconcile",
+      flagged: "Flagged",
+      upcoming_close: "Period to close",
+    } as Record<string, string>,
+    // Row CTA per kind (what the ≤2-tap resolution lands on)
+    cta: {
+      pending_review: "Review",
+      uncategorized: "Categorize",
+      unreconciled: "Reconcile",
+      flagged: "Open",
+      upcoming_close: "Close",
+    } as Record<string, string>,
+    ctaReadonly: "View",
+    // Switcher / client-card count summaries
+    itemsCount: (n: number) => `${n} ${n === 1 ? "item" : "items"}`,
+    allClearChip: "All clear",
+    openClientAria: (name: string) => `Open ${name}'s books`,
+    queueAria: "Cross-client work queue",
+  },
 } as const;
 
 export type Copy = typeof COPY;

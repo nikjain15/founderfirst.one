@@ -9,6 +9,7 @@ import Topbar from "../components/Topbar";
 import { useActiveOrg } from "../org/ActiveOrgProvider";
 import InviteCpa from "../org/InviteCpa";
 import ApprovalSetting from "../org/ApprovalSetting";
+import { COPY } from "../copy";
 
 export default function Settings() {
   const { loading, activeOrg, roleInfo } = useActiveOrg();
@@ -18,14 +19,14 @@ export default function Settings() {
       <Topbar />
       <main className="workspace">
         {loading ? (
-          <p className="muted">Loading…</p>
+          <p className="muted">{COPY.common.loading}</p>
         ) : !activeOrg || roleInfo?.lens !== "owner" ? (
           // Settings is owner-only; anyone else goes back to their books.
           <Navigate to="/" replace />
         ) : (
           <section className="lens">
             <header className="ledger-head">
-              <p className="eyebrow lens-eyebrow">Settings</p>
+              <p className="eyebrow lens-eyebrow">{COPY.settings.eyebrow}</p>
               <h1 className="page-title">{activeOrg.name}</h1>
             </header>
             <div className="ledger-settings">

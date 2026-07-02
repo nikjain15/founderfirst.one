@@ -3,7 +3,11 @@
  * (APP_PRINCIPLES §2 owner, §3 CPA). Kept as pure data (no React) so the nav can be
  * unit-tested in the node environment and so both lenses project from ONE table
  * instead of each hand-rolling a tab list that could drift.
+ *
+ * Tab labels come from the strings catalog (COPY.tabs) — the single source of
+ * user-facing copy (card CENTRAL-1) — not inline literals.
  */
+import { COPY } from "../copy";
 
 // Which navigation a lens presents. Owner = plain-language jobs; CPA = accounting
 // workflow. The panels underneath are identical — only the nav differs.
@@ -30,15 +34,15 @@ export type NavTab = {
 //    de-emphasized Advanced (the accountant-grade ledger). Zero accounting
 //    vocabulary in the four primary jobs; Journal/CoA/Periods live under Advanced.
 export const OWNER_TABS: NavTab[] = [
-  { id: "home", label: "Home", surface: "overview" },
-  { id: "review", label: "Review", writeOnly: true, surface: "review" },
-  { id: "reports", label: "Reports", surface: "reports" },
-  { id: "connections", label: "Connections", surface: "connections" },
+  { id: "home", label: COPY.tabs.home, surface: "overview" },
+  { id: "review", label: COPY.tabs.review, writeOnly: true, surface: "review" },
+  { id: "reports", label: COPY.tabs.reports, surface: "reports" },
+  { id: "connections", label: COPY.tabs.connections, surface: "connections" },
   {
-    id: "advanced", label: "Advanced", subs: [
-      { id: "journal", label: "Journal" },
-      { id: "accounts", label: "Chart of accounts" },
-      { id: "periods", label: "Periods" },
+    id: "advanced", label: COPY.tabs.advanced, subs: [
+      { id: "journal", label: COPY.tabs.journal },
+      { id: "accounts", label: COPY.tabs.chartOfAccounts },
+      { id: "periods", label: COPY.tabs.periods },
     ],
   },
 ];
@@ -47,17 +51,17 @@ export const OWNER_TABS: NavTab[] = [
 //    exactly as it was so the CPA projection does not regress while the owner lens
 //    is restructured (IA-1 touches the owner nav only).
 export const CPA_TABS: NavTab[] = [
-  { id: "overview", label: "Overview", surface: "overview" },
-  { id: "categorize", label: "Categorize", writeOnly: true, surface: "review" },
+  { id: "overview", label: COPY.tabs.overview, surface: "overview" },
+  { id: "categorize", label: COPY.tabs.categorize, writeOnly: true, surface: "review" },
   {
-    id: "books", label: "Books", subs: [
-      { id: "journal", label: "Journal" },
-      { id: "accounts", label: "Accounts" },
-      { id: "import", label: "Import", writeOnly: true },
-      { id: "periods", label: "Periods" },
+    id: "books", label: COPY.tabs.books, subs: [
+      { id: "journal", label: COPY.tabs.journal },
+      { id: "accounts", label: COPY.tabs.accounts },
+      { id: "import", label: COPY.tabs.import, writeOnly: true },
+      { id: "periods", label: COPY.tabs.periods },
     ],
   },
-  { id: "reports", label: "Reports", surface: "reports" },
+  { id: "reports", label: COPY.tabs.reports, surface: "reports" },
 ];
 
 export const NAV_TABS: Record<Nav, NavTab[]> = { owner: OWNER_TABS, cpa: CPA_TABS };

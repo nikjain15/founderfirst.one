@@ -5,6 +5,7 @@
  */
 import { useState, type FormEvent } from "react";
 import { invoke } from "../ledger/api";
+import { COPY } from "../copy";
 
 export default function InviteCpa({ orgId }: { orgId: string }) {
   const [email, setEmail] = useState("");
@@ -25,7 +26,7 @@ export default function InviteCpa({ orgId }: { orgId: string }) {
       if (data?.accept_path) setLink(window.location.origin + data.accept_path);
       setEmail("");
     } catch (err) {
-      setError((err as Error).message || "Could not send invite.");
+      setError((err as Error).message || COPY.invite.errSend);
     } finally {
       setBusy(false);
     }
@@ -33,31 +34,31 @@ export default function InviteCpa({ orgId }: { orgId: string }) {
 
   return (
     <form className="invite-cpa" onSubmit={submit}>
-      <h3>Invite your accountant</h3>
+      <h3>{COPY.invite.heading}</h3>
       <input
         type="email"
         required
         autoComplete="email"
-        aria-label="Accountant email"
-        placeholder="cpa@firm.com"
+        aria-label={COPY.invite.emailAria}
+        placeholder={COPY.invite.emailPlaceholder}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
-      <div className="seg" role="radiogroup" aria-label="Access level">
+      <div className="seg" role="radiogroup" aria-label={COPY.invite.accessAria}>
         <button type="button" className={access === "full" ? "on" : ""} aria-pressed={access === "full"} onClick={() => setAccess("full")}>
-          Full access
+          {COPY.invite.fullAccess}
         </button>
         <button type="button" className={access === "read_only" ? "on" : ""} aria-pressed={access === "read_only"} onClick={() => setAccess("read_only")}>
-          Read-only
+          {COPY.invite.readOnly}
         </button>
       </div>
       <button type="submit" disabled={busy || !email.trim()}>
-        {busy ? "Creating invite…" : "Invite CPA"}
+        {busy ? COPY.invite.creating : COPY.invite.submit}
       </button>
       {error && <p className="error">{error}</p>}
       {link && (
         <p className="invite-link">
-          Invite link (send to your accountant):<br />
+          {COPY.invite.linkLabel}<br />
           <code>{link}</code>
         </p>
       )}

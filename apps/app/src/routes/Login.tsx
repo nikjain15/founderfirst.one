@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 import { getClient } from "../lib/supabase";
 import { hasSupabase } from "../lib/env";
 import { SITE } from "@ff/site";
+import { COPY } from "../copy";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -16,7 +17,7 @@ export default function Login() {
   const submit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     if (!hasSupabase) {
-      setError("Sign-in isn't configured in this environment.");
+      setError(COPY.auth.notConfigured);
       return;
     }
     setBusy(true);
@@ -36,30 +37,30 @@ export default function Login() {
   return (
     <main className="auth-screen">
       <div className="auth-card">
-        <div className="brand" title={`Penny by ${SITE.company}`}>
+        <div className="brand" title={COPY.nav.brandTitle(SITE.company)}>
           <span className="p-mark p-mark-md" aria-hidden="true">P</span>
-          Penny
+          {COPY.nav.penny}
         </div>
         {sent ? (
           <p className="muted">
-            Check <strong>{email}</strong> for a sign-in link.
+            {COPY.auth.checkEmail(email).before}<strong>{email}</strong>{COPY.auth.checkEmail(email).after}
           </p>
         ) : (
           <form onSubmit={submit}>
-            <h1>Sign in</h1>
-            <p className="muted">Penny's keeping your books — sign in to pick up where you left off. We'll email you a one-time link.</p>
+            <h1>{COPY.auth.signIn}</h1>
+            <p className="muted">{COPY.auth.signInLead}</p>
             <input
               type="email"
               required
               autoFocus
               autoComplete="email"
-              aria-label="Email address"
-              placeholder="you@company.com"
+              aria-label={COPY.auth.emailAria}
+              placeholder={COPY.auth.emailPlaceholder}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
             <button type="submit" disabled={busy || !email}>
-              {busy ? "Sending…" : "Email me a link"}
+              {busy ? COPY.auth.sending : COPY.auth.emailMeLink}
             </button>
             {error && <p className="error">{error}</p>}
           </form>

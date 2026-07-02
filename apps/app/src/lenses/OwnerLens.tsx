@@ -5,6 +5,7 @@
 import { useNavigate } from "react-router-dom";
 import type { Org, RoleInfo } from "../org/ActiveOrgProvider";
 import Ledger from "../ledger/Ledger";
+import { COPY } from "../copy";
 
 export default function OwnerLens({ org, roleInfo }: { org: Org; roleInfo: RoleInfo }) {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ export default function OwnerLens({ org, roleInfo }: { org: Org; roleInfo: RoleI
       org={org}
       canWrite={roleInfo.canWrite}
       nav="owner"
-      eyebrow="Your books"
+      eyebrow={COPY.ledger.eyebrowOwner}
       onInvite={() => navigate("/settings")}
     />
   );

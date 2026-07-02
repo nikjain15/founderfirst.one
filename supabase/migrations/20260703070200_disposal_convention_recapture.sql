@@ -68,10 +68,21 @@ grant execute on function public.disposal_year_fraction(text,date) to authentica
 -- Ensures the schedule is computed through the disposal year, applies the asset''s
 -- acquisition convention to the disposal-year depreciation, computes adjusted BOOK
 -- and TAX basis, and flags §1245/§1250 ordinary recapture on a tax gain.
+--
+-- POSTS THE BOOK REMOVAL JE (via post_journal_entry — same path post_book_depreciation
+-- uses, so period-lock + approval-tier + audit are enforced inside it, and it is
+-- idempotent on the key 'dispose:<asset_id>'):
+--   Cr asset_account        cost                (removes the capitalized cost)
+--   Dr accumulated_account  book accumulated    (clears the contra through disposal)
+--   Dr proceeds_account     proceeds            (cash/receivable received, if > 0)
+--   Dr/Cr gain_loss_account book gain/loss      (the balancing plug: Cr a gain, Dr a loss)
+-- The JE uses BOOK numbers only — the TAX gain/loss + §1245/§1250 recapture stay in
+-- the tax / M-1 layer (asset_disposals columns), never the book ledger.
 create or replace function public.dispose_fixed_asset(
   p_actor uuid, p_org uuid, p_asset_id uuid, p_disposal_date date,
   p_proceeds_minor bigint default 0, p_note text default null,
-  p_gain_loss_account_id uuid default null
+  p_gain_loss_account_id uuid default null,
+  p_proceeds_account_id uuid default null
 ) returns uuid
   language plpgsql security definer set search_path = public as $$
 declare
@@ -100,6 +111,9 @@ declare
   v_recap         bigint := 0;
   v_recap_sec     text := null;
   v_disp          uuid;
+  v_entry         journal_entries;
+  v_lines         jsonb;
+  v_key           text;
 begin
   if not can_write_org_as(p_actor, p_org) then
     raise exception 'not authorized to dispose asset for org %', p_org using errcode = '42501';
@@ -157,11 +171,56 @@ begin
     v_recap_sec := case when a.property_type = 'real' then '§1250' else '§1245' end;
   end if;
 
+  -- BOOK REMOVAL JE — validate wiring, then post the balanced removal entry.
+  -- The asset must be wired to a fixed-asset (cost) account and its accumulated
+  -- contra; the gain/loss account is required (the plug that balances the entry);
+  -- proceeds require a cash/receivable account to debit.
+  if a.asset_account_id is null or a.accumulated_account_id is null then
+    raise exception 'asset % has no asset/accumulated account wired — cannot post disposal JE', p_asset_id
+      using errcode = 'invalid_parameter_value';
+  end if;
+  if p_gain_loss_account_id is null then
+    raise exception 'gain/loss account is required to post the disposal JE' using errcode = 'invalid_parameter_value';
+  end if;
+  if coalesce(p_proceeds_minor,0) > 0 and p_proceeds_account_id is null then
+    raise exception 'proceeds account is required when proceeds are received' using errcode = 'invalid_parameter_value';
+  end if;
+
+  -- Cr asset cost, Dr accumulated depreciation, Dr proceeds (if any), then the
+  -- book gain/loss plug: book_gl = proceeds - book_basis
+  --   = (accumulated + proceeds) - cost  → a gain is credited, a loss is debited.
+  -- This makes debits == credits exactly (post_journal_entry also re-checks balance).
+  v_lines := jsonb_build_array(
+    jsonb_build_object('account_id', a.asset_account_id,        'side', 'C', 'amount_minor', a.cost_minor, 'memo', 'Remove asset cost — ' || a.name)
+  );
+  if v_book_acc > 0 then
+    v_lines := v_lines || jsonb_build_array(
+      jsonb_build_object('account_id', a.accumulated_account_id, 'side', 'D', 'amount_minor', v_book_acc, 'memo', 'Clear accumulated depreciation — ' || a.name));
+  end if;
+  if coalesce(p_proceeds_minor,0) > 0 then
+    v_lines := v_lines || jsonb_build_array(
+      jsonb_build_object('account_id', p_proceeds_account_id,    'side', 'D', 'amount_minor', p_proceeds_minor, 'memo', 'Disposal proceeds — ' || a.name));
+  end if;
+  if v_book_gl > 0 then
+    v_lines := v_lines || jsonb_build_array(
+      jsonb_build_object('account_id', p_gain_loss_account_id,   'side', 'C', 'amount_minor', v_book_gl,  'memo', 'Gain on disposal — ' || a.name));
+  elsif v_book_gl < 0 then
+    v_lines := v_lines || jsonb_build_array(
+      jsonb_build_object('account_id', p_gain_loss_account_id,   'side', 'D', 'amount_minor', -v_book_gl, 'memo', 'Loss on disposal — ' || a.name));
+  end if;
+
+  -- idempotent per asset; ensure_open_period (inside post_journal_entry) rejects a
+  -- disposal into a CLOSED period — the removal never lands in a locked period.
+  v_key := 'dispose:' || p_asset_id::text;
+  v_entry := public.post_journal_entry(
+    p_actor, p_org, p_disposal_date, v_key, v_lines,
+    'disposal', p_asset_id::text, 'Disposal — ' || a.name);
+
   insert into public.asset_disposals
     (org_id, asset_id, disposal_date, proceeds_minor, book_basis_minor, gain_loss_minor,
-     tax_basis_minor, tax_gain_loss_minor, recapture_section, recapture_minor, note, disposed_by)
+     tax_basis_minor, tax_gain_loss_minor, recapture_section, recapture_minor, note, disposed_by, posted_entry_id)
   values (p_org, p_asset_id, p_disposal_date, coalesce(p_proceeds_minor,0), v_book_basis, v_book_gl,
-          v_tax_basis, v_tax_gl, v_recap_sec, v_recap, p_note, p_actor)
+          v_tax_basis, v_tax_gl, v_recap_sec, v_recap, p_note, p_actor, v_entry.id)
   returning id into v_disp;
 
   update public.fixed_assets
@@ -173,11 +232,17 @@ begin
           jsonb_build_object('disposal_date', p_disposal_date, 'proceeds_minor', coalesce(p_proceeds_minor,0),
                              'book_basis_minor', v_book_basis, 'gain_loss_minor', v_book_gl,
                              'tax_basis_minor', v_tax_basis, 'tax_gain_loss_minor', v_tax_gl,
-                             'recapture_section', v_recap_sec, 'recapture_minor', v_recap));
+                             'recapture_section', v_recap_sec, 'recapture_minor', v_recap,
+                             'entry_id', v_entry.id));
   return v_disp;
 end $$;
-revoke all on function public.dispose_fixed_asset(uuid,uuid,uuid,date,bigint,text,uuid) from public, anon, authenticated;
-grant execute on function public.dispose_fixed_asset(uuid,uuid,uuid,date,bigint,text,uuid) to service_role;
+revoke all on function public.dispose_fixed_asset(uuid,uuid,uuid,date,bigint,text,uuid,uuid) from public, anon, authenticated;
+grant execute on function public.dispose_fixed_asset(uuid,uuid,uuid,date,bigint,text,uuid,uuid) to service_role;
+
+-- The 070100 signature (…,text,uuid) is now superseded by the 8-arg form above; drop
+-- the stale overload so only ONE dispose_fixed_asset exists (no ambiguous-overload
+-- resolution, no orphaned no-JE version reachable by the shorter signature).
+drop function if exists public.dispose_fixed_asset(uuid,uuid,uuid,date,bigint,text,uuid);
 
 -- ── 5. red-team #4 (P3) — unseeded convention must RAISE, not silently return 0 ─
 -- The engine computes mid_quarter_q1..q3 keys but only mid_quarter_q4 percentages are

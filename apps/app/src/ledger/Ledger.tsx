@@ -18,29 +18,23 @@ import { formatMoney, formatMoneyShort, parseMoneyToMinor } from "./money";
 import { ACCOUNT_TYPES } from "./types";
 import ImportFlow from "../import/ImportFlow";
 import Categorize from "./Categorize";
+import LearnedRules from "./LearnedRules";
+import InviteCpa from "../org/InviteCpa";
 import { Takeaway } from "./Takeaway";
+import {
+  visibleTabs, visibleSubs as visibleSubsOf, type Nav, type Surface,
+} from "./nav";
 import type {
   AccountType, AccountingPeriod, DraftLine, JournalEntry, LedgerAccount,
 } from "./types";
+import { COPY } from "../copy";
 
-// 4 primary tabs, mirroring the /admin IA (owner settings live in the top-bar ⚙️
-// menu, not a tab). The double-entry mechanics (journal/accounts/import/periods)
-// live under Books as sub-tabs so the top row stays calm instead of a flat seven.
-type MainTab = "overview" | "categorize" | "books" | "reports";
-type BooksSub = "journal" | "accounts" | "import" | "periods";
-
-const MAIN_TABS: { id: MainTab; label: string; writeOnly?: boolean }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "categorize", label: "Categorize", writeOnly: true },
-  { id: "books", label: "Books" },
-  { id: "reports", label: "Reports" },
-];
-const BOOKS_SUBS: { id: BooksSub; label: string; writeOnly?: boolean }[] = [
-  { id: "journal", label: "Journal" },
-  { id: "accounts", label: "Accounts" },
-  { id: "import", label: "Import", writeOnly: true },
-  { id: "periods", label: "Periods" },
-];
+/**
+ * Two navigations, one workspace (APP_PRINCIPLES §1, §2, §3). Owner and CPA are
+ * role-scoped projections of the same books, so they share this component but get
+ * their OWN tab set (defined in ./nav) — owner navigates by plain-language jobs,
+ * CPA by accounting workflow. The `nav` prop picks which; the panels are identical.
+ */
 
 /** Roving-tabindex tab strip (arrow-key navigable) — shared by the main tabs and
  *  the Books sub-tabs so keyboard behavior is identical at both levels. */
@@ -84,18 +78,31 @@ const entryTotal = (e: JournalEntry) =>
   (e.lines ?? []).filter((l) => l.side === "D").reduce((s, l) => s + l.amount_minor, 0);
 
 export default function Ledger({
-  org, canWrite, defaultTab = "overview", eyebrow, onInvite,
+  org, canWrite, nav = "owner", defaultTabId, eyebrow, onInvite,
 }: {
   org: { id: string; name: string };
   canWrite: boolean;
-  defaultTab?: MainTab;
+  nav?: Nav;                 // which navigation to present (owner jobs vs CPA workflow)
+  defaultTabId?: string;     // which primary tab to land on (else the first visible one)
   eyebrow?: string;
-  onInvite?: () => void; // owner-only: open Settings to invite an accountant (top-bar ⚙️ menu)
+  onInvite?: () => void;     // owner-only: open Settings to invite an accountant (top-bar ⚙️ menu)
 }) {
-  const [tab, setTab] = useState<MainTab>(defaultTab);
-  const [booksSub, setBooksSub] = useState<BooksSub>("journal");
-  const mainTabs = MAIN_TABS.filter((t) => !t.writeOnly || canWrite);
-  const booksSubs = BOOKS_SUBS.filter((t) => !t.writeOnly || canWrite);
+  // Visible primary tabs for this lens, with write-only tabs hidden for read-only.
+  const tabs = visibleTabs(nav, canWrite);
+  const initialTab = tabs.some((t) => t.id === defaultTabId) ? defaultTabId! : (tabs[0]?.id ?? "");
+  const [tabId, setTabId] = useState<string>(initialTab);
+  // Remember the last sub-surface per parent tab (Advanced / Books), so returning
+  // to it lands where you left. Defaults to the parent's first visible sub.
+  const [sub, setSub] = useState<Surface | null>(null);
+
+  const activeTab = tabs.find((t) => t.id === tabId) ?? tabs[0];
+  const subs = visibleSubsOf(activeTab, canWrite);
+  const activeSub: Surface | null = activeTab?.subs
+    ? (subs.find((s) => s.id === sub)?.id ?? subs[0]?.id ?? null)
+    : null;
+  // The leaf surface currently shown: a leaf tab's surface, or the active sub.
+  const surface: Surface | null = activeTab?.surface ?? activeSub;
+
   const accounts = useAccounts(org.id);
   const entries = useEntries(org.id);
   const periods = usePeriods(org.id);
@@ -104,8 +111,15 @@ export default function Ledger({
   const loading = accounts.isLoading || entries.isLoading || periods.isLoading;
   const error = accounts.isError || entries.isError || periods.isError;
 
-  // Jump straight to a Books sub-tab (used by Overview's actions + Import's onDone).
-  const openBooks = (sub: BooksSub) => { setBooksSub(sub); setTab("books"); };
+  // Jump straight to any surface, opening its parent tab if it's a sub-surface
+  // (used by Home's actions and Import's onDone). Falls back to the leaf tab.
+  const goto = (target: Surface) => {
+    const parent = tabs.find((t) => t.surface === target)
+      ?? tabs.find((t) => (t.subs ?? []).some((s) => s.id === target));
+    if (!parent) return;
+    setTabId(parent.id);
+    if (parent.subs) setSub(target);
+  };
 
   return (
     <section className="lens ledger">
@@ -113,68 +127,111 @@ export default function Ledger({
         {eyebrow && <p className="eyebrow lens-eyebrow">{eyebrow}</p>}
         <h1 className="page-title">{org.name}</h1>
         {!canWrite && (
-          <span className="readonly-chip">Read-only — posting disabled</span>
+          <span className="readonly-chip">{COPY.ledger.readonlyChip}</span>
         )}
       </header>
 
-      <TabStrip items={mainTabs} active={tab} onSelect={setTab}
-        label="Ledger sections" idPrefix="ltab" />
+      <TabStrip items={tabs} active={tabId} onSelect={setTabId}
+        label={COPY.ledger.sectionsAria} idPrefix="ltab" />
 
-      {error && <p className="error">Couldn't load the books. Try again.</p>}
-      {loading && !error && <p className="muted">Loading the books…</p>}
+      {error && <p className="error">{COPY.ledger.loadError}</p>}
+      {loading && !error && <p className="muted">{COPY.common.loadingBooks}</p>}
 
       {!loading && !error && (
-        <div className="ledger-panel" role="tabpanel" id="ledger-panel" aria-labelledby={`ltab-${tab}`} tabIndex={0}>
-          {tab === "overview" && (
-            <Overview
-              entries={entries.data ?? []} accounts={accounts.data ?? []}
-              canWrite={canWrite} orgId={org.id}
-              onReview={() => openBooks("journal")}
-              onCategorize={() => setTab("categorize")}
-              onInvite={onInvite}
-            />
+        <div className="ledger-panel" role="tabpanel" id="ledger-panel" aria-labelledby={`ltab-${tabId}`} tabIndex={0}>
+          {activeTab?.subs && activeSub && (
+            <TabStrip items={subs} active={activeSub} onSelect={setSub}
+              label={COPY.ledger.subSectionsAria(activeTab.label)} idPrefix="lsub" className="ledger-tabs ledger-subtabs" />
           )}
-          {tab === "categorize" && canWrite && (
-            <Categorize orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []} onChange={refresh} />
-          )}
-          {tab === "books" && (
-            <>
-              <TabStrip items={booksSubs} active={booksSub} onSelect={setBooksSub}
-                label="Books sections" idPrefix="lsub" className="ledger-tabs ledger-subtabs" />
-              <div className="ledger-subpanel" role="tabpanel" aria-labelledby={`lsub-${booksSub}`} tabIndex={0}>
-                {booksSub === "journal" && (
-                  <Journal orgId={org.id} canWrite={canWrite}
-                    accounts={accounts.data ?? []} entries={entries.data ?? []} onChange={refresh} />
-                )}
-                {booksSub === "accounts" && (
-                  <Accounts orgId={org.id} canWrite={canWrite}
-                    accounts={accounts.data ?? []} entries={entries.data ?? []} onChange={refresh} />
-                )}
-                {booksSub === "import" && canWrite && (
-                  <ImportFlow orgId={org.id} accounts={accounts.data ?? []}
-                    onDone={() => { refresh(); openBooks("journal"); }} />
-                )}
-                {booksSub === "periods" && (
-                  <Periods orgId={org.id} canWrite={canWrite}
-                    periods={periods.data ?? []} onChange={refresh} />
-                )}
-              </div>
-            </>
-          )}
-          {tab === "reports" && <Reports entries={entries.data ?? []} />}
+          <div className={activeTab?.subs ? "ledger-subpanel" : undefined}
+            role={activeTab?.subs ? "tabpanel" : undefined}
+            aria-labelledby={activeTab?.subs && activeSub ? `lsub-${activeSub}` : undefined}
+            tabIndex={activeTab?.subs ? 0 : undefined}>
+            {surface === "overview" && (
+              <Overview
+                entries={entries.data ?? []} accounts={accounts.data ?? []}
+                canWrite={canWrite} orgId={org.id}
+                onReview={() => goto("review")}
+                onCategorize={() => goto("review")}
+                onConnect={() => goto("connections")}
+                onInvite={onInvite}
+              />
+            )}
+            {surface === "review" && canWrite && (
+              <Categorize orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []} onChange={refresh} />
+            )}
+            {surface === "rules" && (
+              <LearnedRules orgId={org.id} canWrite={canWrite} />
+            )}
+            {surface === "connections" && (
+              <Connections orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []}
+                onImported={() => { refresh(); goto("journal"); }} onInvite={onInvite} />
+            )}
+            {surface === "journal" && (
+              <Journal orgId={org.id} canWrite={canWrite}
+                accounts={accounts.data ?? []} entries={entries.data ?? []} onChange={refresh} />
+            )}
+            {surface === "accounts" && (
+              <Accounts orgId={org.id} canWrite={canWrite}
+                accounts={accounts.data ?? []} entries={entries.data ?? []} onChange={refresh} />
+            )}
+            {surface === "import" && canWrite && (
+              <ImportFlow orgId={org.id} accounts={accounts.data ?? []}
+                onDone={() => { refresh(); goto("journal"); }} />
+            )}
+            {surface === "periods" && (
+              <Periods orgId={org.id} canWrite={canWrite}
+                periods={periods.data ?? []} onChange={refresh} />
+            )}
+            {surface === "reports" && <Reports entries={entries.data ?? []} />}
+          </div>
         </div>
       )}
     </section>
   );
 }
 
+// ── Connections — "bring in / share my data" (APP_PRINCIPLES §2). Absorbs the old
+//    Import tab and the InviteCpa sidebar so bank/connector/import/invite all live
+//    under one owner-facing job instead of being scattered across the ledger. ─────
+function Connections({
+  orgId, canWrite, accounts, onImported, onInvite,
+}: {
+  orgId: string; canWrite: boolean; accounts: LedgerAccount[];
+  onImported: () => void; onInvite?: () => void;
+}) {
+  return (
+    <div className="connections">
+      <section className="connections-block">
+        <h2 className="section-h">{COPY.connections.bringInData}</h2>
+        {canWrite ? (
+          <ImportFlow orgId={orgId} accounts={accounts} onDone={onImported} />
+        ) : (
+          <p className="muted">{COPY.connections.importDisabled}</p>
+        )}
+      </section>
+      <section className="connections-block">
+        <h2 className="section-h">{COPY.connections.shareWithAccountant}</h2>
+        {onInvite ? (
+          <>
+            <p className="muted">{COPY.connections.inviteLead}</p>
+            <InviteCpa orgId={orgId} />
+          </>
+        ) : (
+          <p className="muted">{COPY.connections.accountantManagedByOwner}</p>
+        )}
+      </section>
+    </div>
+  );
+}
+
 // ── Overview — plain-language "how's my business" ────────────────────────────
 function Overview({
-  entries, accounts, canWrite, orgId, onReview, onCategorize, onInvite,
+  entries, accounts, canWrite, orgId, onReview, onCategorize, onConnect, onInvite,
 }: {
   entries: JournalEntry[]; accounts: LedgerAccount[];
   canWrite: boolean; orgId: string;
-  onReview: () => void; onCategorize: () => void; onInvite?: () => void;
+  onReview: () => void; onCategorize: () => void; onConnect: () => void; onInvite?: () => void;
 }) {
   const tb = useMemo(() => trialBalance(entries), [entries]);
   const pnl = useMemo(() => profitAndLoss(entries), [entries]);
@@ -201,10 +258,10 @@ function Overview({
   };
   const inviteNudge = onInvite && !inviteDismissed ? (
     <div className="invite-nudge">
-      <span className="invite-nudge-text">Work with an accountant? Invite them to your books — you control full or read-only access.</span>
+      <span className="invite-nudge-text">{COPY.overview.inviteNudge}</span>
       <span className="invite-nudge-actions">
-        <button className="ghost sm" onClick={() => { dismissInvite(); onInvite(); }}>Invite accountant</button>
-        <button className="invite-nudge-x" aria-label="Dismiss" onClick={dismissInvite}>×</button>
+        <button className="ghost sm" onClick={() => { dismissInvite(); onInvite(); }}>{COPY.overview.inviteNudgeAction}</button>
+        <button className="invite-nudge-x" aria-label={COPY.overview.dismissAria} onClick={dismissInvite}>×</button>
       </span>
     </div>
   ) : null;
@@ -214,8 +271,9 @@ function Overview({
       <>
         {inviteNudge}
         <Empty
-          title="Let's set up your books"
-          body="Connect your bank or import a statement and Penny starts categorizing right away. Prefer to do it by hand? You can add accounts and post entries too."
+          title={COPY.overview.setupTitle}
+          body={COPY.overview.setupBody}
+          action={canWrite ? { label: COPY.overview.goToConnections, onClick: onConnect } : undefined}
         />
       </>
     );
@@ -234,21 +292,19 @@ function Overview({
         onCategorize={onCategorize}
       />
       <div className="kpis">
-        <Kpi label="Cash & assets" value={formatMoneyShort(bs.totalAssets)} />
-        <Kpi label="Net income (all time)" value={formatMoneyShort(pnl.netIncome)}
+        <Kpi label={COPY.overview.kpiCashAssets} value={formatMoneyShort(bs.totalAssets)} />
+        <Kpi label={COPY.overview.kpiNetIncome} value={formatMoneyShort(pnl.netIncome)}
           tone={pnl.netIncome >= 0 ? "good" : "bad"} />
-        <Kpi label="Needs review" value={String(pending)} tone={pending ? "warn" : undefined} />
+        <Kpi label={COPY.overview.kpiNeedsReview} value={String(pending)} tone={pending ? "warn" : undefined} />
       </div>
       {!tb.balanced && (
         <p className="warn-banner">
-          Something doesn't add up in your books — the totals are off by{" "}
-          {formatMoney(Math.abs(tb.totalDebit - tb.totalCredit))}. This is almost always a data
-          hiccup, not lost money. Penny flagged it so you (or your accountant) can take a look.
+          {COPY.overview.notBalancedBanner(formatMoney(Math.abs(tb.totalDebit - tb.totalCredit)))}
         </p>
       )}
-      <h2 className="section-h">Latest activity</h2>
+      <h2 className="section-h">{COPY.overview.latestActivity}</h2>
       {recent.length === 0 ? (
-        <p className="muted">No entries yet.</p>
+        <p className="muted">{COPY.overview.noEntries}</p>
       ) : (
         <ul className="activity">
           {recent.map((e) => (
@@ -284,38 +340,42 @@ function OverviewTakeaway({
 }) {
   if (notBalanced) {
     return (
-      <Takeaway tone="watch" action={canWrite ? { label: "Open journal", onClick: onReview } : undefined}>
-        Something doesn't add up in your books — Penny spotted it. This is almost always a data fix, not lost money.
+      <Takeaway tone="watch" action={canWrite ? { label: COPY.overview.takeawayOpenJournal, onClick: onReview } : undefined}>
+        {COPY.overview.takeawayNotBalanced}
       </Takeaway>
     );
   }
   if (pending > 0) {
+    const t = COPY.overview.takeawayPending(pending);
     return (
-      <Takeaway tone="watch" action={canWrite ? { label: "Review", onClick: onReview } : undefined}>
-        <strong>{pending}</strong> {pending === 1 ? "entry is" : "entries are"} waiting for your approval.
+      <Takeaway tone="watch" action={canWrite ? { label: COPY.overview.takeawayReview, onClick: onReview } : undefined}>
+        <strong>{t.count}</strong>{t.rest}
       </Takeaway>
     );
   }
   if (uncategorized > 0) {
+    const t = COPY.overview.takeawayUncat(uncategorized);
     return (
-      <Takeaway tone="watch" action={canWrite ? { label: "Categorize", onClick: onCategorize } : undefined}>
-        Penny has <strong>{uncategorized}</strong> {uncategorized === 1 ? "transaction" : "transactions"} ready to categorize.
+      <Takeaway tone="watch" action={canWrite ? { label: COPY.overview.takeawayCategorize, onClick: onCategorize } : undefined}>
+        {t.before}<strong>{t.count}</strong>{t.after}
       </Takeaway>
     );
   }
   if (!hasActivity) {
-    return <Takeaway tone="neutral">No activity yet — import your history or post your first entry to get started.</Takeaway>;
+    return <Takeaway tone="neutral">{COPY.overview.takeawayNoActivity}</Takeaway>;
   }
   if (netIncome < 0) {
+    const t = COPY.overview.takeawayNegative(formatMoney(netIncome));
     return (
       <Takeaway tone="watch">
-        You're spending more than you're earning — net <strong>{formatMoney(netIncome)}</strong> so far.
+        {t.before}<strong>{t.money}</strong>{t.after}
       </Takeaway>
     );
   }
+  const t = COPY.overview.takeawayHealthy(formatMoney(netIncome));
   return (
     <Takeaway tone="good">
-      Net income <strong>{formatMoney(netIncome)}</strong> — your books look healthy. Nothing needs you right now.
+      {t.before}<strong>{t.money}</strong>{t.after}
     </Takeaway>
   );
 }
@@ -352,10 +412,10 @@ function Accounts({
   return (
     <div className="accounts">
       <div className="panel-toolbar">
-        <span className="muted">{live.length} accounts</span>
+        <span className="muted">{COPY.accounts.count(live.length)}</span>
         {canWrite && (
           <button className="ghost sm" onClick={() => setAdding((v) => !v)}>
-            {adding ? "Cancel" : "+ Add account"}
+            {adding ? COPY.common.cancel : COPY.accounts.addAccount}
           </button>
         )}
       </div>
@@ -363,15 +423,15 @@ function Accounts({
         <NewAccountForm orgId={orgId} onDone={(ok) => { setAdding(false); if (ok) onChange(); }} />
       )}
       {live.length === 0 ? (
-        <Empty title="No accounts" body="Add an account to start your chart of accounts." />
+        <Empty title={COPY.accounts.noAccountsTitle} body={COPY.accounts.noAccountsBody} />
       ) : (
         <div className="table-wrap">
           {groups.map((g) => (
             <div className="coa-group" key={g.type}>
-              <div className="coa-type">{g.type}</div>
+              <div className="coa-type">{COPY.accountTypes[g.type]}</div>
               {g.rows.map((a) => (
                 <div className="coa-row" key={a.id}>
-                  <span className="coa-code">{a.code ?? "—"}</span>
+                  <span className="coa-code">{a.code ?? COPY.common.emDash}</span>
                   <span className="coa-name">{a.name}</span>
                   <span className="coa-bal">{formatMoney(display(a), a.currency)}</span>
                 </div>
@@ -408,23 +468,23 @@ function NewAccountForm({ orgId, onDone }: { orgId: string; onDone: (ok: boolean
     <form className="ledger-form" onSubmit={submit}>
       <div className="form-row">
         <label>
-          <span>Code</span>
-          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="1000" inputMode="numeric" />
+          <span>{COPY.accounts.codeLabel}</span>
+          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder={COPY.accounts.codePlaceholder} inputMode="numeric" />
         </label>
         <label className="grow">
-          <span>Name</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Cash — Checking" required />
+          <span>{COPY.accounts.nameLabel}</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={COPY.accounts.namePlaceholder} required />
         </label>
         <label>
-          <span>Type</span>
+          <span>{COPY.accounts.typeLabel}</span>
           <select value={type} onChange={(e) => setType(e.target.value as AccountType)}>
-            {ACCOUNT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            {ACCOUNT_TYPES.map((t) => <option key={t} value={t}>{COPY.accountTypes[t]}</option>)}
           </select>
         </label>
       </div>
       {err && <p className="error sm">{err}</p>}
       <div className="form-actions">
-        <button type="submit" disabled={busy || !name.trim()}>{busy ? "Adding…" : "Add account"}</button>
+        <button type="submit" disabled={busy || !name.trim()}>{busy ? COPY.accounts.adding : COPY.accounts.addAccountSubmit}</button>
       </div>
     </form>
   );
@@ -459,15 +519,15 @@ function Journal({
   return (
     <div className="journal">
       <div className="panel-toolbar">
-        <span className="muted">{entries.length} entries</span>
+        <span className="muted">{COPY.journal.count(entries.length)}</span>
         {canWrite && (
           <button className="ghost sm" onClick={() => setPosting((v) => !v)} disabled={liveAccounts.length < 2}>
-            {posting ? "Cancel" : "+ New entry"}
+            {posting ? COPY.common.cancel : COPY.journal.newEntry}
           </button>
         )}
       </div>
       {canWrite && liveAccounts.length < 2 && (
-        <p className="muted sm">Add at least two accounts before posting an entry.</p>
+        <p className="muted sm">{COPY.journal.needTwoAccounts}</p>
       )}
       {posting && canWrite && (
         <NewEntryForm
@@ -478,7 +538,7 @@ function Journal({
       {err && <p className="error sm">{err}</p>}
 
       {entries.length === 0 ? (
-        <Empty title="No entries yet" body="Post your first journal entry to start the books." />
+        <Empty title={COPY.journal.noEntriesTitle} body={COPY.journal.noEntriesBody} />
       ) : (
         <ul className="je-list">
           {entries.map((e) => {
@@ -489,8 +549,8 @@ function Journal({
                 <button className="je-row" onClick={() => setOpen(isOpen ? null : e.id)} aria-expanded={isOpen}>
                   <span className="je-date">{e.entry_date}</span>
                   <span className="je-memo">
-                    {e.memo ?? (reversal ? "Reversal" : e.source)}
-                    {reversal && <span className="tag">reversal</span>}
+                    {e.memo ?? (reversal ? COPY.journal.reversalLabel : e.source)}
+                    {reversal && <span className="tag">{COPY.journal.reversalTag}</span>}
                   </span>
                   <StatusPill status={e.status} />
                   <span className="je-amt">{formatMoney(entryTotal(e))}</span>
@@ -502,28 +562,28 @@ function Journal({
                       {(e.lines ?? []).map((l) => (
                         <div className="je-line" key={l.id}>
                           <span className="jl-acct">
-                            {l.account?.code ? `${l.account.code} · ` : ""}{l.account?.name ?? "—"}
+                            {l.account?.code ? `${l.account.code} · ` : ""}{l.account?.name ?? COPY.common.emDash}
                           </span>
-                          <span className={`jl-amt ${l.side === "D" ? "d" : "c"}`} aria-label={l.side === "D" ? "Debit" : undefined}>
+                          <span className={`jl-amt ${l.side === "D" ? "d" : "c"}`} aria-label={l.side === "D" ? COPY.journal.debit : undefined}>
                             {l.side === "D" ? formatMoney(l.amount_minor, l.currency) : ""}
                           </span>
-                          <span className={`jl-amt ${l.side === "C" ? "c" : "d"}`} aria-label={l.side === "C" ? "Credit" : undefined}>
+                          <span className={`jl-amt ${l.side === "C" ? "c" : "d"}`} aria-label={l.side === "C" ? COPY.journal.credit : undefined}>
                             {l.side === "C" ? formatMoney(l.amount_minor, l.currency) : ""}
                           </span>
                         </div>
                       ))}
                     </div>
-                    {e.source_ref && <p className="muted sm">ref: {e.source_ref}</p>}
+                    {e.source_ref && <p className="muted sm">{COPY.journal.refPrefix}{e.source_ref}</p>}
                     {canWrite && (
                       <div className="je-actions">
                         {e.status === "pending_review" && (
                           <button className="ghost sm" disabled={busyId === e.id} onClick={() => doApprove(e)}>
-                            Approve
+                            {COPY.journal.approve}
                           </button>
                         )}
                         {e.status === "posted" && (
                           <button className="ghost sm danger" disabled={busyId === e.id} onClick={() => doReverse(e)}>
-                            {busyId === e.id ? "Reversing…" : "Reverse"}
+                            {busyId === e.id ? COPY.journal.reversing : COPY.journal.reverse}
                           </button>
                         )}
                       </div>
@@ -592,50 +652,49 @@ function NewEntryForm({
     <form className="ledger-form entry-form" onSubmit={submit}>
       <div className="form-row">
         <label>
-          <span>Date</span>
+          <span>{COPY.journal.dateLabel}</span>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
         </label>
         <label className="grow">
-          <span>Memo</span>
-          <input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="What is this entry?" />
+          <span>{COPY.journal.memoLabel}</span>
+          <input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder={COPY.journal.memoPlaceholder} />
         </label>
       </div>
 
       <div className="lines-head">
-        <span>Account</span><span>Dr/Cr</span><span>Amount</span><span />
+        <span>{COPY.journal.colAccount}</span><span>{COPY.journal.colDrCr}</span><span>{COPY.journal.colAmount}</span><span />
       </div>
       {lines.map((l, i) => (
         <div className="line-row" key={i}>
-          <select value={l.account_id} onChange={(e) => update(i, { account_id: e.target.value })} aria-label={`Line ${i + 1} account`}>
-            <option value="">Select account…</option>
+          <select value={l.account_id} onChange={(e) => update(i, { account_id: e.target.value })} aria-label={COPY.journal.lineAccountAria(i + 1)}>
+            <option value="">{COPY.common.selectAccount}</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ""}{a.name}</option>
             ))}
           </select>
-          <select value={l.side} onChange={(e) => update(i, { side: e.target.value as "D" | "C" })} aria-label={`Line ${i + 1} debit or credit`}>
-            <option value="D">Debit</option>
-            <option value="C">Credit</option>
+          <select value={l.side} onChange={(e) => update(i, { side: e.target.value as "D" | "C" })} aria-label={COPY.journal.lineDrCrAria(i + 1)}>
+            <option value="D">{COPY.journal.debit}</option>
+            <option value="C">{COPY.journal.credit}</option>
           </select>
           <input
-            inputMode="decimal" value={l.amount} aria-label={`Line ${i + 1} amount`}
-            onChange={(e) => update(i, { amount: e.target.value })} placeholder="0.00"
+            inputMode="decimal" value={l.amount} aria-label={COPY.journal.lineAmountAria(i + 1)}
+            onChange={(e) => update(i, { amount: e.target.value })} placeholder={COPY.journal.amountPlaceholder}
           />
           <button type="button" className="line-del" onClick={() => removeLine(i)}
-            disabled={lines.length <= 2} aria-label={`Remove line ${i + 1}`}>×</button>
+            disabled={lines.length <= 2} aria-label={COPY.journal.removeLineAria(i + 1)}>×</button>
         </div>
       ))}
 
       <div className="entry-foot">
-        <button type="button" className="ghost sm" onClick={addLine}>+ Add line</button>
+        <button type="button" className="ghost sm" onClick={addLine}>{COPY.journal.addLine}</button>
         <span className={`balance-indicator ${balanced ? "ok" : "off"}`}>
-          Dr {formatMoney(debit)} · Cr {formatMoney(credit)}
-          {balanced ? " · balanced" : " · not balanced"}
+          {COPY.journal.balanceIndicator(formatMoney(debit), formatMoney(credit), balanced)}
         </span>
       </div>
       {err && <p className="error sm">{err}</p>}
       <div className="form-actions">
         <button type="submit" disabled={busy || !balanced || !allValid}>
-          {busy ? "Posting…" : "Post entry"}
+          {busy ? COPY.journal.posting : COPY.journal.postEntry}
         </button>
       </div>
     </form>
@@ -648,9 +707,9 @@ function Reports({ entries }: { entries: JournalEntry[] }) {
   return (
     <div className="reports">
       <div className="seg report-seg">
-        <button className={view === "pnl" ? "on" : ""} onClick={() => setView("pnl")}>P&amp;L</button>
-        <button className={view === "tb" ? "on" : ""} onClick={() => setView("tb")}>Trial balance</button>
-        <button className={view === "bs" ? "on" : ""} onClick={() => setView("bs")}>Balance sheet</button>
+        <button className={view === "pnl" ? "on" : ""} onClick={() => setView("pnl")}>{COPY.reports.pnl}</button>
+        <button className={view === "tb" ? "on" : ""} onClick={() => setView("tb")}>{COPY.reports.trialBalance}</button>
+        <button className={view === "bs" ? "on" : ""} onClick={() => setView("bs")}>{COPY.reports.balanceSheet}</button>
       </div>
       {view === "pnl" && <PnlReport entries={entries} />}
       {view === "tb" && <TrialBalanceReport entries={entries} />}
@@ -662,16 +721,16 @@ function Reports({ entries }: { entries: JournalEntry[] }) {
 function PnlReport({ entries }: { entries: JournalEntry[] }) {
   const p = useMemo(() => profitAndLoss(entries), [entries]);
   if (p.income.length === 0 && p.expense.length === 0) {
-    return <Empty title="Nothing to report yet" body="Post income and expense entries to see your P&L." />;
+    return <Empty title={COPY.reports.pnlEmptyTitle} body={COPY.reports.pnlEmptyBody} />;
   }
   return (
     <div className="report">
-      <ReportSection title="Revenue" rows={p.income.map((r) => ({ label: r.name, value: formatMoney(r.amount) }))}
-        total={{ label: "Total revenue", value: formatMoney(p.totalIncome) }} />
-      <ReportSection title="Expenses" rows={p.expense.map((r) => ({ label: r.name, value: `(${formatMoney(r.amount)})` }))}
-        total={{ label: "Total expenses", value: `(${formatMoney(p.totalExpense)})` }} />
+      <ReportSection title={COPY.reports.revenue} rows={p.income.map((r) => ({ label: r.name, value: formatMoney(r.amount) }))}
+        total={{ label: COPY.reports.totalRevenue, value: formatMoney(p.totalIncome) }} />
+      <ReportSection title={COPY.reports.expenses} rows={p.expense.map((r) => ({ label: r.name, value: `(${formatMoney(r.amount)})` }))}
+        total={{ label: COPY.reports.totalExpenses, value: `(${formatMoney(p.totalExpense)})` }} />
       <div className="report-net">
-        <span>Net income</span>
+        <span>{COPY.reports.netIncome}</span>
         <span className={p.netIncome >= 0 ? "t-good" : "t-bad"}>
           {p.netIncome >= 0 ? formatMoney(p.netIncome) : `(${formatMoney(-p.netIncome)})`}
         </span>
@@ -682,11 +741,11 @@ function PnlReport({ entries }: { entries: JournalEntry[] }) {
 
 function TrialBalanceReport({ entries }: { entries: JournalEntry[] }) {
   const tb = useMemo(() => trialBalance(entries), [entries]);
-  if (tb.rows.length === 0) return <Empty title="No balances yet" body="Post entries to see the trial balance." />;
+  if (tb.rows.length === 0) return <Empty title={COPY.reports.tbEmptyTitle} body={COPY.reports.tbEmptyBody} />;
   return (
     <div className="report">
       <div className="report-table tb">
-        <div className="report-head"><span>Account</span><span>Debit</span><span>Credit</span></div>
+        <div className="report-head"><span>{COPY.reports.colAccount}</span><span>{COPY.reports.colDebit}</span><span>{COPY.reports.colCredit}</span></div>
         {tb.rows.map((r) => (
           <div className="report-row" key={r.account_id}>
             <span className="r-name">{r.code ? `${r.code} · ` : ""}{r.name}</span>
@@ -695,12 +754,12 @@ function TrialBalanceReport({ entries }: { entries: JournalEntry[] }) {
           </div>
         ))}
         <div className="report-row totals">
-          <span>Totals</span>
+          <span>{COPY.reports.totals}</span>
           <span className="r-num">{formatMoney(tb.totalDebit)}</span>
           <span className="r-num">{formatMoney(tb.totalCredit)}</span>
         </div>
       </div>
-      {!tb.balanced && <p className="error sm">Trial balance does not tie — debits ≠ credits.</p>}
+      {!tb.balanced && <p className="error sm">{COPY.reports.tbDoesNotTie}</p>}
     </div>
   );
 }
@@ -709,25 +768,25 @@ function BalanceSheetReport({ entries }: { entries: JournalEntry[] }) {
   const bs = useMemo(() => balanceSheet(entries), [entries]);
   const empty = bs.assets.length === 0 && bs.liabilities.length === 0 && bs.equity.length === 0;
   if (empty && bs.currentEarnings === 0) {
-    return <Empty title="Nothing on the balance sheet yet" body="Post entries to see assets, liabilities, and equity." />;
+    return <Empty title={COPY.reports.bsEmptyTitle} body={COPY.reports.bsEmptyBody} />;
   }
   return (
     <div className="report">
-      <ReportSection title="Assets" rows={bs.assets.map((r) => ({ label: r.name, value: formatMoney(r.amount) }))}
-        total={{ label: "Total assets", value: formatMoney(bs.totalAssets) }} />
-      <ReportSection title="Liabilities" rows={bs.liabilities.map((r) => ({ label: r.name, value: formatMoney(r.amount) }))}
-        total={{ label: "Total liabilities", value: formatMoney(bs.totalLiabilities) }} />
+      <ReportSection title={COPY.reports.assets} rows={bs.assets.map((r) => ({ label: r.name, value: formatMoney(r.amount) }))}
+        total={{ label: COPY.reports.totalAssets, value: formatMoney(bs.totalAssets) }} />
+      <ReportSection title={COPY.reports.liabilities} rows={bs.liabilities.map((r) => ({ label: r.name, value: formatMoney(r.amount) }))}
+        total={{ label: COPY.reports.totalLiabilities, value: formatMoney(bs.totalLiabilities) }} />
       <ReportSection
-        title="Equity"
+        title={COPY.reports.equity}
         rows={[
           ...bs.equity.map((r) => ({ label: r.name, value: formatMoney(r.amount) })),
-          { label: "Current earnings", value: formatMoney(bs.currentEarnings) },
+          { label: COPY.reports.currentEarnings, value: formatMoney(bs.currentEarnings) },
         ]}
-        total={{ label: "Total equity", value: formatMoney(bs.totalEquity + bs.currentEarnings) }}
+        total={{ label: COPY.reports.totalEquity, value: formatMoney(bs.totalEquity + bs.currentEarnings) }}
       />
       <div className="report-net">
-        <span>Assets = Liabilities + Equity</span>
-        <span className={bs.balanced ? "t-good" : "t-bad"}>{bs.balanced ? "Balanced" : "Out of balance"}</span>
+        <span>{COPY.reports.accountingEquation}</span>
+        <span className={bs.balanced ? "t-good" : "t-bad"}>{bs.balanced ? COPY.reports.balanced : COPY.reports.outOfBalance}</span>
       </div>
     </div>
   );
@@ -744,7 +803,7 @@ function ReportSection({
     <div className="report-section">
       <div className="report-section-h">{title}</div>
       {rows.length === 0 ? (
-        <div className="report-row"><span className="muted">None</span><span /></div>
+        <div className="report-row"><span className="muted">{COPY.common.none}</span><span /></div>
       ) : (
         rows.map((r, i) => (
           <div className="report-row" key={i}><span className="r-name">{r.label}</span><span className="r-num">{r.value}</span></div>
@@ -773,7 +832,7 @@ function Periods({
   }
 
   if (periods.length === 0) {
-    return <Empty title="No periods yet" body="Periods are created automatically the first time you post into a month." />;
+    return <Empty title={COPY.periods.noPeriodsTitle} body={COPY.periods.noPeriodsBody} />;
   }
   return (
     <div className="periods">
@@ -785,7 +844,7 @@ function Periods({
             <span className={`status-pill s-${p.status}`}>{p.status}</span>
             {canWrite && (
               <button className="ghost sm" disabled={busyId === p.id} onClick={() => toggle(p)}>
-                {p.status === "open" ? "Close" : "Reopen"}
+                {p.status === "open" ? COPY.periods.close : COPY.periods.reopen}
               </button>
             )}
           </div>
@@ -799,11 +858,14 @@ function Periods({
 function StatusPill({ status }: { status: JournalEntry["status"] }) {
   return <span className={`status-pill s-${status}`}>{status.replace("_", " ")}</span>;
 }
-function Empty({ title, body }: { title: string; body: string }) {
+function Empty({ title, body, action }: {
+  title: string; body: string; action?: { label: string; onClick: () => void };
+}) {
   return (
     <div className="ledger-empty">
       <h3>{title}</h3>
       <p className="muted">{body}</p>
+      {action && <button className="ghost sm" onClick={action.onClick}>{action.label}</button>}
     </div>
   );
 }

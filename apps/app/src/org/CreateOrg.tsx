@@ -7,15 +7,14 @@ import { useRef, useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "../ledger/api";
 import { useActiveOrg, type OrgType } from "./ActiveOrgProvider";
+import { COPY } from "../copy";
 
 // Map the function's machine error codes to plain-language messages.
 function friendlyError(message: string): string {
-  if (message.includes("org_limit_reached")) {
-    return "You've reached the limit on organizations. Contact us if you need more.";
-  }
-  if (message.includes("bad_name")) return "Please enter a name (up to 120 characters).";
-  if (message.includes("bad_type")) return "Please choose a business or a CPA practice.";
-  return message || "Could not create organization.";
+  if (message.includes("org_limit_reached")) return COPY.org.errLimit;
+  if (message.includes("bad_name")) return COPY.org.errBadName;
+  if (message.includes("bad_type")) return COPY.org.errBadType;
+  return message || COPY.org.errCreate;
 }
 
 export default function CreateOrg({ onDone }: { onDone?: () => void }) {
@@ -55,14 +54,14 @@ export default function CreateOrg({ onDone }: { onDone?: () => void }) {
 
   return (
     <form className="create-org" onSubmit={submit}>
-      <div className="seg" role="radiogroup" aria-label="Organization type">
+      <div className="seg" role="radiogroup" aria-label={COPY.org.typeAria}>
         <button
           type="button"
           className={type === "business" ? "on" : ""}
           aria-pressed={type === "business"}
           onClick={() => setType("business")}
         >
-          Business
+          {COPY.org.business}
         </button>
         <button
           type="button"
@@ -70,20 +69,20 @@ export default function CreateOrg({ onDone }: { onDone?: () => void }) {
           aria-pressed={type === "firm"}
           onClick={() => setType("firm")}
         >
-          CPA practice
+          {COPY.org.cpaPractice}
         </button>
       </div>
       <input
         type="text"
         required
         maxLength={120}
-        aria-label={type === "firm" ? "Practice name" : "Business name"}
-        placeholder={type === "firm" ? "Your practice name" : "Your business name"}
+        aria-label={type === "firm" ? COPY.org.practiceNameAria : COPY.org.businessNameAria}
+        placeholder={type === "firm" ? COPY.org.practiceNamePlaceholder : COPY.org.businessNamePlaceholder}
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
       <button type="submit" disabled={busy || !name.trim()}>
-        {busy ? "Creating…" : type === "firm" ? "Create practice" : "Create business"}
+        {busy ? COPY.org.creating : type === "firm" ? COPY.org.createPractice : COPY.org.createBusiness}
       </button>
       {error && <p className="error">{error}</p>}
     </form>

@@ -47,3 +47,4 @@ deno.lock
 site-bubble/worker/pnpm-lock.yaml
 site-bubble/worker/pnpm-workspace.yaml
 scratchpad/
+tools/app-e2e/artifacts/

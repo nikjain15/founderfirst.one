@@ -12,7 +12,7 @@ the login can be checked without a human (the app uses magic-link auth).
   no creds, so the path is dead code / tree-shaken out.
 - **Runner** — `tools/app-e2e/run.mjs` serves `apps/app/dist/` (built by the
   workflow with `VITE_E2E=1`) and drives headless Chromium. For the owner's key
-  surfaces (Overview · Categorize · Journal · Import) it asserts: the app renders
+  jobs (Home · Review · Reports · Connections + Journal under Advanced) it asserts: the app renders
   past the login wall → an org loaded → each tab's panel renders → **no horizontal
   overflow at 390px** (the `apps/admin/RESPONSIVE.md` invariant). Saves a
   `desktop-<tab>.png` and `mobile-<tab>.png` per screen.

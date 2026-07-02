@@ -9,6 +9,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useOrgSettings, setOrgSettings } from "../ledger/api";
+import { COPY } from "../copy";
 
 export default function ApprovalSetting({ orgId }: { orgId: string }) {
   const qc = useQueryClient();
@@ -25,7 +26,7 @@ export default function ApprovalSetting({ orgId }: { orgId: string }) {
       await setOrgSettings({ org_id: orgId, cpa_posts_require_approval: !on });
       await qc.invalidateQueries({ queryKey: ["org-settings", orgId] });
     } catch (err) {
-      setError((err as Error).message || "Could not update setting.");
+      setError((err as Error).message || COPY.approval.errUpdate);
     } finally {
       setBusy(false);
     }
@@ -35,18 +36,16 @@ export default function ApprovalSetting({ orgId }: { orgId: string }) {
 
   return (
     <div className="approval-setting">
-      <h3>Review accountant's entries</h3>
+      <h3>{COPY.approval.heading}</h3>
       <label className="approval-toggle">
         <input
           type="checkbox"
           checked={on}
           disabled={busy}
           onChange={toggle}
-          aria-label="Require my approval before my accountant's entries hit the books"
+          aria-label={COPY.approval.checkboxAria}
         />
-        <span>
-          Hold my accountant's entries for my approval before they appear in reports.
-        </span>
+        <span>{COPY.approval.label}</span>
       </label>
       {error && <p className="error">{error}</p>}
     </div>

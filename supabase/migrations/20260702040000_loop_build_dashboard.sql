@@ -47,6 +47,13 @@ create index if not exists loop_events_at_idx         on public.loop_events (at 
 alter table public.loop_runs   enable row level security;
 alter table public.loop_events enable row level security;
 
+-- RLS filters ON TOP OF grants — without a SELECT grant the authenticated role is
+-- denied outright and the policies never get a chance to filter (see the phase0
+-- tenancy backbone for the same idiom). Reads only: no INSERT/UPDATE/DELETE grant,
+-- so writes funnel through the service role (which bypasses RLS) — an admin's
+-- browser JWT can read the dashboard but cannot forge loop state.
+grant select on public.loop_runs, public.loop_events to authenticated;
+
 -- Any admin may read the loop state (the Build dashboard is admin-only).
 drop policy if exists "loop_runs_select_admin" on public.loop_runs;
 create policy "loop_runs_select_admin"

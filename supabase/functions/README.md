@@ -4,9 +4,9 @@
 
 Who calls each function is tagged as: **user-facing** (apps/app or apps/web with a user JWT),
 **admin-gated** (requires the `is_admin()` RPC / admins allowlist), **public** (anon-callable by design),
-**cron** (invoked on a schedule — every `cron.schedule(...)` lives in a migration under
-[../migrations/](../migrations/)), **OAuth callback**, **webhook** (external service or DB trigger posts
-to it, gated by signature or shared secret), or **proxy** (holds a third-party API key server-side).
+**cron** (invoked on a schedule — the live pg_cron job list is in [../README.md](../README.md)),
+**OAuth callback**, **webhook** (external service or DB trigger posts to it, gated by signature or
+shared secret), or **proxy** (holds a third-party API key server-side).
 `verify_jwt` per function is set in [../config.toml](../config.toml).
 
 Email architecture and the full email catalog live in [_shared/EMAIL.md](_shared/EMAIL.md) and
@@ -45,10 +45,10 @@ Email architecture and the full email catalog live in [_shared/EMAIL.md](_shared
 
 | Function | What it does | Called by |
 |---|---|---|
-| `email-dispatch` | Sends every due scheduled email (built-in + custom rows in `email_schedules`). | cron, hourly (`0 * * * *`), shared-secret gated |
+| `email-dispatch` | The single timing driver for every recurring email: sends due `email_schedules` rows — custom rows directly, built-in rows by invoking their specialised function (`listening-digest`, `changelog-digest`). | cron, hourly (`0 * * * *`), shared-secret gated |
 | `signup-confirmation` | Waitlist welcome email; re-checks the address is on the waitlist, idempotent via the `welcome_sends` ledger. | public (anon-callable from the signup island) |
 | `admin-welcome` | Sends a one-time welcome email when someone is added to the admins allowlist. | admin-gated (Settings → Admins UI) |
-| `changelog-digest` | Weekly sectioned "What's new" digest with a review-then-send gate (remind / preview / send modes). | cron Mondays 13:00 UTC (remind mode) + admin-gated (preview/send) |
+| `changelog-digest` | Weekly sectioned "What's new" digest with a review-then-send gate (remind / preview / send modes). | invoked by `email-dispatch` (built-in schedule row, remind mode) + admin-gated (preview/send) |
 | `email-compose` | Drafts email copy via the local Ollama compose-server (over Cloudflare Tunnel). | admin-gated proxy |
 | `email-preview` | Renders a draft email template for the admin editor — sends nothing. | admin-gated |
 | `email-test` | Sends one test copy of any email (built-in or custom) to a chosen address. | admin-gated |
@@ -70,7 +70,7 @@ Email architecture and the full email catalog live in [_shared/EMAIL.md](_shared
 | Function | What it does | Called by |
 |---|---|---|
 | `listening-intake` | Single intake door for Signals posts; inserts via `sig_ingest_item` RPC with dedup on external_url. | webhook (browser extension / API poller, shared-secret gated) |
-| `listening-digest` | Daily Signals summary email (top leads, competitor mentions, sourcing-optimizer insights) to all admins; sends only above an intent threshold or weekly floor. | cron, daily 13:00 UTC |
+| `listening-digest` | Daily Signals summary email (top leads, competitor mentions, sourcing-optimizer insights) to all admins; sends only above an intent threshold or weekly floor. | invoked by `email-dispatch` (built-in schedule row, daily 13:00 UTC) |
 
 ## Analytics & SEO (admin-gated proxies; keys held server-side)
 

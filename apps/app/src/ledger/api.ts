@@ -330,6 +330,19 @@ export const importProvider = (provider: ExternalProvider, org_id: string, conne
     `${provider}-import`, { org_id, connection_id },
   );
 
+// ── report exports (W1.2) ─────────────────────────────────────────────────────
+// The file is built + downloaded client-side (export.ts); this records ONE audit
+// row per export (who / which report / period / when). Fire-and-forget from the
+// UI: a logging failure must never block the download the user already got.
+export const logReportExport = (input: {
+  org_id: string;
+  report: "tb" | "pnl" | "bs" | "gl";
+  format: "csv" | "pdf";
+  scope?: { start?: string | null; end?: string | null };
+  filename?: string;
+  rows?: number;
+}) => invoke<{ ok: true }>("report-export", input);
+
 /** A client-side idempotency key for a money mutation (replays are de-duped). */
 export function newIdempotencyKey(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();

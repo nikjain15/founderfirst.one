@@ -10,10 +10,13 @@
  */
 import { useMemo, useState } from "react";
 import {
-  approveEntry, newIdempotencyKey, postEntry, reverseEntry, setPeriod,
+  approveEntry, logReportExport, newIdempotencyKey, postEntry, reverseEntry, setPeriod,
   upsertAccount, useAccounts, useEntries, useLedgerRefresh, usePeriods,
 } from "./api";
-import { balanceSheet, profitAndLoss, trialBalance } from "./reports";
+import { balanceSheet, generalLedger, profitAndLoss, trialBalance } from "./reports";
+import {
+  downloadReport, rangeFilter, type ExportContext, type ReportKind, type ReportScope,
+} from "./export";
 import { formatMoney, formatMoneyShort, parseMoneyToMinor } from "./money";
 import { ACCOUNT_TYPES } from "./types";
 import ImportFlow from "../import/ImportFlow";
@@ -179,7 +182,7 @@ export default function Ledger({
               <Periods orgId={org.id} canWrite={canWrite}
                 periods={periods.data ?? []} onChange={refresh} />
             )}
-            {surface === "reports" && <Reports entries={entries.data ?? []} />}
+            {surface === "reports" && <Reports entries={entries.data ?? []} org={org} />}
           </div>
         </div>
       )}
@@ -697,25 +700,91 @@ function NewEntryForm({
   );
 }
 
-// ── Reports — trial balance / P&L / balance sheet ────────────────────────────
-function Reports({ entries }: { entries: JournalEntry[] }) {
-  const [view, setView] = useState<"tb" | "pnl" | "bs">("pnl");
+// ── Reports — trial balance / P&L / balance sheet / GL detail + exports ──────
+// The date range is applied to the derived report (rangeFilter, shared with the
+// export module so screen ≡ file). Entries arrive fully paginated (api.ts), so a
+// 10k-entry org reports + exports COMPLETELY — no 1000-row truncation.
+function Reports({ entries, org }: { entries: JournalEntry[]; org: { id: string; name: string } }) {
+  const [view, setView] = useState<ReportKind>("pnl");
+  const [start, setStart] = useState<string>("");
+  const [end, setEnd] = useState<string>("");
+  const scope: ReportScope = { start: start || undefined, end: end || undefined };
+  const filter = useMemo(() => rangeFilter(scope), [start, end]);
+
+  const [busy, setBusy] = useState<null | "csv" | "pdf">(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function download(format: "csv" | "pdf") {
+    setBusy(format); setErr(null);
+    try {
+      const ctx: ExportContext = {
+        orgName: org.name,
+        scope,
+        generatedOn: today(),
+      };
+      const rows = entries.length;
+      // Build + download client-side first (the user gets their file even if the
+      // audit call later fails); then record the export. Fire-and-forget audit.
+      const filename = downloadReport(view, format, entries, ctx);
+      void logReportExport({
+        org_id: org.id, report: view, format,
+        scope: { start: scope.start ?? null, end: scope.end ?? null },
+        filename, rows,
+      }).catch(() => { /* audit best-effort; download already delivered */ });
+    } catch {
+      setErr(COPY.reports.exportError);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <div className="reports">
       <div className="seg report-seg">
         <button className={view === "pnl" ? "on" : ""} onClick={() => setView("pnl")}>{COPY.reports.pnl}</button>
         <button className={view === "tb" ? "on" : ""} onClick={() => setView("tb")}>{COPY.reports.trialBalance}</button>
         <button className={view === "bs" ? "on" : ""} onClick={() => setView("bs")}>{COPY.reports.balanceSheet}</button>
+        <button className={view === "gl" ? "on" : ""} onClick={() => setView("gl")}>{COPY.reports.generalLedger}</button>
       </div>
-      {view === "pnl" && <PnlReport entries={entries} />}
-      {view === "tb" && <TrialBalanceReport entries={entries} />}
-      {view === "bs" && <BalanceSheetReport entries={entries} />}
+
+      <div className="report-controls" role="group" aria-label={COPY.reports.exportScopeAria}>
+        <label className="report-date">
+          <span>{view === "bs" ? COPY.reports.exportAsOf : COPY.reports.exportFrom}</span>
+          {view === "bs" ? (
+            <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+          ) : (
+            <input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+          )}
+        </label>
+        {view !== "bs" && (
+          <label className="report-date">
+            <span>{COPY.reports.exportTo}</span>
+            <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+          </label>
+        )}
+        <span className="report-dl">
+          <button className="ghost sm" disabled={busy !== null} onClick={() => download("csv")}>
+            {busy === "csv" ? COPY.reports.exporting : COPY.reports.downloadCsv}
+          </button>
+          <button className="ghost sm" disabled={busy !== null} onClick={() => download("pdf")}>
+            {busy === "pdf" ? COPY.reports.exporting : COPY.reports.downloadPdf}
+          </button>
+        </span>
+      </div>
+      {err && <p className="error sm">{err}</p>}
+
+      {view === "pnl" && <PnlReport entries={entries} filter={filter} />}
+      {view === "tb" && <TrialBalanceReport entries={entries} filter={filter} />}
+      {view === "bs" && <BalanceSheetReport entries={entries} asOf={scope.end} />}
+      {view === "gl" && <GeneralLedgerReport entries={entries} filter={filter} />}
     </div>
   );
 }
 
-function PnlReport({ entries }: { entries: JournalEntry[] }) {
-  const p = useMemo(() => profitAndLoss(entries), [entries]);
+type DateFilter = ((d: string) => boolean) | undefined;
+
+function PnlReport({ entries, filter }: { entries: JournalEntry[]; filter?: DateFilter }) {
+  const p = useMemo(() => profitAndLoss(entries, filter), [entries, filter]);
   if (p.income.length === 0 && p.expense.length === 0) {
     return <Empty title={COPY.reports.pnlEmptyTitle} body={COPY.reports.pnlEmptyBody} />;
   }
@@ -735,8 +804,11 @@ function PnlReport({ entries }: { entries: JournalEntry[] }) {
   );
 }
 
-function TrialBalanceReport({ entries }: { entries: JournalEntry[] }) {
-  const tb = useMemo(() => trialBalance(entries), [entries]);
+function TrialBalanceReport({ entries, filter }: { entries: JournalEntry[]; filter?: DateFilter }) {
+  const tb = useMemo(
+    () => trialBalance(filter ? entries.filter((e) => filter(e.entry_date)) : entries),
+    [entries, filter],
+  );
   if (tb.rows.length === 0) return <Empty title={COPY.reports.tbEmptyTitle} body={COPY.reports.tbEmptyBody} />;
   return (
     <div className="report">
@@ -760,8 +832,8 @@ function TrialBalanceReport({ entries }: { entries: JournalEntry[] }) {
   );
 }
 
-function BalanceSheetReport({ entries }: { entries: JournalEntry[] }) {
-  const bs = useMemo(() => balanceSheet(entries), [entries]);
+function BalanceSheetReport({ entries, asOf }: { entries: JournalEntry[]; asOf?: string }) {
+  const bs = useMemo(() => balanceSheet(entries, asOf), [entries, asOf]);
   const empty = bs.assets.length === 0 && bs.liabilities.length === 0 && bs.equity.length === 0;
   if (empty && bs.currentEarnings === 0) {
     return <Empty title={COPY.reports.bsEmptyTitle} body={COPY.reports.bsEmptyBody} />;
@@ -783,6 +855,39 @@ function BalanceSheetReport({ entries }: { entries: JournalEntry[] }) {
       <div className="report-net">
         <span>{COPY.reports.accountingEquation}</span>
         <span className={bs.balanced ? "t-good" : "t-bad"}>{bs.balanced ? COPY.reports.balanced : COPY.reports.outOfBalance}</span>
+      </div>
+    </div>
+  );
+}
+
+// GL detail — full entry/line dump with per-account running balances. Shares the
+// generalLedger() pure function with the export so screen ≡ file to the cent.
+function GeneralLedgerReport({ entries, filter }: { entries: JournalEntry[]; filter?: DateFilter }) {
+  const rows = useMemo(() => generalLedger(entries, filter), [entries, filter]);
+  if (rows.length === 0) return <Empty title={COPY.reports.glEmptyTitle} body={COPY.reports.glEmptyBody} />;
+  return (
+    <div className="report">
+      <div className="table-wrap">
+        <div className="report-table gl">
+          <div className="report-head gl-head">
+            <span>{COPY.reports.glColDate}</span>
+            <span>{COPY.reports.glColAccount}</span>
+            <span>{COPY.reports.glColMemo}</span>
+            <span>{COPY.reports.glColDebit}</span>
+            <span>{COPY.reports.glColCredit}</span>
+            <span>{COPY.reports.glColBalance}</span>
+          </div>
+          {rows.map((r, i) => (
+            <div className="report-row gl-row" key={`${r.account_id}-${i}`}>
+              <span className="gl-date">{r.entry_date}</span>
+              <span className="gl-acct">{r.account}</span>
+              <span className="gl-memo">{r.memo}</span>
+              <span className="r-num">{r.debit ? formatMoney(r.debit) : ""}</span>
+              <span className="r-num">{r.credit ? formatMoney(r.credit) : ""}</span>
+              <span className="r-num">{formatMoney(r.balance)}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

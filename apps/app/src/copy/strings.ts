@@ -457,6 +457,50 @@ export const COPY = {
     openClientAria: (name: string) => `Open ${name}'s books`,
     queueAria: "Cross-client work queue",
   },
+
+  // ── CPA collaboration primitives (card W1.5) ───────────────────────────────
+  // How a CPA collaborates without moving money unilaterally, and how the owner
+  // sees that activity as trust-tiered "needs-a-look" items. VOICE.md — calm,
+  // plain, no exclamation marks; the owner is never made to feel behind.
+  collab: {
+    // CPA-side affordances (on a posted entry)
+    flag: "Flag",
+    flagged: "Flagged",
+    unflag: "Clear flag",
+    flagReasonPlaceholder: "What should the owner look at? (optional)",
+    flagSubmit: "Flag for review",
+    addNote: "Add a note",
+    notePlaceholder: "Leave a note on this entry…",
+    noteSubmit: "Save note",
+    suggestReclass: "Suggest a category",
+    suggestTo: "Move to",
+    suggestNotePlaceholder: "Why this category? (optional)",
+    suggestSubmit: "Suggest to owner",
+    working: "Working…",
+    activityHeading: "Notes & flags",
+    noActivity: "No notes or flags yet.",
+    flagBadge: "Flagged for review",
+    // Owner-side needs-a-look surface (the suggestion inbox)
+    inboxEyebrow: "From your accountant",
+    inboxTitle: "A few things to approve",
+    inboxLoading: "Loading your accountant's suggestions…",
+    inboxError: "Couldn't load your accountant's suggestions. Try again.",
+    inboxEmptyTitle: "Nothing to approve",
+    inboxEmptyBody:
+      "When your accountant suggests a change or adds a transaction, it lands here for your approval before it hits the books.",
+    tierMedium: "Needs your OK",
+    kindReclass: "Category change",
+    kindAddTxn: "New transaction",
+    reclassSummary: (from: string, to: string) => `Move from ${from} to ${to}`,
+    addTxnSummary: (date: string, amount: string) => `${date} · ${amount}`,
+    approve: "Approve",
+    reject: "Not now",
+    approving: "Approving…",
+    rejecting: "Declining…",
+    approvedNote: "Approved — it's on the books.",
+    // errors
+    actionError: "Couldn't do that just now. Try again.",
+  },
 } as const;
 
 export type Copy = typeof COPY;

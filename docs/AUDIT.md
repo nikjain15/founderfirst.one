@@ -250,7 +250,7 @@ integrator merges in waves. Baseline = `main` after pre-onboarding #1–#15.
 | 3 | Financial reports tie-out | 1 | 0 | `useEntries` had no pagination + prod `max_rows=1000` → orgs >1000 entries silently dropped oldest; reports tied but WRONG. `.range()` paging. | 🟢 | [#129](../../pull/129) |
 | 4 | Accounting periods | 1 | 2 | close-vs-post TOCTOU lands entry in closed period (`FOR SHARE`); approve-into-closed back-door; reverse bricked after close. | 🟢 #156 | [#131](../../pull/131) |
 | 5 | Categorization + CPA feedback | 2 | 1 | double-reversal + double-categorize races; LIKE-wildcard rule poisoning (`a%z`→"alcatraz"@100%, fixed w/ ESCAPE). | 🟢 | [#132](../../pull/132) |
-| 6 | CSV / bank import | 0 | 1 | one impossible calendar date (`02/30`) aborts the whole batch — 0 of N rows stage. Calendar validation + delimiter auto-detect. | 🔵 partial | [#143](../../pull/143) |
+| 6 | CSV / bank import | 0 | 1 | one impossible calendar date (`02/30`) aborts the whole batch — 0 of N rows stage. Calendar validation + delimiter auto-detect. | 🔵 on-main; migration `20260702020000` (safe_to_date) pending prod deploy | [#143](../../pull/143) |
 | 7 | Opening balances import | 0 | 1 | opening-balance row missing an account silently folds into the OBE plug → "balanced" but wrong, success shown. | 🟢 | [#135](../../pull/135) |
 | 8 | Chart of accounts | 0 | 2 | unvalidated `account.currency` → malformed `char(3)` crashes `Intl.NumberFormat` → books view dies; cross-tenant `parent_id`. ISO constraint + cycle guard. | 🟢 | [#137](../../pull/137) |
 | 9 | Auth, session & routing | 0 | — | passed hardening; micro-fixes only. | 🟢 | [#133](../../pull/133) |

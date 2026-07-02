@@ -10,6 +10,7 @@ import Settings from "./routes/Settings";
 import Accept from "./routes/Accept";
 import StaffHome from "./staff/StaffHome";
 import { useIsPlatformStaff } from "./staff/api";
+import { COPY } from "./copy";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,7 +36,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
     }
   }, [loading, session, here]);
 
-  if (loading) return <div className="center muted">Loading…</div>;
+  if (loading) return <div className="center muted">{COPY.common.loading}</div>;
   if (!session) return <Navigate to="/login" replace />;
 
   // Authenticated: if there's a pending return path and we're not already on it,
@@ -52,7 +53,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
 // pending return path, or home (F1).
 function LoginRoute() {
   const { session, loading } = useAuth();
-  if (loading) return <div className="center muted">Loading…</div>;
+  if (loading) return <div className="center muted">{COPY.common.loading}</div>;
   if (session) {
     const returnTo = sessionStorage.getItem(RETURN_KEY);
     sessionStorage.removeItem(RETURN_KEY);
@@ -65,15 +66,15 @@ function LoginRoute() {
 // staff-only access; this just picks the right view once we know the answer.
 function StaffRoute() {
   const { data, isLoading, isError } = useIsPlatformStaff();
-  if (isLoading) return <div className="center muted">Loading…</div>;
+  if (isLoading) return <div className="center muted">{COPY.common.loading}</div>;
   // Don't conflate a failed access check with "not staff" — a transient RPC error
   // would otherwise wrongly show a real staff member the "Staff only" wall.
   if (isError) {
     return (
       <div className="empty" role="alert">
-        <p className="empty-title">Couldn't verify access.</p>
-        <p className="muted">We couldn't check your staff access just now.</p>
-        <p><button type="button" onClick={() => window.location.reload()}>Try again</button></p>
+        <p className="empty-title">{COPY.errors.verifyAccessFailed}</p>
+        <p className="muted">{COPY.errors.verifyAccessBody}</p>
+        <p><button type="button" onClick={() => window.location.reload()}>{COPY.common.tryAgain}</button></p>
       </div>
     );
   }

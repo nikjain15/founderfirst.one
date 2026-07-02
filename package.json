@@ -8,6 +8,7 @@
     "dev:web": "pnpm --filter @ff/web dev",
     "build:web": "pnpm --filter @ff/web build",
     "check:css": "tsx scripts/check-css-imports.ts",
+    "check:app-strings": "tsx scripts/check-app-strings.ts",
     "check:tenant": "tsx scripts/check-tenant-predicate.ts",
     "check:inference": "tsx packages/inference/test/parity.ts",
     "check:judge": "tsx packages/inference/test/judge.ts",

@@ -6,6 +6,7 @@
  * itself is unchanged — it still calls setActiveOrgId.
  */
 import { useEffect, useRef, useState } from "react";
+import { COPY } from "../copy";
 
 type Org = { id: string; name: string; type: string };
 
@@ -83,18 +84,18 @@ export default function OrgSwitcher({
     <div className="orgsw" ref={ref}>
       <button
         ref={triggerRef} type="button" className="orgsw-trigger"
-        aria-haspopup="listbox" aria-expanded={open} aria-label="Switch organization"
+        aria-haspopup="listbox" aria-expanded={open} aria-label={COPY.nav.switchOrgAria}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => { if (!open && (e.key === "ArrowDown" || e.key === "Enter")) { e.preventDefault(); setOpen(true); } }}
       >
         <span className="orgsw-current">
-          <span className="orgsw-name">{activeOrg?.name ?? "Select organization"}</span>
+          <span className="orgsw-name">{activeOrg?.name ?? COPY.nav.selectOrg}</span>
           {activeOrg && <span className="orgsw-type">{activeOrg.type}</span>}
         </span>
         <Chevron />
       </button>
       {open && (
-        <ul className="orgsw-menu" role="listbox" aria-label="Organizations">
+        <ul className="orgsw-menu" role="listbox" aria-label={COPY.nav.orgsAria}>
           {orgs.map((o, i) => (
             <li key={o.id} role="option" aria-selected={o.id === activeOrg?.id}>
               <button
@@ -115,7 +116,7 @@ export default function OrgSwitcher({
                 type="button" className="orgsw-item orgsw-create"
                 onClick={() => { setOpen(false); triggerRef.current?.focus(); onCreateOrg(); }}
               >
-                + New organization
+                {COPY.nav.newOrg}
               </button>
             </li>
           )}

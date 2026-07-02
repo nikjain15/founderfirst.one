@@ -20,7 +20,7 @@
 -- Runs in a transaction and rolls back.
 
 begin;
-select plan(35);
+select plan(39);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -126,7 +126,7 @@ select is(
   'depreciation_book_tax', 'M-1 draft is tagged origin_kind=depreciation_book_tax');
 -- a proposal does NOT count in the summary yet
 select is(
-  (select coalesce(sum(total_minor),0) from tax_m1_summary('80000000-0000-0000-0000-0000000000a0', 2025)),
+  (select coalesce(sum(total_minor),0)::bigint from tax_m1_summary('80000000-0000-0000-0000-0000000000a0', 2025)),
   0::bigint, 'a proposed adjustment is NOT in the M-1 summary');
 -- redraft is idempotent (no dup)
 select ok(

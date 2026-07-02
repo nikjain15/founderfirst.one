@@ -36,8 +36,12 @@ insert into organizations (id, type, name, created_by) values
 insert into memberships (org_id, user_id, role, status) values
   ('80000000-0000-0000-0000-0000000000a0', '80000000-0000-0000-0000-000000000001', 'owner', 'active'),
   ('80000000-0000-0000-0000-0000000000a9', '80000000-0000-0000-0000-000000000009', 'owner', 'active');
+-- the organizations AFTER INSERT trigger (seed_org_accounting_settings) already
+-- created a defaults row for this business org, so upsert our test values on top.
 insert into org_accounting_settings (org_id, home_currency, cpa_posts_require_approval) values
-  ('80000000-0000-0000-0000-0000000000a0', 'USD', false);
+  ('80000000-0000-0000-0000-0000000000a0', 'USD', false)
+  on conflict (org_id) do update set home_currency = excluded.home_currency,
+    cpa_posts_require_approval = excluded.cpa_posts_require_approval;
 
 -- ledger accounts for posting (expense + contra-asset accumulated)
 insert into ledger_accounts (id, org_id, code, name, type) values

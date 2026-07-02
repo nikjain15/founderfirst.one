@@ -6,9 +6,12 @@ name: Responsive gate
 # violation. See tools/responsive-ci/.
 
 on:
+  # Docs-only changes (docs/** or root *.md) skip the rebuild — nothing they touch is built.
   pull_request:
+    paths-ignore: ['docs/**', '*.md']
   push:
     branches: [main]
+    paths-ignore: ['docs/**', '*.md']
   workflow_dispatch:
 
 env:

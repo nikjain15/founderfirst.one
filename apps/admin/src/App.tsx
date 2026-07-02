@@ -23,6 +23,7 @@ const Admins        = lazy(() => named(import("./routes/Admins"), "Admins"));
 const ContentHome   = lazy(() => named(import("./routes/ContentHome"), "ContentHome"));
 const HowItWorks    = lazy(() => named(import("./routes/HowItWorks"), "HowItWorks"));
 const Quality       = lazy(() => named(import("./routes/Quality"), "Quality"));
+const Build         = lazy(() => named(import("./routes/Build"), "Build"));
 const AIQuality     = lazy(() => named(import("./routes/AIQuality"), "AIQuality"));
 const EmailHub      = lazy(() => named(import("./routes/EmailHub"), "EmailHub"));
 const SiteContent   = lazy(() => named(import("./routes/SiteContent"), "SiteContent"));
@@ -180,7 +181,7 @@ export function App() {
                 <div ref={settingsRef} className={`settings-menu ${settingsOpen ? "is-open" : ""}`}>
                   <button
                     type="button"
-                    className={`settings-trigger ${location.pathname.startsWith("/audit") || location.pathname.startsWith("/admins") || location.pathname.startsWith("/how-it-works") || location.pathname.startsWith("/quality") || location.pathname.startsWith("/ai-quality") || location.pathname.startsWith("/emails") ? "active" : ""}`}
+                    className={`settings-trigger ${location.pathname.startsWith("/audit") || location.pathname.startsWith("/admins") || location.pathname.startsWith("/how-it-works") || location.pathname.startsWith("/quality") || location.pathname.startsWith("/build") || location.pathname.startsWith("/ai-quality") || location.pathname.startsWith("/emails") ? "active" : ""}`}
                     aria-haspopup="menu"
                     aria-expanded={settingsOpen}
                     aria-label="Settings"
@@ -193,6 +194,7 @@ export function App() {
                     <span className="settings-email">{session?.user.email}</span>
                     <Link to="/emails" role="menuitem" className={location.pathname.startsWith("/emails") ? "active" : ""}>Emails</Link>
                     <span className="settings-divider" role="separator" />
+                    <Link to="/build" role="menuitem" className={location.pathname.startsWith("/build") ? "active" : ""}>Build</Link>
                     <Link to="/quality" role="menuitem" className={location.pathname.startsWith("/quality") ? "active" : ""}>Quality</Link>
                     <Link to="/ai-quality" role="menuitem" className={location.pathname.startsWith("/ai-quality") ? "active" : ""}>AI quality</Link>
                     <Link to="/experiments" role="menuitem" className={location.pathname.startsWith("/experiments") ? "active" : ""}>Experiments</Link>
@@ -242,6 +244,7 @@ export function App() {
             <Route path="/content" element={<RequireAuth signedIn={signedIn}><ContentHome /></RequireAuth>} />
             <Route path="/audit" element={<RequireAuth signedIn={signedIn}><Audit /></RequireAuth>} />
             <Route path="/how-it-works" element={<RequireAuth signedIn={signedIn}><HowItWorks currentEmail={session?.user.email ?? ""} /></RequireAuth>} />
+            <Route path="/build" element={<RequireAuth signedIn={signedIn}><Build /></RequireAuth>} />
             <Route path="/quality" element={<RequireAuth signedIn={signedIn}><Quality /></RequireAuth>} />
             <Route path="/ai-quality" element={<RequireAuth signedIn={signedIn}><AIQuality /></RequireAuth>} />
             <Route path="/emails" element={<RequireAuth signedIn={signedIn}><EmailHub /></RequireAuth>} />

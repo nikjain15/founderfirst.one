@@ -136,6 +136,44 @@ export async function listAuditRuns(limit = 26): Promise<AuditRunRow[]> {
   return (data as AuditRunRow[]) ?? [];
 }
 
+// ---- Build loop (the /build dashboard, LOOP-1) -----------------------------
+// Reads loop_runs / loop_events (written by the loop-heartbeat edge fn). RLS lets
+// any admin SELECT; writes are service-role-only, so the browser can only read.
+
+import type { LoopRun } from "./loopStatus";
+export type { LoopRun } from "./loopStatus";
+
+export interface LoopEvent {
+  id: string;
+  session_tag: string;
+  at: string;
+  kind: string;
+  message: string;
+}
+
+// All active + recently-finished loop sessions, newest heartbeat first.
+export async function listLoopRuns(): Promise<LoopRun[]> {
+  const db = getClient();
+  const { data, error } = await db
+    .from("loop_runs")
+    .select("session_tag, role, card, phase, status, pr_url, blocked_reason, started_at, last_beat, updated_at")
+    .order("last_beat", { ascending: false });
+  if (error) throw new Error(`listLoopRuns: ${error.message}`);
+  return (data as LoopRun[]) ?? [];
+}
+
+// Recent step-log events across all sessions (newest first).
+export async function listLoopEvents(limit = 40): Promise<LoopEvent[]> {
+  const db = getClient();
+  const { data, error } = await db
+    .from("loop_events")
+    .select("id, session_tag, at, kind, message")
+    .order("at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`listLoopEvents: ${error.message}`);
+  return (data as LoopEvent[]) ?? [];
+}
+
 // ---- AI quality & cost (the /ai-quality dashboard) -------------------------
 // Reads ai_decisions (Phase 0) via is_admin()-gated RPCs. Numeric columns come
 // back from PostgREST as strings (precision-preserving) for the table RPCs; the

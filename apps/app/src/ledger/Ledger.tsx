@@ -21,6 +21,7 @@ import { formatMoney, formatMoneyShort, parseMoneyToMinor } from "./money";
 import { ACCOUNT_TYPES } from "./types";
 import ImportFlow from "../import/ImportFlow";
 import Categorize from "./Categorize";
+import LearnedRules from "./LearnedRules";
 import InviteCpa from "../org/InviteCpa";
 import { Takeaway } from "./Takeaway";
 import {
@@ -161,6 +162,9 @@ export default function Ledger({
             )}
             {surface === "review" && canWrite && (
               <Categorize orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []} onChange={refresh} />
+            )}
+            {surface === "rules" && (
+              <LearnedRules orgId={org.id} canWrite={canWrite} />
             )}
             {surface === "connections" && (
               <Connections orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []}

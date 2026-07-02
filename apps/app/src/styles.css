@@ -685,6 +685,55 @@ button.ghost.sm, .ghost.sm {
   .cat-main .cat-date { grid-column: 1 / -1; }
 }
 
+/* ── Learned rules (Categorize → Rules, W1.6) ──────────────────────────────── */
+.rules-lead { margin: 0.25rem 0 0.5rem; max-width: 46rem; }
+/* Grid rows (not a <table>) so columns collapse cleanly on narrow viewports —
+   RESPONSIVE.md rule 2: no hardcoded px in horizontal layouts. */
+.rules-head, .rules-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1.6fr) minmax(8rem, 1.4fr) minmax(4rem, 0.6fr) 3rem auto;
+  gap: 0.6rem; align-items: center;
+}
+.rules-head {
+  font-size: var(--fs-micro); color: var(--ink-3); text-transform: uppercase;
+  letter-spacing: var(--ls-chip); padding: 0.4rem 0; border-bottom: var(--bw-hair) solid var(--line);
+}
+.rules-hits-h { text-align: right; }
+.rules-list { list-style: none; margin: 0; padding: 0; }
+.rules-row {
+  padding: 0.55rem 0; border-bottom: var(--bw-hair) solid var(--line-2); font-size: var(--fs-ui);
+}
+.rules-pattern { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.rules-match { text-transform: none; }
+.rules-value { overflow-wrap: anywhere; font-weight: var(--fw-medium); }
+.rules-account { overflow-wrap: anywhere; }
+.rules-hits { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+.rules-action { display: flex; justify-content: flex-end; }
+.rules-confirm {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem; padding: 0.75rem 0.9rem;
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-card);
+  background: var(--white); box-shadow: var(--shadow-card);
+  display: flex; flex-direction: column; gap: 0.4rem;
+}
+.rules-confirm-title { margin: 0; font-weight: var(--fw-bold); color: var(--ink); }
+.rules-confirm-actions { display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap; }
+.rules-err { grid-column: 1 / -1; margin: 0.35rem 0 0; }
+
+@media (max-width: 640px) {
+  /* Collapse to pattern + account, with hits/from folded under. */
+  .rules-head { display: none; }
+  .rules-row {
+    grid-template-columns: 1fr auto; gap: 0.35rem 0.6rem;
+    padding: 0.75rem 0; align-items: start;
+  }
+  .rules-pattern { grid-column: 1; }
+  .rules-action { grid-column: 2; grid-row: 1; }
+  .rules-account { grid-column: 1 / -1; color: var(--ink-2); }
+  .rules-from { grid-column: 1; color: var(--ink-3); font-size: var(--fs-micro); }
+  .rules-hits { grid-column: 2; text-align: right; font-size: var(--fs-micro); }
+}
+
 /* ── Platform-staff console ─────────────────────────────────────────────────── */
 .role-pill.role-staff { background: var(--amber-bg); color: var(--amber-strong); border-color: transparent; }
 .staff-chip { background: var(--amber-bg); color: var(--amber-strong); }

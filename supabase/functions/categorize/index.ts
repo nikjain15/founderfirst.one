@@ -6,6 +6,8 @@
  *                                      confidence, rationale, source } | null }
  *   POST { op:"approve", org_id, entry_id, to_account_id, learn?, learn_value? }
  *     → { entry }   (the corrected, reposted journal entry)
+ *   POST { op:"delete_rule", org_id, rule_id }
+ *     → { rule }    (the deactivated learned rule; W1.6 — Penny stops applying it)
  *
  * Propose is server-authoritative and GROUNDED: it tries the deterministic rule
  * matcher first, then falls back to the inference layer constrained to the org's
@@ -50,12 +52,31 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const op = String(body?.op ?? "");
   const orgId = String(body?.org_id ?? "");
-  const entryId = String(body?.entry_id ?? "");
-  if (!orgId || !entryId) return json({ error: "bad_request" }, 400);
+  if (!orgId) return json({ error: "bad_request" }, 400);
 
-  // Same gate as the Approve button: only a writer categorizes.
+  // Same gate as the Approve button: only a writer categorizes (or deletes a
+  // learned rule — read-only CPA fails here AND in the RPC).
   const { data: canWrite } = await svc.rpc("can_write_org_as", { p_actor: user.id, target_org: orgId });
   if (!canWrite) return json({ error: "forbidden" }, 403);
+
+  // ── delete_rule (W1.6) ───────────────────────────────────────────────────────
+  // Soft-delete a learned categorization rule by id. Deactivating flips is_active
+  // off; the matcher filters is_active, so Penny stops proposing from it on the
+  // next categorize. Audit-logged (rule.delete) in the SECDEF RPC. This op keys on
+  // the rule id only — it never evaluates match_value as a LIKE pattern, so the
+  // CAT-F4 ESCAPE hardening in match_categorization_rule is untouched.
+  if (op === "delete_rule") {
+    const ruleId = String(body?.rule_id ?? "");
+    if (!ruleId) return json({ error: "bad_request: rule_id required" }, 400);
+    const { data: rule, error } = await svc.rpc("deactivate_categorization_rule", {
+      p_actor: user.id, p_org: orgId, p_rule_id: ruleId,
+    });
+    if (error) return json({ error: error.message }, 400);
+    return json({ rule });
+  }
+
+  const entryId = String(body?.entry_id ?? "");
+  if (!entryId) return json({ error: "bad_request" }, 400);
 
   // The holding account every uncategorized line sits on (the "from" side).
   const { data: fromAccountId, error: uErr } = await svc.rpc("resolve_uncategorized_account", { p_actor: user.id, p_org: orgId });

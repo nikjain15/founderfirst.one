@@ -157,6 +157,67 @@ export function useUncategorizedRefresh(orgId: string | undefined) {
   return () => { void qc.invalidateQueries({ queryKey: ["uncategorized", orgId] }); };
 }
 
+// ── learned-rules management (W1.6) ───────────────────────────────────────────
+// Owner + full-access CPA see every rule Penny has learned and can delete a bad
+// one. Reads go direct under RLS (categorization_rules is client-readable via
+// can_access_org); the delete goes through the categorize edge fn write-path
+// (deactivate_categorization_rule RPC, audit-logged). match_value is always
+// LITERAL text here — never a LIKE pattern — so the CAT-F4 ESCAPE hardening in the
+// matcher is untouched.
+export interface LearnedRule {
+  id: string;
+  match_type: "description_exact" | "description_contains" | "source_ref_exact";
+  match_value: string;
+  account_id: string;
+  account: { code: string | null; name: string } | null;
+  source: string;         // 'human' | 'penny'
+  times_applied: number;
+  created_at: string;
+}
+
+/**
+ * Normalize a PostgREST learned-rules row: the embedded `account` comes back as
+ * an object, an array, or null depending on the join shape — flatten it to a
+ * single account or null. Exported for unit testing (pure, no client).
+ */
+export function normalizeLearnedRule(row: unknown): LearnedRule {
+  const r = row as Omit<LearnedRule, "account"> & {
+    account: { code: string | null; name: string } | { code: string | null; name: string }[] | null;
+  };
+  const acc = Array.isArray(r.account) ? (r.account[0] ?? null) : r.account;
+  return { ...r, account: acc } as LearnedRule;
+}
+
+/** Every ACTIVE learned rule for an org, busiest first, with its target account. */
+export function useLearnedRules(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["learned-rules", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<LearnedRule[]> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("categorization_rules")
+        .select("id, match_type, match_value, account_id, source, times_applied, created_at, account:ledger_accounts(code, name)")
+        .eq("org_id", orgId!)
+        .eq("is_active", true)
+        .order("times_applied", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return ((data ?? []) as unknown[]).map(normalizeLearnedRule);
+    },
+  });
+}
+
+/** Delete (deactivate) a learned rule — Penny stops applying it. Audit-logged. */
+export const deleteRule = (org_id: string, rule_id: string) =>
+  invoke<{ rule: LearnedRule }>("categorize", { op: "delete_rule", org_id, rule_id });
+
+/** Invalidate the learned-rules list (after a delete). */
+export function useLearnedRulesRefresh(orgId: string | undefined) {
+  const qc = useQueryClient();
+  return () => { void qc.invalidateQueries({ queryKey: ["learned-rules", orgId] }); };
+}
+
 // ── write-path (Edge Functions) ──────────────────────────────────────────────
 // Exported so every caller surfaces the function's friendly {error} body instead
 // of Supabase's generic "non-2xx status code" message.

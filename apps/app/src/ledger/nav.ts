@@ -16,7 +16,7 @@ export type Nav = "owner" | "cpa";
 // Every leaf surface the workspace can show. Both navs route to a subset of these.
 export type Surface =
   | "overview" | "review" | "reports" | "connections"
-  | "journal" | "accounts" | "import" | "periods";
+  | "journal" | "accounts" | "import" | "periods" | "rules";
 
 export type SubTab = { id: Surface; label: string; writeOnly?: boolean };
 
@@ -39,10 +39,13 @@ export const OWNER_TABS: NavTab[] = [
   { id: "reports", label: COPY.tabs.reports, surface: "reports" },
   { id: "connections", label: COPY.tabs.connections, surface: "connections" },
   {
+    // Learned rules live under Advanced for the owner — reachable, never prompted
+    // (W1.6 usability gate: no new top-level nav, no interruption).
     id: "advanced", label: COPY.tabs.advanced, subs: [
       { id: "journal", label: COPY.tabs.journal },
       { id: "accounts", label: COPY.tabs.chartOfAccounts },
       { id: "periods", label: COPY.tabs.periods },
+      { id: "rules", label: COPY.tabs.rules },
     ],
   },
 ];
@@ -52,7 +55,16 @@ export const OWNER_TABS: NavTab[] = [
 //    is restructured (IA-1 touches the owner nav only).
 export const CPA_TABS: NavTab[] = [
   { id: "overview", label: COPY.tabs.overview, surface: "overview" },
-  { id: "categorize", label: COPY.tabs.categorize, writeOnly: true, surface: "review" },
+  {
+    // Categorize is now a parent so "Categorize → Rules" is one tap over (W1.6).
+    // The Categorize queue itself is write-only (read-only CPAs can't approve),
+    // but Rules is visible to read-only CPAs too (they can SEE, not delete) — so
+    // the parent tab is NOT writeOnly; only the queue sub is.
+    id: "categorize", label: COPY.tabs.categorize, subs: [
+      { id: "review", label: COPY.tabs.categorize, writeOnly: true },
+      { id: "rules", label: COPY.tabs.rules },
+    ],
+  },
   {
     id: "books", label: COPY.tabs.books, subs: [
       { id: "journal", label: COPY.tabs.journal },

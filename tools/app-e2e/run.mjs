@@ -4,8 +4,8 @@
  * The durable answer to "the categorize/import screens have no UI test". The app
  * is built with VITE_E2E=1 + a throwaway test account's creds, so it auto-signs-in
  * (apps/app/src/lib/devAuth.ts) with a REAL session. We then drive the real authed
- * UI headlessly and, for the owner's key surfaces (Overview · Categorize · Journal ·
- * Import — Journal/Import reached via the Books sub-tabs):
+ * UI headlessly and, for the owner's key jobs (Home · Review · Reports ·
+ * Connections + Journal under Advanced — APP_PRINCIPLES §2):
  *   1. assert the app renders past the login wall,
  *   2. assert each screen's panel renders (regression net for the screens themselves),
  *   3. assert NO horizontal overflow across the FULL width ladder (320 → 1920,
@@ -76,14 +76,18 @@ const consoleErrors = [];
 page.on("console", (m) => { if (m.type() === "error") { consoleErrors.push(m.text()); console.log("  [browser error]", m.text()); } });
 page.on("pageerror", (e) => { consoleErrors.push(String(e)); console.log("  [page error]", String(e)); });
 
-// The ledger IA (apps/app Ledger.tsx): 4 main tabs (#ltab-*), with the double-entry
-// mechanics under Books as sub-tabs (#lsub-*). writeOnly screens (categorize/import)
-// render only for an owner with write access. Journal/Import live under Books.
+// The OWNER lens IA (apps/app Ledger.tsx, nav="owner" — APP_PRINCIPLES §2): four
+// plain-language jobs (#ltab-home · #ltab-review · #ltab-reports · #ltab-connections)
+// plus a de-emphasized Advanced (#ltab-advanced) whose sub-strip (#lsub-*) exposes
+// the accountant-grade ledger (Journal · Chart of accounts · Periods). The E2E
+// account is an OWNER, so it renders this nav. Review is write-only (the categorize
+// queue); Connections hosts Import + Invite. Journal lives under Advanced.
 const SCREENS = [
-  { key: "overview",   label: "Overview",   main: "overview" },
-  { key: "categorize", label: "Categorize", main: "categorize", writeOnly: true },
-  { key: "journal",    label: "Journal",    main: "books", sub: "journal" },
-  { key: "import",     label: "Import",     main: "books", sub: "import", writeOnly: true },
+  { key: "home",        label: "Home",        main: "home" },
+  { key: "review",      label: "Review",      main: "review", writeOnly: true },
+  { key: "reports",     label: "Reports",     main: "reports" },
+  { key: "connections", label: "Connections", main: "connections" },
+  { key: "journal",     label: "Journal",     main: "advanced", sub: "journal" },
 ];
 
 /** Open a screen (main tab, then Books sub-tab if any). Returns false if absent. */

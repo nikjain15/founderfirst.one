@@ -38,13 +38,12 @@ from it**. Three non-negotiables:
   called by `add_import_rows`). The "migration-ledger drift" and "red pgTAP gate" chips are
   RESOLVED — `db-tests` (pgTAP) and all CI are green on `main`. #143 (CSV) merged.
 - ✅ **Spec docs are on `main`** (this doc set landed via the W0.5 docs PR).
-- ⚠️ **STILL OPEN before builders scale — do these first, do not skip:**
-  - Stress `cleanup.sql` manifests are **NOT run** — ~122 `[…TEST]` fixture orgs remain in
-    prod (of 134 total). Purge them (namespaced, per LEARNINGS #4: back up → show → verify →
-    delete) before the loop adds `[LOOP-*]` fixtures on top. This is a Nik-authorized
-    destructive step, not a builder's call.
-  - Only ONE integrator runs. The parallel integrator chat already landed Wave-0 hygiene
-    (#156/#157/#158/#159/#160/#162/#164/#165) — verify what's done, never redo.
+- ✅ **Prod is clean** — the 134 `[…TEST]`/harness fixture orgs were purged 2 Jul
+  (Nik-authorized; `organizations` = 0, append-only guards intact, global tables untouched;
+  backup taken first per LEARNINGS #4). Builders can add `[LOOP-*]` fixtures on a clean base.
+  (113 orphaned test `auth.users` remain — harmless, optional secondary cleanup.)
+- ⚠️ **Before builders scale:** only ONE integrator runs. The parallel integrator chat already
+  landed Wave-0 hygiene (#156/#157/#158/#159/#160/#162/#164/#165) — verify what's done, never redo.
 - CSV F4 (re-import dedup policy) is a `decision-needed` for Nik; it does not block builds.
 - Mac awake? `sudo pmset -a sleep 0 disksleep 0` at launch (human step; sudo prompts).
 
@@ -93,8 +92,9 @@ LOOP-1 (dashboard) + REG-1 (regression pack) + IA-1 (owner nav — blocks all ap
 → CENTRAL-1/2 → W1.2 + W1.6 → W1.4/IA-2 → rest of Wave 1 → **Wave-1 audit** → Wave 2.
 
 ## Waiting on Nik (surface these; don't block on them silently)
-Tax research sign-off (8 questions in `docs/plans/research/tax-mapping-research.md`) ·
-prod test-fixture cleanup authorization (~122 `[…TEST]` orgs) · daily token/$ spend ceiling
-for the loop · CSV F4 dedup policy · W2.1 catch-up pricing · IA-3 admin-console migration
-plan · Plaid **production** application (sandbox keys already in secrets.env — file early for
-review lead time) · merge/deploy wave approvals (until standing authorization is granted).
+Tax research sign-off — scope LOCKED 3 Jul (every sector × US federal + all 50 states, all
+book-derived taxes); 7 remaining questions in `docs/plans/research/tax-mapping-research.md` ·
+daily token/$ spend ceiling for the loop · CSV F4 dedup policy · W2.1 catch-up pricing ·
+IA-3 admin-console migration plan · Plaid **production** application (sandbox keys already in
+secrets.env — file early for review lead time) · merge/deploy wave approvals (until standing
+authorization is granted).

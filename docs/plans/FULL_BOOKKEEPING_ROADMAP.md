@@ -193,10 +193,12 @@ session touches it.
   delimiter fixed, and the `safe_to_date` migration `20260702020000` is **deployed to prod**
   (verified: `add_import_rows` calls `safe_to_date`). The new migration-ledger drift is
   **RESOLVED** — prod ↔ `main` are in perfect sync (115 = 115, same max version). The pgTAP
-  gate is green. **Still open:** run the stress `cleanup.sql` manifests — **~122 `[…TEST]`
-  fixture orgs remain in prod** (of 134 total); and CSV **F4 dedup = Nik decision**. The loop
-  must not scale builders until the fixture purge is done; its first task is a
-  verify-what's-left sweep, not a redo.
+  gate is green. **Prod fixture purge ✅ DONE (2 Jul, Nik-authorized):** all 134 `[…TEST]`/
+  harness orgs removed — `organizations` = 0, append-only guards intact, global tables
+  untouched (backup taken first per LEARNINGS #4; `TRUNCATE organizations CASCADE` was the
+  clean tool — it skips row-level delete triggers). **Still open:** CSV **F4 dedup = Nik
+  decision** (does not block builds); 113 orphaned test `auth.users` (optional). Prod is a
+  clean base for `[LOOP-*]` fixtures.
 - **W0.4 ✅ DONE (PR #157 deployed):** Signals worker guard against empty-body items being
   promoted + auto-drafted.
 - **W0.5 Land the finalized spec docs on `main`** ← added 1 Jul (Nik); **done in the 2 Jul

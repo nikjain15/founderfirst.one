@@ -88,9 +88,10 @@ decision-needed: none (decisions locked 1 Jul w/ Nik)
 ## IA-2 · CPA Practice home + workflow tabs — MERGED WITH W1.4 (one card, see W1.4)
 
 ## IA-3 · Internal admin console (penny.../admin mirror)
-status: blocked:plan sign-off (Nik) — APP_PRINCIPLES §4: plan-only until the detailed
-  migration plan is approved; parallel-run, additive, never break founderfirst.one/admin.
-decision-needed: Nik approves the migration plan (to be drafted as its own research card)
+status: **DEFERRED until after Wave 1 ships (Nik, 3 Jul)** — do not card the migration plan
+  yet; `founderfirst.one/admin` stays as-is. Revisit once the Wave-1 tax-filing chain is done,
+  then draft the plan for approval (parallel-run, additive, never break `/admin`, APP_PRINCIPLES §4).
+decision-needed: none until Wave 1 closes (then: Nik approves the migration plan)
 
 ## CENTRAL-1 · Centralize apps/app copy, Penny language, and behavior thresholds
 status: unclaimed
@@ -168,9 +169,14 @@ acceptance:
 decision-needed: none to build; every PR it produces IS a decision for Nik
 
 ## W1.3-A · Tax mapping RESEARCH (report + architecture spec — NO build)
-status: **DONE — awaiting Nik sign-off** · report: docs/plans/research/tax-mapping-research.md
-  (6-table data-driven schema, year-versioned forms, CPA-override layer, M-1 adjustments,
-  T2125 extensibility proof, 8 open questions for Nik at the end; W1.3-B build order included)
+status: **✅ SIGNED OFF (Nik, 3 Jul)** — all 8 questions resolved (see the doc's "Decisions"
+  section); **W1.3-B is UNBLOCKED**. report: docs/plans/research/tax-mapping-research.md
+  (6-table data-driven schema, year-versioned forms, CPA-override layer, M-1 adjustments).
+  Locked scope: **all US entity types (incl. C-corp) × federal + 50 states, CPA-lens-gated**;
+  exports = generic CSV/PDF **+ per-suite serializers (Drake/UltraTax) at launch**; CPAs edit
+  mappings (owners view); Penny proposes M-1 as drafts (human approves); **fixed-asset/
+  depreciation subledger BUILT (Penny computes depreciation) — its own card W1.3-C**; year-end
+  package included in subscription; US-only launch (Canada = paper proof). Build order in doc.
 goal: a well-researched, Nik-approved spec for a data-driven, country-extensible tax mapping
   engine. Explicitly NOT a port of apps/demo/util/irs-lookup.js (demo = one input at most).
 spec: Roadmap §W1.3. Deliverables: (A) research report — per-form CPA needs (Sch C, 1120-S,
@@ -282,10 +288,14 @@ workflow: owner · "get me caught up" · drop files → Penny works → owner an
 spec: multi-file/multi-period import queue; backlog auto-categorize in batches (trust-tiered:
   bulk-approve high confidence); per-year progress meter ("2023 ✓ · 2024 in progress");
   VOICE.md shame-free copy throughout; ends in a per-year reconciled + exportable package.
-decision-needed: **pricing/packaging (flat catch-up price?) — marketing page scope** → Nik
+decision-needed: none — **RESOLVED (Nik, 3 Jul): flat price per year of backlog** (a set
+  per-catch-up-year fee; directly answers the "$10k quote, nobody will take my job" Signals
+  pain). Marketing page states the flat per-year number; the exact dollar figure is a
+  go-to-market detail for the marketing card, not a build blocker.
 acceptance:
   - [ ] 3 years of CSVs land categorized + reconciled per year in one guided flow
   - [ ] Interruption budget respected even at 5k backlog txns (batch approvals)
+  - [ ] Priced as flat-per-year (billing/packaging reflects it)
 
 ## W2.2 · QBO migration (one-click, with history)
 status: unclaimed

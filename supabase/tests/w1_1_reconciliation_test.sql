@@ -4,7 +4,7 @@
 -- Scenario ids: W1.1-AUTOMATCH, W1.1-REVERSAL, W1.1-TIEOUT.  Run: `supabase test db`.
 
 begin;
-select plan(18);
+select plan(21);
 
 -- ── fixtures: one business, a FULL CPA, a READ-ONLY CPA, plus a second org ────
 insert into auth.users (id, email, aud, role) values
@@ -182,6 +182,74 @@ select throws_ok($$
   select reconcile_lock(
     '00000000-0000-0000-0000-000000ee0c01', '00000000-0000-0000-0000-000000ee0b01', (select id from _s)) $$,
   'restrict_violation', NULL, 'W1.1-TIEOUT: lock refuses when opening+cleared ≠ closing');
+
+-- ── 13. TIE-OUT INTEGRITY: a match must reflect the entry's net on the account ─
+-- These guard against a forged tie-out: lock() sums statement-line amounts only,
+-- so if match() didn't verify the ledger entry actually moves the bank account by
+-- that amount, a CPA could clear lines against unrelated/zero-movement entries and
+-- still "reconcile" — a silently-wrong month. (Fails before the match() amount/net
+-- check was added; passes after.)
+
+-- reopen the session (it was unlocked by the reversal above; matches are reopened).
+-- fresh line + a $50 revenue-only entry that never touches the bank account.
+create temp table _s2 as
+select * from reconcile_open_session(
+  '00000000-0000-0000-0000-000000ee0c01', '00000000-0000-0000-0000-000000ee0b01',
+  '00000000-0000-0000-0000-000000eec001', '2099-06-30', 0, 5000);
+
+insert into import_rows (id, batch_id, org_id, row_num, txn_date, description, amount_minor, status) values
+  ('00000000-0000-0000-0000-000000ee9201', '00000000-0000-0000-0000-000000eeb101', '00000000-0000-0000-0000-000000ee0b01',
+   3, '2099-06-15', 'Ghost deposit', 5000, 'posted');
+
+-- an entry that posts $50 within revenue only (no bank-account line at all).
+create temp table _off as
+select * from post_journal_entry(
+  p_actor => '00000000-0000-0000-0000-000000ee0a01',
+  p_org   => '00000000-0000-0000-0000-000000ee0b01',
+  p_entry_date => '2099-06-15',
+  p_idempotency_key => 'k-roff',
+  p_lines => '[{"account_id":"00000000-0000-0000-0000-000000eec002","amount_minor":5000,"side":"D"},
+               {"account_id":"00000000-0000-0000-0000-000000eec002","amount_minor":5000,"side":"C"}]'::jsonb);
+
+select throws_ok($$
+  select reconcile_match(
+    '00000000-0000-0000-0000-000000ee0c01', '00000000-0000-0000-0000-000000ee0b01',
+    (select id from _s2), '00000000-0000-0000-0000-000000ee9201', (select id from _off), 'manual') $$,
+  'restrict_violation', NULL,
+  'match refuses an entry with no net movement on the reconciled bank account');
+
+-- an entry that DOES touch the bank account but for the WRONG amount ($40 ≠ $50 line).
+create temp table _wrong as
+select * from post_journal_entry(
+  p_actor => '00000000-0000-0000-0000-000000ee0a01',
+  p_org   => '00000000-0000-0000-0000-000000ee0b01',
+  p_entry_date => '2099-06-15',
+  p_idempotency_key => 'k-rwrong',
+  p_lines => '[{"account_id":"00000000-0000-0000-0000-000000eec001","amount_minor":4000,"side":"D"},
+               {"account_id":"00000000-0000-0000-0000-000000eec002","amount_minor":4000,"side":"C"}]'::jsonb);
+
+select throws_ok($$
+  select reconcile_match(
+    '00000000-0000-0000-0000-000000ee0c01', '00000000-0000-0000-0000-000000ee0b01',
+    (select id from _s2), '00000000-0000-0000-0000-000000ee9201', (select id from _wrong), 'manual') $$,
+  'restrict_violation', NULL,
+  'match refuses an entry whose net on the account ≠ the statement line amount');
+
+-- the RIGHT entry ($50 into the bank) matches cleanly and the session then ties+locks.
+create temp table _right as
+select * from post_journal_entry(
+  p_actor => '00000000-0000-0000-0000-000000ee0a01',
+  p_org   => '00000000-0000-0000-0000-000000ee0b01',
+  p_entry_date => '2099-06-15',
+  p_idempotency_key => 'k-rright',
+  p_lines => '[{"account_id":"00000000-0000-0000-0000-000000eec001","amount_minor":5000,"side":"D"},
+               {"account_id":"00000000-0000-0000-0000-000000eec002","amount_minor":5000,"side":"C"}]'::jsonb);
+
+select lives_ok($$
+  select reconcile_match(
+    '00000000-0000-0000-0000-000000ee0c01', '00000000-0000-0000-0000-000000ee0b01',
+    (select id from _s2), '00000000-0000-0000-0000-000000ee9201', (select id from _right), 'exact') $$,
+  'match accepts the entry whose net on the account equals the statement line');
 
 select * from finish();
 rollback;

@@ -141,6 +141,7 @@ create or replace function public.reconcile_match(
 ) returns reconciliation_matches
   language plpgsql security definer set search_path to 'public' as $$
 declare v_s reconciliation_sessions; v_row import_rows; v_entry journal_entries; v_m reconciliation_matches;
+        v_net bigint;
 begin
   if not can_write_org_as(p_actor, p_org) then
     raise exception 'forbidden: actor may not reconcile org %', p_org using errcode = 'insufficient_privilege';
@@ -163,6 +164,25 @@ begin
   end if;
   if v_row.amount_minor is null or v_row.amount_minor = 0 then
     raise exception 'bad_amount: statement line has no amount to clear' using errcode = 'restrict_violation';
+  end if;
+
+  -- TIE-OUT INTEGRITY (financial crown jewel): a match is only meaningful if the
+  -- ledger entry actually moves the reconciled bank account by the statement line's
+  -- amount. Compute the entry's debit-positive net on session.account_id and require
+  -- it to equal the line. Without this, lock() would sum statement amounts only and
+  -- a session could "tie" while clearing lines against unrelated/zero-movement
+  -- entries — a reconciled month silently wrong. Enforced in the RPC, not the UI.
+  select coalesce(sum(case when side = 'D' then amount_minor else -amount_minor end), 0)
+    into v_net
+    from journal_lines
+   where entry_id = p_entry_id and account_id = v_s.account_id;
+  if v_net = 0 then
+    raise exception 'entry_off_account: entry % has no net movement on the reconciled account %', p_entry_id, v_s.account_id
+      using errcode = 'restrict_violation';
+  end if;
+  if v_net <> v_row.amount_minor then
+    raise exception 'amount_mismatch: entry net % on the account ≠ statement line % — cannot clear', v_net, v_row.amount_minor
+      using errcode = 'restrict_violation';
   end if;
 
   insert into reconciliation_matches

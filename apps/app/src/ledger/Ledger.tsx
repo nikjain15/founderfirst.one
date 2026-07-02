@@ -12,6 +12,7 @@ import { useMemo, useState } from "react";
 import {
   approveEntry, logReportExport, newIdempotencyKey, postEntry, reverseEntry, setPeriod,
   upsertAccount, useAccounts, useEntries, useLedgerRefresh, usePeriods,
+  useReconciliationStatus,
 } from "./api";
 import { balanceSheet, generalLedger, profitAndLoss, trialBalance } from "./reports";
 import {
@@ -21,6 +22,7 @@ import { formatMoney, formatMoneyShort, parseMoneyToMinor } from "./money";
 import { ACCOUNT_TYPES } from "./types";
 import ImportFlow from "../import/ImportFlow";
 import Categorize from "./Categorize";
+import ReconcileView from "./ReconcileView";
 import InviteCpa from "../org/InviteCpa";
 import { Takeaway } from "./Takeaway";
 import {
@@ -182,6 +184,11 @@ export default function Ledger({
               <Periods orgId={org.id} canWrite={canWrite}
                 periods={periods.data ?? []} onChange={refresh} />
             )}
+            {surface === "reconcile" && (
+              <ReconcileView orgId={org.id} canWrite={canWrite}
+                accounts={accounts.data ?? []} entries={entries.data ?? []}
+                onCategorize={() => goto("review")} />
+            )}
             {surface === "reports" && <Reports entries={entries.data ?? []} org={org} />}
           </div>
         </div>
@@ -243,6 +250,8 @@ function Overview({
       && (e.lines ?? []).some((l) => l.account_id === u.id)).length;
   }, [entries, accounts]);
   const recent = entries.slice(0, 5);
+  // Owner-facing reconciliation status — read-only chip, no reconcile affordance.
+  const recon = useReconciliationStatus(orgId);
 
   // First-time nudge to invite an accountant — the invite/approval controls now
   // live in Settings (not on every page). Shown once per org for owners, then
@@ -290,6 +299,12 @@ function Overview({
         onReview={onReview}
         onCategorize={onCategorize}
       />
+      {recon.data && recon.data.lockedCount > 0 && (
+        <p className="reconciled-chip">
+          {COPY.reconcile.homeReconciled(recon.data.lockedCount)}
+          {recon.data.latestLockedAt && ` ${COPY.reconcile.homeReconciledDate(recon.data.latestLockedAt.slice(0, 10))}`}
+        </p>
+      )}
       <div className="kpis">
         <Kpi label={COPY.overview.kpiCashAssets} value={formatMoneyShort(bs.totalAssets)} />
         <Kpi label={COPY.overview.kpiNetIncome} value={formatMoneyShort(pnl.netIncome)}

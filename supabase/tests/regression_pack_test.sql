@@ -98,10 +98,14 @@ insert into categorization_rules (org_id, match_type, match_value, account_id, s
 values ('00000000-0000-0000-0000-0000000e0001', 'description_contains', '100%',
         '00000000-0000-0000-0000-000000f00002', 'human', '00000000-0000-0000-0000-0000000d0001')
 on conflict do nothing;
--- an unrelated description must NOT be poisoned into a match (pre-fix, % matched all)
+-- A discriminating description: 'invoice 1000 paid' contains "100" but NOT the literal
+-- "100%". Pre-fix the pattern was '%100%%' (the value's % a wildcard) so the trailing
+-- "0 paid" was swallowed and this MATCHED (poison); post-fix the % is escaped to '\%'
+-- so only a literal "100%" matches → this must be NULL. This is the fail-before case:
+-- with the ESCAPE reverted, this assertion goes RED.
 select is(
-  match_categorization_rule('00000000-0000-0000-0000-0000000e0001', 'unrelated coffee purchase'),
-  NULL, 'CAT-F4: a "100%" rule does not wildcard-match an unrelated description');
+  match_categorization_rule('00000000-0000-0000-0000-0000000e0001', 'invoice 1000 paid'),
+  NULL, 'CAT-F4: a "100%" rule does not wildcard-match "invoice 1000 paid" (% is escaped, not a wildcard)');
 -- the literal string still matches
 select is(
   match_categorization_rule('00000000-0000-0000-0000-0000000e0001', 'refund 100% of order'),

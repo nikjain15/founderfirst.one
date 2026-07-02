@@ -45,7 +45,13 @@ jobs:
         run: supabase db start
 
       - name: Run pgTAP regression suite
-        run: supabase test db 2>&1 | tee regression-pgtap.tap
+        # pipefail so a RED pgTAP run (non-zero from `supabase test db`) fails the job
+        # instead of being masked by tee's exit code — otherwise a broken test is a
+        # false green and the red-report artifact never uploads.
+        shell: bash
+        run: |
+          set -o pipefail
+          supabase test db 2>&1 | tee regression-pgtap.tap
 
       - name: Upload red report on failure
         if: failure()
@@ -70,7 +76,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run apps/app Vitest suite
-        run: pnpm --dir apps/app test --reporter=verbose 2>&1 | tee regression-vitest.log
+        # pipefail so a failing Vitest run isn't masked by tee (false green otherwise).
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --dir apps/app test --reporter=verbose 2>&1 | tee regression-vitest.log
 
       - name: Upload red report on failure
         if: failure()

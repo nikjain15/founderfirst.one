@@ -30,6 +30,9 @@ verify_jwt = false
 [functions.orgs]
 verify_jwt = true
 
+[functions.onboarding]
+verify_jwt = true
+
 [functions.ledger-entries]
 verify_jwt = true
 

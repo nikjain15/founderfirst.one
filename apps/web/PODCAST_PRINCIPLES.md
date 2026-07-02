@@ -54,7 +54,9 @@ Inherits every rule in [VOICE.md](../../VOICE.md). Podcast-specific rules:
 
 ## 2. Audio production — ElevenLabs v3
 
-We render on **ElevenLabs v3** (the expressive model). This was chosen after A/B'ing the open models (Kokoro/Dia/F5/Orpheus/XTTS/StyleTTS2/Higgs) and F5 vs ElevenLabs — v3 wins on warmth + human emotion, and it holds a consistent voice, which open dialogue models (Dia) do not.
+We render on **ElevenLabs v3** (the expressive model), via **Text-to-Dialogue** (one-pass conversation). This was chosen after A/B'ing the open models (Kokoro/Dia/F5/Orpheus/XTTS/StyleTTS2/Higgs) and F5 vs ElevenLabs — v3 wins on warmth + human emotion, and holds a consistent voice, which open dialogue models (Dia) do not.
+
+> **The lesson that cost us a robotic first cut:** rendering line-by-line and stitching the clips (with a `ffmpeg atempo` slowdown on top) sounds robotic — every line is generated with zero context of the line before it, so there's no reaction, no conversational timing. Friends called it out immediately. **The fix is Text-to-Dialogue** (below): the model hears the whole exchange at once. Do not go back to line-by-line stitching or time-stretching.
 
 **Locked voices & settings:**
 | | Voice | Notes |
@@ -62,11 +64,12 @@ We render on **ElevenLabs v3** (the expressive model). This was chosen after A/B
 | **Penny** | `Matilda` | American, "Knowledgable, Professional" — composed, not breathy |
 | **Guest** | `George` | "Warm, Captivating Storyteller" |
 
-- **Model:** `eleven_v3` · **voice_settings:** `stability: 0.55`, `similarity_boost: 0.85`.
-- **Pace:** render at native, then **slow ~10%** (`ffmpeg atempo=0.9`) so it's measured, not rushed. Stitch lines with ~**0.42s** gaps.
-- **Delivery:** keep it professional — do **not** use breathy `[softly]`/`[whispers]` tags (they read flirty). A sparing `[warmly]`/`[thoughtful]`/`[sighs]` is fine.
-- **Render method:** one API call per line (Penny line → Matilda, guest line → George), download, `atempo`, then concat. ~7k characters ≈ **~$0.70/episode** (pay-as-you-go).
-- **Key:** `ELEVEN_KEY` in `~/.config/founderfirst/secrets.env` (unrestricted key; API needs a payment method on the account). Working render harness: `scratchpad/abtest/ab_el_episode.py` (reads the finalized `LINES`).
+- **Render method — Text-to-Dialogue, one pass per section (this is the whole game).** `POST /v1/text-to-dialogue` with an `inputs[]` array of `{text, voice_id}` (Penny → Matilda, guest → George), so the model gets the **whole exchange** and gives it real timing + reactions. **Never** render line-by-line and stitch.
+- **Model:** `eleven_v3` · **settings:** `stability: 0.32`, `use_speaker_boost: true`.
+- **NO time-stretch.** Do not `atempo`/slow the audio — it adds a synthetic warble. Pace comes from the model + punctuation.
+- **Delivery cues — distribute across BOTH hosts, especially Penny.** Matilda is more even than George, so direct her: `[warmly]` on openers, `[curious]` on questions, `[gently]`/`[reassuring]` when she validates, `[thoughtfully]` on teaching beats; sparing `[sighs]`/`[chuckles softly]` inline. Avoid breathy `[softly]`/`[whispers]` (read flirty).
+- **Chunking:** Text-to-Dialogue caps request length, so split a full episode into ~10–14-turn chunks **at section boundaries** (between exchanges, never mid-Q&A), render each as one dialogue call, concat with ~**0.4s** gaps. ~7k characters ≈ **~$0.70/episode**.
+- **Key:** `ELEVEN_KEY` in `~/.config/founderfirst/secrets.env` (unrestricted key; API needs a payment method). Working harness: `scratchpad/abtest/ab_el_dialogue_full.py` (reads the finalized `LINES`, applies cues, renders in dialogue chunks).
 
 > **Pipeline note:** ElevenLabs is not yet wired into the `content-audio` edge function (that still uses Kokoro on Fly CPU). Episodes are currently rendered with the scratchpad harness, then attached at publish time. Wiring EL in as the default engine is the clean next step.
 
@@ -110,7 +113,7 @@ Surfaces: `/podcast` (index + hero, [podcast/index.astro](src/pages/podcast/inde
 - [ ] CPAs/bookkeepers never blamed.
 - [ ] No echo, warm questions, natural pauses; ~8–9 min.
 - [ ] Rules pass: no exclamation marks, no competitors, no tech/model names, American English, grounded facts only.
-- [ ] Rendered on ElevenLabs v3 — Matilda + George, `stability 0.55`, `atempo 0.9`.
+- [ ] Rendered on ElevenLabs v3 **Text-to-Dialogue** (one pass per section) — Matilda + George, `stability 0.32`, **no time-stretch**, warm cues on both hosts.
 - [ ] Spoken-form addresses in the audio script.
 - [ ] Post tagged `Podcast`; hero player; summary below takeaways; "← All episodes"; no Try-Penny promo; no "Episode N" prefix.
 - [ ] Published, old episode retired if replacing, verified live.

@@ -14,16 +14,38 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { runPlaidSync } from "../_shared/plaidSync.ts";
+import { verifyPlaidWebhook } from "../_shared/plaidWebhookVerify.ts";
+import { verifyPlaidJwt } from "../_shared/plaid.ts";
 
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { "Content-Type": "application/json" } });
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const PLAID_ENV = Deno.env.get("PLAID_ENV") ?? "sandbox";
+const WEBHOOK_SECRET = Deno.env.get("PLAID_WEBHOOK_SECRET") ?? null;
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
-  const body = await req.json().catch(() => ({}));
+
+  // ── AUTHENTICATE the webhook BEFORE acting on it. This is a PUBLIC endpoint;
+  // an unverified receiver lets anyone POST forged transaction/item events for a
+  // known item_id (forced syncs, or flipping a victim's feed to revoked/error).
+  // Read the raw bytes once so the Plaid JWT body-hash checks the exact payload.
+  const rawBody = await req.text();
+  const reqUrl = new URL(req.url);
+  const jwtHeader = req.headers.get("Plaid-Verification");
+  const jwtVerified = jwtHeader ? await verifyPlaidJwt(jwtHeader, rawBody).catch(() => false) : null;
+  const gate = verifyPlaidWebhook({
+    headerSecret: req.headers.get("X-Webhook-Secret"),
+    querySecret: reqUrl.searchParams.get("secret"),
+    configuredSecret: WEBHOOK_SECRET,
+    jwtVerified,
+    env: PLAID_ENV,
+  });
+  if (!gate.ok) return json({ error: "unverified_webhook", reason: gate.reason }, 401);
+
+  const body = (() => { try { return JSON.parse(rawBody || "{}"); } catch { return {}; } })();
   const webhookType = String(body?.webhook_type ?? "");
   const webhookCode = String(body?.webhook_code ?? "");
   const itemId = String(body?.item_id ?? "");

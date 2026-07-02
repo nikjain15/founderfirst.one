@@ -363,7 +363,7 @@ categorization cheaper and more accurate.
 The background validation panel has a **$50/month ceiling**. It is **soft**: we
 **surface running spend** in the admin (a gauge: spend vs. ceiling, %) and **fire a
 one-time admin alert on crossing** so the owner can raise it — we **never hard-stop**
-categorization. Mechanics (`20260701130000_categorization_budget.sql`):
+categorization. Mechanics (`20260702030100_categorization_budget.sql`):
 - Panel calls record under `use_case = 'penny_categorize_panel'` (separable from the
   live answer's `penny_categorize`); spend = `sum(ai_decisions.cost_usd)` this month.
 - `categorization_budget.monthly_ceiling_usd` (default 50.00) is the admin-editable

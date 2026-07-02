@@ -10,8 +10,10 @@
 import { useMemo, useState } from "react";
 import {
   addImportRows, commitImportBatch, connectProvider, createImportBatch, discardImportBatch,
-  importProvider, useConnections, type ExternalProvider, type StagedRow,
+  importProvider, plaidExchange, plaidLinkToken, plaidSync, useConnections,
+  type ExternalProvider, type StagedRow,
 } from "../ledger/api";
+import { openPlaidLink } from "./plaidLink";
 import { parseAmountCell, parseCsv, parseDateCell, type DateFormat, type ParsedCsv } from "./csv";
 import { formatMoney } from "../ledger/money";
 import type { LedgerAccount } from "../ledger/types";
@@ -45,6 +47,7 @@ export default function ImportFlow({
             <span className="ic-sub">{COPY.importFlow.openingSub}</span>
           </button>
         </div>
+        <ConnectBank orgId={orgId} onImported={onDone} />
         <ConnectSoftware orgId={orgId} onImported={onDone} />
       </div>
     );
@@ -342,6 +345,71 @@ function OpeningBalances({
   );
 }
 
+// ── Connect a bank (Plaid bank feeds, W2.3) ──────────────────────────────────
+// Link a bank → transactions flow straight into Penny's categorize queue. The
+// access token never touches the browser: link-token → Plaid Link → server
+// exchange (initial sync). A connected item shows a "Sync now" button; ongoing
+// updates also arrive via the plaid-webhook (replay-safe on the server).
+function ConnectBank({ orgId, onImported }: { orgId: string; onImported: () => void }) {
+  const conns = useConnections(orgId);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const banks = (conns.data ?? []).filter((c) => c.provider === "plaid" && c.status === "active");
+
+  async function link() {
+    setBusy("link"); setErr(null); setMsg(null);
+    try {
+      const { link_token } = await plaidLinkToken(orgId);
+      const publicToken = await openPlaidLink(link_token);
+      if (!publicToken) { setMsg(COPY.importFlow.bankCancelled); return; }
+      setBusy("sync");
+      const r = await plaidExchange(orgId, publicToken);
+      setMsg(r.added > 0 ? COPY.importFlow.bankSyncSummary(r.added) : COPY.importFlow.bankNothingNew);
+      conns.refetch();
+      onImported();
+    } catch (e) { setErr((e as Error).message); } finally { setBusy(null); }
+  }
+  async function sync(connectionId: string) {
+    setBusy(connectionId); setErr(null); setMsg(null);
+    try {
+      const r = await plaidSync(orgId, connectionId);
+      setMsg(r.added > 0 ? COPY.importFlow.bankSyncSummary(r.added) : COPY.importFlow.bankNothingNew);
+      onImported();
+    } catch (e) { setErr((e as Error).message); } finally { setBusy(null); }
+  }
+
+  return (
+    <div className="connect-software">
+      <h3 className="section-h">{COPY.importFlow.bankHeading}</h3>
+      <p className="muted sm">{COPY.importFlow.bankLead}</p>
+      {conns.isError && <p className="error sm" role="alert">{COPY.importFlow.bankLinkError}</p>}
+      <div className="connect-row">
+        <button className="ghost sm" disabled={busy !== null} onClick={link}>
+          {busy === "link" ? COPY.importFlow.bankConnecting
+            : busy === "sync" ? COPY.importFlow.bankSyncing
+            : COPY.importFlow.connectBank}
+        </button>
+      </div>
+      {banks.length > 0 && (
+        <ul className="conn-list">
+          {banks.map((c) => (
+            <li key={c.id}>
+              <span>{c.tenant_name ?? COPY.providers.plaid} <span className="status-pill s-open">{COPY.providers.plaid}</span></span>
+              <button className="ghost sm" disabled={busy === c.id} onClick={() => sync(c.id)}>
+                {busy === c.id ? COPY.importFlow.bankSyncing : COPY.importFlow.syncNow}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {msg && <p className="muted sm">{msg}</p>}
+      {err && <p className="error sm">{err}</p>}
+    </div>
+  );
+}
+
 // ── Connect QuickBooks / Xero ────────────────────────────────────────────────
 const PROVIDERS: { id: ExternalProvider; label: string }[] = [
   { id: "qbo", label: COPY.providers.qbo },
@@ -354,8 +422,12 @@ function ConnectSoftware({ orgId, onImported }: { orgId: string; onImported: () 
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  const active = (conns.data ?? []).filter((c) => c.status === "active");
-  const connectedProviders = new Set(active.map((c) => c.provider));
+  // QBO/Xero only — Plaid bank feeds are handled by ConnectBank above.
+  const active = (conns.data ?? []).filter(
+    (c): c is typeof c & { provider: ExternalProvider } =>
+      c.status === "active" && (c.provider === "qbo" || c.provider === "xero"),
+  );
+  const connectedProviders = new Set<ExternalProvider>(active.map((c) => c.provider));
 
   async function connect(provider: ExternalProvider) {
     setBusy(provider); setErr(null);

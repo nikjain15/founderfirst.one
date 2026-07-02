@@ -17,7 +17,7 @@
 -- Runs in a transaction and rolls back.
 
 begin;
-select plan(31);
+select plan(36);
 
 -- ── fixtures: jurisdiction, a form@2025, lines, rules, org, accounts ─────────
 insert into auth.users (id, email, aud, role) values
@@ -64,7 +64,7 @@ insert into engagements (id, firm_org_id, client_org_id, status, access, initiat
 
 insert into ledger_accounts (id, org_id, code, name, type, tags) values
   ('70000000-0000-0000-0000-0000000000c1', '70000000-0000-0000-0000-0000000000a0', '4000', 'Sales',        'income',  '{}'),
-  ('70000000-0000-0000-0000-0000000000c2', '70000000-0000-0000-0000-0000000000a0', '6100', 'Google Ads',   'expense', '{}'),
+  ('70000000-0000-0000-0000-0000000000c2', '70000000-0000-0000-0000-0000000000a0', '6100', 'Google Advertising', 'expense', '{}'),
   ('70000000-0000-0000-0000-0000000000c3', '70000000-0000-0000-0000-0000000000a0', '6200', 'Client meals', 'expense', '{meals}'),
   ('70000000-0000-0000-0000-0000000000c4', '70000000-0000-0000-0000-0000000000a0', '6900', 'Misc',         'expense', '{}');
 

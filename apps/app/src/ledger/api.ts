@@ -359,9 +359,12 @@ export const discardImportBatch = (org_id: string, batch_id: string) =>
 
 // ── external accounting connections (QBO/Xero) ────────────────────────────────
 export type ExternalProvider = "qbo" | "xero";
+// Plaid is a bank-feed connection (link-token flow, not OAuth redirect); it shares
+// the external_connections table but not the ${provider}-connect/-import fns.
+export type ConnectionProvider = ExternalProvider | "plaid";
 export interface ExternalConnection {
   id: string;
-  provider: ExternalProvider;
+  provider: ConnectionProvider;
   tenant_name: string | null;
   status: "pending" | "active" | "revoked" | "error";
 }
@@ -435,6 +438,22 @@ export function useProviderMigrations(orgId: string | undefined) {
 /** Confirm the migration's cutover date (stamps every batch + marks committed). */
 export const setMigrationCutover = (org_id: string, migration_id: string, cutover_date: string) =>
   invoke<{ migration: ProviderMigration }>("imports", { op: "migration_cutover", org_id, migration_id, cutover_date });
+
+// ── Plaid bank feeds (W2.3) ───────────────────────────────────────────────────
+// The access token never touches the client: link-token → open Plaid Link →
+// exchange the public_token server-side (stores the connection + initial sync).
+export interface PlaidSyncResult { added: number; modified: number; removed: number; skipped: number; }
+
+export const plaidLinkToken = (org_id: string) =>
+  invoke<{ link_token: string; expiration: string }>("plaid-link-token", { org_id });
+
+export const plaidExchange = (org_id: string, public_token: string) =>
+  invoke<PlaidSyncResult & { connection_id: string; tenant_name: string | null }>(
+    "plaid-exchange", { org_id, public_token },
+  );
+
+export const plaidSync = (org_id: string, connection_id: string) =>
+  invoke<PlaidSyncResult>("plaid-sync", { org_id, connection_id });
 
 // ── report exports (W1.2) ─────────────────────────────────────────────────────
 // The file is built + downloaded client-side (export.ts); this records ONE audit

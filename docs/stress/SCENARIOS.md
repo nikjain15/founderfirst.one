@@ -271,3 +271,34 @@ that could silently go wrong.
 | **W2.1-BATCHAPPROVE** | `catch_up_batch_approve` bulk-recategorizes ONLY high-confidence picks (trust tier from `get_effective_behavior_config.confidence_high`, server-authoritative); a below-cutoff item is SKIPPED and left untouched on the holding account — never auto-posted. Reuses `recategorize_entry` (append-only reverse+repost, learning). Tenant-gated (non-member refused, `42501`); the bulk action writes a summary audit row **and** the per-entry recategorize audit row. Period-lock inherited: a closed-period entry still recategorizes into the open period, never permanently blocked. | `catchup.test.ts` (Vitest: `isHighConfidence` / `partitionProposals` trust gating, rule=1 always, no-account never) + `w2_1_catchup_test.sql` (pgTAP: approved/skipped counts, holding-account untouched, audit rows, non-member `42501`, closed-period inheritance) |
 | **W2.1-5K** | The interruption budget holds at 5,000 backlog transactions: with 4,990 high-confidence + 10 low, the owner confirms 4,990 in ONE tap and answers only the 10 low-confidence questions — `interruptionCount` = 10, not 5,000. Surfaced questions are capped at `asks_per_week` (≤5/week) and the rest deferred. | `catchup.test.ts` (Vitest: `interruptionCount` at 5k, `withinAskBudget`, `questionsForThisWeek` cap) |
 | **W2.1-PRICING** | Priced flat-per-year: `catch_up_plans.fee_total_minor` is a generated column = `fee_per_year_minor × cardinality(backlog_years)`; `catch_up_set_plan` records the packaging and audit-logs it. $500/yr over 3 years → $1,500. | `catchup.test.ts` (Vitest: `catchUpFeeTotal`) + `w2_1_catchup_test.sql` (pgTAP: `fee_total_minor` = per-year × N) |
+## W2.3 · Plaid bank feeds (sandbox)
+
+| ID | Proves | Owned by |
+|----|--------|----------|
+| **W2.3-LINK** | A linked Plaid item's transactions land in the SAME categorize queue as CSV/QBO imports (a bank-vs-Uncategorized entry Penny then categorizes), exactly once, and the ledger balances (Dr==Cr). Each Plaid `transaction_id` → one `bank_transactions` row → one journal entry keyed `ext:plaid:<transaction_id>`. | `supabase/tests/w2_3_plaid_ingest_test.sql` (pgTAP: add ingests, distinct entries, ledger balances) + `apps/app/src/import/plaidStateMachine.test.ts` (Vitest: add lands once) |
+| **W2.3-REPLAY** | A duplicate webhook delivery — Plaid retries, at-least-once — adds NOTHING. Re-ingesting the same sync page skips every row (idempotent on `bank_transactions` unique key AND on `post_journal_entry`'s `ext:plaid:<id>`); no new rows, no new entries, net unchanged. Overlapping cursor pages likewise never double-post. | pgTAP (`skipped=2`, row/entry counts unchanged) + Vitest (duplicate page + overlapping page no-op) |
+| **W2.3-REMOVED** | Plaid mutating history is handled by REVERSAL-based corrections, never in-place edits. A **removed** txn reverses its prior entry (original → `status=reversed`, row → `state=removed`, never deleted) and nets to zero; a **modified** (amount/date-changed) txn reverses the old entry and posts a fresh one (books tie to the corrected amount); **pending→posted** with no amount change moves no money. A replayed remove is idempotent (no second reversal). | pgTAP (modify: original reversed + corrected amount + still balances; remove: reversed + state) + Vitest (pending→posted, modify reverse+repost, idempotent remove, full-lifecycle nets to 0) |
+
+**Tenant + role.** `plaid_ingest_transactions` / `plaid_set_cursor` are
+`service_role`-EXECUTE-only (ISOTEST: no `p_actor` forgery from anon/authenticated),
+gated by `can_write_org_as`; a non-member actor is refused. The Plaid access token
+never reaches the browser (stored on `external_connections`, column-walled like
+QBO/Xero); the link_token is the only client-side token. Every add/modify/remove
+writes a `ledger_audit` row.
+
+**Webhook replay-safety proof.** The `plaid-webhook` fn resolves `item_id →
+external_connections` (the tenant boundary; an unknown item is ignored 200 so Plaid
+stops retrying) then runs the SAME `/transactions/sync` loop as `plaid-sync`. Because
+`plaid_ingest_transactions` is idempotent, running the loop twice on the same events
+is a no-op — proven by W2.3-REPLAY.
+
+**Sandbox-only.** Build targets `PLAID_ENV=sandbox` (secret from
+`~/.config/founderfirst/secrets.env` → `PLAID_SECRET_SANDBOX`, set as a Supabase fn
+secret at deploy). Production requires Plaid's app review — a **Nik step** before
+>10 live users (flip `PLAID_ENV`/`PLAID_SECRET` to production). E2E against the live
+Plaid sandbox is feasible via `/sandbox/item/fire_webhook` (`sandboxFireWebhook` in
+`_shared/plaid.ts`); the recorded state machine (`plaidStateMachine.ts`) is the
+CI-runnable fixture that mirrors the RPC contract.
+
+**Re-run.** `pnpm --dir apps/app test` (state machine) · `supabase test db` (pgTAP
+ingestion RPC) · no prod fixtures (the pgTAP seed is self-contained).

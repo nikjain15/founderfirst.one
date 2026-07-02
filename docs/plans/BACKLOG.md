@@ -312,15 +312,15 @@ acceptance:
 decision-needed: none (OAuth consent = human step at run time)
 
 ## W2.3 · Plaid bank feeds
-status: unclaimed (Wave-2 order) — ✅ Nik created the Plaid account 2 Jul; keys in
+status: in-review (PR loop/w2-3-plaid-feeds) — sandbox build complete; production app-review is a Nik step before >10 live users. ✅ Nik created the Plaid account 2 Jul; keys in
   `~/.config/founderfirst/secrets.env` (PLAID_CLIENT_ID / PLAID_SECRET_SANDBOX /
   PLAID_SECRET_PRODUCTION / PLAID_ENV=sandbox). Integrator sets Supabase fn secrets at
   deploy time. Build sandbox-only; file the production application early (review lead time).
 goal: transactions flow in without CSVs. Full 6-step path in Roadmap §W2.3.
 decision-needed: none for sandbox build
 acceptance:
-  - [ ] Sandbox item links; txns land in categorize queue exactly once (webhook replay-safe)
-  - [ ] Pending→posted, removed, modified txns handled via reversal-based corrections
+  - [x] Sandbox item links; txns land in categorize queue exactly once (webhook replay-safe)
+  - [x] Pending→posted, removed, modified txns handled via reversal-based corrections
 
 ## W3.x cards (thread · trust-tiered cards · 3-step onboarding · dashboard · receipts)
 status: not yet carded — carded after Wave 1 ships; decisions already locked:

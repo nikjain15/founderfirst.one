@@ -470,12 +470,27 @@ export const COPY = {
     colSelectNone: "— none —",
     colSelectSelect: "Select…",
     colSelectFallback: (i: number) => `Column ${i}`,
+    // ── Bank feeds (Plaid, W2.3) ─────────────────────────────────────────────
+    bankHeading: "Connect your bank",
+    bankLead:
+      "Link your bank and new transactions flow straight into Penny's queue — no more downloading statements. Penny categorizes them for you.",
+    connectBank: "Connect a bank",
+    bankConnecting: "Opening your bank…",
+    bankSyncing: "Bringing in transactions…",
+    bankConnected: (name: string) => `${name} connected`,
+    bankLinkError: "Couldn't start the bank connection — reload to try again.",
+    bankSyncSummary: (added: number) =>
+      `Brought in ${added} ${added === 1 ? "transaction" : "transactions"} — find them in Review.`,
+    bankNothingNew: "No new transactions since the last sync.",
+    syncNow: "Sync now",
+    bankCancelled: "Bank connection canceled — nothing was linked.",
   },
 
-  // ── Provider labels (QBO / Xero) ───────────────────────────────────────────
+  // ── Provider labels (QBO / Xero / bank feeds) ──────────────────────────────
   providers: {
     qbo: "QuickBooks",
     xero: "Xero",
+    plaid: "your bank",
   },
 
   // ── W2.2 one-click migration (QBO history + trial-balance comparison) ───────

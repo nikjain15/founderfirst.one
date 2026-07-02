@@ -6,7 +6,7 @@
  * node environment alongside reports.test.ts. Maps to APP_PRINCIPLES §2 + §3.
  */
 import { describe, expect, it } from "vitest";
-import { OWNER_TABS, CPA_TABS, visibleTabs, tabForSurface, type Surface } from "./nav";
+import { OWNER_TABS, CPA_TABS, visibleTabs, visibleSubs, tabForSurface, type Surface } from "./nav";
 
 describe("owner lens nav (IA-1 · APP_PRINCIPLES §2)", () => {
   it("presents exactly the four jobs + a de-emphasized Advanced, in order", () => {
@@ -35,10 +35,12 @@ describe("owner lens nav (IA-1 · APP_PRINCIPLES §2)", () => {
 
   it("exposes Journal · Chart of accounts · Periods only under Advanced", () => {
     const advanced = OWNER_TABS.find((t) => t.id === "advanced");
-    expect(advanced?.subs?.map((s) => s.id)).toEqual(["journal", "accounts", "periods"]);
+    // Rules (W1.6 learned-rules management) nests here too — reached deliberately,
+    // never prompted (usability gate: no new top-level nav).
+    expect(advanced?.subs?.map((s) => s.id)).toEqual(["journal", "accounts", "periods", "rules"]);
     // Those accountant surfaces must NOT also be primary tabs.
     const primaryIds = new Set(OWNER_TABS.filter((t) => t.surface).map((t) => t.surface));
-    for (const s of ["journal", "accounts", "periods"] as Surface[]) {
+    for (const s of ["journal", "accounts", "periods", "rules"] as Surface[]) {
       expect(primaryIds.has(s)).toBe(false);
     }
   });
@@ -94,5 +96,33 @@ describe("CPA lens nav is UNCHANGED (regression guard — APP_PRINCIPLES §3)", 
     expect(books.subs!.some((s) => s.id === "import")).toBe(true);
     expect(tabForSurface("cpa", "import", true)?.id).toBe("books");
     expect(tabForSurface("cpa", "import", false)).toBeUndefined(); // write-only sub hidden
+  });
+});
+
+// W1.6-RULEDEL (nav portion) — the learned-rules surface is reachable in ≤3 taps
+// (Categorize/Advanced → Rules → delete) for owner + CPA, and read_only CPA can
+// SEE it but the write-only Categorize queue beside it is hidden.
+describe("learned-rules nav reachability (W1.6 · REG W1.6-RULEDEL)", () => {
+  it("owner reaches Rules via Advanced in 2 taps (never a primary tab)", () => {
+    // Advanced (tap 1) → Rules (tap 2). Not a top-level job — no interruption.
+    expect(OWNER_TABS.some((t) => t.surface === "rules")).toBe(false);
+    expect(tabForSurface("owner", "rules", true)?.id).toBe("advanced");
+    expect(tabForSurface("owner", "rules", false)?.id).toBe("advanced"); // visible read-only too
+  });
+
+  it("CPA reaches Rules from the Categorize tab (Categorize → Rules)", () => {
+    const cat = CPA_TABS.find((t) => t.id === "categorize")!;
+    expect(cat.subs?.map((s) => s.id)).toEqual(["review", "rules"]);
+    expect(tabForSurface("cpa", "rules", true)?.id).toBe("categorize");
+  });
+
+  it("read-only CPA SEES Rules but NOT the write-only Categorize queue beside it", () => {
+    const cat = CPA_TABS.find((t) => t.id === "categorize")!;
+    const roSubs = visibleSubs(cat, false).map((s) => s.id);
+    expect(roSubs).toEqual(["rules"]);                       // queue hidden, rules kept
+    const rwSubs = visibleSubs(cat, true).map((s) => s.id);
+    expect(rwSubs).toEqual(["review", "rules"]);
+    // The parent Categorize tab itself stays visible for read-only (so Rules is reachable).
+    expect(visibleTabs("cpa", false).map((t) => t.id)).toContain("categorize");
   });
 });

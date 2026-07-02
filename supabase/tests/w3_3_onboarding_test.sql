@@ -17,20 +17,20 @@ select plan(13);
 
 -- ── fixtures: owner + non-member; one business org (settings seeded by trigger) ─
 insert into auth.users (id, email, aud, role) values
-  ('00000000-0000-0000-0000-0000000ob0aa', 'ownerOB@test.dev',    'authenticated', 'authenticated'),
-  ('00000000-0000-0000-0000-0000000ob0ee', 'nonmemberOB@test.dev','authenticated', 'authenticated');
+  ('00000000-0000-0000-0000-00000000b0aa', 'ownerOB@test.dev',    'authenticated', 'authenticated'),
+  ('00000000-0000-0000-0000-00000000b0ee', 'nonmemberOB@test.dev','authenticated', 'authenticated');
 
 insert into organizations (id, type, name, created_by) values
-  ('00000000-0000-0000-0000-0000000ob0b1', 'business', 'Onboard Biz', '00000000-0000-0000-0000-0000000ob0aa');
+  ('00000000-0000-0000-0000-00000000b0b1', 'business', 'Onboard Biz', '00000000-0000-0000-0000-00000000b0aa');
 insert into memberships (user_id, org_id, role, status) values
-  ('00000000-0000-0000-0000-0000000ob0aa', '00000000-0000-0000-0000-0000000ob0b1', 'owner', 'active');
+  ('00000000-0000-0000-0000-00000000b0aa', '00000000-0000-0000-0000-00000000b0b1', 'owner', 'active');
 -- the AFTER INSERT trigger seeds org_accounting_settings for business orgs.
 
 -- A second org for the fallback + idempotency cases.
 insert into organizations (id, type, name, created_by) values
-  ('00000000-0000-0000-0000-0000000ob0b2', 'business', 'Fallback Biz', '00000000-0000-0000-0000-0000000ob0aa');
+  ('00000000-0000-0000-0000-00000000b0b2', 'business', 'Fallback Biz', '00000000-0000-0000-0000-00000000b0aa');
 insert into memberships (user_id, org_id, role, status) values
-  ('00000000-0000-0000-0000-0000000ob0aa', '00000000-0000-0000-0000-0000000ob0b2', 'owner', 'active');
+  ('00000000-0000-0000-0000-00000000b0aa', '00000000-0000-0000-0000-00000000b0b2', 'owner', 'active');
 
 -- ── kernel seed rows (test-only): a real entity + a test industry + its template ─
 insert into entity_types (key, label, description, diagnostic_questions, owner_draw_treatment) values
@@ -53,37 +53,37 @@ insert into coa_account_templates (template_ref, code, name, type, sort_order) v
 -- ── 1. happy path: complete_onboarding stamps profile + seeds the CoA ─────────
 select is(
   (select complete_onboarding(
-     '00000000-0000-0000-0000-0000000ob0aa', '00000000-0000-0000-0000-0000000ob0b1',
+     '00000000-0000-0000-0000-00000000b0aa', '00000000-0000-0000-0000-00000000b0b1',
      't_sole', 't_widgets')),
   3, 'complete_onboarding seeds the 3-account widget template');
 
 select is(
-  (select entity_type from org_accounting_settings where org_id = '00000000-0000-0000-0000-0000000ob0b1'),
+  (select entity_type from org_accounting_settings where org_id = '00000000-0000-0000-0000-00000000b0b1'),
   't_sole', 'entity_type stamped on the org settings');
 select is(
-  (select industry_key from org_accounting_settings where org_id = '00000000-0000-0000-0000-0000000ob0b1'),
+  (select industry_key from org_accounting_settings where org_id = '00000000-0000-0000-0000-00000000b0b1'),
   't_widgets', 'industry_key stamped on the org settings');
 
 select is(
-  (select count(*)::int from ledger_accounts where org_id = '00000000-0000-0000-0000-0000000ob0b1'),
+  (select count(*)::int from ledger_accounts where org_id = '00000000-0000-0000-0000-00000000b0b1'),
   3, 'the org now has exactly the template''s 3 accounts');
 select is(
   (select name from ledger_accounts
-    where org_id = '00000000-0000-0000-0000-0000000ob0b1' and code = '4000'),
+    where org_id = '00000000-0000-0000-0000-00000000b0b1' and code = '4000'),
   'Widget sales', 'the income account came from the kernel template (no hardcoded map)');
 select is(
   (select source from ledger_accounts
-    where org_id = '00000000-0000-0000-0000-0000000ob0b1' and code = '4000'),
+    where org_id = '00000000-0000-0000-0000-00000000b0b1' and code = '4000'),
   'onboarding', 'seeded accounts are tagged source=onboarding');
 
 -- ── 2. idempotency: a re-run over an org WITH a chart adds nothing ────────────
 select is(
   (select complete_onboarding(
-     '00000000-0000-0000-0000-0000000ob0aa', '00000000-0000-0000-0000-0000000ob0b1',
+     '00000000-0000-0000-0000-00000000b0aa', '00000000-0000-0000-0000-00000000b0b1',
      't_sole', 't_widgets')),
   0, 'a second onboarding call adds no accounts (idempotent)');
 select is(
-  (select count(*)::int from ledger_accounts where org_id = '00000000-0000-0000-0000-0000000ob0b1'),
+  (select count(*)::int from ledger_accounts where org_id = '00000000-0000-0000-0000-00000000b0b1'),
   3, 'still exactly 3 accounts after the re-run');
 
 -- ── 3. fallback: an industry with no template → general_business template ─────
@@ -92,24 +92,24 @@ insert into industries (key, label, coa_template_ref) values ('t_no_template', '
   on conflict (key) do nothing;
 select is(
   (select complete_onboarding(
-     '00000000-0000-0000-0000-0000000ob0aa', '00000000-0000-0000-0000-0000000ob0b2',
+     '00000000-0000-0000-0000-00000000b0aa', '00000000-0000-0000-0000-00000000b0b2',
      null, 't_no_template')),
   2, 'no coa_template_ref → the general_business fallback (2 accounts) is seeded');
 
 -- ── 4. forged keys are rejected against the kernel ───────────────────────────
 select throws_ok(
-  $$ select complete_onboarding('00000000-0000-0000-0000-0000000ob0aa',
-       '00000000-0000-0000-0000-0000000ob0b1', 'not_a_real_entity', 't_widgets') $$,
+  $$ select complete_onboarding('00000000-0000-0000-0000-00000000b0aa',
+       '00000000-0000-0000-0000-00000000b0b1', 'not_a_real_entity', 't_widgets') $$,
   '22023', null, 'a forged entity_type is rejected');
 select throws_ok(
-  $$ select complete_onboarding('00000000-0000-0000-0000-0000000ob0aa',
-       '00000000-0000-0000-0000-0000000ob0b1', 't_sole', 'not_a_real_industry') $$,
+  $$ select complete_onboarding('00000000-0000-0000-0000-00000000b0aa',
+       '00000000-0000-0000-0000-00000000b0b1', 't_sole', 'not_a_real_industry') $$,
   '22023', null, 'a forged industry_key is rejected');
 
 -- ── 5. tenant gate: a non-member actor is refused ────────────────────────────
 select throws_ok(
-  $$ select complete_onboarding('00000000-0000-0000-0000-0000000ob0ee',
-       '00000000-0000-0000-0000-0000000ob0b1', 't_sole', 't_widgets') $$,
+  $$ select complete_onboarding('00000000-0000-0000-0000-00000000b0ee',
+       '00000000-0000-0000-0000-00000000b0b1', 't_sole', 't_widgets') $$,
   '42501', null, 'a non-member actor is refused (can_write_org_as)');
 
 -- ── 6. ISOTEST: the write functions are not client-EXECUTE-granted ───────────

@@ -119,6 +119,12 @@ const TABLES: Record<
            "status", "sort_order"],
     conflict: "(key)", touchUpdatedAt: true,
   },
+  coa_account_templates: {
+    // CoA templates keyed by (template_ref, code). Re-seeding a corrected chart
+    // updates names/types in place; a new account is a new row (W3.3).
+    cols: ["template_ref", "code", "name", "type", "sort_order"],
+    conflict: "(template_ref, code)", touchUpdatedAt: true,
+  },
 };
 
 function loadSeed(file: string): SeedFile {
@@ -168,7 +174,8 @@ function emitTable(table: string, seed: SeedFile): string {
 
 // Deterministic file order so output is stable.
 const FILE_ORDER = ["entity_types.json", "industries.json", "connectors.json",
-                    "vendor_priors.json", "filing_obligations.json"];
+                    "vendor_priors.json", "filing_obligations.json",
+                    "coa_account_templates.json"];
 
 function generate(): string {
   const banner =
@@ -209,6 +216,20 @@ function validate(): string[] {
   for (const r of loadSeed("vendor_priors.json").rows)
     if (r.industry_key && !industries.has(r.industry_key as string))
       problems.push(`vendor_priors references unknown industry_key '${r.industry_key}'`);
+
+  // W3.3: every industry's coa_template_ref must resolve to a real template (else
+  // onboarding would seed an empty chart for that sector). The general_business
+  // template is the seed_org_coa fallback, so it must exist too.
+  const templateRefs = new Set(
+    loadSeed("coa_account_templates.json").rows.map((r) => r.template_ref as string),
+  );
+  if (!templateRefs.has("general_business"))
+    problems.push("coa_account_templates is missing the 'general_business' template — it's seed_org_coa's fallback for any industry with no CoA template.");
+  for (const r of loadSeed("industries.json").rows) {
+    const ref = r.coa_template_ref as string | undefined;
+    if (ref && !templateRefs.has(ref))
+      problems.push(`industry '${r.key}' references coa_template_ref '${ref}' with no accounts in coa_account_templates`);
+  }
 
   return problems;
 }

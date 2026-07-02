@@ -302,3 +302,38 @@ CI-runnable fixture that mirrors the RPC contract.
 
 **Re-run.** `pnpm --dir apps/app test` (state machine) · `supabase test db` (pgTAP
 ingestion RPC) · no prod fixtures (the pgTAP seed is self-contained).
+
+## W3.3 · Minimal 3-step onboarding (name → entity → industry)
+
+The demo's 8-step quiz is replaced by exactly three steps — business name, entity
+type, industry — with everything else asked in-journey. Entity + industry options
+render from the CENTRAL-2 kernel seeds (no hardcoded enum), the "not sure" flow is a
+seed-driven 2-question diagnostic, and picking an industry seeds the matching chart
+of accounts from its kernel CoA template. These scenarios lock the decisions that
+could silently regress.
+
+| ID | Proves | Owned by |
+|----|--------|----------|
+| **W3.3-ONBOARD** | Onboarding is exactly 3 steps; entity + industry tiles render from the `entity_types` / `industries` kernel seeds — adding a test entity/industry via the seed alone makes it appear (no hardcoded list). `complete_onboarding` stamps `entity_type` + `industry_key` on the org's settings (the filing-calendar consumer reads these) in one atomic call, is tenant-gated (`42501` for a non-member) and rejects a forged entity/industry key against the kernel (`22023`). The onboarding write-path is `service_role`-EXECUTE-only (ISOTEST). | `apps/app/src/onboarding/diagnostic.test.ts` (Vitest: kernel-drives-options — a seeded entity becomes diagnosable with no code) + `supabase/tests/w3_3_onboarding_test.sql` (pgTAP: profile stamped, tenant gate, forged-key reject, not client-EXECUTE-granted) |
+| **W3.3-DIAGNOSTIC** | The "not sure" flow is the seed's 2-question diagnostic: questions are flattened from `entity_types.diagnostic_questions` (deduped, capped to 2), and answers resolve to a single entity — a YES on an entity's own primary question resolves to THAT entity; an all-NO / tie board resolves to `null` (the UI then asks the owner to pick manually, never a forced pick). Adding an entity with its own diagnostic question makes it resolvable with zero code. | `apps/app/src/onboarding/diagnostic.test.ts` (Vitest: `buildQuiz` dedup/cap, `resolveDiagnostic` per-entity resolution, null on no-signal, co-op seed appears) |
+| **W3.3-COA** | Selecting an industry seeds the matching chart of accounts from its kernel `coa_template_ref` — kernel-driven, NO hardcoded industry→accounts map. Every industry's ref resolves to a non-empty, well-formed template (types in the account_type enum, unique codes, ≥1 income + ≥1 expense); an industry with no ref falls back to the `general_business` template. Seeding is idempotent (a re-run over an org that already has a chart adds nothing) and tags accounts `source=onboarding`. | `apps/app/src/onboarding/coaTemplate.test.ts` (Vitest: ref→template resolution, fallback exists, valid accounts, usable chart) + `supabase/tests/w3_3_onboarding_test.sql` (pgTAP: `seed_org_coa` produces the template's rows, fallback path, idempotency) |
+
+**Deferral (in-journey, usability gate).** Onboarding asks NOTHING beyond the three
+steps. After it, a **skippable** "connect a bank" offer routes to the Connections tab
+(APP_PRINCIPLES §2); payment methods, check-in cadence and everything else are asked
+at the moment they matter, never upfront. No 4th onboarding question ships without Nik.
+
+**Kernel-driven, no code.** Adding an entity, an industry, or a whole sector chart is
+a seed edit (`supabase/seeds/kernel/*.json` → `scripts/seed-kernel.ts`), never a code
+change — the CI kernel-seed lint (`pnpm check:kernel-seed`) enforces that every
+industry's `coa_template_ref` resolves to a template and the `general_business`
+fallback exists.
+
+**E2E note.** The DB-layer pgTAP proves "complete onboarding → land in seeded books
+with the right CoA" deterministically (the app-e2e runner uses a pre-seeded owner org
+and does not re-enter onboarding). A live-Supabase browser walkthrough of the 3-step
+wizard is a manual/staging check (needs a fresh no-org account + the `orgs` +
+`onboarding` edge fns), noted for the wave integration pass.
+
+**Re-run.** `pnpm --dir apps/app test` (diagnostic + CoA template) · `supabase test db`
+(onboarding write-path) · `pnpm check:kernel-seed` (seed lint) · no prod fixtures.

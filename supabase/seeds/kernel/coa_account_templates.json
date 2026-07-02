@@ -1,0 +1,975 @@
+{
+  "_meta": {
+    "table": "coa_account_templates",
+    "description": "Chart-of-accounts templates keyed by industries.coa_template_ref. One row per (template_ref, code) account. Base accounts (1000/1200/2000/2200/3000/3900) are uniform; income (4xxx), COGS (5xxx) and operating expenses (6xxx) are drawn from each sector's kernel expense_categories/income label. Seeded into ledger_accounts by seed_org_coa at onboarding (W3.3). Adding a sector chart = seed rows, no code change.",
+    "primary_key": "(template_ref, code)"
+  },
+  "rows": [
+    {
+      "template_ref": "svc_professional",
+      "code": "1000",
+      "name": "Business checking",
+      "type": "asset",
+      "sort_order": 10
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "1200",
+      "name": "Accounts receivable",
+      "type": "asset",
+      "sort_order": 20
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "2000",
+      "name": "Accounts payable",
+      "type": "liability",
+      "sort_order": 30
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "2200",
+      "name": "Sales tax payable",
+      "type": "liability",
+      "sort_order": 40
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "3000",
+      "name": "Owner’s equity",
+      "type": "equity",
+      "sort_order": 50
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "3900",
+      "name": "Owner draws",
+      "type": "equity",
+      "sort_order": 60
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "4000",
+      "name": "Retainer income",
+      "type": "income",
+      "sort_order": 70
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "4900",
+      "name": "Other income",
+      "type": "income",
+      "sort_order": 80
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "6000",
+      "name": "Software",
+      "type": "expense",
+      "sort_order": 90
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "6010",
+      "name": "Travel",
+      "type": "expense",
+      "sort_order": 100
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "6020",
+      "name": "Client meals",
+      "type": "expense",
+      "sort_order": 110
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "6030",
+      "name": "Contractors",
+      "type": "expense",
+      "sort_order": 120
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "6040",
+      "name": "Marketing",
+      "type": "expense",
+      "sort_order": 130
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "6050",
+      "name": "Office / home office",
+      "type": "expense",
+      "sort_order": 140
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "6060",
+      "name": "Continuing education",
+      "type": "expense",
+      "sort_order": 150
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "6070",
+      "name": "Research",
+      "type": "expense",
+      "sort_order": 160
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "6080",
+      "name": "Malpractice insurance",
+      "type": "expense",
+      "sort_order": 170
+    },
+    {
+      "template_ref": "svc_professional",
+      "code": "6090",
+      "name": "Office",
+      "type": "expense",
+      "sort_order": 180
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "1000",
+      "name": "Business checking",
+      "type": "asset",
+      "sort_order": 10
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "1200",
+      "name": "Accounts receivable",
+      "type": "asset",
+      "sort_order": 20
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "2000",
+      "name": "Accounts payable",
+      "type": "liability",
+      "sort_order": 30
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "2200",
+      "name": "Sales tax payable",
+      "type": "liability",
+      "sort_order": 40
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "3000",
+      "name": "Owner’s equity",
+      "type": "equity",
+      "sort_order": 50
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "3900",
+      "name": "Owner draws",
+      "type": "equity",
+      "sort_order": 60
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "4000",
+      "name": "Project fee income",
+      "type": "income",
+      "sort_order": 70
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "4900",
+      "name": "Other income",
+      "type": "income",
+      "sort_order": 80
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "6000",
+      "name": "Software",
+      "type": "expense",
+      "sort_order": 90
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "6010",
+      "name": "Equipment",
+      "type": "expense",
+      "sort_order": 100
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "6020",
+      "name": "Studio rent",
+      "type": "expense",
+      "sort_order": 110
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "6030",
+      "name": "Travel",
+      "type": "expense",
+      "sort_order": 120
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "6040",
+      "name": "Contractors",
+      "type": "expense",
+      "sort_order": 130
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "6050",
+      "name": "Marketing",
+      "type": "expense",
+      "sort_order": 140
+    },
+    {
+      "template_ref": "svc_creative",
+      "code": "6060",
+      "name": "Props & supplies",
+      "type": "expense",
+      "sort_order": 150
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "1000",
+      "name": "Business checking",
+      "type": "asset",
+      "sort_order": 10
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "1200",
+      "name": "Accounts receivable",
+      "type": "asset",
+      "sort_order": 20
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "2000",
+      "name": "Accounts payable",
+      "type": "liability",
+      "sort_order": 30
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "2200",
+      "name": "Sales tax payable",
+      "type": "liability",
+      "sort_order": 40
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "3000",
+      "name": "Owner’s equity",
+      "type": "equity",
+      "sort_order": 50
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "3900",
+      "name": "Owner draws",
+      "type": "equity",
+      "sort_order": 60
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "4000",
+      "name": "Job payment income",
+      "type": "income",
+      "sort_order": 70
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "4900",
+      "name": "Other income",
+      "type": "income",
+      "sort_order": 80
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "5000",
+      "name": "Materials",
+      "type": "expense",
+      "sort_order": 90
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "6000",
+      "name": "Tools",
+      "type": "expense",
+      "sort_order": 100
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "6010",
+      "name": "Vehicle & fuel",
+      "type": "expense",
+      "sort_order": 110
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "6020",
+      "name": "Subcontractors",
+      "type": "expense",
+      "sort_order": 120
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "6030",
+      "name": "Commercial insurance",
+      "type": "expense",
+      "sort_order": 130
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "6040",
+      "name": "License & permits",
+      "type": "expense",
+      "sort_order": 140
+    },
+    {
+      "template_ref": "trades_construction",
+      "code": "6050",
+      "name": "Phone",
+      "type": "expense",
+      "sort_order": 150
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "1000",
+      "name": "Business checking",
+      "type": "asset",
+      "sort_order": 10
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "1200",
+      "name": "Accounts receivable",
+      "type": "asset",
+      "sort_order": 20
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "2000",
+      "name": "Accounts payable",
+      "type": "liability",
+      "sort_order": 30
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "2200",
+      "name": "Sales tax payable",
+      "type": "liability",
+      "sort_order": 40
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "3000",
+      "name": "Owner’s equity",
+      "type": "equity",
+      "sort_order": 50
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "3900",
+      "name": "Owner draws",
+      "type": "equity",
+      "sort_order": 60
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "4000",
+      "name": "Sales payout income",
+      "type": "income",
+      "sort_order": 70
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "4900",
+      "name": "Other income",
+      "type": "income",
+      "sort_order": 80
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "5000",
+      "name": "Inventory",
+      "type": "expense",
+      "sort_order": 90
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "5010",
+      "name": "Shipping",
+      "type": "expense",
+      "sort_order": 100
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "5020",
+      "name": "Packaging",
+      "type": "expense",
+      "sort_order": 110
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "6000",
+      "name": "Marketing",
+      "type": "expense",
+      "sort_order": 120
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "6010",
+      "name": "Platform fees",
+      "type": "expense",
+      "sort_order": 130
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "6020",
+      "name": "Software",
+      "type": "expense",
+      "sort_order": 140
+    },
+    {
+      "template_ref": "retail_ecommerce",
+      "code": "6030",
+      "name": "Marketplaces",
+      "type": "expense",
+      "sort_order": 150
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "1000",
+      "name": "Business checking",
+      "type": "asset",
+      "sort_order": 10
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "1200",
+      "name": "Accounts receivable",
+      "type": "asset",
+      "sort_order": 20
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "2000",
+      "name": "Accounts payable",
+      "type": "liability",
+      "sort_order": 30
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "2200",
+      "name": "Sales tax payable",
+      "type": "liability",
+      "sort_order": 40
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "3000",
+      "name": "Owner’s equity",
+      "type": "equity",
+      "sort_order": 50
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "3900",
+      "name": "Owner draws",
+      "type": "equity",
+      "sort_order": 60
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "4000",
+      "name": "Daily sales",
+      "type": "income",
+      "sort_order": 70
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "4900",
+      "name": "Other income",
+      "type": "income",
+      "sort_order": 80
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "5000",
+      "name": "Food supplies",
+      "type": "expense",
+      "sort_order": 90
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "5010",
+      "name": "Beverages",
+      "type": "expense",
+      "sort_order": 100
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "6000",
+      "name": "Kitchen equipment",
+      "type": "expense",
+      "sort_order": 110
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "6010",
+      "name": "Labor",
+      "type": "expense",
+      "sort_order": 120
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "6020",
+      "name": "Utilities",
+      "type": "expense",
+      "sort_order": 130
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "6030",
+      "name": "Cleaning",
+      "type": "expense",
+      "sort_order": 140
+    },
+    {
+      "template_ref": "food_beverage",
+      "code": "6040",
+      "name": "License & permits",
+      "type": "expense",
+      "sort_order": 150
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "1000",
+      "name": "Business checking",
+      "type": "asset",
+      "sort_order": 10
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "1200",
+      "name": "Accounts receivable",
+      "type": "asset",
+      "sort_order": 20
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "2000",
+      "name": "Accounts payable",
+      "type": "liability",
+      "sort_order": 30
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "2200",
+      "name": "Sales tax payable",
+      "type": "liability",
+      "sort_order": 40
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "3000",
+      "name": "Owner’s equity",
+      "type": "equity",
+      "sort_order": 50
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "3900",
+      "name": "Owner draws",
+      "type": "equity",
+      "sort_order": 60
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "4000",
+      "name": "Client visit income",
+      "type": "income",
+      "sort_order": 70
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "4900",
+      "name": "Other income",
+      "type": "income",
+      "sort_order": 80
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "5000",
+      "name": "Product inventory",
+      "type": "expense",
+      "sort_order": 90
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "6000",
+      "name": "Supplies",
+      "type": "expense",
+      "sort_order": 100
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "6010",
+      "name": "Booth rent",
+      "type": "expense",
+      "sort_order": 110
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "6020",
+      "name": "Continuing education",
+      "type": "expense",
+      "sort_order": 120
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "6030",
+      "name": "Marketing",
+      "type": "expense",
+      "sort_order": 130
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "6040",
+      "name": "Software",
+      "type": "expense",
+      "sort_order": 140
+    },
+    {
+      "template_ref": "beauty_wellness",
+      "code": "6050",
+      "name": "Commercial insurance",
+      "type": "expense",
+      "sort_order": 150
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "1000",
+      "name": "Business checking",
+      "type": "asset",
+      "sort_order": 10
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "1200",
+      "name": "Accounts receivable",
+      "type": "asset",
+      "sort_order": 20
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "2000",
+      "name": "Accounts payable",
+      "type": "liability",
+      "sort_order": 30
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "2200",
+      "name": "Sales tax payable",
+      "type": "liability",
+      "sort_order": 40
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "3000",
+      "name": "Owner’s equity",
+      "type": "equity",
+      "sort_order": 50
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "3900",
+      "name": "Owner draws",
+      "type": "equity",
+      "sort_order": 60
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "4000",
+      "name": "Subscription revenue",
+      "type": "income",
+      "sort_order": 70
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "4900",
+      "name": "Other income",
+      "type": "income",
+      "sort_order": 80
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "6000",
+      "name": "Cloud & hosting",
+      "type": "expense",
+      "sort_order": 90
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "6010",
+      "name": "Software tools",
+      "type": "expense",
+      "sort_order": 100
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "6020",
+      "name": "Contractors",
+      "type": "expense",
+      "sort_order": 110
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "6030",
+      "name": "Domains & SSL",
+      "type": "expense",
+      "sort_order": 120
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "6040",
+      "name": "Marketing",
+      "type": "expense",
+      "sort_order": 130
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "6050",
+      "name": "Travel",
+      "type": "expense",
+      "sort_order": 140
+    },
+    {
+      "template_ref": "tech_saas",
+      "code": "6060",
+      "name": "Hardware",
+      "type": "expense",
+      "sort_order": 150
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "1000",
+      "name": "Business checking",
+      "type": "asset",
+      "sort_order": 10
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "1200",
+      "name": "Accounts receivable",
+      "type": "asset",
+      "sort_order": 20
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "2000",
+      "name": "Accounts payable",
+      "type": "liability",
+      "sort_order": 30
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "2200",
+      "name": "Sales tax payable",
+      "type": "liability",
+      "sort_order": 40
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "3000",
+      "name": "Owner’s equity",
+      "type": "equity",
+      "sort_order": 50
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "3900",
+      "name": "Owner draws",
+      "type": "equity",
+      "sort_order": 60
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "4000",
+      "name": "Insurance payout income",
+      "type": "income",
+      "sort_order": 70
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "4900",
+      "name": "Other income",
+      "type": "income",
+      "sort_order": 80
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "5000",
+      "name": "Medical supplies",
+      "type": "expense",
+      "sort_order": 90
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "6000",
+      "name": "Malpractice insurance",
+      "type": "expense",
+      "sort_order": 100
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "6010",
+      "name": "Continuing education",
+      "type": "expense",
+      "sort_order": 110
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "6020",
+      "name": "Office rent",
+      "type": "expense",
+      "sort_order": 120
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "6030",
+      "name": "Software",
+      "type": "expense",
+      "sort_order": 130
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "6040",
+      "name": "Staff",
+      "type": "expense",
+      "sort_order": 140
+    },
+    {
+      "template_ref": "healthcare_practice",
+      "code": "6050",
+      "name": "Utilities",
+      "type": "expense",
+      "sort_order": 150
+    },
+    {
+      "template_ref": "general_business",
+      "code": "1000",
+      "name": "Business checking",
+      "type": "asset",
+      "sort_order": 10
+    },
+    {
+      "template_ref": "general_business",
+      "code": "1200",
+      "name": "Accounts receivable",
+      "type": "asset",
+      "sort_order": 20
+    },
+    {
+      "template_ref": "general_business",
+      "code": "2000",
+      "name": "Accounts payable",
+      "type": "liability",
+      "sort_order": 30
+    },
+    {
+      "template_ref": "general_business",
+      "code": "2200",
+      "name": "Sales tax payable",
+      "type": "liability",
+      "sort_order": 40
+    },
+    {
+      "template_ref": "general_business",
+      "code": "3000",
+      "name": "Owner’s equity",
+      "type": "equity",
+      "sort_order": 50
+    },
+    {
+      "template_ref": "general_business",
+      "code": "3900",
+      "name": "Owner draws",
+      "type": "equity",
+      "sort_order": 60
+    },
+    {
+      "template_ref": "general_business",
+      "code": "4000",
+      "name": "Client payment income",
+      "type": "income",
+      "sort_order": 70
+    },
+    {
+      "template_ref": "general_business",
+      "code": "4900",
+      "name": "Other income",
+      "type": "income",
+      "sort_order": 80
+    },
+    {
+      "template_ref": "general_business",
+      "code": "6000",
+      "name": "Software",
+      "type": "expense",
+      "sort_order": 90
+    },
+    {
+      "template_ref": "general_business",
+      "code": "6010",
+      "name": "Travel",
+      "type": "expense",
+      "sort_order": 100
+    },
+    {
+      "template_ref": "general_business",
+      "code": "6020",
+      "name": "Business meals",
+      "type": "expense",
+      "sort_order": 110
+    },
+    {
+      "template_ref": "general_business",
+      "code": "6030",
+      "name": "Office",
+      "type": "expense",
+      "sort_order": 120
+    },
+    {
+      "template_ref": "general_business",
+      "code": "6040",
+      "name": "Marketing",
+      "type": "expense",
+      "sort_order": 130
+    },
+    {
+      "template_ref": "general_business",
+      "code": "6050",
+      "name": "Contractors",
+      "type": "expense",
+      "sort_order": 140
+    },
+    {
+      "template_ref": "general_business",
+      "code": "6060",
+      "name": "Miscellaneous business expenses",
+      "type": "expense",
+      "sort_order": 150
+    }
+  ]
+}

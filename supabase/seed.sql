@@ -143,6 +143,284 @@ insert into public.filing_obligations (jurisdiction_code, entity_type, tax_year,
 insert into public.filing_obligations (jurisdiction_code, entity_type, tax_year, obligation_key, kind, form_code, label, due_month, due_day, due_year_offset, threshold_minor, notes, effective_from, effective_to, citation) values ('US-FED', 'sole_prop', 2026, '1099_nec_issue', 'information_return', '1099-NEC', 'Issue 1099-NEC to contractors paid $2,000+', 1, 31, 1, 200000, 'OBBBA raised the threshold to $2,000 for payments made AFTER 31 Dec 2025; inflation-indexed from 2027. Modeled as a NEW row so 2025 still computes at $600 (Roadmap 3c).', '2026-01-01', null, 'https://www.avalara.com/blog/en/north-america/2025/07/one-big-beautiful-bill-act-1099-reporting-threshold.html')
   on conflict (jurisdiction_code, entity_type, tax_year, obligation_key, effective_from) do update set kind = excluded.kind, form_code = excluded.form_code, label = excluded.label, due_month = excluded.due_month, due_day = excluded.due_day, due_year_offset = excluded.due_year_offset, threshold_minor = excluded.threshold_minor, notes = excluded.notes, citation = excluded.citation;
 
+-- coa_account_templates (138 rows)
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '1000', 'Business checking', 'asset', 10)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '1200', 'Accounts receivable', 'asset', 20)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '2000', 'Accounts payable', 'liability', 30)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '2200', 'Sales tax payable', 'liability', 40)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '3000', 'Owner’s equity', 'equity', 50)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '3900', 'Owner draws', 'equity', 60)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '4000', 'Retainer income', 'income', 70)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '4900', 'Other income', 'income', 80)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '6000', 'Software', 'expense', 90)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '6010', 'Travel', 'expense', 100)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '6020', 'Client meals', 'expense', 110)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '6030', 'Contractors', 'expense', 120)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '6040', 'Marketing', 'expense', 130)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '6050', 'Office / home office', 'expense', 140)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '6060', 'Continuing education', 'expense', 150)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '6070', 'Research', 'expense', 160)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '6080', 'Malpractice insurance', 'expense', 170)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_professional', '6090', 'Office', 'expense', 180)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '1000', 'Business checking', 'asset', 10)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '1200', 'Accounts receivable', 'asset', 20)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '2000', 'Accounts payable', 'liability', 30)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '2200', 'Sales tax payable', 'liability', 40)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '3000', 'Owner’s equity', 'equity', 50)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '3900', 'Owner draws', 'equity', 60)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '4000', 'Project fee income', 'income', 70)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '4900', 'Other income', 'income', 80)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '6000', 'Software', 'expense', 90)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '6010', 'Equipment', 'expense', 100)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '6020', 'Studio rent', 'expense', 110)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '6030', 'Travel', 'expense', 120)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '6040', 'Contractors', 'expense', 130)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '6050', 'Marketing', 'expense', 140)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('svc_creative', '6060', 'Props & supplies', 'expense', 150)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '1000', 'Business checking', 'asset', 10)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '1200', 'Accounts receivable', 'asset', 20)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '2000', 'Accounts payable', 'liability', 30)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '2200', 'Sales tax payable', 'liability', 40)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '3000', 'Owner’s equity', 'equity', 50)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '3900', 'Owner draws', 'equity', 60)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '4000', 'Job payment income', 'income', 70)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '4900', 'Other income', 'income', 80)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '5000', 'Materials', 'expense', 90)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '6000', 'Tools', 'expense', 100)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '6010', 'Vehicle & fuel', 'expense', 110)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '6020', 'Subcontractors', 'expense', 120)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '6030', 'Commercial insurance', 'expense', 130)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '6040', 'License & permits', 'expense', 140)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('trades_construction', '6050', 'Phone', 'expense', 150)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '1000', 'Business checking', 'asset', 10)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '1200', 'Accounts receivable', 'asset', 20)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '2000', 'Accounts payable', 'liability', 30)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '2200', 'Sales tax payable', 'liability', 40)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '3000', 'Owner’s equity', 'equity', 50)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '3900', 'Owner draws', 'equity', 60)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '4000', 'Sales payout income', 'income', 70)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '4900', 'Other income', 'income', 80)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '5000', 'Inventory', 'expense', 90)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '5010', 'Shipping', 'expense', 100)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '5020', 'Packaging', 'expense', 110)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '6000', 'Marketing', 'expense', 120)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '6010', 'Platform fees', 'expense', 130)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '6020', 'Software', 'expense', 140)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('retail_ecommerce', '6030', 'Marketplaces', 'expense', 150)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '1000', 'Business checking', 'asset', 10)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '1200', 'Accounts receivable', 'asset', 20)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '2000', 'Accounts payable', 'liability', 30)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '2200', 'Sales tax payable', 'liability', 40)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '3000', 'Owner’s equity', 'equity', 50)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '3900', 'Owner draws', 'equity', 60)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '4000', 'Daily sales', 'income', 70)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '4900', 'Other income', 'income', 80)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '5000', 'Food supplies', 'expense', 90)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '5010', 'Beverages', 'expense', 100)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '6000', 'Kitchen equipment', 'expense', 110)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '6010', 'Labor', 'expense', 120)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '6020', 'Utilities', 'expense', 130)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '6030', 'Cleaning', 'expense', 140)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('food_beverage', '6040', 'License & permits', 'expense', 150)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '1000', 'Business checking', 'asset', 10)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '1200', 'Accounts receivable', 'asset', 20)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '2000', 'Accounts payable', 'liability', 30)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '2200', 'Sales tax payable', 'liability', 40)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '3000', 'Owner’s equity', 'equity', 50)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '3900', 'Owner draws', 'equity', 60)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '4000', 'Client visit income', 'income', 70)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '4900', 'Other income', 'income', 80)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '5000', 'Product inventory', 'expense', 90)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '6000', 'Supplies', 'expense', 100)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '6010', 'Booth rent', 'expense', 110)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '6020', 'Continuing education', 'expense', 120)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '6030', 'Marketing', 'expense', 130)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '6040', 'Software', 'expense', 140)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('beauty_wellness', '6050', 'Commercial insurance', 'expense', 150)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '1000', 'Business checking', 'asset', 10)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '1200', 'Accounts receivable', 'asset', 20)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '2000', 'Accounts payable', 'liability', 30)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '2200', 'Sales tax payable', 'liability', 40)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '3000', 'Owner’s equity', 'equity', 50)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '3900', 'Owner draws', 'equity', 60)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '4000', 'Subscription revenue', 'income', 70)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '4900', 'Other income', 'income', 80)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '6000', 'Cloud & hosting', 'expense', 90)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '6010', 'Software tools', 'expense', 100)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '6020', 'Contractors', 'expense', 110)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '6030', 'Domains & SSL', 'expense', 120)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '6040', 'Marketing', 'expense', 130)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '6050', 'Travel', 'expense', 140)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('tech_saas', '6060', 'Hardware', 'expense', 150)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '1000', 'Business checking', 'asset', 10)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '1200', 'Accounts receivable', 'asset', 20)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '2000', 'Accounts payable', 'liability', 30)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '2200', 'Sales tax payable', 'liability', 40)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '3000', 'Owner’s equity', 'equity', 50)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '3900', 'Owner draws', 'equity', 60)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '4000', 'Insurance payout income', 'income', 70)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '4900', 'Other income', 'income', 80)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '5000', 'Medical supplies', 'expense', 90)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '6000', 'Malpractice insurance', 'expense', 100)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '6010', 'Continuing education', 'expense', 110)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '6020', 'Office rent', 'expense', 120)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '6030', 'Software', 'expense', 130)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '6040', 'Staff', 'expense', 140)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('healthcare_practice', '6050', 'Utilities', 'expense', 150)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '1000', 'Business checking', 'asset', 10)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '1200', 'Accounts receivable', 'asset', 20)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '2000', 'Accounts payable', 'liability', 30)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '2200', 'Sales tax payable', 'liability', 40)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '3000', 'Owner’s equity', 'equity', 50)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '3900', 'Owner draws', 'equity', 60)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '4000', 'Client payment income', 'income', 70)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '4900', 'Other income', 'income', 80)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '6000', 'Software', 'expense', 90)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '6010', 'Travel', 'expense', 100)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '6020', 'Business meals', 'expense', 110)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '6030', 'Office', 'expense', 120)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '6040', 'Marketing', 'expense', 130)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '6050', 'Contractors', 'expense', 140)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+insert into public.coa_account_templates (template_ref, code, name, type, sort_order) values ('general_business', '6060', 'Miscellaneous business expenses', 'expense', 150)
+  on conflict (template_ref, code) do update set name = excluded.name, type = excluded.type, sort_order = excluded.sort_order, updated_at = now();
+
 commit;
 -- ==== END GENERATED: kernel ====
 

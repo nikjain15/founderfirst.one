@@ -15,6 +15,8 @@
     "check:vendor": "tsx scripts/check-inference-vendor.ts",
     "seed:kernel": "tsx scripts/seed-kernel.ts",
     "check:kernel-seed": "tsx scripts/seed-kernel.ts --check",
+    "seed:tax": "tsx scripts/seed-tax.ts",
+    "check:tax-seed": "tsx scripts/seed-tax.ts --check",
     "check:law-literals": "tsx scripts/check-law-literals.ts",
     "check:kernel-hardcodes": "tsx scripts/check-kernel-hardcodes.ts",
     "vendor:inference": "tsx scripts/vendor-inference.ts",

@@ -749,6 +749,54 @@ export const COPY = {
     homeReconciledDate: (date: string) => `Last reconciled ${date}.`,
   },
 
+  // ── W3.3 · Minimal 3-step onboarding (name → entity → industry) ────────────
+  // Exactly three steps. Entity + industry OPTIONS come from the kernel seeds,
+  // never from here — only the framing words live in the catalog. 'app' persona,
+  // VOICE.md: plain language, no jargon, no exclamation marks, lead with the human
+  // moment, everything else asked in-journey.
+  onboarding: {
+    // Progress + shell
+    stepOf: (n: number, total: number) => `Step ${n} of ${total}`,
+    back: "← Back",
+    next: "Next",
+    finishing: "Setting up your books…",
+    loadError: "We couldn't load the setup options just now — please refresh.",
+    // Step 1 — business name
+    nameEyebrow: "Let's get you set up",
+    nameTitle: "What's your business called?",
+    nameLead: "This is the name on your books. You can change it later.",
+    nameAria: "Business name",
+    namePlaceholder: "Your business name",
+    // Step 2 — entity type (tiles from entity_types seed)
+    entityEyebrow: "How you're set up",
+    entityTitle: "What kind of business is it?",
+    entityLead: "This tells Penny how to treat money you take out and which forms you'll file.",
+    entityNotSure: "I'm not sure",
+    entityNotSureAria: "Help me figure out my business type",
+    // Step 2b — the "not sure" diagnostic (questions come from the seed)
+    diagnosticTitle: "A couple of quick questions",
+    diagnosticLead: "Answer these and we'll suggest the right fit — you can always change it.",
+    diagnosticYes: "Yes",
+    diagnosticNo: "No",
+    diagnosticResult: (label: string) => `Sounds like a ${label}.`,
+    diagnosticInconclusive: "We couldn't pin it down from those answers — pick the closest one below, or leave it for now.",
+    diagnosticUseThis: "Use this",
+    diagnosticPickManually: "Choose from the list instead",
+    // Step 3 — industry (tiles from industries seed)
+    industryEyebrow: "Your line of work",
+    industryTitle: "What does your business do?",
+    industryLead: "We'll start your books with the accounts that fit your line of work.",
+    finish: "Start my books",
+    // Post-onboarding — bank connect offer (skippable; routes to Connections)
+    doneEyebrow: "You're set up",
+    doneTitle: (name: string) => `${name} is ready.`,
+    doneLead: "Penny started your books with the right accounts. Connect a bank so transactions flow in automatically — or do it later.",
+    connectBank: "Connect a bank",
+    skipForNow: "I'll do this later",
+    seededNote: (n: number) => `${n} ${n === 1 ? "account" : "accounts"} added to your chart.`,
+    errFinish: "We couldn't finish setting up your books. Please try again.",
+  },
+
   // ── W3.2 · Trust-tiered autonomy (the ≤5-asks/week approval rework) ────────
   // Penny acts on what she's sure of, batches the maybes, and only asks about
   // true unknowns — honestly capped at ≤5 asks/week. All copy here; the deeper

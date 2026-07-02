@@ -34,6 +34,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const SEED_DIR = resolve(ROOT, "supabase/seeds/kernel");
 const OUT = resolve(SEED_DIR, "_generated.sql");
+const SEED_SQL = resolve(ROOT, "supabase/seed.sql");
+
+// Delimited section this card owns inside the SHARED supabase/seed.sql. The seed
+// file is applied by Supabase's stack startup over the pgx BATCH protocol, which
+// does NOT understand psql backslash meta-commands (`\i`, `\set`) — so we INLINE
+// the generated SQL between these markers instead of `\i`-including it. Other loop
+// cards own their own BEGIN/END-marked sections in the same file; a loader only
+// rewrites the block between ITS markers, appending a new one if absent.
+const SECTION_BEGIN = "-- ==== BEGIN GENERATED: kernel (scripts/seed-kernel.ts) — do not edit by hand ====";
+const SECTION_END = "-- ==== END GENERATED: kernel ====";
 
 type Row = Record<string, unknown>;
 interface SeedFile {
@@ -203,6 +213,36 @@ function validate(): string[] {
   return problems;
 }
 
+/** The inlined section body (pure SQL, no backslash meta-commands) that belongs
+ *  between this card's markers in supabase/seed.sql. */
+function sectionBody(generated: string): string {
+  return `${SECTION_BEGIN}\n${generated.trimEnd()}\n${SECTION_END}\n`;
+}
+
+/** Read supabase/seed.sql, replace this card's marked section (or append it if
+ *  absent), and return the full file. Leaves other cards' sections untouched.
+ *  Guarantees the result contains NO psql backslash meta-commands. */
+function renderSeedSql(current: string, generated: string): string {
+  const body = sectionBody(generated);
+  const bi = current.indexOf(SECTION_BEGIN);
+  const ei = current.indexOf(SECTION_END);
+  let next: string;
+  if (bi !== -1 && ei !== -1 && ei > bi) {
+    const before = current.slice(0, bi);
+    const after = current.slice(ei + SECTION_END.length).replace(/^\n/, "");
+    next = `${before}${body}${after}`;
+  } else {
+    // No section yet — strip any legacy `\i` include of our generated file, then
+    // append our inlined section.
+    const stripped = current
+      .split("\n")
+      .filter((l) => !/^\s*\\i\s+supabase\/seeds\/kernel\/_generated\.sql\s*$/.test(l))
+      .join("\n");
+    next = `${stripped.trimEnd()}\n\n${body}`;
+  }
+  return next;
+}
+
 function main(): void {
   const mode = process.argv.includes("--check") ? "check" : "emit";
   const generated = generate();
@@ -213,6 +253,15 @@ function main(): void {
     try { committed = readFileSync(OUT, "utf8"); } catch { /* missing */ }
     if (committed !== generated)
       problems.push("supabase/seeds/kernel/_generated.sql is STALE — run `pnpm seed:kernel` and commit the result.");
+
+    // seed.sql must inline the generated section (Supabase startup applies it over
+    // the pgx batch protocol — no `\i`/backslash meta-commands allowed).
+    let seedSql = "";
+    try { seedSql = readFileSync(SEED_SQL, "utf8"); } catch { /* missing */ }
+    if (renderSeedSql(seedSql, generated) !== seedSql)
+      problems.push("supabase/seed.sql kernel section is STALE or missing — run `pnpm seed:kernel` and commit the result.");
+    if (/^\s*\\/m.test(seedSql))
+      problems.push("supabase/seed.sql contains a psql backslash meta-command (e.g. `\\i`) — unsupported by Supabase startup; inline the SQL instead.");
 
     if (problems.length) {
       console.error(`\n✗ Kernel seed lint failed — ${problems.length} problem(s):\n`);
@@ -226,6 +275,12 @@ function main(): void {
 
   writeFileSync(OUT, generated, "utf8");
   console.info(`✓ Wrote ${OUT} (${generated.split("\n").length} lines).`);
+
+  let seedSql = "";
+  try { seedSql = readFileSync(SEED_SQL, "utf8"); } catch { /* missing */ }
+  const nextSeedSql = renderSeedSql(seedSql, generated);
+  writeFileSync(SEED_SQL, nextSeedSql, "utf8");
+  console.info(`✓ Inlined kernel section into ${SEED_SQL} (no backslash meta-commands).`);
 }
 
 main();

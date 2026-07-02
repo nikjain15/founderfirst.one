@@ -22,6 +22,7 @@ import { ACCOUNT_TYPES } from "./types";
 import ImportFlow from "../import/ImportFlow";
 import Categorize from "./Categorize";
 import LearnedRules from "./LearnedRules";
+import { SuggestionInbox, EntryCollab } from "./CollabUI";
 import InviteCpa from "../org/InviteCpa";
 import { Takeaway } from "./Takeaway";
 import {
@@ -175,7 +176,14 @@ export default function Ledger({
               />
             )}
             {surface === "review" && canWrite && (
-              <Categorize orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []} onChange={refresh} />
+              <>
+                {/* Owner's trust-tiered needs-a-look: the CPA's pending suggestions
+                    land here for approval before anything posts (card W1.5). */}
+                {nav === "owner" && (
+                  <SuggestionInbox orgId={org.id} accounts={accounts.data ?? []} onChange={refresh} />
+                )}
+                <Categorize orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []} onChange={refresh} />
+              </>
             )}
             {surface === "rules" && (
               <LearnedRules orgId={org.id} canWrite={canWrite} />
@@ -604,6 +612,16 @@ function Journal({
                           </button>
                         )}
                       </div>
+                    )}
+                    {/* Collaboration primitives (card W1.5): flag / note / suggest a
+                        category change. Only on posted entries; server role-gates. */}
+                    {canWrite && e.status === "posted" && (
+                      <EntryCollab
+                        orgId={orgId} entryId={e.id} accounts={accounts}
+                        fromAccountIds={Array.from(new Set((e.lines ?? [])
+                          .map((l) => l.account_id).filter((x): x is string => Boolean(x))))}
+                        onChange={onChange}
+                      />
                     )}
                   </div>
                 )}

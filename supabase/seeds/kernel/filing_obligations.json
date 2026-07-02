@@ -1,0 +1,94 @@
+{
+  "_meta": {
+    "table": "filing_obligations",
+    "description": "LAW-DERIVED filing calendar, effective-dated + cited (Roadmap 3c). jurisdiction × entity × tax-year. US-FED first; states fill demand-first as pure data. Every row carries effective_from/effective_to + a citation. A change is a NEW superseding row (see supersede_filing_obligation); OLD periods keep OLD law. The OBBBA 1099 threshold ($600 -> $2,000 for payments after 31 Dec 2025) is modeled as two effective-dated rows below — the canonical proof that thresholds are versioned data, not code literals.",
+    "primary_key": "id (natural key: jurisdiction_code, entity_type, tax_year, obligation_key + effective window)",
+    "date_convention": "due_year_offset: 0 = due within the tax year (estimates), 1 = due the following calendar year (annual returns)."
+  },
+  "rows": [
+    {
+      "jurisdiction_code": "US-FED", "entity_type": "sole_prop", "tax_year": 2025,
+      "obligation_key": "annual_return", "kind": "annual_return", "form_code": "SCH_C",
+      "label": "Individual return with Schedule C (Form 1040)",
+      "due_month": 4, "due_day": 15, "due_year_offset": 1,
+      "effective_from": "2020-01-01", "citation": "https://www.irs.gov/forms-pubs/about-form-1040"
+    },
+    {
+      "jurisdiction_code": "US-FED", "entity_type": "sole_prop", "tax_year": 2025,
+      "obligation_key": "q1_estimate", "kind": "estimate", "form_code": "1040-ES",
+      "label": "Q1 estimated tax payment",
+      "due_month": 4, "due_day": 15, "due_year_offset": 1,
+      "effective_from": "2020-01-01", "citation": "https://www.irs.gov/forms-pubs/about-form-1040-es"
+    },
+    {
+      "jurisdiction_code": "US-FED", "entity_type": "sole_prop", "tax_year": 2025,
+      "obligation_key": "q2_estimate", "kind": "estimate", "form_code": "1040-ES",
+      "label": "Q2 estimated tax payment",
+      "due_month": 6, "due_day": 15, "due_year_offset": 1,
+      "effective_from": "2020-01-01", "citation": "https://www.irs.gov/forms-pubs/about-form-1040-es"
+    },
+    {
+      "jurisdiction_code": "US-FED", "entity_type": "sole_prop", "tax_year": 2025,
+      "obligation_key": "q3_estimate", "kind": "estimate", "form_code": "1040-ES",
+      "label": "Q3 estimated tax payment",
+      "due_month": 9, "due_day": 15, "due_year_offset": 1,
+      "effective_from": "2020-01-01", "citation": "https://www.irs.gov/forms-pubs/about-form-1040-es"
+    },
+    {
+      "jurisdiction_code": "US-FED", "entity_type": "sole_prop", "tax_year": 2025,
+      "obligation_key": "q4_estimate", "kind": "estimate", "form_code": "1040-ES",
+      "label": "Q4 estimated tax payment",
+      "due_month": 1, "due_day": 15, "due_year_offset": 2,
+      "effective_from": "2020-01-01", "citation": "https://www.irs.gov/forms-pubs/about-form-1040-es"
+    },
+    {
+      "jurisdiction_code": "US-FED", "entity_type": "s_corp", "tax_year": 2025,
+      "obligation_key": "annual_return", "kind": "annual_return", "form_code": "1120S",
+      "label": "S corporation return (Form 1120-S)",
+      "due_month": 3, "due_day": 15, "due_year_offset": 1,
+      "effective_from": "2020-01-01", "citation": "https://www.irs.gov/forms-pubs/about-form-1120-s"
+    },
+    {
+      "jurisdiction_code": "US-FED", "entity_type": "s_corp", "tax_year": 2025,
+      "obligation_key": "extension", "kind": "extension", "form_code": "7004",
+      "label": "Automatic 6-month extension (Form 7004)",
+      "due_month": 3, "due_day": 15, "due_year_offset": 1,
+      "effective_from": "2020-01-01", "citation": "https://www.irs.gov/forms-pubs/about-form-7004"
+    },
+    {
+      "jurisdiction_code": "US-FED", "entity_type": "partnership", "tax_year": 2025,
+      "obligation_key": "annual_return", "kind": "annual_return", "form_code": "1065",
+      "label": "Partnership return (Form 1065)",
+      "due_month": 3, "due_day": 15, "due_year_offset": 1,
+      "effective_from": "2020-01-01", "citation": "https://www.irs.gov/forms-pubs/about-form-1065"
+    },
+    {
+      "jurisdiction_code": "US-FED", "entity_type": "c_corp", "tax_year": 2025,
+      "obligation_key": "annual_return", "kind": "annual_return", "form_code": "1120",
+      "label": "C corporation return (Form 1120)",
+      "due_month": 4, "due_day": 15, "due_year_offset": 1,
+      "effective_from": "2020-01-01", "citation": "https://www.irs.gov/forms-pubs/about-form-1120"
+    },
+
+    {
+      "jurisdiction_code": "US-FED", "entity_type": "sole_prop", "tax_year": 2025,
+      "obligation_key": "1099_nec_issue", "kind": "information_return", "form_code": "1099-NEC",
+      "label": "Issue 1099-NEC to contractors paid $600+",
+      "due_month": 1, "due_day": 31, "due_year_offset": 1,
+      "threshold_minor": 60000,
+      "notes": "Threshold $600 for payments THROUGH 31 Dec 2025 (pre-OBBBA).",
+      "effective_from": "2020-01-01", "effective_to": "2025-12-31",
+      "citation": "https://www.irs.gov/forms-pubs/about-form-1099-nec"
+    },
+    {
+      "jurisdiction_code": "US-FED", "entity_type": "sole_prop", "tax_year": 2026,
+      "obligation_key": "1099_nec_issue", "kind": "information_return", "form_code": "1099-NEC",
+      "label": "Issue 1099-NEC to contractors paid $2,000+",
+      "due_month": 1, "due_day": 31, "due_year_offset": 1,
+      "threshold_minor": 200000,
+      "notes": "OBBBA raised the threshold to $2,000 for payments made AFTER 31 Dec 2025; inflation-indexed from 2027. Modeled as a NEW row so 2025 still computes at $600 (Roadmap 3c).",
+      "effective_from": "2026-01-01",
+      "citation": "https://www.avalara.com/blog/en/north-america/2025/07/one-big-beautiful-bill-act-1099-reporting-threshold.html"
+    }
+  ]
+}

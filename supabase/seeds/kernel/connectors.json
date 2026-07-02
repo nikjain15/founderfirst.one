@@ -1,0 +1,39 @@
+{
+  "_meta": {
+    "table": "connectors",
+    "description": "Connector/provider registry behind ONE provider interface (Roadmap 3b). Consumed by the Connections tab, the marketing 'works with' strip, and import flows. Adding Shopify = one interface impl + one row here. Keys 'qbo'/'xero' match the external_provider enum; 'plaid' is the bank-feed provider (W2.3). logo_ref points at a design-system asset id — never an inline URL/SVG.",
+    "primary_key": "key"
+  },
+  "rows": [
+    {
+      "key": "qbo",
+      "name": "QuickBooks Online",
+      "category": "accounting",
+      "logo_ref": "connector-qbo",
+      "capabilities": ["import_history", "coa_pull", "live_sync"],
+      "scopes": ["com.intuit.quickbooks.accounting"],
+      "status": "available",
+      "sort_order": 10
+    },
+    {
+      "key": "xero",
+      "name": "Xero",
+      "category": "accounting",
+      "logo_ref": "connector-xero",
+      "capabilities": ["import_history", "coa_pull", "live_sync"],
+      "scopes": ["accounting.transactions.read", "accounting.settings.read", "offline_access"],
+      "status": "available",
+      "sort_order": 20
+    },
+    {
+      "key": "plaid",
+      "name": "Plaid",
+      "category": "bank_feed",
+      "logo_ref": "connector-plaid",
+      "capabilities": ["bank_feed", "transactions_sync"],
+      "scopes": ["transactions"],
+      "status": "beta",
+      "sort_order": 30
+    }
+  ]
+}

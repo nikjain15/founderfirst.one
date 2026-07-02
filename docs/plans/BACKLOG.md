@@ -322,7 +322,224 @@ acceptance:
   - [x] Sandbox item links; txns land in categorize queue exactly once (webhook replay-safe)
   - [x] Pending→posted, removed, modified txns handled via reversal-based corrections
 
-## W3.x cards (thread · trust-tiered cards · 3-step onboarding · dashboard · receipts)
-status: not yet carded — carded after Wave 1 ships; decisions already locked:
-trust-tiered autonomy (≤5 asks/week budget) · onboarding = name + entity (+ not-sure
-diagnostic) + industry, everything else in-journey · Penny voice per VOICE.md.
+# Wave 3 — the human Penny layer (owner-experience; demo parity)
+
+> Roadmap §Wave-3. This wave makes the real app *feel* like the demo for the OWNER: a
+> conversational Penny, autonomy that respects the ≤5-asks/week budget, a 3-step onboarding,
+> a plain-English Home, and receipt capture. Everything surfaces inside the owner nav locked
+> in APP_PRINCIPLES §2 (Home · Review · Reports · Connections + Advanced) — **no new
+> top-level tab** (usability gate). All Penny language reads the live 'app' persona and all
+> thresholds read `platform_config` (both from CENTRAL-1); all business knowledge (entities,
+> industries, filing deadlines) reads the kernel (CENTRAL-2). No card here invents a source
+> of truth or hardcodes a list.
+
+**Wave-3 build order (dependency-sorted; matches LOOP_PROMPT build-order style).**
+Blocked on Wave-1 IA + CENTRAL cards landing first (owner nav, live 'app' persona,
+`platform_config`, knowledge kernel). Within Wave 3:
+
+1. **W3.2 Trust-tiered autonomy** — lands FIRST; it reworks the Review queue + adds the
+   "Penny did this" feed + digest that W3.1 and W3.4 both surface. It's the shared spine of
+   owner-experience, exactly as IA-1 is the shared spine of the nav. Everything else reads
+   what it establishes.
+2. **W3.1 Penny thread** (blocked-by W3.2) — the conversational surface that shows the
+   activity feed + asks the low-confidence questions the tiering produces.
+3. **W3.4 Owner Home/dashboard** (blocked-by W3.2) — hangs the "Penny did this" feed +
+   digest + coming-up deadlines off Home; reuses existing ledger/kernel data only.
+   **Disjoint from W3.1** once W3.2 lands (thread ≠ Home surface) → the two can build in
+   **parallel** after W3.2 merges.
+4. **W3.3 3-step onboarding** (blocked-by CENTRAL-2 only, NOT W3.2) — reads entity/industry
+   from the kernel; touches the create-org flow, not the Review/Home surfaces. **Fully
+   disjoint** → can build in parallel with W3.2 from the start.
+5. **W3.5 Receipts** (blocked-by W3.2) — a receipt becomes a trust-tiered item, so it needs
+   the tiering pipeline; otherwise self-contained (new capture surface + parse fn). Builds
+   after W3.2, **parallel with W3.1/W3.4**.
+
+Parallelism summary: **W3.3 is disjoint from day one**; after **W3.2** merges, **W3.1 ·
+W3.4 · W3.5** are disjoint enough to run in parallel (thread surface vs Home surface vs
+capture surface — they only share the tier pipeline W3.2 already established). Do NOT run
+W3.1/W3.4/W3.5 before W3.2 — they'd each re-invent the feed/tier plumbing.
+
+## W3.2 · Trust-tiered autonomy (the ≤5-asks/week approval rework)
+status: unclaimed  ← LAND FIRST among Wave-3 cards (establishes the tier pipeline + feed the others read)
+blocked-by: IA-1 (Review tab is the surface), CENTRAL-1 (tier thresholds + asks/week budget
+  live in `platform_config`; "Penny did this" copy in the 'app' persona), CENTRAL-2 (vendor
+  priors feed the high-confidence path). NB: reuses the trust-tier CONFIG already built in
+  Wave 1 — do not re-create it; read it from config.
+goal: the demo's ask-about-everything model becomes homework at scale — instead Penny acts on
+  what she's sure of, batches the maybes, and only interrupts the owner for true unknowns,
+  honestly capped at ≤5 asks/week/org.
+workflow: owner · "don't make me do bookkeeping homework" · open Review → high-confidence work
+  is already done (visible in a "Penny did this" feed w/ 1-tap undo) · medium items
+  batch-approve · low items answered one at a time — a clean week is ≤5 asks total, most weeks 0
+spec: Roadmap §W3.2 (Nik decision, 1 Jul). Three tiers, thresholds read from `platform_config`
+  (CENTRAL-1), never inline:
+  (1) **High confidence** (learned rule / repeat vendor / kernel vendor-prior): Penny posts it
+      herself → shows in a **"Penny did this" activity feed** (hangs off Home per W3.4) with
+      1-tap **undo** (reversal under the hood — reuse the reversal path, never edit posted
+      entries) + a weekly digest. No card.
+  (2) **Medium confidence**: posts as `pending_review` (the workflow already exists) → appears
+      in the Review queue (APP_PRINCIPLES §2), **batch-approvable**.
+  (3) **Low confidence / unknown**: an approval card in Review. Port ONLY the variants real
+      events produce — low-confidence, owner's draw, rule proposal, CPA suggestion (W1.5 feeds
+      this). Income celebration lives in the digest, NOT a card.
+  **Interruption budget: ≤5 asks/week per org**, measured from `ai_decisions`, budget value
+  from config; when the week's budget is spent, additional would-be low-confidence items defer
+  to the digest rather than interrupt (deferral rule read from config). All Penny-facing copy
+  reads the live 'app' persona (VOICE.md — no shame, action-first).
+acceptance:
+  - [ ] High-confidence categorization posts automatically + shows in the feed with working
+        1-tap undo (undo reverses via the reversal path, ledger stays balanced — test)
+  - [ ] Medium items land in Review as `pending_review` and batch-approve in ≤2 taps
+  - [ ] Low items render as approval cards (only the 4 real variants); income events go to the
+        digest, not a card (test asserts no income card is created)
+  - [ ] Owner asks/week never exceeds the `platform_config` budget for a seeded high-volume org;
+        changing the budget row changes the interruption count with no redeploy (test)
+  - [ ] All tier cutoffs + budget read from `platform_config` — zero magic-number thresholds in
+        component/fn code (grep gate); all copy from the 'app' persona (no inline strings)
+tests: Vitest on tier-assignment + budget accounting; pgTAP on the auto-post + undo/reversal
+  RPC path; E2E: seed a week of txns → assert feed/queue/card split + asks-count ≤ budget; REG
+  scenario (budget-overflow-defers-to-digest; undo-reverses-cleanly)
+touches: apps/app/src/ledger/Categorize.tsx + Review surface (OwnerLens/Review), categorize fn,
+  new "Penny did this" feed component, `ai_decisions` reads (ALL SHARED — declare; W3.1/W3.4/
+  W3.5 build on this feed + tier pipeline)
+decision-needed: none (Roadmap §W3.2 locked the tier model + ≤5 budget). If any additional
+  approval-card VARIANT beyond the 4 named seems needed → `decision-needed: Nik` (don't invent)
+
+## W3.1 · Penny thread in-app (conversational activity + Q&A on real books)
+status: unclaimed
+blocked-by: W3.2 (the thread shows the "Penny did this" feed + asks the low-confidence
+  questions the tiering produces), CENTRAL-1 (the 'app' persona is Penny's in-app language —
+  live, no redeploy, the proven bubble/Discord pattern)
+goal: Penny feels alive on the owner's real books — greets, narrates what she did, answers
+  grounded questions about the actual ledger, and raises the few things that need the owner —
+  the demo's aliveness, on real data.
+workflow: owner · "just tell me what's going on / ask Penny a question" · open the thread →
+  read Penny's plain-English activity + ask a question → grounded answer in 1 turn; the thread
+  is where the ≤5 weekly asks appear, not a separate inbox
+spec: Roadmap §W3.1. A chat surface on real books: greeting, activity narration (reads the
+  W3.2 feed), Q&A **grounded on the org's actual ledger** (same grounding discipline as
+  categorize — never ungrounded generation about numbers), idle voice. Reuse the demo's intent
+  architecture + the bubble-worker live-prompt pattern (persona from CENTRAL-1's 'app' key,
+  ~60s cache + baked fallback). Surfaces inside the owner nav (Home pulse + Review), **not a
+  new top-level tab** (usability gate) — decision-needed if a dedicated entry point seems
+  required. No accounting vocabulary to the owner.
+acceptance:
+  - [ ] Penny answers a factual books question (e.g. "how much did I spend on software in Q2?")
+        grounded on the real ledger, tying to the reports to the cent (test)
+  - [ ] Thread narrates the W3.2 activity feed + surfaces the week's low-confidence asks; asking
+        counts against the ≤5/week budget and says so honestly
+  - [ ] Penny's language comes 100% from the live 'app' persona — editing it changes the thread
+        with no redeploy (test); no inline prompt/copy literals (grep gate)
+  - [ ] No hallucinated numbers: an out-of-scope question is declined/deferred, never invented
+        (adversarial test)
+tests: Vitest on intent routing + grounding-scope guard; E2E: ask a grounded question, assert
+  tie-out + no ungrounded numeric claim; persona-live-edit test; REG scenario (grounding-scope
+  refusal)
+touches: apps/app (new thread surface in OwnerLens/Home), a grounded-Q&A edge fn (reuses
+  categorize's grounding pattern), the 'app' persona table (SHARED with W3.2/W3.4 — declare)
+decision-needed: whether the thread gets any nav entry point beyond Home/Review → **Nik**
+  (no new top-level tab without sign-off; default is to nest it in Home)
+
+## W3.3 · Minimal 3-step onboarding (name → entity → industry; rest in-journey)
+status: unclaimed
+blocked-by: CENTRAL-2 (entity_types + industries seeds — onboarding READS the kernel, no
+  hardcoded lists), CENTRAL-1 ('app' persona for the diagnostic/step copy). NOT blocked-by
+  W3.2 — fully disjoint surface (create-org flow), builds in parallel.
+goal: replace the demo's 8-step quiz with 3 steps that get an owner into real books fast, and
+  ask everything else at the moment it matters — never an upfront interrogation.
+workflow: owner · "get me started without a quiz" · business name → entity (with a 2-question
+  "not sure" diagnostic) → industry tile → in books; 3 screens, everything else deferred
+spec: Roadmap §W3.3 (Nik decision, 1 Jul). Exactly 3 steps: (1) **business name**;
+  (2) **entity type** — tiles + labels + the "not sure" **2-question diagnostic**, ALL read
+  from the `entity_types` kernel seed (CENTRAL-2), never a hardcoded enum; (3) **industry** —
+  tiles from the `industries` kernel seed, and selecting one **seeds the CoA template** for
+  that sector (kernel-driven, the 10 demo personas ported into CENTRAL-2). Everything else is
+  asked **in-journey**: bank connect offered right after (skippable, via Connections),
+  payment methods when the first unknown income source appears, check-in cadence after week 1
+  — never as upfront questions. Adding a step, an entity, or an industry is a seed/config
+  edit, not code. **No new onboarding QUESTION beyond these 3** without Nik (usability gate).
+acceptance:
+  - [ ] Onboarding is exactly 3 steps; entity + industry options render from the kernel seeds
+        (adding a test entity/industry via seed alone makes it appear — test)
+  - [ ] "Not sure" runs the 2-question diagnostic from the seed and resolves to an entity (test)
+  - [ ] Selecting an industry seeds the matching CoA template (kernel-driven, no hardcoded map)
+  - [ ] Bank connect is OFFERED post-onboarding and is skippable; no other upfront questions
+  - [ ] Zero hardcoded entity/industry/diagnostic lists in the onboarding code (grep gate);
+        step copy from the 'app' persona
+tests: Vitest on step flow + diagnostic resolution; E2E: complete onboarding → land in seeded
+  books with the right CoA; kernel-seed-drives-options test; REG scenario
+touches: apps/app create-org / onboarding flow (routes/Home.tsx setup cards + a new onboarding
+  view), reads entity_types/industries seeds + CoA-template seeding (SHARED create-org path —
+  declare). Does NOT touch Review/Home feed surfaces (disjoint from W3.2)
+decision-needed: none (3-step scope + in-journey deferral locked). Any 4th onboarding question
+  → **Nik**
+
+## W3.4 · Owner Home / dashboard upgrade (am-I-okay pulse)
+status: unclaimed
+blocked-by: W3.2 (Home hosts the "Penny did this" feed + weekly digest the tiering produces),
+  CENTRAL-2 (coming-up deadlines read `filing_obligations`; no hardcoded dates), CENTRAL-1
+  (summary copy from the 'app' persona). Disjoint from W3.1 → parallel after W3.2.
+goal: Home answers "am I okay?" at a glance (APP_PRINCIPLES §2) — cash position, what needs
+  the owner, upcoming filing deadlines, what's reconciled, catch-up progress — reusing data
+  that already exists; no new source of truth.
+workflow: owner · "am I okay?" · open app → Home is the answer in one screen: cash, "needs you"
+  count (links to Review), coming-up deadlines, Reconciled ✓, plain-English monthly summary — 0
+  taps to the pulse, ≤2 taps to act on anything
+spec: Roadmap §W3.4. Home upgraded to: cash position + comparative/plain-English monthly
+  summary (theme #8), **needs-a-look** count (links into the W3.2 Review queue), **coming-up
+  filing deadlines** read from the kernel's `filing_obligations`/`upcoming_filing_deadlines`
+  (CENTRAL-2 — never a hardcoded calendar), **Reconciled ✓** status (from W1.1 reconciliation),
+  **catch-up progress** (from W2.1 when present), the **"Penny did this" feed + weekly digest**
+  (from W3.2). Tax-readiness % / estimated-taxes strip **only if** W2.4 (quarterly assistant)
+  has landed — otherwise omit, don't fake it. All numbers reuse existing ledger/report data
+  (pagination discipline per RPTTEST — any report-feeding select paginates). No accounting
+  vocabulary; no new top-level tab (this IS Home).
+acceptance:
+  - [ ] Home shows cash, needs-you count (→ Review), coming-up deadlines (from
+        `filing_obligations`), Reconciled ✓, and the "Penny did this" feed — all from existing
+        sources (no new store; test asserts numbers tie to Reports/kernel)
+  - [ ] Coming-up deadlines come from the kernel — changing a `filing_obligations` row changes
+        Home with no code edit (test); zero hardcoded dates/thresholds (grep gate)
+  - [ ] Estimated-taxes strip present ONLY if W2.4 is live, else cleanly absent (no stub number)
+  - [ ] Plain-English summary copy from the 'app' persona; responsive on the full width ladder
+tests: Vitest on the summary/tie-out derivations; E2E Home render w/ seeded org (deadlines +
+  feed + reconciled ✓); kernel-deadline-drives-Home test; REG scenario
+touches: apps/app OwnerLens Home (routes/Home.tsx), reads reconciliation (W1.1), kernel
+  deadlines (CENTRAL-2), the W3.2 feed (SHARED Home surface — declare; disjoint from the W3.1
+  thread surface)
+decision-needed: none (reuses existing data + kernel). If Home wants a metric with no existing
+  source (e.g. a new "tax-readiness %" formula not derivable from current data) → **Nik**
+
+## W3.5 · Receipt capture + match
+status: unclaimed
+blocked-by: W3.2 (a parsed receipt becomes a trust-tiered item — high-confidence auto-matches
+  + shows in the feed, low-confidence becomes an approval card), CENTRAL-1 ('app' persona for
+  capture/confirm copy)
+goal: an owner snaps or forwards a receipt and it attaches to the right transaction with no
+  bookkeeping — closing the "where's the receipt for this charge?" gap (audit-trail trust).
+workflow: owner · "keep my receipts with my books" · photo or text a receipt → Penny parses +
+  matches to a transaction → high-confidence auto-attaches (feed), else a 1-tap confirm card;
+  ≤2 taps per receipt
+spec: Roadmap §W3.5. **Photo/text first (voice later — not this card).** Capture → parse
+  (vendor/amount/date) → **match to an existing transaction** on amount+date window (reuse the
+  W1.1 reconciliation matcher discipline — exact first, fuzzy second); the match result flows
+  through the **W3.2 tier pipeline** (high = auto-attach + feed, low = approval card in Review).
+  Store the receipt asset + link to the ledger entry (audit-logged). No new top-level tab —
+  capture entry lives in Home/Review + the transaction row. Parse via the existing AI inference
+  layer (grounded, records to `ai_decisions`); no new hosted service (stack rule).
+acceptance:
+  - [ ] A photo receipt parses to vendor/amount/date and matches the correct transaction; high
+        confidence auto-attaches + shows in the feed, low confidence yields an approval card
+  - [ ] Attached receipt is stored + linked to the ledger entry and audit-logged; visible on the
+        transaction (test)
+  - [ ] Unmatched receipt lands in a short queue resolvable without leaving the flow (reuses the
+        W1.1 unmatched pattern)
+  - [ ] Match confidence uses the W3.2 tiers/config (no inline thresholds — grep gate); copy
+        from the 'app' persona; no new hosted service introduced
+tests: Vitest on parse→match; pgTAP on the attach/link RPC + audit row; E2E: upload receipt →
+  auto-attach happy path + low-confidence card path; REG scenario (mismatch/duplicate receipt)
+touches: apps/app (new capture surface in Home/Review + transaction row), a receipt-parse edge
+  fn (existing AI layer), storage for the asset, the W3.2 tier pipeline (SHARED — declare)
+decision-needed: none for photo/text. **Voice + email-in capture are explicitly OUT of this
+  card** (Roadmap: voice later) — if wanted, a separate `decision-needed: Nik` card. Receipt
+  asset storage location (Supabase Storage bucket) confirmed in the PR, not invented per-file

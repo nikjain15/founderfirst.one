@@ -210,12 +210,14 @@ begin
   if not can_write_org_as(p_actor, p_org) then
     raise exception 'forbidden: actor may not reconcile org %', p_org using errcode = 'insufficient_privilege';
   end if;
-  select m.*, s.status into v_m, v_status
+  select m.* into v_m
   from reconciliation_matches m
   join reconciliation_sessions s on s.id = m.session_id
   where m.id = p_match_id and m.org_id = p_org
   for update of m, s;
   if not found then raise exception 'not_found: match % not in org %', p_match_id, p_org using errcode = 'no_data_found'; end if;
+  select s.status into v_status
+  from reconciliation_sessions s where s.id = v_m.session_id;
   if v_status = 'locked' then
     raise exception 'reconciliation_locked: session is reconciled; reopen it before unmatching'
       using errcode = 'restrict_violation';

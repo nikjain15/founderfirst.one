@@ -27,9 +27,12 @@ function Check() {
 }
 
 export default function OrgSwitcher({
-  orgs, activeOrg, onSelect,
+  orgs, activeOrg, onSelect, onCreateOrg,
 }: {
   orgs: Org[]; activeOrg: Org | null; onSelect: (id: string) => void;
+  // "+ New organization" / "+ Add client" lives here (APP_PRINCIPLES §5), not on
+  // the page body — the switcher is where a user goes to change which books they're in.
+  onCreateOrg?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -106,6 +109,16 @@ export default function OrgSwitcher({
               </button>
             </li>
           ))}
+          {onCreateOrg && (
+            <li className="orgsw-foot">
+              <button
+                type="button" className="orgsw-item orgsw-create"
+                onClick={() => { setOpen(false); triggerRef.current?.focus(); onCreateOrg(); }}
+              >
+                + New organization
+              </button>
+            </li>
+          )}
         </ul>
       )}
     </div>

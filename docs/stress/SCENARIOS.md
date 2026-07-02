@@ -56,6 +56,8 @@ holds the assertion — this index is the single map from finding id → scenari
 | **GDPR** paginated export / erasure | Data export (GDPRTEST) | P1 | — | ⚠️ **GAP** (fn-level; no pgTAP — export is edge-fn) |
 | **STAFF** break-glass / editor gate | Platform staff (STAFFTEST) | P0 | `phase5_platform_staff_test.sql` + `admin_tiers_and_guards_test.sql` | ✅ covered |
 | **LOOP-1** heartbeat write-path RLS (loop_runs/loop_events) | Build loop (PR #173) | P1 | — | ⏳ **pending** (migration unmerged; add once #173 lands) |
+| **W3.2-UNDO** auto-post undo reverses cleanly (ledger balanced) | Trust-tiered autonomy (W3.2) | P0 | `w3_2_trust_tiered_autonomy_test.sql` | ✅ covered |
+| **W3.2-BUDGET-DEFER** ≤5-asks/week cap → surplus + income defer to digest | Trust-tiered autonomy (W3.2) | P1 | `autonomy.test.ts` (`budgetDisposition`) + `w3_2_trust_tiered_autonomy_test.sql` | ✅ covered |
 
 ## Gaps surfaced for the integrator / Nik
 
@@ -337,3 +339,30 @@ wizard is a manual/staging check (needs a fresh no-org account + the `orgs` +
 
 **Re-run.** `pnpm --dir apps/app test` (diagnostic + CoA template) · `supabase test db`
 (onboarding write-path) · `pnpm check:kernel-seed` (seed lint) · no prod fixtures.
+
+## W3.2 · Trust-tiered autonomy (the ≤5-asks/week approval rework)
+
+The demo's ask-about-everything model becomes homework at scale. Instead each
+uncategorized transaction is triaged server-side into one of three tiers — cutoffs
++ the ≤5-asks/week budget from `platform_config` (`get_effective_behavior_config`,
+CENTRAL-1), never a magic number: HIGH auto-posts (Penny did this, 1-tap undo),
+MEDIUM batch-approves, LOW is one approval card. Income + a spent budget defer to
+the digest, never a card.
+
+| Scenario | Surface | Assertion | Test |
+|---|---|---|---|
+| **W3.2-TIER** | Categorize triage | Tier is assigned from CONFIG cutoffs (`confidence_high`/`confidence_medium`), and a learned rule / repeat vendor is HIGH by provenance regardless of the model's stated confidence — a stricter config re-bands the SAME score with no code change. | `apps/app/src/copy/autonomy.test.ts` (`assignTier`) |
+| **W3.2-AUTOPOST** | HIGH tier | `autopost_categorization` posts the categorization itself (reverse+repost+learn via `recategorize_entry`, append-only), records exactly one `penny_activity` feed row, is idempotent on the key, and is audit-logged (`entry.reverse`). Tenant-gated (non-member `42501`); period-lock respected (a closed period refuses `23001`). | `supabase/tests/w3_2_trust_tiered_autonomy_test.sql` |
+| **W3.2-UNDO** | Feed 1-tap undo | `undo_penny_activity` reverses the reposted entry through the SAME reversal path — the categorized account nets back to zero and the org trial balance ties to zero (double-entry preserved). Undo is idempotent (a second tap never double-reverses). | `supabase/tests/w3_2_trust_tiered_autonomy_test.sql` |
+| **W3.2-BUDGET-DEFER** | LOW tier ≤5/week | `budgetDisposition` caps owner interruptions at `asks_per_week`: a run of 20 unknowns interrupts exactly `asks_per_week` times, then further unknowns DEFER to the digest (`reason=budget_spent`); income ALWAYS defers (`reason=income`, never a card); changing the config budget (5→8) changes the interruption count with no redeploy. Budget is counted from real data (`owner_asks_this_week` / `record_owner_ask` over `ai_decisions`). | `apps/app/src/copy/autonomy.test.ts` (`budgetDisposition`) + `supabase/tests/w3_2_trust_tiered_autonomy_test.sql` (owner-ask counting) |
+
+**Re-run.** `pnpm --dir apps/app test` (tier + budget accounting) · `supabase test
+db` (auto-post + undo/reversal RPC path). No prod fixtures — the pgTAP seed is
+self-contained `[REGTEST]` inside `BEGIN…ROLLBACK`.
+
+**E2E (seed a week).** Seed a week of transactions spanning all three tiers → the
+`triage` op sorts them into feed (HIGH, already posted) / batch queue (MEDIUM) /
+approval cards (LOW), and the owner's asks-count never exceeds the config budget
+(the surplus low-confidence items + income appear as the digest note, not cards).
+The tier split + the ≤budget assertion are the pure-function tests above; the
+server wiring is `supabase/functions/categorize` op `triage`.

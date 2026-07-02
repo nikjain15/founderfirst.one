@@ -195,6 +195,36 @@ tab across the width ladder. No prod fixtures — the pgTAP seed is self-contain
 
 ---
 
+## W2.2 — QBO one-click migration with history
+
+| id | surface | asserts | enforced by |
+|---|---|---|---|
+| W2.2-MIGRATE | Books → Import → Migrate | A connected QBO company migrates fully: CoA upserts, full Purchase/Deposit history (all pages) buckets into one `import_batch` per year (`source='qbo'`), each row keyed by its QBO txn id as `external_id`; a `provider_migrations` record captures the batches + a snapshot of QBO's own trial balance; commit posts every year's rows through the verified bank branch of `commit_import_batch(4-arg)`, so each entry balances (Dr==Cr). | `supabase/tests/w2_2_qbo_migration_test.sql` (year batch commits · entry-per-txn · record_provider_migration) |
+| W2.2-TBTIE | migration → TB compare | The migrated ledger ties to QBO's own trial balance to the CENT: `compareTrialBalances()` matches accounts by normalized name, computes debit-positive nets in integer minor units, and any non-zero `diff` surfaces as a variance row (never silent); `tiesToTheCent` ⟺ `totalVariance===0`; provider-only / ledger-only accounts are flagged. | `apps/app/src/migration/tbCompare.test.ts` (ties · 1c variance · presence · duplicate collapse) · `supabase/tests/w2_2_qbo_migration_test.sql` (posted ledger nets to zero) |
+| W2.2-REPULL-IDEM | migration re-pull | A second pull NEVER doubles the books: provider rows commit under `ext:qbo:<external_id>`, so re-staging the same transactions into a new batch and committing adds ZERO new journal entries — the duplicates are marked `skipped`, not posted. | `supabase/tests/w2_2_qbo_migration_test.sql` (re-pull adds no entries · rows skipped · ext-key present) |
+| W2.2-CUTOVER | migration → cutover | The owner confirms one cutover date after reviewing the TB: `set_import_batch_cutover` stamps each pre-commit batch (refused on a committed/frozen batch), `set_provider_migration_cutover` marks the migration `committed`; both audit-logged. A foreign actor is refused server-side (`can_write_org_as`). | `supabase/tests/w2_2_qbo_migration_test.sql` (cutover stamp · frozen refusal · migration commit · foreign-actor forbidden) |
+
+**Why it matters.** "I'd love historic data in the new system" is the migration
+promise. The trust moment is the side-by-side trial balance: the owner will not
+switch off QuickBooks until the new books match it to the cent. A silent variance —
+or a re-pull that doubles a year of transactions — breaks that trust irrecoverably.
+
+**Idempotency invariant.** Every provider row commits under `ext:qbo:<external_id>`
+(the QBO transaction id). The dedup lives in the shared `commit_import_batch`
+(SYNCTEST F1), so a re-pull, an overlapping year, or a re-run all collide on the
+same key and skip — the migration is safe to run as many times as it takes.
+
+**TB-tie invariant.** The comparison is pure over integer minor units (no float);
+the ledger side derives from the same `accountBalances()` the Reports tab uses, and
+QBO's side is the report it returns. A difference is shown as a row, never absorbed.
+
+**Re-run.** `pnpm --dir apps/app test` (TB-compare unit) · `supabase test db`
+(pgTAP migration RPCs + idempotency). A full E2E needs a QBO sandbox company +
+one human OAuth consent at run time (LEARNINGS #10) — the pgTAP seed stands in for
+that with a self-contained provider fixture.
+
+---
+
 ## W1.3-B tax mapping engine (merged in — consolidated from tests/scenarios/SCENARIOS.md)
 
 ## W1.3-B · Tax mapping engine
@@ -225,3 +255,50 @@ on the app-UI base; this card ships the RPCs it will call).
 | **W1.3C-DISPOSAL** | Disposal computes gain/loss = proceeds − net book value, records the disposal, and marks the asset disposed. | `depreciation.test.ts` (disposalGainLoss gain + loss) + pgTAP (§8 disposal) |
 | **W1.3C-LAW** | `asset_classes` + `macrs_percentages` are year-versioned + effective-dated + cited; `supersede_asset_class` + `asset_class_in_force` make an asset compute under the §179/bonus law of its in-service year; overlapping active windows impossible (EXCLUDE); a law change (bonus step-down, §179 bump, new class) is a seed row. | pgTAP (effective-dating) + `scripts/seed-depreciation.ts --check` (MACRS tables sum to 100%, class→table coverage, effective-dating clean) |
 | **W1.3C-ROLE** | The p_actor-first write RPCs (`register_fixed_asset`, `compute_depreciation_schedule`, `post_book_depreciation`, `draft_depreciation_m1`, `dispose_fixed_asset`, `supersede_asset_class`) are `service_role`-EXECUTE-only (forged-actor P0 closed, ISOTEST); cross-tenant register refused; every action audit-logged. | pgTAP (§9 grants + cross-tenant refusal) |
+
+---
+
+## W2.1 · Catch-up mode (the #1 Signals wedge — years-behind owners, shame-free)
+
+Catch-up mode ORCHESTRATES the existing pipeline (import → categorize → reconcile →
+per-year export); it adds only a flat-per-year packaging model, a trust-gated
+bulk-approve RPC, and a per-year progress rollup. These scenarios lock the decisions
+that could silently go wrong.
+
+| ID | Proves | Owned by |
+|----|--------|----------|
+| **W2.1-CATCHUP** | Multi-year CSVs land as one import batch per backlog year, then Penny proposes a category per landed uncategorized entry; per-year progress (`catch_up_progress`) rolls up uncategorized + reconciled counts and a `done` flag derived from the ledger (no denormalized status to drift). A year with an unsorted transaction is not `done`. | `apps/app/src/catchup/catchup.test.ts` (Vitest: `yearStatus` / `allYearsDone` / `yearOf` / `backlogYears`) + `supabase/tests/w2_1_catchup_test.sql` (pgTAP: per-year rollup) |
+| **W2.1-BATCHAPPROVE** | `catch_up_batch_approve` bulk-recategorizes ONLY high-confidence picks (trust tier from `get_effective_behavior_config.confidence_high`, server-authoritative); a below-cutoff item is SKIPPED and left untouched on the holding account — never auto-posted. Reuses `recategorize_entry` (append-only reverse+repost, learning). Tenant-gated (non-member refused, `42501`); the bulk action writes a summary audit row **and** the per-entry recategorize audit row. Period-lock inherited: a closed-period entry still recategorizes into the open period, never permanently blocked. | `catchup.test.ts` (Vitest: `isHighConfidence` / `partitionProposals` trust gating, rule=1 always, no-account never) + `w2_1_catchup_test.sql` (pgTAP: approved/skipped counts, holding-account untouched, audit rows, non-member `42501`, closed-period inheritance) |
+| **W2.1-5K** | The interruption budget holds at 5,000 backlog transactions: with 4,990 high-confidence + 10 low, the owner confirms 4,990 in ONE tap and answers only the 10 low-confidence questions — `interruptionCount` = 10, not 5,000. Surfaced questions are capped at `asks_per_week` (≤5/week) and the rest deferred. | `catchup.test.ts` (Vitest: `interruptionCount` at 5k, `withinAskBudget`, `questionsForThisWeek` cap) |
+| **W2.1-PRICING** | Priced flat-per-year: `catch_up_plans.fee_total_minor` is a generated column = `fee_per_year_minor × cardinality(backlog_years)`; `catch_up_set_plan` records the packaging and audit-logs it. $500/yr over 3 years → $1,500. | `catchup.test.ts` (Vitest: `catchUpFeeTotal`) + `w2_1_catchup_test.sql` (pgTAP: `fee_total_minor` = per-year × N) |
+## W2.3 · Plaid bank feeds (sandbox)
+
+| ID | Proves | Owned by |
+|----|--------|----------|
+| **W2.3-LINK** | A linked Plaid item's transactions land in the SAME categorize queue as CSV/QBO imports (a bank-vs-Uncategorized entry Penny then categorizes), exactly once, and the ledger balances (Dr==Cr). Each Plaid `transaction_id` → one `bank_transactions` row → one journal entry keyed `ext:plaid:<transaction_id>`. | `supabase/tests/w2_3_plaid_ingest_test.sql` (pgTAP: add ingests, distinct entries, ledger balances) + `apps/app/src/import/plaidStateMachine.test.ts` (Vitest: add lands once) |
+| **W2.3-REPLAY** | A duplicate webhook delivery — Plaid retries, at-least-once — adds NOTHING. Re-ingesting the same sync page skips every row (idempotent on `bank_transactions` unique key AND on `post_journal_entry`'s `ext:plaid:<id>`); no new rows, no new entries, net unchanged. Overlapping cursor pages likewise never double-post. | pgTAP (`skipped=2`, row/entry counts unchanged) + Vitest (duplicate page + overlapping page no-op) |
+| **W2.3-REMOVED** | Plaid mutating history is handled by REVERSAL-based corrections, never in-place edits. A **removed** txn reverses its prior entry (original → `status=reversed`, row → `state=removed`, never deleted) and nets to zero; a **modified** (amount/date-changed) txn reverses the old entry and posts a fresh one (books tie to the corrected amount); **pending→posted** with no amount change moves no money. A replayed remove is idempotent (no second reversal). | pgTAP (modify: original reversed + corrected amount + still balances; remove: reversed + state) + Vitest (pending→posted, modify reverse+repost, idempotent remove, full-lifecycle nets to 0) |
+
+**Tenant + role.** `plaid_ingest_transactions` / `plaid_set_cursor` are
+`service_role`-EXECUTE-only (ISOTEST: no `p_actor` forgery from anon/authenticated),
+gated by `can_write_org_as`; a non-member actor is refused. The Plaid access token
+never reaches the browser (stored on `external_connections`, column-walled like
+QBO/Xero); the link_token is the only client-side token. Every add/modify/remove
+writes a `ledger_audit` row.
+
+**Webhook replay-safety proof.** The `plaid-webhook` fn resolves `item_id →
+external_connections` (the tenant boundary; an unknown item is ignored 200 so Plaid
+stops retrying) then runs the SAME `/transactions/sync` loop as `plaid-sync`. Because
+`plaid_ingest_transactions` is idempotent, running the loop twice on the same events
+is a no-op — proven by W2.3-REPLAY.
+
+**Sandbox-only.** Build targets `PLAID_ENV=sandbox` (secret from
+`~/.config/founderfirst/secrets.env` → `PLAID_SECRET_SANDBOX`, set as a Supabase fn
+secret at deploy). Production requires Plaid's app review — a **Nik step** before
+>10 live users (flip `PLAID_ENV`/`PLAID_SECRET` to production). E2E against the live
+Plaid sandbox is feasible via `/sandbox/item/fire_webhook` (`sandboxFireWebhook` in
+`_shared/plaid.ts`); the recorded state machine (`plaidStateMachine.ts`) is the
+CI-runnable fixture that mirrors the RPC contract.
+
+**Re-run.** `pnpm --dir apps/app test` (state machine) · `supabase test db` (pgTAP
+ingestion RPC) · no prod fixtures (the pgTAP seed is self-contained).

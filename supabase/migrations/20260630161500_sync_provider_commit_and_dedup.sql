@@ -1,0 +1,24 @@
+-- [reconcile:synctest] Ledger/repo parity marker for prod migration 20260630161500
+-- ("sync_provider_commit_and_dedup", SYNCTEST / PR #142).
+--
+-- Applied on prod out-of-band (schema_migrations row present, statements NULL) with
+-- no source file on main. Its two effects were FOLDED FORWARD and their single
+-- source of truth is the later reconcile migrations, both of which idempotently
+-- CREATE OR REPLACE the identical live bodies:
+--
+--   * F0 — QBO/Xero provider-commit ROUTING in commit_import_batch(4-arg): the
+--     provider branch (source in ('qbo','xero')) runs the bank/contra path instead
+--     of dead-ending on the opening-balance branch (no_cutover_date).
+--         -> folded into 20260701210000_commit_import_batch_fold.sql
+--   * F1 — per-row idempotency DEDUP (ext:<source>:<external_id> for provider feeds,
+--     content-key md5 for CSV/manual) so a re-pull / re-upload skips instead of
+--     double-posting.
+--         -> present in 20260701210000_commit_import_batch_fold.sql (commit path) and
+--            20260701200300_reconcile_append_import_rows.sql (staging path)
+--
+-- Verified 2026-07-01: live append_import_rows == repo 20260701200300 and live
+-- commit_import_batch(4-arg) == repo 20260701210000 (pg_get_functiondef, byte-for-byte
+-- modulo pg formatting). Both later migrations run AFTER this version, so a fresh
+-- `supabase db push` reaches the exact prod state. This file carries no DDL — it
+-- exists solely to keep supabase/migrations 1:1 with the prod schema_migrations ledger.
+select 1; -- parity marker only; body captured by the reconcile migrations above

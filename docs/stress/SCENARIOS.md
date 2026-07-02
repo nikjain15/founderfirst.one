@@ -195,6 +195,36 @@ tab across the width ladder. No prod fixtures — the pgTAP seed is self-contain
 
 ---
 
+## W2.2 — QBO one-click migration with history
+
+| id | surface | asserts | enforced by |
+|---|---|---|---|
+| W2.2-MIGRATE | Books → Import → Migrate | A connected QBO company migrates fully: CoA upserts, full Purchase/Deposit history (all pages) buckets into one `import_batch` per year (`source='qbo'`), each row keyed by its QBO txn id as `external_id`; a `provider_migrations` record captures the batches + a snapshot of QBO's own trial balance; commit posts every year's rows through the verified bank branch of `commit_import_batch(4-arg)`, so each entry balances (Dr==Cr). | `supabase/tests/w2_2_qbo_migration_test.sql` (year batch commits · entry-per-txn · record_provider_migration) |
+| W2.2-TBTIE | migration → TB compare | The migrated ledger ties to QBO's own trial balance to the CENT: `compareTrialBalances()` matches accounts by normalized name, computes debit-positive nets in integer minor units, and any non-zero `diff` surfaces as a variance row (never silent); `tiesToTheCent` ⟺ `totalVariance===0`; provider-only / ledger-only accounts are flagged. | `apps/app/src/migration/tbCompare.test.ts` (ties · 1c variance · presence · duplicate collapse) · `supabase/tests/w2_2_qbo_migration_test.sql` (posted ledger nets to zero) |
+| W2.2-REPULL-IDEM | migration re-pull | A second pull NEVER doubles the books: provider rows commit under `ext:qbo:<external_id>`, so re-staging the same transactions into a new batch and committing adds ZERO new journal entries — the duplicates are marked `skipped`, not posted. | `supabase/tests/w2_2_qbo_migration_test.sql` (re-pull adds no entries · rows skipped · ext-key present) |
+| W2.2-CUTOVER | migration → cutover | The owner confirms one cutover date after reviewing the TB: `set_import_batch_cutover` stamps each pre-commit batch (refused on a committed/frozen batch), `set_provider_migration_cutover` marks the migration `committed`; both audit-logged. A foreign actor is refused server-side (`can_write_org_as`). | `supabase/tests/w2_2_qbo_migration_test.sql` (cutover stamp · frozen refusal · migration commit · foreign-actor forbidden) |
+
+**Why it matters.** "I'd love historic data in the new system" is the migration
+promise. The trust moment is the side-by-side trial balance: the owner will not
+switch off QuickBooks until the new books match it to the cent. A silent variance —
+or a re-pull that doubles a year of transactions — breaks that trust irrecoverably.
+
+**Idempotency invariant.** Every provider row commits under `ext:qbo:<external_id>`
+(the QBO transaction id). The dedup lives in the shared `commit_import_batch`
+(SYNCTEST F1), so a re-pull, an overlapping year, or a re-run all collide on the
+same key and skip — the migration is safe to run as many times as it takes.
+
+**TB-tie invariant.** The comparison is pure over integer minor units (no float);
+the ledger side derives from the same `accountBalances()` the Reports tab uses, and
+QBO's side is the report it returns. A difference is shown as a row, never absorbed.
+
+**Re-run.** `pnpm --dir apps/app test` (TB-compare unit) · `supabase test db`
+(pgTAP migration RPCs + idempotency). A full E2E needs a QBO sandbox company +
+one human OAuth consent at run time (LEARNINGS #10) — the pgTAP seed stands in for
+that with a self-contained provider fixture.
+
+---
+
 ## W1.3-B tax mapping engine (merged in — consolidated from tests/scenarios/SCENARIOS.md)
 
 ## W1.3-B · Tax mapping engine

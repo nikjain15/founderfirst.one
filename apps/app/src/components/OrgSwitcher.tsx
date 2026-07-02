@@ -6,6 +6,7 @@
  * itself is unchanged — it still calls setActiveOrgId.
  */
 import { useEffect, useRef, useState } from "react";
+import { COPY } from "../copy";
 
 type Org = { id: string; name: string; type: string };
 
@@ -27,9 +28,14 @@ function Check() {
 }
 
 export default function OrgSwitcher({
-  orgs, activeOrg, onSelect,
+  orgs, activeOrg, onSelect, onCreateOrg, counts,
 }: {
   orgs: Org[]; activeOrg: Org | null; onSelect: (id: string) => void;
+  // "+ New organization" / "+ Add client" lives here (APP_PRINCIPLES §5), not on
+  // the page body — the switcher is where a user goes to change which books they're in.
+  onCreateOrg?: () => void;
+  // Optional per-org open-item counts (CPA practice: badge each client's work).
+  counts?: Record<string, number>;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -80,18 +86,18 @@ export default function OrgSwitcher({
     <div className="orgsw" ref={ref}>
       <button
         ref={triggerRef} type="button" className="orgsw-trigger"
-        aria-haspopup="listbox" aria-expanded={open} aria-label="Switch organization"
+        aria-haspopup="listbox" aria-expanded={open} aria-label={COPY.nav.switchOrgAria}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => { if (!open && (e.key === "ArrowDown" || e.key === "Enter")) { e.preventDefault(); setOpen(true); } }}
       >
         <span className="orgsw-current">
-          <span className="orgsw-name">{activeOrg?.name ?? "Select organization"}</span>
+          <span className="orgsw-name">{activeOrg?.name ?? COPY.nav.selectOrg}</span>
           {activeOrg && <span className="orgsw-type">{activeOrg.type}</span>}
         </span>
         <Chevron />
       </button>
       {open && (
-        <ul className="orgsw-menu" role="listbox" aria-label="Organizations">
+        <ul className="orgsw-menu" role="listbox" aria-label={COPY.nav.orgsAria}>
           {orgs.map((o, i) => (
             <li key={o.id} role="option" aria-selected={o.id === activeOrg?.id}>
               <button
@@ -102,10 +108,23 @@ export default function OrgSwitcher({
                   <span className="orgsw-item-name">{o.name}</span>
                   <span className="orgsw-item-type">{o.type}</span>
                 </span>
+                {counts && (counts[o.id] ?? 0) > 0 && (
+                  <span className="orgsw-count">{counts[o.id]}</span>
+                )}
                 {o.id === activeOrg?.id && <Check />}
               </button>
             </li>
           ))}
+          {onCreateOrg && (
+            <li className="orgsw-foot">
+              <button
+                type="button" className="orgsw-item orgsw-create"
+                onClick={() => { setOpen(false); triggerRef.current?.focus(); onCreateOrg(); }}
+              >
+                {COPY.nav.newOrg}
+              </button>
+            </li>
+          )}
         </ul>
       )}
     </div>

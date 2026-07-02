@@ -308,6 +308,31 @@ whole run.
   PR or a blocked-report** — never by committing to `main`, never by running open-ended
   (the 9×/night hardening cron leaked sessions → SIGBUS; see memory).
 
+## 20. Some prod state lives outside git — when you change it, record it.
+
+**What happened:** Every PR showed a red/neutral "Supabase Preview" check. It wasn't a
+workflow in the repo — the **Supabase GitHub App** posted it because database
+**Branching was enabled** on the project. On PRs touching `supabase/` it tried to spin
+up an ephemeral preview branch, hit the plan's low concurrent-branch limit during the
+multi-PR stress sweep, and came back `cancelled` → a red ✗. We never use preview
+branches (migrations are manual — Rule 3), so it was pure noise that trained everyone to
+ignore a red X. Fixed by disabling branching via the Management API
+(`DELETE /v1/projects/{ref}/branches`) on **2 Jul 2026** — prod stayed `ACTIVE_HEALTHY`,
+data untouched, branch list now empty.
+
+**Rules:**
+- **Config that gates or annotates PRs isn't always in `.github/`.** Dashboard
+  integrations (Supabase GitHub App, Cloudflare, Vercel) post their own checks. If a
+  check is failing and you can't find its workflow, inspect the check-run's `app` slug
+  and `details_url` — that names the external owner.
+- **A CI signal you can't act on is worse than no signal** — it normalises ignoring red.
+  Remove or fix it, don't tolerate it.
+- **A prod-config change made outside git leaves no diff.** Record it (here or in ops
+  notes) with what changed, why, and how to reverse it — otherwise the next person can't
+  tell intentional config from drift. **Current state: Supabase Branching is
+  intentionally OFF** (re-enable only via Dashboard → Settings → Integrations → GitHub →
+  Branching, if the manual-migration workflow ever changes).
+
 ---
 
 *Add a numbered rule above when a mistake teaches a lesson worth not repeating.*

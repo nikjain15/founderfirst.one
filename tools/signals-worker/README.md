@@ -3,7 +3,7 @@
 Always-on pull-worker for FounderFirst Signals. It pulls pending posts from
 Supabase, scores them locally with Ollama, and drafts promoted leads with the
 managed model. No inbound ports — it only makes outbound calls. Part of the
-Signals system — see `SIGNALS_SOLUTION.md`.
+Signals system — see [SOLUTION.md](SOLUTION.md) (design) and [STRATEGY.md](STRATEGY.md) (what/why).
 
 ## What it does each cycle
 
@@ -61,7 +61,7 @@ journalctl -u signals-worker -f
 
 > 4 GiB is tight: `gemma2:2b` + `nomic-embed-text` + Node fit, but don't run a
 > larger score model without bumping the VM. To choose the score model, run the
-> eval described in `SIGNALS_SOLUTION.md` §8 and set `OLLAMA_SCORE_MODEL`.
+> eval described in `SOLUTION.md` §8 and set `OLLAMA_SCORE_MODEL`.
 
 ## Deploying changes to the live host
 

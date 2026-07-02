@@ -1,9 +1,10 @@
-# CSAT — Integration with Dify and the Discord bridge
+# CSAT — Integration with the Worker brain and the Discord bridge
 
-The Supabase side ships in `SCHEMA-005-csat.sql` and the admin surfaces in
-`/admin/analytics` + `/admin/support/:ticketId`. The bridge ships the
-Discord-side CSAT prompts and reaction handling. This doc spells out the
-architecture and what's left for non-Discord channels.
+All of this is **live**: the Supabase side (migrations), the admin surfaces in
+`/admin/analytics` + `/admin/support/:ticketId`, and the bridge's Discord-side
+CSAT prompts + reaction handling. (Dify, named in earlier drafts, was replaced
+by the Cloudflare Worker brain.) This doc spells out the architecture and
+what's left for non-Discord channels.
 
 ---
 

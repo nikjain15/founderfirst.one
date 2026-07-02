@@ -21,16 +21,17 @@ signal to introduce a new bucket. Steps:
 
 1. Add it to `TOPICS` in `apps/admin/src/lib/topics.ts`.
 2. Append it to this table.
-3. Update the Dify classify prompt (in `SYSTEM-PROMPT.md` or wherever the
-   Haiku classify node lives) so the bot knows about the new bucket and
-   when to assign it.
+3. Update the classify prompt in the Cloudflare Worker (`site-bubble/worker/src/`)
+   so the bot knows about the new bucket and when to assign it.
 
 No DB change needed — `topic` is a free-form column.
 
-## Dify integration
+## Worker integration
 
-The Dify classify step should output a `topic` value from this list, and the
-escalation HTTP node should pass it as `p_topic` to `create_ticket`:
+(The classifier used to live in Dify; it now lives in the Cloudflare Worker —
+the old Dify docs are archived in `docs/archive/2026-06-support-dify-*.md`.)
+The classify step should output a `topic` value from this list, and the
+escalation call should pass it as `p_topic` to `create_ticket`:
 
 ```jsonc
 // create_ticket payload (only the topic-relevant bit shown)

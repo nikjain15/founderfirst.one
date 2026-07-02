@@ -8,7 +8,7 @@
  * stage / status) carries a hover hint, and columns sort on click via <SortTh>.
  * Built on the existing admin patterns: .toolbar + .chip filters, .table-wrap /
  * .data-table lists, and the .drawer-overlay / .drawer detail (same as Users /
- * Audit). All data via the admin-gated sig_* RPCs. See SIGNALS_SOLUTION.md.
+ * Audit). All data via the admin-gated sig_* RPCs. See tools/signals-worker/SOLUTION.md.
  */
 import { useState, useEffect, useMemo, Fragment } from "react";
 import { Link } from "react-router-dom";

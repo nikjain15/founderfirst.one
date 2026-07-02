@@ -63,6 +63,19 @@ The mission is simple: give business owners the back-office support that used to
 
 ---
 
+## Finding your way around
+
+**[docs/README.md](docs/README.md) is the map** — where every kind of document lives,
+the rules for adding or moving one, and the docs PR checklist. The short version:
+the repo root holds only this file, [LEARNINGS.md](LEARNINGS.md) (engineering rules
+from real incidents — read before non-trivial work), and [VOICE.md](VOICE.md) (the
+brand voice). Specs live next to the code they govern (`apps/*`, `packages/*`,
+`tools/*`); plans and roadmaps live in [docs/plans/](docs/plans/); finished or
+superseded docs move to [docs/archive/](docs/archive/). Don't add a doc anywhere
+else — find its home in the map first.
+
+---
+
 ## Engineering guardrails
 
 **Responsive standard** — every page, tab, and component must render correctly at any viewport width from 320px to 1920px+. Full rules in [apps/admin/RESPONSIVE.md](apps/admin/RESPONSIVE.md). Quick version:

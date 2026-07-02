@@ -4,9 +4,9 @@ A living, browser-based demo of Penny — an AI-first bookkeeper for US small bu
 
 Built to give prospective users a realistic five-minute walkthrough of the product: onboarding, a first approval, the Penny conversation thread, and a financial summary. Feedback from this demo is what will shape the MVP scope.
 
-**Live:** [founderfirst.one/penny](https://founderfirst.one/penny)
+**Live:** [founderfirst.one/penny/demo/](https://founderfirst.one/penny/demo/) (owner view) · [founderfirst.one/penny/demo/cpa/](https://founderfirst.one/penny/demo/cpa/) (CPA view)
 **Parent project:** [FounderFirst](https://founderfirst.one)
-**Status:** v5 (in development). Supersedes the bundled v4 demo in `../tools/`.
+**Status:** v5, live — all 7 screens complete and deployed. (The bundled v4 demo it superseded is long gone.)
 
 ---
 

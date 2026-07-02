@@ -1,6 +1,8 @@
 # Follow-up Agent — v1 Spec
 
-*Plain-language plan. The first "new-user" agent. Built on top of the existing signals pipeline. Keep it small; expand later.*
+> Status: **planned — not built** (no migration, worker logic, or admin UI exists yet) · spec authored Jun 2026 · Owner: Nik
+
+*Plain-language plan. The first "new-user" agent. Built on top of the existing signals pipeline (see [SOLUTION.md](SOLUTION.md)). Keep it small; expand later.*
 
 ---
 

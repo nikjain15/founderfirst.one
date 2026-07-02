@@ -2013,7 +2013,7 @@ export async function setLiveBlogPost(id: string): Promise<void> {
 
 // ---- Signals (social listening + outreach) ---------------------------------
 // All RPCs are admin-gated server-side (is_admin) and audited via
-// log_admin_action. Mirrors the ticket wrappers above. See SIGNALS_SOLUTION.md.
+// log_admin_action. Mirrors the ticket wrappers above. See tools/signals-worker/SOLUTION.md.
 
 export interface SigItemRow {
   id: string;

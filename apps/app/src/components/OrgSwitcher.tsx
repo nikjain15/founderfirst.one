@@ -110,7 +110,11 @@ export default function OrgSwitcher({
             </li>
           ))}
           {onCreateOrg && (
-            <li className="orgsw-foot">
+            // Not a selectable option — it's an action. role="presentation" keeps the
+            // listbox's children valid (a bare <li> inside role="listbox" is invalid
+            // ARIA and confuses screen readers). Reachable by Tab; arrow keys cycle the
+            // real options above it.
+            <li className="orgsw-foot" role="presentation">
               <button
                 type="button" className="orgsw-item orgsw-create"
                 onClick={() => { setOpen(false); triggerRef.current?.focus(); onCreateOrg(); }}

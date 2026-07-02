@@ -72,6 +72,20 @@ describe("W1.3B-MAP — mapping ties to the books", () => {
     // sorted by the form's own sort_order
     expect(r.lines.map((l) => l.sort_order)).toEqual([...r.lines.map((l) => l.sort_order)].sort((a, b) => a - b));
   });
+
+  it("tie-out holds even when a resolution points at a line the form doesn't define", () => {
+    // A stale/bad override could claim resolved_by='override' with a line_key that
+    // isn't on the form (the set_account_tax_line integrity check now blocks this at
+    // write time, but mapReturn must still never LOSE the amount if one slips in).
+    const bad = [...resolutions, res("a9", "6950", "Ghost", "expense", "no_such_line", "override")];
+    const amts = [...amounts, { account_id: "a9", amount_minor: 7777 }];
+    const r = mapReturn(META, LINES, bad, amts);
+    // the ghost account is surfaced (in unmapped), never silently dropped
+    expect(r.unmapped.some((a) => a.account_id === "a9")).toBe(true);
+    // tie-out: mapped + unmapped == the full TB total for every account
+    const tbTotal = amts.reduce((s, a) => s + a.amount_minor, 0);
+    expect(r.totalMappedMinor + r.totalUnmappedMinor).toBe(tbTotal);
+  });
 });
 
 describe("W1.3B-M1 — book-tax difference drafts + reconciliation", () => {

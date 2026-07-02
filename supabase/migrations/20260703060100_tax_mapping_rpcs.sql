@@ -224,6 +224,23 @@ begin
   if not exists (select 1 from ledger_accounts where id = p_account_id and org_id = p_org) then
     raise exception 'account % is not in org %', p_account_id, p_org using errcode = '42501';
   end if;
+  -- INTEGRITY (research §B): an override may only point at a (form_code, line_key)
+  -- that actually EXISTS as a line on an active form of that code. Without this an
+  -- override can target a non-existent or cross-form line_key; resolve_account_tax_lines
+  -- then reports it as 'override' (mapped) while mapReturn() finds no such line and
+  -- drops the account into the UNMAPPED bucket — the two disagree, and a CPA's
+  -- "mapped" account silently vanishes from its line (OBTEST silent-drop class).
+  if not exists (
+    select 1
+      from public.tax_forms f
+      join public.tax_form_lines l on l.form_id = f.id
+     where f.form_code = p_form_code
+       and f.is_active
+       and l.line_key = p_line_key
+  ) then
+    raise exception 'line_key % is not defined on any active form %', p_line_key, p_form_code
+      using errcode = '23514';
+  end if;
 
   insert into public.org_account_tax_map (org_id, account_id, form_code, line_key, tax_year_from, set_by, note)
   values (p_org, p_account_id, p_form_code, p_line_key, p_tax_year_from, p_actor, p_note)

@@ -501,8 +501,15 @@ button.ghost.sm, .ghost.sm {
 .je-actions { display: flex; gap: 0.5rem; }
 
 /* reports */
-.report-seg { display: inline-flex; border: var(--bw-hair) solid var(--line); border-radius: var(--r-pill); overflow: hidden; }
+/* Segmented report picker (4 views). Fluid-first: the pill never widens the
+   page — when its buttons can't fit (narrow phones) it scrolls inside its own
+   max-width instead of overflowing. Labels stay whole (no clipped text). */
+.report-seg {
+  display: flex; max-width: 100%; overflow-x: auto;
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-pill);
+}
 .report-seg button {
+  flex: 0 0 auto; white-space: nowrap;
   min-height: 2.25rem; background: var(--white); color: var(--ink-3);
   border: none; border-radius: 0; padding: 0.4rem 0.9rem; font-size: var(--fs-ui); font-weight: var(--fw-semibold);
 }

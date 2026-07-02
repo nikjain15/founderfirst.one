@@ -195,6 +195,48 @@ record; the tracker is the working board.
 **How to read a row:** `P0/P1/P2` = confirmed defects by severity · `Status` =
 where the fix is (🟢 live+on-main · 🔵 live-not-on-main / PR-open · ⬜ untested).
 
+## The loop — how coverage grows with the product
+
+Audits are not one-time events. Every new feature enters this cycle, so the
+ledger above always answers "what is tested, what is not" for the *current*
+product — not the product as it was when the last big sweep ran.
+
+**1. Before building** — read the rubric (top of this file) and the ledger rows
+nearest the surface you're touching, plus the LEARNINGS entries they graduated
+into. The failure modes recorded there are design constraints, not history:
+row locks on read-then-write RPCs (#15), "the trial balance still ties" is not
+proof of correctness (#16), report/export queries paginate (#18), migrations
+are the only schema path (#2/#17).
+
+**2. While building** — the PR template
+([.github/PULL_REQUEST_TEMPLATE.md](../.github/PULL_REQUEST_TEMPLATE.md))
+carries the audit gate as a checklist. It is filled in honestly or the PR
+doesn't merge. CI enforces the machine-checkable part: `pgtap`, `app-e2e`,
+`admin-e2e`, `responsive`, `unique-timestamps`. **Never merge over a red
+gate** (#14) — fix the gate first, even if the failure "isn't yours".
+
+**3. At merge — declare the coverage delta.** New functionality = new attack
+surface. The PR adds or updates a ledger row for its surface, starting at
+⬜ untested, and updates the "NOT covered" table if it opens a standing gap.
+A feature is not *done* when it ships; it's done when its row exists.
+
+**4. After shipping — stress it.** ⬜ rows are scheduled as stress passes in
+[STRESS_TEST_TRACKER.md](STRESS_TEST_TRACKER.md) (the v2 operating model there:
+one orchestrator fans out finder → verifier → fixer). A row leaves ⬜ only via
+an adversarial pass — negative inputs, concurrency, cross-tenant, failure
+injection — not via the happy-path e2e.
+
+**5. Recurring — the weekly `/audit` agent** runs the rubric, writes
+`audit_runs` (admin → Settings → Quality), and flags **coverage drift**:
+features merged since the last run that have no ledger row, and ⬜ rows older
+than two weeks with no scheduled stress pass.
+
+**6. Graduate.** A finding class that recurs across features becomes a
+LEARNINGS.md entry, and — wherever possible — a machine gate (a CI check, a
+pgTAP suite, a lint script) so the class can't recur silently. The sweep-1
+examples: pagination (#18) → Vitest in `apps/app`; timestamp collisions →
+`unique-timestamps` CI; tenant predicate → `check:tenant`.
+
 ## Program 1 — feature stress-test sweep (30 Jun – 2 Jul 2026)
 
 15 features adversarially stress-tested on live prod (negative inputs, edge cases,

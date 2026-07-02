@@ -430,17 +430,26 @@ got on 30 Jun–1 Jul:
    (P0s fixed + verified, P1s fixed or explicitly accepted by Nik).
 
 ### 4.5 Human checkpoints (the irreducible minimum, ~30 min/day)
-1. **Integrator's merge/deploy wave** — approve or run it (can graduate to standing
-   authorization once the loop earns trust, with rollback always one step away).
-2. **`decision-needed` cards** (e.g. CSV F4 re-import dedup policy, catch-up pricing).
-3. **OAuth/consents/keys** (Plaid signup, Xero re-consent, spend approvals).
+1. **Merge/deploy policy (Nik, 3 Jul):** the integrator **auto-merges docs- and test-only PRs**;
+   any PR touching **real code or the database (migration / edge fn / schema)** WAITS for Nik's
+   approval before merge + deploy. Rollback always one step away. (Can graduate to fuller
+   standing authorization once the loop earns trust.)
+2. **`decision-needed` cards** — surface to Nik. (Note: the big scope/pricing decisions are now
+   all locked as of 3 Jul; CSV F4 = skip dupes, catch-up = flat per-year, etc.)
+3. **OAuth/consents/keys** (Plaid production application, Xero re-consent). No token-spend
+   approvals — the loop runs on Nik's subscription, not metered API (§4.6).
 Everything else — building, testing, red-teaming, verifying — is the loop's job.
 
-### 4.6 How to physically run it — day + night continuous (Nik decision, 1 Jul)
-- **Cadence:** rolling sessions around the clock — ~3 builders at any time (a new one starts
-  when one finishes), red-team follows each PR, regression suite at 03:00, integrator wave
-  every morning 08:30, retro Sunday. Scheduled via Claude Code routines (`/schedule`), one
-  prompt pack per role naming its single task source (BACKLOG.md / open PRs) and hard rules.
+### 4.6 How to physically run it — subscription-paced, day + night (Nik, 1 Jul; refined 3 Jul)
+- **Runs on Nik's Claude subscription, not metered API tokens (Nik, 3 Jul).** Sessions are
+  Claude Code on the Mac under the subscription; **throughput is bounded by the plan's usage
+  limits, not a $ ceiling** — so **1–2 concurrent builders**, paced (pause + resume on rate
+  limits, never escalate to paid API). More parallelism later = the point to introduce metered
+  API + a daily $ cap; until then, subscription-only.
+- **Cadence:** rolling sessions — **1–2 builders** at a time (a new one starts when one
+  finishes), red-team follows each PR, regression suite at 03:00, integrator wave every morning
+  08:30, retro Sunday. Scheduled via Claude Code routines (`/schedule`), one prompt pack per
+  role naming its single task source (BACKLOG.md / open PRs) and hard rules.
 - **Mac never sleeps:** `sudo pmset -a sleep 0 disksleep 0` (+ `caffeinate` in the launchd
   wrappers); display can sleep, the machine can't. Set up at loop launch.
 - **Isolation:** every session `EnterWorktree` first (existing rule) — **worktrees branch

@@ -47,13 +47,21 @@ from it**. Three non-negotiables:
 - CSV F4 (re-import dedup policy) is a `decision-needed` for Nik; it does not block builds.
 - Mac awake? `sudo pmset -a sleep 0 disksleep 0` at launch (human step; sudo prompts).
 
+## Runs on Nik's Claude subscription — NOT metered API tokens (Nik, 3 Jul)
+The loop runs as **Claude Code sessions on Nik's subscription** (scheduled locally on the Mac),
+not API-billed cloud agents. Consequence: **throughput is bounded by the subscription's usage
+limits, not a dollar cap** — so pace to **1–2 concurrent builders**, not an always-on fleet.
+When a session hits a rate/usage limit, it pauses and resumes rather than escalating to paid
+API. (If Nik later wants more parallelism, that's the point where metered API billing + a daily
+$ ceiling would be introduced — until then, subscription-only.)
+
 ## The agents you run (scheduled routines; each = one role, one prompt, hard timeout)
 | Role | Cadence | One job |
 |---|---|---|
-| Builder ×≤3 | rolling, 24/7 | claim top unclaimed card → worktree **off `main`** → build + tests → PR. Never merge/deploy. |
+| Builder ×1–2 | rolling (subscription-paced) | claim top unclaimed card → worktree **off `main`** → build + tests → PR. Never merge/deploy. |
 | Red-team | after each PR | adversarially break it (edge/negative/concurrency; namespaced `[LOOP-<card>]` fixtures; drive the PR's workflow walkthrough for real); push findings+fixes to the PR |
 | Regression | nightly 03:00 | run the FULL scenario pack on a fresh seeded env; convert new findings/LEARNINGS rules into permanent scenarios; red report on any failure |
-| Integrator | daily 08:30 | review PRs, sequence merges (shared files!), merge green+red-teamed PRs, deploy migrations-then-fns in one wave FROM `main`, verify live (logs + re-query), update BACKLOG statuses, unclaim stale (>24h) cards |
+| Integrator | daily 08:30 | review PRs, sequence merges (shared files!); **auto-merge docs/test-only PRs; code + DB (migration/edge-fn/schema) PRs WAIT for Nik**; deploy migrations-then-fns in one wave FROM `main` (Nik-approved), verify live (logs + re-query), update BACKLOG statuses, unclaim stale (>24h) cards |
 | Regulatory watcher | weekly (daily Jan–Apr) | IRS/state changes → effective-dated, cited seed-diff PR, always `decision-needed` |
 | Auditor + Retro | weekly | `/audit` → Quality dashboard; retro proposes LEARNINGS/BACKLOG updates as a PR |
 
@@ -91,10 +99,21 @@ from it**. Three non-negotiables:
 LOOP-1 (dashboard) + REG-1 (regression pack) + IA-1 (owner nav — blocks all app-UI cards)
 → CENTRAL-1/2 → W1.2 + W1.6 → W1.4/IA-2 → rest of Wave 1 → **Wave-1 audit** → Wave 2.
 
-## Waiting on Nik (surface these; don't block on them silently)
-Tax research sign-off — scope LOCKED 3 Jul (every sector × US federal + all 50 states, all
-book-derived taxes); 7 remaining questions in `docs/plans/research/tax-mapping-research.md` ·
-daily token/$ spend ceiling for the loop · CSV F4 dedup policy · W2.1 catch-up pricing ·
-IA-3 admin-console migration plan · Plaid **production** application (sandbox keys already in
-secrets.env — file early for review lead time) · merge/deploy wave approvals (until standing
-authorization is granted).
+## Scope — FULLY LOCKED (Nik, 3 Jul). No open scope gates remain.
+All prior "Waiting on Nik" scope/pricing questions are resolved:
+- **Tax:** all US entity types incl. C-corp, CPA-lens-gated · federal + all 50 states · exports
+  = generic CSV/PDF **+** per-suite serializers (Drake/UltraTax) at launch · CPAs edit mappings
+  (owners view) · Penny proposes M-1 as drafts (human approves) · **fixed-asset/depreciation
+  subledger built (Penny computes)** · year-end package **included in subscription** · US-only
+  launch (Canada = paper proof). Full detail: `docs/plans/research/tax-mapping-research.md`.
+- **Catch-up (W2.1):** flat price per year of backlog. · **CSV F4:** detect + skip duplicate
+  re-imports. · **IA-3 admin console:** deferred until after Wave 1. · **Spend:** subscription,
+  not metered API (§ above). · **Merges:** docs/test auto-merge; **code + DB PRs wait for Nik**.
+
+## The only human actions still needed
+- **Nik files the Plaid production application** now (sandbox keys already in `secrets.env`;
+  Plaid's review has lead time — build against sandbox meanwhile). External signup, Nik-only.
+- **Nik approves each code/DB merge + deploy wave** (standing policy above; docs/tests are auto).
+- **At launch:** `sudo pmset -a sleep 0 disksleep 0` + create the scheduled routines.
+- **Cloudflare (optional):** disable the misconfigured `penny-proxy` Workers Build so its
+  standing-red check stops (it is NOT the real deploy — `deploy-penny` is green). Dashboard-side.

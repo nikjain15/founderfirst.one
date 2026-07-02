@@ -10,6 +10,7 @@ import AccountMenu from "./AccountMenu";
 import OrgSwitcher from "./OrgSwitcher";
 import CreateOrg from "../org/CreateOrg";
 import { SITE } from "@ff/site";
+import { COPY } from "../copy";
 
 export default function Topbar() {
   const { session, signOut } = useAuth();
@@ -20,15 +21,15 @@ export default function Topbar() {
   const [creating, setCreating] = useState(false);
 
   const roleLabel = roleInfo
-    ? roleInfo.lens === "owner" ? "Owner" : roleInfo.canWrite ? "CPA" : "CPA · read-only"
+    ? roleInfo.lens === "owner" ? COPY.nav.roleOwner : roleInfo.canWrite ? COPY.nav.roleCpa : COPY.nav.roleCpaReadonly
     : null;
 
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <Link className="brand" to="/" title={`Penny by ${SITE.company}`}>
+        <Link className="brand" to="/" title={COPY.nav.brandTitle(SITE.company)}>
           <span className="p-mark p-mark-sm" aria-hidden="true">P</span>
-          Penny
+          {COPY.nav.penny}
         </Link>
 
         <OrgSwitcher orgs={orgs} activeOrg={activeOrg} onSelect={setActiveOrgId}
@@ -42,14 +43,14 @@ export default function Topbar() {
           )}
           <div className="acct-sep" />
           {roleInfo?.lens === "owner" && (
-            <Link className="acct-item" role="menuitem" to="/settings">Settings</Link>
+            <Link className="acct-item" role="menuitem" to="/settings">{COPY.nav.settings}</Link>
           )}
           {isStaff.data && (
-            <Link className="acct-item" role="menuitem" to="/staff">Staff console</Link>
+            <Link className="acct-item" role="menuitem" to="/staff">{COPY.nav.staffConsole}</Link>
           )}
           <div className="acct-sep" />
           <button className="acct-item acct-signout" role="menuitem" onClick={() => void signOut()}>
-            Sign out
+            {COPY.nav.signOut}
           </button>
         </AccountMenu>
       </div>
@@ -57,7 +58,7 @@ export default function Topbar() {
         <div className="topbar-create">
           <div className="topbar-create-inner">
             <CreateOrg onDone={() => setCreating(false)} />
-            <button className="ghost sm" onClick={() => setCreating(false)}>Cancel</button>
+            <button className="ghost sm" onClick={() => setCreating(false)}>{COPY.common.cancel}</button>
           </div>
         </div>
       )}

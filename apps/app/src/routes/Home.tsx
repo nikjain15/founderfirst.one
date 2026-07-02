@@ -11,6 +11,7 @@ import CreateOrg from "../org/CreateOrg";
 import OwnerLens from "../lenses/OwnerLens";
 import CpaLens from "../lenses/CpaLens";
 import { SITE } from "@ff/site";
+import { COPY } from "../copy";
 
 export default function Home() {
   const { loading, error, orgs, activeOrg, roleInfo } = useActiveOrg();
@@ -29,18 +30,16 @@ export default function Home() {
     <div className="shell">
       <Topbar />
       <main className="workspace">
-        {loading && <p className="muted">Loading your workspaces…</p>}
+        {loading && <p className="muted">{COPY.common.loadingWorkspaces}</p>}
         {error && (
-          <p className="error" role="alert">
-            We couldn't load your workspaces just now — please refresh. If it keeps happening, email {SITE.email}.
-          </p>
+          <p className="error" role="alert">{COPY.home.loadError(SITE.email)}</p>
         )}
 
         {!loading && !error && orgs.length === 0 && (
           <div className="empty">
             <span className="p-mark p-mark-lg welcome-mark" aria-hidden="true">P</span>
-            <h1 className="page-title">Welcome.</h1>
-            <p className="muted">Create your first organization and Penny will start keeping your books.</p>
+            <h1 className="page-title">{COPY.home.welcome}</h1>
+            <p className="muted">{COPY.home.welcomeLead}</p>
             <CreateOrg />
           </div>
         )}
@@ -52,10 +51,7 @@ export default function Home() {
           <CpaLens org={activeOrg} roleInfo={roleInfo} />
         )}
         {activeOrg && !roleInfo && (
-          <p className="muted">
-            You're not currently on this organization's books — you may have left it, or an invite was revoked.
-            Switch to one of yours above, or ask the owner to re-invite you.
-          </p>
+          <p className="muted">{COPY.home.noMembership}</p>
         )}
         {/* "+ New organization" is no longer stapled to the page body — it lives in
             the org switcher (APP_PRINCIPLES §5), the one place a user goes to change

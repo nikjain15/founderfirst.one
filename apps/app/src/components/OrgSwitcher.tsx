@@ -28,12 +28,14 @@ function Check() {
 }
 
 export default function OrgSwitcher({
-  orgs, activeOrg, onSelect, onCreateOrg,
+  orgs, activeOrg, onSelect, onCreateOrg, counts,
 }: {
   orgs: Org[]; activeOrg: Org | null; onSelect: (id: string) => void;
   // "+ New organization" / "+ Add client" lives here (APP_PRINCIPLES §5), not on
   // the page body — the switcher is where a user goes to change which books they're in.
   onCreateOrg?: () => void;
+  // Optional per-org open-item counts (CPA practice: badge each client's work).
+  counts?: Record<string, number>;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -106,6 +108,9 @@ export default function OrgSwitcher({
                   <span className="orgsw-item-name">{o.name}</span>
                   <span className="orgsw-item-type">{o.type}</span>
                 </span>
+                {counts && (counts[o.id] ?? 0) > 0 && (
+                  <span className="orgsw-count">{counts[o.id]}</span>
+                )}
                 {o.id === activeOrg?.id && <Check />}
               </button>
             </li>

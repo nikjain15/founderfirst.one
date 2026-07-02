@@ -7,7 +7,7 @@
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { OWNER_TABS, CPA_TABS, visibleTabs, visibleSubs, tabForSurface, type Surface } from "./nav";
+import { OWNER_TABS, CPA_TABS, visibleTabs, visibleSubs, tabForSurface, reachableSurface, type Surface } from "./nav";
 
 describe("owner lens nav (IA-1 · APP_PRINCIPLES §2)", () => {
   it("presents exactly the four jobs + a de-emphasized Advanced, in order", () => {
@@ -139,5 +139,41 @@ describe("learned-rules nav reachability (W1.6 · REG W1.6-RULEDEL)", () => {
     expect(rwSubs).toEqual(["review", "rules"]);
     // The parent Categorize tab itself stays visible for read-only (so Rules is reachable).
     expect(visibleTabs("cpa", false).map((t) => t.id)).toContain("categorize");
+  });
+});
+
+describe("reachableSurface — practice-queue deep-link never dead-ends (W1.4 read_only)", () => {
+  // The queue routes uncategorized→review and unreconciled→import; both tabs are
+  // write-only, so a read_only CPA can't reach them directly. The deep-link must
+  // still open the client's books on a surface they CAN view, not no-op.
+  it("passes a full-access CPA straight through to the requested surface", () => {
+    expect(reachableSurface("cpa", "review", true)).toBe("review");
+    expect(reachableSurface("cpa", "import", true)).toBe("import");
+    expect(reachableSurface("cpa", "periods", true)).toBe("periods");
+    expect(reachableSurface("cpa", "journal", true)).toBe("journal");
+  });
+
+  it("falls a read_only CPA back to a viewable surface (Journal) for write-only targets", () => {
+    // Regression: before the fix these returned nothing reachable and the "View"
+    // button silently did nothing for read_only engagements.
+    expect(tabForSurface("cpa", "review", false)).toBeUndefined();
+    expect(tabForSurface("cpa", "import", false)).toBeUndefined();
+    expect(reachableSurface("cpa", "review", false)).toBe("journal");
+    expect(reachableSurface("cpa", "import", false)).toBe("journal");
+  });
+
+  it("keeps read-only-viewable surfaces (journal, periods) as-is for read_only CPAs", () => {
+    expect(reachableSurface("cpa", "journal", false)).toBe("journal");
+    expect(reachableSurface("cpa", "periods", false)).toBe("periods");
+  });
+
+  it("always resolves to a surface that a visible tab actually exposes", () => {
+    for (const canWrite of [true, false]) {
+      for (const s of ["review", "import", "journal", "periods", "reports"] as Surface[]) {
+        const r = reachableSurface("cpa", s, canWrite);
+        expect(r, `${s}/${canWrite}`).toBeDefined();
+        expect(tabForSurface("cpa", r!, canWrite), `${s}/${canWrite} reachable`).toBeDefined();
+      }
+    }
   });
 });

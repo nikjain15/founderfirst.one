@@ -23,7 +23,10 @@ const ACCT = {
   cogs: { id: "a-cogs", code: "5000", name: "COGS", type: "expense" as const },
   rent: { id: "a-rent", code: "6000", name: "Rent", type: "expense" as const },
 };
-type Acct = (typeof ACCT)[keyof typeof ACCT];
+// code is `string | null` in production (LedgerAccount) — an uncategorized
+// holding account legitimately has no code. Widen the literal-inferred code so
+// tests can exercise the no-code path (and cast such accounts without error).
+type Acct = Omit<(typeof ACCT)[keyof typeof ACCT], "code"> & { code: string | null };
 
 function line(acct: Acct, side: Side, amount_minor: number): JournalLine {
   return {

@@ -13,7 +13,7 @@
 -- Everything runs in a transaction and rolls back.
 
 begin;
-select plan(14);
+select plan(19);
 
 -- ── 1. schema + seed present ─────────────────────────────────────────────────
 select has_table('public', 'entity_types',       'entity_types table exists');
@@ -95,6 +95,62 @@ select ok(
       '00000000-0000-0000-0000-0000000ce2b1', date '2026-02-01', 60)
     where obligation_key = 'annual_return' and due_date = date '2026-03-15'),
   'consumer returns the S-corp annual-return deadline from the kernel (Mar 15 2026)');
+
+-- ── 5. RED-TEAM regressions (PR #177 review) ─────────────────────────────────
+-- (a) DEFECT: the loader emitted source=null but source is NOT NULL DEFAULT 'seed',
+--     so the whole seed aborted and ZERO rows loaded. Assert the seed is actually
+--     present with source defaulted — the fix omits null source so the default wins.
+select ok(
+  (select count(*) from filing_obligations) >= 11,
+  'filing_obligations seed actually LOADED (source-null NOT NULL abort fixed)');
+select ok(
+  not exists (select 1 from filing_obligations where source is null),
+  'every filing_obligations row has a non-null source (DB default applied)');
+
+-- (b) DEFECT: overlapping ACTIVE windows for one key were silently allowed and
+--     masked by distinct-on. The exclusion constraint must now reject them.
+select throws_ok(
+  $ov$
+    insert into filing_obligations
+      (jurisdiction_code, entity_type, tax_year, obligation_key, kind, form_code, label,
+       due_month, due_day, due_year_offset, effective_from, effective_to, citation, source)
+    values
+      ('US-FED','sole_prop',2099,'atk_ov','estimate','X','A',6,15,1,'2020-01-01','2024-12-31','c','seed'),
+      ('US-FED','sole_prop',2099,'atk_ov','estimate','X','B',7,20,1,'2022-01-01','2026-12-31','c','seed')
+  $ov$,
+  '23P01',   -- exclusion_violation
+  null,
+  'overlapping active effective windows for one obligation are REJECTED (no silent wrong-law lookup)');
+
+-- (c) DEFECT: re-running the seed after a supersede re-opened the closed row
+--     (clobbering old law / colliding with one_active). Prove re-seed is idempotent
+--     against a superseded row: closed row stays closed, exactly one open row.
+select public.supersede_filing_obligation(
+  'US-FED', 'sole_prop', 2025, 'q2_estimate', date '2026-02-01',
+  '{"kind":"estimate","form_code":"1040-ES","label":"Q2 revised","due_month":6,"due_day":16}'::jsonb,
+  'https://example.test/rev', 'regulatory_watcher');
+-- re-apply the exact seed upsert for the ORIGINAL q2 row (what a re-seed does):
+insert into filing_obligations
+  (jurisdiction_code, entity_type, tax_year, obligation_key, kind, form_code, label,
+   due_month, due_day, due_year_offset, effective_from, citation)
+values ('US-FED','sole_prop',2025,'q2_estimate','estimate','1040-ES','Q2 estimated tax payment',
+   6,15,1,'2020-01-01','https://www.irs.gov/forms-pubs/about-form-1040-es')
+on conflict (jurisdiction_code, entity_type, tax_year, obligation_key, effective_from)
+  do update set kind = excluded.kind, form_code = excluded.form_code, label = excluded.label,
+     due_month = excluded.due_month, due_day = excluded.due_day,
+     due_year_offset = excluded.due_year_offset, citation = excluded.citation;
+select is(
+  (select count(*)::int from filing_obligations
+     where entity_type='sole_prop' and tax_year=2025 and obligation_key='q2_estimate'
+       and effective_to is null),
+  1,
+  're-seeding a superseded row does NOT re-open the closed window (exactly one open row)');
+select is(
+  (select source from filing_obligations
+     where entity_type='sole_prop' and tax_year=2025 and obligation_key='q2_estimate'
+       and effective_to is null),
+  'regulatory_watcher',
+  're-seed does not clobber the superseding row''s source');
 
 select finish();
 rollback;

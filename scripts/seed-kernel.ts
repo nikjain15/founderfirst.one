@@ -54,7 +54,22 @@ const sqlStr = (v: unknown): string => {
  *  column mismatch. */
 const TABLES: Record<
   string,
-  { cols: string[]; conflict: string; touchUpdatedAt?: boolean }
+  {
+    cols: string[];
+    conflict: string;
+    touchUpdatedAt?: boolean;
+    /** Columns NEVER overwritten by a re-seed's DO UPDATE. For effective-dated law
+     *  rows this is load-bearing: a supersede sets effective_to on the seeded row and
+     *  a regulatory_watcher stamps source — a naive re-seed would reset effective_to
+     *  back to null (re-opening a closed window → clobbering old law / colliding with
+     *  the one-active index) and overwrite source back to 'seed'. Re-seed only
+     *  refreshes descriptive fields; it never resurrects a closed window. */
+    immutableOnConflict?: string[];
+    /** Columns to OMIT from the INSERT when the seed value is null/absent, so the
+     *  DB default applies (e.g. source NOT NULL DEFAULT 'seed'). Without this a
+     *  missing key renders as SQL null and violates the NOT NULL constraint. */
+    omitIfNull?: string[];
+  }
 > = {
   entity_types: {
     cols: ["key", "label", "short_label", "description", "diagnostic_questions",
@@ -80,6 +95,10 @@ const TABLES: Record<
            "threshold_minor", "notes", "effective_from", "effective_to",
            "citation", "source"],
     conflict: "(jurisdiction_code, entity_type, tax_year, obligation_key, effective_from)",
+    // effective_to + source belong to the law LIFECYCLE (supersede / watcher), not
+    // the seed's description of the row. Never let a re-seed reset them.
+    immutableOnConflict: ["effective_to", "source"],
+    omitIfNull: ["source"],
   },
   vendor_priors: {
     cols: ["match_pattern", "vendor_label", "category_hint", "industry_key", "confidence"],
@@ -114,16 +133,23 @@ function emitTable(table: string, seed: SeedFile): string {
   const spec = TABLES[table];
   if (!spec) throw new Error(`No column spec for table '${table}'`);
   const keyCols = conflictCols(spec.conflict);
+  const immutable = new Set(spec.immutableOnConflict ?? []);
+  const omitIfNull = new Set(spec.omitIfNull ?? []);
   const lines: string[] = [];
   lines.push(`-- ${table} (${seed.rows.length} rows)`);
   for (const row of seed.rows) {
-    const values = spec.cols.map((c) => sqlStr(row[c])).join(", ");
-    const updates = spec.cols
-      .filter((c) => !keyCols.has(c))
+    // Omit NOT-NULL-defaulted columns whose seed value is absent/null so the DB
+    // default applies (otherwise SQL null violates the NOT NULL constraint).
+    const cols = spec.cols.filter(
+      (c) => !(omitIfNull.has(c) && (row[c] === null || row[c] === undefined)),
+    );
+    const values = cols.map((c) => sqlStr(row[c])).join(", ");
+    const updates = cols
+      .filter((c) => !keyCols.has(c) && !immutable.has(c))
       .map((c) => `${c} = excluded.${c}`);
     if (spec.touchUpdatedAt) updates.push("updated_at = now()");
     lines.push(
-      `insert into public.${table} (${spec.cols.join(", ")}) values (${values})\n` +
+      `insert into public.${table} (${cols.join(", ")}) values (${values})\n` +
       `  on conflict ${spec.conflict} do update set ${updates.join(", ")};`,
     );
   }

@@ -90,10 +90,31 @@ $ ceiling would be introduced — until then, subscription-only.)
 11. Existing tech stack only (mission #4): no new frameworks, databases, ORMs, CSS/state
     libraries, hosted services, or major-version migrations — `decision-needed` for Nik.
     Small utility deps: allowed, pinned, named in the PR.
-12. Spend ceiling: the loop runs within Nik's stated daily token/$ budget. The integrator
-    tracks spend on the dashboard (§4.7); if the day's ceiling is hit, pause builders and
-    report at the top of the dashboard — overspend is a stop-and-report, never a silent
-    continue.
+12. Spend: **NO numeric ceiling** (Nik, 3 Jul) — max out the subscription per use case. On a
+    rate limit, pause and **resume the loop in a fresh session** (PR-only output + BACKLOG
+    statuses + heartbeats make this safe); never escalate to the metered API. The integrator
+    still surfaces spend on the dashboard.
+
+## Operational discipline (learned the hard way — LEARNINGS 21–24, applied every run)
+These cost real cycles on the Wave 1–2 run; do them from the start:
+- **Worktree off fresh `origin/main`, always** (LEARNINGS 21). The repo root is the stale
+  `deploy-finish` branch — grepping it makes you think dependencies are missing when they
+  aren't. `git fetch` before reasoning about `main`; when git and GitHub disagree, `gh api`
+  wins. **Run `bash scripts/loop-preflight.sh <worktree>` before every push** — it hard-fails
+  a stale base and flags migration-timestamp collisions, pgTAP `plan(N)`≠assertions, non-hex
+  UUID fixtures, and `throws_ok` given a condition-name instead of a 5-char SQLSTATE.
+- **CI-truth** (LEARNINGS 22): a PR is green only when `gh pr checks` says so — never trust a
+  subagent's static "safe" (no local Docker ⇒ pgTAP runs only in CI). Watch tee-without-
+  pipefail false-greens.
+- **Deploy per-function auth; verify by response body** (LEARNINGS 23): never blanket
+  `--no-verify-jwt`; register each fn in `config.toml`; migrations via Management API +
+  ledger insert; a 401 can be correct.
+- **Coordinate shared files** (LEARNINGS 24): disjoint migration-timestamp ranges per builder;
+  `seed.sql` = pure SQL (no `\i`); shared catalogs get labelled additive blocks; dependents
+  build off a **rolling `loop/wave<N>-integration` branch**, not pinned commits.
+- **Throughput (Nik-endorsed, gates preserved):** #1 a **Docker-capable runner** so pgTAP runs
+  locally (biggest win — root cause of multi-round CI cycles; needs Nik infra) · #2 the
+  preflight above (done) · #4 rolling integration branch (done). Cap stays 4, disjoint-gated.
 
 ## Build order (first cycle)
 LOOP-1 (dashboard) + REG-1 (regression pack) + IA-1 (owner nav — blocks all app-UI cards)
@@ -111,9 +132,15 @@ All prior "Waiting on Nik" scope/pricing questions are resolved:
   not metered API (§ above). · **Merges:** docs/test auto-merge; **code + DB PRs wait for Nik**.
 
 ## The only human actions still needed
-- **Nik files the Plaid production application** now (sandbox keys already in `secrets.env`;
-  Plaid's review has lead time — build against sandbox meanwhile). External signup, Nik-only.
-- **Nik approves each code/DB merge + deploy wave** (standing policy above; docs/tests are auto).
+- **Nik files the Plaid production application** — **PARKED (Nik, 2 Jul):** non-critical; the
+  free-trial 10 connections + sandbox cover the pilot. File it before **>10 live users**;
+  W2.3 built + deployed against sandbox meanwhile. Then flip `PLAID_ENV=production` +
+  `PLAID_SECRET_PRODUCTION` (already in `secrets.env`).
+- **Nik gives the loop a Docker-capable runner** (throughput #1) — the top infra ask; lets
+  builders run pgTAP locally and end the multi-round CI-fix cycles. Until then, `loop-preflight`
+  + CI cover it.
+- **Nik approves each wave's merge + deploy** (standing policy; docs/tests auto-merge). Nik may
+  delegate a specific wave's deploy — when he does, run it end-to-end and verify live (Rule 23).
 - **At launch:** `sudo pmset -a sleep 0 disksleep 0` + create the scheduled routines.
-- **Cloudflare (optional):** disable the misconfigured `penny-proxy` Workers Build so its
-  standing-red check stops (it is NOT the real deploy — `deploy-penny` is green). Dashboard-side.
+- *(Resolved 2 Jul: the `penny-proxy` orphaned Worker and the Supabase-Branching preview check
+  were both removed — see LEARNINGS 20. No standing-red checks remain.)*

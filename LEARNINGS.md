@@ -346,6 +346,95 @@ longer exists**; the only Cloudflare Worker for this repo is `penny-site-bubble`
 Cloudflare build check ever reappears, check Workers & Pages → the service → Settings →
 Build for a stray git connection.
 
+## 21. Work in a worktree off fresh `origin/main` — the repo root is a stale branch.
+
+**What happened:** The repo root is permanently checked out on the stale `deploy-finish`
+branch, which predates Waves 1–2. During Wave 3 a builder "verified against origin/main"
+but actually grepped the **repo root**, found no `strings.ts` / `platform_config`, and
+declared its card **blocked — dependencies missing**. They weren't missing; they were on
+`main`, deployed to prod. The builder had read the wrong tree. A whole build cycle was
+wasted. Separately, several turns reasoned off a **stale local `origin/main` ref** (a PR
+showed `MERGED` while the local ref still pointed at the pre-merge commit) until a
+`git fetch` corrected it.
+
+**Rules:**
+- **Every builder/fixer creates a git worktree off freshly-fetched `origin/main` and does
+  ALL reading, grepping, and building INSIDE that worktree** — never in the repo root
+  (it's a stale branch). The loop preflight (`scripts/loop-preflight.sh`) hard-fails if
+  known-recent files are absent, which means you're on a stale base.
+- **`git fetch` before you reason about `main`.** Local refs go stale constantly; when
+  git state and GitHub disagree, GitHub wins — verify via `gh api` / `gh pr view`.
+- **A "missing dependency / this card is blocked" conclusion is far more often a stale
+  base than a real gap.** Re-verify against a fresh worktree before ever reporting blocked
+  or inventing the "missing" thing (which would recreate an owned surface — Rule 6).
+
+## 22. A PR is "green" only when CI says so — a static "safe" verdict is not CI-green.
+
+**What happened:** REG-1 (#175) was reported "safe" by an adversarial reviewer that
+**could not run pgTAP** (no Docker in the sandbox — it reasoned from source only). It was
+folded into the wave as clean. In fact its `regression_pack_test.sql` errored before its
+first assertion (an invalid-hex UUID fixture) and had been **failing all along** — masked
+by a `tee`-without-`pipefail` step in the CI workflow that returned the pipe's exit code
+(~0) and swallowed the red. The fix that added `pipefail` is what finally surfaced it.
+
+**Rules:**
+- **Confirm `gh pr checks <n>` shows every check passing before calling a PR clean or
+  merging it.** A subagent's "safe / should pass in CI" + local `tsc`/`vitest` is
+  necessary but NOT sufficient — pgTAP and the E2E jobs only truly execute in CI.
+- **Hunt false-greens.** Any CI step piping through `tee`/a subshell without
+  `set -o pipefail` reports the pipe's exit code and hides failures. Add `pipefail`
+  wherever the loop adds CI steps.
+- **No local Docker ⇒ recurring pgTAP-authoring bugs** (plan(N)≠assertion count, non-hex
+  UUID fixtures, `is(numeric,bigint)` type mismatch, `throws_ok` given a condition name
+  instead of a 5-char SQLSTATE). `scripts/loop-preflight.sh` catches these statically
+  before pushing; a **Docker-capable runner** so builders run pgTAP locally is the real
+  fix and the standing infra ask.
+
+## 23. Deploy each edge function to match its own auth — verify from the response body, not the status.
+
+**What happened:** During the Wave-2 deploy, all 7 edge functions were deployed with a
+blanket `--no-verify-jwt`. That is only correct for the **public** `plaid-webhook`; it
+left 6 **authed** functions publicly reachable at the gateway (their in-code
+`getUser`/`can_write_org_as` still protected them, but the gateway layer was off). Caught
+by a live smoke test and corrected by redeploying the 6 without the flag. Separately, a
+smoke test read a **401** from `plaid-webhook` and nearly "fixed" a non-bug — the 401 body
+was `{"error":"unverified_webhook"}`, i.e. the gateway was correctly open and the function
+correctly rejected an unsigned request. The status code alone was misleading.
+
+**Rules:**
+- **Never blanket-toggle `verify_jwt` across a deploy.** Public webhooks = `verify_jwt=false`;
+  everything user-facing keeps gateway JWT on. Register each function's setting in
+  `config.toml` so redeploys are reproducible (an unregistered function silently defaults,
+  and a later `deploy` without the flag will flip a webhook closed → unreachable).
+- **Verify a live deploy by the response BODY + a functional probe, not the status code.**
+  A 401 can be correct security; a 200 can be a stale build. Smoke-test: app serves,
+  authed fn returns 401 unauth, public fn returns its own error not a gateway one.
+- **Prod migrations apply via the Management API** (`POST /v1/projects/{ref}/database/query`
+  with `--data @file`, UA header) then insert the version into
+  `supabase_migrations.schema_migrations` — the CLI `db push` needs a DB password not in
+  secrets. `supabase functions deploy <fn> --project-ref <ref>` uses the access token
+  (no DB password). Expect transient Supabase API 502s — retry with ~60s backoff.
+
+## 24. When builders run in parallel, coordinate the shared files up front.
+
+**What happened:** Parallel Wave-1 builders each picked migration timestamps independently
+and two collided (`20260703060000` in both W1.5 and W1.3-B) — invisible per-branch, a hard
+`unique-timestamps` failure once both hit `main`. Separately, CENTRAL-2's `seed.sql` used a
+psql `\i` include; Supabase applies `seed.sql` over the pgx **batch protocol**, which
+rejects backslash meta-commands (`syntax error at or near "\"`), aborting the whole stack
+replay — inherited by every stacked branch.
+
+**Rules:**
+- **Assign disjoint migration-timestamp ranges to concurrent builders up front** (one
+  card = one reserved range), and re-check `ls supabase/migrations | uniq -d` at the gate.
+- **`supabase/seed.sql` must contain pure SQL only — no psql meta-commands (`\i`, `\set`).**
+  Seed loaders inline their generated SQL into delimited sections so cards append, not
+  `\i`-include. The preflight flags `\`-leading lines.
+- **Shared catalogs (strings, seed.sql, nav, `config.toml`) get labelled additive blocks,
+  merged by union at the gate** — never a rewrite. Dependents build off a **rolling
+  `loop/wave<N>-integration` branch** (updated as base cards land), not pinned commits, to
+  avoid gate-time rebase churn.
+
 ---
 
 *Add a numbered rule above when a mistake teaches a lesson worth not repeating.*
@@ -356,6 +445,22 @@ Dated findings from `/audit` runs, newest first. Each entry: the commit audited,
 a short summary, and one line per P0/P1 marked **fixed** or **deferred**. When an
 issue here keeps recurring, graduate it into a numbered rule above — that is how
 we stop repeating it. The command lives at `.claude/commands/audit.md`.
+
+### 2 Jul 2026 · Autonomous build loop — Waves 1 & 2 shipped to prod
+One orchestrating session fanned out builders → red-team → CI-verify → wave-audit → deploy
+(Rule 19 in practice). **Wave 1** (12 cards, integration #185) and **Wave 2** (3 cards,
+integration #189) merged + deployed to prod (16+4 migrations applied via the Management
+API, edge fns deployed, verified live). **18 real defects caught + fixed pre-merge, 6 P0**
+— forgeable bank-rec tie-out, 2 kernel effective-dating (seed never loaded; re-seed
+re-opened closed law), Plaid missing `account_id` column (would crash every sync),
+plaid-webhook forgery (added ES256 verify, fail-closed in prod), catch-up client-confidence
+trust bypass — plus a cross-source dedup race and a raft of pgTAP/CI-truth fixes. Both waves
+passed the 14-dimension audit (0 P0). **Operating lessons graduated into rules 21–24**
+(stale-tree/worktree discipline · CI-truth vs static "safe" · per-function auth on deploy ·
+parallel-builder file coordination). Added `scripts/loop-preflight.sh` to catch the
+recurring pgTAP-authoring bugs before CI. Standing infra ask: a Docker-capable runner so
+pgTAP runs locally (root cause of the multi-round CI-fix cycles). Wave 3 carded (#190),
+building.
 
 ### 30 Jun – 2 Jul 2026 · Feature stress-test sweep (baseline: `main` post-#122)
 15 features adversarially stress-tested on live prod. Full ledger with per-feature

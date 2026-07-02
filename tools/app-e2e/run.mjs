@@ -71,7 +71,9 @@ const { server, port } = await startServer();
 await mkdir(ARTIFACTS, { recursive: true });
 const base = `http://127.0.0.1:${port}/app/`;
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: DESKTOP });
+// acceptDownloads so the W1.2 export-download assertion can capture the file.
+const context = await browser.newContext({ viewport: DESKTOP, acceptDownloads: true });
+const page = await context.newPage();
 const consoleErrors = [];
 page.on("console", (m) => { if (m.type() === "error") { consoleErrors.push(m.text()); console.log("  [browser error]", m.text()); } });
 page.on("pageerror", (e) => { consoleErrors.push(String(e)); console.log("  [page error]", String(e)); });
@@ -124,6 +126,30 @@ async function sweepWidths(label) {
   else ok(`${label}: no overflow across ${LADDER.length} widths (${LADDER[0]}–${LADDER[LADDER.length - 1]}px)`);
 }
 
+/** W1.2 — download a report and assert a real file arrives, period-stamped.
+ *  Proves the 3-tap "Reports → pick period → Download" flow yields one file. */
+async function verifyReportDownload() {
+  await page.setViewportSize(DESKTOP);
+  // Pick a period (any date is fine — the file must still download).
+  const fromDate = page.locator(".report-controls input[type=date]").first();
+  if (await fromDate.count().catch(() => 0)) {
+    await fromDate.fill("2026-01-01").catch(() => {});
+  }
+  const csvBtn = page.getByRole("button", { name: "Download CSV" });
+  if (!(await csvBtn.count().catch(() => 0))) { fail("Reports: no Download CSV button"); return; }
+  try {
+    const [download] = await Promise.all([
+      page.waitForEvent("download", { timeout: 10_000 }),
+      csvBtn.click(),
+    ]);
+    const name = download.suggestedFilename();
+    if (/_.+_.+\.csv$/.test(name)) ok(`Reports export downloaded a period-stamped CSV (${name})`);
+    else fail(`Reports export filename not period-stamped: ${name}`);
+  } catch (e) {
+    fail("Reports export did not trigger a download: " + (e?.message || e));
+  }
+}
+
 try {
   await page.goto(base, { waitUntil: "networkidle", timeout: 60_000 });
 
@@ -162,6 +188,9 @@ try {
         continue;
       }
       ok(`${s.label} renders`);
+      // W1.2 — Reports must export a real file in ≤ 3 taps (pick period → Download).
+      // Assert the download event fires with a period-stamped filename.
+      if (s.key === "reports") await verifyReportDownload();
       await page.screenshot({ path: join(ARTIFACTS, `desktop-${s.key}.png`), fullPage: true });
       await sweepWidths(s.label);                 // 320 → 1920, every ladder width
       await page.setViewportSize(MOBILE);

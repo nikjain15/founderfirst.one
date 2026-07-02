@@ -103,6 +103,74 @@ export function profitAndLoss(
   return { income, expense, totalIncome, totalExpense, netIncome: totalIncome - totalExpense };
 }
 
+// ── General ledger detail ─────────────────────────────────────────────────────
+export interface GlRow {
+  account_id: string;
+  account: string; // "code · name" (or name)
+  entry_date: string;
+  memo: string;
+  debit: number; // minor units (0 if this line is a credit)
+  credit: number; // minor units (0 if this line is a debit)
+  balance: number; // running debit-positive balance within the account
+}
+
+/**
+ * Full entry/line dump with a per-account running balance (debit-positive).
+ * Excludes 'pending_review' (not in the books), like every other report; rows are
+ * ordered by account, then date, then creation so the running balance is
+ * deterministic. Optional inclusive date filter for period scoping. This is the
+ * single source the on-screen GL and the GL export both render (they can't drift).
+ */
+export function generalLedger(
+  entries: JournalEntry[],
+  dateFilter?: (entryDate: string) => boolean,
+): GlRow[] {
+  interface Flat {
+    account_id: string; account: string; entry_date: string; created: string;
+    memo: string; side: "D" | "C"; amount: number;
+  }
+  const flat: Flat[] = [];
+  for (const e of entries) {
+    if (!inBooks(e)) continue;
+    if (dateFilter && !dateFilter(e.entry_date)) continue;
+    for (const l of e.lines ?? []) {
+      const code = l.account?.code;
+      flat.push({
+        account_id: l.account_id,
+        account: code ? `${code} · ${l.account?.name ?? "—"}` : (l.account?.name ?? "—"),
+        entry_date: e.entry_date,
+        created: e.created_at,
+        memo: l.memo ?? e.memo ?? "",
+        side: l.side,
+        amount: l.amount_minor,
+      });
+    }
+  }
+  flat.sort(
+    (a, b) =>
+      a.account.localeCompare(b.account) ||
+      a.entry_date.localeCompare(b.entry_date) ||
+      a.created.localeCompare(b.created),
+  );
+  const rows: GlRow[] = [];
+  let curAccount: string | null = null;
+  let balance = 0;
+  for (const r of flat) {
+    if (r.account_id !== curAccount) { curAccount = r.account_id; balance = 0; }
+    balance += r.side === "D" ? r.amount : -r.amount;
+    rows.push({
+      account_id: r.account_id,
+      account: r.account,
+      entry_date: r.entry_date,
+      memo: r.memo,
+      debit: r.side === "D" ? r.amount : 0,
+      credit: r.side === "C" ? r.amount : 0,
+      balance,
+    });
+  }
+  return rows;
+}
+
 export interface BalanceSheetLine { account_id: string; code: string | null; name: string; amount: number; }
 export interface BalanceSheet {
   assets: BalanceSheetLine[];

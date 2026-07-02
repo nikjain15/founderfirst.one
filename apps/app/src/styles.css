@@ -501,8 +501,15 @@ button.ghost.sm, .ghost.sm {
 .je-actions { display: flex; gap: 0.5rem; }
 
 /* reports */
-.report-seg { display: inline-flex; border: var(--bw-hair) solid var(--line); border-radius: var(--r-pill); overflow: hidden; }
+/* Segmented report picker (4 views). Fluid-first: the pill never widens the
+   page — when its buttons can't fit (narrow phones) it scrolls inside its own
+   max-width instead of overflowing. Labels stay whole (no clipped text). */
+.report-seg {
+  display: flex; max-width: 100%; overflow-x: auto;
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-pill);
+}
 .report-seg button {
+  flex: 0 0 auto; white-space: nowrap;
   min-height: 2.25rem; background: var(--white); color: var(--ink-3);
   border: none; border-radius: 0; padding: 0.4rem 0.9rem; font-size: var(--fs-ui); font-weight: var(--fw-semibold);
 }
@@ -530,6 +537,32 @@ button.ghost.sm, .ghost.sm {
   padding: 0.6rem 0; border-top: 2px solid var(--ink); margin-top: 0.4rem;
   font-weight: var(--fw-bold);
 }
+
+/* report period picker + export buttons (W1.2) */
+.report-controls {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.report-date { display: flex; flex-direction: column; gap: 0.2rem; }
+.report-date span {
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip);
+  color: var(--ink-3);
+}
+.report-date input {
+  min-height: var(--tap-min); font-size: var(--fs-ui);
+  padding: 0.35rem 0.5rem; border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-sm); background: var(--white); color: var(--ink);
+}
+.report-dl { display: inline-flex; gap: 0.5rem; margin-left: auto; }
+
+/* GL detail — full dump w/ running balance. Fluid columns, stacks on narrow. */
+.report-table.gl { min-width: min(52rem, 100%); }
+.report-table.gl .report-head, .report-table.gl .gl-row {
+  grid-template-columns:
+    6rem minmax(8rem, 1fr) minmax(6rem, 1.4fr) 6.5rem 6.5rem 7rem;
+}
+.gl-date { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gl-acct, .gl-memo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* periods */
 .period-row {

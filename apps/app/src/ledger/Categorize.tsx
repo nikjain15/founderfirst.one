@@ -15,6 +15,8 @@ import {
 } from "./api";
 import { formatMoney } from "./money";
 import type { LedgerAccount } from "./types";
+import { COPY } from "../copy";
+import { CONFIG_DEFAULTS, confBand, useBehaviorConfig, type BehaviorConfig } from "../copy/config";
 
 export default function Categorize({
   orgId, canWrite, accounts, onChange,
@@ -23,34 +25,38 @@ export default function Categorize({
 }) {
   const q = useUncategorized(orgId);
   const refreshUncat = useUncategorizedRefresh(orgId);
+  // Behavior thresholds (auto-propose limit, confidence bands) come from config —
+  // not magic numbers (card CENTRAL-1). Falls back to CONFIG_DEFAULTS while loading.
+  const cfg = useBehaviorConfig(orgId).data ?? CONFIG_DEFAULTS;
   const live = accounts.filter((a) => !a.is_archived);
 
-  if (q.isLoading) return <p className="muted">Loading Penny's queue…</p>;
-  if (q.isError) return <p className="error">Couldn't load the categorization queue. Try again.</p>;
+  if (q.isLoading) return <p className="muted">{COPY.categorize.loadingQueue}</p>;
+  if (q.isError) return <p className="error">{COPY.categorize.loadError}</p>;
 
   const rows = q.data ?? [];
   if (rows.length === 0) {
     return (
       <div className="ledger-empty">
-        <h3>All caught up 🎉</h3>
-        <p className="muted">Nothing is waiting to be categorized. New transactions land here as they import.</p>
+        <h3>{COPY.categorize.allCaughtUpTitle}</h3>
+        <p className="muted">{COPY.categorize.allCaughtUpBody}</p>
       </div>
     );
   }
 
+  const found = COPY.categorize.found(rows.length);
   return (
     <div className="categorize">
       <div className="panel-toolbar">
         <span className="penny-lead">
           <span className="p-mark p-mark-sm" aria-hidden="true">P</span>
-          Penny found <strong>{rows.length}</strong> {rows.length === 1 ? "transaction" : "transactions"} to categorize
+          {found.before}<strong>{found.count}</strong>{found.after}
         </span>
       </div>
       <ul className="cat-list">
         {rows.map((e, i) => (
           <CategorizeRow
             key={e.entry_id} orgId={orgId} canWrite={canWrite} accounts={live} entry={e}
-            autoPropose={i < AUTO_PROPOSE_LIMIT}
+            autoPropose={i < cfg.auto_propose_limit} cfg={cfg}
             onApproved={() => { refreshUncat(); onChange(); }}
           />
         ))}
@@ -59,10 +65,10 @@ export default function Categorize({
   );
 }
 
-// Only auto-ask Penny for the first N rows on mount; the rest fetch on demand
-// (an "Ask Penny" button), so opening the tab on a fresh multi-hundred-row import
-// doesn't fire hundreds of concurrent LLM calls (#11 — thundering herd / cost).
-const AUTO_PROPOSE_LIMIT = 8;
+// Only auto-ask Penny for the first N rows on mount (config: auto_propose_limit);
+// the rest fetch on demand (an "Ask Penny" button), so opening the tab on a fresh
+// multi-hundred-row import doesn't fire hundreds of concurrent LLM calls (#11 —
+// thundering herd / cost).
 
 function signedAmount(e: UncategorizedEntry): number {
   // On the holding line a credit = money in (+), a debit = money out (−).
@@ -70,10 +76,10 @@ function signedAmount(e: UncategorizedEntry): number {
 }
 
 function CategorizeRow({
-  orgId, canWrite, accounts, entry, autoPropose, onApproved,
+  orgId, canWrite, accounts, entry, autoPropose, cfg, onApproved,
 }: {
   orgId: string; canWrite: boolean; accounts: LedgerAccount[];
-  entry: UncategorizedEntry; autoPropose: boolean; onApproved: () => void;
+  entry: UncategorizedEntry; autoPropose: boolean; cfg: BehaviorConfig; onApproved: () => void;
 }) {
   const [chosen, setChosen] = useState<string>("");
   const [busy, setBusy] = useState(false);
@@ -118,56 +124,50 @@ function CategorizeRow({
     <li className="cat-row">
       <div className="cat-main">
         <span className="cat-date">{entry.entry_date}</span>
-        <span className="cat-memo">{entry.memo || "(no description)"}</span>
+        <span className="cat-memo">{entry.memo || COPY.categorize.noDescription}</span>
         <span className={`cat-amt ${amount < 0 ? "out" : "in"}`}>{formatMoney(amount, entry.currency)}</span>
       </div>
 
       <div className="cat-propose">
         {!wanted && canWrite && (
           <button type="button" className="ghost sm" onClick={() => setWanted(true)}>
-            <span className="p-mark p-mark-sm" aria-hidden="true">P</span> Ask Penny
+            <span className="p-mark p-mark-sm" aria-hidden="true">P</span> {COPY.categorize.askPenny}
           </button>
         )}
-        {proposal.isLoading && <span className="muted sm">Penny is thinking…</span>}
-        {proposal.isError && <span className="muted sm">Couldn't reach Penny — pick an account below.</span>}
+        {proposal.isLoading && <span className="muted sm">{COPY.categorize.thinking}</span>}
+        {proposal.isError && <span className="muted sm">{COPY.categorize.reachError}</span>}
         {proposal.isSuccess && (
           p ? (
             <span className="penny-suggest">
               <span className="p-mark p-mark-sm" aria-hidden="true">P</span>
               <span className="ps-text">
-                Penny suggests <strong>{p.code ? `${p.code} · ` : ""}{p.name}</strong>
-                <span className={`confidence c-${p.source === "rule" ? "rule" : confBand(p.confidence)}`}>
-                  {p.source === "rule" ? "learned rule" : `${Math.round(p.confidence * 100)}% sure`}
+                {COPY.categorize.suggestsPrefix}<strong>{p.code ? `${p.code} · ` : ""}{p.name}</strong>
+                <span className={`confidence c-${p.source === "rule" ? "rule" : confBand(p.confidence, cfg)}`}>
+                  {p.source === "rule" ? COPY.categorize.learnedRule : COPY.categorize.sureSuffix(Math.round(p.confidence * 100))}
                 </span>
               </span>
               {p.rationale && <span className="ps-why muted sm">{p.rationale}</span>}
             </span>
           ) : (
-            <span className="muted sm">Penny isn't sure on this one — pick the right account.</span>
+            <span className="muted sm">{COPY.categorize.notSure}</span>
           )
         )}
       </div>
 
       {canWrite && (
         <div className="cat-actions">
-          <select value={chosen} onChange={(e) => setChosen(e.target.value)} aria-label="Account">
-            <option value="">Select account…</option>
+          <select value={chosen} onChange={(e) => setChosen(e.target.value)} aria-label={COPY.common.accountAria}>
+            <option value="">{COPY.common.selectAccount}</option>
             {targets.map((a) => (
               <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ""}{a.name}</option>
             ))}
           </select>
           <button className="cat-approve" disabled={busy || !chosen} onClick={approve}>
-            {busy ? "Saving…" : "Approve"}
+            {busy ? COPY.common.saving : COPY.categorize.approve}
           </button>
         </div>
       )}
       {err && <p className="error sm">{err}</p>}
     </li>
   );
-}
-
-function confBand(c: number): "hi" | "mid" | "lo" {
-  if (c >= 0.75) return "hi";
-  if (c >= 0.45) return "mid";
-  return "lo";
 }

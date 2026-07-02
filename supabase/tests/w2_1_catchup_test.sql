@@ -133,7 +133,7 @@ select is(
   (select fee_total_minor from catch_up_set_plan(
      '00000000-0000-0000-0000-00000000c0aa','00000000-0000-0000-0000-00000000c0b1',
      50000, array[2022,2023,2024], 'USD')),
-  150000, 'flat-per-year plan: fee_total = fee_per_year × number of years');
+  150000::bigint, 'flat-per-year plan: fee_total = fee_per_year × number of years');
 
 select * from finish();
 rollback;

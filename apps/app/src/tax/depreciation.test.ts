@@ -56,8 +56,23 @@ describe("W1.3C-MACRS — tax depreciation matches IRS published tables", () => 
     );
     // 14.29% of $14,000 = $2,000.60 → floored to 200060 cents, etc.
     expect(got[0]).toBe(200_060);
-    expect(got.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(1_400_000);
-    expect(got.reduce((a, b) => a + b, 0)).toBeGreaterThan(1_399_900); // ~full recovery (floor rounding)
+    // per-year floor UNDER-recovers; computeSchedule's final-year true-up must
+    // recover EXACTLY cost. Assert full recovery via the schedule (not the raw sum).
+    const noB: AssetClassData = { ...CLASS_7YR, bonus_pct: null };
+    const a14k2: AssetInput = { ...asset10k, cost_minor: 1_400_000, book_life_years: 7 };
+    const sched7 = computeSchedule(a14k2, noB, MACRS_7YR_HY);
+    expect(sched7[sched7.length - 1].tax_accumulated_minor).toBe(1_400_000);
+  });
+
+  it("non-round cost fully recovers to the cent (floor drift trued up over life)", () => {
+    // $12,345.67 — per-year floor strands 2¢; the final-year sweep recovers exactly cost.
+    const odd: AssetInput = { ...asset10k, cost_minor: 1_234_567 };
+    const noBonus: AssetClassData = { ...CLASS_5YR, bonus_pct: null };
+    const sched = computeSchedule(odd, noBonus, MACRS_5YR_HY);
+    expect(sched[sched.length - 1].tax_accumulated_minor).toBe(1_234_567);
+    expect(sched[sched.length - 1].book_accumulated_minor).toBe(1_234_567); // salvage 0
+    // temporary difference nets to ZERO over life (crown-jewel invariant)
+    expect(sched.reduce((a, s) => a + s.book_tax_delta_minor, 0)).toBe(0);
   });
 
   it("mid-quarter Q4 selects the Q4 table (5% year-1 vs 20% half-year)", () => {

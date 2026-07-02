@@ -1,0 +1,8 @@
+{
+  "_meta": { "table": "tax_jurisdictions", "primary_key": "code" },
+  "rows": [
+    { "code": "US-FED", "name": "United States — Federal (IRS)", "country_code": "US", "currency": "USD", "parent_code": null, "sort_order": 10 },
+    { "code": "US-CA", "name": "California — Franchise Tax Board", "country_code": "US", "currency": "USD", "parent_code": "US-FED", "sort_order": 20 },
+    { "code": "CA-FED", "name": "Canada — Revenue Agency (CRA)", "country_code": "CA", "currency": "CAD", "parent_code": null, "sort_order": 30 }
+  ]
+}

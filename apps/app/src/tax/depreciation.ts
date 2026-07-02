@@ -153,3 +153,79 @@ export function disposalGainLoss(
   const basis = costMinor - bookAccumulatedMinor;
   return { book_basis_minor: basis, gain_loss_minor: proceedsMinor - basis };
 }
+
+/**
+ * The disposal-YEAR convention fraction of that year's NORMAL depreciation
+ * (mirror of disposal_year_fraction in 20260703070200). half-year → 0.5;
+ * mid-quarter → the mid-quarter disposal fraction by disposal quarter
+ * (Q1 .125, Q2 .375, Q3 .625, Q4 .875 — Pub 946); mid-month → (month-0.5)/12.
+ */
+export function disposalYearFraction(
+  convention: "half_year" | "mid_quarter" | "mid_month" | "full_year",
+  disposalMonth: number,
+): number {
+  if (convention === "mid_quarter") {
+    return (Math.floor((disposalMonth - 1) / 3) * 2 + 1) / 8; // .125 … .875
+  }
+  if (convention === "mid_month") return (disposalMonth - 0.5) / 12;
+  return 0.5; // half_year (and default)
+}
+
+export interface DisposalResult {
+  book_basis_minor: number;
+  book_gain_loss_minor: number;
+  tax_basis_minor: number;
+  tax_gain_loss_minor: number;
+  recapture_section: "§1245" | "§1250" | null;
+  recapture_minor: number; // ordinary recapture = min(tax gain, tax accumulated)
+}
+
+/**
+ * IRS-correct disposal (mirror of dispose_fixed_asset in 20260703070200).
+ * Adjusted basis = cost − accumulated depreciation THROUGH the disposal year, where
+ * the disposal-year depreciation is the year's NORMAL depreciation × the acquisition
+ * convention fraction. gain/loss = proceeds − adjusted basis, computed BOOK and TAX
+ * separately; on a tax gain, min(gain, tax accumulated) is ordinary §1245/§1250
+ * recapture (§1245 personal property, §1250 real property).
+ */
+export function disposeAsset(args: {
+  costMinor: number;
+  salvageMinor: number;
+  proceedsMinor: number;
+  // accumulated through the year BEFORE disposal (whole allowed years):
+  bookPriorAccumulatedMinor: number;
+  taxPriorAccumulatedMinor: number;
+  // the disposal year's NORMAL (unconventioned) depreciation:
+  bookDisposalYearFullMinor: number;
+  taxDisposalYearFullMinor: number;
+  convention: "half_year" | "mid_quarter" | "mid_month" | "full_year";
+  disposalMonth: number;
+  propertyType?: "personal" | "real";
+}): DisposalResult {
+  const frac = disposalYearFraction(args.convention, args.disposalMonth);
+  const bookDy = Math.floor(args.bookDisposalYearFullMinor * frac);
+  const taxDy = Math.floor(args.taxDisposalYearFullMinor * frac);
+  const bookAcc = Math.min(
+    args.bookPriorAccumulatedMinor + bookDy,
+    args.costMinor - args.salvageMinor,
+  );
+  const taxAcc = Math.min(args.taxPriorAccumulatedMinor + taxDy, args.costMinor);
+  const bookBasis = args.costMinor - bookAcc;
+  const taxBasis = args.costMinor - taxAcc;
+  const bookGl = args.proceedsMinor - bookBasis;
+  const taxGl = args.proceedsMinor - taxBasis;
+  let recapture = 0;
+  let section: "§1245" | "§1250" | null = null;
+  if (taxGl > 0) {
+    recapture = Math.min(taxGl, taxAcc);
+    section = args.propertyType === "real" ? "§1250" : "§1245";
+  }
+  return {
+    book_basis_minor: bookBasis,
+    book_gain_loss_minor: bookGl,
+    tax_basis_minor: taxBasis,
+    tax_gain_loss_minor: taxGl,
+    recapture_section: section,
+    recapture_minor: recapture,
+  };
+}

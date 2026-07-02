@@ -11,6 +11,8 @@ import {
   bookDepreciationForYear,
   m1BucketForDelta,
   disposalGainLoss,
+  disposalYearFraction,
+  disposeAsset,
   midQuarterKey,
   type AssetInput,
   type AssetClassData,
@@ -146,15 +148,58 @@ describe("W1.3C-M1 — book-vs-tax delta drives the M-1 bucket", () => {
 });
 
 describe("W1.3C-DISPOSAL — gain/loss on disposal", () => {
-  it("proceeds above net book value = gain", () => {
+  it("proceeds above net book value = gain (raw helper)", () => {
     // cost 10k, book accumulated 6k → basis 4k; sold for 5k → 1k gain
     const { book_basis_minor, gain_loss_minor } = disposalGainLoss(1_000_000, 600_000, 500_000);
     expect(book_basis_minor).toBe(400_000);
     expect(gain_loss_minor).toBe(100_000);
   });
 
-  it("proceeds below net book value = loss (negative)", () => {
+  it("proceeds below net book value = loss (negative, raw helper)", () => {
     const { gain_loss_minor } = disposalGainLoss(1_000_000, 200_000, 500_000);
     expect(gain_loss_minor).toBe(-300_000); // basis 800k, proceeds 500k
+  });
+
+  it("disposal-year convention fraction: half-year = 0.5, mid-quarter Q1..Q4", () => {
+    expect(disposalYearFraction("half_year", 3)).toBe(0.5);
+    // mid-quarter disposal table (Pub 946): Q1 .125, Q2 .375, Q3 .625, Q4 .875
+    expect(disposalYearFraction("mid_quarter", 2)).toBe(0.125); // Feb → Q1
+    expect(disposalYearFraction("mid_quarter", 5)).toBe(0.375); // May → Q2
+    expect(disposalYearFraction("mid_quarter", 8)).toBe(0.625); // Aug → Q3
+    expect(disposalYearFraction("mid_quarter", 11)).toBe(0.875); // Nov → Q4
+  });
+
+  it("IRS-correct: half-year in the DISPOSAL year; book vs tax; §1245 recapture", () => {
+    // $10,000 computer, in service 2025-06, 5yr 200DB half-year (tax) + SL half-year (book),
+    // no §179/bonus. Dispose 2026-03 for $9,500. year_index of 2026 = 2.
+    //   BOOK: 2025 = $1,000; 2026 normal $2,000 × 0.5 = $1,000 → acc $2,000;
+    //         basis $8,000; gain = 9,500 - 8,000 = $1,500.
+    //   TAX : 2025 = $2,000 (20%); 2026 normal $3,200 (32%) × 0.5 = $1,600 → acc $3,600;
+    //         basis $6,400; gain = 9,500 - 6,400 = $3,100.
+    //   §1245 recapture (personal property) = min(3,100, 3,600) = $3,100 ordinary.
+    const r = disposeAsset({
+      costMinor: 1_000_000, salvageMinor: 0, proceedsMinor: 950_000,
+      bookPriorAccumulatedMinor: 100_000, taxPriorAccumulatedMinor: 200_000,
+      bookDisposalYearFullMinor: 200_000, taxDisposalYearFullMinor: 320_000,
+      convention: "half_year", disposalMonth: 3, propertyType: "personal",
+    });
+    expect(r.book_basis_minor).toBe(800_000);
+    expect(r.book_gain_loss_minor).toBe(150_000);
+    expect(r.tax_basis_minor).toBe(640_000);
+    expect(r.tax_gain_loss_minor).toBe(310_000);
+    expect(r.recapture_section).toBe("§1245");
+    expect(r.recapture_minor).toBe(310_000);
+  });
+
+  it("loss on disposal → no recapture, real property flags §1250 only on a gain", () => {
+    const loss = disposeAsset({
+      costMinor: 1_000_000, salvageMinor: 0, proceedsMinor: 300_000,
+      bookPriorAccumulatedMinor: 100_000, taxPriorAccumulatedMinor: 200_000,
+      bookDisposalYearFullMinor: 200_000, taxDisposalYearFullMinor: 320_000,
+      convention: "half_year", disposalMonth: 3, propertyType: "real",
+    });
+    expect(loss.tax_gain_loss_minor).toBeLessThan(0);
+    expect(loss.recapture_section).toBeNull();
+    expect(loss.recapture_minor).toBe(0);
   });
 });

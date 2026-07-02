@@ -20,7 +20,7 @@
 -- Runs in a transaction and rolls back.
 
 begin;
-select plan(29);
+select plan(35);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -167,15 +167,31 @@ select throws_ok($$
     (select id from _asset2), 2025)
 $$, '23001', NULL, 'posting depreciation into a CLOSED period is refused (period-lock respected)');
 
--- ── 8. disposal: gain/loss = proceeds - net book value ───────────────────────
--- first asset book-accumulated after 2025 = $1,000; basis = $9,000; sell for $9,500 → $500 gain.
+-- ── 8. disposal: IRS-correct — half-year convention in the DISPOSAL year, book vs
+-- tax basis, §1245 ordinary recapture. Asset placed 2025-06, disposed 2026-03 for
+-- $9,500. year_index of 2026 = 2.
+--   BOOK: 2025 $1,000 + 2026 ($2,000 × ½ = $1,000) = $2,000 acc → basis $8,000 →
+--         gain $9,500 - $8,000 = $1,500.
+--   TAX : 2025 $2,000 (20%) + 2026 ($3,200 (32%) × ½ = $1,600) = $3,600 acc →
+--         basis $6,400 → gain $9,500 - $6,400 = $3,100.
+--   §1245 recapture (personal property) = min($3,100 gain, $3,600 tax accumulated) = $3,100.
 create temp table _disp as
 select dispose_fixed_asset(
   '80000000-0000-0000-0000-000000000001', '80000000-0000-0000-0000-0000000000a0', (select id from _asset),
   '2026-03-01', 950000, 'sold'
 ) as id;
-select is((select gain_loss_minor from asset_disposals where id = (select id from _disp)), 50000::bigint,
-  'disposal gain = proceeds $9,500 - net book $9,000 = $500');
+select is((select book_basis_minor from asset_disposals where id = (select id from _disp)), 800000::bigint,
+  'disposal BOOK basis = cost $10,000 - book acc $2,000 (½ book in disposal yr) = $8,000');
+select is((select gain_loss_minor from asset_disposals where id = (select id from _disp)), 150000::bigint,
+  'disposal BOOK gain = proceeds $9,500 - book basis $8,000 = $1,500');
+select is((select tax_basis_minor from asset_disposals where id = (select id from _disp)), 640000::bigint,
+  'disposal TAX basis = cost $10,000 - tax acc $3,600 (½ MACRS in disposal yr) = $6,400');
+select is((select tax_gain_loss_minor from asset_disposals where id = (select id from _disp)), 310000::bigint,
+  'disposal TAX gain = proceeds $9,500 - tax basis $6,400 = $3,100');
+select is((select recapture_minor from asset_disposals where id = (select id from _disp)), 310000::bigint,
+  '§1245 recapture = min(tax gain $3,100, tax accumulated $3,600) = $3,100 ordinary');
+select is((select recapture_section from asset_disposals where id = (select id from _disp)), '§1245',
+  'personal property recapture flagged §1245');
 select is((select status from fixed_assets where id = (select id from _asset)), 'disposed',
   'asset marked disposed');
 
@@ -209,6 +225,27 @@ select is(
     where jurisdiction_code='US-FED' and recovery_period=5 and convention='half_year'
       and macrs_method='200DB' and year_index=1 and is_active and effective_to is null),
   1, 'exactly one active MACRS % in force for (5yr, HY, 200DB, yr1)');
+
+-- ── UNSEEDED-CONVENTION GUARD (red-team #4, P3) ──────────────────────────────
+-- The engine computes mid_quarter_q1..q3 keys but only mid_quarter_q4 % rows are
+-- seeded. An unseeded (recovery_period, convention, year_index) must RAISE, not
+-- silently return 0 depreciation. Register a mid-quarter Q1 (Jan) asset on a class
+-- whose Q1 table is NOT seeded and prove the lookup raises.
+insert into public.asset_classes
+  (jurisdiction_code, class_key, label, tax_year, recovery_period, macrs_method, default_convention,
+   section_179_cap_minor, bonus_pct, effective_from, citation)
+values
+  ('US-FED', 'machinery_mq', 'Machinery (mid-quarter)', 2025, 5, '200DB', 'mid_quarter',
+   125000000, null, '2025-01-01', 'Pub 946 A-4');
+create temp table _mq as
+select register_fixed_asset(
+  '80000000-0000-0000-0000-000000000001', '80000000-0000-0000-0000-0000000000a0',
+  'Lathe','machinery_mq', 1000000, '2025-01-10'  -- January → mid_quarter_q1 (UNSEEDED)
+) as id;
+select throws_ok($$
+  select macrs_tax_depreciation_for_year((select id from _mq), 2025)
+$$, 'P0001', NULL,
+  'unseeded convention (mid_quarter_q1) RAISES instead of silently returning 0 depreciation');
 
 select * from finish();
 rollback;

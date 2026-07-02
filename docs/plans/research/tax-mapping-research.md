@@ -1,8 +1,8 @@
 # Tax Mapping Engine — Research Report + Architecture Spec (W1.3-A)
 
-> Status: **research complete — awaiting Nik sign-off** · 1 Jul 2026 · Owner: Nik
+> Status: **SIGNED OFF (Nik, 3 Jul 2026)** — all 8 questions resolved (see "Decisions" below); W1.3-B unblocked · Owner: Nik
 
-**Status:** research + spec only — no code, no migrations. Gate: Nik sign-off on this doc unblocks W1.3-B (build).
+**Status:** research + spec, signed off. All scope/pricing decisions locked (§ "Scope decision" + § "Decisions"). W1.3-B (build) is unblocked — no open tax gates remain. Still code-first only; no migrations written yet.
 **Date:** 1 Jul 2026 · **Inputs:** web research (cited), `apps/demo/util/irs-lookup.js` (critiqued §A.4), `apps/app/src/ledger/{types,reports}.ts`, Roadmap §2 Signals themes.
 
 ---
@@ -95,7 +95,7 @@ Same spine; deduction block is 12 officer comp · 13 salaries · 14 repairs · 1
 
 **Implication for Penny's export (feeds W1.2):**
 1. **Primary artifact = a generic mapped-TB CSV**: `account_code, account_name, debit, credit, tax_form, tax_line_code, tax_line_label` — every suite's TB utility can consume it with at most a column re-map; it doubles as the human-readable package spine.
-2. **Secondary (later): per-suite profiles** — same data re-serialized (Drake's exact template; a UltraTax tax-code column using TR codes). These are *export serializers over the same mapping data*, not new mapping logic.
+2. **Per-suite profiles — AT LAUNCH (Decision #2, Nik 3 Jul):** same data re-serialized (Drake's exact template; a UltraTax tax-code column using TR codes). These are *export serializers over the same mapping data*, not new mapping logic — but they ship in v1, not as a fast-follow. Drake's template = modify-corrupts, so they need real fixture tests.
 3. **PDF package** for the "just hand it to my CPA" case (most Signals users don't know what software their CPA runs).
 
 ### A.3 Competitor teardown — where books→tax handoff fails
@@ -375,15 +375,44 @@ Notes the proof surfaces (design confirmations, not gaps): CRA's 4-digit line co
 
 ---
 
-## Open questions for Nik (product/pricing/scope — flagged per card)
+## Decisions — LOCKED (Nik, 3 Jul 2026)
 
-1. **v1 form scope:** Sch C + 1120-S + 1065 clearly; is **1120 (C-corp)** in v1? Signals demand is overwhelmingly pass-through; 1120 seed is cheap but its package (Schedule J, 21% tax, charitable limits) adds review surface. *Recommend: seed 1120 lines, defer its package polish.*
-2. **Export targets:** generic mapped-TB CSV + PDF in v1 (recommended); are per-suite serializers (Drake's exact template, UltraTax tax-code column) a fast-follow or v1? Drake's template is "modify = corrupt", so it needs real fixture testing.
-3. **Who edits mappings:** CPA-role only, or owners too? Recommend: full CPAs edit, owners view ("ask your CPA" affordance) — matches ARCHITECTURE.md lens model and limits foot-guns.
-4. **Penny-proposed M-1 adjustments:** auto-propose mechanical ones (meals %, penalties) as *drafts*, or record-only what a CPA enters? Positioning tension: automation vs. "no hallucination near my taxes" (Signals #5). Recommend propose-with-approval, clearly labeled.
-5. **Fixed-asset/depreciation subledger** is the biggest real gap for Schedule L/4562 quality — separate Wave-1.5 card, or accept "book listing + CPA computes" for the pilot?
-6. **Packaging/pricing:** is the year-end CPA package part of the core $200–350/mo bundle (Signals #3 anchor) or a priced artifact like the due-diligence package (#10)? Affects where the "package ready" gate lives.
-7. **Canada:** T2125 stays a paper proof, or do we actually ship CA-FED sole-prop in the pilot? (Corporate T2/GIFI is a much bigger seed job — explicitly out of scope here.)
-8. **`ledger_accounts.tags` column + industry CoA templates with tax tags** — confirm this additive ledger change is acceptable in W1.3-B (it's the only ledger touch; everything else is new tables).
+All 8 questions are resolved. Combined with the "Scope decision" block at the top (every
+sector × US federal + all 50 states), this fully specifies W1.3-B — no open tax gates remain.
 
-**Suggested W1.3-B build order** (after sign-off): migration (6 tables + tags) → seed loader + US-FED 2025 seeds (4 forms) → resolution fn + unmapped queue → CoA tax-chip UI + override editor → tax-grouped P&L → package generator (rides W1.2 export machinery) → adjustments layer → pgTAP over resolution precedence + a seed-lint CI check (every line_key referenced by a rule exists; every form has type-fallback coverage).
+1. **Entity scope: ALL US entity types, fully.** Sch C (sole prop/SMLLC), 1120-S, 1065 **and
+   1120 (C-corp)** — full support, including the C-corp package (Schedule J, 21% tax,
+   charitable limits, M-1/M-2). **Actual tax prep/filing is gated behind the CPA lens**
+   (owners see readiness + the package; a CPA reviews and finalizes). "When Penny does taxes,
+   it fully prepares for every US entity type, CPA-reviewed."
+2. **Exports: BOTH at launch.** The generic mapped-TB CSV + branded PDF **and** per-suite
+   serializers (Drake's exact template, UltraTax tax-code column) ship in v1. Per-suite files
+   are serializers over the same mapping data (§A.2) and need real fixture tests (Drake
+   template = modify-corrupts).
+3. **Who edits mappings: CPAs edit, owners view only.** Owners see the resolved tax line with
+   an "ask your CPA" affordance; only full-access CPAs write `org_account_tax_map` (read_only
+   CPAs excluded). Matches the lens model.
+4. **Penny-proposed M-1 adjustments: propose as drafts, human approves.** Penny drafts the
+   mechanical ones (meals 50%, penalties 0%, entertainment 0%) clearly labeled `proposed`; a
+   human approves before anything is filed. Never auto-applied.
+5. **Fixed-asset / depreciation: BUILD the subledger — Penny computes depreciation itself.**
+   Not "book listing + CPA computes." A real fixed-asset tracker (additions/disposals, method,
+   convention, MACRS/§179/bonus) computes tax depreciation, feeding Form 4562 + Schedule L and
+   the book-vs-tax delta into the M-1 layer. **This is a substantial build — its own card
+   (W1.3-C / fixed-assets), sequenced after the core mapping engine + package.**
+6. **Year-end package pricing: INCLUDED in the subscription.** It's the core "file taxes from
+   Penny" promise, bundled into the $200–350/mo band — not a priced add-on. The "package
+   ready" gate lives inside the normal product, no paywall.
+7. **Canada: US only at launch.** Ship US (all 50 states + federal); T2125 stays the paper
+   extensibility proof (§B.8). The engine stays country-ready (adding CA-FED = seed data
+   only), but no foreign filing in v1. Corporate T2/GIFI explicitly out of scope.
+8. **`ledger_accounts.tags` column confirmed** — the only ledger touch in W1.3-B is acceptable;
+   everything else is new tables.
+
+**Suggested W1.3-B build order** (all gates cleared): migration (6 tables + tags) → seed
+loader + US-FED seeds for **all 4 entity types** → resolution fn + unmapped queue → CoA
+tax-chip UI + CPA override editor → tax-grouped P&L → package generator (rides W1.2 export
+machinery) → per-suite export serializers (Drake/UltraTax, fixture-tested) → M-1 adjustments
+layer (propose-with-approval) → **fixed-asset/depreciation subledger (own card)** → then
+extend the seed matrix to the 50 states. pgTAP over resolution precedence + a seed-lint CI
+check (every line_key referenced by a rule exists; every form has type-fallback coverage).

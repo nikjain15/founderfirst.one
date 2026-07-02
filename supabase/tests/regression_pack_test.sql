@@ -39,7 +39,7 @@ insert into ledger_accounts (id, org_id, code, name, type) values
 
 -- a pre-closed period (for PERIOD-F1)
 insert into accounting_periods (id, org_id, period_start, period_end, status) values
-  ('00000000-0000-0000-0000-000000ap0001', '00000000-0000-0000-0000-0000000e0001', '2025-12-01', '2025-12-31', 'closed');
+  ('00000000-0000-0000-0000-000000ac0001', '00000000-0000-0000-0000-0000000e0001', '2025-12-01', '2025-12-31', 'closed');
 
 -- a posted entry to reverse (for JE-F1)
 create temp table _base as

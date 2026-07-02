@@ -4,7 +4,8 @@
  *  workqueue + reconciliation land in later phases. */
 import type { Org, RoleInfo } from "../org/ActiveOrgProvider";
 import Ledger from "../ledger/Ledger";
+import { COPY } from "../copy";
 
 export default function CpaLens({ org, roleInfo }: { org: Org; roleInfo: RoleInfo }) {
-  return <Ledger org={org} canWrite={roleInfo.canWrite} nav="cpa" defaultTabId="books" eyebrow="Client books" />;
+  return <Ledger org={org} canWrite={roleInfo.canWrite} nav="cpa" defaultTabId="books" eyebrow={COPY.ledger.eyebrowClient} />;
 }

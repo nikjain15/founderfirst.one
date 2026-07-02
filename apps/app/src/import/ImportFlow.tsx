@@ -15,6 +15,7 @@ import {
 import { parseAmountCell, parseCsv, parseDateCell, type DateFormat, type ParsedCsv } from "./csv";
 import { formatMoney } from "../ledger/money";
 import type { LedgerAccount } from "../ledger/types";
+import { COPY } from "../copy";
 
 type Mode = "choose" | "csv" | "opening";
 // Local date (en-CA → YYYY-MM-DD), not UTC — avoids a day-off near midnight/month-end.
@@ -32,16 +33,16 @@ export default function ImportFlow({
     return (
       <div className="import-flow">
         <div className="panel-toolbar">
-          <span className="muted">Bring your existing books in. Nothing posts until you confirm.</span>
+          <span className="muted">{COPY.importFlow.intro}</span>
         </div>
         <div className="import-choices">
           <button className="import-choice" onClick={() => setMode("csv")}>
-            <span className="ic-title">Bank statement (CSV)</span>
-            <span className="ic-sub">Upload a transactions export — map the columns and we'll post them.</span>
+            <span className="ic-title">{COPY.importFlow.bankCsvTitle}</span>
+            <span className="ic-sub">{COPY.importFlow.bankCsvSub}</span>
           </button>
           <button className="import-choice" onClick={() => setMode("opening")} disabled={live.length < 1}>
-            <span className="ic-title">Opening balances</span>
-            <span className="ic-sub">Start the books at a cutover date with each account's balance.</span>
+            <span className="ic-title">{COPY.importFlow.openingTitle}</span>
+            <span className="ic-sub">{COPY.importFlow.openingSub}</span>
           </button>
         </div>
         <ConnectSoftware orgId={orgId} onImported={onDone} />
@@ -84,7 +85,7 @@ function CsvImport({
       setDateCol(find(/date/));
       setDescCol(find(/desc|payee|name|memo|detail/));
       setAmtCol(find(/amount|amt|debit|value/));
-    }).catch(() => setErr("Couldn't read that file."));
+    }).catch(() => setErr(COPY.importFlow.readFileError));
   }
 
   // normalized preview rows
@@ -135,9 +136,9 @@ function CsvImport({
     return (
       <div className="import-flow">
         <div className="import-done">
-          <h3>Imported {done} {done === 1 ? "transaction" : "transactions"}.</h3>
-          <p className="muted">They're in. Penny will help you sort each one into the right category — review or adjust any of them anytime from the Journal.</p>
-          <button onClick={onDone}>Back to the books</button>
+          <h3>{COPY.importFlow.doneTitle(done)}</h3>
+          <p className="muted">{COPY.importFlow.doneBody}</p>
+          <button onClick={onDone}>{COPY.importFlow.backToBooks}</button>
         </div>
       </div>
     );
@@ -146,68 +147,68 @@ function CsvImport({
   return (
     <div className="import-flow">
       <div className="panel-toolbar">
-        <button className="ghost sm" onClick={onBack}>← Back</button>
-        <span className="muted">{csv ? `${csv.rows.length} rows · ${filename}` : "Bank statement CSV"}</span>
+        <button className="ghost sm" onClick={onBack}>{COPY.common.back}</button>
+        <span className="muted">{csv ? COPY.importFlow.csvSummary(csv.rows.length, filename) : COPY.importFlow.csvHeader}</span>
       </div>
 
       {!csv ? (
         <label className="file-drop">
           <input type="file" accept=".csv,text/csv" onChange={onFile} />
-          <span>Choose a CSV file…</span>
+          <span>{COPY.importFlow.chooseCsv}</span>
         </label>
       ) : (
         <>
           <div className="ledger-form">
             <div className="form-row">
-              <label><span>Date column</span>
-                <ColSelect headers={csv.headers} value={dateCol} onChange={setDateCol} label="Date column" />
+              <label><span>{COPY.importFlow.dateColumn}</span>
+                <ColSelect headers={csv.headers} value={dateCol} onChange={setDateCol} label={COPY.importFlow.dateColumn} />
               </label>
-              <label><span>Description column</span>
-                <ColSelect headers={csv.headers} value={descCol} onChange={setDescCol} allowNone label="Description column" />
+              <label><span>{COPY.importFlow.descriptionColumn}</span>
+                <ColSelect headers={csv.headers} value={descCol} onChange={setDescCol} allowNone label={COPY.importFlow.descriptionColumn} />
               </label>
-              <label><span>Amount column</span>
-                <ColSelect headers={csv.headers} value={amtCol} onChange={setAmtCol} label="Amount column" />
+              <label><span>{COPY.importFlow.amountColumn}</span>
+                <ColSelect headers={csv.headers} value={amtCol} onChange={setAmtCol} label={COPY.importFlow.amountColumn} />
               </label>
             </div>
             <div className="form-row">
-              <label><span>Positive amounts are</span>
+              <label><span>{COPY.importFlow.positiveAmountsAre}</span>
                 <select value={positiveIs} onChange={(e) => setPositiveIs(e.target.value as "in" | "out")}>
-                  <option value="in">money in (deposits)</option>
-                  <option value="out">money out (withdrawals)</option>
+                  <option value="in">{COPY.importFlow.moneyIn}</option>
+                  <option value="out">{COPY.importFlow.moneyOut}</option>
                 </select>
               </label>
-              <label><span>Date format</span>
+              <label><span>{COPY.importFlow.dateFormat}</span>
                 <select value={dateFmt} onChange={(e) => setDateFmt(e.target.value as DateFormat)}>
-                  <option value="mdy">Month/Day/Year (US)</option>
-                  <option value="dmy">Day/Month/Year (UK/EU)</option>
+                  <option value="mdy">{COPY.importFlow.dateMdy}</option>
+                  <option value="dmy">{COPY.importFlow.dateDmy}</option>
                 </select>
               </label>
-              <label className="grow"><span>Bank account</span>
+              <label className="grow"><span>{COPY.importFlow.bankAccount}</span>
                 <AccountSelect accounts={accounts} value={bankId} onChange={setBankId} filterType="asset" />
               </label>
-              <label className="grow"><span>Where should these go by default?</span>
-                <AccountSelect accounts={accounts} value={contraId} onChange={setContraId} label="Default category for imported transactions" />
+              <label className="grow"><span>{COPY.importFlow.defaultCategory}</span>
+                <AccountSelect accounts={accounts} value={contraId} onChange={setContraId} label={COPY.importFlow.defaultCategoryAria} />
               </label>
             </div>
           </div>
 
           <div className="import-preview">
-            <div className="ip-head"><span>Date</span><span>Description</span><span>Amount</span><span>OK</span></div>
+            <div className="ip-head"><span>{COPY.importFlow.colDate}</span><span>{COPY.importFlow.colDescription}</span><span>{COPY.importFlow.colAmount}</span><span>{COPY.importFlow.colOk}</span></div>
             {rows.slice(0, 50).map((r) => (
               <div className={`ip-row${r.valid ? "" : " bad"}`} key={r.row_num}>
-                <span>{r.date ?? "—"}</span>
-                <span className="ip-desc">{r.description || "—"}</span>
-                <span className="ip-amt">{r.amount != null ? formatMoney(r.amount) : "—"}</span>
-                <span>{r.valid ? "✓" : "—"}</span>
+                <span>{r.date ?? COPY.common.emDash}</span>
+                <span className="ip-desc">{r.description || COPY.common.emDash}</span>
+                <span className="ip-amt">{r.amount != null ? formatMoney(r.amount) : COPY.common.emDash}</span>
+                <span>{r.valid ? "✓" : COPY.common.emDash}</span>
               </div>
             ))}
-            {rows.length > 50 && <p className="muted sm">…and {rows.length - 50} more</p>}
+            {rows.length > 50 && <p className="muted sm">{COPY.importFlow.andMore(rows.length - 50)}</p>}
           </div>
           {err && <p className="error sm">{err}</p>}
           <div className="form-actions import-actions">
-            <span className="muted sm">{readyCount} of {rows.length} rows ready</span>
+            <span className="muted sm">{COPY.importFlow.rowsReady(readyCount, rows.length)}</span>
             <button disabled={!canImport} onClick={doImport}>
-              {busy ? "Importing…" : `Import ${readyCount} transactions`}
+              {busy ? COPY.importFlow.importing : COPY.importFlow.importN(readyCount)}
             </button>
           </div>
         </>
@@ -252,8 +253,7 @@ function OpeningBalances({
   const credit = completeIdx.reduce((s, i) => s + (rows[i].side === "C" ? parsed[i] : 0), 0);
   const plug = debit - credit; // plugged to Opening Balance Equity
   const partialMsg = partialIdx.length
-    ? `Row${partialIdx.length > 1 ? "s" : ""} ${partialIdx.map((i) => i + 1).join(", ")} ` +
-      `need both an account and a balance — fill both or clear the row before importing.`
+    ? COPY.importFlow.obPartial(partialIdx.map((i) => i + 1).join(", "), partialIdx.length > 1)
     : null;
   // Block while any row is half-filled so nothing is dropped behind the user's back.
   const canImport = completeIdx.length > 0 && partialIdx.length === 0 && !busy;
@@ -274,7 +274,7 @@ function OpeningBalances({
       // carry no balance and are simply not sent.
       const staged: StagedRow[] = completeIdx.map((i, n) => ({
         row_num: n + 1,
-        description: "Opening balance",
+        description: COPY.importFlow.obDescription,
         amount_minor: parsed[i],
         account_id: rows[i].account_id,
         side: rows[i].side,
@@ -294,9 +294,9 @@ function OpeningBalances({
     return (
       <div className="import-flow">
         <div className="import-done">
-          <h3>Opening balances saved.</h3>
-          <p className="muted">Your starting balances are in as of {cutover}. Any difference between your debits and credits was balanced into an Opening Balance Equity account for your accountant to review.</p>
-          <button onClick={onDone}>Back to the books</button>
+          <h3>{COPY.importFlow.obDoneTitle}</h3>
+          <p className="muted">{COPY.importFlow.obDoneBody(cutover)}</p>
+          <button onClick={onDone}>{COPY.importFlow.backToBooks}</button>
         </div>
       </div>
     );
@@ -305,38 +305,38 @@ function OpeningBalances({
   return (
     <div className="import-flow">
       <div className="panel-toolbar">
-        <button className="ghost sm" onClick={onBack}>← Back</button>
-        <span className="muted">Opening balances at cutover</span>
+        <button className="ghost sm" onClick={onBack}>{COPY.common.back}</button>
+        <span className="muted">{COPY.importFlow.openingHeader}</span>
       </div>
       <div className="ledger-form">
         <div className="form-row">
-          <label><span>Cutover date</span>
+          <label><span>{COPY.importFlow.cutoverDate}</span>
             <input type="date" value={cutover} onChange={(e) => setCutover(e.target.value)} />
           </label>
         </div>
-        <div className="lines-head ob-head"><span>Account</span><span>Dr/Cr</span><span>Balance</span><span /></div>
+        <div className="lines-head ob-head"><span>{COPY.journal.colAccount}</span><span>{COPY.journal.colDrCr}</span><span>{COPY.importFlow.obColBalance}</span><span /></div>
         {rows.map((r, i) => (
           <div className={`line-row ob-row${rowState(i) === "partial" ? " bad" : ""}`} key={i}>
-            <AccountSelect accounts={accounts} value={r.account_id} onChange={(v) => update(i, { account_id: v })} label={`Row ${i + 1} account`} />
-            <select value={r.side} onChange={(e) => update(i, { side: e.target.value as "D" | "C" })} aria-label={`Row ${i + 1} debit or credit`}>
-              <option value="D">Debit</option><option value="C">Credit</option>
+            <AccountSelect accounts={accounts} value={r.account_id} onChange={(v) => update(i, { account_id: v })} label={COPY.importFlow.rowAccountAria(i + 1)} />
+            <select value={r.side} onChange={(e) => update(i, { side: e.target.value as "D" | "C" })} aria-label={COPY.importFlow.rowDrCrAria(i + 1)}>
+              <option value="D">{COPY.journal.debit}</option><option value="C">{COPY.journal.credit}</option>
             </select>
-            <input inputMode="decimal" value={r.amount} onChange={(e) => update(i, { amount: e.target.value })} placeholder="0.00" aria-label={`Row ${i + 1} balance`} />
-            <button type="button" className="line-del" onClick={() => removeRow(i)} disabled={rows.length <= 1} aria-label={`Remove row ${i + 1}`}>×</button>
+            <input inputMode="decimal" value={r.amount} onChange={(e) => update(i, { amount: e.target.value })} placeholder={COPY.journal.amountPlaceholder} aria-label={COPY.importFlow.rowBalanceAria(i + 1)} />
+            <button type="button" className="line-del" onClick={() => removeRow(i)} disabled={rows.length <= 1} aria-label={COPY.importFlow.removeRowAria(i + 1)}>×</button>
           </div>
         ))}
         <div className="entry-foot">
-          <button type="button" className="ghost sm" onClick={addRow}>+ Add account</button>
+          <button type="button" className="ghost sm" onClick={addRow}>{COPY.importFlow.addAccount}</button>
           <span className="balance-indicator">
-            Debits {formatMoney(debit)} · Credits {formatMoney(credit)}
-            {plug !== 0 && ` · we'll balance ${formatMoney(Math.abs(plug))} into an opening-balance account`}
+            {COPY.importFlow.obBalanceIndicator(formatMoney(debit), formatMoney(credit))}
+            {plug !== 0 && COPY.importFlow.obPlug(formatMoney(Math.abs(plug)))}
           </span>
         </div>
       </div>
       {partialMsg && <p className="error sm">{partialMsg}</p>}
       {err && <p className="error sm">{err}</p>}
       <div className="form-actions">
-        <button disabled={!canImport} onClick={doImport}>{busy ? "Posting…" : "Import opening balances"}</button>
+        <button disabled={!canImport} onClick={doImport}>{busy ? COPY.importFlow.obPosting : COPY.importFlow.obImport}</button>
       </div>
     </div>
   );
@@ -344,8 +344,8 @@ function OpeningBalances({
 
 // ── Connect QuickBooks / Xero ────────────────────────────────────────────────
 const PROVIDERS: { id: ExternalProvider; label: string }[] = [
-  { id: "qbo", label: "QuickBooks" },
-  { id: "xero", label: "Xero" },
+  { id: "qbo", label: COPY.providers.qbo },
+  { id: "xero", label: COPY.providers.xero },
 ];
 
 function ConnectSoftware({ orgId, onImported }: { orgId: string; onImported: () => void }) {
@@ -362,31 +362,29 @@ function ConnectSoftware({ orgId, onImported }: { orgId: string; onImported: () 
     try {
       const { authorize_url } = await connectProvider(provider, orgId);
       window.open(authorize_url, "_blank", "noopener,noreferrer");
-      setMsg("Approve access in the new tab, then come back and click Pull.");
+      setMsg(COPY.importFlow.approveInTab);
     } catch (e) { setErr((e as Error).message); } finally { setBusy(null); }
   }
   async function pull(provider: ExternalProvider, connectionId: string) {
     setBusy(connectionId); setErr(null); setMsg(null);
     try {
       const r = await importProvider(provider, orgId, connectionId);
-      setMsg(`Pulled ${r.accounts} accounts and staged ${r.ready} transactions for review.`);
+      setMsg(COPY.importFlow.pulledSummary(r.accounts, r.ready));
       onImported();
     } catch (e) { setErr((e as Error).message); } finally { setBusy(null); }
   }
 
   return (
     <div className="connect-software">
-      <h3 className="section-h">Or connect your accounting software</h3>
-      <p className="muted sm">Pull your chart of accounts and history straight from QuickBooks or Xero. Transactions arrive as a preview you confirm.</p>
+      <h3 className="section-h">{COPY.importFlow.connectHeading}</h3>
+      <p className="muted sm">{COPY.importFlow.connectLead}</p>
       {conns.isError && (
-        <p className="error sm" role="alert">
-          Couldn’t check your connected software — reload to try again.
-        </p>
+        <p className="error sm" role="alert">{COPY.importFlow.connectCheckError}</p>
       )}
       <div className="connect-row">
         {PROVIDERS.map((p) => (
           <button key={p.id} className="ghost sm" disabled={busy === p.id || connectedProviders.has(p.id)} onClick={() => connect(p.id)}>
-            {connectedProviders.has(p.id) ? `${p.label} connected` : busy === p.id ? "Opening…" : `Connect ${p.label}`}
+            {connectedProviders.has(p.id) ? COPY.importFlow.providerConnected(p.label) : busy === p.id ? COPY.importFlow.opening : COPY.importFlow.connectProvider(p.label)}
           </button>
         ))}
       </div>
@@ -396,7 +394,7 @@ function ConnectSoftware({ orgId, onImported }: { orgId: string; onImported: () 
             <li key={c.id}>
               <span>{c.tenant_name ?? c.provider} <span className="status-pill s-open">{c.provider}</span></span>
               <button className="ghost sm" disabled={busy === c.id} onClick={() => pull(c.provider, c.id)}>
-                {busy === c.id ? "Pulling…" : "Pull history"}
+                {busy === c.id ? COPY.importFlow.pulling : COPY.importFlow.pullHistory}
               </button>
             </li>
           ))}
@@ -416,9 +414,9 @@ function ColSelect({
 }) {
   return (
     <select value={value} onChange={(e) => onChange(Number(e.target.value))} aria-label={label}>
-      {allowNone && <option value={-1}>— none —</option>}
-      {!allowNone && value < 0 && <option value={-1}>Select…</option>}
-      {headers.map((h, i) => <option key={i} value={i}>{h || `Column ${i + 1}`}</option>)}
+      {allowNone && <option value={-1}>{COPY.importFlow.colSelectNone}</option>}
+      {!allowNone && value < 0 && <option value={-1}>{COPY.importFlow.colSelectSelect}</option>}
+      {headers.map((h, i) => <option key={i} value={i}>{h || COPY.importFlow.colSelectFallback(i + 1)}</option>)}
     </select>
   );
 }
@@ -430,8 +428,8 @@ function AccountSelect({
 }) {
   const opts = filterType ? accounts.filter((a) => a.type === filterType) : accounts;
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label ?? "Account"}>
-      <option value="">Select account…</option>
+    <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label ?? COPY.common.accountAria}>
+      <option value="">{COPY.common.selectAccount}</option>
       {opts.map((a) => <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ""}{a.name}</option>)}
     </select>
   );

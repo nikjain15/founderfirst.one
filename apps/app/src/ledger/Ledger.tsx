@@ -21,7 +21,7 @@ import Categorize from "./Categorize";
 import InviteCpa from "../org/InviteCpa";
 import { Takeaway } from "./Takeaway";
 import {
-  visibleTabs, visibleSubs as visibleSubsOf, type Nav, type Surface,
+  visibleTabs, visibleSubs as visibleSubsOf, reachableSurface, type Nav, type Surface,
 } from "./nav";
 import type {
   AccountType, AccountingPeriod, DraftLine, JournalEntry, LedgerAccount,
@@ -123,8 +123,14 @@ export default function Ledger({
 
   // Land directly on a requested leaf surface (the CPA practice queue deep-links
   // here). Re-runs when the surface changes so tapping a new queue item re-routes.
+  // For a read_only CPA the queue's target tab (Categorize / Import) is write-only
+  // and hidden, so route to the nearest surface they CAN view (the read-only Journal)
+  // instead of no-op'ing — otherwise "View" on an uncategorized/unreconciled row does
+  // nothing for read-only engagements.
   useEffect(() => {
-    if (initialSurface) goto(initialSurface);
+    if (!initialSurface) return;
+    const reachable = reachableSurface(nav, initialSurface, canWrite);
+    if (reachable) goto(reachable);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialSurface]);
 

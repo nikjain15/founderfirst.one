@@ -9,7 +9,7 @@
 -- access, and isolation. All rolls back.
 
 begin;
-select plan(15);
+select plan(17);
 
 -- ── users ────────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -141,6 +141,17 @@ select is(
   (select array_agg(client_org_id order by client_name)::text from cpa_client_counts('00000000-0000-0000-0000-0000000000F0')),
   '{00000000-0000-0000-0000-00000000000a}',
   'a regular CPA assigned only to A sees exactly A (never B)');
+
+-- The QUEUE (not just the counts) must also exclude the unassigned client B — the
+-- ISOTEST forged-actor class at firm scale: a partial-assignment CPA must never see
+-- a work item belonging to a client they aren't assigned to.
+select is(
+  (select count(distinct client_org_id)::int from cpa_practice_queue('00000000-0000-0000-0000-0000000000F0')),
+  1, 'a regular CPA''s queue spans only assigned clients (client B items never leak)');
+select is(
+  (select count(*)::int from cpa_practice_queue('00000000-0000-0000-0000-0000000000F0')
+     where client_org_id = '00000000-0000-0000-0000-00000000000B'),
+  0, 'no client B item appears in the unassigned CPA''s queue');
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- isolation: another firm sees NONE of firm F's clients

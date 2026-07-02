@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "table": "vendor_priors",
+    "description": "Platform-level vendor->category first-guess. PUBLIC facts, SEPARATE from per-org learned rules (no tenant data, no cross-tenant leakage). Consumed by the categorize first-guess in app, catch-up, and imports. match_pattern is an ILIKE pattern applied ESCAPE-safe (CAT-F4). industry_key null = applies to all sectors.",
+    "primary_key": "id (natural key: match_pattern + industry_key)"
+  },
+  "rows": [
+    { "match_pattern": "%aws%",          "vendor_label": "Amazon Web Services", "category_hint": "cloud_hosting", "confidence": 0.85 },
+    { "match_pattern": "%amazon web%",   "vendor_label": "Amazon Web Services", "category_hint": "cloud_hosting", "confidence": 0.9 },
+    { "match_pattern": "%google cloud%", "vendor_label": "Google Cloud",        "category_hint": "cloud_hosting", "confidence": 0.9 },
+    { "match_pattern": "%vercel%",       "vendor_label": "Vercel",              "category_hint": "cloud_hosting", "confidence": 0.85 },
+    { "match_pattern": "%github%",       "vendor_label": "GitHub",              "category_hint": "software",      "confidence": 0.85 },
+    { "match_pattern": "%notion%",       "vendor_label": "Notion",              "category_hint": "software",      "confidence": 0.85 },
+    { "match_pattern": "%adobe%",        "vendor_label": "Adobe",               "category_hint": "software",      "confidence": 0.85 },
+    { "match_pattern": "%zoom%",         "vendor_label": "Zoom",                "category_hint": "software",      "confidence": 0.8 },
+    { "match_pattern": "%slack%",        "vendor_label": "Slack",               "category_hint": "software",      "confidence": 0.8 },
+    { "match_pattern": "%stripe%",       "vendor_label": "Stripe",              "category_hint": "platform_fees", "confidence": 0.75 },
+    { "match_pattern": "%home depot%",   "vendor_label": "The Home Depot",      "category_hint": "materials",     "industry_key": "trades", "confidence": 0.85 },
+    { "match_pattern": "%lowe%",         "vendor_label": "Lowe's",              "category_hint": "materials",     "industry_key": "trades", "confidence": 0.8 },
+    { "match_pattern": "%sysco%",        "vendor_label": "Sysco",               "category_hint": "food_supplies", "industry_key": "food-beverage", "confidence": 0.85 },
+    { "match_pattern": "%us foods%",     "vendor_label": "US Foods",            "category_hint": "food_supplies", "industry_key": "food-beverage", "confidence": 0.85 },
+    { "match_pattern": "%ups%",          "vendor_label": "UPS",                 "category_hint": "shipping",      "confidence": 0.7 },
+    { "match_pattern": "%fedex%",        "vendor_label": "FedEx",               "category_hint": "shipping",      "confidence": 0.7 },
+    { "match_pattern": "%shopify%",      "vendor_label": "Shopify",             "category_hint": "platform_fees", "industry_key": "retail", "confidence": 0.85 },
+    { "match_pattern": "%westlaw%",      "vendor_label": "Westlaw",             "category_hint": "research",      "industry_key": "professional-services", "confidence": 0.85 },
+    { "match_pattern": "%staples%",      "vendor_label": "Staples",             "category_hint": "office",        "confidence": 0.75 },
+    { "match_pattern": "%uber%",         "vendor_label": "Uber",                "category_hint": "travel",        "confidence": 0.65 }
+  ]
+}

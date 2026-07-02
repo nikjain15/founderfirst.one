@@ -1,0 +1,49 @@
+name: kernel-seed
+
+# CENTRAL-2 knowledge-kernel guards (separate workflow to avoid clobbering REG-1 /
+# CENTRAL-1 CI files). Three gates:
+#   1. seed loader is idempotent + fresh — the committed _generated.sql matches a
+#      fresh regenerate, seed refs are valid, and effective-dating holds (only one
+#      OPEN filing_obligation per key). (like migrations-unique for seeds)
+#   2. no feature file hardcodes an entity/industry/deadline list (Roadmap 3b).
+#   3. no law-looking literal ($ threshold / % / deadline) in app code (Roadmap 3c).
+
+on:
+  pull_request:
+    paths:
+      - "supabase/seeds/**"
+      - "scripts/seed-kernel.ts"
+      - "scripts/check-law-literals.ts"
+      - "scripts/check-kernel-hardcodes.ts"
+      - "apps/**"
+      - "site-bubble/**"
+      - "supabase/functions/**"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/seeds/**"
+      - "scripts/seed-kernel.ts"
+      - "scripts/check-law-literals.ts"
+      - "scripts/check-kernel-hardcodes.ts"
+  workflow_dispatch:
+
+jobs:
+  kernel-guards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install (tsx only needed)
+        run: pnpm install --frozen-lockfile
+      - name: Seed loader is fresh + idempotent + effective-dated
+        run: pnpm check:kernel-seed
+      - name: No hardcoded entity/industry/deadline lists
+        run: pnpm check:kernel-hardcodes
+      - name: No law-looking literals in feature code
+        run: pnpm check:law-literals

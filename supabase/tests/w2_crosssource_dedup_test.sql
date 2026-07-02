@@ -48,7 +48,7 @@ select * from create_import_batch(
 select add_import_rows('00000000-0000-0000-0000-0000000f0a01', '00000000-0000-0000-0000-0000000f0b01',
   (select id from _xb),
   '[{"row_num":1,"txn_date":"2026-07-01","description":"Coffee  Shop","amount_minor":-2500,"account_id":"00000000-0000-0000-0000-0000000fc002","status":"ready"}]'::jsonb);
-select perform_ok($$
+select lives_ok($$
   select commit_import_batch('00000000-0000-0000-0000-0000000f0a01','00000000-0000-0000-0000-0000000f0b01',(select id from _xb))
 $$, 'XSRC: CSV coffee commits');
 
@@ -125,7 +125,7 @@ select is((select count(*)::int from journal_entries je
 --    of the same content from another source.
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Plaid REMOVE the coffee txn → its entry is reversed → index row pruned.
-select perform_ok($$
+select lives_ok($$
   select plaid_ingest_transactions(
     '00000000-0000-0000-0000-0000000f0a01', '00000000-0000-0000-0000-0000000f0b01',
     '00000000-0000-0000-0000-0000000fe001',
@@ -145,7 +145,7 @@ select * from create_import_batch(
 select add_import_rows('00000000-0000-0000-0000-0000000f0a01', '00000000-0000-0000-0000-0000000f0b01',
   (select id from _xb2),
   '[{"row_num":1,"txn_date":"2026-07-01","description":"Coffee Shop","amount_minor":-2500,"account_id":"00000000-0000-0000-0000-0000000fc002","status":"ready"}]'::jsonb);
-select perform_ok($$
+select lives_ok($$
   select commit_import_batch('00000000-0000-0000-0000-0000000f0a01','00000000-0000-0000-0000-0000000f0b01',(select id from _xb2))
 $$, 'XSRC-REVERSAL: re-import after reversal commits');
 select is((select status::text from import_rows where batch_id=(select id from _xb2)),

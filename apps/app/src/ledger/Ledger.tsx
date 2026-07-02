@@ -18,29 +18,21 @@ import { formatMoney, formatMoneyShort, parseMoneyToMinor } from "./money";
 import { ACCOUNT_TYPES } from "./types";
 import ImportFlow from "../import/ImportFlow";
 import Categorize from "./Categorize";
+import InviteCpa from "../org/InviteCpa";
 import { Takeaway } from "./Takeaway";
+import {
+  visibleTabs, visibleSubs as visibleSubsOf, type Nav, type Surface,
+} from "./nav";
 import type {
   AccountType, AccountingPeriod, DraftLine, JournalEntry, LedgerAccount,
 } from "./types";
 
-// 4 primary tabs, mirroring the /admin IA (owner settings live in the top-bar ⚙️
-// menu, not a tab). The double-entry mechanics (journal/accounts/import/periods)
-// live under Books as sub-tabs so the top row stays calm instead of a flat seven.
-type MainTab = "overview" | "categorize" | "books" | "reports";
-type BooksSub = "journal" | "accounts" | "import" | "periods";
-
-const MAIN_TABS: { id: MainTab; label: string; writeOnly?: boolean }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "categorize", label: "Categorize", writeOnly: true },
-  { id: "books", label: "Books" },
-  { id: "reports", label: "Reports" },
-];
-const BOOKS_SUBS: { id: BooksSub; label: string; writeOnly?: boolean }[] = [
-  { id: "journal", label: "Journal" },
-  { id: "accounts", label: "Accounts" },
-  { id: "import", label: "Import", writeOnly: true },
-  { id: "periods", label: "Periods" },
-];
+/**
+ * Two navigations, one workspace (APP_PRINCIPLES §1, §2, §3). Owner and CPA are
+ * role-scoped projections of the same books, so they share this component but get
+ * their OWN tab set (defined in ./nav) — owner navigates by plain-language jobs,
+ * CPA by accounting workflow. The `nav` prop picks which; the panels are identical.
+ */
 
 /** Roving-tabindex tab strip (arrow-key navigable) — shared by the main tabs and
  *  the Books sub-tabs so keyboard behavior is identical at both levels. */
@@ -84,18 +76,31 @@ const entryTotal = (e: JournalEntry) =>
   (e.lines ?? []).filter((l) => l.side === "D").reduce((s, l) => s + l.amount_minor, 0);
 
 export default function Ledger({
-  org, canWrite, defaultTab = "overview", eyebrow, onInvite,
+  org, canWrite, nav = "owner", defaultTabId, eyebrow, onInvite,
 }: {
   org: { id: string; name: string };
   canWrite: boolean;
-  defaultTab?: MainTab;
+  nav?: Nav;                 // which navigation to present (owner jobs vs CPA workflow)
+  defaultTabId?: string;     // which primary tab to land on (else the first visible one)
   eyebrow?: string;
-  onInvite?: () => void; // owner-only: open Settings to invite an accountant (top-bar ⚙️ menu)
+  onInvite?: () => void;     // owner-only: open Settings to invite an accountant (top-bar ⚙️ menu)
 }) {
-  const [tab, setTab] = useState<MainTab>(defaultTab);
-  const [booksSub, setBooksSub] = useState<BooksSub>("journal");
-  const mainTabs = MAIN_TABS.filter((t) => !t.writeOnly || canWrite);
-  const booksSubs = BOOKS_SUBS.filter((t) => !t.writeOnly || canWrite);
+  // Visible primary tabs for this lens, with write-only tabs hidden for read-only.
+  const tabs = visibleTabs(nav, canWrite);
+  const initialTab = tabs.some((t) => t.id === defaultTabId) ? defaultTabId! : (tabs[0]?.id ?? "");
+  const [tabId, setTabId] = useState<string>(initialTab);
+  // Remember the last sub-surface per parent tab (Advanced / Books), so returning
+  // to it lands where you left. Defaults to the parent's first visible sub.
+  const [sub, setSub] = useState<Surface | null>(null);
+
+  const activeTab = tabs.find((t) => t.id === tabId) ?? tabs[0];
+  const subs = visibleSubsOf(activeTab, canWrite);
+  const activeSub: Surface | null = activeTab?.subs
+    ? (subs.find((s) => s.id === sub)?.id ?? subs[0]?.id ?? null)
+    : null;
+  // The leaf surface currently shown: a leaf tab's surface, or the active sub.
+  const surface: Surface | null = activeTab?.surface ?? activeSub;
+
   const accounts = useAccounts(org.id);
   const entries = useEntries(org.id);
   const periods = usePeriods(org.id);
@@ -104,8 +109,15 @@ export default function Ledger({
   const loading = accounts.isLoading || entries.isLoading || periods.isLoading;
   const error = accounts.isError || entries.isError || periods.isError;
 
-  // Jump straight to a Books sub-tab (used by Overview's actions + Import's onDone).
-  const openBooks = (sub: BooksSub) => { setBooksSub(sub); setTab("books"); };
+  // Jump straight to any surface, opening its parent tab if it's a sub-surface
+  // (used by Home's actions and Import's onDone). Falls back to the leaf tab.
+  const goto = (target: Surface) => {
+    const parent = tabs.find((t) => t.surface === target)
+      ?? tabs.find((t) => (t.subs ?? []).some((s) => s.id === target));
+    if (!parent) return;
+    setTabId(parent.id);
+    if (parent.subs) setSub(target);
+  };
 
   return (
     <section className="lens ledger">
@@ -117,64 +129,104 @@ export default function Ledger({
         )}
       </header>
 
-      <TabStrip items={mainTabs} active={tab} onSelect={setTab}
-        label="Ledger sections" idPrefix="ltab" />
+      <TabStrip items={tabs} active={tabId} onSelect={setTabId}
+        label="Sections" idPrefix="ltab" />
 
       {error && <p className="error">Couldn't load the books. Try again.</p>}
       {loading && !error && <p className="muted">Loading the books…</p>}
 
       {!loading && !error && (
-        <div className="ledger-panel" role="tabpanel" id="ledger-panel" aria-labelledby={`ltab-${tab}`} tabIndex={0}>
-          {tab === "overview" && (
-            <Overview
-              entries={entries.data ?? []} accounts={accounts.data ?? []}
-              canWrite={canWrite} orgId={org.id}
-              onReview={() => openBooks("journal")}
-              onCategorize={() => setTab("categorize")}
-              onInvite={onInvite}
-            />
+        <div className="ledger-panel" role="tabpanel" id="ledger-panel" aria-labelledby={`ltab-${tabId}`} tabIndex={0}>
+          {activeTab?.subs && activeSub && (
+            <TabStrip items={subs} active={activeSub} onSelect={setSub}
+              label={`${activeTab.label} sections`} idPrefix="lsub" className="ledger-tabs ledger-subtabs" />
           )}
-          {tab === "categorize" && canWrite && (
-            <Categorize orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []} onChange={refresh} />
-          )}
-          {tab === "books" && (
-            <>
-              <TabStrip items={booksSubs} active={booksSub} onSelect={setBooksSub}
-                label="Books sections" idPrefix="lsub" className="ledger-tabs ledger-subtabs" />
-              <div className="ledger-subpanel" role="tabpanel" aria-labelledby={`lsub-${booksSub}`} tabIndex={0}>
-                {booksSub === "journal" && (
-                  <Journal orgId={org.id} canWrite={canWrite}
-                    accounts={accounts.data ?? []} entries={entries.data ?? []} onChange={refresh} />
-                )}
-                {booksSub === "accounts" && (
-                  <Accounts orgId={org.id} canWrite={canWrite}
-                    accounts={accounts.data ?? []} entries={entries.data ?? []} onChange={refresh} />
-                )}
-                {booksSub === "import" && canWrite && (
-                  <ImportFlow orgId={org.id} accounts={accounts.data ?? []}
-                    onDone={() => { refresh(); openBooks("journal"); }} />
-                )}
-                {booksSub === "periods" && (
-                  <Periods orgId={org.id} canWrite={canWrite}
-                    periods={periods.data ?? []} onChange={refresh} />
-                )}
-              </div>
-            </>
-          )}
-          {tab === "reports" && <Reports entries={entries.data ?? []} />}
+          <div className={activeTab?.subs ? "ledger-subpanel" : undefined}
+            role={activeTab?.subs ? "tabpanel" : undefined}
+            aria-labelledby={activeTab?.subs && activeSub ? `lsub-${activeSub}` : undefined}
+            tabIndex={activeTab?.subs ? 0 : undefined}>
+            {surface === "overview" && (
+              <Overview
+                entries={entries.data ?? []} accounts={accounts.data ?? []}
+                canWrite={canWrite} orgId={org.id}
+                onReview={() => goto("review")}
+                onCategorize={() => goto("review")}
+                onConnect={() => goto("connections")}
+                onInvite={onInvite}
+              />
+            )}
+            {surface === "review" && canWrite && (
+              <Categorize orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []} onChange={refresh} />
+            )}
+            {surface === "connections" && (
+              <Connections orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []}
+                onImported={() => { refresh(); goto("journal"); }} onInvite={onInvite} />
+            )}
+            {surface === "journal" && (
+              <Journal orgId={org.id} canWrite={canWrite}
+                accounts={accounts.data ?? []} entries={entries.data ?? []} onChange={refresh} />
+            )}
+            {surface === "accounts" && (
+              <Accounts orgId={org.id} canWrite={canWrite}
+                accounts={accounts.data ?? []} entries={entries.data ?? []} onChange={refresh} />
+            )}
+            {surface === "import" && canWrite && (
+              <ImportFlow orgId={org.id} accounts={accounts.data ?? []}
+                onDone={() => { refresh(); goto("journal"); }} />
+            )}
+            {surface === "periods" && (
+              <Periods orgId={org.id} canWrite={canWrite}
+                periods={periods.data ?? []} onChange={refresh} />
+            )}
+            {surface === "reports" && <Reports entries={entries.data ?? []} />}
+          </div>
         </div>
       )}
     </section>
   );
 }
 
+// ── Connections — "bring in / share my data" (APP_PRINCIPLES §2). Absorbs the old
+//    Import tab and the InviteCpa sidebar so bank/connector/import/invite all live
+//    under one owner-facing job instead of being scattered across the ledger. ─────
+function Connections({
+  orgId, canWrite, accounts, onImported, onInvite,
+}: {
+  orgId: string; canWrite: boolean; accounts: LedgerAccount[];
+  onImported: () => void; onInvite?: () => void;
+}) {
+  return (
+    <div className="connections">
+      <section className="connections-block">
+        <h2 className="section-h">Bring in your data</h2>
+        {canWrite ? (
+          <ImportFlow orgId={orgId} accounts={accounts} onDone={onImported} />
+        ) : (
+          <p className="muted">You have read-only access — importing is disabled.</p>
+        )}
+      </section>
+      <section className="connections-block">
+        <h2 className="section-h">Share with your accountant</h2>
+        {onInvite ? (
+          <>
+            <p className="muted">Invite your accountant to your books — you control full or read-only access.</p>
+            <InviteCpa orgId={orgId} />
+          </>
+        ) : (
+          <p className="muted">Your accountant relationship is managed by the business owner.</p>
+        )}
+      </section>
+    </div>
+  );
+}
+
 // ── Overview — plain-language "how's my business" ────────────────────────────
 function Overview({
-  entries, accounts, canWrite, orgId, onReview, onCategorize, onInvite,
+  entries, accounts, canWrite, orgId, onReview, onCategorize, onConnect, onInvite,
 }: {
   entries: JournalEntry[]; accounts: LedgerAccount[];
   canWrite: boolean; orgId: string;
-  onReview: () => void; onCategorize: () => void; onInvite?: () => void;
+  onReview: () => void; onCategorize: () => void; onConnect: () => void; onInvite?: () => void;
 }) {
   const tb = useMemo(() => trialBalance(entries), [entries]);
   const pnl = useMemo(() => profitAndLoss(entries), [entries]);
@@ -216,6 +268,7 @@ function Overview({
         <Empty
           title="Let's set up your books"
           body="Connect your bank or import a statement and Penny starts categorizing right away. Prefer to do it by hand? You can add accounts and post entries too."
+          action={canWrite ? { label: "Go to Connections", onClick: onConnect } : undefined}
         />
       </>
     );
@@ -799,11 +852,14 @@ function Periods({
 function StatusPill({ status }: { status: JournalEntry["status"] }) {
   return <span className={`status-pill s-${status}`}>{status.replace("_", " ")}</span>;
 }
-function Empty({ title, body }: { title: string; body: string }) {
+function Empty({ title, body, action }: {
+  title: string; body: string; action?: { label: string; onClick: () => void };
+}) {
   return (
     <div className="ledger-empty">
       <h3>{title}</h3>
       <p className="muted">{body}</p>
+      {action && <button className="ghost sm" onClick={action.onClick}>{action.label}</button>}
     </div>
   );
 }

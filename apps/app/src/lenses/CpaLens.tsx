@@ -6,5 +6,5 @@ import type { Org, RoleInfo } from "../org/ActiveOrgProvider";
 import Ledger from "../ledger/Ledger";
 
 export default function CpaLens({ org, roleInfo }: { org: Org; roleInfo: RoleInfo }) {
-  return <Ledger org={org} canWrite={roleInfo.canWrite} defaultTab="books" eyebrow="Client books" />;
+  return <Ledger org={org} canWrite={roleInfo.canWrite} nav="cpa" defaultTabId="books" eyebrow="Client books" />;
 }

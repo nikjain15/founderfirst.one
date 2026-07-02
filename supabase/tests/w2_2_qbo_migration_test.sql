@@ -117,11 +117,13 @@ select is(
      '00000000-0000-0000-0000-0000000d2201','00000000-0000-0000-0000-0000000d22b1',(select id from _y3),'2026-01-01'::date)),
   '2026-01-01'::date, 'set_import_batch_cutover stamps a pre-commit batch');
 
--- and it refuses on a committed batch (frozen)
+-- and it refuses on a committed batch (frozen). restrict_violation = SQLSTATE 23001.
+-- (4-arg throws_ok(sql, errcode, errmsg, desc); a bare NULL 2nd arg is an ambiguous
+--  overload that aborts the plan — use the explicit errcode form.)
 select throws_ok($$
   select set_import_batch_cutover(
     '00000000-0000-0000-0000-0000000d2201','00000000-0000-0000-0000-0000000d22b1',(select id from _y1),'2026-01-01'::date)
-$$, NULL, 'set_import_batch_cutover refuses a committed (frozen) batch');
+$$, '23001', NULL, 'set_import_batch_cutover refuses a committed (frozen) batch');
 
 select is(
   (select status::text from set_provider_migration_cutover(

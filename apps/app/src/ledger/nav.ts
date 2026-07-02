@@ -87,3 +87,23 @@ export function tabForSurface(nav: Nav, surface: Surface, canWrite: boolean): Na
   return tabs.find((t) => t.surface === surface)
     ?? tabs.find((t) => visibleSubs(t, canWrite).some((s) => s.id === surface));
 }
+
+/**
+ * Map a requested surface to one the current viewer can actually reach.
+ *
+ * The CPA practice queue routes uncategorized→`review` and unreconciled→`import`,
+ * but both of those tabs are WRITE-ONLY (a read_only engagement can't categorize or
+ * import). For a read_only CPA those surfaces are hidden, so a raw deep-link would
+ * land nowhere and the "View" button would silently do nothing. Read_only CPAs must
+ * still be able to open the client's books to LOOK at the item — the write-path
+ * refuses the mutation server-side regardless (ARCHITECTURE §4.3). So when the exact
+ * surface isn't visible, fall back to `journal`: the read-only ledger view where the
+ * uncategorized entry / imported rows are visible. Returns undefined only if nothing
+ * in the lens is reachable at all.
+ */
+export function reachableSurface(nav: Nav, surface: Surface, canWrite: boolean): Surface | undefined {
+  if (tabForSurface(nav, surface, canWrite)) return surface;
+  if (tabForSurface(nav, "journal", canWrite)) return "journal";
+  const first = visibleTabs(nav, canWrite)[0];
+  return first?.surface ?? first?.subs?.[0]?.id;
+}

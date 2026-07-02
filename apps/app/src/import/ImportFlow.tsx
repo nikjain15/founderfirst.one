@@ -109,17 +109,18 @@ function CsvImport({
       const { result: batch } = await createImportBatch({
         org_id: orgId, source: "bank_statement", filename: filename || null, bank_account_id: bankId,
       });
-      const staged: StagedRow[] = rows.map((r) => ({
-        row_num: r.row_num, raw: r.raw,
-        txn_date: r.date, description: r.description, amount_minor: r.amount,
-        account_id: contraId, status: r.valid ? "ready" : "error",
-      }));
-      await addImportRows(orgId, batch.id, staged);
+      // Once the batch exists, discard it on ANY downstream failure (staging OR
+      // commit) so a rejected add_rows can't leave an orphan draft batch behind.
       try {
+        const staged: StagedRow[] = rows.map((r) => ({
+          row_num: r.row_num, raw: r.raw,
+          txn_date: r.date, description: r.description, amount_minor: r.amount,
+          account_id: contraId, status: r.valid ? "ready" : "error",
+        }));
+        await addImportRows(orgId, batch.id, staged);
         await commitImportBatch(orgId, batch.id);
         setDone(readyCount);
       } catch (e) {
-        // commit failed → leave no orphan staging
         await discardImportBatch(orgId, batch.id).catch(() => {});
         throw e;
       }

@@ -13,9 +13,32 @@ export interface ParsedCsv {
 /** How ambiguous slash/dash dates (e.g. 03/04/2026) should be read. */
 export type DateFormat = "mdy" | "dmy";
 
+/**
+ * Sniff the field delimiter from the header line. Bank/QBO/Xero exports are
+ * usually comma-separated, but EU locales emit semicolons (comma is the decimal
+ * point there) and some tools emit tabs. We count candidates OUTSIDE quotes on
+ * the first line and pick the most frequent; comma wins ties / a single column.
+ * Without this, a `;`-delimited file collapses to one unusable column and the
+ * whole import silently yields zero mappable rows.
+ */
+function detectDelimiter(src: string): string {
+  const counts: Record<string, number> = { ",": 0, ";": 0, "\t": 0 };
+  let inQuotes = false;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (c === '"') { if (inQuotes && src[i + 1] === '"') i++; else inQuotes = !inQuotes; }
+    else if (!inQuotes && (c === "\n" || c === "\r")) break; // header line only
+    else if (!inQuotes && c in counts) counts[c]++;
+  }
+  let best = ",";
+  for (const d of [";", "\t"]) if (counts[d] > counts[best]) best = d;
+  return best;
+}
+
 export function parseCsv(text: string): ParsedCsv {
   // strip BOM
   const src = text.replace(/^﻿/, "");
+  const delim = detectDelimiter(src);
   const records: string[][] = [];
   let field = "";
   let row: string[] = [];
@@ -32,7 +55,7 @@ export function parseCsv(text: string): ParsedCsv {
       }
     } else if (c === '"') {
       inQuotes = true;
-    } else if (c === ",") {
+    } else if (c === delim) {
       row.push(field); field = "";
     } else if (c === "\n" || c === "\r") {
       if (c === "\r" && src[i + 1] === "\n") i++; // CRLF
@@ -55,8 +78,9 @@ export function parseCsv(text: string): ParsedCsv {
  * Parse a date cell → ISO yyyy-mm-dd, or null. `fmt` disambiguates slash/dash dates
  * that could be month-first (US) or day-first (UK/EU/AU). When a value is
  * self-disambiguating (a part > 12), that wins regardless of `fmt`. Invalid
- * month/day combinations return null rather than producing a bogus ISO string
- * (e.g. "13/04/2026" no longer yields "2026-13-04").
+ * month/day combinations — including impossible calendar dates like "02/30/2026"
+ * — return null rather than producing a bogus ISO string (e.g. "13/04/2026" no
+ * longer yields "2026-13-04", and "02/30/2026" no longer yields "2026-02-30").
  */
 // A real calendar date? (rejects Feb 30, Apr 31, and Feb 29 in a non-leap year).
 function realDate(y: number, m: number, d: number): boolean {

@@ -5,6 +5,7 @@
  * menu items as children; the menu closes itself when any item is clicked.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { COPY } from "../copy";
 
 function GearIcon() {
   return (
@@ -46,7 +47,7 @@ export default function AccountMenu({ email, children }: { email?: string; child
     <div className="acct" ref={ref}>
       <button
         className="acct-trigger" aria-haspopup="menu" aria-expanded={open}
-        aria-label="Account menu" onClick={() => setOpen((v) => !v)}
+        aria-label={COPY.nav.accountMenuAria} onClick={() => setOpen((v) => !v)}
       >
         <GearIcon /><ChevronIcon />
       </button>

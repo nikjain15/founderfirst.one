@@ -1,32 +1,47 @@
 /** Shared top bar: brand + org-switcher, with everything secondary (role,
  *  Settings, Staff console, Sign out) parked in a single ⚙️ menu — mirrors /admin
  *  so the bar stays calm instead of a row of loose links. */
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useActiveOrg } from "../org/ActiveOrgProvider";
 import { useIsPlatformStaff } from "../staff/api";
 import AccountMenu from "./AccountMenu";
 import OrgSwitcher from "./OrgSwitcher";
+import CreateOrg from "../org/CreateOrg";
+import { useClientCounts } from "../lenses/practiceQueue";
 import { SITE } from "@ff/site";
+import { COPY } from "../copy";
 
 export default function Topbar() {
   const { session, signOut } = useAuth();
   const { orgs, activeOrg, roleInfo, setActiveOrgId } = useActiveOrg();
   const isStaff = useIsPlatformStaff();
+  // When a CPA is on their practice, badge the switcher's client list with each
+  // client's open-item count (APP_PRINCIPLES §3 — "counts on the switcher").
+  const firmId = activeOrg?.type === "firm" ? activeOrg.id : undefined;
+  const clientCounts = useClientCounts(firmId);
+  const counts = clientCounts.data
+    ? Object.fromEntries(clientCounts.data.map((c) => [c.client_org_id, c.total]))
+    : undefined;
+  // "+ New organization" opens an inline panel under the bar (APP_PRINCIPLES §5) —
+  // launched from the org switcher, not stapled to the page body.
+  const [creating, setCreating] = useState(false);
 
   const roleLabel = roleInfo
-    ? roleInfo.lens === "owner" ? "Owner" : roleInfo.canWrite ? "CPA" : "CPA · read-only"
+    ? roleInfo.lens === "owner" ? COPY.nav.roleOwner : roleInfo.canWrite ? COPY.nav.roleCpa : COPY.nav.roleCpaReadonly
     : null;
 
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <Link className="brand" to="/" title={`Penny by ${SITE.company}`}>
+        <Link className="brand" to="/" title={COPY.nav.brandTitle(SITE.company)}>
           <span className="p-mark p-mark-sm" aria-hidden="true">P</span>
-          Penny
+          {COPY.nav.penny}
         </Link>
 
-        <OrgSwitcher orgs={orgs} activeOrg={activeOrg} onSelect={setActiveOrgId} />
+        <OrgSwitcher orgs={orgs} activeOrg={activeOrg} onSelect={setActiveOrgId}
+          onCreateOrg={() => setCreating(true)} counts={counts} />
 
         <span className="spacer" />
 
@@ -36,17 +51,25 @@ export default function Topbar() {
           )}
           <div className="acct-sep" />
           {roleInfo?.lens === "owner" && (
-            <Link className="acct-item" role="menuitem" to="/settings">Settings</Link>
+            <Link className="acct-item" role="menuitem" to="/settings">{COPY.nav.settings}</Link>
           )}
           {isStaff.data && (
-            <Link className="acct-item" role="menuitem" to="/staff">Staff console</Link>
+            <Link className="acct-item" role="menuitem" to="/staff">{COPY.nav.staffConsole}</Link>
           )}
           <div className="acct-sep" />
           <button className="acct-item acct-signout" role="menuitem" onClick={() => void signOut()}>
-            Sign out
+            {COPY.nav.signOut}
           </button>
         </AccountMenu>
       </div>
+      {creating && (
+        <div className="topbar-create">
+          <div className="topbar-create-inner">
+            <CreateOrg onDone={() => setCreating(false)} />
+            <button className="ghost sm" onClick={() => setCreating(false)}>{COPY.common.cancel}</button>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

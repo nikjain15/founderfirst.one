@@ -90,6 +90,7 @@ const SCREENS = [
   { key: "reports",     label: "Reports",     main: "reports" },
   { key: "connections", label: "Connections", main: "connections" },
   { key: "journal",     label: "Journal",     main: "advanced", sub: "journal" },
+  { key: "reconcile",   label: "Reconcile",   main: "advanced", sub: "reconcile" }, // W1.1
 ];
 
 /** Open a screen (main tab, then Books sub-tab if any). Returns false if absent. */

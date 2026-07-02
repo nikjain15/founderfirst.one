@@ -16,7 +16,7 @@ export type Nav = "owner" | "cpa";
 // Every leaf surface the workspace can show. Both navs route to a subset of these.
 export type Surface =
   | "overview" | "review" | "reports" | "connections"
-  | "journal" | "accounts" | "import" | "periods" | "rules";
+  | "journal" | "accounts" | "import" | "periods" | "rules" | "reconcile";
 
 export type SubTab = { id: Surface; label: string; writeOnly?: boolean };
 
@@ -44,6 +44,7 @@ export const OWNER_TABS: NavTab[] = [
     id: "advanced", label: COPY.tabs.advanced, subs: [
       { id: "journal", label: COPY.tabs.journal },
       { id: "accounts", label: COPY.tabs.chartOfAccounts },
+      { id: "reconcile", label: COPY.tabs.reconcile },
       { id: "periods", label: COPY.tabs.periods },
       { id: "rules", label: COPY.tabs.rules },
     ],
@@ -70,6 +71,7 @@ export const CPA_TABS: NavTab[] = [
       { id: "journal", label: COPY.tabs.journal },
       { id: "accounts", label: COPY.tabs.accounts },
       { id: "import", label: COPY.tabs.import, writeOnly: true },
+      { id: "reconcile", label: COPY.tabs.reconcile },
       { id: "periods", label: COPY.tabs.periods },
     ],
   },

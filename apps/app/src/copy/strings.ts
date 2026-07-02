@@ -434,6 +434,7 @@ export const COPY = {
     accounts: "Accounts",
     import: "Import",
     rules: "Rules",
+    reconcile: "Reconcile",
   },
 
   // ── Learned rules (W1.6 — Categorize → Rules) ──────────────────────────────
@@ -554,6 +555,67 @@ export const COPY = {
     approvedNote: "Approved — it's on the books.",
     // errors
     actionError: "Couldn't do that just now. Try again.",
+  },
+
+  // ── W1.1 · bank reconciliation (APPENDED block — integrator merges additive keys) ──
+  // CPA-facing (Books → Reconcile) + the owner's "Reconciled ✓" chip on Home. Keep
+  // it plain: pick account + month → auto-match → clear the short list → ✓.
+  reconcile: {
+    eyebrow: "Reconciliation",
+    lead: "Match this account's statement against the books, month by month. Penny auto-matches the obvious ones — you resolve what's left.",
+    accountLabel: "Account",
+    accountAria: "Account to reconcile",
+    statementEndLabel: "Statement date",
+    statementEndAria: "Statement closing date",
+    openingLabel: "Opening balance",
+    closingLabel: "Closing balance",
+    openingAria: "Statement opening balance",
+    closingAria: "Statement closing balance",
+    startReconciling: "Start reconciling",
+    autoMatch: "Auto-match",
+    autoMatching: "Matching…",
+    autoMatchedN: (n: number) => `Penny matched ${n} ${n === 1 ? "line" : "lines"} automatically.`,
+    exactBadge: "exact",
+    fuzzyBadge: "close date",
+    manualBadge: "manual",
+    matchedTitle: "Matched",
+    matchedCount: (n: number) => `${n} matched`,
+    unmatchedTitle: "Needs your attention",
+    unmatchedLead: "These statement lines don't have a matching entry yet. Match one, or create the missing entry.",
+    noUnmatched: "Every statement line is matched.",
+    colDate: "Date",
+    colDescription: "Description",
+    colAmount: "Amount",
+    match: "Match",
+    matching: "Matching…",
+    unmatch: "Unmatch",
+    unmatching: "Unmatching…",
+    pickEntry: "Match to an entry…",
+    createMissing: "Create missing entry",
+    // The tie-out summary (opening / cleared / outstanding / closing).
+    summaryOpening: "Opening",
+    summaryCleared: "Cleared",
+    summaryOutstanding: "Outstanding",
+    summaryClosing: "Closing",
+    summaryDifference: "Difference",
+    tiesOut: "This account ties to the statement — you're clear to reconcile.",
+    doesNotTie: (amount: string) => `Off by ${amount}. Resolve the difference before reconciling.`,
+    lock: "Reconcile ✓",
+    locking: "Reconciling…",
+    reconciledChip: "Reconciled ✓",
+    reconciledOn: (date: string) => `Reconciled on ${date}`,
+    reopen: "Reopen",
+    reopening: "Reopening…",
+    lockedNote: "This month is reconciled and locked. Reopen it to make changes.",
+    reopenedByReversal: "A reversal reopened a matched line — this month needs another look.",
+    loadError: "Couldn't load reconciliation. Try again.",
+    readonlyNote: "You have read-only access — matching and reconciling are disabled.",
+    selectAccountFirst: "Pick a bank or cash account to reconcile.",
+    noStatementLines: "No statement lines for this account yet. Import a bank statement first.",
+    // Owner Home chip (owners never reconcile — they just see the status).
+    homeReconciled: (n: number) =>
+      `Reconciled ✓ — ${n} ${n === 1 ? "account" : "accounts"} tied to statement.`,
+    homeReconciledDate: (date: string) => `Last reconciled ${date}.`,
   },
 } as const;
 

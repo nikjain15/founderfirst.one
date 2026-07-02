@@ -34,14 +34,14 @@ describe("owner lens nav (IA-1 · APP_PRINCIPLES §2)", () => {
     }
   });
 
-  it("exposes Journal · Chart of accounts · Periods only under Advanced", () => {
+  it("exposes Journal · Chart of accounts · Reconcile · Periods only under Advanced", () => {
     const advanced = OWNER_TABS.find((t) => t.id === "advanced");
-    // Rules (W1.6 learned-rules management) nests here too — reached deliberately,
-    // never prompted (usability gate: no new top-level nav).
-    expect(advanced?.subs?.map((s) => s.id)).toEqual(["journal", "accounts", "periods", "rules"]);
+    // Reconcile (W1.1) and Rules (W1.6 learned-rules management) both nest here —
+    // reached deliberately, never prompted (usability gate: no new top-level nav).
+    expect(advanced?.subs?.map((s) => s.id)).toEqual(["journal", "accounts", "reconcile", "periods", "rules"]);
     // Those accountant surfaces must NOT also be primary tabs.
     const primaryIds = new Set(OWNER_TABS.filter((t) => t.surface).map((t) => t.surface));
-    for (const s of ["journal", "accounts", "periods", "rules"] as Surface[]) {
+    for (const s of ["journal", "accounts", "reconcile", "periods", "rules"] as Surface[]) {
       expect(primaryIds.has(s)).toBe(false);
     }
   });
@@ -94,9 +94,9 @@ describe("CPA lens nav is UNCHANGED (regression guard — APP_PRINCIPLES §3)", 
     expect(CPA_TABS.map((t) => t.id)).toEqual(["overview", "categorize", "books", "reports"]);
   });
 
-  it("still nests Journal · Accounts · Import · Periods under Books", () => {
+  it("still nests Journal · Accounts · Import · Reconcile · Periods under Books", () => {
     const books = CPA_TABS.find((t) => t.id === "books");
-    expect(books?.subs?.map((s) => s.id)).toEqual(["journal", "accounts", "import", "periods"]);
+    expect(books?.subs?.map((s) => s.id)).toEqual(["journal", "accounts", "import", "reconcile", "periods"]);
   });
 
   it("does NOT adopt the owner's Home/Connections/Advanced jobs", () => {

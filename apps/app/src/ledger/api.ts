@@ -404,6 +404,182 @@ export const logReportExport = (input: {
   rows?: number;
 }) => invoke<{ ok: true }>("report-export", input);
 
+// ── bank reconciliation (W1.1) ────────────────────────────────────────────────
+// Reads go straight to Supabase under the scoped JWT (RLS: members + engaged CPAs
+// see their own rows only). Writes go through the `reconcile` edge fn → the
+// service_role-only match RPCs (a read-only CPA is refused server-side).
+export type ReconciliationStatus = "open" | "locked";
+export type ReconciliationMatchKind = "exact" | "fuzzy" | "manual";
+
+export interface ReconciliationSession {
+  id: string;
+  org_id: string;
+  account_id: string;
+  period_id: string | null;
+  statement_end: string;
+  opening_minor: number;
+  closing_minor: number;
+  status: ReconciliationStatus;
+  locked_at: string | null;
+}
+
+export interface ReconciliationMatchRow {
+  id: string;
+  session_id: string;
+  import_row_id: string;
+  entry_id: string;
+  kind: ReconciliationMatchKind;
+  amount_minor: number;
+  reopened_at: string | null;
+}
+
+/** A statement line to reconcile — one committed/staged import_rows row. */
+export interface ImportStatementRow {
+  id: string;
+  txn_date: string | null;
+  description: string | null;
+  amount_minor: number | null;
+}
+
+/** Reconciliation sessions for an account, newest statement first. */
+export function useReconciliationSessions(orgId: string | undefined, accountId: string | undefined) {
+  return useQuery({
+    queryKey: ["reconciliation-sessions", orgId, accountId],
+    enabled: Boolean(orgId && accountId),
+    queryFn: async (): Promise<ReconciliationSession[]> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("reconciliation_sessions")
+        .select("id,org_id,account_id,period_id,statement_end,opening_minor,closing_minor,status,locked_at")
+        .eq("org_id", orgId)
+        .eq("account_id", accountId)
+        .order("statement_end", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as ReconciliationSession[];
+    },
+  });
+}
+
+/** Confirmed (live) matches within a session. */
+export function useReconciliationMatches(orgId: string | undefined, sessionId: string | undefined) {
+  return useQuery({
+    queryKey: ["reconciliation-matches", orgId, sessionId],
+    enabled: Boolean(orgId && sessionId),
+    queryFn: async (): Promise<ReconciliationMatchRow[]> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("reconciliation_matches")
+        .select("id,session_id,import_row_id,entry_id,kind,amount_minor,reopened_at")
+        .eq("org_id", orgId)
+        .eq("session_id", sessionId)
+        .is("reopened_at", null);
+      if (error) throw error;
+      return (data ?? []) as ReconciliationMatchRow[];
+    },
+  });
+}
+
+// Statement lines feed the reconciliation tie-out, so this is a report-feeding
+// select and MUST NOT truncate at PostgREST max_rows (1000 on prod) — a partial
+// statement can still falsely "tie" (LEARNINGS: RPTTEST). Page through every row.
+const STATEMENT_PAGE = 1000;
+const MAX_STATEMENT_PAGES = 1000; // 1M-row safety stop; far beyond pilot scale
+
+/**
+ * Statement lines for ONE bank account — committed CSV/bank-statement import rows.
+ * The bank side lives on `import_batches.bank_account_id`; `import_rows.account_id`
+ * is the contra/category, so we scope by the parent batch's bank account via an
+ * inner-join filter (`import_batches!inner`). Filtering only by `org_id` would
+ * pull OTHER accounts' lines into the reconciliation (wrong-account contamination).
+ * All pages load — reconciliation needs the complete statement.
+ */
+// Exported for unit test: proves the account filter + full pagination. `sb` is
+// the (untyped) Supabase client; the caller passes getClient().
+export async function fetchStatementRows(
+  sb: ReturnType<typeof getClient>, orgId: string, accountId: string,
+): Promise<ImportStatementRow[]> {
+  const all: ImportStatementRow[] = [];
+  for (let page = 0; page < MAX_STATEMENT_PAGES; page++) {
+    const from = page * STATEMENT_PAGE;
+    const { data, error } = await sb
+      .from("import_rows")
+      .select("id,txn_date,description,amount_minor,import_batches!inner(bank_account_id)")
+      .eq("org_id", orgId)
+      .eq("import_batches.bank_account_id", accountId)
+      .not("amount_minor", "is", null)
+      .order("txn_date", { ascending: true })
+      .order("id", { ascending: true }) // total order → stable across pages
+      .range(from, from + STATEMENT_PAGE - 1);
+    if (error) throw error;
+    const rows = (data ?? []) as ImportStatementRow[];
+    all.push(...rows.map((r) => ({
+      id: r.id, txn_date: r.txn_date, description: r.description, amount_minor: r.amount_minor,
+    })));
+    if (rows.length < STATEMENT_PAGE) return all;
+  }
+  throw new Error("statement-rows: exceeded the maximum page count");
+}
+
+export function useStatementRows(orgId: string | undefined, accountId: string | undefined) {
+  return useQuery({
+    queryKey: ["statement-rows", orgId, accountId],
+    enabled: Boolean(orgId && accountId),
+    queryFn: () => fetchStatementRows(getClient(), orgId as string, accountId as string),
+  });
+}
+
+/**
+ * The owner's read-only reconciliation summary for Home — most recent locked
+ * session per org. Owners never reconcile; they just see "Reconciled ✓" and when.
+ */
+export function useReconciliationStatus(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["reconciliation-status", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<{ lockedCount: number; latestLockedAt: string | null }> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("reconciliation_sessions")
+        .select("locked_at,status")
+        .eq("org_id", orgId)
+        .eq("status", "locked")
+        .order("locked_at", { ascending: false });
+      if (error) throw error;
+      const rows = (data ?? []) as { locked_at: string | null }[];
+      return { lockedCount: rows.length, latestLockedAt: rows[0]?.locked_at ?? null };
+    },
+  });
+}
+
+export const openReconciliation = (input: {
+  org_id: string; account_id: string; statement_end: string;
+  opening_minor?: number; closing_minor?: number; period_id?: string | null;
+}) => invoke<{ result: ReconciliationSession }>("reconcile", { op: "open", ...input });
+
+export const matchReconciliation = (input: {
+  org_id: string; session_id: string; import_row_id: string; entry_id: string;
+  kind?: ReconciliationMatchKind;
+}) => invoke<{ result: ReconciliationMatchRow }>("reconcile", { op: "match", ...input });
+
+export const unmatchReconciliation = (org_id: string, match_id: string) =>
+  invoke<{ result: null }>("reconcile", { op: "unmatch", org_id, match_id });
+
+export const lockReconciliation = (org_id: string, session_id: string) =>
+  invoke<{ result: ReconciliationSession }>("reconcile", { op: "lock", org_id, session_id });
+
+export const reopenReconciliation = (org_id: string, session_id: string) =>
+  invoke<{ result: ReconciliationSession }>("reconcile", { op: "reopen", org_id, session_id });
+
+/** Invalidate every reconciliation query for an org after a write. */
+export function useReconciliationRefresh(orgId: string | undefined) {
+  const qc = useQueryClient();
+  return () => {
+    for (const key of ["reconciliation-sessions", "reconciliation-matches", "statement-rows"]) {
+      void qc.invalidateQueries({ queryKey: [key, orgId] });
+    }
+  };
+}
+
 /** A client-side idempotency key for a money mutation (replays are de-duped). */
 export function newIdempotencyKey(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();

@@ -897,3 +897,39 @@ button.ghost.sm, .ghost.sm {
 .collab-item.is-open { font-weight: var(--fw-semibold); }
 .collab-item .ci-kind { color: var(--ink-3); font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip); white-space: nowrap; }
 .collab-item .ci-body { color: var(--ink-2); }
+/* ── bank reconciliation (W1.1) ───────────────────────────────── */
+.reconcile { display: flex; flex-direction: column; gap: 0.9rem; align-self: stretch; }
+.reconcile-setup {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: 0.75rem;
+}
+.reconcile-setup label { display: flex; flex-direction: column; gap: 0.3rem; font-size: var(--fs-ui); color: var(--ink-2); }
+.reconcile-setup input, .reconcile-setup select { font-size: 1rem; min-height: var(--tap-min, 44px); }
+.reconcile-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+.reconcile-summary {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: 0.6rem; margin: 0;
+}
+.reconcile-summary > div {
+  display: flex; flex-direction: column; gap: 0.15rem;
+  padding: var(--pad-card); border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); background: var(--white);
+}
+.reconcile-summary dt { font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip); color: var(--ink-3); }
+.reconcile-summary dd { margin: 0; font-size: var(--fs-body); font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; }
+.reconcile-summary .ties dd { color: var(--income-strong); }
+.reconcile-summary .off dd { color: var(--error); }
+.ties-msg { color: var(--income-strong); font-size: var(--fs-ui); }
+.off-msg { color: var(--error); font-size: var(--fs-ui); }
+.reconciled-chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: var(--fs-ui); font-weight: var(--fw-semibold);
+  padding: 0.25rem 0.6rem; border-radius: var(--r-pill);
+  background: var(--brand-tint); color: var(--income-strong);
+}
+.reconciled-note { color: var(--ink-2); font-size: var(--fs-ui); }
+.kind-badge {
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip);
+  color: var(--ink-3); margin-left: 0.35rem;
+}
+.reconcile-matched h3, .reconcile-unmatched h3 { font-size: var(--fs-h3); margin: 0.5rem 0; }

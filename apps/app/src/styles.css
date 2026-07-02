@@ -49,6 +49,7 @@ body {
 
 input {
   font-size: var(--fs-input);
+  min-height: var(--tap-min); /* ≥44px touch target (RESPONSIVE.md rule 3), matches select */
   padding: 0.6rem 0.75rem;
   border: var(--bw-hair) solid var(--line);
   border-radius: var(--r-pill);
@@ -67,13 +68,34 @@ button {
   border-radius: var(--r-pill);
   border: var(--bw-hair) solid transparent;
   background: var(--brand);
-  color: var(--paper);
+  color: var(--white); /* #fff on --brand = 4.62:1, clears AA; --paper was 4.05:1 */
   cursor: pointer;
   padding: 0.5rem 1rem;
 }
 button:hover:not(:disabled) { background: var(--brand-hover); }
 button:disabled { opacity: 0.5; cursor: default; }
-button.ghost { background: transparent; color: var(--ink-2); border-color: var(--line); }
+
+/* Ghost (secondary) — works on <button> AND <a>/<Link> alike, so a link styled
+   as a button (`className="ghost"`) reads as one instead of a raw blue link.
+   Self-contained: anchors don't inherit the base button box, so restate it. */
+.ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  min-height: var(--tap-min, 44px);
+  padding: 0.5rem 1rem;
+  font-size: var(--fs-ui); font-weight: var(--fw-semibold);
+  background: transparent; color: var(--ink-2);
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-pill);
+  text-decoration: none; cursor: pointer; white-space: nowrap;
+}
+/* Ghost stays ghost on hover (the base button:hover would flood it with --brand). */
+.ghost:hover:not(:disabled),
+button.ghost:hover:not(:disabled) { background: var(--brand-soft); color: var(--ink); }
+a.ghost, a.ghost:visited { color: var(--ink-2); }
+
+/* Connect-software (import) layout — was unstyled, fell back to block stacking. */
+.connect-row { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.conn-list { list-style: none; margin: var(--space-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.conn-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
 
 /* ── authed shell ────────────────────────────────────────────── */
 .shell { min-height: 100dvh; display: flex; flex-direction: column; }
@@ -91,35 +113,99 @@ button.ghost { background: transparent; color: var(--ink-2); border-color: var(-
   margin: 0 auto;
   padding: 0.7rem var(--page-pad-x);
 }
-.topbar-email { font-size: var(--fs-ui); }
 @media (max-width: 640px) {
-  .topbar-email { display: none; }
+  /* Two tidy rows: brand + ⚙️ on top (gear pushed right), org-switcher full-width
+     below — instead of three stacked rows. */
   .topbar-inner { flex-wrap: wrap; }
-  .org-switcher { max-width: 14rem; }
+  .topbar .spacer { display: none; }
+  .topbar .acct { margin-left: auto; }
+  .orgsw { order: 3; flex-basis: 100%; }
+  .orgsw-trigger { max-width: none; width: 100%; justify-content: space-between; }
+  .orgsw-menu { left: 0; right: 0; max-width: none; }
 }
+/* Brand wordmark — sans (Inter), like admin's brand; the P-mark carries the
+   identity. It's a link home (logo → home), so kill the anchor blue/underline. */
 .topbar .brand {
   display: inline-flex; align-items: center; gap: 0.5rem;
-  font-family: var(--font-display); font-weight: var(--fw-bold); font-size: var(--fs-h3);
+  font-weight: var(--fw-bold); font-size: var(--fs-body); letter-spacing: -0.01em;
+  color: var(--ink); text-decoration: none;
 }
+.topbar a.brand:hover { color: var(--ink); opacity: 0.85; }
 .topbar .spacer { flex: 1; }
-.org-switcher {
-  font-size: var(--fs-input); /* ≥16px — prevents iOS Safari focus-zoom on this real <select> */
-  padding: 0.4rem 0.6rem;
-  border: var(--bw-hair) solid var(--line);
-  border-radius: var(--r-pill);
-  background: var(--paper);
-  color: var(--ink);
+/* ── Org switcher — custom dropdown (replaces the native <select>) ─────────── */
+.orgsw { position: relative; display: inline-flex; min-width: 0; }
+.orgsw-trigger {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  min-height: var(--tap-min); max-width: 20rem; padding: 0.35rem 0.7rem;
+  background: var(--paper); color: var(--ink);
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-pill);
+  cursor: pointer; font-size: var(--fs-ui);
 }
+.orgsw-trigger:hover:not(:disabled) { background: var(--white); }
+.orgsw-current { min-width: 0; display: inline-flex; align-items: baseline; gap: 0.4rem; overflow: hidden; }
+.orgsw-name { font-weight: var(--fw-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.orgsw-type { flex: none; font-size: var(--fs-micro); color: var(--ink-3); white-space: nowrap; }
+.orgsw-chevron { flex: none; color: var(--ink-3); }
+.orgsw-menu {
+  position: absolute; top: calc(100% + 0.4rem); left: 0; z-index: 50;
+  min-width: 14rem; max-width: min(24rem, 92vw); max-height: 60vh; overflow-y: auto;
+  margin: 0; padding: 0.35rem; list-style: none;
+  background: var(--white); border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); box-shadow: var(--shadow-float);
+}
+.orgsw-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%;
+  min-height: 2.6rem; padding: 0.45rem 0.6rem;
+  background: transparent; color: var(--ink-2); border: 0; border-radius: var(--r-card);
+  text-align: left; cursor: pointer; font-size: var(--fs-ui);
+}
+.orgsw-item:hover:not(:disabled) { background: var(--brand-soft); color: var(--ink); }
+.orgsw-item > svg { flex: none; color: var(--brand-strong); }
+.orgsw-item-text { min-width: 0; display: flex; flex-direction: column; }
+.orgsw-item-name { font-weight: var(--fw-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.orgsw-item-type { font-size: var(--fs-micro); color: var(--ink-3); }
+
+/* ── ⚙️ account menu (top-bar) — mirrors admin's settings dropdown ─────────── */
+.acct { position: relative; display: inline-flex; }
+.acct-trigger {
+  display: inline-flex; align-items: center; gap: 0.2rem;
+  min-height: var(--tap-min); padding: 0.4rem 0.55rem;
+  background: transparent; color: var(--ink-2);
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-pill); cursor: pointer;
+}
+.acct-trigger:hover:not(:disabled) { background: var(--brand-soft); color: var(--ink); }
+.acct-menu {
+  position: absolute; top: calc(100% + 0.4rem); right: 0; z-index: 50;
+  min-width: 13rem; max-width: min(20rem, 90vw); padding: 0.35rem;
+  display: flex; flex-direction: column;
+  background: var(--white); border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); box-shadow: var(--shadow-float);
+}
+.acct-email {
+  padding: 0.4rem 0.6rem; font-size: var(--fs-micro); color: var(--ink-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.acct-role { padding: 0 0.6rem 0.35rem; font-size: var(--fs-micro); color: var(--ink-3); }
+.acct-sep { height: var(--bw-hair); background: var(--line-2); margin: 0.3rem 0.25rem; }
+.acct-sep:first-child, .acct-sep + .acct-sep { display: none; } /* no leading/duplicate dividers */
+.acct-item {
+  display: flex; align-items: center; gap: 0.4rem; width: 100%;
+  min-height: 2.4rem; padding: 0.4rem 0.6rem;
+  background: transparent; color: var(--ink-2); border: 0; border-radius: var(--r-card);
+  text-align: left; text-decoration: none; font-size: var(--fs-ui); cursor: pointer; white-space: nowrap;
+}
+.acct-item:hover:not(:disabled) { background: var(--brand-soft); color: var(--ink); }
+a.acct-item, a.acct-item:visited { color: var(--ink-2); }
 .workspace {
   flex: 1;
   width: 100%;
   max-width: var(--page-max);
   margin: 0 auto;
-  padding: 1.75rem var(--page-pad-x) 4rem;
+  padding: clamp(28px, 5vw, 52px) var(--page-pad-x) 4rem; /* match admin .admin-main top rhythm */
 }
 .empty { text-align: center; max-width: 34rem; margin: 3.5rem auto 0; }
 .empty .welcome-mark { margin: 0 auto 1.1rem; }
-.empty h1 { font-size: var(--fs-h1); margin: 0 0 0.5rem; }
+.empty .page-title { margin: 0 0 0.5rem; }
 
 /* ── role / lens ─────────────────────────────────────────────── */
 .role-pill {
@@ -136,7 +222,11 @@ button.ghost { background: transparent; color: var(--ink-2); border-color: var(-
 .role-pill.role-cpa { background: var(--brand-soft); color: var(--ink-2); border-color: transparent; }
 
 .lens { width: min(100%, var(--page-max, 60rem)); }
-.lens h1 { font-size: var(--fs-h1); margin: 0 0 0.25rem; }
+/* Headings use the shared `.page-title` (design-system typography.css) — the one
+   canonical page-heading scale for the whole platform. Here we only tune the
+   in-flex spacing + the eyebrow that leads it (admin's eyebrow → title rhythm). */
+.lens .page-title { margin: 0 0 0.25rem; }
+.lens-eyebrow { flex-basis: 100%; margin: 0 0 0.3rem; }
 .readonly-note {
   margin-top: 1rem;
   padding: 0.6rem 0.8rem;
@@ -201,6 +291,26 @@ button.ghost { background: transparent; color: var(--ink-2); border-color: var(-
 }
 .invite-link code { font-family: var(--font-mono); font-size: var(--fs-micro); }
 
+/* ── owner control: review CPA's entries (CPATEST-F1) ─────────── */
+.approval-setting {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(100%, 24rem);
+  padding-top: 1.25rem;
+  border-top: var(--bw-hair) solid var(--line);
+}
+.approval-setting h3 { margin: 0; font-size: var(--fs-h3); }
+.approval-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: var(--fs-ui);
+  color: var(--ink-2);
+}
+.approval-toggle input { margin-top: 0.15rem; }
+
 /* ── ledger workspace ─────────────────────────────────────────── */
 .ledger { display: flex; flex-direction: column; gap: 1rem; align-self: stretch; }
 .ledger-head { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
@@ -210,21 +320,52 @@ button.ghost { background: transparent; color: var(--ink-2); border-color: var(-
   padding: 0.2rem 0.55rem; border-radius: var(--r-pill);
   background: var(--amber-bg); color: var(--ink-2);
 }
-.lens-aside { width: min(100%, var(--page-max, 60rem)); margin-top: 1.5rem; }
 
+/* Section nav — mirrors admin's .nav-links: ink-3 default, ink + underline when
+   active (not brand teal), medium weight, airy gaps. */
 .ledger-tabs {
-  display: flex; gap: 0.25rem; overflow-x: auto;
+  display: flex; gap: clamp(18px, 2.4vw, 32px); overflow-x: auto;
   border-bottom: var(--bw-hair) solid var(--line);
 }
 .ledger-tab {
   min-height: var(--tap-min, 44px);
   background: transparent; color: var(--ink-3);
   border: none; border-bottom: 2px solid transparent;
-  border-radius: 0; padding: 0.4rem 0.8rem; white-space: nowrap;
-  font-size: var(--fs-ui); font-weight: var(--fw-semibold);
+  border-radius: 0; padding: 0.4rem 0.15rem; white-space: nowrap;
+  font-size: var(--fs-ui); font-weight: var(--fw-medium);
 }
 .ledger-tab:hover:not(:disabled) { background: transparent; color: var(--ink); }
-.ledger-tab.on { color: var(--brand); border-bottom-color: var(--brand); }
+.ledger-tab.on { color: var(--ink); border-bottom-color: var(--ink); }
+
+/* Books sub-tabs — a lighter, smaller strip nested under the "Books" main tab so
+   the two levels read as a hierarchy, not two identical rows. */
+.ledger-subtabs { margin-top: 1rem; gap: clamp(14px, 2vw, 26px); border-bottom-color: var(--line-2); }
+.ledger-subtabs .ledger-tab { font-size: var(--fs-label); min-height: 2.4rem; color: var(--ink-3); }
+.ledger-subtabs .ledger-tab.on { color: var(--ink); border-bottom-color: var(--ink); }
+.ledger-subpanel { margin-top: 1rem; }
+
+/* Settings tab — owner-only controls (invite accountant, review-before-post).
+   The sections carry their own top border/margin for stacking; drop it on the
+   first one so the panel starts clean. */
+.ledger-settings { max-width: 32rem; margin-top: 1.5rem; }
+.ledger-settings > :first-child { margin-top: 0; padding-top: 0; border-top: none; }
+
+/* First-time invite nudge on the Overview (replaces invite-on-every-page). */
+.invite-nudge {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  flex-wrap: wrap; margin-bottom: var(--space-4);
+  padding: 0.6rem 0.5rem 0.6rem 0.85rem;
+  background: var(--brand-soft); border: var(--bw-hair) solid var(--line); border-radius: var(--r-card);
+  font-size: var(--fs-ui); color: var(--ink-2);
+}
+.invite-nudge-text { flex: 1 1 16rem; }
+.invite-nudge-actions { display: inline-flex; align-items: center; gap: 0.4rem; }
+.invite-nudge-x {
+  min-height: 2rem; width: 2rem; padding: 0; line-height: 1;
+  background: transparent; color: var(--ink-3); border: 0; border-radius: var(--r-pill);
+  font-size: var(--fs-body);
+}
+.invite-nudge-x:hover:not(:disabled) { background: var(--white); color: var(--ink); }
 
 .ledger-panel { min-height: 8rem; }
 .panel-toolbar {
@@ -242,11 +383,12 @@ button.ghost.sm, .ghost.sm {
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 0.75rem; }
 .kpi {
   display: flex; flex-direction: column; gap: 0.2rem;
+  min-width: 0; /* let the tile shrink below its content so a long value can't widen the grid track */
   padding: var(--pad-card); border: var(--bw-hair) solid var(--line);
   border-radius: var(--r-card); background: var(--white); box-shadow: var(--shadow-card);
 }
 .kpi-label { font-size: var(--fs-micro); color: var(--ink-3); text-transform: uppercase; letter-spacing: var(--ls-chip); }
-.kpi-value { font-size: var(--fs-kpi); font-weight: var(--fw-bold); }
+.kpi-value { font-size: var(--fs-kpi); font-weight: var(--fw-bold); overflow-wrap: anywhere; }
 .t-good { color: var(--income-strong); } .t-bad { color: var(--error); } .t-warn { color: var(--amber-strong); }
 .warn-banner {
   padding: 0.6rem 0.8rem; border-radius: var(--r-card);
@@ -390,7 +532,9 @@ button.ghost.sm, .ghost.sm {
 .ledger-empty h3 { margin: 0 0 0.3rem; font-size: var(--fs-h3); }
 
 @media (max-width: 640px) {
-  .je-row { grid-template-columns: 1fr auto 1.2rem; }
+  /* Date hides on mobile, leaving memo · status · amount · caret — 4 tracks.
+     (The old 3-track template dropped the amount into the caret cell → clipped.) */
+  .je-row { grid-template-columns: minmax(0, 1fr) auto auto 1.2rem; column-gap: 0.4rem; }
   .je-row .je-date { display: none; }
   .je-line { grid-template-columns: 1fr 6rem 6rem; font-size: var(--fs-ui); }
   .report-table.tb .report-row, .report-table.tb .report-head { grid-template-columns: minmax(0, 1fr) 5.5rem 5.5rem; }
@@ -503,7 +647,9 @@ button.ghost.sm, .ghost.sm {
   flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem;
   background: transparent; color: inherit; border: 0; text-align: left; padding: 0; cursor: pointer; min-height: var(--tap-min);
 }
-.staff-org-main:hover { background: transparent; }
+/* :not(:disabled) matches the base `button:hover:not(:disabled)` specificity —
+   without it, the base green hover wins and floods the whole row green. */
+.staff-org-main:hover:not(:disabled) { background: transparent; }
 .so-name { font-weight: var(--fw-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .so-meta { font-size: var(--fs-micro); color: var(--ink-3); }
 
@@ -545,7 +691,7 @@ button.ghost.sm, .ghost.sm {
   flex: none; text-decoration: none; font-weight: var(--fw-medium); color: var(--ink);
   white-space: nowrap; background: transparent; border: 0; padding: 0; cursor: pointer; min-height: 0;
 }
-.takeaway-action:hover { text-decoration: underline; background: transparent; }
+.takeaway-action:hover:not(:disabled) { text-decoration: underline; background: transparent; }
 @media (max-width: 640px) {
   .takeaway { align-items: flex-start; flex-wrap: wrap; }
 }

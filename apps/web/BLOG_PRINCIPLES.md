@@ -5,6 +5,10 @@ from building the first posts. Read this before adding or editing a post so the
 blog stays consistent. Pairs with [VOICE.md](../../VOICE.md) (how we sound) and
 the design system (how we look).
 
+> **Producing a podcast episode?** Episodes are `Podcast`-tagged blog posts with
+> their own rules on top of this file (inline-player hero, script/voice, audio,
+> publishing) — see [PODCAST_PRINCIPLES.md](PODCAST_PRINCIPLES.md).
+
 > **The test for any post:** would a calm, knowledgeable bookkeeper publish this
 > to help a busy business owner — and could a search engine *or an AI answer*
 > lift the answer straight off the page? If not, rewrite it.

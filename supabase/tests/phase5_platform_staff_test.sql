@@ -14,9 +14,13 @@ insert into auth.users (id, email, aud, role) values
 insert into organizations (id, type, name, created_by) values
   ('00000000-0000-0000-0000-0000000000b1', 'business', 'Tenant Co', '00000000-0000-0000-0000-00000000a2a2');
 
--- adding to admins should sync into platform_staff via trigger
-insert into admins (email, is_super, added_by, added_at) values
-  ('staffuser@test.dev', false, 'seed', now());
+-- adding to admins should sync into platform_staff via trigger.
+-- role => 'editor': break-glass OPEN is a privilege-EXPANDING write, so
+-- 20260701130000_break_glass_editor_gate now gates open_break_glass on
+-- is_admin_editor() (editor or super). A default-'viewer' admin would be rejected
+-- with 42501 before any reason/org check — seed the tier this actor needs.
+insert into admins (email, is_super, role, added_by, added_at) values
+  ('staffuser@test.dev', false, 'editor', 'seed', now());
 
 select is(
   (select count(*)::int from platform_staff ps join auth.users u on u.id = ps.user_id

@@ -45,25 +45,45 @@ export function usePeriods(orgId: string | undefined) {
   });
 }
 
-/** Entries with their lines (and each line's account) embedded in one query. */
+const ENTRY_SELECT =
+  "id,entry_date,memo,status,source,source_ref,reverses_id,created_at," +
+  "lines:journal_lines(id,account_id,amount_minor,currency,side,memo," +
+  "account:ledger_accounts(code,name,type))";
+
+// PostgREST caps any single response at `max_rows` (1000 on prod). Reports
+// (trial balance / P&L / balance sheet) are derived from the FULL entry list
+// (ARCHITECTURE.md §6.5), so a one-shot select silently truncates the books for
+// any org past 1000 entries — and because every entry is internally balanced,
+// the truncated reports still *tie to the cent*, just to the WRONG number (the
+// dropped rows are the oldest: opening balances, capital injections). Page
+// through every entry so the books are complete. Most orgs fit in one page.
+const ENTRY_PAGE = 1000;
+const MAX_ENTRY_PAGES = 1000; // 1M-entry safety stop; far beyond pilot scale
+
+/** Entries with their lines (and each line's account) embedded — all pages. */
 export function useEntries(orgId: string | undefined) {
   return useQuery({
     queryKey: ["ledger-entries", orgId],
     enabled: Boolean(orgId),
     queryFn: async (): Promise<JournalEntry[]> => {
       const sb = getClient();
-      const { data, error } = await sb
-        .from("journal_entries")
-        .select(
-          "id,entry_date,memo,status,source,source_ref,reverses_id,created_at," +
-            "lines:journal_lines(id,account_id,amount_minor,currency,side,memo," +
-            "account:ledger_accounts(code,name,type))",
-        )
-        .eq("org_id", orgId)
-        .order("entry_date", { ascending: false })
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as unknown as JournalEntry[];
+      const all: JournalEntry[] = [];
+      for (let page = 0; page < MAX_ENTRY_PAGES; page++) {
+        const from = page * ENTRY_PAGE;
+        const { data, error } = await sb
+          .from("journal_entries")
+          .select(ENTRY_SELECT)
+          .eq("org_id", orgId)
+          .order("entry_date", { ascending: false })
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false }) // total order → stable across pages
+          .range(from, from + ENTRY_PAGE - 1);
+        if (error) throw error;
+        const rows = (data ?? []) as unknown as JournalEntry[];
+        all.push(...rows);
+        if (rows.length < ENTRY_PAGE) return all;
+      }
+      throw new Error("ledger-entries: exceeded the maximum page count");
     },
   });
 }
@@ -201,6 +221,40 @@ export const upsertAccount = (input: {
 
 export const setPeriod = (org_id: string, period_id: string, action: "close" | "reopen") =>
   invoke<{ period: AccountingPeriod }>("ledger-periods", { org_id, period_id, action });
+
+// ── org accounting settings (owner control: CPA approval gate) ───────────────
+export interface OrgAccountingSettings {
+  org_id: string;
+  cpa_posts_require_approval: boolean;
+  home_currency: string;
+  fiscal_year_start_month: number;
+}
+
+/** The owner's accounting settings for an org (RLS-readable to anyone who can
+ *  access the org; only the owner may write via setOrgSettings). */
+export function useOrgSettings(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["org-settings", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<OrgAccountingSettings | null> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("org_accounting_settings")
+        .select("org_id,cpa_posts_require_approval,home_currency,fiscal_year_start_month")
+        .eq("org_id", orgId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as OrgAccountingSettings | null;
+    },
+  });
+}
+
+export const setOrgSettings = (input: {
+  org_id: string;
+  cpa_posts_require_approval?: boolean;
+  home_currency?: string;
+  fiscal_year_start_month?: number;
+}) => invoke<{ settings: OrgAccountingSettings }>("org-settings", { op: "set", ...input });
 
 // ── history import (Phase 3) ──────────────────────────────────────────────────
 export type ImportSource = "csv" | "bank_statement" | "trial_balance" | "opening_balances";

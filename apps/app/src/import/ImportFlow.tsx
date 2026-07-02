@@ -231,11 +231,32 @@ function OpeningBalances({
   const [done, setDone] = useState(false);
 
   const parsed = rows.map((r) => parseAmountCell(r.amount) ?? 0);
-  const debit = rows.reduce((s, r, i) => s + (r.side === "D" ? parsed[i] : 0), 0);
-  const credit = rows.reduce((s, r, i) => s + (r.side === "C" ? parsed[i] : 0), 0);
+  // Classify each row so the preview matches exactly what will post, and so a row
+  // the user half-filled is never silently dropped (OBTEST P0): an entered balance
+  // with no account would otherwise vanish into the OBE plug — books "balanced" but
+  // wrong, with no error shown.
+  //   complete = account picked AND a positive balance  → posts
+  //   blank    = neither account nor a positive balance → an empty add-row, ignored
+  //   partial  = exactly one of the two (or a non-positive amount on a real row)
+  const rowState = (i: number): "complete" | "blank" | "partial" => {
+    const hasAcct = Boolean(rows[i].account_id);
+    const hasAmt = parsed[i] > 0;
+    if (hasAcct && hasAmt) return "complete";
+    if (!hasAcct && !hasAmt) return "blank";
+    return "partial";
+  };
+  const completeIdx = rows.map((_, i) => i).filter((i) => rowState(i) === "complete");
+  const partialIdx = rows.map((_, i) => i).filter((i) => rowState(i) === "partial");
+  // Totals + plug over the rows that will ACTUALLY post (complete only).
+  const debit = completeIdx.reduce((s, i) => s + (rows[i].side === "D" ? parsed[i] : 0), 0);
+  const credit = completeIdx.reduce((s, i) => s + (rows[i].side === "C" ? parsed[i] : 0), 0);
   const plug = debit - credit; // plugged to Opening Balance Equity
-  const valid = rows.filter((r, i) => r.account_id && parsed[i] > 0);
-  const canImport = valid.length > 0 && !busy;
+  const partialMsg = partialIdx.length
+    ? `Row${partialIdx.length > 1 ? "s" : ""} ${partialIdx.map((i) => i + 1).join(", ")} ` +
+      `need both an account and a balance — fill both or clear the row before importing.`
+    : null;
+  // Block while any row is half-filled so nothing is dropped behind the user's back.
+  const canImport = completeIdx.length > 0 && partialIdx.length === 0 && !busy;
 
   const update = (i: number, patch: Partial<ObRow>) =>
     setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
@@ -248,19 +269,20 @@ function OpeningBalances({
       const { result: batch } = await createImportBatch({
         org_id: orgId, source: "opening_balances", cutover_date: cutover,
       });
-      try {
-        const staged: StagedRow[] = rows.map((r, i) => ({
-          row_num: i + 1,
-          description: "Opening balance",
-          amount_minor: parsed[i],
-          account_id: r.account_id || null,
-          side: r.side,
-          status: r.account_id && parsed[i] > 0 ? "ready" : "skipped",
-        }));
-        await addImportRows(orgId, batch.id, staged);
-        await commitImportBatch(orgId, batch.id);
-        setDone(true);
-      } catch (e) { await discardImportBatch(orgId, batch.id).catch(() => {}); throw e; }
+      // Stage ONLY complete rows as ready. canImport already guarantees there are no
+      // partial rows, so nothing the user entered is dropped silently; blank add-rows
+      // carry no balance and are simply not sent.
+      const staged: StagedRow[] = completeIdx.map((i, n) => ({
+        row_num: n + 1,
+        description: "Opening balance",
+        amount_minor: parsed[i],
+        account_id: rows[i].account_id,
+        side: rows[i].side,
+        status: "ready",
+      }));
+      await addImportRows(orgId, batch.id, staged);
+      try { await commitImportBatch(orgId, batch.id); setDone(true); }
+      catch (e) { await discardImportBatch(orgId, batch.id).catch(() => {}); throw e; }
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -273,7 +295,7 @@ function OpeningBalances({
       <div className="import-flow">
         <div className="import-done">
           <h3>Opening balances saved.</h3>
-          <p className="muted">Your starting balances are in as of {cutover}. Anything that didn't add up was set aside in an opening-balance account your accountant can review.</p>
+          <p className="muted">Your starting balances are in as of {cutover}. Any difference between your debits and credits was balanced into an Opening Balance Equity account for your accountant to review.</p>
           <button onClick={onDone}>Back to the books</button>
         </div>
       </div>
@@ -294,7 +316,7 @@ function OpeningBalances({
         </div>
         <div className="lines-head ob-head"><span>Account</span><span>Dr/Cr</span><span>Balance</span><span /></div>
         {rows.map((r, i) => (
-          <div className="line-row ob-row" key={i}>
+          <div className={`line-row ob-row${rowState(i) === "partial" ? " bad" : ""}`} key={i}>
             <AccountSelect accounts={accounts} value={r.account_id} onChange={(v) => update(i, { account_id: v })} label={`Row ${i + 1} account`} />
             <select value={r.side} onChange={(e) => update(i, { side: e.target.value as "D" | "C" })} aria-label={`Row ${i + 1} debit or credit`}>
               <option value="D">Debit</option><option value="C">Credit</option>
@@ -311,6 +333,7 @@ function OpeningBalances({
           </span>
         </div>
       </div>
+      {partialMsg && <p className="error sm">{partialMsg}</p>}
       {err && <p className="error sm">{err}</p>}
       <div className="form-actions">
         <button disabled={!canImport} onClick={doImport}>{busy ? "Posting…" : "Import opening balances"}</button>
@@ -355,6 +378,11 @@ function ConnectSoftware({ orgId, onImported }: { orgId: string; onImported: () 
     <div className="connect-software">
       <h3 className="section-h">Or connect your accounting software</h3>
       <p className="muted sm">Pull your chart of accounts and history straight from QuickBooks or Xero. Transactions arrive as a preview you confirm.</p>
+      {conns.isError && (
+        <p className="error sm" role="alert">
+          Couldn’t check your connected software — reload to try again.
+        </p>
+      )}
       <div className="connect-row">
         {PROVIDERS.map((p) => (
           <button key={p.id} className="ghost sm" disabled={busy === p.id || connectedProviders.has(p.id)} onClick={() => connect(p.id)}>

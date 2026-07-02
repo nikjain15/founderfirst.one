@@ -1,7 +1,10 @@
 # Social Listening & Outreach — Strategy
 
-> Pure strategy (the "what" and "why"). Architecture/implementation is designed
-> separately — see the **Claude Code prompt** at the end to kick that off.
+> Pure strategy (the "what" and "why"). **Status: decided and built — Phase 1 is
+> LIVE** (manual intake via extension + Quick-Add; scoring, leads, outreach drafts
+> all in production). Phase 2 (automated API collection) is still planned, not built.
+> Architecture: [SOLUTION.md](SOLUTION.md). The Claude Code prompt at the end is the
+> historical kick-off prompt, kept for record only.
 
 ---
 
@@ -196,7 +199,7 @@ GOAL
 Build a near-real-time pipeline that finds founders/small-business owners voicing
 bookkeeping/accounting pain on social media, scores them for intent, surfaces them as
 leads in the admin CRM, and drafts problem-driven, human-approved outreach. Full
-strategy is in SOCIAL_LISTENING_STRATEGY.md (read it).
+strategy is in tools/signals-worker/STRATEGY.md — this file (read it).
 
 WHAT TO BUILD (two intake pipes, one engine)
 1. Automated collection from a usage-based provider (API Direct — pay-per-request,

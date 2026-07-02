@@ -4,13 +4,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
  * content-audio — Step 6 of the content pipeline. Renders the draft's audio
  * script into a single branded-voice MP3 and stores it on the item.
  *
- * Provider strategy (locked decision): open-best as primary, paid as fallback.
- *   1. PRIMARY  — Chatterbox (MIT) on the Fly GPU TTS server (scale-to-zero).
- *                 It runs Podcastfy assembly + voice-cloning from the brand
- *                 reference clip, and returns one finished MP3.
- *   2. FALLBACK — ElevenLabs API, single-voice read of the flattened script.
- * Both clone the SAME locked reference clip (content_voice_profile), so the
- * brand voice is identical either way. Audio is blocked until that clip exists.
+ * Provider strategy: open-best as primary, paid as fallback.
+ *   1. PRIMARY  — Kokoro (Apache-2.0) on the Fly CPU server (founderfirst-kokoro,
+ *                 tools/kokoro-server). Default engine ("kokoro"); async render via
+ *                 /render_item, tuned by the admin Voice Studio settings.
+ *   2. ALT      — Chatterbox (MIT) on the Fly GPU TTS server (tools/tts-server),
+ *                 voice-cloning from the brand reference clip. Earlier primary.
+ *   3. FALLBACK — ElevenLabs API, single-voice read of the flattened script.
  */
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",

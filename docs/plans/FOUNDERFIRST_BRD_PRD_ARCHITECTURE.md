@@ -1,7 +1,9 @@
 # FounderFirst — BRD · PRD · Hardened Architecture (build-ready)
 
-> Status: **Draft for review** · 27 Jun 2026 · Owner: Nik
+> Status: **shipped — Phases 0–5 built and live** (penny.founderfirst.one) · authored 27 Jun 2026, status updated 1 Jul 2026 · Owner: Nik
 > Companion to [ARCHITECTURE.md](ARCHITECTURE.md) (source of truth for locked decisions).
+> ⚠️ Part C re-derives the data model/API from ARCHITECTURE §2–10 for traceability —
+> any change to the core model must be kept in sync in BOTH docs.
 > This document does **not** re-litigate §0/§1b of ARCHITECTURE.md — it builds on them and
 > hardens them into a complete, build-ready spec set: **Part A — BRD**, **Part B — PRD**,
 > **Part C — Hardened Architecture**, **Part D — Traceability & gap analysis**.

@@ -175,6 +175,20 @@ async function main() {
     await page.screenshot({ path: join(ARTIFACTS, "whatsnew-digest.png"), fullPage: true });
     console.log(`Screenshot → ${join(ARTIFACTS, "whatsnew-digest.png")}`);
 
+    // 5b. Build-loop dashboard (Settings → Build) renders (LOOP-1). Reads
+    // loop_runs/loop_events; asserts the page + Waiting-on-Nik section render even
+    // with no live sessions (the empty state is a valid render).
+    await page.goto(`${base}/admin/build`, { waitUntil: "networkidle" });
+    await page.getByRole("heading", { name: /what the loop is doing/i }).waitFor({ timeout: 15_000 });
+    check("Build dashboard renders", true);
+    // The Waiting-on-Nik section only renders once ≥1 loop_runs row exists. Until
+    // the migration is deployed (write-don't-deploy) the page shows its empty/error
+    // state, which is still a valid render — so this is informational, not a gate.
+    const waitingHead = await page.getByRole("heading", { name: /waiting on nik/i }).count();
+    console.log(`  (Build: Waiting-on-Nik section ${waitingHead > 0 ? "present" : "absent — no loop_runs yet / table not deployed"})`);
+    await page.screenshot({ path: join(ARTIFACTS, "build.png"), fullPage: true });
+    console.log(`Screenshot → ${join(ARTIFACTS, "build.png")}`);
+
     // 6. Capture the behind-auth digest covers (best-effort — never fails the
     // gate). Banner clip matches the public covers (1200×630). Written to both
     // the CI artifact and the public folder (for local authed runs).

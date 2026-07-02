@@ -14,7 +14,9 @@ insert into organizations (id, type, name, created_by) values
 insert into memberships (user_id, org_id, role, status) values
   ('00000000-0000-0000-0000-00000000a2a2', '00000000-0000-0000-0000-0000000000b1', 'owner', 'active');
 insert into org_accounting_settings (org_id, home_currency) values ('00000000-0000-0000-0000-0000000000b1', 'USD') on conflict (org_id) do update set home_currency = excluded.home_currency;
-insert into admins (email, is_super, added_by, added_at) values ('staffuser@test.dev', false, 'seed', now());
+-- role => 'editor' so this staff actor can OPEN break-glass: 20260701130000 gates
+-- open_break_glass on is_admin_editor(); a default-'viewer' admin hits 42501 first.
+insert into admins (email, is_super, role, added_by, added_at) values ('staffuser@test.dev', false, 'editor', 'seed', now());
 insert into ledger_accounts (id, org_id, code, name, type) values
   ('00000000-0000-0000-0000-00000000c001', '00000000-0000-0000-0000-0000000000b1', '1000', 'Cash', 'asset'),
   ('00000000-0000-0000-0000-00000000c002', '00000000-0000-0000-0000-0000000000b1', '4000', 'Sales', 'income');

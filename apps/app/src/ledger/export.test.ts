@@ -182,6 +182,40 @@ describe("completeness at scale (no 1000-row truncation)", () => {
   });
 });
 
+describe("CSV formula-injection defense", () => {
+  // An account name that starts with a formula trigger. Excel/Sheets would
+  // execute it on open unless it is neutralized to literal text.
+  const evilAcct = { id: "a-evil", code: null, name: "=HYPERLINK(\"http://evil\")", type: "expense" as const };
+  const entries = [
+    entry("2026-05-01", [line(ACCT.cash, "D", 100_00), line(evilAcct as Acct, "C", 100_00)]),
+  ];
+
+  it("neutralizes a leading = in an account name (raw text is guarded)", () => {
+    const csv = toCsv("gl", entries, CTX);
+    // The dangerous cell must NOT appear as a bare formula: no line begins the
+    // account cell with a raw '='. Neutralized cells carry a leading tab and are
+    // RFC-quoted.
+    expect(csv).not.toMatch(/(^|,)=HYPERLINK/m);
+    expect(csv).toContain('"\t=HYPERLINK');
+  });
+
+  it("still parses back to the original name (tab-prefixed) and does not corrupt numbers", () => {
+    const rows = parseCsv(toCsv("gl", entries, CTX));
+    const data = rows.filter((r) => r[0]?.startsWith("2026-"));
+    // account is cell[1]; leading tab neutralizer preserved, value intact.
+    expect(data.some((r) => r[1] === "\t=HYPERLINK(\"http://evil\")")).toBe(true);
+    // A negative amount is a number, not a formula — must be left as-is.
+    expect(csvCellIsNumberSafe()).toBe(true);
+  });
+});
+
+// Guard: a negative amount cell like "-300.00" must survive untouched.
+function csvCellIsNumberSafe(): boolean {
+  const e = [entry("2026-05-01", [line(ACCT.sales, "D", 300_00), line(ACCT.cash, "C", 300_00)])];
+  const csv = toCsv("gl", e, { ...CTX, scope: {} });
+  return csv.includes("300.00") && !csv.includes("\t-") && !csv.includes("\t3");
+}
+
 describe("filename + PDF structure", () => {
   it("builds a period-stamped, kebab filename", () => {
     expect(exportFilename("Acme, Inc.", "tb", { ...CTX, scope: { end: "2026-06-30" } }, "csv"))

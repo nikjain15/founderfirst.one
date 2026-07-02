@@ -56,10 +56,21 @@ function csvAmount(minor: number): string {
   return neg ? `-${s}` : s;
 }
 
-// ── CSV primitives (RFC 4180) ────────────────────────────────────────────────
+// ── CSV primitives (RFC 4180 + formula-injection defense) ─────────────────────
+// A cell whose text starts with = + - @ (or a leading tab/CR) is interpreted by
+// Excel/Sheets as a FORMULA when the file is opened — a classic CSV-injection
+// vector, since account names and memos are user-controlled (imports,
+// categorization). Neutralize by prefixing a tab so the spreadsheet treats it as
+// literal text. Numeric amount cells are emitted by csvAmount (e.g. "-300.00")
+// and must NOT be mangled, so pure numbers are exempted.
+const NUMERIC_RE = /^-?\d+(\.\d+)?$/;
+function neutralize(s: string): string {
+  if (NUMERIC_RE.test(s)) return s;
+  return /^[=+\-@\t\r]/.test(s) ? `\t${s}` : s;
+}
 function csvCell(v: string | number): string {
-  const s = String(v);
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  const s = neutralize(String(v));
+  return /[",\n\r\t]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 function csvRow(cells: (string | number)[]): string {
   return cells.map(csvCell).join(",");

@@ -1,0 +1,40 @@
+name: Loop preflight
+
+# Static pre-merge checks that catch the recurring authoring bugs BEFORE the slow
+# pgTAP / e2e jobs run: pgTAP plan(N) vs assertion count, non-hex UUID fixtures,
+# throws_ok given a condition-name instead of a 5-char SQLSTATE, seed.sql psql `\i`,
+# and migration-timestamp collisions. Heuristic checks are ADVISORY (surfaced as PR
+# annotations, never block); the job fails only on a genuine hard problem (e.g. a real
+# migration-timestamp collision) — which cannot false-trip on a normal CI checkout.
+# See LEARNINGS 21/22/24 and scripts/loop-preflight.sh.
+
+on:
+  pull_request:
+    paths:
+      - "supabase/**"
+      - "apps/app/**"
+  workflow_dispatch:
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch main for diff-based checks
+        run: git fetch origin main --depth=50 || true
+
+      - name: Run loop preflight
+        shell: bash
+        run: |
+          set +e
+          bash scripts/loop-preflight.sh . | tee preflight.out
+          rc=${PIPESTATUS[0]}
+          # Advisory warnings → PR annotations (non-blocking).
+          grep '⚠️' preflight.out | sed 's/^⚠️  */::warning::preflight: /' || true
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::Loop preflight found a blocking issue — see the log above."
+          fi
+          exit "$rc"

@@ -10,7 +10,7 @@
 -- data. Same self-seeding [REGTEST] technique as the rest — everything rolls back.
 
 begin;
-select plan(17);
+select plan(21);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -118,23 +118,67 @@ select * from post_journal_entry(
   '[{"account_id":"00000000-0000-0000-0000-00000000c002","amount_minor":700,"side":"D"},
     {"account_id":"00000000-0000-0000-0000-00000000c001","amount_minor":700,"side":"C"}]'::jsonb,
   'manual', null, 'ADOBE *999');
--- close the period AFTER the entry exists, then attempt the auto-post
-insert into accounting_periods (org_id, period_start, period_end, status) values
-  ('00000000-0000-0000-0000-0000000000b1', '2026-03-01', '2026-03-31', 'closed');
+-- close the period AFTER the entry exists, then attempt the auto-post.
+-- post_journal_entry above lazily created the March 2026 period (ensure_open_period),
+-- so close THAT period rather than re-inserting it (a raw insert would collide on
+-- accounting_periods_org_id_period_start_period_end_key and abort the whole plan).
+update accounting_periods set status = 'closed'
+ where org_id = '00000000-0000-0000-0000-0000000000b1'
+   and period_start = '2026-03-01' and period_end = '2026-03-31';
 select throws_ok($$
   select autopost_categorization('00000000-0000-0000-0000-00000000000a','00000000-0000-0000-0000-0000000000b1',
     (select id from _mar), '00000000-0000-0000-0000-00000000c002','00000000-0000-0000-0000-00000000c003',
     'ap-mar','vendor_prior',1.0,'x')
 $$, '23001', NULL, 'a closed period blocks the auto-post (period-lock respected)');
 
--- ── interruption budget counts from ai_decisions ─────────────────────────────
+-- ── interruption budget: counts from ai_decisions AND caps atomically ────────
+-- record_owner_ask is the single budget gate — it decides allowed/not under an
+-- org lock, so the ≤N/week cap can't be blown past by concurrent asks. We can't
+-- open two live connections inside one pgTAP txn, but the invariant is the same
+-- either way: at used=budget-1, exactly ONE more ask is allowed and every
+-- further ask is refused with the count frozen at the cap.
 select is(owner_asks_this_week('00000000-0000-0000-0000-0000000000b1'), 0,
   'no owner interruptions counted yet this week');
-select lives_ok($$ select record_owner_ask('00000000-0000-0000-0000-0000000000b1',
-  (select id from journal_entries where org_id='00000000-0000-0000-0000-0000000000b1' limit 1)) $$,
-  'recording an owner ask succeeds');
+
+-- first ask (budget 5) → allowed, spent becomes 1
+select results_eq(
+  $$ select allowed, spent from record_owner_ask(
+       '00000000-0000-0000-0000-0000000000b1',
+       '00000000-0000-0000-0000-0000000000e1', 5) $$,
+  $$ values (true, 1) $$,
+  'the first owner ask is allowed and counts as 1');
 select is(owner_asks_this_week('00000000-0000-0000-0000-0000000000b1'), 1,
   'recording one owner ask counts one interruption this week');
+
+-- idempotent: the SAME entry again is already counted → allowed, no second insert
+select results_eq(
+  $$ select allowed, spent from record_owner_ask(
+       '00000000-0000-0000-0000-0000000000b1',
+       '00000000-0000-0000-0000-0000000000e1', 5) $$,
+  $$ values (true, 1) $$,
+  'a repeat ask for the same entry is allowed but not double-counted (idempotent)');
+
+-- drive the org to used=4 with three more distinct interruptions
+insert into ai_decisions (tenant_id, use_case, runtime, provider, model, request_ref, gate_status)
+select 'org:00000000-0000-0000-0000-0000000000b1', 'owner_interruption', 'deno', 'workers-ai', 'n/a', r, 'unevaluated'
+from unnest(array['e2','e3','e4']) as r;
+-- the 5th distinct ask exactly fills the budget → allowed, spent = 5
+select results_eq(
+  $$ select allowed, spent from record_owner_ask(
+       '00000000-0000-0000-0000-0000000000b1',
+       '00000000-0000-0000-0000-0000000000e5', 5) $$,
+  $$ values (true, 5) $$,
+  'the ask that fills the budget (5th of 5) is allowed');
+-- the 6th distinct ask is over budget → refused, and the count is FROZEN at 5
+-- (this is the TOCTOU invariant: a concurrent read-then-write can never exceed 5)
+select results_eq(
+  $$ select allowed, spent from record_owner_ask(
+       '00000000-0000-0000-0000-0000000000b1',
+       '00000000-0000-0000-0000-0000000000e6', 5) $$,
+  $$ values (false, 5) $$,
+  'an ask past the budget is refused with the count frozen at the cap');
+select is(owner_asks_this_week('00000000-0000-0000-0000-0000000000b1'), 5,
+  'the ≤5/week cap holds exactly — no over-count past the budget');
 
 select * from finish();
 rollback;

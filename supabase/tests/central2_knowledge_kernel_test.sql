@@ -13,7 +13,7 @@
 -- Everything runs in a transaction and rolls back.
 
 begin;
-select plan(19);
+select plan(20);
 
 -- ── 1. schema + seed present ─────────────────────────────────────────────────
 select has_table('public', 'entity_types',       'entity_types table exists');

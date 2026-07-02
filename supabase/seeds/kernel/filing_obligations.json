@@ -76,8 +76,8 @@
       "label": "Issue 1099-NEC to contractors paid $600+",
       "due_month": 1, "due_day": 31, "due_year_offset": 1,
       "threshold_minor": 60000,
-      "notes": "Threshold $600 for payments THROUGH 31 Dec 2025 (pre-OBBBA).",
-      "effective_from": "2020-01-01", "effective_to": "2025-12-31",
+      "notes": "Threshold $600 for payments THROUGH 31 Dec 2025 (pre-OBBBA). Row is keyed to tax_year 2025, so it stays the standing authority for 2025 filings/amendments indefinitely — effective window stays OPEN; the 2026 OBBBA change is a separate tax_year row, never an in-key supersede.",
+      "effective_from": "2020-01-01",
       "citation": "https://www.irs.gov/forms-pubs/about-form-1099-nec"
     },
     {

@@ -126,6 +126,26 @@ create unique index if not exists filing_obligations_one_active
   on public.filing_obligations (jurisdiction_code, entity_type, tax_year, obligation_key)
   where effective_to is null and is_active;
 
+-- STRONGER effective-dating invariant: no two ACTIVE rows for one key may have
+-- OVERLAPPING effective windows — not just at the open end. The one_active index
+-- above only guards effective_to IS NULL rows; two rows with overlapping *closed*
+-- windows (or a closed window overlapping an open one) would otherwise both be "in
+-- force" for some as_of, and filing_obligations_for()'s distinct-on would silently
+-- pick one — a wrong-law lookup with no error. An EXCLUDE over the daterange makes
+-- that state impossible to insert. effective_to is INCLUSIVE (filing_obligations_for
+-- uses effective_to >= as_of), so the range upper bound is effective_to + 1 day,
+-- half-open '[)'. A null effective_to = 'infinity'.
+create extension if not exists btree_gist;
+alter table public.filing_obligations
+  add constraint filing_obligations_no_overlap
+  exclude using gist (
+    jurisdiction_code with =,
+    entity_type       with =,
+    tax_year          with =,
+    obligation_key    with =,
+    daterange(effective_from, effective_to + 1, '[)') with &&
+  ) where (is_active);
+
 -- ── vendor_priors ───────────────────────────────────────────────────────────
 -- PLATFORM-LEVEL vendor→category first-guess. Explicitly SEPARATE from per-org
 -- learned rules (categorization_rules) — no cross-tenant leakage: these are public

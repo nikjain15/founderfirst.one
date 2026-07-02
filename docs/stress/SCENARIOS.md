@@ -225,3 +225,37 @@ on the app-UI base; this card ships the RPCs it will call).
 | **W1.3C-DISPOSAL** | Disposal computes gain/loss = proceeds − net book value, records the disposal, and marks the asset disposed. | `depreciation.test.ts` (disposalGainLoss gain + loss) + pgTAP (§8 disposal) |
 | **W1.3C-LAW** | `asset_classes` + `macrs_percentages` are year-versioned + effective-dated + cited; `supersede_asset_class` + `asset_class_in_force` make an asset compute under the §179/bonus law of its in-service year; overlapping active windows impossible (EXCLUDE); a law change (bonus step-down, §179 bump, new class) is a seed row. | pgTAP (effective-dating) + `scripts/seed-depreciation.ts --check` (MACRS tables sum to 100%, class→table coverage, effective-dating clean) |
 | **W1.3C-ROLE** | The p_actor-first write RPCs (`register_fixed_asset`, `compute_depreciation_schedule`, `post_book_depreciation`, `draft_depreciation_m1`, `dispose_fixed_asset`, `supersede_asset_class`) are `service_role`-EXECUTE-only (forged-actor P0 closed, ISOTEST); cross-tenant register refused; every action audit-logged. | pgTAP (§9 grants + cross-tenant refusal) |
+
+---
+
+## W2.3 · Plaid bank feeds (sandbox)
+
+| ID | Proves | Owned by |
+|----|--------|----------|
+| **W2.3-LINK** | A linked Plaid item's transactions land in the SAME categorize queue as CSV/QBO imports (a bank-vs-Uncategorized entry Penny then categorizes), exactly once, and the ledger balances (Dr==Cr). Each Plaid `transaction_id` → one `bank_transactions` row → one journal entry keyed `ext:plaid:<transaction_id>`. | `supabase/tests/w2_3_plaid_ingest_test.sql` (pgTAP: add ingests, distinct entries, ledger balances) + `apps/app/src/import/plaidStateMachine.test.ts` (Vitest: add lands once) |
+| **W2.3-REPLAY** | A duplicate webhook delivery — Plaid retries, at-least-once — adds NOTHING. Re-ingesting the same sync page skips every row (idempotent on `bank_transactions` unique key AND on `post_journal_entry`'s `ext:plaid:<id>`); no new rows, no new entries, net unchanged. Overlapping cursor pages likewise never double-post. | pgTAP (`skipped=2`, row/entry counts unchanged) + Vitest (duplicate page + overlapping page no-op) |
+| **W2.3-REMOVED** | Plaid mutating history is handled by REVERSAL-based corrections, never in-place edits. A **removed** txn reverses its prior entry (original → `status=reversed`, row → `state=removed`, never deleted) and nets to zero; a **modified** (amount/date-changed) txn reverses the old entry and posts a fresh one (books tie to the corrected amount); **pending→posted** with no amount change moves no money. A replayed remove is idempotent (no second reversal). | pgTAP (modify: original reversed + corrected amount + still balances; remove: reversed + state) + Vitest (pending→posted, modify reverse+repost, idempotent remove, full-lifecycle nets to 0) |
+
+**Tenant + role.** `plaid_ingest_transactions` / `plaid_set_cursor` are
+`service_role`-EXECUTE-only (ISOTEST: no `p_actor` forgery from anon/authenticated),
+gated by `can_write_org_as`; a non-member actor is refused. The Plaid access token
+never reaches the browser (stored on `external_connections`, column-walled like
+QBO/Xero); the link_token is the only client-side token. Every add/modify/remove
+writes a `ledger_audit` row.
+
+**Webhook replay-safety proof.** The `plaid-webhook` fn resolves `item_id →
+external_connections` (the tenant boundary; an unknown item is ignored 200 so Plaid
+stops retrying) then runs the SAME `/transactions/sync` loop as `plaid-sync`. Because
+`plaid_ingest_transactions` is idempotent, running the loop twice on the same events
+is a no-op — proven by W2.3-REPLAY.
+
+**Sandbox-only.** Build targets `PLAID_ENV=sandbox` (secret from
+`~/.config/founderfirst/secrets.env` → `PLAID_SECRET_SANDBOX`, set as a Supabase fn
+secret at deploy). Production requires Plaid's app review — a **Nik step** before
+>10 live users (flip `PLAID_ENV`/`PLAID_SECRET` to production). E2E against the live
+Plaid sandbox is feasible via `/sandbox/item/fire_webhook` (`sandboxFireWebhook` in
+`_shared/plaid.ts`); the recorded state machine (`plaidStateMachine.ts`) is the
+CI-runnable fixture that mirrors the RPC contract.
+
+**Re-run.** `pnpm --dir apps/app test` (state machine) · `supabase test db` (pgTAP
+ingestion RPC) · no prod fixtures (the pgTAP seed is self-contained).

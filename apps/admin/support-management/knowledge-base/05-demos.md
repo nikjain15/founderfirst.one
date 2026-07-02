@@ -4,7 +4,7 @@ Penny is live as an interactive demo you can click through right now — no sign
 
 ## Business owner view
 
-The mobile experience. Lives at [founderfirst.one/penny/demo/businessowner/](https://founderfirst.one/penny/demo/businessowner/).
+The mobile experience. Lives at [founderfirst.one/penny/demo/](https://founderfirst.one/penny/demo/).
 
 What's in it:
 - Onboarding

@@ -162,6 +162,11 @@ P1 = guideline breach / UX regression / real risk · P2 = polish.
   policy, How-it-works guide reflect what the system actually does now.
 - **READMEs current** — setup/deploy docs match reality; `CLAUDE.md` /
   `LEARNINGS.md` references valid.
+- **Hard facts verbatim** — the offer ("3 months on us", referral cap 12), demo
+  URLs (`/penny/demo/`, `/penny/demo/cpa/`), contact (`founder@founderfirst.one`),
+  and live model/engine names match canon everywhere they appear.
+- **No shipped work framed as future** — no "pending deploy" / "not yet" / "coming
+  soon" in a doc whose feature is live; status headers flipped (docs/README.md rule 9).
 
 ### 13. dead_code
 - **Unused exports / files** (ts-prune-style) removed or justified.

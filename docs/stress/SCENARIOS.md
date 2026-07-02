@@ -225,3 +225,19 @@ on the app-UI base; this card ships the RPCs it will call).
 | **W1.3C-DISPOSAL** | Disposal computes gain/loss = proceeds − net book value, records the disposal, and marks the asset disposed. | `depreciation.test.ts` (disposalGainLoss gain + loss) + pgTAP (§8 disposal) |
 | **W1.3C-LAW** | `asset_classes` + `macrs_percentages` are year-versioned + effective-dated + cited; `supersede_asset_class` + `asset_class_in_force` make an asset compute under the §179/bonus law of its in-service year; overlapping active windows impossible (EXCLUDE); a law change (bonus step-down, §179 bump, new class) is a seed row. | pgTAP (effective-dating) + `scripts/seed-depreciation.ts --check` (MACRS tables sum to 100%, class→table coverage, effective-dating clean) |
 | **W1.3C-ROLE** | The p_actor-first write RPCs (`register_fixed_asset`, `compute_depreciation_schedule`, `post_book_depreciation`, `draft_depreciation_m1`, `dispose_fixed_asset`, `supersede_asset_class`) are `service_role`-EXECUTE-only (forged-actor P0 closed, ISOTEST); cross-tenant register refused; every action audit-logged. | pgTAP (§9 grants + cross-tenant refusal) |
+
+---
+
+## W2.1 · Catch-up mode (the #1 Signals wedge — years-behind owners, shame-free)
+
+Catch-up mode ORCHESTRATES the existing pipeline (import → categorize → reconcile →
+per-year export); it adds only a flat-per-year packaging model, a trust-gated
+bulk-approve RPC, and a per-year progress rollup. These scenarios lock the decisions
+that could silently go wrong.
+
+| ID | Proves | Owned by |
+|----|--------|----------|
+| **W2.1-CATCHUP** | Multi-year CSVs land as one import batch per backlog year, then Penny proposes a category per landed uncategorized entry; per-year progress (`catch_up_progress`) rolls up uncategorized + reconciled counts and a `done` flag derived from the ledger (no denormalized status to drift). A year with an unsorted transaction is not `done`. | `apps/app/src/catchup/catchup.test.ts` (Vitest: `yearStatus` / `allYearsDone` / `yearOf` / `backlogYears`) + `supabase/tests/w2_1_catchup_test.sql` (pgTAP: per-year rollup) |
+| **W2.1-BATCHAPPROVE** | `catch_up_batch_approve` bulk-recategorizes ONLY high-confidence picks (trust tier from `get_effective_behavior_config.confidence_high`, server-authoritative); a below-cutoff item is SKIPPED and left untouched on the holding account — never auto-posted. Reuses `recategorize_entry` (append-only reverse+repost, learning). Tenant-gated (non-member refused, `42501`); the bulk action writes a summary audit row **and** the per-entry recategorize audit row. Period-lock inherited: a closed-period entry still recategorizes into the open period, never permanently blocked. | `catchup.test.ts` (Vitest: `isHighConfidence` / `partitionProposals` trust gating, rule=1 always, no-account never) + `w2_1_catchup_test.sql` (pgTAP: approved/skipped counts, holding-account untouched, audit rows, non-member `42501`, closed-period inheritance) |
+| **W2.1-5K** | The interruption budget holds at 5,000 backlog transactions: with 4,990 high-confidence + 10 low, the owner confirms 4,990 in ONE tap and answers only the 10 low-confidence questions — `interruptionCount` = 10, not 5,000. Surfaced questions are capped at `asks_per_week` (≤5/week) and the rest deferred. | `catchup.test.ts` (Vitest: `interruptionCount` at 5k, `withinAskBudget`, `questionsForThisWeek` cap) |
+| **W2.1-PRICING** | Priced flat-per-year: `catch_up_plans.fee_total_minor` is a generated column = `fee_per_year_minor × cardinality(backlog_years)`; `catch_up_set_plan` records the packaging and audit-logs it. $500/yr over 3 years → $1,500. | `catchup.test.ts` (Vitest: `catchUpFeeTotal`) + `w2_1_catchup_test.sql` (pgTAP: `fee_total_minor` = per-year × N) |

@@ -197,6 +197,76 @@ export const COPY = {
     accountantManagedByOwner: "Your accountant relationship is managed by the business owner.",
   },
 
+  // ── Catch-up mode (W2.1) — the shame-free "get me caught up" guided flow. Years
+  //    behind is normal; the copy meets the owner where they are, never scolds a
+  //    gap (VOICE.md bans shame language), measures effort in minutes per year, and
+  //    quotes the flat-per-year price verbatim. ──────────────────────────────────
+  catchUp: {
+    entryTitle: "Catch me up",
+    entrySub: "Behind on your books? Drop in what you have and Penny gets each year sorted — you just confirm the handful she's unsure about.",
+    startCta: "Get me caught up",
+    // Step 1 — drop files
+    dropTitle: "Drop in your files",
+    dropLead: "Add a bank export for each year you're catching up on. One file or many — Penny sorts them by year.",
+    dropChoose: "Choose CSV files",
+    dropReadError: "We couldn't read that file. Check it's a CSV export and try again.",
+    filesQueued: (n: number) => `${n} ${n === 1 ? "file" : "files"} ready`,
+    removeFileAria: (name: string) => `Remove ${name}`,
+    // Column mapping (shared across files with the same shape)
+    mapTitle: "Which columns are which?",
+    mapLead: "Tell Penny where the date, description, and amount live. She'll use the same map for every file.",
+    bankAccount: "Which account is this?",
+    defaultCategory: "Where unsure amounts land for now",
+    defaultCategoryAria: "Default category for uncategorized amounts",
+    next: "Next",
+    // Step 2 — bring it in
+    bringInTitle: "Bring it all in",
+    bringInLead: (rows: number, years: number) =>
+      `${rows} ${rows === 1 ? "transaction" : "transactions"} across ${years} ${years === 1 ? "year" : "years"}, ready to sort.`,
+    bringInCta: "Bring it in",
+    bringingIn: "Bringing it in…",
+    bringInError: "Something interrupted the import. Nothing was half-saved — you can start it again.",
+    // Step 3 — Penny sorts
+    sortingTitle: "Penny's sorting your books",
+    sortingLead: "She's grouping transactions and matching the ones she recognizes. This can take a moment for a few years of history.",
+    sortedTitle: (n: number) => `Penny sorted ${n} ${n === 1 ? "transaction" : "transactions"}`,
+    // Batch approve
+    batchTitle: "Confirm in one go",
+    batchLead: (n: number) =>
+      `Penny's confident about ${n} ${n === 1 ? "transaction" : "transactions"}. Confirm them all at once, or open any to change it.`,
+    batchApproveCta: (n: number) => `Confirm ${n} at once`,
+    batchApproving: "Confirming…",
+    batchDone: (n: number) => `Confirmed ${n} ✓`,
+    batchNoneConfident: "Penny isn't sure enough to bulk-confirm any of these — she'll ask you about them below.",
+    // Batched questions (the interruption budget)
+    questionsTitle: "A few Penny wants to check",
+    questionsLead: (n: number) =>
+      `${n} ${n === 1 ? "transaction needs" : "transactions need"} your call. That's the whole ask for this batch — not one prompt per transaction.`,
+    questionsNone: "Nothing left for you to decide — Penny handled the rest.",
+    // Per-year progress meter
+    progressTitle: "Your years",
+    progressLoadError: "Couldn't load your catch-up progress. Try again.",
+    yearDone: (year: number) => `${year} ✓`,
+    yearInProgress: (year: number) => `${year} in progress`,
+    yearNotStarted: (year: number) => `${year} not started`,
+    yearDetail: (uncat: number, recon: number) =>
+      `${uncat} to sort · ${recon} ${recon === 1 ? "month" : "months"} reconciled`,
+    yearReconcileCta: (year: number) => `Reconcile ${year}`,
+    yearExportCta: (year: number) => `Get the ${year} package`,
+    // Packaging — flat per year, quoted verbatim
+    pricingTitle: "What catch-up costs",
+    pricingFlat: (fee: string) => `A flat ${fee} per year of catch-up.`,
+    pricingTotal: (total: string, years: number) =>
+      `${years} ${years === 1 ? "year" : "years"} — ${total} in total.`,
+    pricingNone: "Your accountant will set the per-year price for your catch-up.",
+    // Package (the end state)
+    packageTitle: (year: number) => `${year} is caught up`,
+    packageBody: "Sorted, reconciled, and ready to hand off. Download the year's package below.",
+    // Generic
+    done: "Done",
+    close: "Close",
+  },
+
   // ── Categorize (Review tab) ────────────────────────────────────────────────
   categorize: {
     loadingQueue: "Loading Penny's queue…",

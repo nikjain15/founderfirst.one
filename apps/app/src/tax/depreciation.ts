@@ -123,6 +123,18 @@ export function computeSchedule(
       book_tax_delta_minor: tax - book,
     });
   }
+  // FINAL-YEAR TRUE-UP — mirror of compute_depreciation_schedule's residual sweep.
+  // Per-year Math.floor() strands a few cents of basis; MACRS/SL must recover EXACTLY
+  // cost (tax) / cost-salvage (book) over the life or the temporary difference never
+  // nets to zero. Sweep the residual into the final line so accumulated == basis.
+  const last = out[out.length - 1];
+  if (last) {
+    last.tax_minor += asset.cost_minor - taxAcc;
+    last.book_minor += bookBase - bookAcc;
+    last.tax_accumulated_minor = asset.cost_minor;
+    last.book_accumulated_minor = bookBase;
+    last.book_tax_delta_minor = last.tax_minor - last.book_minor;
+  }
   return out;
 }
 

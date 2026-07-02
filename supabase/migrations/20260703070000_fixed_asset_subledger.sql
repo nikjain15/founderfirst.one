@@ -106,6 +106,25 @@ create table if not exists public.macrs_percentages (
 );
 create index if not exists macrs_percentages_lookup
   on public.macrs_percentages (jurisdiction_code, recovery_period, convention, macrs_method);
+-- EFFECTIVE-DATING INTEGRITY (repeat of the CENTRAL-2 overlap P0 — the SAME guard
+-- asset_classes carries must live on THIS law table too, or macrs_tax_depreciation_for_year's
+-- `order by effective_from desc limit 1` silently picks one of two overlapping active
+-- rows). One active % per (jurisdiction, recovery_period, convention, method, year_index),
+-- and no two active rows whose effective ranges overlap.
+create unique index if not exists macrs_percentages_one_active
+  on public.macrs_percentages (jurisdiction_code, recovery_period, convention, macrs_method, year_index)
+  where effective_to is null and is_active;
+alter table public.macrs_percentages drop constraint if exists macrs_percentages_no_overlap;
+alter table public.macrs_percentages
+  add constraint macrs_percentages_no_overlap
+  exclude using gist (
+    jurisdiction_code with =,
+    recovery_period   with =,
+    convention        with =,
+    macrs_method      with =,
+    year_index        with =,
+    daterange(effective_from, effective_to + 1, '[)') with &&
+  ) where (is_active);
 comment on table public.macrs_percentages is
   'LAW-DERIVED: IRS published MACRS percentage tables (Pub 946 App. A). DATA, never literals — the engine looks up percentage by (recovery_period, convention, method, year_index). Effective-dated + cited.';
 

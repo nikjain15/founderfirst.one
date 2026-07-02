@@ -1,0 +1,96 @@
+{
+  "_meta": {
+    "table": "entity_types",
+    "description": "Business entity structures — the 'what am I?' knowledge. entity_type keys align with docs/plans/research/tax-mapping-research.md §B (sole_prop | s_corp | c_corp | partnership | nonprofit). Consumed by onboarding (the not-sure diagnostic), the tax engine (W1.3-B forms key off these), Penny explanations, and marketing/compare pages.",
+    "primary_key": "key"
+  },
+  "rows": [
+    {
+      "key": "sole_prop",
+      "label": "Sole proprietor / single-member LLC",
+      "short_label": "Sole prop",
+      "description": "You and the business are the same for tax. Profit is yours; you pay income + self-employment tax on it. Most freelancers and one-person businesses start here.",
+      "diagnostic_questions": [
+        { "q": "Are you the only owner?", "helps_pick": "sole_prop" },
+        { "q": "Did you file paperwork to become an S-corp or C-corp?", "helps_pick": "not_this_if_yes" }
+      ],
+      "owner_draw_treatment": "equity_distribution",
+      "officer_comp_rule": "No W-2 for the owner. Money you take out is an owner draw (equity), not a deductible expense.",
+      "forms_filed": [
+        { "form_code": "SCH_C", "jurisdiction": "US-FED", "note": "Schedule C with your 1040" },
+        { "form_code": "SCH_SE", "jurisdiction": "US-FED", "note": "Self-employment tax" }
+      ],
+      "files_balance_sheet": false,
+      "sort_order": 10
+    },
+    {
+      "key": "partnership",
+      "label": "Partnership / multi-member LLC",
+      "short_label": "Partnership",
+      "description": "Two or more owners share the business. The business files an informational return; profit flows to each partner's personal return via a K-1.",
+      "diagnostic_questions": [
+        { "q": "Do you have two or more owners?", "helps_pick": "partnership" },
+        { "q": "Did you elect S-corp or C-corp status?", "helps_pick": "not_this_if_yes" }
+      ],
+      "owner_draw_treatment": "guaranteed_payment",
+      "officer_comp_rule": "Partners are never W-2 employees. Pay for their work is a guaranteed payment (Form 1065 line 10), never wages.",
+      "forms_filed": [
+        { "form_code": "1065", "jurisdiction": "US-FED", "note": "Partnership return" },
+        { "form_code": "K1_1065", "jurisdiction": "US-FED", "note": "One K-1 per partner" }
+      ],
+      "files_balance_sheet": true,
+      "sort_order": 20
+    },
+    {
+      "key": "s_corp",
+      "label": "S corporation",
+      "short_label": "S-corp",
+      "description": "A tax election (often over an LLC or corporation). Profit passes to owners' personal returns, but owner-employees must take a reasonable W-2 salary first — the #1 thing the IRS looks at.",
+      "diagnostic_questions": [
+        { "q": "Did you file Form 2553 to be taxed as an S-corp?", "helps_pick": "s_corp" },
+        { "q": "Do you (an owner) also work in the business?", "helps_pick": "s_corp_reasonable_comp" }
+      ],
+      "owner_draw_treatment": "wages",
+      "officer_comp_rule": "Owner-employees must take a reasonable W-2 salary (Form 1120-S line 7), kept separate from staff wages (line 8). Distributions above salary are equity, not wages.",
+      "forms_filed": [
+        { "form_code": "1120S", "jurisdiction": "US-FED", "note": "S-corp return" },
+        { "form_code": "K1_1120S", "jurisdiction": "US-FED", "note": "One K-1 per shareholder" }
+      ],
+      "files_balance_sheet": true,
+      "sort_order": 30
+    },
+    {
+      "key": "c_corp",
+      "label": "C corporation",
+      "short_label": "C-corp",
+      "description": "A separate taxpayer. The company pays its own income tax (21% federal), then owners are taxed again on dividends. Common for startups raising outside investment.",
+      "diagnostic_questions": [
+        { "q": "Is the business a corporation that did NOT elect S-corp status?", "helps_pick": "c_corp" },
+        { "q": "Do you have outside investors or plan to raise venture funding?", "helps_pick": "c_corp_common" }
+      ],
+      "owner_draw_treatment": "wages",
+      "officer_comp_rule": "Officers are W-2 employees (Form 1120 line 12 officer comp). Owner profit comes out as dividends (not a deduction) or salary.",
+      "forms_filed": [
+        { "form_code": "1120", "jurisdiction": "US-FED", "note": "C-corp return" }
+      ],
+      "files_balance_sheet": true,
+      "sort_order": 40
+    },
+    {
+      "key": "nonprofit",
+      "label": "Nonprofit / tax-exempt",
+      "short_label": "Nonprofit",
+      "description": "A tax-exempt organization (typically 501(c)(3)). No owners; surplus is reinvested in the mission. Files an information return instead of paying income tax.",
+      "diagnostic_questions": [
+        { "q": "Is the organization recognized as tax-exempt by the IRS?", "helps_pick": "nonprofit" }
+      ],
+      "owner_draw_treatment": "na",
+      "officer_comp_rule": "No owners. Staff and officers are W-2 employees; compensation must be reasonable and disclosed on the Form 990.",
+      "forms_filed": [
+        { "form_code": "990", "jurisdiction": "US-FED", "note": "Return of Organization Exempt From Income Tax" }
+      ],
+      "files_balance_sheet": true,
+      "sort_order": 50
+    }
+  ]
+}

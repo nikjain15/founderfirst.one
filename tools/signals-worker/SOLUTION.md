@@ -14,10 +14,8 @@
 > gemma2:2b. An empty-item guard (PR #157, 1-Jul) blocks intent hallucination on
 > empty captures. Outreach voice is single-sourced from `penny_outreach_persona`
 > (admin → Penny → Outreach), and the source optimizer is outcome-aware (PR #100).
-**Build progress:** Step 1 (migration) ✅ · Step 2 (intake edge fn + extension + admin UI) ✅ ·
-Step 3 (VM worker) ✅ · Step 4 (admin UI, in Step 2) ✅ · Step 5 (daily digest) ✅
-**Remaining:** deploy (functions + migrations), Vault secrets, install Ollama on the VM,
-load the extension, run the score-model eval.
+**Build progress:** all five steps ✅ — migration · intake edge fn + extension + admin UI ·
+worker · admin UI · daily digest. Deployed; nothing remaining from the original plan.
 
 ---
 

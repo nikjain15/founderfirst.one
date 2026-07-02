@@ -1,7 +1,7 @@
 # FounderFirst — feature stress-test program (tracker + operating model)
 
 The durable audit **ledger** (findings, per-feature, coverage gaps) lives in
-[AUDIT.md](../AUDIT.md) → "Audit ledger". This file is the **operating model + working
+[AUDIT.md](AUDIT.md) → "Audit ledger". This file is the **operating model + working
 board**: how we run an audit and where each run currently stands.
 
 **Track status two ways:** (1) this board (Tracker table below) · (2) GitHub → PRs

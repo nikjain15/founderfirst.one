@@ -65,4 +65,4 @@ to test — bad validator output means bad Penny voice at the user.
 
 ## Questions
 
-Open an issue, or email nik@founderfirst.one.
+Open an issue, or email founder@founderfirst.one.

@@ -4,8 +4,16 @@
 > doc. The **strategy** (the "what/why") lives in [STRATEGY.md](STRATEGY.md);
 > this doc is the **how**. Update this as decisions change.
 
-**Admin tab:** `Signals` · **Route:** `/admin/signals`
-**Status:** Phase 1 built (worktree `feat/signals`), pending deploy · **Last updated:** 2026-06-21
+**Admin tab:** `Signals` (now under Audience → `/audience#signals`)
+**Status:** LIVE in production · **Last updated:** 2026-07-01
+
+> **Live config (differs from the original design below — this block wins):**
+> the worker runs on the **Mac host via launchd** (`one.founderfirst.signals-worker`,
+> folder `~/signals-worker`), not a Lima VM; logs at `~/Library/Logs/founderfirst/`.
+> The live score model is **`qwen2.5:7b`** (set via `OLLAMA_SCORE_MODEL`), not
+> gemma2:2b. An empty-item guard (PR #157, 1-Jul) blocks intent hallucination on
+> empty captures. Outreach voice is single-sourced from `penny_outreach_persona`
+> (admin → Penny → Outreach), and the source optimizer is outcome-aware (PR #100).
 **Build progress:** Step 1 (migration) ✅ · Step 2 (intake edge fn + extension + admin UI) ✅ ·
 Step 3 (VM worker) ✅ · Step 4 (admin UI, in Step 2) ✅ · Step 5 (daily digest) ✅
 **Remaining:** deploy (functions + migrations), Vault secrets, install Ollama on the VM,
@@ -41,9 +49,9 @@ added only after the loop is proven.
 |---|---|---|
 | Tab name / route | **Signals** / `/admin/signals` | Sub-tabs: Feed, Pipeline, Lead detail, Keywords, Quick-Add |
 | Tech stack | **Same as founderfirst.one/admin** | Supabase + RLS + `is_admin()` RPCs + edge functions + React admin + Resend + pg_cron. No new platforms except the VM worker. |
-| The brain — hosting | **Our existing VM** (Lima VM on Mac: 2 vCPU, 4 GiB, CPU-only, no GPU) | Always-on, pulls work — no inbound ports, Ollama stays private |
+| The brain — hosting | ~~Lima VM~~ → **Mac host, launchd** (`one.founderfirst.signals-worker`) | Always-on, pulls work — no inbound ports, Ollama stays private. The VM design was superseded at deploy time. |
 | The brain — split | **Local AI scores; hosted AI drafts** | VM is too small for good draft-writing. Scoring is high-volume/low-stakes → free local; drafting is customer-facing → hosted (pennies/day). One swappable interface; can go all-local later. |
-| Local models | `gemma2:2b` or `llama3.2:3b` (scoring) + `nomic-embed-text` (embeddings) | Final pick via a ~20-post eval once real captures exist. 8B won't fit 4 GiB. |
+| Local models | scoring = **`qwen2.5:7b`** (picked by the §8 eval; env `OLLAMA_SCORE_MODEL`) + `nomic-embed-text` (embeddings) | Original candidates were gemma2:2b / llama3.2:3b; the eval on real captures chose qwen2.5:7b. |
 | Collection (Phase 1) | **Manual only** — browser extension (Facebook first) + Quick-Add paste box | No provider account needed to start |
 | Collection (Phase 2) | **API Direct** (pay-per-request, no monthly fee) for Reddit/HN/X/public LinkedIn | Keys live on the VM |
 | Outreach | **Copy-by-default; human sends natively.** API-send seam stubbed for one safe platform later (Phase 2) | Never auto-send |

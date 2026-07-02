@@ -60,6 +60,12 @@ in the same PR that adds the doc — the map is only useful while it's complete.
 8. **Naming:** canon specs are `SCREAMING_SNAKE.md`; plans are `kebab-case.md`
    (or `SCREAMING_SNAKE` for the few program-level ones); archives are prefixed
    `YYYY-MM-`; stress campaigns are `docs/stress/<feature>[-<yyyymmmdd>]/`.
+9. **Deploying a change flips the doc, in the same PR.** When something ships,
+   moves host, or changes model/engine/route, update the affected doc's Status /
+   "Last verified" line and its claims right then — a doc that still says
+   "pending deploy" or names the old model is how drift starts (LEARNINGS rule 7).
+   If a doc has drifted so far it describes a system that no longer exists,
+   **archive it and write the current truth fresh** — don't patch around a fossil.
 
 ## 3. PR checklist (docs)
 

@@ -28,7 +28,7 @@ insert into auth.users (id, email, aud, role) values
   ('80000000-0000-0000-0000-000000000009', 'other@depr.dev', 'authenticated', 'authenticated');
 
 insert into public.tax_jurisdictions (code, name, country_code, currency) values
-  ('US-FED', 'US Federal', 'US', 'USD') on conflict (code) do nothing;
+  ('ZZ-DEPR', 'US Federal', 'US', 'USD') on conflict (code) do nothing;
 
 insert into organizations (id, type, name, created_by) values
   ('80000000-0000-0000-0000-0000000000a0', 'business', 'Depr Co', '80000000-0000-0000-0000-000000000001'),
@@ -50,15 +50,15 @@ insert into public.asset_classes
   (jurisdiction_code, class_key, label, tax_year, recovery_period, macrs_method, default_convention,
    section_179_cap_minor, bonus_pct, effective_from, citation)
 values
-  ('US-FED', 'computers', 'Computers', 2025, 5, '200DB', 'half_year', 125000000, null, '2025-01-01', 'Pub 946 A-1');
+  ('ZZ-DEPR', 'computers', 'Computers', 2025, 5, '200DB', 'half_year', 125000000, null, '2025-01-01', 'Pub 946 A-1');
 insert into public.macrs_percentages
   (jurisdiction_code, recovery_period, convention, macrs_method, year_index, percentage, effective_from, citation) values
-  ('US-FED', 5, 'half_year', '200DB', 1, 20.00, '1987-01-01', 'Pub 946 A-1'),
-  ('US-FED', 5, 'half_year', '200DB', 2, 32.00, '1987-01-01', 'Pub 946 A-1'),
-  ('US-FED', 5, 'half_year', '200DB', 3, 19.20, '1987-01-01', 'Pub 946 A-1'),
-  ('US-FED', 5, 'half_year', '200DB', 4, 11.52, '1987-01-01', 'Pub 946 A-1'),
-  ('US-FED', 5, 'half_year', '200DB', 5, 11.52, '1987-01-01', 'Pub 946 A-1'),
-  ('US-FED', 5, 'half_year', '200DB', 6, 5.76,  '1987-01-01', 'Pub 946 A-1');
+  ('ZZ-DEPR', 5, 'half_year', '200DB', 1, 20.00, '1987-01-01', 'Pub 946 A-1'),
+  ('ZZ-DEPR', 5, 'half_year', '200DB', 2, 32.00, '1987-01-01', 'Pub 946 A-1'),
+  ('ZZ-DEPR', 5, 'half_year', '200DB', 3, 19.20, '1987-01-01', 'Pub 946 A-1'),
+  ('ZZ-DEPR', 5, 'half_year', '200DB', 4, 11.52, '1987-01-01', 'Pub 946 A-1'),
+  ('ZZ-DEPR', 5, 'half_year', '200DB', 5, 11.52, '1987-01-01', 'Pub 946 A-1'),
+  ('ZZ-DEPR', 5, 'half_year', '200DB', 6, 5.76,  '1987-01-01', 'Pub 946 A-1');
 
 -- ── 1. schema present ────────────────────────────────────────────────────────
 select has_table('public', 'asset_classes',                'asset_classes exists');
@@ -72,7 +72,7 @@ create temp table _asset as
 select register_fixed_asset(
   p_actor => '80000000-0000-0000-0000-000000000001',
   p_org   => '80000000-0000-0000-0000-0000000000a0',
-  p_name  => 'MacBook Pro', p_class_key => 'computers',
+  p_name  => 'MacBook Pro', p_class_key => 'computers', p_jurisdiction_code => 'ZZ-DEPR',
   p_cost_minor => 1000000, p_in_service_date => '2025-06-15',
   p_book_life_years => 5, p_book_convention => 'half_year',
   p_expense_account_id => '80000000-0000-0000-0000-0000000000c1',
@@ -154,7 +154,7 @@ select is(
 create temp table _asset2 as
 select register_fixed_asset(
   '80000000-0000-0000-0000-000000000001','80000000-0000-0000-0000-0000000000a0',
-  'Second laptop','computers', 500000, '2025-06-15', 'US-FED', 0, 'straight_line', 5, 'half_year',
+  'Second laptop','computers', 500000, '2025-06-15', 'ZZ-DEPR', 0, 'straight_line', 5, 'half_year',
   0, false, null, '80000000-0000-0000-0000-0000000000c1', '80000000-0000-0000-0000-0000000000c2'
 ) as id;
 select compute_depreciation_schedule('80000000-0000-0000-0000-000000000001','80000000-0000-0000-0000-0000000000a0',(select id from _asset2));
@@ -217,12 +217,12 @@ select has_index('public', 'macrs_percentages', 'macrs_percentages_one_active',
 select throws_ok($$
   insert into public.macrs_percentages
     (jurisdiction_code, recovery_period, convention, macrs_method, year_index, percentage, effective_from, citation)
-  values ('US-FED', 5, 'half_year', '200DB', 1, 19.00, '2030-01-01', 'bogus overlap')
+  values ('ZZ-DEPR', 5, 'half_year', '200DB', 1, 19.00, '2030-01-01', 'bogus overlap')
 $$, NULL, NULL, 'a second overlapping ACTIVE macrs % row is rejected (no_overlap EXCLUDE)');
 -- exactly one active % resolves for the seeded key
 select is(
   (select count(*)::int from public.macrs_percentages
-    where jurisdiction_code='US-FED' and recovery_period=5 and convention='half_year'
+    where jurisdiction_code='ZZ-DEPR' and recovery_period=5 and convention='half_year'
       and macrs_method='200DB' and year_index=1 and is_active and effective_to is null),
   1, 'exactly one active MACRS % in force for (5yr, HY, 200DB, yr1)');
 
@@ -235,7 +235,7 @@ insert into public.asset_classes
   (jurisdiction_code, class_key, label, tax_year, recovery_period, macrs_method, default_convention,
    section_179_cap_minor, bonus_pct, effective_from, citation)
 values
-  ('US-FED', 'machinery_mq', 'Machinery (mid-quarter)', 2025, 5, '200DB', 'mid_quarter',
+  ('ZZ-DEPR', 'machinery_mq', 'Machinery (mid-quarter)', 2025, 5, '200DB', 'mid_quarter',
    125000000, null, '2025-01-01', 'Pub 946 A-4');
 create temp table _mq as
 select register_fixed_asset(

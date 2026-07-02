@@ -118,6 +118,11 @@ decision-needed: none
 status: unclaimed
 blocked-by: — (schema card; W1.3-B, W2.4, W3.3 BUILD AGAINST these tables — land the schema
   before those cards start, or they'll each invent their own)
+scope note (Nik, 3 Jul, LOCKED): the seed TARGET is **every sector/persona we build ×
+  US federal + all 50 states** (`jurisdictions` = federal + 50 states; `industries` = all
+  built sectors). Schema + loader ship first; the rows fill in progressively as pure data
+  (federal + all-sector first, states demand-first to all 50) — no code changes to add a
+  state/sector. See tax-mapping-research "Scope decision".
 goal: business knowledge is seed data every app projects from (Roadmap principle 3b): add a
   sector/entity/deadline/country in ONE place → onboarding, CoA seeding, categorize hints,
   tax engine, coming-up cards, marketing, Signals all update.

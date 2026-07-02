@@ -251,9 +251,14 @@ this frame, not the old tab set** (avoids double work):
     guidance, "did I miss the deadline" anxiety).
   - **(B) Architecture spec:** a **data-driven mapping layer** — `tax_jurisdictions` →
     `tax_forms` → `tax_form_lines` → account-mapping rules stored as **data** (seed files
-    per jurisdiction + entity type), never hardcoded. All US entities in v1; extensibility
-    proven by dry-mapping one foreign form on paper (e.g. Canada T2125) with **zero code
-    changes required**. Adding a country/category = inserting rows.
+    per jurisdiction + entity type), never hardcoded. **Scope (Nik, 3 Jul, LOCKED): every
+    sector/persona we build × US federal + all 50 states** — the seed matrix `sector ×
+    entity_type × jurisdiction(federal + 50 states) × tax_year`, all rows, shipped as data
+    (federal + all-sector first, states seeded in demand-first to all 50). All book-derived
+    taxes (income/franchise returns, 1099s, estimates + sales-tax liability tracking); sales-tax
+    rate/nexus via integration, payroll via Gusto. See tax-mapping-research "Scope decision".
+    Extensibility proven by dry-mapping one foreign form on paper (Canada T2125) with **zero
+    code changes**. Adding a state/country/sector = inserting rows.
   - Spec reviewed by Nik before a builder touches it. Then: P&L grouped by tax-form section,
     per-account tax-line assignment UI (CPA-editable), **year-end tax package** export.
 - **W1.4 CPA workqueue = IA-2 Practice home** (merged with the IA redesign) — firm-level

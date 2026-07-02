@@ -7,6 +7,28 @@
 
 ---
 
+## Scope decision — LOCKED (Nik, 3 Jul 2026)
+
+**Coverage: every industry sector/persona we build × US federal + all 50 states.** The seed
+matrix is `sector × entity_type × jurisdiction (federal + 50 states) × tax_year` — all rows,
+never code (the whole point of Part B). Because coverage is DATA, it ships progressively with
+zero code changes: engine + federal + all-sector CoA templates first (unblocks the north-star
+chain), then states seed in demand-first until all 50 are covered — each state is an added/
+superseding row, never a code sweep. "Change once, update everywhere" (kernel principle 3b/3c)
+holds at this scale: one seed edit → app, estimator, deadline cards, emails, marketing, Signals.
+
+**Tax types — all book-derived:** income & franchise return mapping (this engine), 1099s, and
+quarterly estimates, all computed from the books. Sales tax: *liability tracking + a
+filing-ready summary* comes from the books; sales-tax **rate/nexus determination is a
+third-party integration** (Stripe Tax / TaxJar-class), not a from-scratch build. **Payroll tax
+stays a Gusto integration** (Roadmap "Don't build") — its numbers still flow into the books.
+
+**This resolves US jurisdiction + sector breadth only.** The other 7 questions at the end of
+this doc (1120 in v1, export targets, who edits mappings, Penny-proposed M-1 adjustments,
+fixed-asset subledger, packaging/pricing, Canada) are still open and gate full sign-off.
+
+---
+
 ## Executive summary
 
 1. **What a CPA needs from Penny is not "a line number chip" — it's a year-end package** whose spine is a *tax-line-grouped trial balance*: every book account carries an assignment to a tax-form line, plus the supporting schedules the TB can't carry (fixed assets/depreciation, officer comp, owner distributions/basis activity, book-tax adjustments, 1099 vendor totals). Every professional tax suite (Lacerte, UltraTax, Drake, CCH) imports exactly this shape: **account → tax code/line → balance** ([Lacerte TB utility](https://accountants.intuit.com/support/en-us/help-article/partnership/using-lacerte-trial-balance-utility-import-excel/L19njx4ka_US_en_US), [UltraTax tax codes](https://www.thomsonreuters.com/en-us/help/accounting-cs/integrate-with-cs-professional-suite/import-account-balances-into-ultratax-cs), [Drake TB import](https://kb.drakesoftware.com/kb/Drake-Tax/11166.htm)).

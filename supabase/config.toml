@@ -107,3 +107,6 @@ verify_jwt = true
 
 [functions.loop-heartbeat]
 verify_jwt = false
+
+[functions.catch-up]
+verify_jwt = true

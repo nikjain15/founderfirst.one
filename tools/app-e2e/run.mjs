@@ -151,6 +151,22 @@ async function verifyReportDownload() {
   }
 }
 
+/** W2.1 — Catch-up mode renders inside Connections and its guided flow advances.
+ *  Non-mutating happy path: the "Catch me up" hero + "Get me caught up" CTA render;
+ *  clicking Start reveals the "Drop in your files" step (the file-drop). Proves the
+ *  guided flow is wired without touching the ledger or spending AI tokens. */
+async function verifyCatchUpEntry() {
+  await page.setViewportSize(DESKTOP);
+  const startCta = page.getByRole("button", { name: "Get me caught up" });
+  if (!(await startCta.count().catch(() => 0))) { fail("Connections: no catch-up entry (Get me caught up)"); return; }
+  ok("Catch-up mode entry renders in Connections");
+  await startCta.first().click().catch(() => {});
+  await page.waitForTimeout(400);
+  const drop = page.locator(".catchup .file-drop");
+  if (await drop.count().catch(() => 0)) ok("Catch-up guided flow advances to the drop-files step");
+  else fail("Catch-up: Start did not advance to the drop-files step");
+}
+
 try {
   await page.goto(base, { waitUntil: "networkidle", timeout: 60_000 });
 
@@ -192,6 +208,8 @@ try {
       // W1.2 — Reports must export a real file in ≤ 3 taps (pick period → Download).
       // Assert the download event fires with a period-stamped filename.
       if (s.key === "reports") await verifyReportDownload();
+      // W2.1 — Catch-up mode is the guided "get me caught up" job on Connections.
+      if (s.key === "connections") await verifyCatchUpEntry();
       await page.screenshot({ path: join(ARTIFACTS, `desktop-${s.key}.png`), fullPage: true });
       await sweepWidths(s.label);                 // 320 → 1920, every ladder width
       await page.setViewportSize(MOBILE);

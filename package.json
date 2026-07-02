@@ -17,6 +17,8 @@
     "check:kernel-seed": "tsx scripts/seed-kernel.ts --check",
     "seed:tax": "tsx scripts/seed-tax.ts",
     "check:tax-seed": "tsx scripts/seed-tax.ts --check",
+    "seed:depreciation": "tsx scripts/seed-depreciation.ts",
+    "check:depreciation-seed": "tsx scripts/seed-depreciation.ts --check",
     "check:law-literals": "tsx scripts/check-law-literals.ts",
     "check:kernel-hardcodes": "tsx scripts/check-kernel-hardcodes.ts",
     "vendor:inference": "tsx scripts/vendor-inference.ts",

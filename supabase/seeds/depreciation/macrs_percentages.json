@@ -1,0 +1,30 @@
+{
+  "_meta": {
+    "table": "macrs_percentages",
+    "note": "LAW DATA — the IRS published MACRS percentage tables (Pub 946 Appendix A). The depreciation engine LOOKS THESE UP; it never encodes a percentage as a literal. Percentages are whole-number percents (20.00 = 20%). Sources: IRS Pub 946 Table A-1 (200DB half-year), Table A-5 (200DB mid-quarter, Q4). effective_from marks the year these tables govern."
+  },
+  "rows": [
+    { "jurisdiction_code": "US-FED", "recovery_period": 5, "convention": "half_year", "macrs_method": "200DB", "year_index": 1, "percentage": 20.00, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-1 (200% DB, half-year, 5-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 5, "convention": "half_year", "macrs_method": "200DB", "year_index": 2, "percentage": 32.00, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-1 (200% DB, half-year, 5-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 5, "convention": "half_year", "macrs_method": "200DB", "year_index": 3, "percentage": 19.20, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-1 (200% DB, half-year, 5-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 5, "convention": "half_year", "macrs_method": "200DB", "year_index": 4, "percentage": 11.52, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-1 (200% DB, half-year, 5-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 5, "convention": "half_year", "macrs_method": "200DB", "year_index": 5, "percentage": 11.52, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-1 (200% DB, half-year, 5-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 5, "convention": "half_year", "macrs_method": "200DB", "year_index": 6, "percentage": 5.76, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-1 (200% DB, half-year, 5-year)" },
+
+    { "jurisdiction_code": "US-FED", "recovery_period": 7, "convention": "half_year", "macrs_method": "200DB", "year_index": 1, "percentage": 14.29, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-1 (200% DB, half-year, 7-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 7, "convention": "half_year", "macrs_method": "200DB", "year_index": 2, "percentage": 24.49, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-1 (200% DB, half-year, 7-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 7, "convention": "half_year", "macrs_method": "200DB", "year_index": 3, "percentage": 17.49, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-1 (200% DB, half-year, 7-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 7, "convention": "half_year", "macrs_method": "200DB", "year_index": 4, "percentage": 12.49, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-1 (200% DB, half-year, 7-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 7, "convention": "half_year", "macrs_method": "200DB", "year_index": 5, "percentage": 8.93, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-1 (200% DB, half-year, 7-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 7, "convention": "half_year", "macrs_method": "200DB", "year_index": 6, "percentage": 8.92, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-1 (200% DB, half-year, 7-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 7, "convention": "half_year", "macrs_method": "200DB", "year_index": 7, "percentage": 8.93, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-1 (200% DB, half-year, 7-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 7, "convention": "half_year", "macrs_method": "200DB", "year_index": 8, "percentage": 4.46, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-1 (200% DB, half-year, 7-year)" },
+
+    { "jurisdiction_code": "US-FED", "recovery_period": 5, "convention": "mid_quarter_q4", "macrs_method": "200DB", "year_index": 1, "percentage": 5.00, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-5 (200% DB, mid-quarter Q4, 5-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 5, "convention": "mid_quarter_q4", "macrs_method": "200DB", "year_index": 2, "percentage": 38.00, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-5 (200% DB, mid-quarter Q4, 5-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 5, "convention": "mid_quarter_q4", "macrs_method": "200DB", "year_index": 3, "percentage": 22.80, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-5 (200% DB, mid-quarter Q4, 5-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 5, "convention": "mid_quarter_q4", "macrs_method": "200DB", "year_index": 4, "percentage": 13.68, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-5 (200% DB, mid-quarter Q4, 5-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 5, "convention": "mid_quarter_q4", "macrs_method": "200DB", "year_index": 5, "percentage": 10.94, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-5 (200% DB, mid-quarter Q4, 5-year)" },
+    { "jurisdiction_code": "US-FED", "recovery_period": 5, "convention": "mid_quarter_q4", "macrs_method": "200DB", "year_index": 6, "percentage": 9.58, "effective_from": "1987-01-01", "citation": "IRS Pub 946 Table A-5 (200% DB, mid-quarter Q4, 5-year)" }
+  ]
+}

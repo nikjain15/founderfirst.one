@@ -80,3 +80,42 @@ export function confBand(c: number, cfg: BehaviorConfig): ConfBand {
   if (c >= cfg.confidence_medium) return "mid";
   return "lo";
 }
+
+// ── W3.2 trust tiers ──────────────────────────────────────────────────────────
+export type Tier = "high" | "medium" | "low";
+
+/**
+ * The trust tier for a categorization proposal (card W3.2). Mirrors the server's
+ * authoritative decision (supabase/functions/categorize `tierFor`) so the app and
+ * the edge fn agree, and so the tier assignment is unit-testable without a DB.
+ *
+ * A learned RULE or a repeat-VENDOR prior is HIGH by provenance — Penny has seen
+ * this exact call before, regardless of the model's stated confidence. Otherwise
+ * band by the config cutoffs (never a magic number — cutoffs come from cfg).
+ */
+export function assignTier(
+  confidence: number,
+  source: "rule" | "vendor_prior" | "penny",
+  cfg: BehaviorConfig,
+): Tier {
+  if (source === "rule" || source === "vendor_prior") return "high";
+  if (confidence >= cfg.confidence_high) return "high";
+  if (confidence >= cfg.confidence_medium) return "medium";
+  return "low";
+}
+
+/**
+ * Budget accounting for the ≤N-asks/week interruption cap (card W3.2). Given the
+ * asks already spent this week and the config budget, decide whether ONE more
+ * low-confidence unknown may interrupt the owner, or must DEFER to the digest.
+ * Income never interrupts (it belongs in the digest, not a card).
+ */
+export function budgetDisposition(
+  spent: number,
+  cfg: BehaviorConfig,
+  opts: { isIncome?: boolean } = {},
+): { interrupt: boolean; defer: boolean; reason?: "income" | "budget_spent" } {
+  if (opts.isIncome) return { interrupt: false, defer: true, reason: "income" };
+  if (spent >= cfg.asks_per_week) return { interrupt: false, defer: true, reason: "budget_spent" };
+  return { interrupt: true, defer: false };
+}

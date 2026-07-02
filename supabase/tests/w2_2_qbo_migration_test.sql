@@ -9,7 +9,7 @@
 -- Same technique as phase3_import_test: SECURITY DEFINER fns take p_actor; rollback.
 
 begin;
-select plan(17);
+select plan(16);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values

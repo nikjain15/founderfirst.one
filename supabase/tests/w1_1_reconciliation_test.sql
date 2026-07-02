@@ -142,7 +142,7 @@ select throws_ok($$
   select reconcile_match(
     '00000000-0000-0000-0000-000000ee0c01', '00000000-0000-0000-0000-000000ee0b01',
     (select id from _s), '00000000-0000-0000-0000-000000ee9102', (select id from _dep), 'manual') $$,
-  'restrict_violation', NULL, 'a locked session refuses new matches');
+  '23001', NULL, 'a locked session refuses new matches');
 
 -- ── 11. W1.1-REVERSAL: reversing the matched entry REOPENS the match ─────────
 -- The match is live before the reversal.
@@ -181,7 +181,7 @@ select is(
 select throws_ok($$
   select reconcile_lock(
     '00000000-0000-0000-0000-000000ee0c01', '00000000-0000-0000-0000-000000ee0b01', (select id from _s)) $$,
-  'restrict_violation', NULL, 'W1.1-TIEOUT: lock refuses when opening+cleared ≠ closing');
+  '23001', NULL, 'W1.1-TIEOUT: lock refuses when opening+cleared ≠ closing');
 
 -- ── 13. TIE-OUT INTEGRITY: a match must reflect the entry's net on the account ─
 -- These guard against a forged tie-out: lock() sums statement-line amounts only,
@@ -215,7 +215,7 @@ select throws_ok($$
   select reconcile_match(
     '00000000-0000-0000-0000-000000ee0c01', '00000000-0000-0000-0000-000000ee0b01',
     (select id from _s2), '00000000-0000-0000-0000-000000ee9201', (select id from _off), 'manual') $$,
-  'restrict_violation', NULL,
+  '23001', NULL,
   'match refuses an entry with no net movement on the reconciled bank account');
 
 -- an entry that DOES touch the bank account but for the WRONG amount ($40 ≠ $50 line).
@@ -232,7 +232,7 @@ select throws_ok($$
   select reconcile_match(
     '00000000-0000-0000-0000-000000ee0c01', '00000000-0000-0000-0000-000000ee0b01',
     (select id from _s2), '00000000-0000-0000-0000-000000ee9201', (select id from _wrong), 'manual') $$,
-  'restrict_violation', NULL,
+  '23001', NULL,
   'match refuses an entry whose net on the account ≠ the statement line amount');
 
 -- the RIGHT entry ($50 into the bank) matches cleanly and the session then ties+locks.

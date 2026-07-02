@@ -43,6 +43,12 @@ exception when duplicate_object then null; end $$;
 alter table external_connections
   add column if not exists sync_cursor text;   -- Plaid /transactions/sync cursor; null on first pull
 
+-- The bank/cash ledger account this Plaid item posts into. The ingestion RPC reads
+-- and (on first sync) sets this, so it MUST exist on external_connections — without
+-- it every ingest raises 42703. (Red-team W2.3: migration parity with the RPC.)
+alter table external_connections
+  add column if not exists account_id uuid references ledger_accounts(id);
+
 -- ── the Plaid-fed raw transaction store (W1.1 anticipated reconciling here) ───
 -- One row per Plaid transaction, per org. This is the raw feed + the state machine
 -- source; the ledger entry it produced is `journal_entry_id`. Corrections flip

@@ -120,6 +120,65 @@ describe("autoMatch — W1.1-AUTOMATCH", () => {
   });
 });
 
+// ── statement-line loading — W1.1-STMT (account filter + full pagination) ─────
+// fetchStatementRows must (1) scope lines to the session's bank account — the
+// linkage is import_batches.bank_account_id, NOT import_rows.account_id — and
+// (2) page through EVERY row (report-feeding select, RPTTEST rule: never cap at
+// PostgREST max_rows=1000, or a partial statement can falsely "tie").
+import { fetchStatementRows, type ImportStatementRow } from "./api";
+
+type StmtRow = ImportStatementRow & { bank_account_id: string };
+
+/** A fake Supabase query builder: records the .eq filters and serves .range() pages. */
+function fakeClient(allRows: StmtRow[]) {
+  const filters: Record<string, unknown> = {};
+  const builder = {
+    _from: 0, _to: 0,
+    from() { return builder; },
+    select() { return builder; },
+    eq(col: string, val: unknown) { filters[col] = val; return builder; },
+    not() { return builder; },
+    order() { return builder; },
+    range(from: number, to: number) { builder._from = from; builder._to = to; return builder; },
+    // Awaiting the builder resolves the query (mirrors PostgREST's thenable).
+    then(resolve: (r: { data: StmtRow[]; error: null }) => void) {
+      const scoped = allRows.filter((r) => r.bank_account_id === filters["import_batches.bank_account_id"]);
+      resolve({ data: scoped.slice(builder._from, builder._to + 1), error: null });
+    },
+  };
+  return { builder, filters };
+}
+
+describe("fetchStatementRows — W1.1-STMT", () => {
+  it("returns ONLY the selected account's lines (excludes a second account)", async () => {
+    const rows: StmtRow[] = [
+      { id: "r1", txn_date: "2026-06-01", description: "a", amount_minor: 100, bank_account_id: "bank-A" },
+      { id: "r2", txn_date: "2026-06-02", description: "b", amount_minor: 200, bank_account_id: "bank-B" },
+      { id: "r3", txn_date: "2026-06-03", description: "c", amount_minor: 300, bank_account_id: "bank-A" },
+    ];
+    const { builder, filters } = fakeClient(rows);
+    const out = await fetchStatementRows(builder as never, "org-1", "bank-A");
+    expect(out.map((r) => r.id)).toEqual(["r1", "r3"]); // bank-B's r2 excluded
+    // proves the account filter is actually applied (not just in the queryKey).
+    expect(filters["import_batches.bank_account_id"]).toBe("bank-A");
+    expect(filters["org_id"]).toBe("org-1");
+    // no leaked join column on the returned shape.
+    expect(out[0]).not.toHaveProperty("bank_account_id");
+  });
+
+  it("loads a >1000-row statement completely (pages until exhausted)", async () => {
+    const N = 2500; // spans 3 pages of 1000
+    const rows: StmtRow[] = Array.from({ length: N }, (_, i) => ({
+      id: `r${i}`, txn_date: "2026-06-01", description: null, amount_minor: i + 1, bank_account_id: "bank-A",
+    }));
+    const { builder } = fakeClient(rows);
+    const out = await fetchStatementRows(builder as never, "org-1", "bank-A");
+    expect(out).toHaveLength(N); // NOT capped at 1000 — the RPTTEST truncation class
+    expect(out[0].id).toBe("r0");
+    expect(out[N - 1].id).toBe(`r${N - 1}`);
+  });
+});
+
 describe("reconciliationReport — W1.1-TIEOUT", () => {
   it("ties to the cent: closing = opening + Σ cleared", () => {
     const r = reconciliationReport({

@@ -45,6 +45,8 @@ jobs:
         run: pnpm check:kernel-seed
       - name: Tax seed loader is fresh + idempotent + rule/line + type-fallback lint (W1.3-B)
         run: pnpm check:tax-seed
+      - name: Depreciation seed loader is fresh + MACRS tables sum to 100% + class->table coverage (W1.3-C)
+        run: pnpm check:depreciation-seed
       - name: No hardcoded entity/industry/deadline lists
         run: pnpm check:kernel-hardcodes
       - name: No law-looking literals in feature code

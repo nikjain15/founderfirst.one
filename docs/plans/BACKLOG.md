@@ -94,7 +94,7 @@ status: **DEFERRED until after Wave 1 ships (Nik, 3 Jul)** — do not card the m
 decision-needed: none until Wave 1 closes (then: Nik approves the migration plan)
 
 ## CENTRAL-1 · Centralize apps/app copy, Penny language, and behavior thresholds
-status: unclaimed
+status: pr:#176 (stacked on #174/IA-1)
 blocked-by: IA-1 (do the copy sweep once, on the NEW nav, not twice)
 goal: change voice/copy/thresholds without code changes (standing principle #3) — the three
   ❌ rows in the roadmap registry.

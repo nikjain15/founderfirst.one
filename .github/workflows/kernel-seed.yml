@@ -13,6 +13,7 @@ on:
     paths:
       - "supabase/seeds/**"
       - "scripts/seed-kernel.ts"
+      - "scripts/seed-tax.ts"
       - "scripts/check-law-literals.ts"
       - "scripts/check-kernel-hardcodes.ts"
       - "apps/**"
@@ -23,6 +24,7 @@ on:
     paths:
       - "supabase/seeds/**"
       - "scripts/seed-kernel.ts"
+      - "scripts/seed-tax.ts"
       - "scripts/check-law-literals.ts"
       - "scripts/check-kernel-hardcodes.ts"
   workflow_dispatch:
@@ -41,6 +43,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Seed loader is fresh + idempotent + effective-dated
         run: pnpm check:kernel-seed
+      - name: Tax seed loader is fresh + idempotent + rule/line + type-fallback lint (W1.3-B)
+        run: pnpm check:tax-seed
       - name: No hardcoded entity/industry/deadline lists
         run: pnpm check:kernel-hardcodes
       - name: No law-looking literals in feature code

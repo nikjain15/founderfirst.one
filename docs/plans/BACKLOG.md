@@ -116,7 +116,7 @@ touches: apps/app broadly (SHARED — sequence right after IA-1, before feature 
 decision-needed: none
 
 ## CENTRAL-2 · Knowledge kernel schema + seeds (entities · sectors · filing calendar · vendor priors · connector registry)
-status: claimed:loop-central-2 → pr (schema + idempotent loader + seeds + one consumer + 3 CI gates + pgTAP)
+status: pr:#177 (schema + idempotent loader + seeds + one consumer + 3 CI gates + pgTAP)
 blocked-by: — (schema card; W1.3-B, W2.4, W3.3 BUILD AGAINST these tables — land the schema
   before those cards start, or they'll each invent their own)
 scope note (Nik, 3 Jul, LOCKED): the seed TARGET is **every sector/persona we build ×

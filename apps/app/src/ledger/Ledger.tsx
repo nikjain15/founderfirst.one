@@ -23,16 +23,60 @@ import type {
   AccountType, AccountingPeriod, DraftLine, JournalEntry, LedgerAccount,
 } from "./types";
 
-type Tab = "overview" | "categorize" | "accounts" | "journal" | "import" | "reports" | "periods";
-const ALL_TABS: { id: Tab; label: string; writeOnly?: boolean }[] = [
+// 4 primary tabs, mirroring the /admin IA (owner settings live in the top-bar ⚙️
+// menu, not a tab). The double-entry mechanics (journal/accounts/import/periods)
+// live under Books as sub-tabs so the top row stays calm instead of a flat seven.
+type MainTab = "overview" | "categorize" | "books" | "reports";
+type BooksSub = "journal" | "accounts" | "import" | "periods";
+
+const MAIN_TABS: { id: MainTab; label: string; writeOnly?: boolean }[] = [
   { id: "overview", label: "Overview" },
   { id: "categorize", label: "Categorize", writeOnly: true },
-  { id: "accounts", label: "Accounts" },
-  { id: "journal", label: "Journal" },
-  { id: "import", label: "Import", writeOnly: true },
+  { id: "books", label: "Books" },
   { id: "reports", label: "Reports" },
+];
+const BOOKS_SUBS: { id: BooksSub; label: string; writeOnly?: boolean }[] = [
+  { id: "journal", label: "Journal" },
+  { id: "accounts", label: "Accounts" },
+  { id: "import", label: "Import", writeOnly: true },
   { id: "periods", label: "Periods" },
 ];
+
+/** Roving-tabindex tab strip (arrow-key navigable) — shared by the main tabs and
+ *  the Books sub-tabs so keyboard behavior is identical at both levels. */
+function TabStrip<T extends string>({
+  items, active, onSelect, label, idPrefix, className = "ledger-tabs",
+}: {
+  items: { id: T; label: string }[];
+  active: T; onSelect: (id: T) => void;
+  label: string; idPrefix: string; className?: string;
+}) {
+  return (
+    <nav className={className} role="tablist" aria-label={label}>
+      {items.map((t, i) => (
+        <button
+          key={t.id} role="tab" id={`${idPrefix}-${t.id}`}
+          aria-selected={active === t.id} tabIndex={active === t.id ? 0 : -1}
+          className={`ledger-tab${active === t.id ? " on" : ""}`}
+          onClick={() => onSelect(t.id)}
+          onKeyDown={(e) => {
+            if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) return;
+            e.preventDefault();
+            const n = items.length;
+            const j = e.key === "ArrowRight" ? (i + 1) % n
+              : e.key === "ArrowLeft" ? (i - 1 + n) % n
+              : e.key === "Home" ? 0 : n - 1;
+            onSelect(items[j].id);
+            e.currentTarget.parentElement
+              ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[j]?.focus();
+          }}
+        >
+          {t.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
 
 // Local date (en-CA → YYYY-MM-DD), not UTC — avoids a day-off near midnight/month-end.
 const today = () => new Date().toLocaleDateString("en-CA");
@@ -40,14 +84,18 @@ const entryTotal = (e: JournalEntry) =>
   (e.lines ?? []).filter((l) => l.side === "D").reduce((s, l) => s + l.amount_minor, 0);
 
 export default function Ledger({
-  org, canWrite, defaultTab = "overview",
+  org, canWrite, defaultTab = "overview", eyebrow, onInvite,
 }: {
   org: { id: string; name: string };
   canWrite: boolean;
-  defaultTab?: Tab;
+  defaultTab?: MainTab;
+  eyebrow?: string;
+  onInvite?: () => void; // owner-only: open Settings to invite an accountant (top-bar ⚙️ menu)
 }) {
-  const [tab, setTab] = useState<Tab>(defaultTab);
-  const tabs = ALL_TABS.filter((t) => !t.writeOnly || canWrite);
+  const [tab, setTab] = useState<MainTab>(defaultTab);
+  const [booksSub, setBooksSub] = useState<BooksSub>("journal");
+  const mainTabs = MAIN_TABS.filter((t) => !t.writeOnly || canWrite);
+  const booksSubs = BOOKS_SUBS.filter((t) => !t.writeOnly || canWrite);
   const accounts = useAccounts(org.id);
   const entries = useEntries(org.id);
   const periods = usePeriods(org.id);
@@ -56,42 +104,21 @@ export default function Ledger({
   const loading = accounts.isLoading || entries.isLoading || periods.isLoading;
   const error = accounts.isError || entries.isError || periods.isError;
 
+  // Jump straight to a Books sub-tab (used by Overview's actions + Import's onDone).
+  const openBooks = (sub: BooksSub) => { setBooksSub(sub); setTab("books"); };
+
   return (
     <section className="lens ledger">
       <header className="ledger-head">
-        <h1>{org.name}</h1>
+        {eyebrow && <p className="eyebrow lens-eyebrow">{eyebrow}</p>}
+        <h1 className="page-title">{org.name}</h1>
         {!canWrite && (
           <span className="readonly-chip">Read-only — posting disabled</span>
         )}
       </header>
 
-      <nav className="ledger-tabs" role="tablist" aria-label="Ledger sections">
-        {tabs.map((t, i) => (
-          <button
-            key={t.id}
-            role="tab"
-            id={`ltab-${t.id}`}
-            aria-controls="ledger-panel"
-            aria-selected={tab === t.id}
-            tabIndex={tab === t.id ? 0 : -1}
-            className={`ledger-tab${tab === t.id ? " on" : ""}`}
-            onClick={() => setTab(t.id)}
-            onKeyDown={(e) => {
-              if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) return;
-              e.preventDefault();
-              const n = tabs.length;
-              const j = e.key === "ArrowRight" ? (i + 1) % n
-                : e.key === "ArrowLeft" ? (i - 1 + n) % n
-                : e.key === "Home" ? 0 : n - 1;
-              setTab(tabs[j].id);
-              e.currentTarget.parentElement
-                ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[j]?.focus();
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
+      <TabStrip items={mainTabs} active={tab} onSelect={setTab}
+        label="Ledger sections" idPrefix="ltab" />
 
       {error && <p className="error">Couldn't load the books. Try again.</p>}
       {loading && !error && <p className="muted">Loading the books…</p>}
@@ -101,38 +128,40 @@ export default function Ledger({
           {tab === "overview" && (
             <Overview
               entries={entries.data ?? []} accounts={accounts.data ?? []}
-              canWrite={canWrite}
-              onReview={() => setTab("journal")}
+              canWrite={canWrite} orgId={org.id}
+              onReview={() => openBooks("journal")}
               onCategorize={() => setTab("categorize")}
-            />
-          )}
-          {tab === "accounts" && (
-            <Accounts
-              orgId={org.id} canWrite={canWrite}
-              accounts={accounts.data ?? []} entries={entries.data ?? []}
-              onChange={refresh}
-            />
-          )}
-          {tab === "journal" && (
-            <Journal
-              orgId={org.id} canWrite={canWrite}
-              accounts={accounts.data ?? []} entries={entries.data ?? []}
-              onChange={refresh}
+              onInvite={onInvite}
             />
           )}
           {tab === "categorize" && canWrite && (
             <Categorize orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []} onChange={refresh} />
           )}
-          {tab === "import" && canWrite && (
-            <ImportFlow orgId={org.id} accounts={accounts.data ?? []} onDone={() => { refresh(); setTab("journal"); }} />
+          {tab === "books" && (
+            <>
+              <TabStrip items={booksSubs} active={booksSub} onSelect={setBooksSub}
+                label="Books sections" idPrefix="lsub" className="ledger-tabs ledger-subtabs" />
+              <div className="ledger-subpanel" role="tabpanel" aria-labelledby={`lsub-${booksSub}`} tabIndex={0}>
+                {booksSub === "journal" && (
+                  <Journal orgId={org.id} canWrite={canWrite}
+                    accounts={accounts.data ?? []} entries={entries.data ?? []} onChange={refresh} />
+                )}
+                {booksSub === "accounts" && (
+                  <Accounts orgId={org.id} canWrite={canWrite}
+                    accounts={accounts.data ?? []} entries={entries.data ?? []} onChange={refresh} />
+                )}
+                {booksSub === "import" && canWrite && (
+                  <ImportFlow orgId={org.id} accounts={accounts.data ?? []}
+                    onDone={() => { refresh(); openBooks("journal"); }} />
+                )}
+                {booksSub === "periods" && (
+                  <Periods orgId={org.id} canWrite={canWrite}
+                    periods={periods.data ?? []} onChange={refresh} />
+                )}
+              </div>
+            </>
           )}
           {tab === "reports" && <Reports entries={entries.data ?? []} />}
-          {tab === "periods" && (
-            <Periods
-              orgId={org.id} canWrite={canWrite}
-              periods={periods.data ?? []} onChange={refresh}
-            />
-          )}
         </div>
       )}
     </section>
@@ -141,10 +170,11 @@ export default function Ledger({
 
 // ── Overview — plain-language "how's my business" ────────────────────────────
 function Overview({
-  entries, accounts, canWrite, onReview, onCategorize,
+  entries, accounts, canWrite, orgId, onReview, onCategorize, onInvite,
 }: {
   entries: JournalEntry[]; accounts: LedgerAccount[];
-  canWrite: boolean; onReview: () => void; onCategorize: () => void;
+  canWrite: boolean; orgId: string;
+  onReview: () => void; onCategorize: () => void; onInvite?: () => void;
 }) {
   const tb = useMemo(() => trialBalance(entries), [entries]);
   const pnl = useMemo(() => profitAndLoss(entries), [entries]);
@@ -158,16 +188,41 @@ function Overview({
   }, [entries, accounts]);
   const recent = entries.slice(0, 5);
 
+  // First-time nudge to invite an accountant — the invite/approval controls now
+  // live in Settings (not on every page). Shown once per org for owners, then
+  // dismissible; always reachable in Settings afterward.
+  const nudgeKey = `ff.inviteNudge.${orgId}`;
+  const [inviteDismissed, setInviteDismissed] = useState(() => {
+    try { return localStorage.getItem(nudgeKey) === "1"; } catch { return false; }
+  });
+  const dismissInvite = () => {
+    try { localStorage.setItem(nudgeKey, "1"); } catch { /* private mode */ }
+    setInviteDismissed(true);
+  };
+  const inviteNudge = onInvite && !inviteDismissed ? (
+    <div className="invite-nudge">
+      <span className="invite-nudge-text">Work with an accountant? Invite them to your books — you control full or read-only access.</span>
+      <span className="invite-nudge-actions">
+        <button className="ghost sm" onClick={() => { dismissInvite(); onInvite(); }}>Invite accountant</button>
+        <button className="invite-nudge-x" aria-label="Dismiss" onClick={dismissInvite}>×</button>
+      </span>
+    </div>
+  ) : null;
+
   if (accounts.length === 0) {
     return (
-      <Empty
-        title="Let's set up your books"
-        body="Connect your bank or import a statement and Penny starts categorizing right away. Prefer to do it by hand? You can add accounts and post entries too."
-      />
+      <>
+        {inviteNudge}
+        <Empty
+          title="Let's set up your books"
+          body="Connect your bank or import a statement and Penny starts categorizing right away. Prefer to do it by hand? You can add accounts and post entries too."
+        />
+      </>
     );
   }
   return (
     <div className="overview">
+      {inviteNudge}
       <OverviewTakeaway
         canWrite={canWrite}
         notBalanced={!tb.balanced}

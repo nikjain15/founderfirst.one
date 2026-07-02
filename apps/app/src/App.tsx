@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./auth/AuthProvider";
@@ -6,6 +6,7 @@ import { ActiveOrgProvider } from "./org/ActiveOrgProvider";
 import { AppErrorBoundary } from "./lib/ErrorBoundary";
 import Login from "./routes/Login";
 import Home from "./routes/Home";
+import Settings from "./routes/Settings";
 import Accept from "./routes/Accept";
 import StaffHome from "./staff/StaffHome";
 import { useIsPlatformStaff } from "./staff/api";
@@ -16,11 +17,48 @@ const queryClient = new QueryClient({
   },
 });
 
+// Where to send the user back to after they sign in. Survives the magic-link round
+// trip (a full page reload), which is why it lives in sessionStorage and not router
+// state. Only one redirect is honored per stash — it's cleared on consume.
+const RETURN_KEY = "ff.returnTo";
+
 function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
+  const location = useLocation();
+  const here = location.pathname + location.search;
+
+  // Remember the protected page an unauthenticated user tried to reach, so we can
+  // resume there after the magic link lands them back on "/" (F2).
+  useEffect(() => {
+    if (!loading && !session && here && here !== "/") {
+      sessionStorage.setItem(RETURN_KEY, here);
+    }
+  }, [loading, session, here]);
+
   if (loading) return <div className="center muted">Loading…</div>;
   if (!session) return <Navigate to="/login" replace />;
+
+  // Authenticated: if there's a pending return path and we're not already on it,
+  // consume it once and go there.
+  const returnTo = sessionStorage.getItem(RETURN_KEY);
+  if (returnTo) {
+    sessionStorage.removeItem(RETURN_KEY);
+    if (returnTo !== here) return <Navigate to={returnTo} replace />;
+  }
   return <>{children}</>;
+}
+
+// An already-signed-in user has no business on /login — bounce them to their
+// pending return path, or home (F1).
+function LoginRoute() {
+  const { session, loading } = useAuth();
+  if (loading) return <div className="center muted">Loading…</div>;
+  if (session) {
+    const returnTo = sessionStorage.getItem(RETURN_KEY);
+    sessionStorage.removeItem(RETURN_KEY);
+    return <Navigate to={returnTo && returnTo !== "/login" ? returnTo : "/"} replace />;
+  }
+  return <Login />;
 }
 
 // The staff console is its own top-level route (not org-scoped). The DB enforces
@@ -50,7 +88,7 @@ function AppRoutes() {
   return (
     <AppErrorBoundary resetKey={location.pathname}>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<LoginRoute />} />
         <Route path="/accept" element={<Accept />} />
         <Route
           path="/staff"
@@ -66,6 +104,16 @@ function AppRoutes() {
             <RequireAuth>
               <ActiveOrgProvider>
                 <Home />
+              </ActiveOrgProvider>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <RequireAuth>
+              <ActiveOrgProvider>
+                <Settings />
               </ActiveOrgProvider>
             </RequireAuth>
           }

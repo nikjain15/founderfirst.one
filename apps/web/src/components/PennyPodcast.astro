@@ -1,0 +1,73 @@
+---
+// Podcast episode hero + inline player — a professional "now playing" card.
+// Click ► (or the waveform) to play; the waveform fills as it plays and is
+// clickable to seek. On-brand: design tokens only.
+interface Props { mins?: number; src?: string }
+const { mins = 9, src = "" } = Astro.props;
+// Static waveform envelope — deterministic, reads as a real audio clip.
+const bars = [26, 44, 62, 40, 78, 54, 92, 48, 70, 34, 84, 58, 100, 52, 74, 42, 88, 60, 80, 46, 66, 32, 90, 56, 72, 38, 82, 50, 64, 30, 76, 44, 68, 36, 86, 52];
+---
+<div class="pa" data-player>
+  <audio class="pa-audio" src={src} preload="none"></audio>
+  <div class="pa-head">
+    <div class="pa-mark" aria-hidden="true"><span>P</span></div>
+    <div class="pa-show">
+      <span class="s1">Podcast</span>
+      <span class="s2">Penny by FounderFirst</span>
+    </div>
+  </div>
+  <div class="pa-wave" role="group" aria-label="Seek">
+    {bars.map((h, i) => <button class="pa-bar" type="button" style={`height:${h}%`} data-i={i} aria-label={`Seek to ${Math.round((i / bars.length) * 100)} percent`}></button>)}
+  </div>
+  <div class="pa-foot">
+    <button class="pa-play" type="button" aria-label="Play episode"><span class="ic">►</span></button>
+    <span class="pa-meta" data-default={`Listen in Penny's voice · ${mins} min`}>Listen in Penny's voice · {mins} min</span>
+  </div>
+</div>
+<script>
+  document.querySelectorAll<HTMLElement>('[data-player]').forEach((card) => {
+    const audio = card.querySelector('.pa-audio') as HTMLAudioElement | null;
+    const bars = Array.from(card.querySelectorAll<HTMLElement>('.pa-bar'));
+    const playBtn = card.querySelector('.pa-play') as HTMLElement | null;
+    const icon = card.querySelector('.ic') as HTMLElement | null;
+    const meta = card.querySelector('.pa-meta') as HTMLElement | null;
+    if (!audio || !playBtn || !icon || !meta) return;
+    const fmt = (s: number) => isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}` : '';
+    playBtn.addEventListener('click', () => { audio.paused ? audio.play() : audio.pause(); });
+    audio.addEventListener('play', () => { card.classList.add('playing'); icon.textContent = '❚❚'; });
+    audio.addEventListener('pause', () => { icon.textContent = '►'; });
+    audio.addEventListener('timeupdate', () => {
+      const p = audio.duration ? audio.currentTime / audio.duration : 0;
+      const active = Math.round(p * bars.length);
+      bars.forEach((b, i) => b.classList.toggle('on', i < active));
+      if (audio.duration) meta.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+    });
+    audio.addEventListener('ended', () => {
+      card.classList.remove('playing'); icon.textContent = '►';
+      bars.forEach((b) => b.classList.remove('on'));
+      meta.textContent = meta.dataset.default || '';
+    });
+    bars.forEach((b, i) => b.addEventListener('click', () => {
+      if (audio.duration) audio.currentTime = (i / bars.length) * audio.duration;
+      if (audio.paused) audio.play();
+    }));
+  });
+</script>
+<style>
+  .pa { width: min(100%, 380px); border-radius: var(--r-card-emph); background: linear-gradient(160deg, var(--brand), var(--brand-strong)); color: var(--white); padding: clamp(22px, 3vw, 30px); box-shadow: var(--shadow-float); display: grid; gap: clamp(18px, 3vw, 26px); }
+  .pa-head { display: flex; align-items: center; gap: 12px; }
+  .pa-mark { width: 46px; height: 46px; border-radius: 50%; background: rgba(255, 255, 255, 0.16); display: grid; place-items: center; flex: none; }
+  .pa-mark span { font-family: Georgia, serif; font-style: italic; font-weight: var(--fw-bold); font-size: 24px; padding-bottom: 2px; }
+  .pa-show { display: grid; gap: 2px; }
+  .pa-show .s1 { font-size: var(--fs-eyebrow); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; opacity: 0.82; }
+  .pa-show .s2 { font-family: var(--font-display); font-size: 17px; line-height: 1.1; }
+  .pa-wave { display: flex; align-items: center; gap: 3px; height: 66px; }
+  .pa-bar { flex: 1; min-width: 2px; padding: 0; border: 0; background: rgba(255, 255, 255, 0.3); border-radius: 999px; cursor: pointer; transition: background 0.12s ease; }
+  .pa-bar.on { background: var(--white); }
+  .pa-bar:hover { background: rgba(255, 255, 255, 0.6); }
+  .pa-foot { display: flex; align-items: center; gap: 12px; }
+  .pa-play { width: 44px; height: 44px; border-radius: 50%; background: var(--white); color: var(--brand); border: 0; display: grid; place-items: center; font-size: 14px; flex: none; cursor: pointer; transition: transform 0.12s ease; }
+  .pa-play:hover { transform: scale(1.06); }
+  .pa-play .ic { line-height: 1; }
+  .pa-meta { font-size: var(--fs-data-row); opacity: 0.95; font-variant-numeric: tabular-nums; }
+</style>

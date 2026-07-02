@@ -1,6 +1,9 @@
 # Categorization — multi-model validation & cost-aware model selection
 
-**Status:** design / proposal (no code yet). **North star:** make Penny's
+**Status:** design / proposal (no code yet). **Parent system:** this instantiates the
+[AI quality & cost layer](ai-quality-cost-layer-plan.html) (+ its living
+[GUARDRAILS](../ai-quality-cost-layer/GUARDRAILS.md)) for categorization.
+**North star:** make Penny's
 categorization *as accurate as possible*, prove it with data, and serve that
 accuracy at the **lowest cost** — with a first-class **admin view of how well
 we're doing**.

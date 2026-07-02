@@ -63,6 +63,19 @@ The mission is simple: give business owners the back-office support that used to
 
 ---
 
+## Finding your way around
+
+**[docs/README.md](docs/README.md) is the map** — where every kind of document lives,
+the rules for adding or moving one, and the docs PR checklist. The short version:
+the repo root holds only this file, [LEARNINGS.md](LEARNINGS.md) (engineering rules
+from real incidents — read before non-trivial work), and [VOICE.md](VOICE.md) (the
+brand voice). Specs live next to the code they govern (`apps/*`, `packages/*`,
+`tools/*`); plans and roadmaps live in [docs/plans/](docs/plans/); finished or
+superseded docs move to [docs/archive/](docs/archive/). Don't add a doc anywhere
+else — find its home in the map first.
+
+---
+
 ## Engineering guardrails
 
 **Responsive standard** — every page, tab, and component must render correctly at any viewport width from 320px to 1920px+. Full rules in [apps/admin/RESPONSIVE.md](apps/admin/RESPONSIVE.md). Quick version:
@@ -79,6 +92,8 @@ The mission is simple: give business owners the back-office support that used to
 **Design tokens** — all color, spacing, radius, and font-size come from [packages/design-system/tokens.css](packages/design-system/tokens.css). Never inline hex values or magic px.
 
 **Blog** — every blog post follows [apps/web/BLOG_PRINCIPLES.md](apps/web/BLOG_PRINCIPLES.md): DB-first publishing, typed content blocks, a unique on-topic hero per post, uniform `/blog` layout, [VOICE.md](VOICE.md) tone, and the SEO/GEO + ship checklist. Read it before adding or editing a post.
+
+**Podcast** — *Penny by FounderFirst* episodes follow [apps/web/PODCAST_PRINCIPLES.md](apps/web/PODCAST_PRINCIPLES.md): the one playbook for voice/script (two hosts, guest persona from Signals, educational-first — the guest never sells), audio (ElevenLabs v3 — Penny = Matilda, guest = George), website (the `Podcast`-tagged post with the `PennyPodcast` inline-player hero), and the end-to-end publish flow. Read it before producing an episode.
 
 ---
 

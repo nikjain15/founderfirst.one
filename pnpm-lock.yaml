@@ -146,9 +146,6 @@ importers:
       '@ff/site':
         specifier: workspace:*
         version: link:../../packages/site
-      '@ff/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@supabase/supabase-js':
         specifier: ^2.45.0
         version: 2.105.1
@@ -186,25 +183,6 @@ importers:
   packages/inference: {}
 
   packages/site: {}
-
-  packages/ui:
-    dependencies:
-      '@ff/design-system':
-        specifier: workspace:*
-        version: link:../design-system
-      react:
-        specifier: ^18.3.1
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.3.1
-        version: 18.3.1(react@18.3.1)
-    devDependencies:
-      '@types/react':
-        specifier: ^18.3.3
-        version: 18.3.29
-      '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.7(@types/react@18.3.29)
 
 packages:
 

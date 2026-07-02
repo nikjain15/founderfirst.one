@@ -1,8 +1,12 @@
-/** Shared top bar: brand, org-switcher, current lens/role, account. */
+/** Shared top bar: brand + org-switcher, with everything secondary (role,
+ *  Settings, Staff console, Sign out) parked in a single ⚙️ menu — mirrors /admin
+ *  so the bar stays calm instead of a row of loose links. */
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useActiveOrg } from "../org/ActiveOrgProvider";
 import { useIsPlatformStaff } from "../staff/api";
+import AccountMenu from "./AccountMenu";
+import OrgSwitcher from "./OrgSwitcher";
 import { SITE } from "@ff/site";
 
 export default function Topbar() {
@@ -10,42 +14,38 @@ export default function Topbar() {
   const { orgs, activeOrg, roleInfo, setActiveOrgId } = useActiveOrg();
   const isStaff = useIsPlatformStaff();
 
+  const roleLabel = roleInfo
+    ? roleInfo.lens === "owner" ? "Owner" : roleInfo.canWrite ? "CPA" : "CPA · read-only"
+    : null;
+
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <span className="brand" title={`Penny by ${SITE.company}`}>
+        <Link className="brand" to="/" title={`Penny by ${SITE.company}`}>
           <span className="p-mark p-mark-sm" aria-hidden="true">P</span>
           Penny
-        </span>
+        </Link>
 
-        {orgs.length > 0 && (
-          <select
-            className="org-switcher"
-            value={activeOrg?.id ?? ""}
-            onChange={(e) => setActiveOrgId(e.target.value)}
-            aria-label="Active organization"
-          >
-            {orgs.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.name} · {o.type}
-              </option>
-            ))}
-          </select>
-        )}
-
-        {roleInfo && (
-          <span className={`role-pill role-${roleInfo.lens}`}>
-            {roleInfo.lens === "owner" ? "Owner" : "CPA"}
-            {!roleInfo.canWrite && " · read-only"}
-          </span>
-        )}
+        <OrgSwitcher orgs={orgs} activeOrg={activeOrg} onSelect={setActiveOrgId} />
 
         <span className="spacer" />
-        {isStaff.data && (
-          <Link className="ghost sm staff-link" to="/staff">Staff console</Link>
-        )}
-        <span className="muted topbar-email">{session?.user.email}</span>
-        <button className="ghost" onClick={() => void signOut()}>Sign out</button>
+
+        <AccountMenu email={session?.user.email}>
+          {roleLabel && activeOrg && (
+            <div className="acct-role">{roleLabel} · {activeOrg.name}</div>
+          )}
+          <div className="acct-sep" />
+          {roleInfo?.lens === "owner" && (
+            <Link className="acct-item" role="menuitem" to="/settings">Settings</Link>
+          )}
+          {isStaff.data && (
+            <Link className="acct-item" role="menuitem" to="/staff">Staff console</Link>
+          )}
+          <div className="acct-sep" />
+          <button className="acct-item acct-signout" role="menuitem" onClick={() => void signOut()}>
+            Sign out
+          </button>
+        </AccountMenu>
       </div>
     </header>
   );

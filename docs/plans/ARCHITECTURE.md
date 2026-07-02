@@ -89,6 +89,28 @@ delight items above are part of the definition of done, not a backlog.
 
 ---
 
+## 1c. Navigation IA per lens (the layout of the three projections)
+
+The *layout* of each lens — its tabs, sub-tabs, and the staff/admin console — is specified in
+**[apps/app/APP_PRINCIPLES.md](../../apps/app/APP_PRINCIPLES.md)** (read it before touching nav).
+The load-bearing summary:
+
+- **Owner** navigates by *"what do I need?"*: **Home · Review · Reports · Connections**, with a
+  de-emphasized **Advanced** area exposing the accountant ledger (Journal · Chart of accounts ·
+  Periods). No accounting vocabulary in the default path.
+- **CPA** navigates by *accounting workflow*: a firm-level **Practice home** across all clients,
+  then per-client **Journal · Categorize · Chart of accounts · Reports (with Trial balance) ·
+  Periods**. The org switcher is the CPA's client list (`+ Add client` lives there).
+- **Staff/Admin** is internal-only (see §4.2).
+- Lenses get **their own tab sets** (owner vs. accountant vocabulary), not one shared list that is
+  merely filtered. `+ New organization` / `+ Add client` lives in the org switcher, not the page.
+
+> **Baseline note:** `main` == prod and carries the current grouped nav; the `deploy-finish` branch
+> is stale for the app IA. Do IA work from a worktree off `main`. Locked owner/CPA/admin decisions
+> are in APP_PRINCIPLES §7.
+
+---
+
 ## 2. Backbone recommendation (the "advise me")
 
 **Recommendation: Supabase as the backbone, fronted by a thin typed API layer for
@@ -239,6 +261,13 @@ create table platform_staff (
 ```
 
 Platform-admin access to tenant data is **break-glass and audited**, never silent.
+
+**Internal admin console (planned).** The staff surface grows beyond break-glass into a full
+internal console at `penny.founderfirst.one/admin` that **mirrors and, over time, absorbs
+`founderfirst.one/admin`** ([apps/admin](../../apps/admin)) — Support · Audience · Analytics · Penny
++ Settings, with break-glass books access as one module. Migration is **additive and parallel-run**
+(never break the existing `/admin`, one Supabase source of truth, no big-bang cutover). Planned now,
+built after sign-off — see [apps/app/APP_PRINCIPLES.md](../../apps/app/APP_PRINCIPLES.md) §4, §8.
 
 ### 4.3 The authorization predicate (used everywhere)
 

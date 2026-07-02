@@ -1,7 +1,12 @@
-# FounderFirst TTS server (Chatterbox, Fly GPU, scale-to-zero)
+# FounderFirst TTS server (Chatterbox, Fly GPU, scale-to-zero) — LEGACY
 
-Brand-voice synthesis for the content pipeline. **Primary** TTS provider
-(ElevenLabs is the edge-function fallback). Runs Chatterbox (MIT) on a Fly GPU
+> ⚠️ **Not the live engine.** Content audio now renders on **Kokoro (Fly CPU,
+> app `founderfirst-kokoro`)** — see [tools/kokoro-server/README.md](../kokoro-server/README.md).
+> `content-audio` defaults to `engine: "kokoro"`; this Chatterbox GPU server is the
+> earlier build, kept as an alternative engine. ElevenLabs remains the paid fallback
+> (and is the podcast engine — see apps/web/PODCAST_PRINCIPLES.md).
+
+Brand-voice synthesis for the content pipeline. Runs Chatterbox (MIT) on a Fly GPU
 machine that scales to zero — it boots on the first request and stops when idle,
 so you only pay GPU while rendering.
 

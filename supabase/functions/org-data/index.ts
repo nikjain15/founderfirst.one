@@ -5,11 +5,15 @@
  *                                         RLS-scoped). Integration tokens are NEVER
  *                                         included — only connection metadata.
  * POST { op: 'disconnect', org_id, connection_id }
- *                                       → revoke + DELETE an external_connections row,
- *                                         wiping the live OAuth access/refresh tokens
- *                                         (the sensitive personal/financial data the
- *                                         privacy policy promises a user can erase).
- *                                         Gated by can_write_org_as; audited.
+ *                                       → DELETE an external_connections row, wiping the
+ *                                         live OAuth access/refresh tokens we store (the
+ *                                         sensitive personal/financial data the privacy
+ *                                         policy promises a user can erase). Gated by
+ *                                         can_write_org_as; audited. NOTE: this erases the
+ *                                         tokens WE hold; it does not call the provider's
+ *                                         upstream token-revocation endpoint (the grant at
+ *                                         Xero/QBO lapses on expiry) — upstream revoke is a
+ *                                         tracked follow-up, not part of this self-serve op.
  *
  * Why no ledger hard-delete here: posted journal entries are an append-only,
  * legally-retained financial record. "Deleting your data" for the books means
@@ -35,6 +39,11 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 // non-secret connection columns only — tokens never leave the server
 const CONN_COLS = "id, provider, status, realm_id, tenant_name, scope, last_error, connected_by, created_at, updated_at";
 
+// org_id / connection_id are uuids — validate up front so a malformed value returns
+// a clean 400 instead of leaking a raw Postgres "invalid input syntax for type uuid"
+// error (which also names internal tables).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -49,7 +58,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const op = String(body?.op ?? "");
   const orgId = String(body?.org_id ?? "");
-  if (!orgId) return json({ error: "bad_org" }, 400);
+  if (!orgId || !UUID_RE.test(orgId)) return json({ error: "bad_org" }, 400);
 
   // ── export: read AS the user (RLS scopes to orgs they may access) ───────────
   if (op === "export") {
@@ -57,22 +66,41 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false, autoRefreshToken: false },
     });
+    // PostgREST hard-caps rows per request (db-max-rows, 1000 on this project), so a
+    // single select silently TRUNCATES a real org's history. Page by a stable key
+    // until a short page proves we've drained the table — the export must be COMPLETE
+    // (the privacy policy promises "a copy of the data we hold about you").
+    const PAGE = 1000;
     const grab = async (table: string, cols = "*") => {
-      const { data, error } = await asUser.from(table).select(cols).eq("org_id", orgId);
-      if (error) throw new Error(`${table}: ${error.message}`);
-      return data ?? [];
+      const out: unknown[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await asUser
+          .from(table).select(cols).eq("org_id", orgId)
+          .order("id", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) throw new Error(`${table}: ${error.message}`);
+        const batch = data ?? [];
+        out.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+      return out;
     };
     try {
-      const [org, accounts, entries, lines, periods, batches, rows, rules, connections, audit] = await Promise.all([
-        asUser.from("organizations").select("*").eq("id", orgId).maybeSingle().then((r) => r.data),
-        grab("ledger_accounts"), grab("journal_entries"), grab("journal_lines"),
-        grab("accounting_periods"), grab("import_batches"), grab("import_rows"),
-        grab("categorization_rules"), grab("external_connections", CONN_COLS), grab("ledger_audit"),
-      ]);
+      // cheap access gate first: if the user can't read the org, RLS returns no row →
+      // 403 before we run any (now-paginated) table reads.
+      const { data: org } = await asUser.from("organizations").select("*").eq("id", orgId).maybeSingle();
       if (!org) return json({ error: "forbidden_or_not_found" }, 403);
+      const [settings, accounts, entries, lines, periods, batches, rows, rules, connections, audit] =
+        await Promise.all([
+          asUser.from("org_accounting_settings").select("*").eq("org_id", orgId).maybeSingle().then((r) => r.data),
+          grab("ledger_accounts"), grab("journal_entries"), grab("journal_lines"),
+          grab("accounting_periods"), grab("import_batches"), grab("import_rows"),
+          grab("categorization_rules"), grab("external_connections", CONN_COLS), grab("ledger_audit"),
+        ]);
       return json({
         exported_at: new Date().toISOString(),
-        org, accounts, journal_entries: entries, journal_lines: lines,
+        org, accounting_settings: settings,
+        accounts, journal_entries: entries, journal_lines: lines,
         accounting_periods: periods, import_batches: batches, import_rows: rows,
         categorization_rules: rules, connections, ledger_audit: audit,
       });
@@ -84,7 +112,7 @@ Deno.serve(async (req) => {
   // ── disconnect: erase an integration's live tokens (write → can_write_org) ──
   if (op === "disconnect") {
     const connId = String(body?.connection_id ?? "");
-    if (!connId) return json({ error: "bad_connection" }, 400);
+    if (!connId || !UUID_RE.test(connId)) return json({ error: "bad_connection" }, 400);
     const { data: canWrite } = await svc.rpc("can_write_org_as", { p_actor: user.id, target_org: orgId });
     if (!canWrite) return json({ error: "forbidden" }, 403);
     const { data: conn } = await svc.from("external_connections")

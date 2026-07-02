@@ -9,6 +9,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import AccountMenu from "../components/AccountMenu";
 import { SITE } from "@ff/site";
 import {
   useStaffOrgs, useStaffBreakGlass, useStaffAccounts, useStaffEntries,
@@ -50,7 +51,8 @@ export default function StaffHome({ isStaff }: { isStaff: boolean }) {
       <main className="workspace">
         <section className="lens staff">
           <header className="ledger-head">
-            <h1>Platform console</h1>
+            <p className="eyebrow lens-eyebrow">{SITE.company}</p>
+            <h1 className="page-title">Platform console</h1>
             <span className="readonly-chip staff-chip">Staff · break-glass audited</span>
           </header>
 
@@ -79,15 +81,20 @@ function StaffBar({ email, signOut }: { email?: string; signOut: () => Promise<v
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <span className="brand" title={`Penny by ${SITE.company}`}>
+        <Link className="brand" to="/" title={`Penny by ${SITE.company}`}>
           <span className="p-mark p-mark-sm" aria-hidden="true">P</span>
           Penny
-        </span>
+        </Link>
         <span className="role-pill role-staff">Platform staff</span>
         <span className="spacer" />
-        <Link className="ghost sm" to="/">Back to Penny</Link>
-        <span className="muted topbar-email">{email}</span>
-        <button className="ghost" onClick={() => void signOut()}>Sign out</button>
+        <AccountMenu email={email}>
+          <div className="acct-sep" />
+          <Link className="acct-item" role="menuitem" to="/">Back to Penny</Link>
+          <div className="acct-sep" />
+          <button className="acct-item acct-signout" role="menuitem" onClick={() => void signOut()}>
+            Sign out
+          </button>
+        </AccountMenu>
       </div>
     </header>
   );

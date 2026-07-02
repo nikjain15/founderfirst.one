@@ -1,15 +1,21 @@
 # Signals — Solution Design
 
 > Social listening + outreach for FounderFirst. This is the source-of-truth design
-> doc. The **strategy** (the "what/why") lives in `SOCIAL_LISTENING_STRATEGY.md`;
+> doc. The **strategy** (the "what/why") lives in [STRATEGY.md](STRATEGY.md);
 > this doc is the **how**. Update this as decisions change.
 
-**Admin tab:** `Signals` · **Route:** `/admin/signals`
-**Status:** Phase 1 built (worktree `feat/signals`), pending deploy · **Last updated:** 2026-06-21
-**Build progress:** Step 1 (migration) ✅ · Step 2 (intake edge fn + extension + admin UI) ✅ ·
-Step 3 (VM worker) ✅ · Step 4 (admin UI, in Step 2) ✅ · Step 5 (daily digest) ✅
-**Remaining:** deploy (functions + migrations), Vault secrets, install Ollama on the VM,
-load the extension, run the score-model eval.
+**Admin tab:** `Signals` (now under Audience → `/audience#signals`)
+**Status:** LIVE in production · **Last updated:** 2026-07-01
+
+> **Live config (differs from the original design below — this block wins):**
+> the worker runs on the **Mac host via launchd** (`one.founderfirst.signals-worker`,
+> folder `~/signals-worker`), not a Lima VM; logs at `~/Library/Logs/founderfirst/`.
+> The live score model is **`qwen2.5:7b`** (set via `OLLAMA_SCORE_MODEL`), not
+> gemma2:2b. An empty-item guard (PR #157, 1-Jul) blocks intent hallucination on
+> empty captures. Outreach voice is single-sourced from `penny_outreach_persona`
+> (admin → Penny → Outreach), and the source optimizer is outcome-aware (PR #100).
+**Build progress:** all five steps ✅ — migration · intake edge fn + extension + admin UI ·
+worker · admin UI · daily digest. Deployed; nothing remaining from the original plan.
 
 ---
 
@@ -41,9 +47,9 @@ added only after the loop is proven.
 |---|---|---|
 | Tab name / route | **Signals** / `/admin/signals` | Sub-tabs: Feed, Pipeline, Lead detail, Keywords, Quick-Add |
 | Tech stack | **Same as founderfirst.one/admin** | Supabase + RLS + `is_admin()` RPCs + edge functions + React admin + Resend + pg_cron. No new platforms except the VM worker. |
-| The brain — hosting | **Our existing VM** (Lima VM on Mac: 2 vCPU, 4 GiB, CPU-only, no GPU) | Always-on, pulls work — no inbound ports, Ollama stays private |
+| The brain — hosting | ~~Lima VM~~ → **Mac host, launchd** (`one.founderfirst.signals-worker`) | Always-on, pulls work — no inbound ports, Ollama stays private. The VM design was superseded at deploy time. |
 | The brain — split | **Local AI scores; hosted AI drafts** | VM is too small for good draft-writing. Scoring is high-volume/low-stakes → free local; drafting is customer-facing → hosted (pennies/day). One swappable interface; can go all-local later. |
-| Local models | `gemma2:2b` or `llama3.2:3b` (scoring) + `nomic-embed-text` (embeddings) | Final pick via a ~20-post eval once real captures exist. 8B won't fit 4 GiB. |
+| Local models | scoring = **`qwen2.5:7b`** (picked by the §8 eval; env `OLLAMA_SCORE_MODEL`) + `nomic-embed-text` (embeddings) | Original candidates were gemma2:2b / llama3.2:3b; the eval on real captures chose qwen2.5:7b. |
 | Collection (Phase 1) | **Manual only** — browser extension (Facebook first) + Quick-Add paste box | No provider account needed to start |
 | Collection (Phase 2) | **API Direct** (pay-per-request, no monthly fee) for Reddit/HN/X/public LinkedIn | Keys live on the VM |
 | Outreach | **Copy-by-default; human sends natively.** API-send seam stubbed for one safe platform later (Phase 2) | Never auto-send |
@@ -71,10 +77,14 @@ added only after the loop is proven.
                                                                     │  status='pending'
                        VM PULL-WORKER  (always-on service, no inbound ports)
                        claim_pending_items() ───────────────────────┤
+                         0. empty-content guard (no title+body → archive,
+                            no model call)                           │
                          1. keyword prefilter (drop noise)           │
                          2. embed → pgvector cosine vs ICP refs → relevance
-                         3. Ollama gemma2:2b → {intent, pain_tags, competitor}
+                         3. Ollama score model → {intent, pain_tags, competitor}
                          4. promote → lead; draft via HOSTED AI + get_live_voice()
+                            → validateDraft() gate (refusal/length/must
+                              reference the post; reject → lead stays 'new')
                        submit_score() / promote_to_lead() ──────────► writes back
                                                                     │
                                                                     ▼
@@ -115,12 +125,35 @@ intake. Swapping or adding a provider = writing one new mapper. No lock-in.
 ```
 interface Brain {
   embed(text): vector            // nomic-embed-text (local)
-  score(item): { intent, pain_tags, competitor }   // gemma2:2b (local)
+  score(item): { intent, pain_tags, competitor }   // Ollama, local (live: qwen2.5:7b)
   draft(lead, voice): string     // hosted AI (Anthropic key we already use)
 }
 ```
 `OllamaBrain` is the default for embed/score; drafting uses the managed call. Bumping
 the VM to 8 GiB later lets drafting move local with a one-line swap.
+
+### Quality guards (added 1 Jul 2026, PR #157)
+
+Garbage-in produced garbage-out once (empty facebook items → hallucinated
+intent=85 → refusal text saved as drafts), so the pipeline now defends itself
+at four layers — each independent, so a bug in one can't reach the Leads view:
+
+1. **Worker, pre-score** — items with no title AND no body are archived before
+   any model call (`processItem`, index.mjs).
+2. **Worker, pre-save** — `validateDraft()` (brain.mjs) rejects drafts that are
+   refusals/meta-requests, out of length bounds, or don't reference the post;
+   the lead stays at `new` (the manual-drafting queue).
+3. **DB backstops** — `sig_submit_score` clamps empty items (intent 0, never
+   promoted; migration `20260701153000`); `sig_set_lead_draft` raises on empty
+   or refusal-looking drafts (migration `20260701170000`). No caller — stale
+   worker, ad-hoc script — can bypass these.
+4. **Daily anomaly scan** — the optimizer's Brain report flags identical
+   score-signature clusters, high intent on <40-char text, and refusal-looking
+   saved drafts, so the next new failure mode surfaces within a day instead of
+   by someone stumbling on a polluted Leads view.
+
+Worker deploys are one command (`tools/signals-worker/deploy.sh` — see the
+worker README), which keeps the live host and `main` from drifting.
 
 ---
 

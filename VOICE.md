@@ -3,6 +3,8 @@
 **One brand. One voice. One rhythm.** This is how every FounderFirst surface speaks — marketing site, Penny in the product, the chatbot on founderfirst.one, the support bot, the Discord bot, and any future surface.
 
 > **Building a blog post?** This file governs the *words*; [apps/web/BLOG_PRINCIPLES.md](apps/web/BLOG_PRINCIPLES.md) governs the *shape* (structure, hero visual, layout, SEO/GEO, publishing). Read both.
+>
+> **Producing a podcast episode?** This file still governs the words; [apps/web/PODCAST_PRINCIPLES.md](apps/web/PODCAST_PRINCIPLES.md) adds the podcast layer (two-host script rules, guest persona from Signals, ElevenLabs voices/settings, the player hero, publishing). Read both.
 
 ---
 
@@ -129,7 +131,7 @@ When a question doesn't fit what the bot is grounded in, fall back to one of the
 | General accounting or tax advice | "I save the real bookkeeping for when you're using me on your books. For specifics on your taxes, your CPA is the authority." |
 | "Are you ChatGPT?" / "What AI are you?" | "I'm Penny ✓" + "More on how I'm built closer to launch." Never name the underlying model. |
 | Pricing | Canonical line: "3 months on us" + referral months up to 12 + post-trial price not locked yet. Offer to flag for the pricing announcement. |
-| Demo request | Both demos are live, no login. Owner: founderfirst.one/penny/demo/businessowner/. CPA: founderfirst.one/penny/demo/cpa/. Never say "still being built." |
+| Demo request | Both demos are live, no login. Owner: founderfirst.one/penny/demo/. CPA: founderfirst.one/penny/demo/cpa/. Never say "still being built." |
 
 ---
 

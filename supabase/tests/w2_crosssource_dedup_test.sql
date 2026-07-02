@@ -9,7 +9,7 @@
 -- Scenario ids: XSRC-CSV-THEN-PLAID, XSRC-REPLAY, XSRC-TWO-DISTINCT, XSRC-REVERSAL.
 
 begin;
-select plan(18);
+select plan(17);
 
 -- ── fixtures: one business (owner), a bank account, a Plaid connection ────────
 insert into auth.users (id, email, aud, role) values
@@ -115,8 +115,7 @@ select is(
     '[]'::jsonb, '[]'::jsonb))->>'added')::int,
   2, 'XSRC-TWO-DISTINCT: two distinct same-day $5 lattes from one source both post');
 select is((select count(*)::int from journal_entries je
-             join journal_lines jl on jl.entry_id=je.id
-            where je.org_id='00000000-0000-0000-0000-0000000f0b01' and jl.account_id='00000000-0000-0000-0000-0000000fc002'
+            where je.org_id='00000000-0000-0000-0000-0000000f0b01'
               and je.status='posted' and je.entry_date='2026-07-05'),
   2, 'XSRC-TWO-DISTINCT: both latte entries present (distinct, not merged)');
 

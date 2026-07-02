@@ -15,9 +15,12 @@ name: App E2E
 # loudly at "authed app rendered" — that's the signal to add them, not a silent skip.
 
 on:
+  # Docs-only changes (docs/** or root *.md) skip the rebuild — nothing they touch is built.
   pull_request:
+    paths-ignore: ['docs/**', '*.md']
   push:
     branches: [main]
+    paths-ignore: ['docs/**', '*.md']
   workflow_dispatch:
 
 env:

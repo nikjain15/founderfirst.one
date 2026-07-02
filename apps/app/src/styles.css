@@ -799,3 +799,63 @@ button.ghost.sm, .ghost.sm {
 @media (max-width: 640px) {
   .takeaway { align-items: flex-start; flex-wrap: wrap; }
 }
+
+/* ── CPA Practice home — cross-client work queue (card W1.4) ───────────────── */
+/* Switcher badge: each client's open-item count next to its name. */
+.orgsw-count {
+  flex: none; min-width: 1.4rem; padding: 0 var(--space-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: var(--fs-micro); font-weight: var(--fw-semibold);
+  color: var(--amber-strong); background: var(--amber-bg); border-radius: var(--r-pill);
+}
+
+.practice .section-h { margin-top: var(--space-5); }
+.practice .section-h:first-of-type { margin-top: var(--space-3); }
+
+/* The ranked queue list. */
+.pq-list { list-style: none; margin: var(--space-2) 0 0; padding: 0; }
+.pq-row {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-3) 0; border-bottom: var(--bw-hair) solid var(--line);
+  flex-wrap: wrap;
+}
+.pq-dot { flex: none; width: var(--space-2); height: var(--space-2); border-radius: 50%; background: var(--ink-3); }
+.pq-dot.k-pending_review { background: var(--error); }
+.pq-dot.k-uncategorized  { background: var(--amber); }
+.pq-dot.k-unreconciled   { background: var(--amber-strong); }
+.pq-dot.k-flagged        { background: var(--ink-3); }
+.pq-dot.k-upcoming_close  { background: var(--sage); }
+.pq-body { flex: 1 1 12rem; min-width: 0; display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+.pq-client { font-weight: var(--fw-semibold); color: var(--ink); }
+.pq-kind { color: var(--ink-2); font-size: var(--fs-ui); }
+.pq-title {
+  color: var(--ink-3); font-size: var(--fs-micro); min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
+}
+.pq-age { flex: none; color: var(--ink-4); font-size: var(--fs-micro); }
+.pq-cta { flex: none; }
+
+/* Clients section — the switcher's list, in-page, with counts. */
+.pq-clients { list-style: none; margin: var(--space-2) 0 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr)); gap: var(--space-2); }
+.pq-client-card {
+  width: 100%; min-height: var(--tap-min);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  padding: var(--space-3); text-align: left;
+  background: var(--white); color: var(--ink); border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); cursor: pointer; font-size: var(--fs-ui);
+}
+.pq-client-card:hover:not(:disabled) { background: var(--brand-soft); }
+.pq-client-name { font-weight: var(--fw-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pq-client-count {
+  flex: none; padding: 0 var(--space-2); font-size: var(--fs-micro); font-weight: var(--fw-semibold);
+  color: var(--amber-strong); background: var(--amber-bg); border-radius: var(--r-pill);
+}
+.pq-client-count.clear { color: var(--ink-3); background: var(--brand-soft); }
+.pq-archive { margin-top: var(--space-4); }
+.pq-archive > summary {
+  cursor: pointer; color: var(--ink-3); font-size: var(--fs-micro); font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-eyebrow); text-transform: uppercase; min-height: var(--tap-min);
+  display: flex; align-items: center;
+}
+.pq-archive[open] > summary { margin-bottom: var(--space-2); }

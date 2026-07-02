@@ -67,7 +67,7 @@ touches: supabase/tests, apps/app tests, .github/workflows (SHARED CI — declar
 decision-needed: none
 
 ## IA-1 · Owner lens nav restructure (APP_PRINCIPLES Phase 1)
-status: unclaimed  ← LAND FIRST among app-UI cards (touches the shared files everything builds into)
+status: pr:#174  ← LAND FIRST among app-UI cards (touches the shared files everything builds into)
 goal: owner navigates by plain-language jobs: Home · Review · Reports · Connections +
   de-emphasized Advanced (Journal · CoA · Periods); "+ New organization" → org switcher.
 workflow: owner · "find anything I need" · any job reachable in ≤2 taps from Home; zero

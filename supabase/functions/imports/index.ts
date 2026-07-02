@@ -72,6 +72,32 @@ Deno.serve(async (req) => {
     return json({ result, posted: posted ?? 0, errors: errors ?? 0, duplicates: duplicates ?? 0 }, 200);
   }
 
+  // ── W2.2: confirm a provider migration's cutover date ───────────────────────
+  // Stamps every batch in the migration, then marks the migration committed.
+  if (op === "migration_cutover") {
+    if (!body?.migration_id || !body?.cutover_date) return json({ error: "bad_migration" }, 400);
+    const migrationId = String(body.migration_id);
+    const cutover = String(body.cutover_date);
+    const { data: mig, error: readErr } = await svc
+      .from("provider_migrations").select("batch_ids").eq("id", migrationId).eq("org_id", orgId).maybeSingle();
+    if (readErr) return json({ error: readErr.message }, 400);
+    if (!mig) return json({ error: "not_found" }, 404);
+    for (const batchId of ((mig as { batch_ids?: string[] }).batch_ids ?? [])) {
+      const { error } = await svc.rpc("set_import_batch_cutover", {
+        p_actor: user.id, p_org: orgId, p_batch: batchId, p_cutover: cutover,
+      });
+      // A committed batch is frozen — treat that as already-done, not a failure.
+      if (error && !/committed|frozen/.test(error.message ?? "")) {
+        return json({ error: error.message, code: error.code }, statusForPgError(error.code, error.message));
+      }
+    }
+    const { data, error } = await svc.rpc("set_provider_migration_cutover", {
+      p_actor: user.id, p_org: orgId, p_migration: migrationId, p_cutover: cutover,
+    });
+    if (error) return json({ error: error.message, code: error.code }, statusForPgError(error.code, error.message));
+    return json({ migration: data }, 200);
+  }
+
   let rpc: string;
   let args: Record<string, unknown>;
   switch (op) {

@@ -10,8 +10,10 @@
 import { useMemo, useState } from "react";
 import {
   addImportRows, commitImportBatch, connectProvider, createImportBatch, discardImportBatch,
-  importProvider, useConnections, type ExternalProvider, type StagedRow,
+  importProvider, migrateProvider, useConnections, useProviderMigrations,
+  type ExternalProvider, type ProviderMigration, type StagedRow,
 } from "../ledger/api";
+import MigrationFlow from "../migration/MigrationFlow";
 import { parseAmountCell, parseCsv, parseDateCell, type DateFormat, type ParsedCsv } from "./csv";
 import { formatMoney } from "../ledger/money";
 import type { LedgerAccount } from "../ledger/types";
@@ -350,12 +352,29 @@ const PROVIDERS: { id: ExternalProvider; label: string }[] = [
 
 function ConnectSoftware({ orgId, onImported }: { orgId: string; onImported: () => void }) {
   const conns = useConnections(orgId);
+  const migrations = useProviderMigrations(orgId);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [activeMigration, setActiveMigration] = useState<ProviderMigration | null>(null);
 
   const active = (conns.data ?? []).filter((c) => c.status === "active");
   const connectedProviders = new Set(active.map((c) => c.provider));
+  // A migration still in review (not yet cut over) can be resumed per connection.
+  const migByConn = new Map(
+    (migrations.data ?? []).filter((m) => m.status !== "discarded").map((m) => [m.connection_id, m]),
+  );
+
+  // Once a migration is launched or resumed, the review flow takes over the panel.
+  if (activeMigration) {
+    return (
+      <MigrationFlow
+        orgId={orgId}
+        migration={activeMigration}
+        onDone={() => { setActiveMigration(null); migrations.refetch(); onImported(); }}
+      />
+    );
+  }
 
   async function connect(provider: ExternalProvider) {
     setBusy(provider); setErr(null);
@@ -371,6 +390,16 @@ function ConnectSoftware({ orgId, onImported }: { orgId: string; onImported: () 
       const r = await importProvider(provider, orgId, connectionId);
       setMsg(COPY.importFlow.pulledSummary(r.accounts, r.ready));
       onImported();
+    } catch (e) { setErr((e as Error).message); } finally { setBusy(null); }
+  }
+  async function migrate(provider: ExternalProvider, connectionId: string) {
+    setBusy(connectionId); setErr(null); setMsg(null);
+    try {
+      await migrateProvider(provider, orgId, connectionId);
+      // The migration record now exists (upserted by the pull) — load it into review.
+      const { data } = await migrations.refetch();
+      const mig = (data ?? []).find((m) => m.connection_id === connectionId) ?? null;
+      if (mig) setActiveMigration(mig);
     } catch (e) { setErr((e as Error).message); } finally { setBusy(null); }
   }
 
@@ -390,14 +419,29 @@ function ConnectSoftware({ orgId, onImported }: { orgId: string; onImported: () 
       </div>
       {active.length > 0 && (
         <ul className="conn-list">
-          {active.map((c) => (
-            <li key={c.id}>
-              <span>{c.tenant_name ?? c.provider} <span className="status-pill s-open">{c.provider}</span></span>
-              <button className="ghost sm" disabled={busy === c.id} onClick={() => pull(c.provider, c.id)}>
-                {busy === c.id ? COPY.importFlow.pulling : COPY.importFlow.pullHistory}
-              </button>
-            </li>
-          ))}
+          {active.map((c) => {
+            const label = PROVIDERS.find((p) => p.id === c.provider)?.label ?? c.provider;
+            const resumable = migByConn.get(c.id);
+            return (
+              <li key={c.id}>
+                <span>{c.tenant_name ?? c.provider} <span className="status-pill s-open">{c.provider}</span></span>
+                <span className="conn-actions">
+                  <button className="ghost sm" disabled={busy === c.id} onClick={() => pull(c.provider, c.id)}>
+                    {busy === c.id ? COPY.importFlow.pulling : COPY.importFlow.pullHistory}
+                  </button>
+                  {resumable ? (
+                    <button className="sm" onClick={() => setActiveMigration(resumable)}>
+                      {COPY.migration.reviewHeading}
+                    </button>
+                  ) : (
+                    <button className="sm" disabled={busy === c.id} onClick={() => migrate(c.provider, c.id)}>
+                      {busy === c.id ? COPY.migration.migrating : COPY.migration.migrateButton(label)}
+                    </button>
+                  )}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
       {msg && <p className="muted sm">{msg}</p>}

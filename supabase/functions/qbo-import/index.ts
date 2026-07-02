@@ -1,16 +1,22 @@
 /**
  * qbo-import — pull the chart of accounts + transactions from a connected
- * QuickBooks company into a PREVIEWABLE import_batch (ARCHITECTURE.md §6.4, §6.6).
- * POST { org_id, connection_id } (authed) → { batch_id, accounts, rows }.
+ * QuickBooks company (ARCHITECTURE.md §6.4, §6.6). Two modes:
  *
- * Accounts upsert into the ledger. Purchases (money out) + Deposits (money in)
- * stage as rows against the primary bank account — previewed, not committed.
- * NOTE: QBO's transaction model spans Purchase/Deposit/JournalEntry across
- * multiple bank accounts; this first pass stages txns on the primary bank and
- * skips the rest. Validate against a sandbox company before GA.
+ *   • default (preview) — POST { org_id, connection_id } → one PREVIEWABLE batch
+ *     of the primary bank's Purchases/Deposits, not committed. (Unchanged.)
+ *   • historical migration — POST { org_id, connection_id, historical: true } →
+ *     W2.2 one-click migration: pull the FULL Purchase + Deposit history across
+ *     all pages, bucket into ONE import_batch per calendar year, stage each row
+ *     with its QBO transaction id as external_id (so a re-pull dedups on
+ *     ext:qbo:<id> and NEVER double-posts), snapshot QBO's own Trial Balance for
+ *     the side-by-side comparison, and record a provider_migration the UI drives
+ *     through mapping review → TB compare → cutover.
+ *
+ * Nothing is posted here — the app commits each batch through the verified,
+ * deduped commit_import_batch(4-arg) path (source 'qbo' → bank branch).
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { refreshToken, qboQuery, mapQboAccountType, toMinor } from "../_shared/qbo.ts";
+import { refreshToken, qboQuery, qboQueryAll, qboTrialBalance, mapQboAccountType, toMinor } from "../_shared/qbo.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -36,6 +42,7 @@ Deno.serve(async (req) => {
   const { data: u } = await svc.auth.getUser(jwt);
   const user = u?.user;
   if (!user) return json({ error: "unauthorized" }, 401);
+  const uid = user.id; // stable non-null ref for closures below
 
   const body = await req.json().catch(() => ({}));
   const orgId = String(body?.org_id ?? "");
@@ -66,6 +73,108 @@ Deno.serve(async (req) => {
     }
   }
   const realm = conn.realm_id as string;
+  const historical = body?.historical === true;
+
+  // ── shared: pull + upsert the chart of accounts, return QBO id → ledger id ──
+  async function pullChartOfAccounts(): Promise<{ map: Map<string, string>; count: number }> {
+    const acctResp = await qboQuery(realm, "select * from Account maxresults 1000", access);
+    const accounts: QboAccount[] = acctResp?.QueryResponse?.Account ?? [];
+    const map = new Map<string, string>();
+    for (const a of accounts) {
+      const { data: acc } = await svc.rpc("upsert_ledger_account", {
+        p_actor: uid, p_org: orgId, p_name: a.Name,
+        p_type: mapQboAccountType(a.Classification), p_code: a.AcctNum ?? null,
+      });
+      const id = (acc as { id?: string })?.id;
+      if (id) map.set(a.Id, id);
+    }
+    return { map, count: accounts.length };
+  }
+
+  const yearOf = (d?: string | null) => (d && d.length >= 4 ? d.slice(0, 4) : "unknown");
+
+  // ── W2.2 historical migration ───────────────────────────────────────────────
+  if (historical) {
+    try {
+      const { map: qboIdToOurId, count: acctCount } = await pullChartOfAccounts();
+
+      // Full history (all pages), not just the first 500.
+      const purchases: QboTxn[] = await qboQueryAll(realm, "Purchase", access);
+      const deposits: QboTxn[] = await qboQueryAll(realm, "Deposit", access);
+
+      // Primary bank = the account most transactions clear through.
+      const bankCount = new Map<string, number>();
+      for (const p of purchases) { const b = p.AccountRef?.value; if (b) bankCount.set(b, (bankCount.get(b) ?? 0) + 1); }
+      for (const d of deposits) { const b = d.DepositToAccountRef?.value; if (b) bankCount.set(b, (bankCount.get(b) ?? 0) + 1); }
+      const primaryBankQboId = [...bankCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+      const bankId = primaryBankQboId ? qboIdToOurId.get(primaryBankQboId) : undefined;
+
+      // Normalize every txn on the primary bank into a staged row keyed by its QBO id.
+      interface Staged { row_num: number; raw: unknown; txn_date: string | null; description: string; amount_minor: number; account_id: string | null; external_id: string; status: string; }
+      const byYear = new Map<string, Staged[]>();
+      let txnCount = 0;
+      const stage = (t: QboTxn, sign: 1 | -1, bankQboId: string | undefined, contraQboId: string | undefined, desc: string, kind: string) => {
+        if (bankQboId !== primaryBankQboId) return; // off-primary-bank txns are out of scope for this pass
+        const contraId = contraQboId ? qboIdToOurId.get(contraQboId) ?? null : null;
+        const year = yearOf(t.TxnDate);
+        const list = byYear.get(year) ?? [];
+        list.push({
+          row_num: list.length + 1, raw: t as unknown,
+          txn_date: t.TxnDate ?? null, description: desc,
+          amount_minor: sign * toMinor(t.TotalAmt), account_id: contraId,
+          external_id: `${kind}:${t.Id}`,           // stable per-txn id → ext:qbo:<external_id>
+          status: t.TxnDate ? "ready" : "error",
+        });
+        byYear.set(year, list);
+        txnCount++;
+      };
+      for (const p of purchases)
+        stage(p, -1, p.AccountRef?.value, p.Line?.[0]?.AccountBasedExpenseLineDetail?.AccountRef?.value, p.EntityRef?.name ?? p.PrivateNote ?? "Purchase", "purchase");
+      for (const d of deposits)
+        stage(d, 1, d.DepositToAccountRef?.value, d.Line?.[0]?.DepositLineDetail?.AccountRef?.value, d.PrivateNote ?? "Deposit", "deposit");
+
+      // One import_batch per year, staged via append_import_rows (writes external_id).
+      const years = [...byYear.keys()].sort();
+      const batchIds: string[] = [];
+      for (const year of years) {
+        const { data: batchRes, error: batchErr } = await svc.rpc("create_import_batch", {
+          p_actor: uid, p_org: orgId, p_source: "qbo",
+          p_filename: `${conn.tenant_name ?? "QuickBooks"} · ${year}`,
+          p_bank_account_id: bankId ?? null, p_cutover_date: null,
+        });
+        if (batchErr) return json({ error: batchErr.message }, 400);
+        const batchId = (batchRes as { id: string }).id;
+        batchIds.push(batchId);
+        const rows = byYear.get(year)!;
+        const { error: rowsErr } = await svc.rpc("append_import_rows", { p_actor: uid, p_org: orgId, p_batch: batchId, p_rows: rows });
+        if (rowsErr) return json({ error: rowsErr.message }, 400);
+      }
+
+      // Snapshot QBO's own Trial Balance for the side-by-side comparison.
+      let providerTb: { name: string; debit_minor: number; credit_minor: number }[] = [];
+      let providerTbAsOf: string | null = null;
+      try {
+        const tb = await qboTrialBalance(realm, access);
+        providerTb = tb.rows;
+        providerTbAsOf = tb.asOf;
+      } catch (_e) { /* TB report is best-effort; migration still proceeds without it */ }
+
+      const { data: mig, error: migErr } = await svc.rpc("record_provider_migration", {
+        p_actor: uid, p_org: orgId, p_connection: connId, p_provider: "qbo",
+        p_batch_ids: batchIds, p_accounts: acctCount, p_txn_count: txnCount,
+        p_provider_tb: providerTb, p_provider_tb_as_of: providerTbAsOf,
+      });
+      if (migErr) return json({ error: migErr.message }, 400);
+
+      return json({
+        migration_id: (mig as { id: string })?.id, batch_ids: batchIds,
+        accounts: acctCount, txn_count: txnCount, years,
+        provider_tb_rows: providerTb.length, provider_tb_as_of: providerTbAsOf,
+      }, 200);
+    } catch (e) {
+      return json({ error: "migration_failed", detail: (e as Error).message }, 502);
+    }
+  }
 
   try {
     // 1. chart of accounts → upsert; map QBO account Id → our ledger id

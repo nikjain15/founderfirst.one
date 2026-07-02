@@ -96,6 +96,19 @@ a.ghost, a.ghost:visited { color: var(--ink-2); }
 .connect-row { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
 .conn-list { list-style: none; margin: var(--space-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 .conn-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.conn-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+/* ── W2.2 QBO migration review ───────────────────────────────── */
+.migration-flow { display: flex; flex-direction: column; gap: var(--space-4); }
+.migration-step { display: flex; flex-direction: column; gap: var(--space-2); }
+.migration-step h4 { font-size: var(--fs-body); margin: 0; }
+.migration-batches { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.migration-batches li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.migration-tb { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.migration-tb th, .migration-tb td { padding: var(--space-1) var(--space-2); text-align: left; border-bottom: 1px solid var(--line-2); }
+.migration-tb th.num, .migration-tb td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.migration-tb tr.tb-variance td { background: var(--amber-bg); color: var(--amber-strong); }
+.tb-tag { display: inline-block; margin-left: var(--space-2); font-size: var(--fs-xs); color: var(--ink-3); }
 
 /* ── authed shell ────────────────────────────────────────────── */
 .shell { min-height: 100dvh; display: flex; flex-direction: column; }

@@ -5,12 +5,13 @@
 -- (undo_penny_activity) reverses that repost through the SAME reversal path, so the
 -- trial balance nets back and the ledger stays balanced + append-only. This suite
 -- pins: the auto-post posts + feeds, the undo reverses cleanly (ledger balanced),
--- both are tenant-gated + period-lock-respecting, both are audit-logged, and the
+-- both are tenant-gated, a CPA-closed period reposts the correction into today
+-- (never blocked, the close is respected), both are audit-logged, and the
 -- interruption budget (owner_asks_this_week / record_owner_ask) counts from real
 -- data. Same self-seeding [REGTEST] technique as the rest — everything rolls back.
 
 begin;
-select plan(21);
+select plan(23);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -110,7 +111,11 @@ select throws_ok($$
     'ap-x','penny',0.9,'x')
 $$, '42501', NULL, 'a non-member cannot auto-post into another org');
 
--- ── period lock: a closed period blocks the auto-post (restrict_violation) ────
+-- ── closed period: the auto-post is NOT blocked — it reposts into today ───────
+-- Design (recategorize_entry): a CPA close must never permanently block a
+-- categorization, so when the original entry's period is closed the correction
+-- is reposted into today's OPEN period and the original flips to 'reversed'; the
+-- closed period is left untouched. Pin THAT behavior (not a period-lock throw).
 create temp table _mar as
 select * from post_journal_entry(
   '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000b1',
@@ -118,18 +123,26 @@ select * from post_journal_entry(
   '[{"account_id":"00000000-0000-0000-0000-00000000c002","amount_minor":700,"side":"D"},
     {"account_id":"00000000-0000-0000-0000-00000000c001","amount_minor":700,"side":"C"}]'::jsonb,
   'manual', null, 'ADOBE *999');
--- close the period AFTER the entry exists, then attempt the auto-post.
--- post_journal_entry above lazily created the March 2026 period (ensure_open_period),
--- so close THAT period rather than re-inserting it (a raw insert would collide on
--- accounting_periods_org_id_period_start_period_end_key and abort the whole plan).
+-- close the period AFTER the entry exists. post_journal_entry lazily created the
+-- March 2026 period (ensure_open_period), so close THAT period rather than
+-- re-inserting it (a raw insert would collide on the org/start/end unique key).
 update accounting_periods set status = 'closed'
  where org_id = '00000000-0000-0000-0000-0000000000b1'
    and period_start = '2026-03-01' and period_end = '2026-03-31';
-select throws_ok($$
-  select autopost_categorization('00000000-0000-0000-0000-00000000000a','00000000-0000-0000-0000-0000000000b1',
+create temp table _maract as
+select * from autopost_categorization('00000000-0000-0000-0000-00000000000a','00000000-0000-0000-0000-0000000000b1',
     (select id from _mar), '00000000-0000-0000-0000-00000000c002','00000000-0000-0000-0000-00000000c003',
-    'ap-mar','vendor_prior',1.0,'x')
-$$, '23001', NULL, 'a closed period blocks the auto-post (period-lock respected)');
+    'ap-mar','vendor_prior',1.0,'x');
+select is((select kind from _maract), 'autopost_category',
+  'a closed period does NOT block the auto-post — the correction reposts (into today)');
+select is(
+  (select status::text from journal_entries where id = (select id from _mar)),
+  'reversed', 'the original entry in the closed period flips to reversed (append-only)');
+select is(
+  (select status::text from accounting_periods
+     where org_id='00000000-0000-0000-0000-0000000000b1'
+       and period_start='2026-03-01' and period_end='2026-03-31'),
+  'closed', 'the closed period itself is left closed (the CPA close is respected)');
 
 -- ── interruption budget: counts from ai_decisions AND caps atomically ────────
 -- record_owner_ask is the single budget gate — it decides allowed/not under an

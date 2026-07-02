@@ -580,6 +580,96 @@ export function useReconciliationRefresh(orgId: string | undefined) {
   };
 }
 
+// ── catch-up mode (W2.1) ──────────────────────────────────────────────────────
+// The guided multi-year flow ORCHESTRATES import / categorize / reconcile / export
+// (all reused above); these calls are the catch-up-specific write-path. Reads
+// (progress, plan) and writes (set_plan, batch_approve) go through the `catch-up`
+// edge fn → the service_role-only, audited RPCs (progress reads under the same fn).
+
+/** One backlog year's progress, derived from the ledger (no denormalized status). */
+export interface CatchUpYear {
+  year: number;
+  entries: number;
+  uncategorized: number;
+  reconciled_sessions: number;
+  done: boolean;
+}
+
+/** Flat-per-year packaging for a catch-up (the model behind "priced per year"). */
+export interface CatchUpPlan {
+  org_id: string;
+  fee_per_year_minor: number;
+  currency: string;
+  backlog_years: number[];
+  fee_total_minor: number;
+  status: "draft" | "active" | "complete";
+}
+
+/** One bulk-approve item — the owner accepting Penny's high-confidence pick. */
+export interface BatchApproveItem {
+  entry_id: string;
+  to_account_id: string;
+  confidence: number;
+  learn_value?: string | null;
+}
+
+export interface BatchApproveResult {
+  approved: number;
+  skipped: number;
+  failed: number;
+  results: { entry_id: string; status: "approved" | "skipped" | "failed"; detail?: string }[];
+}
+
+/** The catch-up plan for an org (RLS-readable to anyone who can access the org). */
+export function useCatchUpPlan(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["catch-up-plan", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<CatchUpPlan | null> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("catch_up_plans")
+        .select("org_id,fee_per_year_minor,currency,backlog_years,fee_total_minor,status")
+        .eq("org_id", orgId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as CatchUpPlan | null;
+    },
+  });
+}
+
+/** Per-year progress meter (uncategorized / reconciled counts, done flag). */
+export function useCatchUpProgress(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["catch-up-progress", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<CatchUpYear[]> => {
+      const { years } = await invoke<{ years: CatchUpYear[] }>("catch-up", { op: "progress", org_id: orgId });
+      return years ?? [];
+    },
+  });
+}
+
+/** Set the flat-per-year packaging for this catch-up. */
+export const setCatchUpPlan = (input: {
+  org_id: string; fee_per_year_minor: number; backlog_years: number[]; currency?: string;
+}) => invoke<{ plan: CatchUpPlan }>("catch-up", { op: "set_plan", ...input });
+
+/** Bulk-approve high-confidence picks in one action (low-confidence → skipped). */
+export const batchApproveCatchUp = (org_id: string, items: BatchApproveItem[]) =>
+  invoke<BatchApproveResult>("catch-up", { op: "batch_approve", org_id, items });
+
+/** Invalidate catch-up + downstream ledger queries after a batch approve. */
+export function useCatchUpRefresh(orgId: string | undefined) {
+  const qc = useQueryClient();
+  return () => {
+    for (const key of ["catch-up-progress", "catch-up-plan", "uncategorized",
+      "ledger-entries", "learned-rules"]) {
+      void qc.invalidateQueries({ queryKey: [key, orgId] });
+    }
+  };
+}
+
 /** A client-side idempotency key for a money mutation (replays are de-duped). */
 export function newIdempotencyKey(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();

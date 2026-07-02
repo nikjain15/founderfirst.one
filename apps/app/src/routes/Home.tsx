@@ -3,7 +3,7 @@
  * chosen from the derived role (owner vs cpa); data + RLS are identical underneath
  * — only the default view and affordances differ (ARCHITECTURE.md §B1).
  */
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Topbar from "../components/Topbar";
 import { useActiveOrg } from "../org/ActiveOrgProvider";
@@ -14,7 +14,6 @@ import { SITE } from "@ff/site";
 
 export default function Home() {
   const { loading, error, orgs, activeOrg, roleInfo } = useActiveOrg();
-  const [creating, setCreating] = useState(false);
   const nav = useNavigate();
 
   // Resume an invite the user opened before signing in.
@@ -58,18 +57,9 @@ export default function Home() {
             Switch to one of yours above, or ask the owner to re-invite you.
           </p>
         )}
-
-        {orgs.length > 0 && (
-          <div className="new-org">
-            {creating ? (
-              <CreateOrg onDone={() => setCreating(false)} />
-            ) : (
-              <button className="ghost" onClick={() => setCreating(true)}>
-                + New organization
-              </button>
-            )}
-          </div>
-        )}
+        {/* "+ New organization" is no longer stapled to the page body — it lives in
+            the org switcher (APP_PRINCIPLES §5), the one place a user goes to change
+            which books they're in. */}
       </main>
     </div>
   );

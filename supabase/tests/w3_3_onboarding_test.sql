@@ -90,11 +90,15 @@ select is(
 -- (t_no_template has no coa_template_ref → seed_org_coa falls back)
 insert into industries (key, label, coa_template_ref) values ('t_no_template', 'No template', null)
   on conflict (key) do nothing;
+-- general_business is a shared/pre-seeded ref (our fixture rows above no-op on
+-- conflict), so assert against its ACTUAL template size rather than a magic
+-- number — the fallback must seed exactly what the general_business template holds.
 select is(
   (select complete_onboarding(
      '00000000-0000-0000-0000-00000000b0aa', '00000000-0000-0000-0000-00000000b0b2',
      null, 't_no_template')),
-  2, 'no coa_template_ref → the general_business fallback (2 accounts) is seeded');
+  (select count(*)::int from coa_account_templates where template_ref = 'general_business'),
+  'no coa_template_ref → the general_business fallback template is seeded in full');
 
 -- ── 4. forged keys are rejected against the kernel ───────────────────────────
 select throws_ok(

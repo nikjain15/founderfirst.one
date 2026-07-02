@@ -110,3 +110,15 @@ verify_jwt = false
 
 [functions.catch-up]
 verify_jwt = true
+
+[functions.plaid-webhook]
+verify_jwt = false
+
+[functions.plaid-link-token]
+verify_jwt = true
+
+[functions.plaid-exchange]
+verify_jwt = true
+
+[functions.plaid-sync]
+verify_jwt = true

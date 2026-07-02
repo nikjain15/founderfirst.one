@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from "react";
+import { COPY } from "../copy";
 
 /**
  * Catches render-time crashes and failed lazy-chunk loads so one broken view
@@ -31,13 +32,10 @@ export class AppErrorBoundary extends Component<Props, State> {
     if (this.state.error) {
       return (
         <div className="empty" role="alert">
-          <p className="empty-title">Something went wrong.</p>
-          <p className="muted">
-            This view failed to load — usually because a new version shipped while
-            this tab was open. Reloading fixes it.
-          </p>
+          <p className="empty-title">{COPY.errors.somethingWrong}</p>
+          <p className="muted">{COPY.errors.viewFailed}</p>
           <p>
-            <button type="button" onClick={() => window.location.reload()}>Reload</button>
+            <button type="button" onClick={() => window.location.reload()}>{COPY.common.reload}</button>
           </p>
         </div>
       );

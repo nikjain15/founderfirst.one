@@ -1,0 +1,41 @@
+name: Centralization gate
+
+# Card CENTRAL-1 — the standing centralization gate. Fails the build if a
+# component in apps/app reintroduces a hard-coded user-facing string literal
+# (they must live in apps/app/src/copy/strings.ts, COPY). This is the app twin of
+# check:css / check:tenant — a silent-drift guard (LEARNINGS rule 14).
+#
+# Kept in its OWN workflow file (not folded into regression.yml, which REG-1 owns)
+# so the two gates never clobber each other.
+
+on:
+  pull_request:
+    paths-ignore: ['docs/**', '*.md']
+  push:
+    branches: [main]
+    paths-ignore: ['docs/**', '*.md']
+  workflow_dispatch:
+
+jobs:
+  app-strings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # The centralization gate: zero user-facing string literals in apps/app
+      # components. New literal = failed build; move it into COPY.
+      - name: Check app strings are centralized
+        run: pnpm check:app-strings
+
+      # The copy/config/persona layer's unit tests (catalog integrity, config
+      # coercion + fallback, threshold banding).
+      - name: App unit tests
+        run: pnpm --filter @ff/app test

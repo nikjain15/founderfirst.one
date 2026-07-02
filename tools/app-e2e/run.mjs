@@ -4,8 +4,8 @@
  * The durable answer to "the categorize/import screens have no UI test". The app
  * is built with VITE_E2E=1 + a throwaway test account's creds, so it auto-signs-in
  * (apps/app/src/lib/devAuth.ts) with a REAL session. We then drive the real authed
- * UI headlessly and, for the owner's key surfaces (Overview · Categorize · Journal ·
- * Import — Journal/Import reached via the Books sub-tabs):
+ * UI headlessly and, for the owner's key jobs (Home · Review · Reports ·
+ * Connections + Journal under Advanced — APP_PRINCIPLES §2):
  *   1. assert the app renders past the login wall,
  *   2. assert each screen's panel renders (regression net for the screens themselves),
  *   3. assert NO horizontal overflow across the FULL width ladder (320 → 1920,
@@ -71,19 +71,26 @@ const { server, port } = await startServer();
 await mkdir(ARTIFACTS, { recursive: true });
 const base = `http://127.0.0.1:${port}/app/`;
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: DESKTOP });
+// acceptDownloads so the W1.2 export-download assertion can capture the file.
+const context = await browser.newContext({ viewport: DESKTOP, acceptDownloads: true });
+const page = await context.newPage();
 const consoleErrors = [];
 page.on("console", (m) => { if (m.type() === "error") { consoleErrors.push(m.text()); console.log("  [browser error]", m.text()); } });
 page.on("pageerror", (e) => { consoleErrors.push(String(e)); console.log("  [page error]", String(e)); });
 
-// The ledger IA (apps/app Ledger.tsx): 4 main tabs (#ltab-*), with the double-entry
-// mechanics under Books as sub-tabs (#lsub-*). writeOnly screens (categorize/import)
-// render only for an owner with write access. Journal/Import live under Books.
+// The OWNER lens IA (apps/app Ledger.tsx, nav="owner" — APP_PRINCIPLES §2): four
+// plain-language jobs (#ltab-home · #ltab-review · #ltab-reports · #ltab-connections)
+// plus a de-emphasized Advanced (#ltab-advanced) whose sub-strip (#lsub-*) exposes
+// the accountant-grade ledger (Journal · Chart of accounts · Periods). The E2E
+// account is an OWNER, so it renders this nav. Review is write-only (the categorize
+// queue); Connections hosts Import + Invite. Journal lives under Advanced.
 const SCREENS = [
-  { key: "overview",   label: "Overview",   main: "overview" },
-  { key: "categorize", label: "Categorize", main: "categorize", writeOnly: true },
-  { key: "journal",    label: "Journal",    main: "books", sub: "journal" },
-  { key: "import",     label: "Import",     main: "books", sub: "import", writeOnly: true },
+  { key: "home",        label: "Home",        main: "home" },
+  { key: "review",      label: "Review",      main: "review", writeOnly: true },
+  { key: "reports",     label: "Reports",     main: "reports" },
+  { key: "connections", label: "Connections", main: "connections" },
+  { key: "journal",     label: "Journal",     main: "advanced", sub: "journal" },
+  { key: "reconcile",   label: "Reconcile",   main: "advanced", sub: "reconcile" }, // W1.1
 ];
 
 /** Open a screen (main tab, then Books sub-tab if any). Returns false if absent. */
@@ -118,6 +125,30 @@ async function sweepWidths(label) {
   }
   if (bad.length) fail(`${label}: horizontal overflow at ${bad.join(", ")}`);
   else ok(`${label}: no overflow across ${LADDER.length} widths (${LADDER[0]}–${LADDER[LADDER.length - 1]}px)`);
+}
+
+/** W1.2 — download a report and assert a real file arrives, period-stamped.
+ *  Proves the 3-tap "Reports → pick period → Download" flow yields one file. */
+async function verifyReportDownload() {
+  await page.setViewportSize(DESKTOP);
+  // Pick a period (any date is fine — the file must still download).
+  const fromDate = page.locator(".report-controls input[type=date]").first();
+  if (await fromDate.count().catch(() => 0)) {
+    await fromDate.fill("2026-01-01").catch(() => {});
+  }
+  const csvBtn = page.getByRole("button", { name: "Download CSV" });
+  if (!(await csvBtn.count().catch(() => 0))) { fail("Reports: no Download CSV button"); return; }
+  try {
+    const [download] = await Promise.all([
+      page.waitForEvent("download", { timeout: 10_000 }),
+      csvBtn.click(),
+    ]);
+    const name = download.suggestedFilename();
+    if (/_.+_.+\.csv$/.test(name)) ok(`Reports export downloaded a period-stamped CSV (${name})`);
+    else fail(`Reports export filename not period-stamped: ${name}`);
+  } catch (e) {
+    fail("Reports export did not trigger a download: " + (e?.message || e));
+  }
 }
 
 try {
@@ -158,6 +189,9 @@ try {
         continue;
       }
       ok(`${s.label} renders`);
+      // W1.2 — Reports must export a real file in ≤ 3 taps (pick period → Download).
+      // Assert the download event fires with a period-stamped filename.
+      if (s.key === "reports") await verifyReportDownload();
       await page.screenshot({ path: join(ARTIFACTS, `desktop-${s.key}.png`), fullPage: true });
       await sweepWidths(s.label);                 // 320 → 1920, every ladder width
       await page.setViewportSize(MOBILE);

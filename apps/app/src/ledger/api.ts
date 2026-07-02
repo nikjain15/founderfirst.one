@@ -418,22 +418,52 @@ export function useReconciliationMatches(orgId: string | undefined, sessionId: s
   });
 }
 
-/** Statement lines for an account — committed CSV/bank-statement import rows. */
+// Statement lines feed the reconciliation tie-out, so this is a report-feeding
+// select and MUST NOT truncate at PostgREST max_rows (1000 on prod) — a partial
+// statement can still falsely "tie" (LEARNINGS: RPTTEST). Page through every row.
+const STATEMENT_PAGE = 1000;
+const MAX_STATEMENT_PAGES = 1000; // 1M-row safety stop; far beyond pilot scale
+
+/**
+ * Statement lines for ONE bank account — committed CSV/bank-statement import rows.
+ * The bank side lives on `import_batches.bank_account_id`; `import_rows.account_id`
+ * is the contra/category, so we scope by the parent batch's bank account via an
+ * inner-join filter (`import_batches!inner`). Filtering only by `org_id` would
+ * pull OTHER accounts' lines into the reconciliation (wrong-account contamination).
+ * All pages load — reconciliation needs the complete statement.
+ */
+// Exported for unit test: proves the account filter + full pagination. `sb` is
+// the (untyped) Supabase client; the caller passes getClient().
+export async function fetchStatementRows(
+  sb: ReturnType<typeof getClient>, orgId: string, accountId: string,
+): Promise<ImportStatementRow[]> {
+  const all: ImportStatementRow[] = [];
+  for (let page = 0; page < MAX_STATEMENT_PAGES; page++) {
+    const from = page * STATEMENT_PAGE;
+    const { data, error } = await sb
+      .from("import_rows")
+      .select("id,txn_date,description,amount_minor,import_batches!inner(bank_account_id)")
+      .eq("org_id", orgId)
+      .eq("import_batches.bank_account_id", accountId)
+      .not("amount_minor", "is", null)
+      .order("txn_date", { ascending: true })
+      .order("id", { ascending: true }) // total order → stable across pages
+      .range(from, from + STATEMENT_PAGE - 1);
+    if (error) throw error;
+    const rows = (data ?? []) as ImportStatementRow[];
+    all.push(...rows.map((r) => ({
+      id: r.id, txn_date: r.txn_date, description: r.description, amount_minor: r.amount_minor,
+    })));
+    if (rows.length < STATEMENT_PAGE) return all;
+  }
+  throw new Error("statement-rows: exceeded the maximum page count");
+}
+
 export function useStatementRows(orgId: string | undefined, accountId: string | undefined) {
   return useQuery({
     queryKey: ["statement-rows", orgId, accountId],
     enabled: Boolean(orgId && accountId),
-    queryFn: async (): Promise<ImportStatementRow[]> => {
-      const sb = getClient();
-      const { data, error } = await sb
-        .from("import_rows")
-        .select("id,txn_date,description,amount_minor")
-        .eq("org_id", orgId)
-        .not("amount_minor", "is", null)
-        .order("txn_date", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as ImportStatementRow[];
-    },
+    queryFn: () => fetchStatementRows(getClient(), orgId as string, accountId as string),
   });
 }
 

@@ -157,6 +157,87 @@ export function useUncategorizedRefresh(orgId: string | undefined) {
   return () => { void qc.invalidateQueries({ queryKey: ["uncategorized", orgId] }); };
 }
 
+// ── W3.2 trust-tiered autonomy ────────────────────────────────────────────────
+// One server-authoritative call per uncategorized entry decides the tier (cutoffs
+// + the ≤5-asks/week budget from platform_config): HIGH auto-posts (Penny did
+// this), MEDIUM returns for the batch queue, LOW returns a card (income + spent-
+// budget defer to the digest). The feed + undo reuse the reversal path.
+
+export type Tier = "high" | "medium" | "low" | "digest";
+export interface TriageResult {
+  tier: Tier;
+  proposal: CategoryProposal | null;
+  variant?: "low_confidence";
+  reason?: "income" | "budget_spent";
+  spent?: number;
+  budget?: number;
+  activity?: PennyActivity;
+  note?: string;
+}
+
+/** Decide + act on one uncategorized entry's tier (server-authoritative). */
+export const triageEntry = (org_id: string, entry_id: string) =>
+  invoke<TriageResult>("categorize", { op: "triage", org_id, entry_id });
+
+export interface PennyActivity {
+  id: string;
+  org_id: string;
+  kind: string;
+  entry_id: string | null;
+  account_id: string | null;
+  source: "rule" | "vendor_prior" | "penny";
+  confidence: number;
+  summary: string;
+  undo_entry_id: string | null;
+  undone_at: string | null;
+  created_at: string;
+}
+
+/** The "Penny did this" feed for an org (RLS-scoped read). */
+export function usePennyActivity(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["penny-activity", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<PennyActivity[]> => {
+      const sb = getClient();
+      const { data, error } = await sb.rpc("list_penny_activity", { p_org: orgId, p_limit: 50 });
+      if (error) throw error;
+      return (data ?? []) as PennyActivity[];
+    },
+  });
+}
+
+/** 1-tap undo of one auto-post — reverses the reposted entry (ledger stays balanced). */
+export const undoActivity = (org_id: string, activity_id: string) =>
+  invoke<{ activity: PennyActivity }>("categorize", { op: "undo", org_id, activity_id });
+
+export function usePennyActivityRefresh(orgId: string | undefined) {
+  const qc = useQueryClient();
+  return () => { void qc.invalidateQueries({ queryKey: ["penny-activity", orgId] }); };
+}
+
+/** The owner's interruption budget for this week (spent / cap / remaining). */
+export function useAskBudget(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["ask-budget", orgId],
+    enabled: Boolean(orgId),
+    staleTime: 30_000,
+    queryFn: async (): Promise<{ spent: number; budget: number; remaining: number }> => {
+      const sb = getClient();
+      const { data, error } = await sb.rpc("owner_asks_this_week", { p_org: orgId });
+      if (error) throw error;
+      // The cap comes from config (CENTRAL-1); the app reads it via useBehaviorConfig.
+      // We only return the raw spent here; the caller folds in the config budget.
+      const spent = Number(data ?? 0);
+      return { spent, budget: 0, remaining: 0 };
+    },
+  });
+}
+export function useAskBudgetRefresh(orgId: string | undefined) {
+  const qc = useQueryClient();
+  return () => { void qc.invalidateQueries({ queryKey: ["ask-budget", orgId] }); };
+}
+
 // ── learned-rules management (W1.6) ───────────────────────────────────────────
 // Owner + full-access CPA see every rule Penny has learned and can delete a bad
 // one. Reads go direct under RLS (categorization_rules is client-readable via

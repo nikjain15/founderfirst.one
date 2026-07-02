@@ -51,6 +51,26 @@ function clip(s: unknown, max: number): string | null {
   return t.length > max ? t.slice(0, max) : t;
 }
 
+/**
+ * Constant-time string comparison for the shared bearer secret. A plain `a !== b`
+ * short-circuits on the first differing byte, leaking token length/prefix via
+ * response timing (same class as the ISOTEST forged-actor findings). We compare
+ * every byte regardless of mismatch. Length is not itself secret, but folding it
+ * into the accumulator avoids an early-exit branch. Both args must be non-empty.
+ */
+export function safeEqual(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  const enc = new TextEncoder();
+  const ab = enc.encode(a);
+  const bb = enc.encode(b);
+  let diff = ab.length ^ bb.length;
+  const len = Math.max(ab.length, bb.length);
+  for (let i = 0; i < len; i++) {
+    diff |= (ab[i] ?? 0) ^ (bb[i] ?? 0);
+  }
+  return diff === 0;
+}
+
 type Payload = {
   session_tag?: string;
   role?: string;
@@ -62,7 +82,7 @@ type Payload = {
   event?: string | null;
 };
 
-Deno.serve(async (req) => {
+export async function handle(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
   if (req.method !== "POST")    return json({ error: "method_not_allowed" }, 405);
 
@@ -70,7 +90,7 @@ Deno.serve(async (req) => {
   const expected = Deno.env.get("LOOP_HEARTBEAT_TOKEN");
   const auth = req.headers.get("authorization") ?? "";
   const presented = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
-  if (!expected || presented !== expected) {
+  if (!expected || !safeEqual(presented, expected)) {
     return json({ error: "unauthorized" }, 401);
   }
 
@@ -121,4 +141,8 @@ Deno.serve(async (req) => {
   }
 
   return json({ ok: true, session_tag: sessionTag, last_beat: now });
-});
+}
+
+// Only bind the port when run as the entrypoint — importing for unit tests
+// (index.test.ts) must not start a listener.
+if (import.meta.main) Deno.serve(handle);

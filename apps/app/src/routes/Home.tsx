@@ -7,7 +7,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Topbar from "../components/Topbar";
 import { useActiveOrg } from "../org/ActiveOrgProvider";
-import CreateOrg from "../org/CreateOrg";
+import Onboarding from "../onboarding/Onboarding";
 import OwnerLens from "../lenses/OwnerLens";
 import CpaLens from "../lenses/CpaLens";
 import { SITE } from "@ff/site";
@@ -35,13 +35,11 @@ export default function Home() {
           <p className="error" role="alert">{COPY.home.loadError(SITE.email)}</p>
         )}
 
+        {/* No books yet → the minimal 3-step onboarding (W3.3): name → entity →
+            industry, everything else asked in-journey. The old bare CreateOrg form
+            is superseded (it still lives in the org switcher for "+ New org"). */}
         {!loading && !error && orgs.length === 0 && (
-          <div className="empty">
-            <span className="p-mark p-mark-lg welcome-mark" aria-hidden="true">P</span>
-            <h1 className="page-title">{COPY.home.welcome}</h1>
-            <p className="muted">{COPY.home.welcomeLead}</p>
-            <CreateOrg />
-          </div>
+          <Onboarding />
         )}
 
         {activeOrg && roleInfo?.lens === "owner" && (

@@ -978,3 +978,53 @@ button.ghost.sm, .ghost.sm {
 .catchup-year .cy-label { font-weight: var(--fw-semibold); }
 .catchup-year.cy-done .cy-label { color: var(--income-strong); }
 .catchup-year .cy-actions { margin-left: auto; display: flex; gap: var(--space-2); }
+
+/* ── W3.3 · Minimal 3-step onboarding ────────────────────────────────────── */
+.onboarding { max-width: 40rem; }
+.onboarding > .eyebrow { display: block; margin-bottom: var(--space-2); }
+.onb-step {
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-2); margin-top: var(--space-3);
+}
+.onb-step .page-title { margin: 0; }
+.onb-step > input {
+  width: min(100%, 24rem); margin-top: var(--space-2);
+  font-size: var(--fs-input); min-height: var(--tap-min);
+}
+.onb-step > button { min-height: var(--tap-min); width: min(100%, 24rem); }
+.onb-kicker {
+  font-size: var(--fs-micro); font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--brand-strong);
+}
+/* Tiles — fluid auto-fit grid (RESPONSIVE.md rule 1); no fixed pixel columns. */
+.onb-tiles {
+  display: grid; gap: var(--space-2); width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  margin-top: var(--space-2); text-align: left;
+}
+.onb-tile {
+  display: flex; flex-direction: column; gap: var(--space-1);
+  align-items: flex-start; text-align: left;
+  padding: var(--pad-card); min-height: var(--tap-min);
+  background: var(--paper); color: var(--ink-1);
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-card);
+  width: 100%;
+}
+.onb-tile:hover { border-color: var(--brand); }
+.onb-tile.on { border-color: var(--brand); background: var(--brand-tint); }
+.onb-tile-label { font-weight: var(--fw-semibold); color: var(--ink-1); }
+.onb-tile-desc { font-size: var(--fs-sm); }
+.onb-link {
+  background: transparent; border: none; color: var(--brand-strong);
+  font-weight: var(--fw-medium); min-height: var(--tap-min); padding: var(--space-1) var(--space-2);
+}
+.onb-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; margin-top: var(--space-2); }
+.onb-question, .onb-result { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
+.onb-q { font-weight: var(--fw-semibold); font-size: var(--fs-h3); text-align: center; margin: 0; }
+.onb-yesno { display: flex; gap: var(--space-2); }
+.onb-yesno button { min-height: var(--tap-min); min-width: 6rem; }
+@media (max-width: 480px) {
+  .onb-actions { flex-direction: column; width: min(100%, 24rem); }
+  .onb-yesno { width: min(100%, 24rem); }
+  .onb-yesno button { flex: 1; }
+}

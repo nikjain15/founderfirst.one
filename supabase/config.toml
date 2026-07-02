@@ -104,3 +104,6 @@ verify_jwt = true
 
 [functions.content-publish]
 verify_jwt = true
+
+[functions.loop-heartbeat]
+verify_jwt = false

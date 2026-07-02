@@ -57,9 +57,10 @@ insert into organizations (id, type, name, created_by) values
   ('70000000-0000-0000-0000-0000000000b0', 'firm', 'CPA Firm', '70000000-0000-0000-0000-000000000002');
 insert into memberships (org_id, user_id, role, status) values
   ('70000000-0000-0000-0000-0000000000b0', '70000000-0000-0000-0000-000000000002', 'firm_admin', 'active');
-insert into engagements (id, firm_org_id, client_org_id, status, access) values
+insert into engagements (id, firm_org_id, client_org_id, status, access, initiated_by) values
   ('70000000-0000-0000-0000-0000000000e0', '70000000-0000-0000-0000-0000000000b0',
-   '70000000-0000-0000-0000-0000000000a0', 'active', 'full');
+   '70000000-0000-0000-0000-0000000000a0', 'active', 'full',
+   '70000000-0000-0000-0000-000000000002');
 
 insert into ledger_accounts (id, org_id, code, name, type, tags) values
   ('70000000-0000-0000-0000-0000000000c1', '70000000-0000-0000-0000-0000000000a0', '4000', 'Sales',        'income',  '{}'),

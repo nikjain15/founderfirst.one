@@ -19,6 +19,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { resolveOnDeno } from "../_shared/inference/deno.ts";
 import { orgTenant } from "../_shared/inference/core.ts";
+import { getAppPersona } from "../_shared/appPersona.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -130,13 +131,12 @@ Deno.serve(async (req) => {
       rationale: { type: "string", description: "one short sentence, plain language" },
     },
   } as const;
-  const system = [
-    "You are Penny, an autonomous bookkeeper. Categorize one bank transaction by",
-    "choosing the single best ledger account from the chart of accounts provided.",
-    "You MUST return an account_id that appears in the list — never invent one.",
-    "Prefer income accounts for money in and expense accounts for money out.",
-    "If nothing is a good fit, pick the closest and give it a low confidence.",
-  ].join(" ");
+  // Penny's in-app language is a LIVE, admin-editable persona (card CENTRAL-1) —
+  // read the published 'app' body (~60s cache, baked fallback) instead of a
+  // hard-coded SYSTEM string, so tuning her voice is an edit, not a redeploy.
+  const system = await getAppPersona(
+    { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY: SERVICE_ROLE_KEY },
+  );
   const userMsg = [
     `Transaction: "${description}" — ${direction}.`,
     "",

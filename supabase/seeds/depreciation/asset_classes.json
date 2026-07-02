@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "table": "asset_classes",
+    "note": "LAW DATA — MACRS recovery classes with §179 cap + bonus %, effective-dated + cited. A law change (bonus step-down, §179 bump) is a NEW row with a new effective_from, never an edit. Amounts are minor units (cents). Sources: IRS Pub 946 (How To Depreciate Property), IRC §168 (MACRS), §179 (expensing), §168(k) (bonus)."
+  },
+  "rows": [
+    {
+      "jurisdiction_code": "US-FED", "class_key": "computers", "label": "Computers & peripheral equipment",
+      "tax_year": 2025, "recovery_period": 5, "macrs_method": "200DB", "default_convention": "half_year",
+      "section_179_cap_minor": 125000000, "bonus_pct": 40, "class_life_years": 6,
+      "effective_from": "2025-01-01",
+      "citation": "IRS Pub 946 (2025) Asset Class 00.12; IRC §168(e), §179 (2025 cap $1,250,000), §168(k) (40% bonus 2025)"
+    },
+    {
+      "jurisdiction_code": "US-FED", "class_key": "office_machinery", "label": "Office machinery (5-year)",
+      "tax_year": 2025, "recovery_period": 5, "macrs_method": "200DB", "default_convention": "half_year",
+      "section_179_cap_minor": 125000000, "bonus_pct": 40, "class_life_years": 6,
+      "effective_from": "2025-01-01",
+      "citation": "IRS Pub 946 (2025) 5-year property; IRC §168(e); §168(k) 40% bonus (2025)"
+    },
+    {
+      "jurisdiction_code": "US-FED", "class_key": "vehicles_light", "label": "Automobiles & light general-purpose trucks",
+      "tax_year": 2025, "recovery_period": 5, "macrs_method": "200DB", "default_convention": "half_year",
+      "section_179_cap_minor": 125000000, "bonus_pct": 40, "class_life_years": 5,
+      "effective_from": "2025-01-01",
+      "citation": "IRS Pub 946 (2025) Asset Class 00.22 (light trucks/autos, 5-year); §280F luxury-auto caps apply separately"
+    },
+    {
+      "jurisdiction_code": "US-FED", "class_key": "office_furniture", "label": "Office furniture, fixtures & equipment",
+      "tax_year": 2025, "recovery_period": 7, "macrs_method": "200DB", "default_convention": "half_year",
+      "section_179_cap_minor": 125000000, "bonus_pct": 40, "class_life_years": 10,
+      "effective_from": "2025-01-01",
+      "citation": "IRS Pub 946 (2025) Asset Class 00.11 (office furniture/fixtures, 7-year); §168(e)"
+    },
+    {
+      "jurisdiction_code": "US-FED", "class_key": "machinery", "label": "Machinery & equipment (7-year)",
+      "tax_year": 2025, "recovery_period": 7, "macrs_method": "200DB", "default_convention": "half_year",
+      "section_179_cap_minor": 125000000, "bonus_pct": 40, "class_life_years": 12,
+      "effective_from": "2025-01-01",
+      "citation": "IRS Pub 946 (2025) 7-year property; §168(e)"
+    },
+    {
+      "jurisdiction_code": "US-FED", "class_key": "computers", "label": "Computers & peripheral equipment",
+      "tax_year": 2024, "recovery_period": 5, "macrs_method": "200DB", "default_convention": "half_year",
+      "section_179_cap_minor": 122000000, "bonus_pct": 60, "class_life_years": 6,
+      "effective_from": "2024-01-01",
+      "citation": "IRS Pub 946 (2024) Asset Class 00.12; §179 (2024 cap $1,220,000); §168(k) 60% bonus (2024)"
+    }
+  ]
+}

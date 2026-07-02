@@ -10,6 +10,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+    # Docs-only merges (docs/** or root *.md) don't change the built site — skip the deploy.
+    paths-ignore: ['docs/**', '*.md']
   workflow_dispatch:
   # Fired by content-publish (Supabase edge fn) so a newly-published post/episode
   # rebuilds the static site without a code push. Needs a GH token on the fn side.

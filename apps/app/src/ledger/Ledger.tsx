@@ -21,6 +21,7 @@ import {
 import { formatMoney, formatMoneyShort, parseMoneyToMinor } from "./money";
 import { ACCOUNT_TYPES } from "./types";
 import ImportFlow from "../import/ImportFlow";
+import CatchUpFlow from "../catchup/CatchUpFlow";
 import Categorize from "./Categorize";
 import LearnedRules from "./LearnedRules";
 import { SuggestionInbox, EntryCollab } from "./CollabUI";
@@ -192,7 +193,8 @@ export default function Ledger({
             )}
             {surface === "connections" && (
               <Connections orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []}
-                onImported={() => { refresh(); goto("journal"); }} onInvite={onInvite} />
+                onImported={() => { refresh(); goto("journal"); }} onInvite={onInvite}
+                onReconcile={() => goto("reconcile")} onReports={() => goto("reports")} />
             )}
             {surface === "journal" && (
               <Journal orgId={org.id} canWrite={canWrite}
@@ -227,13 +229,22 @@ export default function Ledger({
 //    Import tab and the InviteCpa sidebar so bank/connector/import/invite all live
 //    under one owner-facing job instead of being scattered across the ledger. ─────
 function Connections({
-  orgId, canWrite, accounts, onImported, onInvite,
+  orgId, canWrite, accounts, onImported, onInvite, onReconcile, onReports,
 }: {
   orgId: string; canWrite: boolean; accounts: LedgerAccount[];
   onImported: () => void; onInvite?: () => void;
+  onReconcile?: () => void; onReports?: () => void;
 }) {
   return (
     <div className="connections">
+      {/* Catch-up mode (W2.1) — the guided "get me caught up" job for a years-behind
+          owner. Sits above the raw import: it orchestrates import → categorize →
+          reconcile → per-year package. Read-only viewers see the import copy inside. */}
+      <section className="connections-block">
+        <h2 className="section-h">{COPY.catchUp.entryTitle}</h2>
+        <CatchUpFlow orgId={orgId} canWrite={canWrite} accounts={accounts}
+          onDone={onReports ?? onImported} onReconcile={onReconcile} />
+      </section>
       <section className="connections-block">
         <h2 className="section-h">{COPY.connections.bringInData}</h2>
         {canWrite ? (

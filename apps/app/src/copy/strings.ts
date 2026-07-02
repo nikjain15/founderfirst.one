@@ -433,6 +433,41 @@ export const COPY = {
     books: "Books",
     accounts: "Accounts",
     import: "Import",
+    rules: "Rules",
+  },
+
+  // ── Learned rules (W1.6 — Categorize → Rules) ──────────────────────────────
+  // Owner/CPA sees every shortcut Penny has learned and can remove a bad one.
+  rules: {
+    loading: "Loading Penny's rules…",
+    loadError: "Couldn't load Penny's rules. Try again.",
+    emptyTitle: "No rules yet",
+    emptyBody:
+      "As you categorize, Penny remembers your choices so she can handle the same kind of transaction next time. Those shortcuts show up here.",
+    lead:
+      "These are the shortcuts Penny has learned from you. Remove any that are sending transactions to the wrong place.",
+    count: (n: number) => `${n} ${n === 1 ? "rule" : "rules"}`,
+    colPattern: "When a transaction looks like",
+    colAccount: "Penny files it under",
+    colLearnedFrom: "Learned from",
+    colHits: "Used",
+    hits: (n: number) => `${n}×`,
+    learnedFromPenny: "Penny",
+    learnedFromHuman: "You",
+    matchExact: "matches exactly",
+    matchContains: "contains",
+    matchSourceRef: "reference",
+    deleteAria: (pattern: string) => `Delete the rule for ${pattern}`,
+    deleteLabel: "Delete",
+    deleting: "Removing…",
+    readOnlyNote: "You have read-only access — you can see Penny's rules but not change them.",
+    // Confirm dialog (the card's required "Penny will stop applying it" line).
+    confirmTitle: "Remove this rule?",
+    confirmBody: (pattern: string) =>
+      `Penny will stop applying it. Transactions that look like “${pattern}” won't be filed automatically anymore — you can still categorize them yourself.`,
+    confirmDelete: "Remove rule",
+    confirmCancel: "Keep it",
+    deleteError: "Couldn't remove that rule. Try again.",
   },
 } as const;
 

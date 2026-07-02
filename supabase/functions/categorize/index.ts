@@ -123,13 +123,18 @@ Deno.serve(async (req) => {
   }
 
   // record_ask → tag one owner interruption in ai_decisions (budget accounting).
+  // The RPC itself enforces the ≤N/week cap atomically and tells us whether the
+  // ask was allowed; the cap stays DATA (asks_per_week from platform_config).
   if (op === "record_ask") {
     const askEntryId = String(body?.entry_id ?? "");
     if (!askEntryId) return json({ error: "bad_request: entry_id required" }, 400);
-    const { error } = await svc.rpc("record_owner_ask", { p_org: orgId, p_entry_id: askEntryId, p_actor: user.id });
+    const cfg = await effectiveConfig(svc, orgId);
+    const { data: rec, error } = await svc.rpc("record_owner_ask", {
+      p_org: orgId, p_entry_id: askEntryId, p_budget: cfg.asks_per_week, p_actor: user.id,
+    });
     if (error) return json({ error: error.message }, 400);
-    const { data: spent } = await svc.rpc("owner_asks_this_week", { p_org: orgId });
-    return json({ spent: Number(spent ?? 0) });
+    const row = Array.isArray(rec) ? rec[0] : rec;
+    return json({ allowed: Boolean(row?.allowed), spent: Number(row?.spent ?? 0), budget: cfg.asks_per_week });
   }
 
   // ── delete_rule (W1.6) ───────────────────────────────────────────────────────
@@ -340,17 +345,23 @@ async function lowTierResponse(svc: any, orgId: string, entryId: string, proposa
   if (proposal && proposal.type === "income") {
     return json({ tier: "digest", reason: "income", proposal });
   }
-  const { data: spent } = await svc.rpc("owner_asks_this_week", { p_org: orgId });
-  const used = Number(spent ?? 0);
-  if (used >= cfg.asks_per_week) {
+  // Count-and-record atomically: record_owner_ask enforces the ≤N/week cap under
+  // an org-scoped lock and returns whether this ask was allowed. This closes the
+  // TOCTOU where concurrent low-confidence entries all read used<budget and every
+  // one recorded — now they serialize and the cap holds exactly.
+  const { data: rec } = await svc.rpc("record_owner_ask", {
+    p_org: orgId, p_entry_id: entryId, p_budget: cfg.asks_per_week,
+  });
+  const row = Array.isArray(rec) ? rec[0] : rec;
+  const used = Number(row?.spent ?? 0);
+  if (!row?.allowed) {
     // Budget spent → defer to the digest rather than interrupt (deferral rule).
     return json({ tier: "digest", reason: "budget_spent", spent: used, budget: cfg.asks_per_week, proposal });
   }
-  // A real interruption — count it, then return the card.
-  await svc.rpc("record_owner_ask", { p_org: orgId, p_entry_id: entryId });
+  // Allowed → a real interruption was counted; return the card.
   return json({
     tier: "low", variant: "low_confidence", proposal,
-    spent: used + 1, budget: cfg.asks_per_week,
+    spent: used, budget: cfg.asks_per_week,
     note: autopostError ? "autopost_fell_back: " + autopostError : undefined,
   });
 }

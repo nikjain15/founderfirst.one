@@ -188,24 +188,55 @@ $$;
 grant execute on function list_penny_activity(uuid, int) to authenticated;
 
 -- =============================================================================
--- Interruption budget — measured from ai_decisions
+-- Interruption budget — measured off the ai_decisions ledger
 -- =============================================================================
+-- tenant-ok: budget helpers below both filter ai_decisions by tenant_id
+--            ('org:'||p_org); this prose line only mentions the table by name.
 -- One low-confidence ASK the owner sees == one interruption. We tag it in
--- ai_decisions (the single source of truth for AI decisions) with a stable
+-- the ai_decisions ledger (the single source of truth for AI decisions) with a stable
 -- use_case so the count is real data, not a client tally. record_owner_ask is
 -- idempotent per (org, entry) within the week so re-rendering the card doesn't
 -- inflate the count.
+--
+-- record_owner_ask is ALSO the single budget gate: it decides atomically whether
+-- an ask is allowed. The old two-step (read owner_asks_this_week → compare →
+-- record) was a TOCTOU — N low-confidence entries triaged concurrently all read
+-- used<budget and every one recorded, blowing past the ≤5/week cap. Now the
+-- count-and-record happens under a transaction-scoped advisory lock keyed on the
+-- org, so concurrent asks serialize: each sees the prior insert's effect and the
+-- cap holds exactly. Returns whether the ask was allowed + the resulting count so
+-- the caller can defer to the digest when not allowed.
+--
+-- p_budget is the ≤N cap; it stays DATA (the caller passes asks_per_week from
+-- platform_config) — the cutoff is never hardcoded here.
+drop function if exists record_owner_ask(uuid, uuid, uuid);
 create or replace function record_owner_ask(
   p_org      uuid,
   p_entry_id uuid,
+  p_budget   int,
   p_actor    uuid default null
-) returns void
+) returns table (allowed boolean, spent int)
 language plpgsql security definer set search_path = public as $$
 declare
   v_week_start timestamptz := date_trunc('week', now());
-  v_ref text := p_entry_id::text;
+  v_ref  text := p_entry_id::text;
+  v_used int;
 begin
-  -- Idempotent within the week: one interruption per entry per week.
+  -- Serialize concurrent asks for THIS org so count-then-insert is atomic. The
+  -- lock is transaction-scoped (released at commit/rollback), keyed on the org
+  -- uuid hashed into two int4 classifiers (hashtext returns int4) so distinct
+  -- orgs almost never contend; the 'owner_ask' namespace keeps it off other locks.
+  perform pg_advisory_xact_lock(
+    hashtext('owner_ask'), hashtext(p_org::text));
+
+  select count(*)::int into v_used
+    from ai_decisions
+   where tenant_id = 'org:' || p_org::text
+     and use_case = 'owner_interruption'
+     and created_at >= v_week_start;
+
+  -- Idempotent within the week: a repeat ask for the same entry is already
+  -- counted — report allowed=true (the card may render) without a second insert.
   if exists (
     select 1 from ai_decisions
      where tenant_id = 'org:' || p_org::text
@@ -213,14 +244,23 @@ begin
        and request_ref = v_ref
        and created_at >= v_week_start
   ) then
+    return query select true, v_used;
     return;
   end if;
+
+  -- Budget spent → not allowed; caller defers to the digest. No insert.
+  if v_used >= p_budget then
+    return query select false, v_used;
+    return;
+  end if;
+
   insert into ai_decisions (tenant_id, use_case, runtime, provider, model, request_ref, gate_status)
   values ('org:' || p_org::text, 'owner_interruption', 'deno', 'workers-ai', 'n/a', v_ref, 'unevaluated');
+  return query select true, v_used + 1;
 end$$;
 
-revoke all on function record_owner_ask(uuid,uuid,uuid) from public;
-grant execute on function record_owner_ask(uuid,uuid,uuid) to service_role;
+revoke all on function record_owner_ask(uuid,uuid,int,uuid) from public;
+grant execute on function record_owner_ask(uuid,uuid,int,uuid) to service_role;
 
 -- How many owner interruptions has this org had since the start of THIS week.
 -- The ≤5 budget (asks_per_week, from platform_config) caps this number; the

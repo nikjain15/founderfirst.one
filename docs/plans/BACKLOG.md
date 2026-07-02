@@ -390,8 +390,10 @@ acceptance:
   - [ ] High-confidence categorization posts automatically + shows in the feed with working
         1-tap undo (undo reverses via the reversal path, ledger stays balanced — test)
   - [ ] Medium items land in Review as `pending_review` and batch-approve in ≤2 taps
-  - [ ] Low items render as approval cards (only the 4 real variants); income events go to the
-        digest, not a card (test asserts no income card is created)
+  - [ ] Low items render as approval cards (only the 4 real variants); income is NEVER rendered
+        as an approval card — a low-confidence income event defers to the digest, and a
+        high-confidence income event may auto-post to the feed (auto-post is fine — Nik). The
+        invariant is only that no income *card* is ever created (test asserts no income card)
   - [ ] Owner asks/week never exceeds the `platform_config` budget for a seeded high-volume org;
         changing the budget row changes the interruption count with no redeploy (test)
   - [ ] All tier cutoffs + budget read from `platform_config` — zero magic-number thresholds in

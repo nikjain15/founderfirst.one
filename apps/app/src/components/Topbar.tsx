@@ -9,6 +9,7 @@ import { useIsPlatformStaff } from "../staff/api";
 import AccountMenu from "./AccountMenu";
 import OrgSwitcher from "./OrgSwitcher";
 import CreateOrg from "../org/CreateOrg";
+import { useClientCounts } from "../lenses/practiceQueue";
 import { SITE } from "@ff/site";
 import { COPY } from "../copy";
 
@@ -16,6 +17,13 @@ export default function Topbar() {
   const { session, signOut } = useAuth();
   const { orgs, activeOrg, roleInfo, setActiveOrgId } = useActiveOrg();
   const isStaff = useIsPlatformStaff();
+  // When a CPA is on their practice, badge the switcher's client list with each
+  // client's open-item count (APP_PRINCIPLES §3 — "counts on the switcher").
+  const firmId = activeOrg?.type === "firm" ? activeOrg.id : undefined;
+  const clientCounts = useClientCounts(firmId);
+  const counts = clientCounts.data
+    ? Object.fromEntries(clientCounts.data.map((c) => [c.client_org_id, c.total]))
+    : undefined;
   // "+ New organization" opens an inline panel under the bar (APP_PRINCIPLES §5) —
   // launched from the org switcher, not stapled to the page body.
   const [creating, setCreating] = useState(false);
@@ -33,7 +41,7 @@ export default function Topbar() {
         </Link>
 
         <OrgSwitcher orgs={orgs} activeOrg={activeOrg} onSelect={setActiveOrgId}
-          onCreateOrg={() => setCreating(true)} />
+          onCreateOrg={() => setCreating(true)} counts={counts} />
 
         <span className="spacer" />
 

@@ -8,7 +8,7 @@
  * enforced server-side (can_write_org) — the disabled button is a courtesy, not
  * the control (ARCHITECTURE.md §1, §6).
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   approveEntry, newIdempotencyKey, postEntry, reverseEntry, setPeriod,
   upsertAccount, useAccounts, useEntries, useLedgerRefresh, usePeriods,
@@ -77,12 +77,13 @@ const entryTotal = (e: JournalEntry) =>
   (e.lines ?? []).filter((l) => l.side === "D").reduce((s, l) => s + l.amount_minor, 0);
 
 export default function Ledger({
-  org, canWrite, nav = "owner", defaultTabId, eyebrow, onInvite,
+  org, canWrite, nav = "owner", defaultTabId, initialSurface, eyebrow, onInvite,
 }: {
   org: { id: string; name: string };
   canWrite: boolean;
   nav?: Nav;                 // which navigation to present (owner jobs vs CPA workflow)
   defaultTabId?: string;     // which primary tab to land on (else the first visible one)
+  initialSurface?: Surface;  // land directly on a leaf surface (e.g. the CPA practice queue routes here)
   eyebrow?: string;
   onInvite?: () => void;     // owner-only: open Settings to invite an accountant (top-bar ⚙️ menu)
 }) {
@@ -119,6 +120,13 @@ export default function Ledger({
     setTabId(parent.id);
     if (parent.subs) setSub(target);
   };
+
+  // Land directly on a requested leaf surface (the CPA practice queue deep-links
+  // here). Re-runs when the surface changes so tapping a new queue item re-routes.
+  useEffect(() => {
+    if (initialSurface) goto(initialSurface);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSurface]);
 
   return (
     <section className="lens ledger">

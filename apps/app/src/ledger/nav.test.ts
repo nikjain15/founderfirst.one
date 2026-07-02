@@ -5,6 +5,7 @@
  * lens is proven UNCHANGED. Pure-data test (nav config is React-free), runs in the
  * node environment alongside reports.test.ts. Maps to APP_PRINCIPLES §2 + §3.
  */
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { OWNER_TABS, CPA_TABS, visibleTabs, tabForSurface, type Surface } from "./nav";
 
@@ -69,6 +70,20 @@ describe("owner lens nav (IA-1 · APP_PRINCIPLES §2)", () => {
   it("hides the write-only Review tab for read-only viewers", () => {
     expect(visibleTabs("owner", true).map((t) => t.id)).toContain("review");
     expect(visibleTabs("owner", false).map((t) => t.id)).not.toContain("review");
+  });
+});
+
+describe("org switcher — '+ New organization' listbox a11y (IA-1 · APP_PRINCIPLES §5)", () => {
+  it("marks the create action as a non-option so the listbox stays valid ARIA", async () => {
+    // The create <li> sits inside <ul role="listbox">. A bare <li> there is invalid
+    // ARIA (listbox children must be option/group/presentation). It must be
+    // role="presentation" — it's an action, not a selectable org.
+    const src = readFileSync(
+      new URL("../components/OrgSwitcher.tsx", import.meta.url), "utf8",
+    );
+    const foot = src.slice(src.indexOf('className="orgsw-foot"'));
+    const liTag = foot.slice(0, foot.indexOf(">") + 1);
+    expect(liTag).toContain('role="presentation"');
   });
 });
 

@@ -54,7 +54,7 @@ select is((select count(distinct journal_entry_id)::int from bank_transactions w
 -- the ledger balances (every posted entry Dr==Cr — sum of all lines nets to 0).
 select is(
   (select coalesce(sum(case when side='D' then amount_minor else -amount_minor end),0)
-   from journal_lines where org_id='00000000-0000-0000-0000-0000000e0b01'),
+   from journal_lines where org_id='00000000-0000-0000-0000-0000000e0b01')::bigint,
   0::bigint, 'ledger balances after add (Dr==Cr across all lines)');
 
 -- ── 3. W2.3-REPLAY: re-ingesting the same page is a NO-OP (webhook replay) ────
@@ -93,7 +93,7 @@ select is(
 -- ledger still balances after the reversal + repost.
 select is(
   (select coalesce(sum(case when side='D' then amount_minor else -amount_minor end),0)
-   from journal_lines where org_id='00000000-0000-0000-0000-0000000e0b01'),
+   from journal_lines where org_id='00000000-0000-0000-0000-0000000e0b01')::bigint,
   0::bigint, 'ledger still balances after modify (reverse + repost)');
 
 -- ── 5. W2.3-REMOVED: removing t2 reverses its entry, marks the row removed ────

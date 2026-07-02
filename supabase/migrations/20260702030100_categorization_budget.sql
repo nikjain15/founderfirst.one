@@ -43,6 +43,9 @@ create or replace view categorization_panel_spend as
 select date_trunc('month', created_at)::date as month,
        coalesce(sum(cost_usd), 0)::numeric(12,6) as spend_usd,
        count(*)                                  as calls
+  -- tenant-ok: platform-wide spend gauge for the internal multi-model validation
+  -- panel; sums across all orgs by design (a platform R&D cost ceiling, not
+  -- per-tenant billing), so a tenant_id predicate would defeat its purpose.
   from ai_decisions
  where use_case = 'penny_categorize_panel'
  group by 1;
@@ -63,6 +66,8 @@ declare
 begin
   select monthly_ceiling_usd into v_ceiling from categorization_budget limit 1;
   v_ceiling := coalesce(v_ceiling, 50.00);
+  -- tenant-ok: platform-wide monthly spend for the soft $50 ceiling; aggregates
+  -- every org's validation-panel cost by design (not per-tenant), so no tenant_id.
   select coalesce(sum(cost_usd), 0) into v_spend
     from ai_decisions
    where use_case = 'penny_categorize_panel' and created_at >= v_month;

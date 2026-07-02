@@ -110,7 +110,7 @@ revoke all on function record_categorization_outcome(uuid, uuid, jsonb, text, uu
 grant execute on function record_categorization_outcome(uuid, uuid, jsonb, text, uuid, uuid, uuid, text) to service_role;
 
 -- ── scorecard view: per-model accuracy (raw + CPA-weighted) ─────────────────
--- Cost/latency are joined from ai_decisions at query time in the admin fn; this
+-- Cost/latency are joined from the ai_decisions ledger at query time in the admin fn; this
 -- view is the accuracy spine. One row per model that has proposed at least once.
 create or replace view categorization_model_scorecard as
 with runs as (

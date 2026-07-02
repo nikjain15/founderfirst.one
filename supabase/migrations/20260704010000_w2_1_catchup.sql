@@ -158,6 +158,8 @@ declare
   v_entry_id     uuid;
   v_to_acct      uuid;
   v_conf         numeric;
+  v_memo         text;
+  v_rule_acct    uuid;
   v_learn_value  text;
   v_idem         text;
   v_approved     int := 0;
@@ -190,19 +192,51 @@ begin
     v_conf        := coalesce((v_item ->> 'confidence')::numeric, 0);
     v_learn_value := v_item ->> 'learn_value';
 
-    -- TRUST GATE (server-authoritative): only high-confidence picks bulk-post.
-    -- A low-confidence item is never auto-posted — it goes to the batched
-    -- question queue instead (returned as skipped).
+    -- TRUST GATE (server-authoritative): only picks the SERVER itself can confirm
+    -- are high-confidence bulk-post. The client-supplied `confidence` is advisory
+    -- ONLY — it is NEVER the security boundary, because a malicious client can label
+    -- any low-confidence pick `confidence: 1`. Bulk auto-posting is therefore
+    -- restricted to picks the server can re-derive deterministically: a learned
+    -- categorization RULE (the confidence-1 tier) matching this entry's own memo to
+    -- the SAME account the caller claims. Any pick that is not server-reproducible
+    -- (model/"penny" tier, a spoofed confidence, or a mismatched account) is SKIPPED
+    -- to the batched question queue — never auto-posted. This is the same rule the
+    -- categorize `propose` path returns as confidence 1 (match_categorization_rule),
+    -- so it introduces no new trust logic — it just refuses to trust the client.
     if v_entry_id is null or v_to_acct is null then
       v_failed := v_failed + 1;
       v_results := v_results || jsonb_build_object('entry_id', v_item ->> 'entry_id',
                      'status', 'failed', 'detail', 'missing entry_id or to_account_id');
       continue;
     end if;
+
+    -- Belt-and-suspenders: honor the client's own low-confidence self-report too
+    -- (if it admits < cutoff, skip immediately, no lookup needed).
     if v_conf < v_high then
       v_skipped := v_skipped + 1;
       v_results := v_results || jsonb_build_object('entry_id', v_entry_id,
                      'status', 'skipped', 'detail', 'below trust tier');
+      continue;
+    end if;
+
+    -- Server-authoritative re-derivation: read THIS org's entry memo (tenant-scoped;
+    -- a cross-tenant or non-existent entry_id yields null → skipped, never posted)
+    -- and re-run the deterministic learned-rule match. Only a server-confirmed rule
+    -- hit to the caller's claimed account qualifies for bulk auto-post.
+    -- Use the ENTRY-level memo — the exact field the categorize `propose` path keys
+    -- its confidence-1 rule match on (journal_entries.memo). The join to a holding
+    -- line asserts the entry is still uncategorized (has a line on v_from_acct);
+    -- an already-sorted or cross-tenant entry yields null → skipped, never posted.
+    select je.memo into v_memo
+      from journal_entries je
+      join journal_lines jl on jl.entry_id = je.id and jl.account_id = v_from_acct
+     where je.id = v_entry_id and je.org_id = p_org and je.status = 'posted'
+     limit 1;
+    v_rule_acct := match_categorization_rule(p_org, v_memo);
+    if v_rule_acct is null or v_rule_acct <> v_to_acct then
+      v_skipped := v_skipped + 1;
+      v_results := v_results || jsonb_build_object('entry_id', v_entry_id,
+                     'status', 'skipped', 'detail', 'not server-confirmed high confidence');
       continue;
     end if;
 

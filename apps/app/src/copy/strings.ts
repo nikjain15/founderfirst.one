@@ -796,6 +796,47 @@ export const COPY = {
     seededNote: (n: number) => `${n} ${n === 1 ? "account" : "accounts"} added to your chart.`,
     errFinish: "We couldn't finish setting up your books. Please try again.",
   },
+
+  // ── W3.2 · Trust-tiered autonomy (the ≤5-asks/week approval rework) ────────
+  // Penny acts on what she's sure of, batches the maybes, and only asks about
+  // true unknowns — honestly capped at ≤5 asks/week. All copy here; the deeper
+  // Penny voice for the rationale is the live 'app' persona (no shame, action-
+  // first — VOICE.md). No exclamation marks.
+  autonomy: {
+    // "Penny did this" activity feed (high-confidence auto-posts).
+    feedTitle: "Penny did this",
+    feedLead: "High-confidence work Penny handled on her own. Undo anything that isn't right.",
+    feedEmpty: "Nothing yet — as transactions come in, the ones Penny is sure about land here, already done.",
+    feedLoading: "Loading what Penny's done…",
+    feedError: "Couldn't load Penny's activity. Try again.",
+    filedUnder: (account: string) => `Filed under ${account}`,
+    viaRule: "learned rule",
+    viaVendor: "repeat vendor",
+    viaPenny: "Penny's call",
+    undo: "Undo",
+    undoing: "Undoing…",
+    undone: "Undone",
+    undoError: "Couldn't undo that. Try again.",
+    sureSuffix: (pct: number) => `${pct}% sure`,
+
+    // Interruption budget — the honest ≤5/week cap.
+    budgetLine: (spent: number, budget: number) =>
+      `${spent} of ${budget} questions this week`,
+    budgetClear: (budget: number) => `No questions this week yet — up to ${budget} if something needs you.`,
+    budgetSpent: "That's this week's questions. Anything else Penny wasn't sure about is waiting in your weekly summary instead of interrupting you.",
+
+    // Batch-approve (medium tier).
+    batchTitle: "Ready for a quick yes",
+    batchLead: "Penny's fairly sure about these. Approve them all, or open one to change it.",
+    batchCount: (n: number) => `${n} ${n === 1 ? "transaction" : "transactions"} to confirm`,
+    approveAll: "Approve all",
+    approving: "Approving…",
+
+    // Low-confidence card.
+    askTitle: "A few need your call",
+    askLead: "Penny couldn't be sure on these. Pick where each belongs.",
+    deferredNote: "Some lower-priority items are waiting in your weekly summary rather than interrupting you.",
+  },
 } as const;
 
 export type Copy = typeof COPY;

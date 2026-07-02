@@ -5,6 +5,12 @@ from the *number* of features but from having **no rule for where a new one
 goes** — so each grabs a tab or a Settings row. These principles make placement
 a decision, not a default. Read this before adding any admin surface.
 
+> **Scope note.** These principles also govern the **planned internal console at
+> `penny.founderfirst.one/admin`**, which will mirror and, over time, absorb this
+> `founderfirst.one/admin` (parallel-run, additive, one Supabase source of truth — no
+> big-bang cutover). Same jobs, same tabs, same rules on both surfaces during the migration.
+> See [apps/app/APP_PRINCIPLES.md](../app/APP_PRINCIPLES.md) §4.
+
 ## The seven
 
 ### 1. Organize around jobs, not data sources or tools

@@ -67,8 +67,11 @@ function stripLineComment(line: string): string {
 }
 
 function scanFile(abs: string): Violation[] {
-  const relPath = relative(APP_SRC, abs);
-  const src = readFileSync(abs, "utf8");
+  return scanSource(readFileSync(abs, "utf8"), relative(APP_SRC, abs));
+}
+
+/** Pure, testable core: scan source text for user-facing copy literals. */
+export function scanSource(src: string, relPath = "in-memory.tsx"): Violation[] {
   const lines = src.split("\n");
   const vios: Violation[] = [];
   let inBlockComment = false;
@@ -98,13 +101,35 @@ function scanFile(abs: string): Violation[] {
       vios.push({ file: relPath, line: i + 1, text, why: "JSX text literal" });
     }
 
-    // 2) Human-facing attribute string literals.
+    // 1b) A JSX text node opened on this line but not yet closed — the copy sits
+    //     on the following line(s): `<p>` then `   Some words` then `</p>`. The
+    //     one-line rule above misses this (the very case a dev would use to slip
+    //     copy past the gate), so catch a line that OPENS a tag (`…>` at EOL, not
+    //     self-closing / not `/>`) whose next non-blank line is bare text.
+    if (/[^=]>\s*$/.test(code) && !/\/>\s*$/.test(code) && !/=>\s*$/.test(code)) {
+      for (let j = i + 1; j < lines.length; j++) {
+        const next = lines[j].trim();
+        if (next === "") continue;
+        const text = next.replace(/<.*$/, "").trim();
+        // Bare prose copy: starts with a letter, is followed by a closing tag on
+        // the same or a later line, and carries NO code punctuation (so arrow
+        // bodies / statements like `setRows((rs) => …);` are excluded). This
+        // targets exactly the multi-line-copy dodge without flagging code.
+        if (/^[A-Za-z]/.test(next) && hasLetter(text) && !/[(){};=[\]|&$`]/.test(text) && text !== "P") {
+          vios.push({ file: relPath, line: j + 1, text, why: "JSX text literal (multi-line)" });
+        }
+        break; // only inspect the first non-blank following line
+      }
+    }
+
+    // 2) Human-facing attribute string literals. Both quote styles — a
+    //    single-quoted attr (`placeholder='…'`) is copy just the same.
     for (const attr of COPY_ATTRS) {
-      const re = new RegExp(`\\b${attr.replace("-", "\\-")}=\"([^\"]+)\"`, "g");
+      const re = new RegExp(`\\b${attr.replace("-", "\\-")}=(["'])(.*?)\\1`, "g");
       for (const m of code.matchAll(re)) {
-        const val = m[1].trim();
+        const val = m[2].trim();
         if (val && hasLetter(val)) {
-          vios.push({ file: relPath, line: i + 1, text: `${attr}="${val}"`, why: "attribute copy literal" });
+          vios.push({ file: relPath, line: i + 1, text: `${attr}=${m[1]}${val}${m[1]}`, why: "attribute copy literal" });
         }
       }
     }
@@ -129,4 +154,5 @@ function main() {
   process.exit(1);
 }
 
-main();
+// Run only as a CLI, not when imported by a test.
+if (import.meta.url === `file://${process.argv[1]}`) main();

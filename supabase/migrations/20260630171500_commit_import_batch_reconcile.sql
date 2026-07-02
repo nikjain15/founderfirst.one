@@ -1,0 +1,21 @@
+-- [reconcile:obtest] Ledger/repo parity marker for prod migration 20260630171500
+-- ("commit_import_batch_reconcile", OBTEST / PR #135).
+--
+-- Applied on prod out-of-band (schema_migrations row present, statements NULL) with
+-- no source file on main. Its effect — OBTEST #135's OPENING-BALANCE GUARD in
+-- commit_import_batch(4-arg): a `ready` opening/trial-balance row missing
+-- account/side/amount RAISES import_row_invalid and posts NOTHING (atomic), instead
+-- of silently dropping it into the OBE plug ("balanced" but WRONG) — was FOLDED
+-- FORWARD and its single source of truth is:
+--
+--   20260701210000_commit_import_batch_fold.sql
+--
+-- which idempotently CREATE OR REPLACEs the current live 4-arg body (guard + F0
+-- provider routing + external_id/content-key dedup + chunking + per-row isolation).
+--
+-- Verified 2026-07-01: live commit_import_batch(4-arg) == repo 20260701210000
+-- (pg_get_functiondef, modulo pg formatting). That migration runs AFTER this version,
+-- so a fresh `supabase db push` reaches the exact prod state. This file carries no
+-- DDL — it exists solely to keep supabase/migrations 1:1 with the prod
+-- schema_migrations ledger.
+select 1; -- parity marker only; body captured by 20260701210000_commit_import_batch_fold.sql

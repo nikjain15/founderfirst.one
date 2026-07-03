@@ -366,3 +366,32 @@ approval cards (LOW), and the owner's asks-count never exceeds the config budget
 (the surplus low-confidence items + income appear as the digest note, not cards).
 The tier split + the ≤budget assertion are the pure-function tests above; the
 server wiring is `supabase/functions/categorize` op `triage`.
+
+## W3.5 · Receipt capture + match
+
+An owner snaps or pastes a receipt; Penny parses vendor/amount/date, matches it to
+an existing transaction (W1.1 discipline — exact date+amount first, fuzzy
+amount+date-window second), and the match flows through the **W3.2 tier pipeline**:
+HIGH auto-attaches + shows in the feed, LOW yields a 1-tap confirm card, no
+candidate lands in a short unmatched queue. Tier cutoffs stay DATA
+(`platform_config` via `get_effective_behavior_config`) — no inline threshold.
+
+| Scenario | Surface | Assertion | Test |
+|---|---|---|---|
+| **W3.5-MATCH** | receipt→txn matcher | Exact (same date + amount magnitude) wins outright; else the nearest fuzzy candidate within the ±window; a receipt outside the window (or with no amount/date) produces NO match → the unmatched queue. Amount matches on magnitude regardless of the receipt's sign. | `apps/app/src/ledger/receiptMatch.test.ts` |
+| **W3.5-TIER** | tier band (auto-attach vs card) | `receiptTier` bands the match from CONFIG cutoffs (`confidence_high`/`confidence_medium`): an exact match is HIGH (auto-attach) by provenance; a several-days-off fuzzy match is LOW (a confirm card); a stricter org config re-bands the SAME score with no code change. | `apps/app/src/ledger/receiptMatch.test.ts` (`receiptTier`) |
+| **W3.5-DEDUP** (duplicate receipt) | attach RPC | The "one live receipt per entry" unique index holds: a SECOND receipt cannot attach to an entry that already has one (`attach_receipt` raises `entry_has_receipt`); the matcher itself SKIPS an entry that already carries a receipt, falling through to the next candidate. Re-attaching the SAME receipt to the SAME entry is idempotent (no error). | `apps/app/src/ledger/receiptMatch.test.ts` (skip) + `supabase/tests/w3_5_receipts_test.sql` (unique + idempotent) |
+| **W3.5-MISMATCH** (owner re-points) | detach / attach | A receipt attach is metadata, not a posting: `detach_receipt` unlinks WITHOUT touching the ledger — the org trial balance is unchanged — and returns the receipt to the unmatched queue so the owner can re-point it; `dismiss_receipt` discards an unmatched receipt. Every capture/attach/detach/dismiss writes a `ledger_audit` row (`receipt.*`, `target_type='receipt'`). | `supabase/tests/w3_5_receipts_test.sql` |
+| **W3.5-FEED** | HIGH auto-attach | `autoattach_receipt` records exactly one `penny_activity` row with the new `kind='receipt_matched'` (reusing the W3.2 feed), so W3.1's thread + W3.4's Home surface it for free; it's idempotent per receipt. | `supabase/tests/w3_5_receipts_test.sql` |
+
+**Re-run.** `pnpm --dir apps/app test` (parse→match→tier, pure) · `supabase test db`
+(attach/link RPC + audit row + feed row). No prod fixtures — the pgTAP seed is
+self-contained inside `BEGIN…ROLLBACK`.
+
+**E2E (upload happy path + card path).** The app-e2e runner (`tools/app-e2e/run.mjs`,
+`verifyReceiptCapture`) asserts the capture surface renders inside Review (no new
+top-level tab), offers both photo + paste entry (≤2 taps), reveals the paste box,
+and shows the in-flow unmatched queue. The auto-attach vs confirm-card DECISION is
+proven deterministically by the Vitest tier test (no AI tokens, no ledger mutation
+in CI — same discipline as W2.1/W3.2); the server wiring is
+`supabase/functions/receipts` op `capture` (HIGH → `autoattach_receipt`, else a card).

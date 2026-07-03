@@ -820,3 +820,103 @@ export function newIdempotencyKey(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `k-${Date.now()}-${Math.round(Math.random() * 1e9)}`;
 }
+
+// ── Receipts (W3.5) ───────────────────────────────────────────────────────────
+export interface Receipt {
+  id: string;
+  org_id: string;
+  capture_kind: "photo" | "text";
+  storage_path: string | null;
+  vendor: string | null;
+  amount_minor: number | null;
+  receipt_date: string | null;
+  raw_text: string | null;
+  status: "unmatched" | "attached" | "dismissed";
+  entry_id: string | null;
+  match_kind: "exact" | "fuzzy" | "manual" | null;
+  confidence: number | null;
+  created_at: string;
+}
+export interface ReceiptMatchCandidate {
+  entry_id: string;
+  entry_date: string | null;
+  memo: string | null;
+  amount_minor: number | null;
+  match_kind: "exact" | "fuzzy";
+  date_delta: number;
+  confidence: number;
+}
+export interface CaptureResult {
+  receipt: Receipt;
+  match: { entry_id: string; kind: "exact" | "fuzzy"; dateDelta: number } | null;
+  tier: "high" | "medium" | "low" | "unmatched";
+  activity?: unknown;
+  card?: boolean;
+  candidate?: ReceiptMatchCandidate;
+  note?: string;
+}
+
+/** The short queue of receipts that haven't been matched to a transaction yet. */
+export function useUnmatchedReceipts(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["receipts-unmatched", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<Receipt[]> => {
+      const sb = getClient();
+      const { data, error } = await sb.rpc("list_unmatched_receipts", { p_org: orgId });
+      if (error) throw error;
+      return (data ?? []) as Receipt[];
+    },
+  });
+}
+
+/** Attached receipts for the org, keyed by entry — hydrates the row indicator. */
+export function useAttachedReceipts(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["receipts-attached", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<Record<string, Receipt>> => {
+      const sb = getClient();
+      const { data, error } = await sb.rpc("list_attached_receipts", { p_org: orgId });
+      if (error) throw error;
+      const byEntry: Record<string, Receipt> = {};
+      for (const r of (data ?? []) as Receipt[]) if (r.entry_id) byEntry[r.entry_id] = r;
+      return byEntry;
+    },
+  });
+}
+
+/** Invalidate every receipt query (and the feed) after a capture / attach / detach. */
+export function useReceiptsRefresh(orgId: string | undefined) {
+  const qc = useQueryClient();
+  return () => {
+    for (const key of ["receipts-unmatched", "receipts-attached", "penny-activity", "ledger-entries"]) {
+      void qc.invalidateQueries({ queryKey: [key, orgId] });
+    }
+  };
+}
+
+/** Capture a receipt (photo base64 or pasted text) → parse + match + tier. */
+export const captureReceipt = (input: {
+  org_id: string;
+  capture_kind: "photo" | "text";
+  image_base64?: string;
+  mime?: string;
+  raw_text?: string;
+}) => invoke<CaptureResult>("receipts", { op: "capture", ...input });
+
+/** Owner confirms / re-points a receipt at a transaction (manual attach). */
+export const attachReceipt = (org_id: string, receipt_id: string, entry_id: string) =>
+  invoke<{ receipt: Receipt }>("receipts", { op: "attach", org_id, receipt_id, entry_id });
+
+/** 1-tap undo of a receipt link (the ledger entry is untouched). */
+export const detachReceipt = (org_id: string, receipt_id: string) =>
+  invoke<{ receipt: Receipt }>("receipts", { op: "detach", org_id, receipt_id });
+
+/** Discard a receipt that documents nothing. */
+export const dismissReceipt = (org_id: string, receipt_id: string) =>
+  invoke<{ receipt: Receipt }>("receipts", { op: "dismiss", org_id, receipt_id });
+
+/** A short-lived signed URL to view the private receipt asset. */
+export const receiptSignedUrl = (org_id: string, receipt_id: string) =>
+  invoke<{ url: string | null }>("receipts", { op: "signed_url", org_id, receipt_id });

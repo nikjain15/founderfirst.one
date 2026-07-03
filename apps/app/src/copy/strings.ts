@@ -837,6 +837,43 @@ export const COPY = {
     askLead: "Penny couldn't be sure on these. Pick where each belongs.",
     deferredNote: "Some lower-priority items are waiting in your weekly summary rather than interrupting you.",
   },
+
+  // ── Receipts (W3.5) — capture + match, from the 'app' persona voice ──────────
+  receipts: {
+    // Capture entry — lives inline in Home/Review + on a transaction row (no new tab).
+    capture: "Add a receipt",
+    captureLead: "Snap or paste a receipt — Penny files it with the right transaction.",
+    capturePhoto: "Take a photo",
+    capturePaste: "Paste receipt text",
+    pastePlaceholder: "Paste the receipt text (vendor, total, date)…",
+    reading: "Reading your receipt…",
+    matching: "Finding its transaction…",
+    captureError: "Couldn't read that receipt. Try a clearer photo, or paste the text.",
+
+    // High-confidence auto-attach outcome.
+    attachedTitle: "Filed with your books",
+    attachedLine: (vendor: string, amount: string) => `Kept your ${amount} receipt from ${vendor} with its transaction.`,
+
+    // Low-confidence confirm card (in Review).
+    confirmTitle: "Is this the right transaction?",
+    confirmLead: "Penny thinks this receipt goes here. One tap to confirm, or pick another.",
+    confirm: "Yes, attach it",
+    confirming: "Attaching…",
+    notThis: "Not this one",
+
+    // Unmatched queue — resolvable in-flow.
+    unmatchedTitle: "Receipts waiting on a transaction",
+    unmatchedLead: "Penny couldn't find a matching charge yet. Point each one at its transaction, or set it aside.",
+    unmatchedEmpty: "No receipts waiting — everything's filed.",
+    dismiss: "Set aside",
+    pickTransaction: "Choose a transaction",
+
+    // On a transaction row.
+    hasReceipt: "Receipt attached",
+    viewReceipt: "View receipt",
+    detach: "Remove receipt",
+    detaching: "Removing…",
+  },
 } as const;
 
 export type Copy = typeof COPY;

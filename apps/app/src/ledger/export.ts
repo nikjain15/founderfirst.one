@@ -17,10 +17,15 @@
  * runtime (getBrandRgb) — never an inlined hex.
  */
 import { balanceSheet, generalLedger, profitAndLoss, trialBalance } from "./reports";
+import type { NecSummary } from "./reports";
 import { formatMoney } from "./money";
 import type { JournalEntry } from "./types";
 
-export type ReportKind = "tb" | "pnl" | "bs" | "gl";
+// "nec" = the year-end 1099-NEC contractor summary (card W2.5). Unlike the other
+// four reports it is NOT derived from the entry list — it comes from the
+// ninetynine_nec_summary RPC (vendor tags + payment-method exclusion + kernel
+// threshold, all server-side) and is passed on ExportContext.nec.
+export type ReportKind = "tb" | "pnl" | "bs" | "gl" | "nec";
 export type ExportFormat = "csv" | "pdf";
 
 /** Period scope for a report. TB/P&L/GL use a date range; BS uses `asOf`. */
@@ -36,6 +41,9 @@ export interface ExportContext {
   scope: ReportScope;
   /** local date the file was generated (YYYY-MM-DD) — stamped in the header. */
   generatedOn: string;
+  /** For the "nec" ReportKind only: the 1099-NEC summary from the RPC (server-
+   *  computed). Ignored by the four ledger-derived reports. */
+  nec?: NecSummary;
 }
 
 /** Date filter matching accountBalances' convention (inclusive both ends). */
@@ -77,7 +85,8 @@ function csvRow(cells: (string | number)[]): string {
 }
 
 /** Human-readable scope label for a header line. */
-export function scopeLabel(kind: ReportKind, scope: ReportScope): string {
+export function scopeLabel(kind: ReportKind, scope: ReportScope, nec?: NecSummary): string {
+  if (kind === "nec") return `Tax year ${nec?.taxYear ?? scope.end?.slice(0, 4) ?? "—"}`;
   if (kind === "bs") return `As of ${scope.end ?? "today"}`;
   const from = scope.start ?? "start";
   const to = scope.end ?? "today";
@@ -91,8 +100,10 @@ function buildModel(
   kind: ReportKind,
   entries: JournalEntry[],
   scope: ReportScope,
+  nec?: NecSummary,
 ): { title: string; header: string[]; body: (string | number | { minor: number })[][] }[] {
   const f = rangeFilter(scope);
+  if (kind === "nec") return necModel(nec);
   if (kind === "tb") {
     const tb = trialBalance(entriesInScope(entries, f));
     const rows = tb.rows.map((r) => [
@@ -145,6 +156,43 @@ function labelOf(code: string | null, name: string): string {
   return code ? `${code} · ${name}` : name;
 }
 
+const NEC_HEADER = ["Vendor", "W-9", "TIN", "1099-NEC amount", "Excluded (card/1099-K)", "Must file"];
+
+/**
+ * The year-end 1099-NEC summary as a table (card W2.5). One row per 1099-eligible
+ * vendor, ordered by reportable amount. "1099-NEC amount" already excludes card /
+ * third-party-network payments (server-side, from the data-driven exclusion).
+ * "Must file" marks vendors that cross the kernel threshold — those are the 1099s
+ * the payer actually issues. A trailing total row sums the amounts that must be
+ * filed, so the CPA sees the filing obligation at a glance. The header row states
+ * the kernel threshold in effect (LAW; never a literal).
+ */
+function necModel(
+  nec?: NecSummary,
+): { title: string; header: string[]; body: (string | number | { minor: number })[][] }[] {
+  const rows: (string | number | { minor: number })[][] = (nec?.rows ?? []).map((r) => [
+    r.vendor_name,
+    r.w9_on_file ? "On file" : "Missing",
+    r.tax_id_last4 ? `${(r.tax_id_type ?? "").toUpperCase()} ••${r.tax_id_last4}` : "—",
+    { minor: r.reportable_minor },
+    { minor: r.excluded_minor },
+    r.meets_threshold ? "Yes" : "No",
+  ]);
+  rows.push([
+    "Total to file",
+    "",
+    "",
+    { minor: nec?.totalReportable ?? 0 },
+    { minor: 0 },
+    String(nec?.vendorsToFile ?? 0),
+  ]);
+  const thr = nec?.thresholdMinor;
+  const title = thr != null
+    ? `1099-NEC contractor summary (threshold ${csvAmount(thr)})`
+    : "1099-NEC contractor summary";
+  return [{ title, header: NEC_HEADER, body: rows }];
+}
+
 // TB shares P&L/BS's convention of deriving from posted+reversed, excluding
 // pending_review; trialBalance already applies inBooks. But the range filter is
 // applied inside accountBalances for P&L/BS; TB has no filter arg, so pre-filter
@@ -156,12 +204,12 @@ function entriesInScope(entries: JournalEntry[], f?: (d: string) => boolean): Jo
 
 // ── CSV output ────────────────────────────────────────────────────────────────
 export function toCsv(kind: ReportKind, entries: JournalEntry[], ctx: ExportContext): string {
-  const model = buildModel(kind, entries, ctx.scope);
+  const model = buildModel(kind, entries, ctx.scope, ctx.nec);
   const lines: string[] = [];
   // Entity-stamped header block (kept as leading rows so it survives a re-import).
   lines.push(csvRow([ctx.orgName]));
   lines.push(csvRow([model[0].title]));
-  lines.push(csvRow([scopeLabel(kind, ctx.scope)]));
+  lines.push(csvRow([scopeLabel(kind, ctx.scope, ctx.nec)]));
   lines.push(csvRow([`Generated ${ctx.generatedOn}`]));
   lines.push("");
   for (const table of model) {
@@ -215,7 +263,7 @@ export function toPdf(kind: ReportKind, entries: JournalEntry[], ctx: ExportCont
   const brand = getBrandRgb("--brand", [0.196, 0.522, 0.298]);
   const ink = getBrandRgb("--ink", [0.157, 0.196, 0.247]);
   const muted = getBrandRgb("--ink-3", [0.357, 0.388, 0.431]);
-  const model = buildModel(kind, entries, ctx.scope);
+  const model = buildModel(kind, entries, ctx.scope, ctx.nec);
 
   const PAGE_W = 612, PAGE_H = 792, MARGIN = 48;
   const LINE = 16;
@@ -243,7 +291,7 @@ export function toPdf(kind: ReportKind, entries: JournalEntry[], ctx: ExportCont
   // Entity-stamped header + brand rule.
   stream += text(MARGIN, y, ctx.orgName, 18, ink, true); y -= 22;
   stream += text(MARGIN, y, model[0].title, 13, brand, true); y -= 16;
-  stream += text(MARGIN, y, scopeLabel(kind, ctx.scope), 10, muted); y -= 12;
+  stream += text(MARGIN, y, scopeLabel(kind, ctx.scope, ctx.nec), 10, muted); y -= 12;
   stream += text(MARGIN, y, `Generated ${ctx.generatedOn}`, 10, muted); y -= 8;
   stream += `${rgb(brand)} RG 1.5 w ${MARGIN} ${y} m ${PAGE_W - MARGIN} ${y} l S\n`; y -= 18;
 
@@ -354,7 +402,7 @@ function assemblePdf(pages: string[], w: number, h: number): Uint8Array {
 /** kebab-safe filename stem, e.g. "acme-inc_trial-balance_2026-06-30". */
 export function exportFilename(orgName: string, kind: ReportKind, ctx: ExportContext, ext: ExportFormat): string {
   const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "report";
-  const kindSlug = { tb: "trial-balance", pnl: "profit-and-loss", bs: "balance-sheet", gl: "general-ledger" }[kind];
+  const kindSlug = { tb: "trial-balance", pnl: "profit-and-loss", bs: "balance-sheet", gl: "general-ledger", nec: "1099-nec-summary" }[kind];
   const stamp = ctx.scope.end ?? ctx.generatedOn;
   return `${slug(orgName)}_${kindSlug}_${stamp}.${ext}`;
 }

@@ -11,7 +11,7 @@
 -- data. Same self-seeding [REGTEST] technique as the rest — everything rolls back.
 
 begin;
-select plan(23);
+select plan(25);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -150,6 +150,12 @@ select is(
 -- open two live connections inside one pgTAP txn, but the invariant is the same
 -- either way: at used=budget-1, exactly ONE more ask is allowed and every
 -- further ask is refused with the count frozen at the cap.
+--
+-- owner_asks_this_week is now membership-gated (Wave-3 audit F1): it raises
+-- unless the caller can_access_org(p_org). Read it as org A's owner so the
+-- reads below pass the guard. (record_owner_ask stays service_role/superuser —
+-- we set only the JWT claim, not the role.)
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-00000000000a","email":"w32ownerA@test.dev","role":"authenticated"}';
 select is(owner_asks_this_week('00000000-0000-0000-0000-0000000000b1'), 0,
   'no owner interruptions counted yet this week');
 
@@ -192,6 +198,17 @@ select results_eq(
   'an ask past the budget is refused with the count frozen at the cap');
 select is(owner_asks_this_week('00000000-0000-0000-0000-0000000000b1'), 5,
   'the ≤5/week cap holds exactly — no over-count past the budget');
+
+-- ── F1 fix: owner_asks_this_week is membership-gated (no cross-tenant read) ───
+-- As org B's owner (a NON-member of org A), reading org A's count is forbidden.
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-00000000000b","email":"w32ownerB@test.dev","role":"authenticated"}';
+select throws_ok(
+  $$ select owner_asks_this_week('00000000-0000-0000-0000-0000000000b1') $$,
+  '42501', NULL,
+  'a non-member cannot read another org''s weekly interruption count');
+-- but org B's owner CAN read their OWN org's count (0 interruptions, guard passes)
+select is(owner_asks_this_week('00000000-0000-0000-0000-0000000000b2'), 0,
+  'a member still reads their own org''s interruption count');
 
 select * from finish();
 rollback;

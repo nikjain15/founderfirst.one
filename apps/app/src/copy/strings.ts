@@ -990,9 +990,12 @@ export const COPY = {
     sending: "Penny's checking your books…",
     error: "Couldn't reach Penny just now. Try again.",
     readOnly: "You can ask Penny about these books, but not make changes.",
-    // The ≤5/week budget line shown in the thread (honest interruption count).
-    budgetSpent: (spent: number, budget: number) => `${spent} of ${budget} questions this week`,
-    budgetClear: (budget: number) => `No questions this week yet — up to ${budget} if something needs you.`,
+    // A plain, non-numeric affordance. The thread is owner-INITIATED Q&A, which is
+    // NOT an interruption (Nik, 3 Jul), so it does not consume the ≤5/week
+    // interruption budget — that budget governs Penny's own low-confidence asks
+    // (surfaced in Categorize), not questions the owner chooses to ask here. We do
+    // NOT show an interruption counter the thread doesn't govern (Wave-3 audit F2).
+    askHint: "Ask as much as you like — asking here is free and never counts against your weekly summary.",
     // A few suggested prompts to make the surface discoverable.
     suggestSpend: "What did I spend this month?",
     suggestIncome: "How much did I bring in this year?",

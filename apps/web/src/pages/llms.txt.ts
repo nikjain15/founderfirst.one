@@ -25,6 +25,7 @@ export const GET: APIRoute = async () => {
     "## Links",
     "- Home: https://founderfirst.one/",
     "- Compare: https://founderfirst.one/compare/",
+    "- Rescue (bookkeeper shut down? Penny picks up your books): https://founderfirst.one/rescue/",
     "- Blog: https://founderfirst.one/blog/",
   ].join("\n");
 

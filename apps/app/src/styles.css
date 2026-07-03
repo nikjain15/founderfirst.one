@@ -568,6 +568,20 @@ button.ghost.sm, .ghost.sm {
 }
 .report-dl { display: inline-flex; gap: 0.5rem; margin-left: auto; }
 
+/* W4.4 lender package — compare-to-prior toggle + on-screen summary. */
+.report-date.pkg-compare {
+  flex-direction: row; align-items: center; gap: 0.4rem;
+  align-self: flex-end; min-height: var(--tap-min);
+}
+.report-date.pkg-compare input { min-height: auto; }
+.report-date.pkg-compare span {
+  text-transform: none; letter-spacing: normal;
+  font-size: var(--fs-ui); color: var(--ink);
+}
+.package-report .report-table td.num {
+  text-align: right; font-variant-numeric: tabular-nums;
+}
+
 /* GL detail — full dump w/ running balance. Fluid columns, stacks on narrow. */
 .report-table.gl { min-width: min(52rem, 100%); }
 .report-table.gl .report-head, .report-table.gl .gl-row {

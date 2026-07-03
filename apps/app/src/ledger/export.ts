@@ -16,8 +16,8 @@
  * single-file document. Brand colors come from the design-system tokens at
  * runtime (getBrandRgb) — never an inlined hex.
  */
-import { balanceSheet, cashFlow, generalLedger, profitAndLoss, trialBalance } from "./reports";
-import type { NecSummary } from "./reports";
+import { arApAging, balanceSheet, cashFlow, generalLedger, profitAndLoss, trialBalance, AGING_BUCKETS } from "./reports";
+import type { AgingReport, NecSummary } from "./reports";
 import { formatMoney } from "./money";
 import type { JournalEntry } from "./types";
 
@@ -25,7 +25,10 @@ import type { JournalEntry } from "./types";
 // four reports it is NOT derived from the entry list — it comes from the
 // ninetynine_nec_summary RPC (vendor tags + payment-method exclusion + kernel
 // threshold, all server-side) and is passed on ExportContext.nec.
-export type ReportKind = "tb" | "pnl" | "bs" | "gl" | "cf" | "nec";
+// "pkg" = the lender / due-diligence package (card W4.4): a single assembled
+// document — cover sheet + P&L + Balance Sheet + Cash-flow + AR/AP aging +
+// period comparatives — riding this SAME export machinery (nothing new re-derived).
+export type ReportKind = "tb" | "pnl" | "bs" | "gl" | "cf" | "nec" | "pkg";
 export type ExportFormat = "csv" | "pdf";
 
 /** Period scope for a report. TB/P&L/GL use a date range; BS uses `asOf`. */
@@ -44,6 +47,10 @@ export interface ExportContext {
   /** For the "nec" ReportKind only: the 1099-NEC summary from the RPC (server-
    *  computed). Ignored by the four ledger-derived reports. */
   nec?: NecSummary;
+  /** For the "pkg" ReportKind: the immediately-prior comparative period, so the
+   *  package shows this-period vs prior-period figures side by side. Omit → no
+   *  comparative column (the package still assembles, single-period). */
+  priorScope?: ReportScope;
 }
 
 /** Date filter matching accountBalances' convention (inclusive both ends). */
@@ -88,6 +95,11 @@ function csvRow(cells: (string | number)[]): string {
 export function scopeLabel(kind: ReportKind, scope: ReportScope, nec?: NecSummary): string {
   if (kind === "nec") return `Tax year ${nec?.taxYear ?? scope.end?.slice(0, 4) ?? "—"}`;
   if (kind === "bs") return `As of ${scope.end ?? "today"}`;
+  if (kind === "pkg") {
+    const from = scope.start ?? "start";
+    const to = scope.end ?? "today";
+    return `Financial package · ${from} to ${to}`;
+  }
   const from = scope.start ?? "start";
   const to = scope.end ?? "today";
   return `${from} to ${to}`;
@@ -96,14 +108,18 @@ export function scopeLabel(kind: ReportKind, scope: ReportScope, nec?: NecSummar
 // ── report → tabular model (shared by CSV + PDF so they can't diverge) ─────────
 /** Build a report as an ordered list of tables of RAW minor-unit amounts.
  *  The caller formats amounts for CSV (csvAmount) or PDF (formatMoney). */
+type Table = { title: string; header: string[]; body: (string | number | { minor: number })[][] };
+
 function buildModel(
   kind: ReportKind,
   entries: JournalEntry[],
   scope: ReportScope,
   nec?: NecSummary,
-): { title: string; header: string[]; body: (string | number | { minor: number })[][] }[] {
+  priorScope?: ReportScope,
+): Table[] {
   const f = rangeFilter(scope);
   if (kind === "nec") return necModel(nec);
+  if (kind === "pkg") return packageModel(entries, scope, priorScope);
   if (kind === "tb") {
     const tb = trialBalance(entriesInScope(entries, f));
     const rows = tb.rows.map((r) => [
@@ -215,6 +231,126 @@ function necModel(
   return [{ title, header: NEC_HEADER, body: rows }];
 }
 
+// ── Lender / due-diligence package (card W4.4) ────────────────────────────────
+/**
+ * Assemble the full lender / DD package as an ordered list of tables — a cover
+ * sheet, then P&L, Balance Sheet, Cash-flow, and AR/AP aging — all DERIVED from
+ * the same entry list via the SAME pure report builders the on-screen reports and
+ * the single-statement exports use, so the package can never disagree with them
+ * to the cent. When `priorScope` is given, each statement carries a prior-period
+ * comparative column (this period · prior period · Δ).
+ *
+ * A cover sheet leads: entity, coverage period, comparative period, generation
+ * date, and a tie-out attestation line per statement (BS balanced · cash-flow
+ * ties to the BS cash delta). Because every figure comes from the audited
+ * builders, "ties to the cent" is a property of the assembly, not a re-check.
+ */
+function packageModel(
+  entries: JournalEntry[],
+  scope: ReportScope,
+  priorScope?: ReportScope,
+): Table[] {
+  const f = rangeFilter(scope);
+  const pf = priorScope ? rangeFilter(priorScope) : undefined;
+  const asOf = scope.end;
+  const priorAsOf = priorScope?.end;
+
+  const pnl = profitAndLoss(entries, f);
+  const bs = balanceSheet(entries, asOf);
+  const cf = cashFlow(entries, scope);
+  const ar = arApAging(entries, "ar", asOf);
+  const ap = arApAging(entries, "ap", asOf);
+
+  const pnlPrior = priorScope ? profitAndLoss(entries, pf) : undefined;
+  const bsPrior = priorScope ? balanceSheet(entries, priorAsOf) : undefined;
+
+  // Two-value comparative row: [label, current, prior, Δ]. When no prior, the
+  // header/body collapse to [label, amount] (single-period package).
+  const cmp = !!priorScope;
+  const twoCol = (label: string, cur: number, prior?: number): (string | { minor: number })[] =>
+    cmp
+      ? [label, { minor: cur }, { minor: prior ?? 0 }, { minor: cur - (prior ?? 0) }]
+      : [label, { minor: cur }];
+  const money2Header = cmp ? ["", "This period", "Prior period", "Change"] : ["", "Amount"];
+  const acctHeader = cmp ? ["Account", "This period", "Prior period", "Change"] : ["Account", "Amount"];
+
+  // Look up a line's prior-period amount by account_id (0 if absent).
+  const priorAmount = (lines: { account_id: string; amount: number }[] | undefined, id: string) =>
+    lines?.find((l) => l.account_id === id)?.amount ?? 0;
+
+  const tables: Table[] = [];
+
+  // 1) Cover sheet — attestation + scope.
+  const coverBody: (string | number | { minor: number })[][] = [
+    ["Coverage period", scopeLabel("pnl", scope)],
+    ["Balance sheet as of", asOf ?? "today"],
+  ];
+  if (priorScope) coverBody.push(["Comparative period", scopeLabel("pnl", priorScope)]);
+  coverBody.push(
+    ["Contents", "P&L · Balance sheet · Cash flow · AR/AP aging"],
+    ["Balance sheet balanced", bs.balanced ? "Yes" : "No — review"],
+    ["Cash flow ties to balance sheet", cf.ties ? "Yes" : "No — review"],
+    ["Net income", { minor: pnl.netIncome }],
+    ["Total assets", { minor: bs.totalAssets }],
+    ["Cash at end of period", { minor: cf.endingCash }],
+    ["AR outstanding", { minor: ar.grandTotal }],
+    ["AP outstanding", { minor: ap.grandTotal }],
+  );
+  tables.push({ title: "Financial package — cover", header: ["", ""], body: coverBody });
+
+  // 2) Profit & loss (with comparatives).
+  const pnlBody: (string | number | { minor: number })[][] = [];
+  for (const r of pnl.income) pnlBody.push(twoCol(labelOf(r.code, r.name), r.amount, priorAmount(pnlPrior?.income, r.account_id)));
+  pnlBody.push(twoCol("Total revenue", pnl.totalIncome, pnlPrior?.totalIncome));
+  for (const r of pnl.expense) pnlBody.push(twoCol(labelOf(r.code, r.name), r.amount, priorAmount(pnlPrior?.expense, r.account_id)));
+  pnlBody.push(twoCol("Total expenses", pnl.totalExpense, pnlPrior?.totalExpense));
+  pnlBody.push(twoCol("Net income", pnl.netIncome, pnlPrior?.netIncome));
+  tables.push({ title: "Profit & loss", header: acctHeader, body: pnlBody });
+
+  // 3) Balance sheet (with comparatives).
+  const bsBody: (string | number | { minor: number })[][] = [];
+  for (const r of bs.assets) bsBody.push(twoCol(labelOf(r.code, r.name), r.amount, priorAmount(bsPrior?.assets, r.account_id)));
+  bsBody.push(twoCol("Total assets", bs.totalAssets, bsPrior?.totalAssets));
+  for (const r of bs.liabilities) bsBody.push(twoCol(labelOf(r.code, r.name), r.amount, priorAmount(bsPrior?.liabilities, r.account_id)));
+  bsBody.push(twoCol("Total liabilities", bs.totalLiabilities, bsPrior?.totalLiabilities));
+  for (const r of bs.equity) bsBody.push(twoCol(labelOf(r.code, r.name), r.amount, priorAmount(bsPrior?.equity, r.account_id)));
+  bsBody.push(twoCol("Current earnings", bs.currentEarnings, bsPrior?.currentEarnings));
+  bsBody.push(twoCol("Total equity", bs.totalEquity + bs.currentEarnings, bsPrior ? bsPrior.totalEquity + bsPrior.currentEarnings : undefined));
+  tables.push({ title: "Balance sheet", header: acctHeader, body: bsBody });
+
+  // 4) Cash flow (indirect). Single-period; comparatives on the three totals.
+  const cfPrior = priorScope ? cashFlow(entries, priorScope) : undefined;
+  const cfBody: (string | number | { minor: number })[][] = [
+    twoCol("Net cash from operating activities", cf.operating, cfPrior?.operating),
+    twoCol("Net cash from investing activities", cf.investingTotal, cfPrior?.investingTotal),
+    twoCol("Net cash from financing activities", cf.financingTotal, cfPrior?.financingTotal),
+    twoCol("Net change in cash", cf.netChange, cfPrior?.netChange),
+    twoCol("Cash at end of period", cf.endingCash, cfPrior?.endingCash),
+  ];
+  tables.push({ title: "Cash flow", header: money2Header, body: cfBody });
+
+  // 5) AR aging + 6) AP aging — bucketed schedules (no comparative; as-of snapshot).
+  tables.push(agingTable("Accounts receivable aging", ar));
+  tables.push(agingTable("Accounts payable aging", ap));
+
+  return tables;
+}
+
+function agingTable(title: string, rep: AgingReport): Table {
+  const header = ["Account", ...AGING_BUCKETS.map((b) => b.label), "Total"];
+  const body: (string | number | { minor: number })[][] = rep.rows.map((r) => [
+    labelOf(r.code, r.name),
+    ...AGING_BUCKETS.map((b) => ({ minor: r.buckets[b.key] })),
+    { minor: r.total },
+  ]);
+  body.push([
+    "Total",
+    ...AGING_BUCKETS.map((b) => ({ minor: rep.totals[b.key] })),
+    { minor: rep.grandTotal },
+  ]);
+  return { title, header, body };
+}
+
 // TB shares P&L/BS's convention of deriving from posted+reversed, excluding
 // pending_review; trialBalance already applies inBooks. But the range filter is
 // applied inside accountBalances for P&L/BS; TB has no filter arg, so pre-filter
@@ -226,7 +362,7 @@ function entriesInScope(entries: JournalEntry[], f?: (d: string) => boolean): Jo
 
 // ── CSV output ────────────────────────────────────────────────────────────────
 export function toCsv(kind: ReportKind, entries: JournalEntry[], ctx: ExportContext): string {
-  const model = buildModel(kind, entries, ctx.scope, ctx.nec);
+  const model = buildModel(kind, entries, ctx.scope, ctx.nec, ctx.priorScope);
   const lines: string[] = [];
   // Entity-stamped header block (kept as leading rows so it survives a re-import).
   lines.push(csvRow([ctx.orgName]));
@@ -285,11 +421,11 @@ export function toPdf(kind: ReportKind, entries: JournalEntry[], ctx: ExportCont
   const brand = getBrandRgb("--brand", [0.196, 0.522, 0.298]);
   const ink = getBrandRgb("--ink", [0.157, 0.196, 0.247]);
   const muted = getBrandRgb("--ink-3", [0.357, 0.388, 0.431]);
-  const model = buildModel(kind, entries, ctx.scope, ctx.nec);
+  const model = buildModel(kind, entries, ctx.scope, ctx.nec, ctx.priorScope);
 
   const PAGE_W = 612, PAGE_H = 792, MARGIN = 48;
   const LINE = 16;
-  const cols = layoutColumns(model[0].header, PAGE_W - MARGIN * 2);
+  const usable = PAGE_W - MARGIN * 2;
 
   // Content-stream builder with automatic page breaks.
   const pages: string[] = [];
@@ -319,6 +455,9 @@ export function toPdf(kind: ReportKind, entries: JournalEntry[], ctx: ExportCont
 
   for (const table of model) {
     ensure(LINE * 2);
+    // Per-table column layout so tables with different column counts (e.g. the
+    // package's 2-col cover, 4-col comparatives, 6-col aging) each align.
+    const cols = layoutColumns(table.header, usable);
     if (model.length > 1) { stream += text(MARGIN, y, table.title, 12, ink, true); y -= LINE; }
     // column headers
     stream += drawRow(table.header.map(String), cols, MARGIN, y, 9, muted, true, text);
@@ -424,7 +563,7 @@ function assemblePdf(pages: string[], w: number, h: number): Uint8Array {
 /** kebab-safe filename stem, e.g. "acme-inc_trial-balance_2026-06-30". */
 export function exportFilename(orgName: string, kind: ReportKind, ctx: ExportContext, ext: ExportFormat): string {
   const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "report";
-  const kindSlug = { tb: "trial-balance", pnl: "profit-and-loss", bs: "balance-sheet", gl: "general-ledger", cf: "cash-flow", nec: "1099-nec-summary" }[kind];
+  const kindSlug = { tb: "trial-balance", pnl: "profit-and-loss", bs: "balance-sheet", gl: "general-ledger", cf: "cash-flow", nec: "1099-nec-summary", pkg: "lender-package" }[kind];
   const stamp = ctx.scope.end ?? ctx.generatedOn;
   return `${slug(orgName)}_${kindSlug}_${stamp}.${ext}`;
 }

@@ -15,6 +15,7 @@ describe("behavior config defaults", () => {
       auto_propose_limit: 8,
       asks_per_week: 5,
       digest_cadence_days: 7,
+      invoice_nudge_cadence_days: 7,
     });
   });
 });

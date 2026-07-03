@@ -1028,6 +1028,61 @@ export const COPY = {
     youLabel: "You",
     pennyLabel: "Penny",
   },
+
+  // ── Invoicing + AR (W4.3) — nested under Connections, opt-in, off by default.
+  //    Voice: warm, plain, no accounting jargon up top, no exclamation marks.
+  invoicing: {
+    sectionTitle: "Getting paid",
+    optInLead: "Send invoices and get paid faster, with gentle reminders when one goes overdue. Turn it on when you're ready — it stays off until you do.",
+    enableCta: "Turn on invoicing",
+    loading: "Loading your invoices…",
+    genericError: "Something went wrong. Try again.",
+    empty: "No invoices yet. Create your first one to send it.",
+    newInvoice: "New invoice",
+    // AR aging
+    noOutstanding: "Nothing outstanding right now.",
+    owedTitle: (amount: string) => `${amount} owed to you`,
+    bucketLabel: (bucket: string) =>
+      bucket === "current" ? "Not yet due"
+      : bucket === "90+" ? "90+ days"
+      : `${bucket} days`,
+    // reminders
+    nudgesLabel: "Send gentle reminders on overdue invoices",
+    sendRemindersNow: "Send reminders now",
+    nudgesSent: (n: number) => n === 0 ? "No reminders were due." : `Sent ${n} reminder${n === 1 ? "" : "s"}.`,
+    // table
+    colNumber: "Invoice",
+    colCustomer: "Customer",
+    colDue: "Due",
+    colTotal: "Total",
+    colBalance: "Balance",
+    colStatus: "Status",
+    colActions: "Actions",
+    statusLabel: (s: string) =>
+      s === "draft" ? "Draft"
+      : s === "sent" ? "Sent"
+      : s === "partial" ? "Part paid"
+      : s === "paid" ? "Paid"
+      : s === "void" ? "Voided" : s,
+    send: "Send",
+    recordPayment: "Record payment",
+    void: "Void",
+    // payment inline
+    paymentAmount: "Amount received",
+    applyPayment: "Apply",
+    cancel: "Cancel",
+    // form
+    customerName: "Customer name",
+    customerEmail: "Customer email",
+    dueDate: "Due date",
+    lineDescription: "Description",
+    lineQty: "Qty",
+    linePrice: "Unit price",
+    addLine: "Add line",
+    removeLine: "Remove line",
+    totalPrefix: "Total:",
+    saveDraft: "Save draft",
+  },
 } as const;
 
 export type Copy = typeof COPY;

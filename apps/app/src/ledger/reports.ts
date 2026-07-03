@@ -171,6 +171,59 @@ export function generalLedger(
   return rows;
 }
 
+// ── 1099-NEC year-end summary (card W2.5) ─────────────────────────────────────
+/**
+ * One row per 1099-eligible vendor from the `ninetynine_nec_summary` RPC. Amounts
+ * are integer minor units. reportable_minor already EXCLUDES card/third-party-
+ * network payments (the IRS 1099-K exclusion, applied server-side from the
+ * data-driven payment_methods.nec_reportable flag); excluded_minor carries the
+ * excluded total for transparency. threshold_minor is the LAW value from the
+ * kernel (filing_obligations); meets_threshold says the payer must issue a 1099.
+ */
+export interface NecVendorRow {
+  vendor_id: string;
+  vendor_name: string;
+  is_1099_eligible: boolean;
+  w9_on_file: boolean;
+  tax_id_type: string | null;
+  tax_id_last4: string | null;
+  reportable_minor: number;
+  excluded_minor: number;
+  payment_count: number;
+  threshold_minor: number | null;
+  meets_threshold: boolean;
+}
+
+export interface NecSummary {
+  taxYear: number;
+  thresholdMinor: number | null; // the kernel threshold in effect (null = kernel has no rule)
+  rows: NecVendorRow[];
+  totalReportable: number; // Σ reportable across vendors that MEET the threshold
+  vendorsToFile: number; // count of vendors meeting the threshold (need a 1099-NEC)
+}
+
+/**
+ * Roll the raw RPC rows into a filing-ready summary. Pure + deterministic so the
+ * on-screen table and the export can never diverge. Totals count only vendors
+ * that MEET the threshold, because those are the ones a 1099-NEC is actually
+ * issued for; sub-threshold vendors still appear in `rows` (a CPA wants to see
+ * the near-misses) but are not summed into the filing totals.
+ */
+export function necSummary(taxYear: number, rows: NecVendorRow[]): NecSummary {
+  const sorted = [...rows].sort(
+    (a, b) => b.reportable_minor - a.reportable_minor || a.vendor_name.localeCompare(b.vendor_name),
+  );
+  const thresholdMinor = rows.length > 0 ? rows[0].threshold_minor : null;
+  const filers = sorted.filter((r) => r.meets_threshold);
+  return {
+    taxYear,
+    thresholdMinor,
+    rows: sorted,
+    totalReportable: filers.reduce((s, r) => s + r.reportable_minor, 0),
+    vendorsToFile: filers.length,
+  };
+}
+
 export interface BalanceSheetLine { account_id: string; code: string | null; name: string; amount: number; }
 export interface BalanceSheet {
   assets: BalanceSheetLine[];

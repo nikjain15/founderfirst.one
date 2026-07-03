@@ -113,9 +113,13 @@ select * from upsert_invoice('00000000-0000-0000-0000-00000000000a', '00000000-0
   '[{"description":"Overdue job","unit_price_minor":20000}]'::jsonb, 'Late Corp', 'late@x.test',
   '2026-01-10'::date, '2026-01-01'::date);
 select send_invoice('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000b1', (select id from _inv2));
+-- invoice_ar_aging is membership-gated (can_access_org via auth.uid()); read it
+-- AS the owner so the JWT claim resolves (mirrors owner_asks_this_week tests).
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-00000000000a","email":"owner@test.dev","role":"authenticated"}';
 select is(
   (select balance_minor from invoice_ar_aging('00000000-0000-0000-0000-0000000000b1', '2026-05-01'::date) where bucket = '90+'),
   20000::bigint, 'AR aging puts a long-overdue open invoice in the 90+ bucket');
+reset "request.jwt.claims";
 
 -- ── 18. nudge selector honors the config cadence + opt-in ─────────────────────
 -- The overdue open invoice (inv2, has email) is due a nudge as-of a late date.

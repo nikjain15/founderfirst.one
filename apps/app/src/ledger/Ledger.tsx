@@ -23,6 +23,7 @@ import { ACCOUNT_TYPES } from "./types";
 import ImportFlow from "../import/ImportFlow";
 import CatchUpFlow from "../catchup/CatchUpFlow";
 import Categorize from "./Categorize";
+import Receipts, { ReceiptBadge } from "./Receipts";
 import OwnerHome from "./OwnerHome";
 import LearnedRules from "./LearnedRules";
 import PennyThread from "./PennyThread";
@@ -209,6 +210,9 @@ export default function Ledger({
                   <SuggestionInbox orgId={org.id} accounts={accounts.data ?? []} onChange={refresh} />
                 )}
                 <Categorize orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []} onChange={refresh} />
+                {/* Receipt capture + match (W3.5): snap/paste a receipt, Penny files
+                    it with the right transaction; unmatched land in a queue here. */}
+                <Receipts orgId={org.id} canWrite={canWrite} entries={entries.data ?? []} onChange={refresh} />
               </>
             )}
             {surface === "rules" && (
@@ -662,6 +666,8 @@ function Journal({
                       ))}
                     </div>
                     {e.source_ref && <p className="muted sm">{COPY.journal.refPrefix}{e.source_ref}</p>}
+                    {/* Receipt attached to this transaction (W3.5): view / remove. */}
+                    <ReceiptBadge orgId={orgId} entryId={e.id} canWrite={canWrite} />
                     {canWrite && (
                       <div className="je-actions">
                         {e.status === "pending_review" && (

@@ -1029,6 +1029,67 @@ button.ghost.sm, .ghost.sm {
   .onb-yesno button { flex: 1; }
 }
 
+/* ── Receipts (W3.5): capture + match, nested in Review ─────────────────────── */
+.receipts { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-5); }
+.receipts-head { display: flex; flex-direction: column; gap: 0.2rem; }
+.receipt-capture { display: flex; flex-direction: column; gap: 0.6rem; }
+.receipt-capture-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.receipt-paste { display: flex; flex-direction: column; gap: 0.5rem; }
+.receipt-paste-input {
+  width: 100%; font-size: var(--fs-input); min-height: var(--tap-min);
+  padding: 0.6rem; border: 1px solid var(--line); border-radius: var(--radius-2);
+  background: var(--surface); color: var(--ink-1); resize: vertical;
+}
+.receipt-outcome {
+  display: flex; flex-direction: column; gap: 0.15rem;
+  padding: 0.7rem 0.9rem; border-radius: var(--radius-2);
+  border: 1px solid var(--line); background: var(--surface-2);
+}
+.receipt-outcome.ok { border-color: var(--brand); }
+.receipt-confirm {
+  display: flex; flex-direction: column; gap: 0.5rem;
+  padding: 0.8rem 0.9rem; border-radius: var(--radius-2);
+  border: 1px solid var(--line); background: var(--surface-2);
+}
+.receipt-candidate {
+  display: grid; grid-template-columns: minmax(84px, auto) 1fr auto;
+  gap: 0.6rem; align-items: baseline; padding: 0.5rem 0;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.receipt-confirm-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.receipts-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.receipt-item {
+  padding: 0.6rem 0.8rem; border: 1px solid var(--line);
+  border-radius: var(--radius-2); background: var(--surface);
+}
+.receipt-item-head { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: space-between; }
+.receipt-item-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.receipt-label { font-weight: 600; }
+.receipt-picker { list-style: none; margin: 0.5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; max-height: 16rem; overflow-y: auto; }
+.receipt-pick {
+  width: 100%; display: grid; grid-template-columns: minmax(84px, auto) 1fr;
+  gap: 0.6rem; text-align: left; min-height: var(--tap-min);
+  padding: 0.4rem 0.6rem; border: 1px solid transparent; border-radius: var(--radius-1);
+  background: none; cursor: pointer; color: var(--ink-1);
+}
+.receipt-pick:hover { border-color: var(--line); background: var(--surface-2); }
+.receipt-badge { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.receipt-chip {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  padding: 0.15rem 0.5rem; border-radius: var(--radius-1);
+  background: var(--surface-2); border: 1px solid var(--line);
+  font-size: var(--fs-caption); color: var(--ink-2);
+}
+.rc-date { color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rc-memo { color: var(--ink-1); overflow: hidden; text-overflow: ellipsis; }
+.rc-amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+@media (max-width: 480px) {
+  .receipt-candidate { grid-template-columns: 1fr; gap: 0.2rem; }
+  .receipt-pick { grid-template-columns: 1fr; gap: 0.1rem; }
+  .receipt-item-head { align-items: flex-start; }
+}
+
 /* ── Penny thread (W3.1) — grounded Q&A on the owner Home ────────────────────── */
 .penny-thread {
   margin-top: var(--space-5);

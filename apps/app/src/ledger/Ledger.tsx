@@ -14,7 +14,7 @@ import {
   upsertAccount, useAccounts, useEntries, useLedgerRefresh, usePeriods,
   useReconciliationStatus, useNecSummary,
 } from "./api";
-import { balanceSheet, cashFlow, generalLedger, profitAndLoss, trialBalance, necSummary } from "./reports";
+import { arApAging, balanceSheet, cashFlow, generalLedger, profitAndLoss, trialBalance, necSummary } from "./reports";
 import {
   downloadReport, rangeFilter, type ExportContext, type ReportKind, type ReportScope,
 } from "./export";
@@ -831,6 +831,12 @@ function Reports({ entries, org }: { entries: JournalEntry[]; org: { id: string;
 
   const [busy, setBusy] = useState<null | "csv" | "pdf">(null);
   const [err, setErr] = useState<string | null>(null);
+  // W4.4 lender package: optionally include a prior-period comparative column.
+  const [pkgCompare, setPkgCompare] = useState(true);
+  const priorScope = useMemo(
+    () => (view === "pkg" && pkgCompare ? priorPeriodScope(scope) : undefined),
+    [view, pkgCompare, start, end],
+  );
 
   async function download(format: "csv" | "pdf") {
     setBusy(format); setErr(null);
@@ -840,6 +846,7 @@ function Reports({ entries, org }: { entries: JournalEntry[]; org: { id: string;
         scope: view === "nec" ? { end: `${necYear}-12-31` } : scope,
         generatedOn: today(),
         nec: view === "nec" ? nec : undefined,
+        priorScope: view === "pkg" ? priorScope : undefined,
       };
       const rows = view === "nec" ? nec.rows.length : entries.length;
       // Build + download client-side first (the user gets their file even if the
@@ -866,6 +873,7 @@ function Reports({ entries, org }: { entries: JournalEntry[]; org: { id: string;
         <button className={view === "cf" ? "on" : ""} onClick={() => setView("cf")}>{COPY.reports.cashFlow}</button>
         <button className={view === "gl" ? "on" : ""} onClick={() => setView("gl")}>{COPY.reports.generalLedger}</button>
         <button className={view === "nec" ? "on" : ""} onClick={() => setView("nec")}>{COPY.reports.nec}</button>
+        <button className={view === "pkg" ? "on" : ""} onClick={() => setView("pkg")}>{COPY.reports.pkg}</button>
       </div>
 
       <div className="report-controls" role="group" aria-label={COPY.reports.exportScopeAria}>
@@ -895,6 +903,15 @@ function Reports({ entries, org }: { entries: JournalEntry[]; org: { id: string;
             )}
           </>
         )}
+        {view === "pkg" && (
+          <label className="report-date pkg-compare">
+            <input
+              type="checkbox" checked={pkgCompare}
+              onChange={(e) => setPkgCompare(e.target.checked)}
+            />
+            <span>{COPY.reports.pkgComparePrior}</span>
+          </label>
+        )}
         <span className="report-dl">
           <button className="ghost sm" disabled={busy !== null} onClick={() => download("csv")}>
             {busy === "csv" ? COPY.reports.exporting : COPY.reports.downloadCsv}
@@ -912,6 +929,65 @@ function Reports({ entries, org }: { entries: JournalEntry[]; org: { id: string;
       {view === "cf" && <CashFlowReport entries={entries} scope={scope} />}
       {view === "gl" && <GeneralLedgerReport entries={entries} filter={filter} />}
       {view === "nec" && <NecReport nec={nec} />}
+      {view === "pkg" && <PackageReport entries={entries} scope={scope} priorScope={priorScope} />}
+    </div>
+  );
+}
+
+/**
+ * The prior comparative period: the same-length window immediately BEFORE the
+ * selected period. If no start is set (open-ended), we can't infer a length, so
+ * there is no comparative (the package still assembles single-period).
+ */
+function priorPeriodScope(scope: ReportScope): ReportScope | undefined {
+  const { start, end } = scope;
+  if (!start || !end) return undefined;
+  const days = Math.round((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86_400_000);
+  const priorEnd = new Date(Date.parse(`${start}T00:00:00Z`) - 86_400_000);
+  const priorStart = new Date(priorEnd.getTime() - days * 86_400_000);
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  return { start: iso(priorStart), end: iso(priorEnd) };
+}
+
+// ── Lender / due-diligence package (card W4.4) ───────────────────────────────
+// On-screen summary of what the package export contains. The heavy lifting is in
+// the export module (packageModel), which assembles the SAME derived statements
+// into one CSV/PDF — this panel just previews the tie-out + headline figures so
+// the user knows the package is sound before they hand it to a lender.
+function PackageReport(
+  { entries, scope, priorScope }: { entries: JournalEntry[]; scope: ReportScope; priorScope?: ReportScope },
+) {
+  const summary = useMemo(() => {
+    const bs = balanceSheet(entries, scope.end);
+    const cf = cashFlow(entries, scope);
+    const pnl = profitAndLoss(entries, rangeFilter(scope));
+    const ar = arApAging(entries, "ar", scope.end);
+    const ap = arApAging(entries, "ap", scope.end);
+    return { bs, cf, pnl, ar, ap };
+  }, [entries, scope.start, scope.end]);
+
+  if (entries.length === 0) {
+    return <Empty title={COPY.reports.pkgTitle} body={COPY.reports.pkgBody} />;
+  }
+  const ties = summary.bs.balanced && summary.cf.ties;
+  return (
+    <div className="report package-report">
+      <p className="sub">{COPY.reports.pkgBody}</p>
+      <p className="sub sm">{COPY.reports.pkgIncludes}</p>
+      <p className={`sub sm ${ties ? "" : "error"}`}>
+        {ties ? COPY.reports.cfTiesNote : COPY.reports.cfDoesNotTie}
+      </p>
+      <table className="report-table">
+        <tbody>
+          <tr><td>{COPY.reports.cfNetIncome}</td><td className="num">{formatMoney(summary.pnl.netIncome)}</td></tr>
+          <tr><td>{COPY.reports.cfEndingCash}</td><td className="num">{formatMoney(summary.cf.endingCash)}</td></tr>
+          <tr><td>{COPY.reports.pkgArAging}</td><td className="num">{formatMoney(summary.ar.grandTotal)}</td></tr>
+          <tr><td>{COPY.reports.pkgApAging}</td><td className="num">{formatMoney(summary.ap.grandTotal)}</td></tr>
+          {priorScope && (
+            <tr><td>{COPY.reports.pkgComparePrior}</td><td className="num">{priorScope.start} – {priorScope.end}</td></tr>
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }

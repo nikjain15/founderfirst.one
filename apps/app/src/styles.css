@@ -1028,3 +1028,52 @@ button.ghost.sm, .ghost.sm {
   .onb-yesno { width: min(100%, 24rem); }
   .onb-yesno button { flex: 1; }
 }
+
+/* ── Penny thread + "Penny did this" feed (W3.1 / W3.2) — owner Home pulse ──── */
+.penny-thread {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-card);
+  background: var(--brand-tint);
+  display: flex; flex-direction: column; gap: var(--space-3);
+}
+.thread-head { display: flex; flex-direction: column; gap: var(--space-1); }
+.thread-head .section-h { display: flex; align-items: center; gap: var(--space-2); }
+.thread-budget { margin: 0; }
+.thread-turns {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  max-height: 24rem; overflow-y: auto;
+  padding: var(--space-2); border-radius: var(--r-card);
+  background: var(--white);
+}
+.thread-turn { display: flex; flex-direction: column; gap: 2px; max-width: 100%; }
+.thread-turn .turn-who { font-size: var(--fs-xs); color: var(--ink-3); font-weight: var(--fw-semibold); }
+.thread-turn .turn-text { font-size: var(--fs-body); color: var(--ink-1); line-height: 1.5; word-break: break-word; }
+.thread-turn.t-you { align-items: flex-end; text-align: right; }
+.thread-turn.t-you .turn-text { color: var(--ink); }
+.thread-turn.is-pending .turn-text { color: var(--ink-3); font-style: italic; }
+.thread-suggest { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.thread-input { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.thread-input input {
+  flex: 1 1 14rem; min-height: var(--tap-min); font-size: var(--fs-input);
+}
+.thread-input button { min-height: var(--tap-min); white-space: nowrap; }
+
+.penny-did { margin-top: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
+.penny-did-head .section-h { display: flex; align-items: center; gap: var(--space-2); }
+.penny-did-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.penny-did-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);
+  padding: var(--space-2); border: 1px solid var(--line-2); border-radius: var(--r-card);
+}
+.penny-did-row.is-undone { opacity: 0.55; }
+.penny-did-row .pd-date { font-size: var(--fs-xs); color: var(--ink-3); flex: 0 0 auto; }
+.penny-did-row .pd-summary { flex: 1 1 12rem; color: var(--ink-1); }
+.penny-did-row .pd-source { font-size: var(--fs-xs); color: var(--ink-3); }
+.penny-did-row .pd-undone { font-size: var(--fs-xs); color: var(--ink-3); }
+.penny-did-row .pd-err { flex: 1 1 100%; }
+@media (max-width: 480px) {
+  .thread-input input { flex: 1 1 100%; }
+  .thread-input button { flex: 1 1 100%; }
+}

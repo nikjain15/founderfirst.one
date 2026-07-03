@@ -1029,7 +1029,7 @@ button.ghost.sm, .ghost.sm {
   .onb-yesno button { flex: 1; }
 }
 
-/* ── Penny thread + "Penny did this" feed (W3.1 / W3.2) — owner Home pulse ──── */
+/* ── Penny thread (W3.1) — grounded Q&A on the owner Home ────────────────────── */
 .penny-thread {
   margin-top: var(--space-5);
   padding: var(--space-4);
@@ -1059,21 +1059,71 @@ button.ghost.sm, .ghost.sm {
   flex: 1 1 14rem; min-height: var(--tap-min); font-size: var(--fs-input);
 }
 .thread-input button { min-height: var(--tap-min); white-space: nowrap; }
-
-.penny-did { margin-top: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
-.penny-did-head .section-h { display: flex; align-items: center; gap: var(--space-2); }
-.penny-did-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
-.penny-did-row {
-  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);
-  padding: var(--space-2); border: 1px solid var(--line-2); border-radius: var(--r-card);
-}
-.penny-did-row.is-undone { opacity: 0.55; }
-.penny-did-row .pd-date { font-size: var(--fs-xs); color: var(--ink-3); flex: 0 0 auto; }
-.penny-did-row .pd-summary { flex: 1 1 12rem; color: var(--ink-1); }
-.penny-did-row .pd-source { font-size: var(--fs-xs); color: var(--ink-3); }
-.penny-did-row .pd-undone { font-size: var(--fs-xs); color: var(--ink-3); }
-.penny-did-row .pd-err { flex: 1 1 100%; }
 @media (max-width: 480px) {
   .thread-input input { flex: 1 1 100%; }
   .thread-input button { flex: 1 1 100%; }
+}
+
+/* ── Owner Home — the "am I okay?" pulse (W3.4) ──────────────────────────────
+   Fluid, tokens only, no fixed pixel widths (RESPONSIVE.md). The KPI grid reuses
+   the shared auto-fit .kpis track so it can't overflow on the width ladder. */
+.owner-home { display: flex; flex-direction: column; gap: var(--space-4); }
+.owner-home .home-kpis { margin-top: var(--space-1); }
+.kpi-sub { margin-top: var(--space-1); }
+/* The needs-you tile is actionable → make it a real button but keep the tile look. */
+.kpi-btn {
+  text-align: left; cursor: pointer; font: inherit; color: inherit;
+  min-height: var(--tap-min);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.kpi-btn:hover { border-color: var(--brand); }
+.kpi-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.kpi-btn.t-warn { border-color: var(--amber); }
+
+.home-summary { display: flex; flex-direction: column; gap: var(--space-1); }
+.home-summary-text { color: var(--ink-1); font-size: var(--fs-body); margin: 0; }
+
+.home-deadlines { display: flex; flex-direction: column; gap: var(--space-2); }
+.deadlines-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.deadline-row {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+  gap: var(--space-2); padding: var(--space-2) 0;
+  border-bottom: var(--bw-hair) solid var(--line-2);
+}
+.deadline-row .dl-label { color: var(--ink-1); font-weight: var(--fw-semibold); min-width: 0; }
+.deadline-row .dl-due { color: var(--ink-3); font-size: var(--fs-ui); }
+.deadline-row.is-soon .dl-due { color: var(--amber-strong); font-weight: var(--fw-semibold); }
+
+.home-catchup .catchup-years {
+  list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2);
+}
+.catchup-year {
+  display: inline-flex; align-items: baseline; gap: var(--space-1);
+  padding: var(--space-1) var(--space-3); border-radius: var(--r-pill);
+  background: var(--amber-bg); font-size: var(--fs-ui);
+}
+.catchup-year.is-done { background: var(--income-bg); color: var(--income-strong); }
+.catchup-year .cu-year { font-weight: var(--fw-bold); }
+
+/* "Penny did this" feed (W3.2) — styled here alongside Home, its primary host. */
+.penny-did { display: flex; flex-direction: column; gap: var(--space-2); }
+.penny-did-head { display: flex; flex-direction: column; gap: var(--space-1); }
+.penny-did-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.penny-did-row {
+  display: grid; grid-template-columns: minmax(5rem, auto) 1fr minmax(6rem, auto) auto;
+  gap: var(--space-2); align-items: center;
+  padding: var(--space-2) 0; border-bottom: var(--bw-hair) solid var(--line-2);
+}
+.penny-did-row .pd-date { color: var(--ink-3); font-size: var(--fs-ui); font-variant-numeric: tabular-nums; }
+.penny-did-row .pd-summary { min-width: 0; overflow-wrap: anywhere; }
+.penny-did-row .pd-source { color: var(--ink-3); font-size: var(--fs-ui); }
+.penny-did-row.is-undone { opacity: 0.55; }
+.penny-did-row .pd-undone { color: var(--ink-3); font-size: var(--fs-ui); }
+.penny-did-row .pd-err { grid-column: 1 / -1; }
+/* The Penny "P" badge (.p-mark / .p-mark-sm) is owned by the design system
+   (components/p-mark.css, imported in main.tsx) — never redefine it here. */
+
+@media (max-width: 640px) {
+  .penny-did-row { grid-template-columns: 1fr auto; row-gap: var(--space-1); }
+  .penny-did-row .pd-source { grid-column: 1 / -1; }
 }

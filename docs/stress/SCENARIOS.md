@@ -58,6 +58,8 @@ holds the assertion — this index is the single map from finding id → scenari
 | **LOOP-1** heartbeat write-path RLS (loop_runs/loop_events) | Build loop (PR #173) | P1 | — | ⏳ **pending** (migration unmerged; add once #173 lands) |
 | **W3.2-UNDO** auto-post undo reverses cleanly (ledger balanced) | Trust-tiered autonomy (W3.2) | P0 | `w3_2_trust_tiered_autonomy_test.sql` | ✅ covered |
 | **W3.2-BUDGET-DEFER** ≤5-asks/week cap → surplus + income defer to digest | Trust-tiered autonomy (W3.2) | P1 | `autonomy.test.ts` (`budgetDisposition`) + `w3_2_trust_tiered_autonomy_test.sql` | ✅ covered |
+| **W3.4-PULSE** Home numbers tie to Reports (cash/needs-you/month summary derived from the SAME ledger, never a separate store) | Owner Home (W3.4) | P1 | `homePulse.test.ts` | ✅ covered |
+| **W3.4-DEADLINE** "Coming up" reads the kernel — change a `filing_obligations` seed row → Home moves, no code edit (never a hardcoded calendar) | Owner Home (W3.4) | P0 | `w3_4_owner_home_deadlines_test.sql` | ✅ covered |
 
 ## Gaps surfaced for the integrator / Nik
 
@@ -366,3 +368,32 @@ approval cards (LOW), and the owner's asks-count never exceeds the config budget
 (the surplus low-confidence items + income appear as the digest note, not cards).
 The tier split + the ≤budget assertion are the pure-function tests above; the
 server wiring is `supabase/functions/categorize` op `triage`.
+
+## W3.4 · Owner Home — the "am I okay?" pulse
+
+Home answers the owner's only real question at a glance (APP_PRINCIPLES §2) —
+cash on hand, what needs a decision (→ Review), what's coming up (filing
+deadlines), what's reconciled, and a plain-English "your month so far" —
+**reusing data the app already loads**. There is no new source of truth: cash,
+the needs-you count, and the month summary all fold out of the same
+`journal_entries` + `ledger_accounts` the Reports tab renders (so Home can never
+disagree with Reports); the "Penny did this" feed is W3.2's component dropped in;
+the "Coming up" deadlines come from the CENTRAL-2 kernel's
+`upcoming_filing_deadlines` (a deadline is never a literal in the app). The
+estimated-taxes / tax-readiness strip is intentionally ABSENT — it belongs to W2.4
+(quarterly assistant), which is not live; we omit it rather than fake a number.
+
+| Scenario | Surface | Assertion | Test |
+|---|---|---|---|
+| **W3.4-PULSE** | Home derivations | Cash on hand sums only the cash/bank accounts (< total assets), falling back to total assets when no cash account exists; the needs-you count = pending-review + posted-uncategorized (what Review shows); the month summary's net ties to the P&L over the same month's entries and the delta to last month is signed. All pure over the ledger the app already paged — no separate store. | `apps/app/src/ledger/homePulse.test.ts` |
+| **W3.4-DEADLINE** | "Coming up" | Deadlines resolve from the kernel's `upcoming_filing_deadlines` (jurisdiction × entity × effective-dated `filing_obligations`). **Changing a seed row moves the date Home shows with no code edit** (supersede 04-15 → 05-01 and the resolved `due_date` follows); the horizon filters correctly; an org with no tax profile yields none (Home degrades to "nothing coming up"); the fn is EXECUTE-grantable to `authenticated` (Home calls it from the session). | `supabase/tests/w3_4_owner_home_deadlines_test.sql` |
+
+**Re-run.** `pnpm --dir apps/app test` (pulse tie-out) · `supabase test db`
+(kernel-deadline-drives-Home). No prod fixtures — the pgTAP seed is self-contained
+inside `BEGIN…ROLLBACK`.
+
+**E2E.** The authed app smoke (`tools/app-e2e/run.mjs`) opens Home for the seeded
+owner and asserts the pulse renders on one screen — the money-on-hand + needs-you
+tiles, the plain-English month summary, the kernel-driven "Coming up" section, and
+the "Penny did this" feed — with the needs-you tile an actionable button into
+Review, and NO horizontal overflow across the full 320→1920 width ladder.

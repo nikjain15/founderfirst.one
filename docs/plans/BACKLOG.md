@@ -513,7 +513,7 @@ decision-needed: none (reuses existing data + kernel). If Home wants a metric wi
   source (e.g. a new "tax-readiness %" formula not derivable from current data) → **Nik**
 
 ## W3.5 · Receipt capture + match
-status: unclaimed
+status: built (loop/w3-5-receipts) — PR open
 blocked-by: W3.2 (a parsed receipt becomes a trust-tiered item — high-confidence auto-matches
   + shows in the feed, low-confidence becomes an approval card), CENTRAL-1 ('app' persona for
   capture/confirm copy)

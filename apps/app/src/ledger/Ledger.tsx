@@ -25,6 +25,7 @@ import CatchUpFlow from "../catchup/CatchUpFlow";
 import Categorize from "./Categorize";
 import Receipts, { ReceiptBadge } from "./Receipts";
 import OwnerHome from "./OwnerHome";
+import Invoicing from "./Invoicing";
 import LearnedRules from "./LearnedRules";
 import PennyThread from "./PennyThread";
 import PennyDidThis from "./PennyDidThis";
@@ -279,6 +280,13 @@ function Connections({
         ) : (
           <p className="muted">{COPY.connections.importDisabled}</p>
         )}
+      </section>
+      {/* Getting paid (W4.3) — invoicing + AR nudges, nested here (not a new top-
+          level tab). Opt-in, off by default: renders a one-line enable prompt
+          until the owner turns it on. */}
+      <section className="connections-block">
+        <h2 className="section-h">{COPY.invoicing.sectionTitle}</h2>
+        <Invoicing orgId={orgId} canWrite={canWrite} />
       </section>
       <section className="connections-block">
         <h2 className="section-h">{COPY.connections.shareWithAccountant}</h2>

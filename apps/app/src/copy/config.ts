@@ -25,6 +25,8 @@ export interface BehaviorConfig {
   asks_per_week: number;
   /** Default digest cadence in days (e.g. the weekly review nudge). */
   digest_cadence_days: number;
+  /** Days between AR reminder nudges for an overdue invoice (W4.3). */
+  invoice_nudge_cadence_days: number;
 }
 
 /** Baked fallback — MUST match the platform_config seed in the migration. */
@@ -34,6 +36,7 @@ export const CONFIG_DEFAULTS: BehaviorConfig = {
   auto_propose_limit: 8,
   asks_per_week: 5,
   digest_cadence_days: 7,
+  invoice_nudge_cadence_days: 7,
 };
 
 const KEYS = Object.keys(CONFIG_DEFAULTS) as (keyof BehaviorConfig)[];

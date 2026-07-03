@@ -239,10 +239,11 @@ export function useAskBudgetRefresh(orgId: string | undefined) {
 }
 
 // ── Penny thread (W3.1) — grounded Q&A on the real books ──────────────────────
-// The NUMBER is computed client-side from the SAME paginated entries the reports
-// use (thread.ts computeMetric → ties to the cent), then sent to the penny-thread
-// fn ONLY for phrasing in Penny's live 'app' voice. A null fact = an out-of-scope
-// question → the fn declines, never invents a figure. Records to ai_decisions.
+// The client computes the number optimistically from the SAME paginated entries
+// the reports use (thread.ts computeMetric → ties to the cent) for a snappy UI, and
+// MAY pass it as a hint — but the penny-thread fn is AUTHORITATIVE (P2-1): it
+// re-routes the question and re-computes the fact from the org's ledger server-side,
+// and its figure wins. A client-forged amount is discarded. Records to ai_decisions.
 export interface ThreadFact {
   metric: "spend" | "income" | "net" | "cash";
   amount_minor: number;
@@ -250,8 +251,8 @@ export interface ThreadFact {
   period_label: string;
 }
 
-/** Ask Penny a grounded books question — fact is the client-computed answer (or
- *  null for an out-of-scope decline). Returns Penny's phrasing of it. */
+/** Ask Penny a grounded books question. `fact` is an optimistic client hint only —
+ *  the server re-routes + re-computes and its answer is authoritative. */
 export const askPennyThread = (org_id: string, question: string, fact: ThreadFact | null) =>
   invoke<{ text: string; declined?: boolean; fact_stated?: string }>(
     "penny-thread", { op: "answer", org_id, question, fact },

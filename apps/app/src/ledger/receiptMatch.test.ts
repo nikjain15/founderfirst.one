@@ -211,3 +211,41 @@ describe("parse→match→tier end-to-end (the flow the edge fn runs)", () => {
     expect(matchReceipt(parsed, candidates)).toBeNull(); // → lands in the queue (no tier)
   });
 });
+
+describe("REG-W3-F3 — same-amount/different-date fuzzy collision must NOT auto-attach", () => {
+  // Audit Program 4, F3: the tie guard only covered EXACT same-date collisions.
+  // A same-amount txn on two DIFFERENT dates equidistant from the receipt let the
+  // fuzzy pass silently pick one and (with vendor corroboration) auto-attach to a
+  // possibly-wrong entry. Repro: $42.00 "Acme" on Jul-1 AND Jul-3; a receipt dated
+  // Jul-2 is 1 day from both. Fix: fuzzyTies≥2 → confirm card, never HIGH.
+  const collision = [
+    entry("acme-jul1", "2026-07-01", 4200, "ACME SUPPLY"),
+    entry("acme-jul3", "2026-07-03", 4200, "ACME SUPPLY"),
+  ];
+  const parsed = receipt(-4200, "2026-07-02", "Acme");
+
+  it("reports the fuzzy tie (fuzzyTies≥2) instead of silently choosing one", () => {
+    const m = matchReceipt(parsed, collision)!;
+    expect(m.kind).toBe("fuzzy");
+    expect(m.dateDelta).toBe(1); // equidistant from both
+    expect(m.fuzzyTies).toBe(2); // BEFORE THE FIX this was 0 → auto-attach slipped through
+  });
+
+  it("downgrades to a confirm card (LOW) even when the vendor corroborates", () => {
+    const m = matchReceipt(parsed, collision)!;
+    const corr = vendorInMemo(parsed.vendor, collision[0].memo); // true (ACME SUPPLY)
+    expect(corr).toBe(true);
+    // Without the fix this cleared confidence_high (corroborated fuzzy ≈ high band)
+    // and auto-attached; with the fix ambiguity forces a confirm card.
+    expect(receiptTier(m, matchConfidence(m, corr), CUTOFFS, { vendorCorroborated: corr })).toBe("low");
+  });
+
+  it("a SINGLE nearest same-amount candidate still auto-attaches (no over-downgrade)", () => {
+    // Only one same-amount txn in the window → not a tie → the legit path is untouched.
+    const one = [entry("acme-jul1", "2026-07-01", 4200, "ACME SUPPLY")];
+    const m = matchReceipt(receipt(-4200, "2026-07-02", "Acme"), one)!;
+    expect(m.fuzzyTies).toBe(1);
+    const corr = vendorInMemo("Acme", one[0].memo);
+    expect(receiptTier(m, matchConfidence(m, corr), CUTOFFS, { vendorCorroborated: corr })).not.toBe("low");
+  });
+});

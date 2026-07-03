@@ -369,6 +369,28 @@ approval cards (LOW), and the owner's asks-count never exceeds the config budget
 The tier split + the ≤budget assertion are the pure-function tests above; the
 server wiring is `supabase/functions/categorize` op `triage`.
 
+## W3.1 · Penny thread in-app (grounded Q&A on real books)
+
+Penny answers factual books questions on the owner's Home thread, GROUNDED on the
+real ledger — never an invented number. The number is computed CLIENT-SIDE from the
+same paginated entries the reports use (`ledger/thread.ts` `computeMetric`, the exact
+report math), then the `penny-thread` fn only phrases it in Penny's live 'app'
+persona. An out-of-scope / advice / prediction question, or a category that matches
+no account, is DECLINED — the fn is handed no figure, so a hallucinated number is
+structurally impossible. The thread nests in Home (no new top-level tab).
+
+| Scenario | Surface | Assertion | Test |
+|---|---|---|---|
+| **W3.1-ROUTE** | Intent routing | `routeMessage` classifies greeting / activity / grounded question / unsupported deterministically; a grounded question extracts metric + period + category (`spend on software in Q2` → spend / Q2 bounds / "software"). | `apps/app/src/ledger/thread.test.ts` (`routeMessage`) |
+| **W3.1-SCOPE-REFUSAL** | Grounding-scope guard (REG) | An out-of-scope question — advice (`should I pay estimated taxes?`), a **prediction** (`what will my revenue be next quarter?`), a deduction question, or off-books chatter — is `unsupported`; the fn is sent a **null fact** and DECLINES with no dollar figure. A named category that matches no account is flagged `categoryUnmatched` and declined, never reported as a real $0. | `apps/app/src/ledger/thread.test.ts` (grounding-scope guard) |
+| **W3.1-TIEOUT** | Grounded answer | `computeMetric` equals the report math to the cent for spend / income / net (P&L) and cash (balance-sheet total assets), period-scoped; a category-scoped figure sums only the matched account and excludes out-of-period entries. So a thread figure and the Reports tab can never disagree. | `apps/app/src/ledger/thread.test.ts` (`computeMetric` ties to `profitAndLoss` / `balanceSheet`) |
+| **W3.1-READ-GATE** | Thread access | `can_access_org_as` grants a thread question to a member AND a read-only engaged CPA (a question is a READ), refuses a stranger (403), and is `service_role`-EXECUTE-only — off the client surface (a membership oracle otherwise, LEARNINGS: isolation F1). | `supabase/tests/w3_1_penny_thread_test.sql` |
+| **W3.1-PERSONA-LIVE** | Live 'app' persona | Publishing a new 'app' persona version changes what the thread runtime (`get_live_app_persona('app')`) reads — Penny's thread language is live-editable with no redeploy (the proven bubble/Discord pattern). | `supabase/tests/w3_1_penny_thread_test.sql` |
+
+**Re-run.** `pnpm --dir apps/app test` (routing + scope guard + tie-out) · `supabase
+test db` (read gate + persona live-edit). E2E: `tools/app-e2e/run.mjs` asserts the
+thread renders on Home and answers a grounded turn (no new top-level tab).
+
 ## W3.4 · Owner Home — the "am I okay?" pulse
 
 Home answers the owner's only real question at a glance (APP_PRINCIPLES §2) —

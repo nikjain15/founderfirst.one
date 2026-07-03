@@ -238,6 +238,26 @@ export function useAskBudgetRefresh(orgId: string | undefined) {
   return () => { void qc.invalidateQueries({ queryKey: ["ask-budget", orgId] }); };
 }
 
+// ── Penny thread (W3.1) — grounded Q&A on the real books ──────────────────────
+// The client computes the number optimistically from the SAME paginated entries
+// the reports use (thread.ts computeMetric → ties to the cent) for a snappy UI, and
+// MAY pass it as a hint — but the penny-thread fn is AUTHORITATIVE (P2-1): it
+// re-routes the question and re-computes the fact from the org's ledger server-side,
+// and its figure wins. A client-forged amount is discarded. Records to ai_decisions.
+export interface ThreadFact {
+  metric: "spend" | "income" | "net" | "cash";
+  amount_minor: number;
+  category_label: string | null;
+  period_label: string;
+}
+
+/** Ask Penny a grounded books question. `fact` is an optimistic client hint only —
+ *  the server re-routes + re-computes and its answer is authoritative. */
+export const askPennyThread = (org_id: string, question: string, fact: ThreadFact | null) =>
+  invoke<{ text: string; declined?: boolean; fact_stated?: string }>(
+    "penny-thread", { op: "answer", org_id, question, fact },
+  );
+
 // ── learned-rules management (W1.6) ───────────────────────────────────────────
 // Owner + full-access CPA see every rule Penny has learned and can delete a bad
 // one. Reads go direct under RLS (categorization_rules is client-readable via

@@ -175,6 +175,31 @@ async function verifyCatchUpEntry() {
   else fail("Catch-up: Start did not advance to the drop-files step");
 }
 
+/** W3.1 — the Penny thread renders on Home and answers a grounded question. The
+ *  thread is nested in Home (no new top-level tab). We assert it renders, then ask
+ *  a grounded books question via a suggested prompt and confirm Penny replies with
+ *  a turn. The authoritative tie-out + "no invented number" checks are the Vitest
+ *  suite (thread.test.ts); here we prove the surface is wired and answers a turn. */
+async function verifyPennyThread() {
+  await page.setViewportSize(DESKTOP);
+  const thread = page.locator(".penny-thread");
+  if (!(await thread.count().catch(() => 0))) { fail("Home: Penny thread not rendered"); return; }
+  ok("Penny thread renders on Home (nested, no new top-level tab)");
+  const suggest = page.locator(".penny-thread .thread-suggest button").first();
+  if (!(await suggest.count().catch(() => 0))) { fail("Home: no thread suggestion prompt"); return; }
+  await suggest.click().catch(() => {});
+  // A "you" turn appears immediately; Penny's answer follows (local or via the fn).
+  try {
+    await page.waitForFunction(
+      () => document.querySelectorAll(".penny-thread .thread-turn.t-penny").length >= 2,
+      undefined, { timeout: 15_000 },
+    );
+    ok("Penny answered a grounded question in the thread");
+  } catch {
+    fail("Penny thread: no answer turn within timeout");
+  }
+}
+
 /** Idempotently ensure the E2E org has BOOKS (≥1 account + ≥1 posted entry).
  *
  *  The E2E org lives on real (prod) Supabase and is seeded out-of-band, so its
@@ -358,6 +383,8 @@ try {
       ok(`${s.label} renders`);
       // W3.4 — Home must be the owner "am I okay?" pulse (cash, needs-you, deadlines, feed).
       if (s.key === "home") await verifyOwnerHomePulse();
+      // W3.1 — the Penny thread lives on Home (nested, no new top-level tab).
+      if (s.key === "home") await verifyPennyThread();
       // W1.2 — Reports must export a real file in ≤ 3 taps (pick period → Download).
       // Assert the download event fires with a period-stamped filename.
       if (s.key === "reports") await verifyReportDownload();

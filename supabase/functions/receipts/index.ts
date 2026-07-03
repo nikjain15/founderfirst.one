@@ -56,6 +56,11 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const USE_CASE_RECEIPT_PARSE = "penny_receipt_parse";
 const BUCKET = "receipts";
 const MATCH_WINDOW_DAYS = 4; // same ±window discipline as W1.1 fuzzy pass
+// A receipt photo is a phone snapshot — bound the upload so a hostile/oversized
+// payload can't exhaust memory or the bucket. Only raster image types are stored;
+// SVG is rejected (it can carry script and would render from the signed URL).
+const MAX_RECEIPT_BYTES = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_MIMES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 
 // ── Trust tiers are DATA (platform_config, CENTRAL-1 / W3.2) — read via the one
 //    reader RPC, org override folded over the platform default. Baked fallback
@@ -179,8 +184,17 @@ Deno.serve(async (req) => {
     const b64 = typeof body?.image_base64 === "string" ? body.image_base64 : "";
     if (!b64) return json({ error: "bad_request: image_base64 required for a photo capture" }, 400);
     const mime = typeof body?.mime === "string" ? body.mime : "image/jpeg";
-    const ext = mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : mime.includes("heic") ? "heic" : "jpg";
-    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    if (!ALLOWED_MIMES.has(mime)) return json({ error: "bad_request: unsupported image type" }, 415);
+    // Reject an oversized payload before decoding (base64 is ~4/3 the byte size).
+    if (b64.length > Math.ceil(MAX_RECEIPT_BYTES / 3) * 4) return json({ error: "payload_too_large: receipt image exceeds 10MB" }, 413);
+    const ext = mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : mime.includes("heic") || mime.includes("heif") ? "heic" : "jpg";
+    let bytes: Uint8Array;
+    try {
+      bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    } catch {
+      return json({ error: "bad_request: image_base64 is not valid base64" }, 400);
+    }
+    if (bytes.byteLength > MAX_RECEIPT_BYTES) return json({ error: "payload_too_large: receipt image exceeds 10MB" }, 413);
     const objId = crypto.randomUUID();
     storagePath = `${orgId}/${objId}.${ext}`;
     const { error: upErr } = await svc.storage.from(BUCKET).upload(storagePath, bytes, { contentType: mime, upsert: false });

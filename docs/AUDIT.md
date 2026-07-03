@@ -237,6 +237,148 @@ pgTAP suite, a lint script) so the class can't recur silently. The sweep-1
 examples: pagination (#18) → Vitest in `apps/app`; timestamp collisions →
 `unique-timestamps` CI; tenant predicate → `check:tenant`.
 
+## Program 4 — Wave 3 wave-gate audit (owner-experience layer, 3 Jul 2026)
+
+The Wave-3 gate (LOOP_PROMPT hard-rule #8): the 14-dimension rubric + an adversarial
+stress pass over the Wave-3 blast radius (all shipped + deployed), run before Wave 4
+scales. Blast radius: **W3.2** trust-tiered autonomy (Review queue · "Penny did this"
+feed · ≤5-asks/week budget · auto-post + 1-tap undo), **W3.1** in-app Penny thread
+(grounded Q&A), **W3.3** 3-step onboarding (kernel-driven entity/industry + CoA seeding),
+**W3.4** owner Home / am-I-okay pulse, **W3.5** receipt capture + match — plus a
+sanity-check of the co-deployed **W2.4** estimated-tax strip + **W2.5** 1099 tracking
+(they touch the same Home/Reports surfaces).
+
+**GATE VERDICT: 🟢 CLEAR to start Wave 4 — 0 P0.** Two P1s + three P2s found (below);
+all are contained (low-value metadata leak, copy-honesty, matcher edge, hardening) and
+none blocks the wave. Recommend the two P1s are fixed or Nik-accepted before Wave 4
+merges land. The trust cluster (security / data-integrity) is materially clean: the
+recurring LEARNINGS failure modes (#15 TOCTOU locks, #16 balanced≠correct, #18
+pagination, forged-`p_actor`, service_role-only grants) are all correctly handled in the
+new code — the W3.2 spine is the strongest-built surface of the wave.
+
+### Per-dimension summary (blast radius)
+
+| Dimension | Verdict | Notes |
+|---|---|---|
+| security (RLS/isolation/actor/SECDEF) | 🟢 pass (1 P1) | every write RPC `can_write_org_as(p_actor,…)`, service_role-only EXECUTE, `SET search_path`; forged-`p_actor` class closed. **One gap:** `owner_asks_this_week` reader ungated (F1). |
+| data_integrity (append-only/reversal/idempotency) | 🟢 pass | undo = reversal path + `FOR UPDATE`; one-reversal-per-original; auto-post idempotent on key; onboarding atomic + kernel-validated; balanced≠correct invariants held. |
+| performance (pagination) | 🟢 pass | Home/estimated-tax reuse the RPTTEST-paginated `useEntries`; thread fn `fetchEntries` loops `.range()` — no 1000-row cliff. |
+| ia_ux / usability gate | 🟡 pass w/ note | thread nests in Home (no new top-level tab ✔); ≤2-tap jobs ✔. **F2:** thread budget counter is dishonest (copy implies owner questions count; they don't). |
+| copy / voice / centralization | 🟢 pass (F2 copy) | persona from live 'app' table (no redeploy), no inline hex, tier cutoffs + tax rates from config/seed; centralization CI gates wired (`check:app-strings/-tenant/-law-literals/-kernel-hardcodes`). |
+| design_system | 🟢 pass | no inline hex, no bare `<h1>`, no hardcoded px widths in new components. |
+| responsive | 🟢 pass (static) | no fixed px horizontal layouts; full width-ladder browser walk = standing gap (auth-walled; see NOT-covered). |
+| a11y | 🟡 pass w/ note | aria present on interactive components; OwnerHome light on aria labels (polish, tracked). |
+| reliability / observability | 🟢 pass | thread declines out-of-scope/empty-books cleanly; auto-post + undo audit-logged via trigger. |
+| tests | 🟢 pass | Vitest + pgTAP + dedicated `regression.thread-server-authority.test.ts` for every W3 surface. |
+
+### Findings (ranked, verified — `file:line` + repro)
+
+**F1 · P1 · Cross-tenant read — `owner_asks_this_week` has no `can_access_org` gate.**
+`supabase/migrations/20260705010000_w3_2_trust_tiered_autonomy.sql:268-279`. The fn is
+SECURITY DEFINER (bypasses RLS), granted to `authenticated` (line 279), and counts
+`ai_decisions where tenant_id='org:'||p_org` with **no `can_access_org(p_org)` guard** —
+unlike its sibling `list_penny_activity` (line 184) and every W3.5 receipt reader, which
+all include `and can_access_org(p_org)`. **Repro:** any authenticated user calls
+`rpc('owner_asks_this_week',{p_org:<any-other-org-uuid>})` and gets that org's weekly
+owner-interruption count. Low-value metadata (a count, no financial detail) ⇒ P1, but a
+real isolation-pattern breach and trivially exploitable. **Fix:** add
+`and can_access_org(p_org)` to the WHERE (matches line 184); the edge-fn path calls it via
+service role, so the app is unaffected. → regression stub REG-W3-F1.
+
+**F2 · P1 · Honesty/copy drift — thread budget counter never moves.**
+Counter copy `apps/app/src/copy/strings.ts` (`thread.budgetSpent` "N of 5 questions this
+week"), rendered `PennyThread.tsx:108-110`. The thread fn logs asks under
+`use_case:'penny_thread'` (`supabase/functions/penny-thread/index.ts:51,185`), but the
+budget counter (`owner_asks_this_week`/`record_owner_ask`) counts only
+`use_case='owner_interruption'` (`20260705010000_…sql:235`). **Repro:** ask Penny 20
+grounded questions this week — the header stays "0 of 5 questions this week" and never
+blocks. The ≤5/week budget is an explicit usability + honesty promise (LOOP_PROMPT #1,
+memory "usability-first"). Either the copy is wrong (it describes *Penny's* proactive
+interruptions, not the owner's questions) or thread asks must route through the budget
+gate. **Fix (decision-needed lean):** reword to "Penny's questions for you this week" or
+intentionally decouple + drop the counter from the thread — confirm intended semantics
+with Nik. → regression stub REG-W3-F2 (asserts counter semantics match what's counted).
+
+**F3 · P2 · Receipt auto-attach to wrong txn on a fuzzy same-amount collision.**
+`apps/app/src/ledger/receiptMatch.ts:138-141` + `supabase/functions/receipts/matcher.ts`.
+The ambiguity guard only fires on **exact same-date** ties (`match.exactTies>=2`, line
+138). If two entries share the same amount on *different* dates within the match window
+(4d), the exact pass finds none, the fuzzy pass picks the nearest by date with
+`exactTies=0`, and if the parsed vendor corroborates, the tier clears `confidence_high` →
+**auto-attach to a possibly-wrong entry**. **Repro:** $42.00 "Acme" on Jul-1 and again on
+Jul-3; a receipt dated Jul-2 fuzzy-matches both, picks one, vendor corroborates →
+auto-attach. P2: detach is 1-tap, metadata-only, ledger untouched. **Fix:** count fuzzy
+ties at the best delta and downgrade to a confirm card when >1. → regression stub REG-W3-F3.
+
+**F4 · P2 · Grounding post-check allows an extra invented number.**
+`supabase/functions/penny-thread/index.ts:198` — the guard only asserts the correct money
+string is *present* (`!text.includes(money(fact.amountMinor))`). A reply "…$200.00, about
+15% of revenue" passes though the prompt forbids percentages/estimates. Can never corrupt
+the server-computed stated fact (`index.ts:146`) ⇒ P2, but the header's "hallucinated
+number is structurally impossible" overstates. **Fix:** reject any currency/percent token
+other than the single allowed `money(fact.amountMinor)`; fall back to the deterministic
+phrasing. → regression stub REG-W3-F4 (adversarial: extra-number reply is rejected).
+
+**F5 · P2 · Receipt feed-row idempotency via `LIKE '%uuid%'` substring, not a key.**
+`supabase/migrations/20260705030000_w3_5_receipts.sql:244-247,287-290` — `autoattach_receipt`
+/ `detach_receipt` dedupe + undo the feed row with `summary like '%'||p_receipt_id||'%'`
+against free-text owner copy, vs. W3.2's proper `entry_id=` key (`20260705010000:120`). No
+security impact; a future copy change dropping the `[uuid]` suffix silently breaks
+dedup/undo. **Fix:** add a nullable `receipt_id uuid` column to `penny_activity` and key
+off it. → regression stub REG-W3-F5.
+
+**Advisory (P2/robustness, no stub):** onboarding diagnostic `nudgeTarget` uses
+`startsWith` over entity keys — a future prefix-colliding seed token could mis-suggest an
+entity (`diagnostic.ts:105-111`); `complete_onboarding` re-validates the final key against
+the kernel so no invalid entity is ever written — seed-authoring footgun only.
+
+### W2.4 / W2.5 sanity-check (co-deployed onto Home/Reports)
+Both clean under the trust cluster: `estimated_tax_basis` and the 1099 RPCs are SECURITY
+DEFINER + `SET search_path` + `can_access_org`/`can_write_org_as` gated + service_role-only
+writes; **all tax rates/factors/thresholds are seed/params data, zero rate literals in
+code** (`20260706020000_…sql`, `20260706030000_…sql`); the estimated-tax strip on Home is
+correctly gated on W2.4 presence (no stub number when absent). No findings.
+
+### Coverage delta — Wave-3 ledger rows (this program)
+
+New surfaces enter the ledger. A row leaves ⬜ only via this formal adversarial pass;
+each below got the pass (finder → verifier) — those with findings carry the finding id.
+
+| # | Surface | Permanent test | Status |
+|---|---|---|---|
+| W3.2 | Trust-tiered autonomy (feed · auto-post · undo · ≤5 budget) | `w3_2_trust_tiered_test.sql` + `apps/app/src/ledger/*tier*` Vitest | 🟢 stress-passed; **F1 (P1)** open |
+| W3.1 | Penny thread in-app (grounded Q&A) | `thread.test.ts` + `regression.thread-server-authority.test.ts` | 🟢 stress-passed; **F2 (P1) / F4 (P2)** open |
+| W3.3 | 3-step onboarding (kernel entity/industry + CoA seed) | onboarding Vitest + `20260705020000` pgTAP; `check:kernel-seed` gate | 🟢 stress-passed; no defect (seed-order deploy note) |
+| W3.4 | Owner Home / am-I-okay pulse | `homePulse.test.ts` | 🟢 stress-passed; no defect |
+| W3.5 | Receipt capture + match | `receiptMatch.test.ts` + `w3_5_receipts_test.sql` | 🟢 stress-passed; **F3 / F5 (P2)** open (supersedes the Wave-1 ⬜ W3.5 row) |
+
+**Coverage delta:** +4 new ledger rows (W3.1/2/3/4) + W3.5 promoted from ⬜ (Program 2) to
+stress-passed. 0 P0, 2 P1, 3 P2 — all with a permanent regression stub (REG-W3-F1…F5) to
+be authored into `regression_pack` at fix time (the coverage ratchet).
+
+### Proposed LEARNINGS additions (retro)
+1. **A SECURITY DEFINER reader granted to `authenticated` must carry its own tenant guard
+   in the WHERE — RLS does not protect it.** DEFINER bypasses RLS; the `can_access_org(p_org)`
+   predicate is the *only* thing scoping the read. F1 slipped because a sibling reader in the
+   same file had the guard and this one didn't — grep every DEFINER reader for the guard when
+   a file adds one. (Graduate toward extending `check:tenant-predicate` to flag DEFINER
+   readers missing `can_access_org`.)
+2. **A user-facing counter must count the thing it names.** F2: "N of 5 questions this week"
+   counted a *different* use_case than the thread's questions. When a surface renders a budget/
+   quota, assert (in a test) that the number it shows is derived from the same event stream it
+   claims to measure — an honesty gate, not just a copy check.
+3. **Idempotency/undo keys are foreign keys, not substrings.** F5: dedupe via `LIKE '%uuid%'`
+   over free-text copy couples correctness to copy. Key structural invariants off a real column.
+
+### Standing gaps carried forward (NOT covered by this program)
+- **Full width-ladder browser walk** of the new Home/thread/receipt surfaces (auth-walled —
+  static responsive check only; same gap as Programs 1–2).
+- **axe/a11y browser scan** of the new surfaces (OwnerHome aria polish flagged statically).
+- **CoA-template seed deploy-order** — `seed_org_coa` returns 0 accounts (silent) if the kernel
+  seed isn't loaded before onboarding runs; CI (`check:kernel-seed`) guards the seed file's
+  integrity but not that prod was seeded before the migration went live. Operational deploy
+  note for the integrator (load kernel seed with the W3.3 migration wave), not a code defect.
+
 ## Program 2 — Wave 1 (full-bookkeeping loop, 2 Jul 2026)
 
 The build loop's first wave: the top-half of the product ([FULL_BOOKKEEPING_ROADMAP.md](plans/FULL_BOOKKEEPING_ROADMAP.md)

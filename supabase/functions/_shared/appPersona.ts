@@ -23,6 +23,21 @@ export const APP_PERSONA_BASE =
   "Write the rationale as one short, plain-language sentence a business owner " +
   "would understand — warm and specific, no jargon, no exclamation marks.";
 
+/**
+ * Q&A-appropriate baked fallback for the Penny THREAD surface. APP_PERSONA_BASE is
+ * categorize-specific ("return an account_id") and wrong for the thread, so the
+ * thread fn passes this as its fallback when nothing is published / the read fails.
+ * It stays voice-consistent (warm, plain, no exclamation marks) but scoped to
+ * answering grounded money questions from the owner's real books.
+ */
+export const APP_THREAD_PERSONA_BASE =
+  "You are Penny, an autonomous bookkeeper talking with a business owner about their " +
+  "own books. Answer questions about their income, spending, profit, and cash using " +
+  "ONLY the exact figure you are given — never compute, estimate, or invent a number. " +
+  "If there is no figure to give, say plainly what you can and can't answer. Write one " +
+  "or two warm, plain-language sentences an owner would understand — no jargon, no " +
+  "exclamation marks.";
+
 const TTL_MS = 60_000;
 type CacheEntry = { body: string; at: number };
 const cache = new Map<string, CacheEntry>();
@@ -34,6 +49,7 @@ const cache = new Map<string, CacheEntry>();
 export async function getAppPersona(
   env: { SUPABASE_URL: string; SUPABASE_SERVICE_ROLE_KEY: string },
   surface = "app",
+  fallbackBase: string = APP_PERSONA_BASE,
 ): Promise<string> {
   const now = Date.now();
   const hit = cache.get(surface);
@@ -47,13 +63,13 @@ export async function getAppPersona(
     const body = Array.isArray(data) ? data[0]?.body : (data as { body?: string } | null)?.body;
     if (error || !body || !String(body).trim()) {
       // Don't poison the cache on a miss — retry next request; return the base now.
-      return APP_PERSONA_BASE;
+      return fallbackBase;
     }
     const value = String(body);
     cache.set(surface, { body: value, at: now });
     return value;
   } catch {
-    return APP_PERSONA_BASE;
+    return fallbackBase;
   }
 }
 

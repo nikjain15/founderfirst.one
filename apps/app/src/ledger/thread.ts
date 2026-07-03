@@ -192,9 +192,11 @@ export function resolvePeriod(text: string, now: Date): { start: string | null; 
 
 /**
  * Classify one owner message. Pure: no model, no DB, deterministic given `now`.
- * The fn calls this SAME routine (shared code, ported) so the client and server
- * agree on what is answerable — the client never sends an unsupported turn as a
- * grounded question, and the server re-checks before spending a model call.
+ * The penny-thread fn runs this SAME routine (ported to _shared/thread/route.ts)
+ * server-side and is AUTHORITATIVE: it re-routes the message and re-computes the
+ * fact from the org's ledger, so it never trusts the client's classification or
+ * amount. This client copy exists for a snappy optimistic UI, not as the source of
+ * truth — if the two ever disagree, the server's answer wins.
  */
 export function routeMessage(raw: string, now: Date = new Date()): ThreadRoute {
   const text = (raw ?? "").trim();

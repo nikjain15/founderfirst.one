@@ -446,6 +446,24 @@ a short summary, and one line per P0/P1 marked **fixed** or **deferred**. When a
 issue here keeps recurring, graduate it into a numbered rule above — that is how
 we stop repeating it. The command lives at `.claude/commands/audit.md`.
 
+### 3 Jul 2026 · Wave-3 wave-gate audit (owner-experience layer) — GATE 🟢 CLEAR
+14-dimension rubric + adversarial stress pass over the Wave-3 blast radius (W3.2 trust-tiered
+autonomy · W3.1 Penny thread · W3.3 onboarding · W3.4 owner Home · W3.5 receipts) + a W2.4/W2.5
+sanity-check, all shipped+deployed. **0 P0.** Trust cluster materially clean — the recurring
+failure modes (LEARNINGS #15 TOCTOU locks, #16 balanced≠correct, #18 pagination, forged-`p_actor`,
+service_role-only grants) are all correctly handled; the W3.2 spine (advisory-lock atomic budget,
+`FOR UPDATE` undo, reversal-path undo, one-reversal-per-original) is the wave's strongest surface.
+**2 P1 + 3 P2**, all contained, none blocks Wave 4: **F1** `owner_asks_this_week` DEFINER reader
+missing `can_access_org` → cross-tenant weekly-count leak (low-value metadata; fix = add the guard);
+**F2** thread "N of 5 questions this week" counter counts `owner_interruption`, not the thread's
+`penny_thread` asks → dishonest budget copy; **F3** receipt fuzzy same-amount-different-date collision
+can auto-attach to the wrong txn (1-tap detach, ledger untouched); **F4** grounding post-check allows
+an extra invented %/number alongside the correct figure; **F5** receipt feed idempotency via
+`LIKE '%uuid%'` substring not a key. Each → a REG-W3-F* regression stub (coverage ratchet). Full
+report + per-dimension table + coverage-delta rows: **[AUDIT.md](docs/AUDIT.md) → Program 4**. Three
+retro rules proposed there (DEFINER-reader tenant guard · counter-honesty test · undo keys are FKs).
+Gate verdict: **Wave 4 clear to start** (P0s = 0; recommend F1+F2 fixed-or-Nik-accepted first).
+
 ### 2 Jul 2026 · Autonomous build loop — Waves 1 & 2 shipped to prod
 One orchestrating session fanned out builders → red-team → CI-verify → wave-audit → deploy
 (Rule 19 in practice). **Wave 1** (12 cards, integration #185) and **Wave 2** (3 cards,

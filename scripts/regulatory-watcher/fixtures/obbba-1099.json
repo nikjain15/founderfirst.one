@@ -1,0 +1,39 @@
+{
+  "_meta": {
+    "name": "obbba-1099",
+    "description": "REPLAY FIXTURE — the 2026 OBBBA 1099-NEC threshold change ($600 -> $2,000 for payments after 31 Dec 2025). Two parts: the seed state AS IT STOOD BEFORE the change (only the $600 tax_year=2025 row, no 2026 row yet), and the law-change signal a watched source would emit. Feeding these to detect() must produce exactly ONE seed-diff adding the 2026 $2,000 row — the canonical LOOP-2 acceptance test (BACKLOG LOOP-2 acceptance (a)). Citation is the OBBBA/IRS reporting-threshold source.",
+    "citation_note": "OBBBA §70433 raised the 1099-NEC/MISC reporting threshold to $2,000 for payments made after 31 Dec 2025, inflation-indexed from 2027."
+  },
+  "state": {
+    "filing_obligations": [
+      {
+        "jurisdiction_code": "US-FED", "entity_type": "sole_prop", "tax_year": 2025,
+        "obligation_key": "1099_nec_issue", "kind": "information_return", "form_code": "1099-NEC",
+        "label": "Issue 1099-NEC to contractors paid $600+",
+        "due_month": 1, "due_day": 31, "due_year_offset": 1,
+        "threshold_minor": 60000,
+        "effective_from": "2020-01-01",
+        "citation": "https://www.irs.gov/forms-pubs/about-form-1099-nec"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "source_id": "irs_1099_nec_instructions",
+      "jurisdiction_code": "US-FED",
+      "entity_type": "sole_prop",
+      "tax_year": 2026,
+      "obligation_key": "1099_nec_issue",
+      "proposed": {
+        "kind": "information_return",
+        "form_code": "1099-NEC",
+        "label": "Issue 1099-NEC to contractors paid $2,000+",
+        "due_month": 1, "due_day": 31, "due_year_offset": 1,
+        "threshold_minor": 200000,
+        "effective_from": "2026-01-01"
+      },
+      "citation": "https://www.avalara.com/blog/en/north-america/2025/07/one-big-beautiful-bill-act-1099-reporting-threshold.html",
+      "summary": "OBBBA raised the 1099-NEC reporting threshold from $600 to $2,000 for payments made after 31 Dec 2025 (inflation-indexed from 2027). Modeled as a NEW tax_year 2026 row so 2025 filings still compute at $600 (Roadmap 3c: old periods keep old law)."
+    }
+  ]
+}

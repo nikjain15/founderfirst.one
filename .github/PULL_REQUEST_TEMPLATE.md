@@ -20,6 +20,18 @@
 - [ ] Closes a finding → status flipped in the ledger + STRESS_TEST_TRACKER.md
 - [ ] Opens a standing gap → added to the "NOT covered" table
 
+## Law change — [decision-needed] (regulatory-watcher / any law-derived seed edit)
+
+<!-- Delete this whole section unless this PR changes law-derived kernel data
+     (filing_obligations / tax tables: thresholds, %, deadlines, form lines).
+     Auto-drafted by the LOOP-2 regulatory watcher; a human MUST review + merge. -->
+
+- [ ] **Citation** (IRS rev-proc / bill / instruction URL; trade-press must be corroborated by a primary source):
+- [ ] **Effective dates** — old→new `effective_from`; old-law rows left intact so old periods keep old law (Roadmap 3c):
+- [ ] **Affected consumers** — surfaces that recompute on merge (cards / nudges / checklist / 1099 report / estimator):
+- [ ] `pnpm seed:kernel` regenerated `_generated.sql`; `pnpm check:reg-watcher` + `pnpm check:kernel-seed` green
+- [ ] Change is a NEW superseding row, never an overwrite; the watcher did NOT self-merge
+
 ## Deploy notes
 
 <!-- Migrations to push (list timestamps), edge functions to deploy, secrets to set. Write "None — repo-only" if nothing. -->

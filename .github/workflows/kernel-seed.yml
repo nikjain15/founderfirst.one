@@ -51,3 +51,5 @@ jobs:
         run: pnpm check:kernel-hardcodes
       - name: No law-looking literals in feature code
         run: pnpm check:law-literals
+      - name: Regulatory-watcher detector replay (LOOP-2 REG-1)
+        run: pnpm check:reg-watcher

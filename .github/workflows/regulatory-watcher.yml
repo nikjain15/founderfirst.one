@@ -1,0 +1,79 @@
+name: regulatory-watcher
+
+# LOOP-2 · the regulatory-watcher scheduled routine (Roadmap principle 3c).
+#
+# Cadence: weekly year-round + DAILY during filing season (1 Jan – 15 Apr). A
+# detected tax-law / deadline change becomes ONE decision-needed seed-diff PR; no
+# detection ⇒ log only (false-positive-safe). It NEVER merges and NEVER deploys —
+# the human review gate + branch protection on main keep a person in the loop.
+#
+# Confirmed changes are fed via the REG_WATCHER_SIGNALS secret/input (a JSON array
+# of LawChangeSignal). The baseline scan probes sources for reachability + a
+# content hash but does not auto-extract (see scripts/regulatory-watcher/fetch.ts).
+
+on:
+  schedule:
+    - cron: "0 13 * * 1"          # weekly: Mondays 13:00 UTC (year-round)
+    - cron: "0 13 1-31 1-4 *"     # daily in Jan–Apr (filing season); --season on
+  workflow_dispatch:
+    inputs:
+      open_pr:
+        description: "Open the decision-needed PR if a change is detected (else dry-run)"
+        type: boolean
+        default: true
+      signals_json:
+        description: "Confirmed LawChangeSignal[] as JSON (overrides the REG_WATCHER_SIGNALS secret)"
+        required: false
+        type: string
+
+# The routine writes a branch + opens a draft PR; nothing else.
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Always self-test the pure detector first — a broken watcher must not run.
+      - name: Replay test (REG-1)
+        run: pnpm check:reg-watcher
+
+      # Decide seasonal cadence: the daily cron only fires Jan–Apr, so treat any
+      # run in months 1–4 as seasonal (includes seasonal_daily sources).
+      - name: Determine cadence
+        id: cad
+        run: |
+          MONTH=$(date -u +%m)
+          if [ "$MONTH" -ge 1 ] && [ "$MONTH" -le 4 ]; then
+            echo "season=--season" >> "$GITHUB_OUTPUT"
+          else
+            echo "season=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure git identity
+        run: |
+          git config user.name "founderfirst-regwatcher"
+          git config user.email "founder@founderfirst.one"
+
+      - name: Run watcher
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # dispatch input wins; else the standing secret (may be empty → no signal → no PR).
+          REG_WATCHER_SIGNALS: ${{ github.event.inputs.signals_json || secrets.REG_WATCHER_SIGNALS }}
+        run: |
+          OPEN_PR=""
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event.inputs.open_pr }}" = "true" ]; then
+            OPEN_PR="--open-pr"
+          fi
+          pnpm reg-watcher -- --scan ${{ steps.cad.outputs.season }} $OPEN_PR

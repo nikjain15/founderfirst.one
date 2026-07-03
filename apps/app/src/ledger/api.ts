@@ -8,6 +8,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getClient } from "../lib/supabase";
 import type { AccountType, AccountingPeriod, JournalEntry, LedgerAccount } from "./types";
+import type { NecVendorRow } from "./reports";
 
 // ── reads ───────────────────────────────────────────────────────────────────
 export function useAccounts(orgId: string | undefined) {
@@ -562,7 +563,7 @@ export const plaidSync = (org_id: string, connection_id: string) =>
 // UI: a logging failure must never block the download the user already got.
 export const logReportExport = (input: {
   org_id: string;
-  report: "tb" | "pnl" | "bs" | "gl";
+  report: "tb" | "pnl" | "bs" | "gl" | "nec";
   format: "csv" | "pdf";
   scope?: { start?: string | null; end?: string | null };
   filename?: string;
@@ -975,3 +976,103 @@ export const dismissReceipt = (org_id: string, receipt_id: string) =>
 /** A short-lived signed URL to view the private receipt asset. */
 export const receiptSignedUrl = (org_id: string, receipt_id: string) =>
   invoke<{ url: string | null }>("receipts", { op: "signed_url", org_id, receipt_id });
+
+// ── 1099 contractor tracking (card W2.5) ──────────────────────────────────────
+export interface Vendor {
+  id: string;
+  name: string;
+  is_1099_eligible: boolean;
+  legal_name: string | null;
+  tax_id_type: "ein" | "ssn" | null;
+  tax_id_last4: string | null;
+  address: string | null;
+  w9_on_file: boolean;
+  is_archived: boolean;
+}
+
+export interface PaymentMethod {
+  key: string;
+  label: string;
+  nec_reportable: boolean;
+  sort_order: number;
+}
+
+/** The org's active vendors (RLS-scoped read). */
+export function useVendors(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["vendors", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<Vendor[]> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("vendors").select("*").eq("org_id", orgId).eq("is_archived", false)
+        .order("name");
+      if (error) throw error;
+      return (data ?? []) as Vendor[];
+    },
+  });
+}
+
+/** The payment-method taxonomy (reference data; the NEC exclusion is a flag). */
+export function usePaymentMethods() {
+  return useQuery({
+    queryKey: ["payment-methods"],
+    queryFn: async (): Promise<PaymentMethod[]> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("payment_methods").select("key,label,nec_reportable,sort_order")
+        .eq("is_active", true).order("sort_order");
+      if (error) throw error;
+      return (data ?? []) as PaymentMethod[];
+    },
+  });
+}
+
+/** The year-end 1099-NEC summary rows for a tax year (server-computed). */
+export function useNecSummary(orgId: string | undefined, taxYear: number) {
+  return useQuery({
+    queryKey: ["nec-summary", orgId, taxYear],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<NecVendorRow[]> => {
+      const sb = getClient();
+      const { data, error } = await sb.rpc("ninetynine_nec_summary", {
+        p_org: orgId, p_tax_year: taxYear,
+      });
+      if (error) throw error;
+      return (data ?? []) as NecVendorRow[];
+    },
+  });
+}
+
+export function useNecRefresh(orgId: string | undefined) {
+  const qc = useQueryClient();
+  return () => {
+    for (const key of ["vendors", "nec-summary", "ledger-entries"]) {
+      void qc.invalidateQueries({ queryKey: [key, orgId] });
+    }
+  };
+}
+
+/** Create or update a per-org vendor (1099 flag + W-9 fields). */
+export const upsertVendor = (input: {
+  org_id: string;
+  vendor_id?: string | null;
+  name: string;
+  is_1099_eligible: boolean;
+  legal_name?: string | null;
+  tax_id_type?: "ein" | "ssn" | null;
+  tax_id_last4?: string | null;
+  address?: string | null;
+  w9_on_file?: boolean;
+}) => invoke<{ result: Vendor }>("nec-tracking", { op: "vendor_upsert", ...input });
+
+export const archiveVendor = (org_id: string, vendor_id: string) =>
+  invoke<{ result: Vendor }>("nec-tracking", { op: "vendor_archive", org_id, vendor_id });
+
+/** Attribute a posted entry to a vendor + payment method (1099 tagging). */
+export const tagEntryVendor = (
+  org_id: string, entry_id: string, vendor_id: string, payment_method_key: string,
+) => invoke("nec-tracking", { op: "tag_entry", org_id, entry_id, vendor_id, payment_method_key });
+
+export const untagEntryVendor = (org_id: string, entry_id: string) =>
+  invoke("nec-tracking", { op: "untag_entry", org_id, entry_id });

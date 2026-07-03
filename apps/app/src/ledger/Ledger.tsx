@@ -12,9 +12,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   approveEntry, logReportExport, newIdempotencyKey, postEntry, reverseEntry, setPeriod,
   upsertAccount, useAccounts, useEntries, useLedgerRefresh, usePeriods,
-  useReconciliationStatus,
+  useReconciliationStatus, useNecSummary,
 } from "./api";
-import { balanceSheet, generalLedger, profitAndLoss, trialBalance } from "./reports";
+import { balanceSheet, generalLedger, profitAndLoss, trialBalance, necSummary } from "./reports";
 import {
   downloadReport, rangeFilter, type ExportContext, type ReportKind, type ReportScope,
 } from "./export";
@@ -813,8 +813,13 @@ function Reports({ entries, org }: { entries: JournalEntry[]; org: { id: string;
   const [view, setView] = useState<ReportKind>("pnl");
   const [start, setStart] = useState<string>("");
   const [end, setEnd] = useState<string>("");
+  const [necYear, setNecYear] = useState<number>(new Date().getFullYear() - 1);
   const scope: ReportScope = { start: start || undefined, end: end || undefined };
   const filter = useMemo(() => rangeFilter(scope), [start, end]);
+
+  // 1099-NEC summary (card W2.5) — server-computed vendor roll-up for the tax year.
+  const necRows = useNecSummary(org.id, necYear).data ?? [];
+  const nec = useMemo(() => necSummary(necYear, necRows), [necYear, necRows]);
 
   const [busy, setBusy] = useState<null | "csv" | "pdf">(null);
   const [err, setErr] = useState<string | null>(null);
@@ -824,10 +829,11 @@ function Reports({ entries, org }: { entries: JournalEntry[]; org: { id: string;
     try {
       const ctx: ExportContext = {
         orgName: org.name,
-        scope,
+        scope: view === "nec" ? { end: `${necYear}-12-31` } : scope,
         generatedOn: today(),
+        nec: view === "nec" ? nec : undefined,
       };
-      const rows = entries.length;
+      const rows = view === "nec" ? nec.rows.length : entries.length;
       // Build + download client-side first (the user gets their file even if the
       // audit call later fails); then record the export. Fire-and-forget audit.
       const filename = downloadReport(view, format, entries, ctx);
@@ -850,22 +856,35 @@ function Reports({ entries, org }: { entries: JournalEntry[]; org: { id: string;
         <button className={view === "tb" ? "on" : ""} onClick={() => setView("tb")}>{COPY.reports.trialBalance}</button>
         <button className={view === "bs" ? "on" : ""} onClick={() => setView("bs")}>{COPY.reports.balanceSheet}</button>
         <button className={view === "gl" ? "on" : ""} onClick={() => setView("gl")}>{COPY.reports.generalLedger}</button>
+        <button className={view === "nec" ? "on" : ""} onClick={() => setView("nec")}>{COPY.reports.nec}</button>
       </div>
 
       <div className="report-controls" role="group" aria-label={COPY.reports.exportScopeAria}>
-        <label className="report-date">
-          <span>{view === "bs" ? COPY.reports.exportAsOf : COPY.reports.exportFrom}</span>
-          {view === "bs" ? (
-            <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
-          ) : (
-            <input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-          )}
-        </label>
-        {view !== "bs" && (
+        {view === "nec" ? (
           <label className="report-date">
-            <span>{COPY.reports.exportTo}</span>
-            <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+            <span>{COPY.reports.necTaxYear}</span>
+            <input
+              type="number" min={2000} max={2100} value={necYear}
+              onChange={(e) => setNecYear(Number(e.target.value) || necYear)}
+            />
           </label>
+        ) : (
+          <>
+            <label className="report-date">
+              <span>{view === "bs" ? COPY.reports.exportAsOf : COPY.reports.exportFrom}</span>
+              {view === "bs" ? (
+                <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+              ) : (
+                <input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+              )}
+            </label>
+            {view !== "bs" && (
+              <label className="report-date">
+                <span>{COPY.reports.exportTo}</span>
+                <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+              </label>
+            )}
+          </>
         )}
         <span className="report-dl">
           <button className="ghost sm" disabled={busy !== null} onClick={() => download("csv")}>
@@ -882,6 +901,50 @@ function Reports({ entries, org }: { entries: JournalEntry[]; org: { id: string;
       {view === "tb" && <TrialBalanceReport entries={entries} filter={filter} />}
       {view === "bs" && <BalanceSheetReport entries={entries} asOf={scope.end} />}
       {view === "gl" && <GeneralLedgerReport entries={entries} filter={filter} />}
+      {view === "nec" && <NecReport nec={nec} />}
+    </div>
+  );
+}
+
+// ── 1099-NEC contractor summary (card W2.5) ──────────────────────────────────
+function NecReport({ nec }: { nec: ReturnType<typeof necSummary> }) {
+  if (nec.rows.length === 0) {
+    return <Empty title={COPY.reports.necEmptyTitle} body={COPY.reports.necEmptyBody} />;
+  }
+  return (
+    <div className="report">
+      <p className="sub sm">{COPY.reports.necThresholdNote}</p>
+      <table className="report-table">
+        <thead>
+          <tr>
+            <th>{COPY.reports.necColVendor}</th>
+            <th>{COPY.reports.necColW9}</th>
+            <th>{COPY.reports.necColTin}</th>
+            <th className="num">{COPY.reports.necColReportable}</th>
+            <th className="num">{COPY.reports.necColExcluded}</th>
+            <th>{COPY.reports.necColMustFile}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {nec.rows.map((r) => (
+            <tr key={r.vendor_id} className={r.meets_threshold ? "t-must-file" : ""}>
+              <td>{r.vendor_name}</td>
+              <td>{r.w9_on_file ? COPY.reports.necW9OnFile : COPY.reports.necW9Missing}</td>
+              <td>{r.tax_id_last4 ? `${(r.tax_id_type ?? "").toUpperCase()} ••${r.tax_id_last4}` : "—"}</td>
+              <td className="num">{formatMoney(r.reportable_minor)}</td>
+              <td className="num">{formatMoney(r.excluded_minor)}</td>
+              <td>{r.meets_threshold ? COPY.reports.necMustFileYes : COPY.reports.necMustFileNo}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colSpan={3}>{COPY.reports.necTotalToFile} ({nec.vendorsToFile})</td>
+            <td className="num">{formatMoney(nec.totalReportable)}</td>
+            <td colSpan={2} />
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 }

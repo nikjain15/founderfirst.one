@@ -37,7 +37,7 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const REPORTS = new Set(["tb", "pnl", "bs", "gl"]);
+const REPORTS = new Set(["tb", "pnl", "bs", "gl", "nec"]);
 const FORMATS = new Set(["csv", "pdf"]);
 
 Deno.serve(async (req) => {

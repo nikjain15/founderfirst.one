@@ -389,6 +389,23 @@ export const COPY = {
     exporting: "Preparing…",
     exportError: "Could not prepare the download. Try again.",
     exportScopeAria: "Report period",
+    // ── W2.5 · 1099-NEC contractor summary (APPENDED block — additive keys) ──
+    nec: "1099-NEC",
+    necTaxYear: "Tax year",
+    necEmptyTitle: "No 1099 contractors yet",
+    necEmptyBody: "Tag a payment with a 1099-eligible vendor and it will show up here at year end.",
+    necColVendor: "Vendor",
+    necColW9: "W-9",
+    necColTin: "TIN",
+    necColReportable: "1099-NEC amount",
+    necColExcluded: "Excluded (card / 1099-K)",
+    necColMustFile: "Must file",
+    necW9OnFile: "On file",
+    necW9Missing: "Missing",
+    necMustFileYes: "Yes",
+    necMustFileNo: "No",
+    necTotalToFile: "Total to file",
+    necThresholdNote: "The $ threshold comes from current IRS rules — Penny keeps it up to date.",
   },
 
   // ── Periods ────────────────────────────────────────────────────────────────

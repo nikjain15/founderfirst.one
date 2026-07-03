@@ -14,7 +14,7 @@ import {
   upsertAccount, useAccounts, useEntries, useLedgerRefresh, usePeriods,
   useReconciliationStatus, useNecSummary,
 } from "./api";
-import { balanceSheet, generalLedger, profitAndLoss, trialBalance, necSummary } from "./reports";
+import { balanceSheet, cashFlow, generalLedger, profitAndLoss, trialBalance, necSummary } from "./reports";
 import {
   downloadReport, rangeFilter, type ExportContext, type ReportKind, type ReportScope,
 } from "./export";
@@ -863,6 +863,7 @@ function Reports({ entries, org }: { entries: JournalEntry[]; org: { id: string;
         <button className={view === "pnl" ? "on" : ""} onClick={() => setView("pnl")}>{COPY.reports.pnl}</button>
         <button className={view === "tb" ? "on" : ""} onClick={() => setView("tb")}>{COPY.reports.trialBalance}</button>
         <button className={view === "bs" ? "on" : ""} onClick={() => setView("bs")}>{COPY.reports.balanceSheet}</button>
+        <button className={view === "cf" ? "on" : ""} onClick={() => setView("cf")}>{COPY.reports.cashFlow}</button>
         <button className={view === "gl" ? "on" : ""} onClick={() => setView("gl")}>{COPY.reports.generalLedger}</button>
         <button className={view === "nec" ? "on" : ""} onClick={() => setView("nec")}>{COPY.reports.nec}</button>
       </div>
@@ -908,6 +909,7 @@ function Reports({ entries, org }: { entries: JournalEntry[]; org: { id: string;
       {view === "pnl" && <PnlReport entries={entries} filter={filter} />}
       {view === "tb" && <TrialBalanceReport entries={entries} filter={filter} />}
       {view === "bs" && <BalanceSheetReport entries={entries} asOf={scope.end} />}
+      {view === "cf" && <CashFlowReport entries={entries} scope={scope} />}
       {view === "gl" && <GeneralLedgerReport entries={entries} filter={filter} />}
       {view === "nec" && <NecReport nec={nec} />}
     </div>
@@ -1031,6 +1033,53 @@ function BalanceSheetReport({ entries, asOf }: { entries: JournalEntry[]; asOf?:
       <div className="report-net">
         <span>{COPY.reports.accountingEquation}</span>
         <span className={bs.balanced ? "t-good" : "t-bad"}>{bs.balanced ? COPY.reports.balanced : COPY.reports.outOfBalance}</span>
+      </div>
+    </div>
+  );
+}
+
+// Cash-flow statement (GAAP indirect, card W4.2). Shares the cashFlow() pure
+// function with the export so screen ≡ file to the cent; the statement ties to
+// the balance-sheet cash change by construction (see reports.ts).
+function CashFlowReport({ entries, scope }: { entries: JournalEntry[]; scope: ReportScope }) {
+  const cf = useMemo(() => cashFlow(entries, scope), [entries, scope.start, scope.end]);
+  const empty = cf.netChange === 0 && cf.operatingAdjustments.length === 0
+    && cf.investing.length === 0 && cf.financing.length === 0 && cf.netIncome === 0;
+  if (empty) return <Empty title={COPY.reports.cfEmptyTitle} body={COPY.reports.cfEmptyBody} />;
+  const sign = (v: number) => (v >= 0 ? formatMoney(v) : `(${formatMoney(-v)})`);
+  return (
+    <div className="report">
+      <ReportSection
+        title={COPY.reports.cfOperating}
+        rows={[
+          { label: COPY.reports.cfNetIncome, value: sign(cf.netIncome) },
+          ...cf.operatingAdjustments.map((l) => ({ label: l.name, value: sign(l.amount) })),
+        ]}
+        total={{ label: COPY.reports.cfOperatingTotal, value: sign(cf.operating) }}
+      />
+      <ReportSection
+        title={COPY.reports.cfInvesting}
+        rows={cf.investing.map((l) => ({ label: l.name, value: sign(l.amount) }))}
+        total={{ label: COPY.reports.cfInvestingTotal, value: sign(cf.investingTotal) }}
+      />
+      <ReportSection
+        title={COPY.reports.cfFinancing}
+        rows={cf.financing.map((l) => ({ label: l.name, value: sign(l.amount) }))}
+        total={{ label: COPY.reports.cfFinancingTotal, value: sign(cf.financingTotal) }}
+      />
+      <ReportSection
+        title={COPY.reports.cfNetChange}
+        rows={[
+          { label: COPY.reports.cfNetChange, value: sign(cf.netChange) },
+          { label: COPY.reports.cfBeginningCash, value: sign(cf.beginningCash) },
+        ]}
+        total={{ label: COPY.reports.cfEndingCash, value: sign(cf.endingCash) }}
+      />
+      <div className="report-net">
+        <span>{cf.ties ? COPY.reports.cfTiesNote : COPY.reports.cfDoesNotTie}</span>
+        <span className={cf.ties ? "t-good" : "t-bad"}>
+          {cf.ties ? COPY.reports.balanced : COPY.reports.outOfBalance}
+        </span>
       </div>
     </div>
   );

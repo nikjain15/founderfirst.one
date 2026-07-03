@@ -77,6 +77,14 @@ const page = await context.newPage();
 const consoleErrors = [];
 page.on("console", (m) => { if (m.type() === "error") { consoleErrors.push(m.text()); console.log("  [browser error]", m.text()); } });
 page.on("pageerror", (e) => { consoleErrors.push(String(e)); console.log("  [page error]", String(e)); });
+// Capture the Supabase anon key from the app's own requests (it's baked into the
+// bundle, not on window) — ensureBooks() needs it as the `apikey` for REST + fn calls.
+let capturedAnonKey = null;
+page.on("request", (req) => {
+  if (capturedAnonKey) return;
+  const k = req.headers()["apikey"];
+  if (k && k.includes(".")) capturedAnonKey = k;   // JWT-shaped anon key
+});
 
 // The OWNER lens IA (apps/app Ledger.tsx, nav="owner" — APP_PRINCIPLES §2): four
 // plain-language jobs (#ltab-home · #ltab-review · #ltab-reports · #ltab-connections)
@@ -192,6 +200,144 @@ async function verifyPennyThread() {
   }
 }
 
+/** Idempotently ensure the E2E org has BOOKS (≥1 account + ≥1 posted entry).
+ *
+ *  The E2E org lives on real (prod) Supabase and is seeded out-of-band, so its
+ *  books can be wiped by a fixture purge (as happened 2 Jul) — leaving the org
+ *  present but account-less. When that happens Home is *correctly* the "set up
+ *  your books" nudge, so the W3.4 pulse can never render and every books-facing
+ *  assertion (owner Home, non-empty Reports) is a false red. Rather than depend
+ *  on manual re-seeding, make the test hermetic: create-if-absent a minimal chart
+ *  of accounts (Cash asset + Sales income) and one balanced entry, via the SAME
+ *  Edge-Function write-path the app uses (never a direct table write). All calls
+ *  are idempotent — a re-run with books already present is a no-op (duplicate
+ *  account code → code_in_use ignored; the entry carries a fixed idempotency_key).
+ *  Runs under the page's own authed session, so RLS/can_write_org still gate it. */
+async function ensureBooks() {
+  // Pull the live session out of the running app (its own supabase client stores
+  // the session under the default storageKey: sb-<ref>-auth-token in localStorage).
+  const ctx = await page.evaluate(() => {
+    let token = null, ref = null;
+    for (const k of Object.keys(localStorage)) {
+      const m = k.match(/^sb-(.+)-auth-token$/);
+      if (!m) continue;
+      try {
+        const v = JSON.parse(localStorage.getItem(k) || "null");
+        if (v?.access_token) { token = v.access_token; ref = m[1]; }
+      } catch { /* skip */ }
+    }
+    return { token, ref };
+  });
+  if (!ctx?.token || !ctx?.ref) { fail("ensureBooks: could not read the authed session"); return; }
+  const sbUrl = `https://${ctx.ref}.supabase.co`;
+  const anon = capturedAnonKey;
+  if (!anon) { fail("ensureBooks: could not capture the Supabase anon key from app traffic"); return; }
+
+  // Resolve the org the app is showing (first membership org).
+  const membRes = await page.evaluate(async ([sbUrl, token, anon]) => {
+    const r = await fetch(`${sbUrl}/rest/v1/organizations?select=id&limit=1`, {
+      headers: { apikey: anon, Authorization: `Bearer ${token}` },
+    });
+    return { status: r.status, body: await r.json().catch(() => null) };
+  }, [sbUrl, ctx.token, anon]);
+  const orgId = Array.isArray(membRes.body) && membRes.body[0]?.id;
+  if (!orgId) { fail(`ensureBooks: no org via REST (status ${membRes.status})`); return; }
+
+  // Already has books? Then nothing to do (fast, common path once seeded).
+  const acctRes = await page.evaluate(async ([sbUrl, token, anon, orgId]) => {
+    const r = await fetch(
+      `${sbUrl}/rest/v1/ledger_accounts?select=id&org_id=eq.${orgId}&limit=1`,
+      { headers: { apikey: anon, Authorization: `Bearer ${token}` } },
+    );
+    return { status: r.status, body: await r.json().catch(() => null) };
+  }, [sbUrl, ctx.token, anon, orgId]);
+  if (Array.isArray(acctRes.body) && acctRes.body.length > 0) {
+    ok("E2E org already has books (no seed needed)");
+    return;
+  }
+
+  // Create-if-absent: Cash (asset) + Sales (income), then one balanced entry.
+  const fn = (name, payload) => page.evaluate(async ([sbUrl, token, anon, name, payload]) => {
+    const r = await fetch(`${sbUrl}/functions/v1/${name}`, {
+      method: "POST",
+      headers: { apikey: anon, Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return { status: r.status, body: await r.json().catch(() => null) };
+  }, [sbUrl, ctx.token, anon, name, payload]);
+
+  const mkAcct = async (code, accName, type) => {
+    const res = await fn("ledger-accounts", { org_id: orgId, name: accName, type, code });
+    // code_in_use (409/duplicate) is fine — the account already exists.
+    const id = res.body?.account?.id ?? res.body?.id;
+    if (id) return id;
+    if (String(res.body?.error) === "code_in_use") {
+      const look = await page.evaluate(async ([sbUrl, token, anon, orgId, code]) => {
+        const r = await fetch(
+          `${sbUrl}/rest/v1/ledger_accounts?select=id&org_id=eq.${orgId}&code=eq.${code}&limit=1`,
+          { headers: { apikey: anon, Authorization: `Bearer ${token}` } },
+        );
+        return r.json().catch(() => null);
+      }, [sbUrl, ctx.token, anon, orgId, code]);
+      return Array.isArray(look) && look[0]?.id;
+    }
+    fail(`ensureBooks: create ${accName} failed (status ${res.status}: ${JSON.stringify(res.body)})`);
+    return null;
+  };
+
+  const cashId = await mkAcct("1000", "Cash", "asset");
+  const salesId = await mkAcct("4000", "Sales", "income");
+  if (!cashId || !salesId) return;
+
+  // One balanced entry: debit Cash / credit Sales $100.00 (10000 minor).
+  const entry = await fn("ledger-entries", {
+    op: "post",
+    org_id: orgId,
+    entry_date: "2026-01-15",
+    idempotency_key: "e2e-smoke-seed-v1",
+    source: "manual",
+    lines: [
+      { account_id: cashId, side: "D", amount_minor: "10000", currency: "USD" },
+      { account_id: salesId, side: "C", amount_minor: "10000", currency: "USD" },
+    ],
+  });
+  if (entry.status >= 200 && entry.status < 300) ok("E2E org seeded with a minimal chart + entry");
+  else fail(`ensureBooks: post entry failed (status ${entry.status}: ${JSON.stringify(entry.body)})`);
+
+  // Reload so the app's React Query cache picks up the freshly-seeded books.
+  await page.reload({ waitUntil: "networkidle", timeout: 60_000 });
+  await page.waitForTimeout(1200);
+}
+
+/** W3.4 — the owner Home "am I okay?" pulse renders its parts on one screen:
+ *  the money-on-hand + needs-you tiles, the plain-English month summary, the
+ *  kernel-driven "Coming up" deadlines section, and the "Penny did this" feed.
+ *  Non-mutating: it only asserts the surfaces are present (numbers/rows come from
+ *  the seeded org's real data + the kernel calendar — never hardcoded). */
+async function verifyOwnerHomePulse() {
+  await page.setViewportSize(DESKTOP);
+  const home = page.locator(".owner-home");
+  if (!(await home.count().catch(() => 0))) {
+    // The seeded owner has books, so Home should be the pulse (not the setup nudge).
+    fail("Home: owner pulse (.owner-home) did not render for the seeded org");
+    return;
+  }
+  ok("Home renders the owner 'am I okay?' pulse");
+  const parts = [
+    [".home-kpis .kpi", "money-on-hand + needs-you tiles"],
+    [".home-summary-text", "plain-English month summary"],
+    [".home-deadlines", "kernel-driven 'Coming up' deadlines"],
+    [".penny-did", "'Penny did this' feed"],
+  ];
+  for (const [sel, name] of parts) {
+    if (await home.locator(sel).count().catch(() => 0)) ok(`Home: ${name} present`);
+    else fail(`Home: ${name} (${sel}) missing`);
+  }
+  // The needs-you tile is a button that navigates into Review (0→2 taps to act).
+  if (await home.locator(".kpi-btn").count().catch(() => 0)) ok("Home: needs-you tile is an actionable button (→ Review)");
+  else fail("Home: needs-you tile is not an actionable button");
+}
+
 try {
   await page.goto(base, { waitUntil: "networkidle", timeout: 60_000 });
 
@@ -219,6 +365,11 @@ try {
   } else {
     ok("owner ledger loaded (org present)");
 
+    // Make the run hermetic: ensure the org has books (idempotent create-if-absent
+    // via the write-path) so the owner Home pulse + non-empty Reports can render
+    // even after a fixture purge wiped the seeded books. No-op once seeded.
+    await ensureBooks();
+
     // ── Each key screen: renders + overflow-free across the FULL width ladder,
     //    with desktop + mobile screenshots for the CI artifact. ────────────────
     for (const s of SCREENS) {
@@ -230,6 +381,8 @@ try {
         continue;
       }
       ok(`${s.label} renders`);
+      // W3.4 — Home must be the owner "am I okay?" pulse (cash, needs-you, deadlines, feed).
+      if (s.key === "home") await verifyOwnerHomePulse();
       // W3.1 — the Penny thread lives on Home (nested, no new top-level tab).
       if (s.key === "home") await verifyPennyThread();
       // W1.2 — Reports must export a real file in ≤ 3 taps (pick period → Download).

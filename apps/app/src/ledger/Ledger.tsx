@@ -23,6 +23,7 @@ import { ACCOUNT_TYPES } from "./types";
 import ImportFlow from "../import/ImportFlow";
 import CatchUpFlow from "../catchup/CatchUpFlow";
 import Categorize from "./Categorize";
+import OwnerHome from "./OwnerHome";
 import LearnedRules from "./LearnedRules";
 import PennyThread from "./PennyThread";
 import PennyDidThis from "./PennyDidThis";
@@ -171,15 +172,28 @@ export default function Ledger({
             aria-labelledby={activeTab?.subs && activeSub ? `lsub-${activeSub}` : undefined}
             tabIndex={activeTab?.subs ? 0 : undefined}>
             {surface === "overview" && (
-              <Overview
-                entries={entries.data ?? []} accounts={accounts.data ?? []}
-                canWrite={canWrite} orgId={org.id} nav={nav}
-                onReview={() => goto("review")}
-                onCategorize={() => goto("review")}
-                onConnect={() => goto("connections")}
-                onInvite={onInvite}
-                onChange={refresh}
-              />
+              // Owner Home is the "am I okay?" pulse (W3.4): once there are books it
+              // renders the cash / needs-you / deadlines / reconciled / Penny-did feed
+              // dashboard; before any accounts exist it falls through to the shared
+              // Overview's setup nudge. The CPA keeps the plain accounting Overview.
+              nav === "owner" && (accounts.data?.length ?? 0) > 0 ? (
+                <OwnerHome
+                  entries={entries.data ?? []} accounts={accounts.data ?? []}
+                  canWrite={canWrite} orgId={org.id}
+                  onReview={() => goto("review")}
+                  onRefresh={refresh}
+                />
+              ) : (
+                <Overview
+                  entries={entries.data ?? []} accounts={accounts.data ?? []}
+                  canWrite={canWrite} orgId={org.id} nav={nav}
+                  onReview={() => goto("review")}
+                  onCategorize={() => goto("review")}
+                  onConnect={() => goto("connections")}
+                  onInvite={onInvite}
+                  onChange={refresh}
+                />
+              )
             )}
             {surface === "review" && canWrite && (
               <>

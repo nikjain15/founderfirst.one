@@ -745,6 +745,41 @@ export function useReconciliationRefresh(orgId: string | undefined) {
   };
 }
 
+// ── coming-up filing deadlines (W3.4, reads CENTRAL-2 kernel) ─────────────────
+// The deadlines are NEVER hardcoded in the app — they come from the knowledge
+// kernel's `upcoming_filing_deadlines(org, as_of, horizon)` RPC (CENTRAL-2), which
+// resolves the org's (jurisdiction, entity) against the effective-dated
+// `filing_obligations` seed. Change a seed row → Home moves, no code edit. The RPC
+// is security-definer + granted to `authenticated`; it returns [] for an org with
+// no tax profile set yet (onboarding populates entity_type), so Home degrades to
+// "nothing coming up" rather than erroring.
+export interface FilingDeadline {
+  obligation_key: string;
+  kind: string;            // 'return' | 'estimate' | 'info_return' | 'extension' …
+  form_code: string | null;
+  label: string;
+  due_date: string;        // YYYY-MM-DD
+  days_until: number;
+  citation: string | null;
+}
+
+/** Filing deadlines due within `horizonDays` for an org, from the kernel calendar. */
+export function useUpcomingDeadlines(orgId: string | undefined, horizonDays = 90) {
+  return useQuery({
+    queryKey: ["upcoming-deadlines", orgId, horizonDays],
+    enabled: Boolean(orgId),
+    staleTime: 60_000,
+    queryFn: async (): Promise<FilingDeadline[]> => {
+      const sb = getClient();
+      const { data, error } = await sb.rpc("upcoming_filing_deadlines", {
+        p_org_id: orgId, p_horizon_days: horizonDays,
+      });
+      if (error) throw error;
+      return (data ?? []) as FilingDeadline[];
+    },
+  });
+}
+
 // ── catch-up mode (W2.1) ──────────────────────────────────────────────────────
 // The guided multi-year flow ORCHESTRATES import / categorize / reconcile / export
 // (all reused above); these calls are the catch-up-specific write-path. Reads

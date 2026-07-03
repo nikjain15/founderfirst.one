@@ -1166,6 +1166,26 @@ button.ghost.sm, .ghost.sm {
 .catchup-year.is-done { background: var(--income-bg); color: var(--income-strong); }
 .catchup-year .cu-year { font-weight: var(--fw-bold); }
 
+/* Estimated quarterly taxes (W2.4) — grounded on the same P&L + kernel rates. */
+.home-estimated-tax { display: flex; flex-direction: column; gap: var(--space-2); }
+.et-headline { display: flex; flex-direction: column; gap: var(--space-1); }
+.et-headline .et-amount { color: var(--ink-1); font-size: var(--fs-h3); font-weight: var(--fw-bold); }
+.et-headline.t-warn .et-amount { color: var(--amber-strong); }
+.et-setaside { color: var(--ink-2); margin: 0; }
+.et-breakdown { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.et-line {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+  gap: var(--space-2);
+}
+.et-line .et-line-label { color: var(--ink-2); min-width: 0; }
+.et-line .et-line-amt { color: var(--ink-1); font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; }
+.et-line.et-total { border-top: var(--bw-hair) solid var(--line-2); padding-top: var(--space-1); }
+.et-line.et-total .et-line-label { color: var(--ink-1); font-weight: var(--fw-semibold); }
+.et-deadline { color: var(--ink-3); margin: 0; }
+.et-deadline.is-soon { color: var(--amber-strong); font-weight: var(--fw-semibold); }
+.et-penalty { margin: 0; }
+.et-disclaimer { margin: 0; }
+
 /* "Penny did this" feed (W3.2) — styled here alongside Home, its primary host. */
 .penny-did { display: flex; flex-direction: column; gap: var(--space-2); }
 .penny-did-head { display: flex; flex-direction: column; gap: var(--space-1); }

@@ -12,9 +12,10 @@
  *
  * Every number reuses data the app already loads (entries/accounts pages are
  * RPTTEST-paginated in api.ts) — no new store. All copy comes from the CENTRAL-1
- * catalog (the 'app' voice), no inline strings. The estimated-taxes / tax-readiness
- * strip is intentionally ABSENT: it belongs to W2.4 (quarterly assistant), which is
- * NOT live — we omit it cleanly rather than fake a number (W3.4 acceptance).
+ * catalog (the 'app' voice), no inline strings. The estimated-taxes strip is now
+ * LIVE (W2.4): it grounds a quarterly estimate on the same P&L, reads law-derived
+ * rates from the kernel, and cleanly omits the number when there's no tax profile /
+ * no seeded rates / no profit (never faked).
  *
  * This is Home (the owner-lens `overview` surface) — NOT a new top-level tab
  * (usability gate) and disjoint from the W3.1 thread surface.
@@ -24,6 +25,7 @@ import {
   useCatchUpProgress, useReconciliationStatus, useUpcomingDeadlines, type FilingDeadline,
 } from "./api";
 import { cashPosition, monthlySummary, needsYouCount } from "./homePulse";
+import EstimatedTaxes from "./EstimatedTaxes";
 import { formatMoney, formatMoneyShort } from "./money";
 import PennyDidThis from "./PennyDidThis";
 import { Takeaway } from "./Takeaway";
@@ -102,6 +104,10 @@ export default function OwnerHome({
 
       {/* Coming up — kernel-driven filing deadlines (never a hardcoded calendar). */}
       <ComingUp q={deadlines} />
+
+      {/* Estimated taxes (W2.4) — grounded on the same P&L + kernel rates; the
+          strip omits itself cleanly when there's no profile / rates / profit. */}
+      <EstimatedTaxes entries={entries} orgId={orgId} />
 
       {/* Catch-up progress (W2.1) — only when a catch-up is in flight. */}
       <CatchUpStrip years={catchUp.data ?? []} />

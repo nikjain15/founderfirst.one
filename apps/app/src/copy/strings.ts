@@ -808,6 +808,41 @@ export const COPY = {
     catchUpToGo: (n: number) => `${n} to go`,
   },
 
+  // ── W2.4 · Quarterly estimated-tax assistant (Home strip) ──────────────────
+  // Plain-language, no jargon, no exclamation marks. This is an ESTIMATE — every
+  // surface carries the "not tax advice, confirm with your CPA" disclaimer. Rates
+  // and deadlines are law-derived data (kernel), never named here.
+  estimatedTax: {
+    title: "Estimated taxes",
+    // The headline: what to pay this quarter (safe-harbor, even split).
+    perQuarter: (amount: string) => `About ${amount} for this quarter`,
+    perQuarterSub: (year: number) => `Based on your ${year} profit so far, split evenly across four quarters.`,
+    // Set-aside guidance.
+    setAside: (pct: string, amount: string) =>
+      `A safe habit: set aside ${pct} of what you earn — around ${amount} so far.`,
+    // Component breakdown labels (resolved from EstimateComponent.labelKey).
+    selfEmployment: "Self-employment tax",
+    federalIncome: "Federal income tax",
+    stateIncome: "State income tax",
+    corporate: "Corporate income tax",
+    breakdownTotal: (amount: string) => `Estimated ${amount} for the year`,
+    // Deadline + penalty nudge (date-driven from the kernel calendar).
+    dueSoon: (days: number, date: string) =>
+      days <= 0 ? `Due today, ${date}` : days === 1 ? `Due tomorrow, ${date}` : `Due in ${days} days, on ${date}`,
+    overdue: (date: string) =>
+      `This quarter's payment was due ${date} — paying now can limit any underpayment penalty.`,
+    penaltySoon: "Paying on time helps you avoid an underpayment penalty.",
+    // Empty / unavailable states — omit the number, never fake one.
+    noProfile: "Tell us your business type and we'll estimate your quarterly taxes.",
+    noParams: "We don't have tax rates for your location yet — check back soon.",
+    noEstimateEntity: "Your business type doesn't make quarterly estimated payments.",
+    noProfit: "No profit to estimate taxes on yet this year.",
+    // The standing disclaimer — shown wherever a number appears.
+    disclaimer: "This is an estimate, not tax advice. Confirm with your CPA before you pay.",
+    // A quiet link to the source (citation).
+    learnMore: "See the official guidance",
+  },
+
   // ── W3.3 · Minimal 3-step onboarding (name → entity → industry) ────────────
   // Exactly three steps. Entity + industry OPTIONS come from the kernel seeds,
   // never from here — only the framing words live in the catalog. 'app' persona,

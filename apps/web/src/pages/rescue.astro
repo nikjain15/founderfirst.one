@@ -1,0 +1,201 @@
+---
+import Base from "../layouts/Base.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import SignupForm from "../components/SignupForm.tsx";
+import { SITE } from "../lib/site";
+import type { Page } from "@ff/content";
+
+// Rescue-migration landing page (W4.5). Targets business owners whose bookkeeper
+// or bookkeeping service wound down — a shame-free "we'll pick up your books"
+// value prop that feeds Signals via the waitlist source tag ("rescue").
+const page: Page = {
+  slug: "/rescue",
+  surface: "marketing",
+  seo: {
+    title: "Your bookkeeper shut down? Penny picks up your books — FounderFirst",
+    description:
+      "If your bookkeeping service wound down, Penny takes over your books. Connect your accounts and Penny sorts every transaction, catches you up, and keeps your books CPA-ready. Nothing to migrate. Starts free.",
+    keyFacts: [
+      "Penny is an autonomous AI bookkeeper that takes over when your service winds down",
+      "Connect your bank, card, and Stripe — nothing to migrate or export first",
+      "Penny catches up your backlog and keeps books CPA-ready, 3 months free",
+    ],
+  },
+  sections: [],
+};
+
+// Answer-box FAQ (rendered on-page + emitted as FAQPage JSON-LD for GEO).
+const faqs = [
+  {
+    q: "My bookkeeping service is shutting down. What do I do now?",
+    a: "Connect your bank, card, and payment accounts to Penny. Penny reads your transactions directly, sorts them the way your CPA needs, and keeps going from wherever your old service left off. There is nothing to export or hand over first.",
+  },
+  {
+    q: "Do I need to move my data out before it disappears?",
+    a: "Penny works from your live accounts, not from your old provider's files. Connect your bank, card, and Stripe and Penny rebuilds your books from the source. If you do have exports, they help fill in the past faster — but they are not required.",
+  },
+  {
+    q: "I'm months behind now. Can Penny catch me up?",
+    a: "Yes. Penny works through your backlog a period at a time and gets each month organized and CPA-ready. You answer only the few questions Penny can't settle on its own — a tap each.",
+  },
+  {
+    q: "Is it safe to connect my accounts?",
+    a: "Penny is read-only. It watches where your money moves and sorts it — it can never move a cent. Your login stays yours.",
+  },
+];
+
+const jsonLdFaq = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+});
+
+const steps = [
+  {
+    n: "1",
+    h: "Connect your accounts",
+    p: "Your bank, your card, Stripe — anywhere money moves. Penny reads them directly. Nothing to export from your old service first.",
+  },
+  {
+    n: "2",
+    h: "Penny catches you up",
+    p: "Penny works through the backlog a period at a time and sorts every transaction the way your CPA needs it.",
+  },
+  {
+    n: "3",
+    h: "Your books stay clean",
+    p: "From here on, Penny keeps up in the background. A few taps a week, and your real profit stays clear.",
+  },
+];
+
+const reassure = [
+  { h: "Nothing to migrate", p: "Penny connects to your accounts and reads from the source. There is no file to move and no data to rescue by hand." },
+  { h: "Read-only, always", p: "Penny watches and sorts. It can never move money. Your logins stay yours." },
+  { h: "CPA-ready every day", p: "Your books stay in the shape your accountant expects — not a scramble at tax time." },
+  { h: "Starts free", p: "3 months on us. No lock-in, and no quote for a year of cleanup." },
+];
+---
+<Base page={page}>
+  <script type="application/ld+json" set:html={jsonLdFaq} is:inline />
+  <Nav />
+
+  <section class="rsc-hero">
+    <div class="wrap">
+      <p class="eyebrow brand">Bookkeeper winding down?</p>
+      <h1>Your service is closing. Your books don't have to.</h1>
+      <p class="lede">When a bookkeeping service shuts its doors, you're left holding the books. Penny picks them up — connect your accounts and Penny sorts every transaction, catches up what's behind, and keeps everything CPA-ready. Nothing to migrate.</p>
+      <div class="rsc-cta">
+        <SignupForm client:load source="rescue" ctaLabel="Get 3 months free" />
+        <p class="rsc-cta-note">3 months on us. Read-only — Penny can't move a cent.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="rsc-steps">
+    <div class="wrap">
+      <h2>Picking up your books is three steps.</h2>
+      <div class="s-grid">
+        {steps.map((s) => (
+          <div class="s-card">
+            <span class="s-num">{s.n}</span>
+            <h3>{s.h}</h3>
+            <p>{s.p}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="rsc-reassure">
+    <div class="wrap">
+      <h2>No shame, no scramble.</h2>
+      <p class="sub">Falling behind when your service disappears isn't on you. Here's what changes the day you connect Penny.</p>
+      <div class="r-grid">
+        {reassure.map((r) => (
+          <div class="r-card">
+            <span class="r-tick" aria-hidden="true">✓</span>
+            <div>
+              <h3>{r.h}</h3>
+              <p>{r.p}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="rsc-faq">
+    <div class="wrap">
+      <h2>Questions owners ask us.</h2>
+      <div class="f-list">
+        {faqs.map((f) => (
+          <details class="f-item">
+            <summary>{f.q}</summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="dark rsc-final">
+    <div class="wrap center">
+      <h2>Hand off the books. Get back to the work.</h2>
+      <div class="rsc-cta">
+        <SignupForm client:load source="rescue" ctaLabel="Get 3 months free" />
+        <p class="rsc-cta-note">Or <a href="/compare/">see how Penny compares</a>.</p>
+      </div>
+    </div>
+  </section>
+  <Footer />
+</Base>
+<style>
+  h1 { font-size: var(--fs-display-1); line-height: 1.06; letter-spacing: var(--ls-tight); margin-bottom: var(--space-4); max-width: 780px; }
+  h2 { font-size: var(--fs-display-2); line-height: 1.12; letter-spacing: var(--ls-tighter); margin-bottom: var(--space-6); }
+  h3 { font-size: var(--fs-body); font-weight: var(--fw-semibold); margin-bottom: var(--space-2); }
+  .eyebrow { font-size: var(--fs-eyebrow); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--ink-4); font-weight: var(--fw-semibold); }
+  .eyebrow.brand { color: var(--brand); margin-bottom: var(--space-3); }
+  .lede { font-size: var(--fs-body); color: var(--ink-3); line-height: 1.6; max-width: 640px; }
+
+  .rsc-hero { padding-bottom: var(--space-6); }
+  .rsc-cta { margin-top: var(--space-6); max-width: 460px; }
+  .rsc-cta-note { font-size: var(--fs-eyebrow); color: var(--ink-4); text-align: center; }
+  .rsc-cta-note a { color: var(--brand); text-decoration: underline; }
+
+  .rsc-steps .s-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); }
+  .s-card { border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-6); background: var(--white); }
+  .s-num { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--brand-tint); color: var(--brand); font-family: var(--font-display); font-weight: var(--fw-semibold); margin-bottom: var(--space-4); }
+  .s-card p { font-size: var(--fs-ui); color: var(--ink-3); line-height: 1.6; }
+
+  .rsc-reassure .sub { font-size: var(--fs-body); color: var(--ink-3); line-height: 1.6; max-width: 620px; margin-bottom: var(--space-8); }
+  .r-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-5); }
+  .r-card { display: flex; gap: var(--space-4); border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-6); background: var(--white); }
+  .r-tick { flex-shrink: 0; display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--brand-tint); color: var(--brand); font-weight: var(--fw-bold); }
+  .r-card p { font-size: var(--fs-ui); color: var(--ink-3); line-height: 1.6; }
+
+  .f-list { display: flex; flex-direction: column; gap: var(--space-3); max-width: 760px; }
+  .f-item { border: var(--bw-hair) solid var(--line); border-radius: var(--r-card-emph); padding: var(--space-5) var(--space-6); background: var(--white); }
+  .f-item summary { font-size: var(--fs-ui); font-weight: var(--fw-medium); color: var(--ink); cursor: pointer; list-style: none; }
+  .f-item summary::-webkit-details-marker { display: none; }
+  .f-item summary::after { content: "+"; float: right; color: var(--ink-4); font-weight: var(--fw-bold); }
+  .f-item[open] summary::after { content: "–"; }
+  .f-item p { font-size: var(--fs-ui); color: var(--ink-3); line-height: 1.6; margin-top: var(--space-3); }
+
+  .dark { background: var(--dark); color: var(--white); }
+  .dark h2 { color: var(--white); }
+  .center { text-align: center; }
+  .rsc-final .rsc-cta { margin-inline: auto; }
+  .rsc-final .rsc-cta-note a { color: var(--brand-soft); }
+
+  @media (max-width: 860px) {
+    .rsc-steps .s-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .r-grid { grid-template-columns: 1fr; }
+  }
+</style>

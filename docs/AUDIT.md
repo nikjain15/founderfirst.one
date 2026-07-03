@@ -410,6 +410,7 @@ pending) · 🔵 live-not-on-main / PR-open · 🟢 live+on-main.
 | W1.3-C | Fixed-asset / depreciation subledger (Penny computes depreciation) | `fixed_asset_depreciation_test.sql` | ⬜ red-teamed; stress-pass pending |
 | W3.5 | Receipt capture + match (photo/text → parse → match → W3.2 tier → attach/queue; private `receipts` bucket) | `apps/app/src/ledger/receiptMatch.test.ts` + `w3_5_receipts_test.sql` + app-e2e `verifyReceiptCapture` | ⬜ red-teamed; stress-pass pending |
 | LOOP-2 | Regulatory-watcher routine (law change → cited effective-dated seed-diff PR, decision-needed, never self-merge; false-positive-safe) | `scripts/regulatory-watcher/replay-test.ts` (`pnpm check:reg-watcher`, OBBBA 1099 replay + idempotency/no-op/stale-date guards) + `loop2_regulatory_watcher_test.sql` (supersede + old/new-law lookup + service_role-only) | ⬜ red-teamed; stress-pass pending |
+| W4.2 | Cash-flow statement (GAAP indirect: operating/investing/financing; ties to BS cash delta + P&L; CSV+PDF via W1.2 machinery) | `apps/app/src/ledger/cashFlow.test.ts` (tie-out to BS cash delta + P&L, section classification, begin/end cash, reversal/pending discipline) + `export.test.ts` cash-flow CSV tie-out | ⬜ red-teamed; stress-pass pending |
 
 **Coverage delta:** +12 ledger rows, all ⬜ (baseline + per-PR red-team, formal stress pass pending).
 Wave 1 **invalidates the standing "whole top-half not built yet" gap** from Program 1 — reconciliation,

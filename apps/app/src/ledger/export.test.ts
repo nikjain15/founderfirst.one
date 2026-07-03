@@ -6,7 +6,7 @@
  * PDF must be a structurally valid document.
  */
 import { describe, expect, it } from "vitest";
-import { balanceSheet, generalLedger, profitAndLoss, trialBalance } from "./reports";
+import { balanceSheet, cashFlow, generalLedger, profitAndLoss, trialBalance } from "./reports";
 import { exportFilename, toCsv, toPdf, type ExportContext } from "./export";
 import type { JournalEntry, JournalLine, Side } from "./types";
 
@@ -120,6 +120,33 @@ describe("CSV ties to the on-screen numbers to the cent", () => {
     const rows = parseCsv(toCsv("pnl", entries, CTX));
     expect(rows[0][0]).toBe("Acme, Inc."); // comma → quoted, round-trips clean
     expect(rows[3][0]).toBe("Generated 2026-07-02");
+  });
+});
+
+describe("cash-flow CSV ties to cashFlow() + the BS cash delta (card W4.2)", () => {
+  const entries = seedKnown(); // all-time; every account moves in one period
+
+  it("net change in cash row matches cashFlow() and ties", () => {
+    const cf = cashFlow(entries);
+    const rows = parseCsv(toCsv("cf", entries, CTX));
+    const net = rows.find((r) => r[0] === "Net change in cash" && r.length > 1)!;
+    expect(Number(net[1]) * 100).toBe(cf.netChange);
+    expect(cf.ties).toBe(true);
+    // Cash delta on the seed: +1,000,000 −150,000 −200,000 −60,000 +100,000 = 690,000
+    expect(net[1]).toBe("6900.00");
+  });
+
+  it("net income line matches the P&L (statements articulate)", () => {
+    const rows = parseCsv(toCsv("cf", entries, CTX));
+    const ni = rows.find((r) => r[0] === "Net income" && r.length > 1)!;
+    expect(Number(ni[1]) * 100).toBe(profitAndLoss(entries).netIncome); // 20_000 → 200.00
+  });
+
+  it("operating total = net income + working-capital deltas", () => {
+    const cf = cashFlow(entries);
+    const rows = parseCsv(toCsv("cf", entries, CTX));
+    const opTotal = rows.find((r) => r[0] === "Net cash from operating activities")!;
+    expect(Number(opTotal[1]) * 100).toBe(cf.operating);
   });
 });
 

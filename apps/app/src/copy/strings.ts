@@ -406,6 +406,22 @@ export const COPY = {
     necMustFileNo: "No",
     necTotalToFile: "Total to file",
     necThresholdNote: "The $ threshold comes from current IRS rules — Penny keeps it up to date.",
+    // ── W4.2 · cash-flow statement (GAAP indirect) (APPENDED block — additive keys) ──
+    cashFlow: "Cash flow",
+    cfEmptyTitle: "No cash movement yet",
+    cfEmptyBody: "Post entries with cash accounts to see where your cash came from and went.",
+    cfOperating: "Operating activities",
+    cfInvesting: "Investing activities",
+    cfFinancing: "Financing activities",
+    cfNetIncome: "Net income",
+    cfOperatingTotal: "Net cash from operating activities",
+    cfInvestingTotal: "Net cash from investing activities",
+    cfFinancingTotal: "Net cash from financing activities",
+    cfNetChange: "Net change in cash",
+    cfBeginningCash: "Cash at beginning of period",
+    cfEndingCash: "Cash at end of period",
+    cfTiesNote: "Ties to the change in cash on your balance sheet.",
+    cfDoesNotTie: "Cash flow does not tie to the balance-sheet cash change.",
   },
 
   // ── Periods ────────────────────────────────────────────────────────────────

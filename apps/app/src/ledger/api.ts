@@ -564,7 +564,7 @@ export const plaidSync = (org_id: string, connection_id: string) =>
 // UI: a logging failure must never block the download the user already got.
 export const logReportExport = (input: {
   org_id: string;
-  report: "tb" | "pnl" | "bs" | "gl" | "nec";
+  report: "tb" | "pnl" | "bs" | "gl" | "cf" | "nec";
   format: "csv" | "pdf";
   scope?: { start?: string | null; end?: string | null };
   filename?: string;

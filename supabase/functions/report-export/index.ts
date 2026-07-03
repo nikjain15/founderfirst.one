@@ -1,7 +1,7 @@
 /**
  * report-export — record ONE ledger_audit row per report export (card W1.2).
  *
- * POST { org_id, report: 'tb'|'pnl'|'bs'|'gl'|'cf'|'nec', format: 'csv'|'pdf',
+ * POST { org_id, report: 'tb'|'pnl'|'bs'|'gl'|'cf'|'nec'|'pkg', format: 'csv'|'pdf',
  *        scope?: { start?, end? }, filename?, rows? }
  *   → inserts a `report.export` row into ledger_audit and returns { ok: true }.
  *
@@ -37,7 +37,7 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const REPORTS = new Set(["tb", "pnl", "bs", "gl", "cf", "nec"]);
+const REPORTS = new Set(["tb", "pnl", "bs", "gl", "cf", "nec", "pkg"]);
 const FORMATS = new Set(["csv", "pdf"]);
 
 Deno.serve(async (req) => {

@@ -7,7 +7,7 @@
  * and exclude only 'pending_review' (not yet in the books). All amounts are
  * integer minor units.
  */
-import type { AccountType, JournalEntry } from "./types";
+import type { AccountType, JournalEntry, Side } from "./types";
 
 export interface AccountBalance {
   account_id: string;
@@ -431,4 +431,132 @@ export function cashFlow(
     bsCashDelta,
     ties: netChange === bsCashDelta,
   };
+}
+
+// ── AR / AP aging (card W4.4 — supporting schedule for the lender package) ─────
+/**
+ * AR / AP aging, DERIVED from the ledger like every other report (never stored).
+ *
+ * We do NOT have open-invoice / open-bill documents in the ledger model, so the
+ * "outstanding" balance is the account's net book balance as of the as-of date:
+ *   receivables (asset, debit-normal)   → net = debit − credit, positive = owed to us
+ *   payables    (liability, credit-normal) → net = credit − debit, positive = we owe
+ * The age bucket is assigned per posting line by the entry_date's distance from the
+ * as-of date, and each account's outstanding balance is apportioned across buckets
+ * in FIFO order (oldest debits first for AR, oldest credits first for AP) so that
+ * payments net down the oldest open amount first — the standard aging convention.
+ * Every bucket sum ties back to the account's book balance to the cent, and the
+ * grand total ties to the balance-sheet AR / AP lines (arApAging.test proves it).
+ *
+ * Account selection is by plain-language name + common CoA code, mirroring the
+ * cash-flow classifier's data-driven approach (one auditable place). This keeps
+ * the schedule zero-config for the owner while a CPA can still read every line.
+ */
+const AR_PATTERNS = ["accounts receivable", "receivable", "a/r", "trade debtors"];
+const AP_PATTERNS = ["accounts payable", "payable", "a/p", "trade creditors"];
+
+/** The four standard aging buckets (days past the transaction date), in order. */
+export const AGING_BUCKETS = [
+  { key: "current", label: "Current (0–30)", maxDays: 30 },
+  { key: "d31_60", label: "31–60", maxDays: 60 },
+  { key: "d61_90", label: "61–90", maxDays: 90 },
+  { key: "d90_plus", label: "90+", maxDays: Infinity },
+] as const;
+export type AgingBucketKey = (typeof AGING_BUCKETS)[number]["key"];
+
+export interface AgingRow {
+  account_id: string;
+  code: string | null;
+  name: string;
+  /** minor units per bucket key, in AGING_BUCKETS order. */
+  buckets: Record<AgingBucketKey, number>;
+  total: number; // Σ buckets == the account's book balance (positive = outstanding)
+}
+export interface AgingReport {
+  kind: "ar" | "ap";
+  rows: AgingRow[];
+  totals: Record<AgingBucketKey, number>;
+  grandTotal: number;
+}
+
+function daysBetween(from: string, to: string): number {
+  const a = Date.parse(`${from}T00:00:00Z`);
+  const b = Date.parse(`${to}T00:00:00Z`);
+  return Math.floor((b - a) / 86_400_000);
+}
+function bucketForAge(days: number): AgingBucketKey {
+  for (const b of AGING_BUCKETS) if (days <= b.maxDays) return b.key;
+  return "d90_plus";
+}
+function emptyBuckets(): Record<AgingBucketKey, number> {
+  return { current: 0, d31_60: 0, d61_90: 0, d90_plus: 0 };
+}
+
+/**
+ * Build the AR (`kind:'ar'`) or AP (`kind:'ap'`) aging as of `asOf` (inclusive;
+ * omit → today). Each matching account's net balance is apportioned across buckets
+ * by netting the oldest same-sign postings against opposite-sign ones (FIFO).
+ */
+export function arApAging(
+  entries: JournalEntry[],
+  kind: "ar" | "ap",
+  asOf?: string,
+): AgingReport {
+  const today = asOf ?? new Date().toISOString().slice(0, 10);
+  const patterns = kind === "ar" ? AR_PATTERNS : AP_PATTERNS;
+  const wantType: AccountType = kind === "ar" ? "asset" : "liability";
+  // "Outstanding" side: AR is debit-normal (a debit opens a receivable, a credit
+  // pays it); AP is credit-normal (a credit opens a payable, a debit pays it).
+  const openSide: Side = kind === "ar" ? "D" : "C";
+
+  // Collect matching lines per account, tagged with age, filtered to as-of.
+  interface Post { age: number; signedMinor: number; } // + opens, − pays down
+  const perAccount = new Map<string, { code: string | null; name: string; posts: Post[] }>();
+  for (const e of entries) {
+    if (e.status === "pending_review") continue;
+    if (e.entry_date > today) continue;
+    const age = daysBetween(e.entry_date, today);
+    for (const l of e.lines ?? []) {
+      const type = (l.account?.type ?? "asset") as AccountType;
+      if (type !== wantType) continue;
+      const name = l.account?.name ?? "—";
+      const code = l.account?.code ?? null;
+      if (!matchesAny(code, name, patterns)) continue;
+      const signed = l.side === openSide ? l.amount_minor : -l.amount_minor;
+      const acc = perAccount.get(l.account_id) ?? { code, name, posts: [] };
+      acc.posts.push({ age, signedMinor: signed });
+      perAccount.set(l.account_id, acc);
+    }
+  }
+
+  const rows: AgingRow[] = [];
+  const totals = emptyBuckets();
+  let grandTotal = 0;
+  for (const [account_id, acc] of perAccount) {
+    // FIFO: sort opens oldest→newest, pay them down with the payments, then age
+    // the remaining open amounts into buckets.
+    const opens = acc.posts.filter((p) => p.signedMinor > 0).sort((a, b) => b.age - a.age);
+    let payments = acc.posts.filter((p) => p.signedMinor < 0).reduce((s, p) => s - p.signedMinor, 0);
+    const buckets = emptyBuckets();
+    let total = 0;
+    for (const o of opens) {
+      let remaining = o.signedMinor;
+      if (payments > 0) {
+        const applied = Math.min(payments, remaining);
+        remaining -= applied;
+        payments -= applied;
+      }
+      if (remaining > 0) {
+        const key = bucketForAge(o.age);
+        buckets[key] += remaining;
+        total += remaining;
+      }
+    }
+    if (total === 0) continue; // fully paid / net-zero account — omit
+    rows.push({ account_id, code: acc.code, name: acc.name, buckets, total });
+    for (const b of AGING_BUCKETS) totals[b.key] += buckets[b.key];
+    grandTotal += total;
+  }
+  rows.sort((a, b) => (a.code ?? "").localeCompare(b.code ?? "") || a.name.localeCompare(b.name));
+  return { kind, rows, totals, grandTotal };
 }

@@ -138,3 +138,75 @@ describe("idempotency contract (parser is deterministic)", () => {
     expect(`ext:${a.provider}:payout:${a.payoutId}`).toBe("ext:stripe:payout:po_dup");
   });
 });
+
+// ── CSV → PayoutComponents bridge (the upload UI's parse path) ────────────────
+import { parsePayoutCsv, type ParsedPayoutCsv } from "./payouts";
+
+describe("parsePayoutCsv", () => {
+  it("splits a Stripe balance-transactions CSV into gross/fees and ties to net", () => {
+    // two charges (100.00 gross, 3.20 fee) + (50.00 gross, 1.75 fee), one payout line
+    const csv: ParsedPayoutCsv = {
+      headers: ["type", "amount", "fee", "net"],
+      rows: [
+        ["charge", "100.00", "3.20", "96.80"],
+        ["charge", "50.00", "1.75", "48.25"],
+        ["payout", "-145.05", "0", "-145.05"], // the payout line itself is ignored by the parser
+      ],
+    };
+    const r = parsePayoutCsv("stripe", "po_1", "2026-07-01", "USD", csv);
+    expect(r.components.grossMinor).toBe(15000);
+    expect(r.components.feesMinor).toBe(495);
+    expect(r.components.refundsMinor).toBe(0);
+    expect(r.components.netMinor).toBe(15000 - 495); // 14505
+    // report net column sums to 96.80 + 48.25 − 145.05 = 0 (payout line offsets) —
+    // reconcile compares against OUR computed net, which won't match this contrived
+    // net column; the important property is the split is exact + float-free.
+    expect(Number.isInteger(r.components.netMinor)).toBe(true);
+    expect(r.rowCount).toBeGreaterThan(0);
+  });
+
+  it("reconciles a Shopify payout whose net column ties to the split", () => {
+    const csv: ParsedPayoutCsv = {
+      headers: ["Type", "Amount", "Fee", "Net"],
+      rows: [
+        ["charge", "200.00", "5.80", "194.20"],
+        ["refund", "20.00", "0", "-20.00"],
+      ],
+    };
+    const r = parsePayoutCsv("shopify", "sp_1", "2026-07-02", "USD", csv);
+    expect(r.components.grossMinor).toBe(20000);
+    expect(r.components.feesMinor).toBe(580);
+    expect(r.components.refundsMinor).toBe(2000);
+    // gross − fees − refunds = 20000 − 580 − 2000 = 17420
+    expect(r.components.netMinor).toBe(17420);
+    // report net column: 194.20 − 20.00 = 174.20 = 17420 → reconciles
+    expect(r.reportedNetMinor).toBe(17420);
+    expect(r.reconciles).toBe(true);
+  });
+
+  it("flags a report that does NOT reconcile (surfaced to owner, never plugged)", () => {
+    const csv: ParsedPayoutCsv = {
+      headers: ["Type", "Amount", "Fee", "Net"],
+      rows: [["charge", "100.00", "3.00", "90.00"]], // net column lies: says 90 but 100−3=97
+    };
+    const r = parsePayoutCsv("shopify", "sp_bad", "2026-07-02", "USD", csv);
+    expect(r.components.netMinor).toBe(9700);
+    expect(r.reportedNetMinor).toBe(9000);
+    expect(r.reconciles).toBe(false);
+  });
+
+  it("treats a missing net column as reconciled (no net to compare against)", () => {
+    const csv: ParsedPayoutCsv = {
+      headers: ["type", "amount", "fee"],
+      rows: [["charge", "100.00", "3.00"]],
+    };
+    const r = parsePayoutCsv("stripe", "po_nonet", "2026-07-01", "USD", csv);
+    expect(r.reportedNetMinor).toBeNull();
+    expect(r.reconciles).toBe(true);
+  });
+
+  it("throws (not plugs) when required columns are missing", () => {
+    const csv: ParsedPayoutCsv = { headers: ["foo", "bar"], rows: [["1", "2"]] };
+    expect(() => parsePayoutCsv("stripe", "po_x", "2026-07-01", "USD", csv)).toThrow();
+  });
+});

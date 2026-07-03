@@ -26,6 +26,7 @@ import Categorize from "./Categorize";
 import Receipts, { ReceiptBadge } from "./Receipts";
 import OwnerHome from "./OwnerHome";
 import Invoicing from "./Invoicing";
+import PayoutUpload from "../ecommerce/PayoutUpload";
 import LearnedRules from "./LearnedRules";
 import PennyThread from "./PennyThread";
 import PennyDidThis from "./PennyDidThis";
@@ -280,6 +281,12 @@ function Connections({
         ) : (
           <p className="muted">{COPY.connections.importDisabled}</p>
         )}
+      </section>
+      {/* Split a payout (W4.1) — a Stripe/Shopify deposit is really sales − fees −
+          refunds; this splits it correctly. Nested here, not a new top-level tab. */}
+      <section className="connections-block">
+        <h2 className="section-h">{COPY.payouts.sectionTitle}</h2>
+        <PayoutUpload orgId={orgId} canWrite={canWrite} accounts={accounts} />
       </section>
       {/* Getting paid (W4.3) — invoicing + AR nudges, nested here (not a new top-
           level tab). Opt-in, off by default: renders a one-line enable prompt

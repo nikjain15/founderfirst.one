@@ -1029,6 +1029,41 @@ button.ghost.sm, .ghost.sm {
   .onb-yesno button { flex: 1; }
 }
 
+/* ── Penny thread (W3.1) — grounded Q&A on the owner Home ────────────────────── */
+.penny-thread {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-card);
+  background: var(--brand-tint);
+  display: flex; flex-direction: column; gap: var(--space-3);
+}
+.thread-head { display: flex; flex-direction: column; gap: var(--space-1); }
+.thread-head .section-h { display: flex; align-items: center; gap: var(--space-2); }
+.thread-budget { margin: 0; }
+.thread-turns {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  max-height: 24rem; overflow-y: auto;
+  padding: var(--space-2); border-radius: var(--r-card);
+  background: var(--white);
+}
+.thread-turn { display: flex; flex-direction: column; gap: 2px; max-width: 100%; }
+.thread-turn .turn-who { font-size: var(--fs-xs); color: var(--ink-3); font-weight: var(--fw-semibold); }
+.thread-turn .turn-text { font-size: var(--fs-body); color: var(--ink-1); line-height: 1.5; word-break: break-word; }
+.thread-turn.t-you { align-items: flex-end; text-align: right; }
+.thread-turn.t-you .turn-text { color: var(--ink); }
+.thread-turn.is-pending .turn-text { color: var(--ink-3); font-style: italic; }
+.thread-suggest { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.thread-input { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.thread-input input {
+  flex: 1 1 14rem; min-height: var(--tap-min); font-size: var(--fs-input);
+}
+.thread-input button { min-height: var(--tap-min); white-space: nowrap; }
+@media (max-width: 480px) {
+  .thread-input input { flex: 1 1 100%; }
+  .thread-input button { flex: 1 1 100%; }
+}
+
 /* ── Owner Home — the "am I okay?" pulse (W3.4) ──────────────────────────────
    Fluid, tokens only, no fixed pixel widths (RESPONSIVE.md). The KPI grid reuses
    the shared auto-fit .kpis track so it can't overflow on the width ladder. */

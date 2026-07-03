@@ -879,6 +879,39 @@ export const COPY = {
     askLead: "Penny couldn't be sure on these. Pick where each belongs.",
     deferredNote: "Some lower-priority items are waiting in your weekly summary rather than interrupting you.",
   },
+
+  // ── W3.1 · Penny thread (conversational activity + grounded Q&A) ───────────
+  // The thread makes Penny feel alive on the owner's REAL books: she greets,
+  // narrates what she did (the W3.2 feed), and answers factual questions grounded
+  // on the actual ledger — never an invented number. The STRUCTURAL labels live
+  // here; Penny's answer prose comes from the live 'app' persona (no redeploy).
+  // VOICE.md — plain, warm, no jargon, no exclamation marks.
+  thread: {
+    title: "Ask Penny",
+    lead: "Ask about your money — what you spent, brought in, or have on hand. Penny answers from your real books.",
+    // The idle greeting Penny opens with (structural; persona colors the answers).
+    greeting: "Hi — I'm keeping an eye on your books. Ask me anything about your money, or see what I've handled below.",
+    // Activity narration intro (links to the "Penny did this" feed just below).
+    activityIntro: "Here's what I've taken care of lately — it's all in the feed below, and you can undo anything.",
+    activityNone: "Nothing new to report yet. As transactions come in, I'll handle the clear ones and note them here.",
+    // Input
+    inputAria: "Ask Penny a question about your books",
+    inputPlaceholder: "e.g. how much did I spend on software in Q2?",
+    send: "Ask",
+    sending: "Penny's checking your books…",
+    error: "Couldn't reach Penny just now. Try again.",
+    readOnly: "You can ask Penny about these books, but not make changes.",
+    // The ≤5/week budget line shown in the thread (honest interruption count).
+    budgetSpent: (spent: number, budget: number) => `${spent} of ${budget} questions this week`,
+    budgetClear: (budget: number) => `No questions this week yet — up to ${budget} if something needs you.`,
+    // A few suggested prompts to make the surface discoverable.
+    suggestSpend: "What did I spend this month?",
+    suggestIncome: "How much did I bring in this year?",
+    suggestCash: "How much cash do I have?",
+    // Speaker labels for the turn list.
+    youLabel: "You",
+    pennyLabel: "Penny",
+  },
 } as const;
 
 export type Copy = typeof COPY;

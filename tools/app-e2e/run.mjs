@@ -167,6 +167,35 @@ async function verifyCatchUpEntry() {
   else fail("Catch-up: Start did not advance to the drop-files step");
 }
 
+/** W3.4 — the owner Home "am I okay?" pulse renders its parts on one screen:
+ *  the money-on-hand + needs-you tiles, the plain-English month summary, the
+ *  kernel-driven "Coming up" deadlines section, and the "Penny did this" feed.
+ *  Non-mutating: it only asserts the surfaces are present (numbers/rows come from
+ *  the seeded org's real data + the kernel calendar — never hardcoded). */
+async function verifyOwnerHomePulse() {
+  await page.setViewportSize(DESKTOP);
+  const home = page.locator(".owner-home");
+  if (!(await home.count().catch(() => 0))) {
+    // The seeded owner has books, so Home should be the pulse (not the setup nudge).
+    fail("Home: owner pulse (.owner-home) did not render for the seeded org");
+    return;
+  }
+  ok("Home renders the owner 'am I okay?' pulse");
+  const parts = [
+    [".home-kpis .kpi", "money-on-hand + needs-you tiles"],
+    [".home-summary-text", "plain-English month summary"],
+    [".home-deadlines", "kernel-driven 'Coming up' deadlines"],
+    [".penny-did", "'Penny did this' feed"],
+  ];
+  for (const [sel, name] of parts) {
+    if (await home.locator(sel).count().catch(() => 0)) ok(`Home: ${name} present`);
+    else fail(`Home: ${name} (${sel}) missing`);
+  }
+  // The needs-you tile is a button that navigates into Review (0→2 taps to act).
+  if (await home.locator(".kpi-btn").count().catch(() => 0)) ok("Home: needs-you tile is an actionable button (→ Review)");
+  else fail("Home: needs-you tile is not an actionable button");
+}
+
 try {
   await page.goto(base, { waitUntil: "networkidle", timeout: 60_000 });
 
@@ -205,6 +234,8 @@ try {
         continue;
       }
       ok(`${s.label} renders`);
+      // W3.4 — Home must be the owner "am I okay?" pulse (cash, needs-you, deadlines, feed).
+      if (s.key === "home") await verifyOwnerHomePulse();
       // W1.2 — Reports must export a real file in ≤ 3 taps (pick period → Download).
       // Assert the download event fires with a period-stamped filename.
       if (s.key === "reports") await verifyReportDownload();

@@ -749,6 +749,44 @@ export const COPY = {
     homeReconciledDate: (date: string) => `Last reconciled ${date}.`,
   },
 
+  // ── W3.4 · Owner Home ("am I okay?") pulse ─────────────────────────────────
+  // The one-screen answer: cash, what needs you, coming-up deadlines, what's
+  // reconciled, a plain-English month summary. 'app' persona voice (VOICE.md):
+  // warm, no jargon, no exclamation marks, lead with the human answer. No
+  // accounting vocabulary — this is the owner's surface. Deadlines + numbers are
+  // interpolated from live data; only the framing words live here.
+  ownerHome: {
+    cashLabel: "Money on hand",
+    cashSubCash: "Across your bank and cash accounts.",
+    cashSubAssets: "Your total assets — add a bank account to track cash on its own.",
+    needsYouLabel: "Needs you",
+    needsYouNone: "You're all caught up — nothing needs you right now.",
+    needsYouSome: (n: number) =>
+      `${n} ${n === 1 ? "thing" : "things"} ${n === 1 ? "needs" : "need"} a quick decision.`,
+    needsYouAction: "Review",
+
+    // Coming-up filing deadlines (from the kernel — never a hardcoded calendar).
+    deadlinesTitle: "Coming up",
+    deadlinesNone: "Nothing on the calendar in the next few months.",
+    deadlineDue: (days: number) =>
+      days <= 0 ? "due today"
+        : days === 1 ? "due tomorrow"
+        : `due in ${days} days`,
+    deadlineOn: (date: string) => `on ${date}`,
+
+    // Plain-English month summary (theme #8). Warm, comparative, no jargon.
+    summaryTitle: "Your month so far",
+    summaryQuiet: "It's quiet so far this month — no income or spending recorded yet.",
+    summaryNet: (net: string) => `You're net ${net} this month.`,
+    summaryUpFromLast: (delta: string) => ` That's ${delta} better than last month.`,
+    summaryDownFromLast: (delta: string) => ` That's ${delta} lower than last month.`,
+    summaryFlatFromLast: " About the same as last month.",
+    summaryNoPrev: " Not enough history yet to compare to last month.",
+
+    activityTitle: "Latest activity",
+    noEntries: "No activity yet.",
+  },
+
   // ── W3.3 · Minimal 3-step onboarding (name → entity → industry) ────────────
   // Exactly three steps. Entity + industry OPTIONS come from the kernel seeds,
   // never from here — only the framing words live in the catalog. 'app' persona,

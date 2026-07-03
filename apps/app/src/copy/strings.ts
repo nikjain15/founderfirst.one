@@ -785,6 +785,10 @@ export const COPY = {
 
     activityTitle: "Latest activity",
     noEntries: "No activity yet.",
+
+    // Catch-up progress strip (W2.1) — per-year meter, only when a catch-up is live.
+    catchUpDone: "✓",
+    catchUpToGo: (n: number) => `${n} to go`,
   },
 
   // ── W3.3 · Minimal 3-step onboarding (name → entity → industry) ────────────

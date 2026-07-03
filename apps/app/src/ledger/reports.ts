@@ -275,3 +275,160 @@ export function balanceSheet(entries: JournalEntry[], asOf?: string): BalanceShe
     totalAssets, totalLiabilities, totalEquity, currentEarnings, balanced,
   };
 }
+
+// ── Cash-flow statement, GAAP indirect method (card W4.2) ─────────────────────
+/**
+ * GAAP indirect cash-flow statement, DERIVED from the same journal data as every
+ * other report (ARCHITECTURE.md §6.5 — reports are derived, never stored).
+ *
+ * Why it ALWAYS ties to the cent: for any set of balanced entries in the period,
+ * Σ over ALL accounts of (period debit − period credit) = 0. Cash's own
+ * (D − C) delta therefore equals −Σ over every NON-cash account of its (D − C)
+ * delta. So the change in cash is fully explained by the non-cash account deltas,
+ * and this builder does nothing but classify each non-cash delta into
+ * operating / investing / financing and sum. The three section totals thus add
+ * back to ΔCash by construction — the same identity the balance sheet uses, so
+ * the statement ties to the BS cash delta AND (net income + working-capital
+ * changes) reconcile to operating cash exactly (cashFlow.test.ts proves it).
+ *
+ * Sign convention: every line is a cash EFFECT (positive = cash in). A non-cash
+ * account's cash effect is −(its debit-normal net change): e.g. AR rising (a
+ * debit delta) USES cash (negative), a payable rising (a credit delta) provides
+ * cash (positive). Net income is presented as the operating starting line; the
+ * income/expense accounts' own cash effect is what makes it reconcile.
+ *
+ * Classification (rebuilt on real accounts — the demo util/cash-flow.js category
+ * mapper is the interaction reference, not a port):
+ *   income / expense accounts   → operating (they compose net income + non-cash)
+ *   asset accounts              → operating (working capital) unless the code/name
+ *                                 marks a long-term/investing asset → investing
+ *   liability accounts          → operating unless the code/name marks debt
+ *                                 (loan/note/line of credit) → financing
+ *   equity accounts             → financing (contributions / draws / distributions)
+ * All amounts are integer minor units.
+ */
+export interface CashFlowLine { account_id: string; code: string | null; name: string; amount: number; }
+export interface CashFlowStatement {
+  netIncome: number;
+  /** Operating detail EXCLUDING the net-income starting line (adjustments + WC). */
+  operatingAdjustments: CashFlowLine[];
+  operating: number; // net income + Σ operatingAdjustments
+  investing: CashFlowLine[];
+  investingTotal: number;
+  financing: CashFlowLine[];
+  financingTotal: number;
+  netChange: number; // operating + investingTotal + financingTotal
+  beginningCash: number; // cash balance as of the day BEFORE the period start
+  endingCash: number; // beginningCash + netChange
+  /** ΔCash computed independently from the balance sheet, for the tie-out check. */
+  bsCashDelta: number;
+  ties: boolean; // netChange === bsCashDelta (to the cent)
+}
+
+// A section-classifier over what a ledger line actually carries (type + code +
+// name). Long-term/investing assets and debt liabilities are recognised by
+// plain-language name patterns + common CoA code bands; everything else is
+// working-capital operating. Kept as data so the mapping is auditable in one place.
+// Long-term / capital assets whose PURCHASE or SALE is an investing cash flow.
+// NB: "accumulated depreciation" is deliberately NOT here — it is a contra-asset
+// whose period movement is the depreciation add-back, an OPERATING non-cash
+// adjustment (indirect method), so it must fall through to operating.
+const INVESTING_ASSET_PATTERNS = [
+  "equipment", "furniture", "fixture", "vehicle", "machinery", "building",
+  "property", "land", "leasehold", "intangible", "goodwill",
+  "property, plant", "fixed asset",
+];
+const FINANCING_LIABILITY_PATTERNS = [
+  "loan", "note payable", "notes payable", "line of credit", "mortgage",
+  "long-term debt", "long term debt", "bond", "capital lease", "lease payable",
+];
+const CASH_PATTERNS = ["cash", "checking", "savings", "bank", "money market", "petty cash", "operating account"];
+
+function matchesAny(code: string | null, name: string, patterns: string[]): boolean {
+  const hay = `${code ?? ""} ${name}`.toLowerCase();
+  return patterns.some((p) => hay.includes(p));
+}
+
+/** Is this asset account a cash / cash-equivalent account (the statement's subject)? */
+export function isCashAccount(code: string | null, name: string): boolean {
+  return matchesAny(code, name, CASH_PATTERNS);
+}
+
+type CfSection = "cash" | "operating" | "investing" | "financing";
+function classifyCashFlow(type: AccountType, code: string | null, name: string): CfSection {
+  if (type === "income" || type === "expense") return "operating";
+  if (type === "equity") return "financing";
+  if (type === "asset") {
+    if (isCashAccount(code, name)) return "cash";
+    return matchesAny(code, name, INVESTING_ASSET_PATTERNS) ? "investing" : "operating";
+  }
+  // liability
+  return matchesAny(code, name, FINANCING_LIABILITY_PATTERNS) ? "financing" : "operating";
+}
+
+/**
+ * Cash-flow statement over [start, end] (both inclusive; omit for all-time).
+ * `beginning` is derived from cash balances strictly BEFORE `start`.
+ */
+export function cashFlow(
+  entries: JournalEntry[],
+  scope: { start?: string; end?: string } = {},
+): CashFlowStatement {
+  const { start, end } = scope;
+  const periodFilter = (d: string) => (!start || d >= start) && (!end || d <= end);
+  const priorFilter = start ? (d: string) => d < start : () => false;
+
+  // Period deltas per account (debit-normal net change), classified.
+  const period = accountBalances(entries, periodFilter);
+  // Prior-period cash (opening cash balance) — cash accounts only.
+  const prior = accountBalances(entries, priorFilter);
+
+  let netIncome = 0;
+  const opAdj: CashFlowLine[] = [];
+  const investing: CashFlowLine[] = [];
+  const financing: CashFlowLine[] = [];
+  let bsCashDelta = 0;
+
+  for (const b of period) {
+    const section = classifyCashFlow(b.type, b.code, b.name);
+    if (section === "cash") {
+      bsCashDelta += b.net; // debit-normal delta of a cash account == ΔCash
+      continue;
+    }
+    // Net income is the sum of income (credit-normal) less expense (debit-normal);
+    // captured separately so it can lead the operating section.
+    if (b.type === "income") { netIncome += b.credit - b.debit; continue; }
+    if (b.type === "expense") { netIncome -= b.debit - b.credit; continue; }
+    // Every remaining non-cash account contributes its cash effect = −(D−C delta).
+    const amount = -b.net;
+    if (amount === 0) continue;
+    const line: CashFlowLine = { account_id: b.account_id, code: b.code, name: b.name, amount };
+    if (section === "investing") investing.push(line);
+    else if (section === "financing") financing.push(line);
+    else opAdj.push(line); // operating working-capital / non-cash adjustment
+  }
+
+  const investingTotal = investing.reduce((s, l) => s + l.amount, 0);
+  const financingTotal = financing.reduce((s, l) => s + l.amount, 0);
+  const operating = netIncome + opAdj.reduce((s, l) => s + l.amount, 0);
+  const netChange = operating + investingTotal + financingTotal;
+
+  const beginningCash = prior
+    .filter((b) => b.type === "asset" && isCashAccount(b.code, b.name))
+    .reduce((s, b) => s + b.net, 0);
+
+  return {
+    netIncome,
+    operatingAdjustments: opAdj.sort((a, b) => (a.code ?? "").localeCompare(b.code ?? "")),
+    operating,
+    investing: investing.sort((a, b) => (a.code ?? "").localeCompare(b.code ?? "")),
+    investingTotal,
+    financing: financing.sort((a, b) => (a.code ?? "").localeCompare(b.code ?? "")),
+    financingTotal,
+    netChange,
+    beginningCash,
+    endingCash: beginningCash + netChange,
+    bsCashDelta,
+    ties: netChange === bsCashDelta,
+  };
+}

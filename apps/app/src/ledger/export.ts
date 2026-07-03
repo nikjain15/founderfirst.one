@@ -16,7 +16,7 @@
  * single-file document. Brand colors come from the design-system tokens at
  * runtime (getBrandRgb) — never an inlined hex.
  */
-import { balanceSheet, generalLedger, profitAndLoss, trialBalance } from "./reports";
+import { balanceSheet, cashFlow, generalLedger, profitAndLoss, trialBalance } from "./reports";
 import type { NecSummary } from "./reports";
 import { formatMoney } from "./money";
 import type { JournalEntry } from "./types";
@@ -25,7 +25,7 @@ import type { JournalEntry } from "./types";
 // four reports it is NOT derived from the entry list — it comes from the
 // ninetynine_nec_summary RPC (vendor tags + payment-method exclusion + kernel
 // threshold, all server-side) and is passed on ExportContext.nec.
-export type ReportKind = "tb" | "pnl" | "bs" | "gl" | "nec";
+export type ReportKind = "tb" | "pnl" | "bs" | "gl" | "cf" | "nec";
 export type ExportFormat = "csv" | "pdf";
 
 /** Period scope for a report. TB/P&L/GL use a date range; BS uses `asOf`. */
@@ -139,6 +139,28 @@ function buildModel(
       { title: "Assets", header: ["Account", "Amount"], body: assets },
       { title: "Liabilities", header: ["Account", "Amount"], body: liab },
       { title: "Equity", header: ["Account", "Amount"], body: eq },
+    ];
+  }
+  if (kind === "cf") {
+    const cf = cashFlow(entries, scope);
+    const op: (string | number | { minor: number })[][] = [["Net income", { minor: cf.netIncome }]];
+    for (const l of cf.operatingAdjustments) op.push([labelOf(l.code, l.name), { minor: l.amount }]);
+    op.push(["Net cash from operating activities", { minor: cf.operating }]);
+    const inv = cf.investing.map((l) => [labelOf(l.code, l.name), { minor: l.amount }]);
+    inv.push(["Net cash from investing activities", { minor: cf.investingTotal }]);
+    const fin = cf.financing.map((l) => [labelOf(l.code, l.name), { minor: l.amount }]);
+    fin.push(["Net cash from financing activities", { minor: cf.financingTotal }]);
+    return [
+      { title: "Operating activities", header: ["", "Amount"], body: op },
+      { title: "Investing activities", header: ["", "Amount"], body: inv },
+      { title: "Financing activities", header: ["", "Amount"], body: fin },
+      {
+        title: "Net change in cash", header: ["", "Amount"], body: [
+          ["Net change in cash", { minor: cf.netChange }],
+          ["Cash at beginning of period", { minor: cf.beginningCash }],
+          ["Cash at end of period", { minor: cf.endingCash }],
+        ],
+      },
     ];
   }
   // GL detail — full entry/line dump with a running balance per account. Reuses
@@ -304,7 +326,7 @@ export function toPdf(kind: ReportKind, entries: JournalEntry[], ctx: ExportCont
     for (const row of table.body) {
       ensure();
       const cells = row.map((c) => (isMinor(c) ? formatMoney(c.minor) : String(c)));
-      const bold = typeof row[0] === "string" && /^Total|^Net income|^Totals|^Current earnings/.test(row[0]);
+      const bold = typeof row[0] === "string" && /^Total|^Net income|^Totals|^Current earnings|^Net cash|^Net change|^Cash at/.test(row[0]);
       stream += drawRow(cells, cols, MARGIN, y, 9, bold ? ink : ink, bold, text);
       y -= LINE;
     }
@@ -402,7 +424,7 @@ function assemblePdf(pages: string[], w: number, h: number): Uint8Array {
 /** kebab-safe filename stem, e.g. "acme-inc_trial-balance_2026-06-30". */
 export function exportFilename(orgName: string, kind: ReportKind, ctx: ExportContext, ext: ExportFormat): string {
   const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "report";
-  const kindSlug = { tb: "trial-balance", pnl: "profit-and-loss", bs: "balance-sheet", gl: "general-ledger", nec: "1099-nec-summary" }[kind];
+  const kindSlug = { tb: "trial-balance", pnl: "profit-and-loss", bs: "balance-sheet", gl: "general-ledger", cf: "cash-flow", nec: "1099-nec-summary" }[kind];
   const stamp = ctx.scope.end ?? ctx.generatedOn;
   return `${slug(orgName)}_${kindSlug}_${stamp}.${ext}`;
 }

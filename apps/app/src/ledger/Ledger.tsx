@@ -24,7 +24,10 @@ import ImportFlow from "../import/ImportFlow";
 import CatchUpFlow from "../catchup/CatchUpFlow";
 import Categorize from "./Categorize";
 import Receipts, { ReceiptBadge } from "./Receipts";
+import OwnerHome from "./OwnerHome";
 import LearnedRules from "./LearnedRules";
+import PennyThread from "./PennyThread";
+import PennyDidThis from "./PennyDidThis";
 import { SuggestionInbox, EntryCollab } from "./CollabUI";
 import ReconcileView from "./ReconcileView";
 import InviteCpa from "../org/InviteCpa";
@@ -170,14 +173,34 @@ export default function Ledger({
             aria-labelledby={activeTab?.subs && activeSub ? `lsub-${activeSub}` : undefined}
             tabIndex={activeTab?.subs ? 0 : undefined}>
             {surface === "overview" && (
-              <Overview
-                entries={entries.data ?? []} accounts={accounts.data ?? []}
-                canWrite={canWrite} orgId={org.id}
-                onReview={() => goto("review")}
-                onCategorize={() => goto("review")}
-                onConnect={() => goto("connections")}
-                onInvite={onInvite}
-              />
+              // Owner Home is the "am I okay?" pulse (W3.4): once there are books it
+              // renders the cash / needs-you / deadlines / reconciled / Penny-did feed
+              // dashboard; before any accounts exist it falls through to the shared
+              // Overview's setup nudge. The CPA keeps the plain accounting Overview.
+              nav === "owner" && (accounts.data?.length ?? 0) > 0 ? (
+                // Owner-with-books Home is the W3.4 pulse dashboard; the W3.1 Penny
+                // thread (grounded Q&A) nests beneath it on the same Home screen —
+                // it moved off Overview when the pulse took over this path.
+                <>
+                  <OwnerHome
+                    entries={entries.data ?? []} accounts={accounts.data ?? []}
+                    canWrite={canWrite} orgId={org.id}
+                    onReview={() => goto("review")}
+                    onRefresh={refresh}
+                  />
+                  <PennyThread orgId={org.id} entries={entries.data ?? []} canWrite={canWrite} />
+                </>
+              ) : (
+                <Overview
+                  entries={entries.data ?? []} accounts={accounts.data ?? []}
+                  canWrite={canWrite} orgId={org.id} nav={nav}
+                  onReview={() => goto("review")}
+                  onCategorize={() => goto("review")}
+                  onConnect={() => goto("connections")}
+                  onInvite={onInvite}
+                  onChange={refresh}
+                />
+              )
             )}
             {surface === "review" && canWrite && (
               <>
@@ -274,11 +297,12 @@ function Connections({
 
 // ── Overview — plain-language "how's my business" ────────────────────────────
 function Overview({
-  entries, accounts, canWrite, orgId, onReview, onCategorize, onConnect, onInvite,
+  entries, accounts, canWrite, orgId, nav, onReview, onCategorize, onConnect, onInvite, onChange,
 }: {
   entries: JournalEntry[]; accounts: LedgerAccount[];
-  canWrite: boolean; orgId: string;
-  onReview: () => void; onCategorize: () => void; onConnect: () => void; onInvite?: () => void;
+  canWrite: boolean; orgId: string; nav: Nav;
+  onReview: () => void; onCategorize: () => void; onConnect: () => void;
+  onInvite?: () => void; onChange?: () => void;
 }) {
   const tb = useMemo(() => trialBalance(entries), [entries]);
   const pnl = useMemo(() => profitAndLoss(entries), [entries]);
@@ -324,6 +348,9 @@ function Overview({
           body={COPY.overview.setupBody}
           action={canWrite ? { label: COPY.overview.goToConnections, onClick: onConnect } : undefined}
         />
+        {/* Penny is present from day one — she greets and can answer once books
+            exist (before then she declines gracefully). Owner-only, like below. */}
+        {nav === "owner" && <PennyThread orgId={orgId} entries={entries} canWrite={canWrite} />}
       </>
     );
   }
@@ -371,6 +398,16 @@ function Overview({
             </li>
           ))}
         </ul>
+      )}
+
+      {/* The Penny thread (W3.1) + "Penny did this" feed (W3.2) live on the owner's
+          Home — the conversational pulse. Owner-only: the CPA navigates by ledger
+          workflow, not a chat. The thread narrates the feed just beneath it. */}
+      {nav === "owner" && (
+        <>
+          <PennyThread orgId={orgId} entries={entries} canWrite={canWrite} />
+          <PennyDidThis orgId={orgId} canWrite={canWrite} onChange={onChange} />
+        </>
       )}
     </div>
   );

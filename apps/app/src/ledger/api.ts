@@ -238,6 +238,26 @@ export function useAskBudgetRefresh(orgId: string | undefined) {
   return () => { void qc.invalidateQueries({ queryKey: ["ask-budget", orgId] }); };
 }
 
+// ── Penny thread (W3.1) — grounded Q&A on the real books ──────────────────────
+// The client computes the number optimistically from the SAME paginated entries
+// the reports use (thread.ts computeMetric → ties to the cent) for a snappy UI, and
+// MAY pass it as a hint — but the penny-thread fn is AUTHORITATIVE (P2-1): it
+// re-routes the question and re-computes the fact from the org's ledger server-side,
+// and its figure wins. A client-forged amount is discarded. Records to ai_decisions.
+export interface ThreadFact {
+  metric: "spend" | "income" | "net" | "cash";
+  amount_minor: number;
+  category_label: string | null;
+  period_label: string;
+}
+
+/** Ask Penny a grounded books question. `fact` is an optimistic client hint only —
+ *  the server re-routes + re-computes and its answer is authoritative. */
+export const askPennyThread = (org_id: string, question: string, fact: ThreadFact | null) =>
+  invoke<{ text: string; declined?: boolean; fact_stated?: string }>(
+    "penny-thread", { op: "answer", org_id, question, fact },
+  );
+
 // ── learned-rules management (W1.6) ───────────────────────────────────────────
 // Owner + full-access CPA see every rule Penny has learned and can delete a bad
 // one. Reads go direct under RLS (categorization_rules is client-readable via
@@ -723,6 +743,41 @@ export function useReconciliationRefresh(orgId: string | undefined) {
       void qc.invalidateQueries({ queryKey: [key, orgId] });
     }
   };
+}
+
+// ── coming-up filing deadlines (W3.4, reads CENTRAL-2 kernel) ─────────────────
+// The deadlines are NEVER hardcoded in the app — they come from the knowledge
+// kernel's `upcoming_filing_deadlines(org, as_of, horizon)` RPC (CENTRAL-2), which
+// resolves the org's (jurisdiction, entity) against the effective-dated
+// `filing_obligations` seed. Change a seed row → Home moves, no code edit. The RPC
+// is security-definer + granted to `authenticated`; it returns [] for an org with
+// no tax profile set yet (onboarding populates entity_type), so Home degrades to
+// "nothing coming up" rather than erroring.
+export interface FilingDeadline {
+  obligation_key: string;
+  kind: string;            // 'return' | 'estimate' | 'info_return' | 'extension' …
+  form_code: string | null;
+  label: string;
+  due_date: string;        // YYYY-MM-DD
+  days_until: number;
+  citation: string | null;
+}
+
+/** Filing deadlines due within `horizonDays` for an org, from the kernel calendar. */
+export function useUpcomingDeadlines(orgId: string | undefined, horizonDays = 90) {
+  return useQuery({
+    queryKey: ["upcoming-deadlines", orgId, horizonDays],
+    enabled: Boolean(orgId),
+    staleTime: 60_000,
+    queryFn: async (): Promise<FilingDeadline[]> => {
+      const sb = getClient();
+      const { data, error } = await sb.rpc("upcoming_filing_deadlines", {
+        p_org_id: orgId, p_horizon_days: horizonDays,
+      });
+      if (error) throw error;
+      return (data ?? []) as FilingDeadline[];
+    },
+  });
 }
 
 // ── catch-up mode (W2.1) ──────────────────────────────────────────────────────

@@ -58,6 +58,8 @@ holds the assertion — this index is the single map from finding id → scenari
 | **LOOP-1** heartbeat write-path RLS (loop_runs/loop_events) | Build loop (PR #173) | P1 | — | ⏳ **pending** (migration unmerged; add once #173 lands) |
 | **W3.2-UNDO** auto-post undo reverses cleanly (ledger balanced) | Trust-tiered autonomy (W3.2) | P0 | `w3_2_trust_tiered_autonomy_test.sql` | ✅ covered |
 | **W3.2-BUDGET-DEFER** ≤5-asks/week cap → surplus + income defer to digest | Trust-tiered autonomy (W3.2) | P1 | `autonomy.test.ts` (`budgetDisposition`) + `w3_2_trust_tiered_autonomy_test.sql` | ✅ covered |
+| **W3.4-PULSE** Home numbers tie to Reports (cash/needs-you/month summary derived from the SAME ledger, never a separate store) | Owner Home (W3.4) | P1 | `homePulse.test.ts` | ✅ covered |
+| **W3.4-DEADLINE** "Coming up" reads the kernel — change a `filing_obligations` seed row → Home moves, no code edit (never a hardcoded calendar) | Owner Home (W3.4) | P0 | `w3_4_owner_home_deadlines_test.sql` | ✅ covered |
 
 ## Gaps surfaced for the integrator / Nik
 
@@ -397,3 +399,54 @@ and shows the in-flow unmatched queue. The auto-attach vs confirm-card DECISION 
 proven deterministically by the Vitest tier test (no AI tokens, no ledger mutation
 in CI — same discipline as W2.1/W3.2); the server wiring is
 `supabase/functions/receipts` op `capture` (HIGH → `autoattach_receipt`, else a card).
+
+## W3.1 · Penny thread in-app (grounded Q&A on real books)
+
+Penny answers factual books questions on the owner's Home thread, GROUNDED on the
+real ledger — never an invented number. The number is computed CLIENT-SIDE from the
+same paginated entries the reports use (`ledger/thread.ts` `computeMetric`, the exact
+report math), then the `penny-thread` fn only phrases it in Penny's live 'app'
+persona. An out-of-scope / advice / prediction question, or a category that matches
+no account, is DECLINED — the fn is handed no figure, so a hallucinated number is
+structurally impossible. The thread nests in Home (no new top-level tab).
+
+| Scenario | Surface | Assertion | Test |
+|---|---|---|---|
+| **W3.1-ROUTE** | Intent routing | `routeMessage` classifies greeting / activity / grounded question / unsupported deterministically; a grounded question extracts metric + period + category (`spend on software in Q2` → spend / Q2 bounds / "software"). | `apps/app/src/ledger/thread.test.ts` (`routeMessage`) |
+| **W3.1-SCOPE-REFUSAL** | Grounding-scope guard (REG) | An out-of-scope question — advice (`should I pay estimated taxes?`), a **prediction** (`what will my revenue be next quarter?`), a deduction question, or off-books chatter — is `unsupported`; the fn is sent a **null fact** and DECLINES with no dollar figure. A named category that matches no account is flagged `categoryUnmatched` and declined, never reported as a real $0. | `apps/app/src/ledger/thread.test.ts` (grounding-scope guard) |
+| **W3.1-TIEOUT** | Grounded answer | `computeMetric` equals the report math to the cent for spend / income / net (P&L) and cash (balance-sheet total assets), period-scoped; a category-scoped figure sums only the matched account and excludes out-of-period entries. So a thread figure and the Reports tab can never disagree. | `apps/app/src/ledger/thread.test.ts` (`computeMetric` ties to `profitAndLoss` / `balanceSheet`) |
+| **W3.1-READ-GATE** | Thread access | `can_access_org_as` grants a thread question to a member AND a read-only engaged CPA (a question is a READ), refuses a stranger (403), and is `service_role`-EXECUTE-only — off the client surface (a membership oracle otherwise, LEARNINGS: isolation F1). | `supabase/tests/w3_1_penny_thread_test.sql` |
+| **W3.1-PERSONA-LIVE** | Live 'app' persona | Publishing a new 'app' persona version changes what the thread runtime (`get_live_app_persona('app')`) reads — Penny's thread language is live-editable with no redeploy (the proven bubble/Discord pattern). | `supabase/tests/w3_1_penny_thread_test.sql` |
+
+**Re-run.** `pnpm --dir apps/app test` (routing + scope guard + tie-out) · `supabase
+test db` (read gate + persona live-edit). E2E: `tools/app-e2e/run.mjs` asserts the
+thread renders on Home and answers a grounded turn (no new top-level tab).
+
+## W3.4 · Owner Home — the "am I okay?" pulse
+
+Home answers the owner's only real question at a glance (APP_PRINCIPLES §2) —
+cash on hand, what needs a decision (→ Review), what's coming up (filing
+deadlines), what's reconciled, and a plain-English "your month so far" —
+**reusing data the app already loads**. There is no new source of truth: cash,
+the needs-you count, and the month summary all fold out of the same
+`journal_entries` + `ledger_accounts` the Reports tab renders (so Home can never
+disagree with Reports); the "Penny did this" feed is W3.2's component dropped in;
+the "Coming up" deadlines come from the CENTRAL-2 kernel's
+`upcoming_filing_deadlines` (a deadline is never a literal in the app). The
+estimated-taxes / tax-readiness strip is intentionally ABSENT — it belongs to W2.4
+(quarterly assistant), which is not live; we omit it rather than fake a number.
+
+| Scenario | Surface | Assertion | Test |
+|---|---|---|---|
+| **W3.4-PULSE** | Home derivations | Cash on hand sums only the cash/bank accounts (< total assets), falling back to total assets when no cash account exists; the needs-you count = pending-review + posted-uncategorized (what Review shows); the month summary's net ties to the P&L over the same month's entries and the delta to last month is signed. All pure over the ledger the app already paged — no separate store. | `apps/app/src/ledger/homePulse.test.ts` |
+| **W3.4-DEADLINE** | "Coming up" | Deadlines resolve from the kernel's `upcoming_filing_deadlines` (jurisdiction × entity × effective-dated `filing_obligations`). **Changing a seed row moves the date Home shows with no code edit** (supersede 04-15 → 05-01 and the resolved `due_date` follows); the horizon filters correctly; an org with no tax profile yields none (Home degrades to "nothing coming up"); the fn is EXECUTE-grantable to `authenticated` (Home calls it from the session). | `supabase/tests/w3_4_owner_home_deadlines_test.sql` |
+
+**Re-run.** `pnpm --dir apps/app test` (pulse tie-out) · `supabase test db`
+(kernel-deadline-drives-Home). No prod fixtures — the pgTAP seed is self-contained
+inside `BEGIN…ROLLBACK`.
+
+**E2E.** The authed app smoke (`tools/app-e2e/run.mjs`) opens Home for the seeded
+owner and asserts the pulse renders on one screen — the money-on-hand + needs-you
+tiles, the plain-English month summary, the kernel-driven "Coming up" section, and
+the "Penny did this" feed — with the needs-you tile an actionable button into
+Review, and NO horizontal overflow across the full 320→1920 width ladder.

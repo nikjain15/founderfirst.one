@@ -34,6 +34,7 @@ export interface ReceiptMatch {
   kind: "exact" | "fuzzy";
   dateDelta: number; // |days| between receipt and entry (0 for exact)
   amount_minor: number; // the entry magnitude matched
+  exactTies: number; // # of same-date+amount candidates (≥2 = ambiguous → confirm, never auto-attach)
 }
 
 /** Whole-day difference between two YYYY-MM-DD dates (UTC, calendar days). */
@@ -63,10 +64,14 @@ export function matchReceipt(
   );
   if (sameAmount.length === 0) return null;
 
-  // Pass 1: EXACT (delta 0). Pick the first same-date candidate.
-  const exact = sameAmount.find((c) => dayDiff(receipt.receipt_date!, c.entry_date) === 0);
-  if (exact) {
-    return { entry_id: exact.entry_id, kind: "exact", dateDelta: 0, amount_minor: Math.abs(exact.amount_minor) };
+  // Pass 1: EXACT (delta 0). Count ALL same-date+amount candidates — if two or
+  // more tie, the receipt is AMBIGUOUS: we cannot know which transaction it
+  // belongs to, so we surface the tie (exactTies ≥ 2) and let the tier pipeline
+  // downgrade to a confirm card rather than silently auto-attach to the first.
+  const exactTies = sameAmount.filter((c) => dayDiff(receipt.receipt_date!, c.entry_date) === 0);
+  if (exactTies.length > 0) {
+    const exact = exactTies[0];
+    return { entry_id: exact.entry_id, kind: "exact", dateDelta: 0, amount_minor: Math.abs(exact.amount_minor), exactTies: exactTies.length };
   }
 
   // Pass 2: FUZZY within ±windowDays, nearest date wins.
@@ -77,38 +82,61 @@ export function matchReceipt(
     if (d <= windowDays && d < bestDelta) { best = c; bestDelta = d; }
   }
   if (!best) return null;
-  return { entry_id: best.entry_id, kind: "fuzzy", dateDelta: bestDelta, amount_minor: Math.abs(best.amount_minor) };
+  return { entry_id: best.entry_id, kind: "fuzzy", dateDelta: bestDelta, amount_minor: Math.abs(best.amount_minor), exactTies: 0 };
 }
 
 /**
  * Confidence for a receipt match, in [0,1], for the W3.2 tier bands. This is the
  * matcher's OWN signal (not a magic threshold — the CUTOFFS that turn it into a
- * tier live in platform_config and are applied by tierFor in the edge fn):
- *   • exact date → strong (1.0). Amount + same-day is as sure as reconciliation's
- *     exact pass.
+ * tier live in platform_config and are applied by receiptTier):
+ *   • exact date + amount → strong, but NOT certain on its own. Amount+date can
+ *     collide (two same-price purchases the same day), so an exact match is only
+ *     maximally confident (1.0) when the parsed VENDOR also corroborates the
+ *     entry. An uncorroborated exact match decays into the medium band so it
+ *     confirms rather than auto-attaches (the vendor-check, not provenance alone).
  *   • fuzzy → decays with date distance (nearer = surer), staying in the medium/
  *     low band so a date-off match confirms rather than auto-attaches by default.
  * A vendor-name corroboration nudges confidence up (still ≤1).
  */
 export function matchConfidence(match: ReceiptMatch, vendorCorroborated: boolean): number {
-  let base = match.kind === "exact" ? 1 : Math.max(0.4, 0.85 - match.dateDelta * 0.12);
-  if (vendorCorroborated) base = Math.min(1, base + 0.1);
+  const exactBase = vendorCorroborated ? 1 : 0.6; // uncorroborated exact ⇒ medium band, needs a vendor to auto-attach
+  let base = match.kind === "exact" ? exactBase : Math.max(0.4, 0.85 - match.dateDelta * 0.12);
+  if (match.kind === "fuzzy" && vendorCorroborated) base = Math.min(1, base + 0.1);
   return Math.round(base * 1000) / 1000;
 }
 
 /**
  * Band a receipt match into a W3.2 trust tier. The CUTOFFS are DATA — passed in
  * from platform_config (confidence_high / confidence_medium) — never hardcoded
- * here; this is the same discipline the categorize edge fn uses. An exact-date
- * match is HIGH by provenance (as sure as reconciliation's exact pass); a fuzzy
- * match is banded by the config cutoffs. HIGH → auto-attach; MEDIUM/LOW → a
- * confirm card. Mirrors tierFor() in supabase/functions/receipts/index.ts so the
- * on-screen behavior and the server decision are one source of truth.
+ * here; this is the same discipline the categorize edge fn uses. HIGH →
+ * auto-attach; MEDIUM/LOW → a confirm card in Review. Mirrors the server decision
+ * in supabase/functions/receipts/index.ts so on-screen and server are one source.
+ *
+ * Trust-safety (W3.2 principle — Penny only AUTO-acts when genuinely sure):
+ *   • AMBIGUOUS exact (exactTies ≥ 2): two or more transactions share the same
+ *     amount+date, so we cannot know which the receipt belongs to → downgrade to
+ *     LOW (confirm card) so the owner picks. Never silently attach to the first.
+ *   • An amount+date exact match is NOT auto-attached on provenance alone: it
+ *     qualifies for HIGH only when the parsed vendor CORROBORATES the entry
+ *     (vendorCorroborated), OR the confidence otherwise clears confidence_high.
+ *     Amount+date that match but a vendor that does not corroborate → confirm
+ *     card, banded by the config cutoffs.
+ *   • A fuzzy match is banded purely by the config cutoffs (no exact provenance).
  */
 export interface TierCutoffs { confidence_high: number; confidence_medium: number }
 export type Tier = "high" | "medium" | "low";
-export function receiptTier(match: ReceiptMatch, confidence: number, cutoffs: TierCutoffs): Tier {
-  if (match.kind === "exact") return "high";
+export interface TierContext { vendorCorroborated?: boolean }
+export function receiptTier(
+  match: ReceiptMatch,
+  confidence: number,
+  cutoffs: TierCutoffs,
+  ctx: TierContext = {},
+): Tier {
+  // Ambiguous exact ties can never auto-attach — surface as a confirm card.
+  if (match.kind === "exact" && match.exactTies >= 2) return "low";
+  // A single unambiguous exact match is HIGH only if the vendor corroborates OR
+  // the confidence clears the config high cutoff — otherwise it confirms.
+  if (match.kind === "exact" && ctx.vendorCorroborated) return "high";
   if (confidence >= cutoffs.confidence_high) return "high";
   if (confidence >= cutoffs.confidence_medium) return "medium";
   return "low";

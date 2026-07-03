@@ -41,12 +41,25 @@ describe("matchReceipt — W3.5-MATCH", () => {
     entry("e-other", "2026-07-01", 999),
   ];
 
-  it("EXACT: same date + amount wins outright", () => {
+  it("EXACT: a SINGLE same date + amount candidate matches (one unambiguous tie)", () => {
     const m = matchReceipt(receipt(-4599, "2026-07-01"), candidates);
     expect(m).not.toBeNull();
     expect(m!.entry_id).toBe("e-exact");
     expect(m!.kind).toBe("exact");
     expect(m!.dateDelta).toBe(0);
+    expect(m!.exactTies).toBe(1); // unambiguous — exactly one candidate on that amount+date
+  });
+
+  it("AMBIGUOUS EXACT (W3.5-AMBIG): ≥2 candidates tie on amount+date → exactTies counts them", () => {
+    // Two same-price purchases on the same day: the receipt cannot be attributed
+    // to one over the other, so the matcher reports the tie for the tier pipeline.
+    const tie = [
+      entry("e-a", "2026-07-01", 4599, "COFFEE BAR"),
+      entry("e-b", "2026-07-01", 4599, "LUNCH SPOT"),
+    ];
+    const m = matchReceipt(receipt(-4599, "2026-07-01", "Coffee Bar"), tie)!;
+    expect(m.kind).toBe("exact");
+    expect(m.exactTies).toBe(2); // ambiguous — the tier gate must downgrade to a confirm card
   });
 
   it("FUZZY: no same-date candidate → nearest within the window", () => {
@@ -92,9 +105,14 @@ describe("matchReceipt — W3.5-DEDUP (one receipt per entry)", () => {
 });
 
 describe("matchConfidence + vendorInMemo — W3.5-CONFIDENCE", () => {
-  it("an exact match is maximally confident", () => {
+  it("an exact match is maximally confident ONLY when the vendor corroborates", () => {
     const m = matchReceipt(receipt(-4599, "2026-07-01"), [entry("e", "2026-07-01", 4599)])!;
-    expect(matchConfidence(m, false)).toBe(1);
+    // Amount+date alone is strong but not certain — an uncorroborated exact match
+    // sits in the medium band (needs the vendor to auto-attach), corroborated = 1.0.
+    expect(matchConfidence(m, false)).toBeLessThan(1);
+    expect(matchConfidence(m, false)).toBeGreaterThanOrEqual(CUTOFFS.confidence_medium);
+    expect(matchConfidence(m, false)).toBeLessThan(CUTOFFS.confidence_high);
+    expect(matchConfidence(m, true)).toBe(1);
   });
 
   it("fuzzy confidence decays with date distance (nearer = surer)", () => {
@@ -121,9 +139,40 @@ describe("matchConfidence + vendorInMemo — W3.5-CONFIDENCE", () => {
 });
 
 describe("receiptTier — the auto-attach vs confirm-card decision (W3.2 bands)", () => {
-  it("HIGH: an exact-date match auto-attaches (by provenance, like reconciliation's exact pass)", () => {
-    const m = matchReceipt(receipt(-4599, "2026-07-01"), [entry("e", "2026-07-01", 4599)])!;
-    expect(receiptTier(m, matchConfidence(m, false), CUTOFFS)).toBe("high");
+  it("HIGH: a SINGLE exact match auto-attaches only when the vendor corroborates", () => {
+    // W3.5-VENDOR: exact amount+date + a corroborating vendor ⇒ genuinely sure ⇒ auto-attach.
+    const cand = [entry("e", "2026-07-01", 4599, "STAPLES #44")];
+    const parsed = receipt(-4599, "2026-07-01", "Staples");
+    const m = matchReceipt(parsed, cand)!;
+    const corr = vendorInMemo(parsed.vendor, cand[0].memo); // true
+    expect(receiptTier(m, matchConfidence(m, corr), CUTOFFS, { vendorCorroborated: corr })).toBe("high");
+  });
+
+  it("CONFIRM (W3.5-VENDOR-MISMATCH): exact amount+date but the vendor does NOT corroborate → not HIGH", () => {
+    // Amount+date line up, but the parsed vendor is nowhere in the memo — Penny is
+    // not sure enough to silently attach. It must become a confirm card, not HIGH.
+    const cand = [entry("e", "2026-07-01", 4599, "OFFICE DEPOT #12")];
+    const parsed = receipt(-4599, "2026-07-01", "Staples");
+    const m = matchReceipt(parsed, cand)!;
+    const corr = vendorInMemo(parsed.vendor, cand[0].memo); // false
+    expect(corr).toBe(false);
+    const tier = receiptTier(m, matchConfidence(m, corr), CUTOFFS, { vendorCorroborated: corr });
+    expect(tier).not.toBe("high");
+    expect(tier).toBe("medium"); // confirm card in Review
+  });
+
+  it("CONFIRM (W3.5-AMBIG): ≥2 exact ties can never auto-attach, even if a vendor corroborates", () => {
+    // Two same-amount+date candidates: ambiguous ⇒ the owner must pick ⇒ LOW confirm,
+    // never a silent attach to the first — regardless of vendor corroboration.
+    const tie = [
+      entry("e-a", "2026-07-01", 4599, "STAPLES #44"),
+      entry("e-b", "2026-07-01", 4599, "STAPLES #91"),
+    ];
+    const parsed = receipt(-4599, "2026-07-01", "Staples");
+    const m = matchReceipt(parsed, tie)!;
+    expect(m.exactTies).toBe(2);
+    // Even asserting corroboration true, ambiguity forces a confirm card.
+    expect(receiptTier(m, matchConfidence(m, true), CUTOFFS, { vendorCorroborated: true })).toBe("low");
   });
 
   it("LOW: a several-days-off fuzzy match yields a confirm card, not an auto-attach", () => {
@@ -149,9 +198,11 @@ describe("parse→match→tier end-to-end (the flow the edge fn runs)", () => {
     const candidates = [entry("txn-1", "2026-07-01", 4599, "STAPLES #44 CARD PURCHASE")];
     const m = matchReceipt(parsed, candidates)!;
     expect(m.entry_id).toBe("txn-1");
-    const conf = matchConfidence(m, vendorInMemo(parsed.vendor, candidates[0].memo));
-    expect(conf).toBe(1); // exact date + amount + vendor
-    expect(receiptTier(m, conf, CUTOFFS)).toBe("high"); // → the auto-attach path
+    expect(m.exactTies).toBe(1); // unambiguous
+    const corr = vendorInMemo(parsed.vendor, candidates[0].memo);
+    const conf = matchConfidence(m, corr);
+    expect(conf).toBe(1); // exact date + amount + corroborating vendor
+    expect(receiptTier(m, conf, CUTOFFS, { vendorCorroborated: corr })).toBe("high"); // → the auto-attach path
   });
 
   it("a receipt with no same-amount transaction produces no match → the unmatched queue", () => {

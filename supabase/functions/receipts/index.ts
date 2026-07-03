@@ -231,8 +231,12 @@ Deno.serve(async (req) => {
   const confidence = matchConfidence(match, corroborated);
 
   // 5) Band the match through the W3.2 tiers (cutoffs are DATA, no magic number).
+  //    Trust-safety: an exact amount+date match auto-attaches ONLY when the vendor
+  //    corroborates (or confidence clears the cutoff); ambiguous ties (≥2 same
+  //    amount+date) downgrade to a confirm card inside receiptTier — never a silent
+  //    attach to the first candidate.
   const cfg = await effectiveConfig(svc, orgId);
-  const tier = receiptTier(match, confidence, cfg);
+  const tier = receiptTier(match, confidence, cfg, { vendorCorroborated: corroborated });
 
   if (tier === "high") {
     // HIGH → auto-attach + a "Penny did this" feed row.

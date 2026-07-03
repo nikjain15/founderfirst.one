@@ -324,6 +324,9 @@ function Overview({
           body={COPY.overview.setupBody}
           action={canWrite ? { label: COPY.overview.goToConnections, onClick: onConnect } : undefined}
         />
+        {/* Penny is present from day one — she greets and can answer once books
+            exist (before then she declines gracefully). Owner-only, like below. */}
+        {nav === "owner" && <PennyThread orgId={orgId} entries={entries} canWrite={canWrite} />}
       </>
     );
   }

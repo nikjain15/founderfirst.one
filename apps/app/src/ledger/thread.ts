@@ -124,7 +124,7 @@ const MONEY_RE = /\b(spend|spent|spending|cost|costs?|paid|pay|expense|expenses|
 // question like "should I pay estimated taxes?" (advice, not a ledger fact) is
 // declined rather than answered with a fabricated figure. Prediction ("will",
 // "next quarter", "going to") is refused: the ledger is retrospective, not a forecast.
-const ADVICE_RE = /\b(should i|advice|recommend|what if|predict|forecast|will\s+(i|my|it|the|we)|going to|next (quarter|month|year|week)|tax (advice|strategy|planning)|deductible|write.?off|invest|stock|weather|joke)\b/i;
+const ADVICE_RE = /\b(should i|advice|recommend|what if|predict|prediction|forecast|project|projection|projected|estimate|estimated|will\s+(i|my|it|the|we)|going to|next (quarter|month|year|week)|tax (advice|strategy|planning)|deductible|write.?off|invest|stock|weather|joke)\b/i;
 
 /** Map free text to the metric we compute, or null if none is clearly asked. */
 function metricFor(text: string): MetricKind | null {
@@ -210,6 +210,12 @@ export function routeMessage(raw: string, now: Date = new Date()): ThreadRoute {
   const anchored = MONEY_RE.test(text);
   if (metric && anchored) {
     const period = resolvePeriod(text, now);
+    // A period that begins entirely in the FUTURE has no ledger facts — answering
+    // it would report a hollow $0 as if it were real (a de-facto prediction). The
+    // ledger is retrospective: decline rather than invent a zero. (An all-time or
+    // to-date period, start=null or spanning now, is fine.)
+    const todayYmd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    if (period.start && period.start > todayYmd) return { intent: "unsupported" };
     return {
       intent: "question",
       query: {

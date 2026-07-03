@@ -82,6 +82,22 @@ describe("grounding-scope guard — refuse out of scope, never invent", () => {
   it("does not force a metric when none is clearly a books question", () => {
     expect(routeMessage("how are you today", NOW).intent).toBe("unsupported");
   });
+  it("declines projection/estimate verbs even with a metric (no hollow number)", () => {
+    // "project"/"estimate" ask for a forecast, not a ledger fact — declining
+    // avoids reporting a computed figure as if the owner asked a factual question.
+    expect(routeMessage("project my income for 2027", NOW).intent).toBe("unsupported");
+    expect(routeMessage("estimate my software spend next year", NOW).intent).toBe("unsupported");
+    expect(routeMessage("how much should I spend on software?", NOW).intent).toBe("unsupported");
+  });
+  it("declines a wholly future period — no ledger facts exist to report as $0", () => {
+    // A retrospective-sounding question over a future window must NOT answer $0 as
+    // if it were real; the period starts after today, so decline.
+    expect(routeMessage("how much did I bring in in 2027?", NOW).intent).toBe("unsupported");
+    expect(routeMessage("how much did I spend in Q1 2030?", NOW).intent).toBe("unsupported");
+    // A current/elapsed period still answers.
+    expect(routeMessage("how much did I bring in this year?", NOW).intent).toBe("question");
+    expect(routeMessage("how much did I spend in Q2 2026?", NOW).intent).toBe("question");
+  });
 });
 
 describe("computeMetric — ties to the reports, to the cent", () => {

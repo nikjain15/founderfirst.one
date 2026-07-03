@@ -175,6 +175,40 @@ async function verifyCatchUpEntry() {
   else fail("Catch-up: Start did not advance to the drop-files step");
 }
 
+/** W3.5 — Receipt capture + match renders inside Review (no new top-level tab).
+ *  Non-mutating happy path: the "Add a receipt" surface + its photo/paste capture
+ *  controls + the unmatched-receipts queue render. Clicking "Paste receipt text"
+ *  reveals the paste box. Proves the capture surface is wired without uploading a
+ *  receipt (which would spend AI tokens + mutate the ledger — kept out of the gate,
+ *  same discipline as catch-up). The auto-attach + low-confidence-card paths are
+ *  covered deterministically by the Vitest flow test + the pgTAP RPC test. */
+async function verifyReceiptCapture() {
+  await page.setViewportSize(DESKTOP);
+  const capture = page.locator(".receipts .receipt-capture");
+  if (!(await capture.count().catch(() => 0))) { fail("Review: no receipt-capture surface (W3.5)"); return; }
+  ok("Receipt capture surface renders in Review (no new top-level tab)");
+  const photoBtn = page.getByRole("button", { name: "Take a photo" });
+  const pasteBtn = page.getByRole("button", { name: "Paste receipt text" });
+  if ((await photoBtn.count().catch(() => 0)) && (await pasteBtn.count().catch(() => 0))) {
+    ok("Receipt capture offers both photo and paste entry (≤2 taps)");
+  } else {
+    fail("Review: receipt capture missing a photo/paste entry");
+  }
+  await pasteBtn.first().click().catch(() => {});
+  await page.waitForTimeout(300);
+  if (await page.locator(".receipt-paste-input").count().catch(() => 0)) {
+    ok("Receipt paste flow reveals the paste box");
+  } else {
+    fail("Review: paste did not reveal the receipt text box");
+  }
+  // The short unmatched queue (resolvable in-flow) is present on the surface.
+  if (await page.locator(".receipts-queue").count().catch(() => 0)) {
+    ok("Unmatched-receipts queue renders in-flow");
+  } else {
+    fail("Review: no unmatched-receipts queue");
+  }
+}
+
 /** W3.1 — the Penny thread renders on Home and answers a grounded question. The
  *  thread is nested in Home (no new top-level tab). We assert it renders, then ask
  *  a grounded books question via a suggested prompt and confirm Penny replies with
@@ -390,6 +424,8 @@ try {
       if (s.key === "reports") await verifyReportDownload();
       // W2.1 — Catch-up mode is the guided "get me caught up" job on Connections.
       if (s.key === "connections") await verifyCatchUpEntry();
+      // W3.5 — Receipt capture + match is nested in Review (no new top-level tab).
+      if (s.key === "review") await verifyReceiptCapture();
       await page.screenshot({ path: join(ARTIFACTS, `desktop-${s.key}.png`), fullPage: true });
       await sweepWidths(s.label);                 // 320 → 1920, every ladder width
       await page.setViewportSize(MOBILE);

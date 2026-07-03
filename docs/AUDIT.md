@@ -266,6 +266,7 @@ pending) · 🔵 live-not-on-main / PR-open · 🟢 live+on-main.
 | W1.1 | Bank reconciliation (new `reconciliations` schema; match against `import_rows`) | `w1_1_reconciliation_test.sql` | ⬜ red-teamed; stress-pass pending |
 | W1.3-B | Tax mapping engine (data-driven jurisdiction × form × line, CPA-lens-gated) | `tax_mapping_engine_test.sql` | ⬜ red-teamed; stress-pass pending |
 | W1.3-C | Fixed-asset / depreciation subledger (Penny computes depreciation) | `fixed_asset_depreciation_test.sql` | ⬜ red-teamed; stress-pass pending |
+| W3.5 | Receipt capture + match (photo/text → parse → match → W3.2 tier → attach/queue; private `receipts` bucket) | `apps/app/src/ledger/receiptMatch.test.ts` + `w3_5_receipts_test.sql` + app-e2e `verifyReceiptCapture` | ⬜ red-teamed; stress-pass pending |
 
 **Coverage delta:** +12 ledger rows, all ⬜ (baseline + per-PR red-team, formal stress pass pending).
 Wave 1 **invalidates the standing "whole top-half not built yet" gap** from Program 1 — reconciliation,

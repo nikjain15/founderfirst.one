@@ -114,6 +114,9 @@ verify_jwt = false
 [functions.catch-up]
 verify_jwt = true
 
+[functions.receipts]
+verify_jwt = true
+
 [functions.plaid-webhook]
 verify_jwt = false
 

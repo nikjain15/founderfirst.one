@@ -177,12 +177,18 @@ export default function Ledger({
               // dashboard; before any accounts exist it falls through to the shared
               // Overview's setup nudge. The CPA keeps the plain accounting Overview.
               nav === "owner" && (accounts.data?.length ?? 0) > 0 ? (
-                <OwnerHome
-                  entries={entries.data ?? []} accounts={accounts.data ?? []}
-                  canWrite={canWrite} orgId={org.id}
-                  onReview={() => goto("review")}
-                  onRefresh={refresh}
-                />
+                // Owner-with-books Home is the W3.4 pulse dashboard; the W3.1 Penny
+                // thread (grounded Q&A) nests beneath it on the same Home screen —
+                // it moved off Overview when the pulse took over this path.
+                <>
+                  <OwnerHome
+                    entries={entries.data ?? []} accounts={accounts.data ?? []}
+                    canWrite={canWrite} orgId={org.id}
+                    onReview={() => goto("review")}
+                    onRefresh={refresh}
+                  />
+                  <PennyThread orgId={org.id} entries={entries.data ?? []} canWrite={canWrite} />
+                </>
               ) : (
                 <Overview
                   entries={entries.data ?? []} accounts={accounts.data ?? []}

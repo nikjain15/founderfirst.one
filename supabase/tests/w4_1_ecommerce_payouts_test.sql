@@ -109,7 +109,7 @@ select throws_ok(
        '00000000-0000-0000-0000-0000000e0001', '00000000-0000-0000-0000-0000000e00b1',
        'stripe', 'po_bad', '2026-07-03', '00000000-0000-0000-0000-0000000e0c01',
        5000, 0, 0, 0, 4999, null, null) $$,
-  'P0001', NULL, 'a payout that does not reconcile is rejected (never plugged)');
+  '23514', NULL, 'a payout that does not reconcile is rejected (never plugged)');
 
 -- ── 5. unknown provider rejected ─────────────────────────────────────────────
 select throws_ok(

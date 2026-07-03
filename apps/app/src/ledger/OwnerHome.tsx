@@ -205,7 +205,7 @@ function CatchUpStrip({ years }: { years: { year: number; done: boolean; uncateg
         {years.map((y) => (
           <li key={y.year} className={`catchup-year${y.done ? " is-done" : ""}`}>
             <span className="cu-year">{y.year}</span>
-            <span className="cu-state">{y.done ? "✓" : `${y.uncategorized} to go`}</span>
+            <span className="cu-state">{y.done ? COPY.ownerHome.catchUpDone : COPY.ownerHome.catchUpToGo(y.uncategorized)}</span>
           </li>
         ))}
       </ul>

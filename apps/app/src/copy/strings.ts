@@ -422,6 +422,14 @@ export const COPY = {
     cfEndingCash: "Cash at end of period",
     cfTiesNote: "Ties to the change in cash on your balance sheet.",
     cfDoesNotTie: "Cash flow does not tie to the balance-sheet cash change.",
+    // ── W4.4 · lender / due-diligence package (APPENDED block — additive keys) ──
+    pkg: "Lender package",
+    pkgTitle: "Lender / due-diligence package",
+    pkgBody: "One export a lender or buyer can rely on: your P&L, balance sheet, cash flow, and AR/AP aging — with a prior-period comparison and a cover sheet — assembled into a single CSV or PDF.",
+    pkgComparePrior: "Compare to the prior period",
+    pkgIncludes: "Includes P&L · balance sheet · cash flow · AR/AP aging · cover sheet",
+    pkgArAging: "Accounts receivable aging",
+    pkgApAging: "Accounts payable aging",
   },
 
   // ── Periods ────────────────────────────────────────────────────────────────

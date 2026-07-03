@@ -237,6 +237,152 @@ pgTAP suite, a lint script) so the class can't recur silently. The sweep-1
 examples: pagination (#18) → Vitest in `apps/app`; timestamp collisions →
 `unique-timestamps` CI; tenant predicate → `check:tenant`.
 
+## Program 5 — Wave 4 wave-gate audit (money-in + reporting layer, 3 Jul 2026)
+
+The Wave-4 gate (LOOP_PROMPT hard-rule #8): the 14-dimension rubric + an adversarial
+stress pass over the Wave-4 blast radius (all merged + deployed to prod), run before the
+loop ramps further. Blast radius: **W4.1** e-commerce payout splitting (provider-agnostic
+framework; Stripe/Shopify parsers; `post_ecommerce_payout` / `reverse_ecommerce_payout`
+RPCs; `ext:<provider>:payout:<id>` idempotency; reconcile-not-plug guard), **W4.2**
+cash-flow statement (GAAP indirect; `cf` report kind; ties to the BS cash delta), **W4.3**
+invoicing + AR (invoices/lines/payments; Dr AR / Cr Revenue on send, Dr Cash / Cr AR on
+pay; aging; opt-in nudges via `invoicing` edge fn + Resend), **W4.4** lender / due-diligence
+package (`pkg` report kind; statements + aging + comparatives + cover), **W4.5** rescue
+landing page (`apps/web/src/pages/rescue.astro`) — plus a merge-integration re-check of the
+shared files (`export.ts` / `Ledger.tsx` / `api.ts` / `reports.ts`) that W4.1–W4.4 all
+touched via conflict-resolved merges.
+
+**GATE VERDICT: 🟢 CLEAR — 0 P0, 0 P1.** Only three P2s found (below): a payment-input UX
+gap (server-enforced, no data risk), two different-by-design AR-aging bucket schemes shown
+to the owner (consistency), and a narrow CSV-injection edge (leading-whitespace-before-
+formula). None blocks the wave; all are polish/consistency. **The trust cluster (security /
+data-integrity) is materially clean and is the strongest-built part of the wave:** every new
+write RPC is `can_write_org_as(p_actor,…)`-gated, SECURITY DEFINER + `SET search_path=public`,
+revoked-from-public + service_role-only EXECUTE; every posting funnels through
+`post_journal_entry` with a stable `ext:`/`invoice:` idempotency key (no double-post);
+corrections go through the reversal path (append-only); `send_invoice` / `apply_invoice_payment`
+/ `void_invoice` all take `SELECT … FOR UPDATE` (LEARNINGS #15); the payout reconcile check
+*rejects* a non-tying split rather than plugging (LEARNINGS #16); the report/package feed
+paginates all rows via `useEntries` `.range()` loop (LEARNINGS #18); CSV export has a
+formula-injection neutralizer (new hardening this wave). All 5 W4 PRs (#205–#209) are
+CI-green; 61 W4 Vitest tests + the W4.1/W4.3 pgTAP suites pass.
+
+### Per-dimension summary (blast radius)
+
+| Dimension | Verdict | Notes |
+|---|---|---|
+| security (RLS/isolation/actor/SECDEF) | 🟢 pass | new tables org-scoped + RLS `nowrite`/`can_access_org`; every write RPC `can_write_org_as(p_actor,…)` + `SET search_path` + service_role-only EXECUTE; `invoice_ar_aging` (authed read) embeds `can_access_org` in its WHERE. No forged-`p_actor` surface. |
+| data_integrity (append-only/reversal/idempotency/ties) | 🟢 pass | all postings via `post_journal_entry` (balanced, period-aware); stable idempotency keys (`ext:<prov>:payout:<id>`, `invoice:send:<id>`, `invoice:pay:<payid>`) — re-import/re-send return the original, no double-post; corrections = reversal path; `FOR UPDATE` on invoice send/pay/void; overpayment rejected server-side; payout reconcile rejects non-tying split. |
+| performance (pagination) | 🟢 pass | cash-flow + package are pure functions over the fully-paginated `useEntries` (`api.ts:73-88` `.range()` loop until exhausted, hard cap raises); no `max_rows=1000` cliff (proven by `export.test.ts` 10k-row case). |
+| ia_ux / usability gate | 🟢 pass (1 P2) | invoicing nests under Connections (opt-in, OFF by default — no new top-level nav ✔); cash-flow/package are report tabs. **F3 (P2):** owner sees a 5-bucket AR aging (invoice view) and a 4-bucket AR aging (lender package) — different by design (due-date vs entry-date) but visually inconsistent. |
+| copy / voice / centralization | 🟢 pass | nudge cadence is DATA (`platform_config.invoice_nudge_cadence_days=7`, mirrored in `CONFIG_DEFAULTS`); no rate/threshold/fee-% literals in W4 code; rescue page: 0 exclamations, no competitor names, no guarantees, uses `SITE`. |
+| design_system | 🟢 pass | no inline hex / magic px in new components; rescue uses `Base` layout + tokens. |
+| responsive | 🟢 pass (static) | no fixed-px horizontal layouts in the new tabs/rescue; full width-ladder browser walk = standing gap (auth-walled app; static-only). |
+| a11y | 🟡 pass w/ note | invoicing table/pay-row use labels; full axe scan of new surfaces is the standing browser gap. |
+| reliability / observability | 🟢 pass | send posts books first, emails after (email failure never un-posts — comment + code order confirmed); aging returns a stable 5-bucket shape even when empty. |
+| tests | 🟢 pass | 61 Vitest (payouts/cashFlow/package/invoiceMath/export) + `w4_1_ecommerce_payouts_test.sql` (16) + `w4_3_invoicing_test.sql` (21) — idempotency, tie-out, reconcile-guard, overpayment, void/reversal, auth-gate, aging, config-driven nudge all covered. |
+| copy_docs / seo | 🟢 pass | rescue.astro has unique title/description via `Base`; admin/app surfaces noindex (excluded). |
+| dead_code | 🟢 pass | no shipped stubs; PayPal/Square/Amazon are `status='planned'` registry rows (not shipped UI) — intentional extensibility, not a "coming soon" destination. |
+
+### Findings (ranked, verified — `file:line` + repro)
+
+**F1 · P2 · Payment input has no client-side overpayment cap (server-enforced).**
+`apps/app/src/ledger/Invoicing.tsx:184-190`. The pay-row `<input>` passes any typed amount
+straight to `payInvoice(orgId, inv.id, minor)` with `parseMoneyToMinor(amt) ?? balance` — no
+`Math.min(minor, balance)`, no disabled-on-over-amount, no inline validation, though `balance`
+is in scope (line 154). **Repro:** open a sent invoice's pay row, type more than the
+outstanding balance, click Apply. **No data-integrity risk:** `apply_invoice_payment` rejects
+it server-side (`20260706070000_…sql:361-363`, `overpayment` `check_violation`, under
+`FOR UPDATE`) — so the books are safe; the user just gets a raw error toast instead of a
+guarded button. UX polish. **Fix:** cap/validate client-side and disable Apply when the amount
+exceeds `balance`. → regression stub REG-W4-F1 (asserts the client caps at balance).
+
+**F2 · P2 · CSV formula-injection neutralizer misses leading-whitespace-before-formula.**
+`apps/app/src/ledger/export.ts:82-85`. `neutralize()` prefixes a tab to cells whose *first
+char* is `= + - @ \t \r`, but a cell like `" =HYPERLINK(…)"` (leading space, then `=`) is not
+caught — the classic guard trims first, then checks. Account names / invoice memos are
+user-controlled. **Repro:** an account named `" =2+2"` exports un-neutralized; a spreadsheet
+that trims leading spaces on open then evaluates the formula. Low likelihood (leading-space +
+formula is unusual) + affects only a downloaded file the owner opens ⇒ P2. **Fix:** check
+`/^\s*[=+\-@]/` (or trim before the leading-char test), keeping the pure-number exemption.
+→ regression stub REG-W4-F2 (leading-space formula is neutralized).
+
+**F3 · P2 · Two divergent AR-aging bucket schemes surfaced to the same owner.**
+`apps/app/src/ledger/invoiceMath.ts:35-44` (invoice view: `current / 1-30 / 31-60 / 61-90 /
+90+`, aged by **due date**, 5 buckets — matches SQL `invoice_ar_aging`) vs.
+`apps/app/src/ledger/reports.ts:459-464` (`AGING_BUCKETS`, lender package: `Current(0–30) /
+31–60 / 61–90 / 90+`, aged by **entry date**, 4 buckets). They measure genuinely different
+things (invoice-level due-date aging vs. GL-line entry-date aging) so it is **not** a strict
+one-source-of-truth violation — but an owner comparing the invoicing screen to the lender
+package sees two AR aging tables with different bucket counts and totals for overlapping
+receivables. **Repro:** enable invoicing, send an overdue invoice, open both the invoicing AR
+aging and the W4.4 package aging → different buckets/splits. Consistency/UX ⇒ P2. **Fix:**
+either unify the two schemes or label each explicitly (due-date vs. transaction-date aging) so
+the difference is intentional and legible. → regression stub REG-W4-F3 (documents/locks the two
+schemes' boundaries so a future edit can't silently diverge further).
+
+**Advisory (P2/robustness, no stub):** `invoiceMath.ts:63` `Math.max(cadenceDays, 1)` silently
+floors a 0/negative nudge cadence to 1 day rather than surfacing a misconfiguration — defensive
+but hides a bad `platform_config` value; the mirrored fallback (`CONFIG_DEFAULTS`) must stay in
+sync with the migration seed (both currently 7 — verified).
+
+### W4.5 rescue-page + merge-integration sanity-check
+- **Rescue page** (`apps/web/src/pages/rescue.astro`): voice-clean (0 `!`, no competitor names,
+  no unsubstantiated guarantees/compliance claims), imports `SITE` (no hardcoded email/URL),
+  renders via `Base` layout with a unique title + description. No findings.
+- **Shared-file merges** (`export.ts` / `reports.ts` / `Ledger.tsx` / `api.ts`, touched by
+  W4.1–W4.4 via conflict-resolved merges): app typechecks clean, no timestamp collisions
+  (`uniq -d` empty), all 5 PRs CI-green, 61 Vitest pass — no merge-integration regression. The
+  `cf` / `pkg` export kinds and the cash-flow/package tabs wire through the same paginated
+  `useEntries`.
+
+### Coverage delta — Wave-4 ledger rows (this program)
+
+New surfaces enter the ledger. A row leaves ⬜ only via this formal adversarial pass; each
+below got the pass (finder → verifier); those with findings carry the finding id.
+
+| # | Surface | Permanent test | Status |
+|---|---|---|---|
+| W4.1 | E-commerce payout splitting (provider-agnostic; Stripe/Shopify; post/reverse RPCs) | `w4_1_ecommerce_payouts_test.sql` (16) + `apps/app/src/ecommerce/payouts.test.ts` (12) | 🟢 stress-passed; no defect |
+| W4.2 | Cash-flow statement (GAAP indirect, `cf` kind) | `apps/app/src/ledger/cashFlow.test.ts` (13) + `export.test.ts` CF tie-out | 🟢 stress-passed; no defect |
+| W4.3 | Invoicing + AR (invoices/lines/payments; aging; opt-in nudges) | `w4_3_invoicing_test.sql` (21) + `invoiceMath.test.ts` (10) | 🟢 stress-passed; **F1 / F3 (P2)** open |
+| W4.4 | Lender / due-diligence package (`pkg` kind; statements + aging + comparatives + cover) | `apps/app/src/ledger/package.test.ts` (9) | 🟢 stress-passed; no defect |
+| W4.5 | Rescue-migration landing page (`/rescue`) | (static Astro; covered by web build + voice CI) | 🟢 stress-passed; no defect |
+| — | CSV export hardening (cf/pkg CSV) | `export.test.ts` (17, incl. formula-injection) | 🟢 stress-passed; **F2 (P2)** open |
+
+**Coverage delta:** +5 new ledger rows (W4.1–W4.5). 0 P0, 0 P1, 3 P2 — each with a permanent
+regression stub (REG-W4-F1…F3) to be authored into `regression_pack` at fix time (the coverage
+ratchet). Wave 4 invalidates the standing "Wave 4 not built" gap from Program 1.
+
+### Proposed LEARNINGS additions (retro)
+1. **A server-enforced invariant still needs a client-side guard for the *user*, not the data.**
+   F1: overpayment is correctly rejected by the RPC, so the books are safe — but the UI lets the
+   user submit an impossible amount and eat a raw error. Server-safe ≠ user-safe; mirror
+   hard-boundaries (balance caps, positive-only) in the input so the user is guided, not just
+   blocked. (Complements #16: the DB is the source of truth, but the UX must reflect the same
+   boundary.)
+2. **When two views age/bucket the "same" money by different rules, label the axis or unify it.**
+   F3: due-date AR aging (invoice view) vs. entry-date AR aging (lender package) are both correct
+   and both legitimate, but an unlabelled bucket count/total mismatch reads as a bug to the owner.
+   Any two schedules of overlapping data must either share a scheme or name their axis.
+3. **A CSV formula-injection guard must trim before testing the leading char.** F2: checking only
+   the first char misses `" =…"`. Neutralize on `/^\s*[=+\-@]/`. (Graduate toward a shared
+   `csvCell` util + a test that a leading-space formula is neutralized, so every export inherits it.)
+
+### Standing gaps carried forward (NOT covered by this program)
+- **Full width-ladder browser walk** of the new invoicing / cash-flow / package tabs and the
+  rescue page across the auth wall (static responsive check only — same gap as Programs 1–4).
+- **axe / a11y browser scan** of the invoicing pay-row + report tabs (labels present statically;
+  no automated scan).
+- **Invoice email deliverability** — the `invoicing` edge fn's Resend send path + nudge dispatch
+  are not exercised end-to-end here (SECDEF/idempotency/config verified in code; live email = a
+  manual/integration check, like Wave-3's nudge path).
+- **PayPal / Square / Amazon parsers** — registered as `planned`; the RPC + framework are
+  provider-agnostic and tested via Stripe/Shopify, but the three planned parsers don't exist yet
+  (nothing to stress — carried as the extensibility backlog, not a defect).
+- **Multi-currency invoices/payouts** — the single-currency guard still applies; the moment
+  multi-currency is enabled the invoice/payout FX path is untested (standing gap from Program 1).
+
 ## Program 4 — Wave 3 wave-gate audit (owner-experience layer, 3 Jul 2026)
 
 The Wave-3 gate (LOOP_PROMPT hard-rule #8): the 14-dimension rubric + an adversarial

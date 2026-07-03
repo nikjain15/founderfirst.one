@@ -2,13 +2,22 @@
 import "@ff/design-system/tokens.css";
 import "@ff/design-system/components/reset.css";
 import "@ff/design-system/components/typography.css";
+import "../styles/fonts.css";
 import type { Page } from "@ff/content";
 import { buildJsonLd } from "../lib/seo";
 import ConsentBanner from "../components/ConsentBanner.tsx";
 import { SITE } from "../lib/site";
 
-interface Props { page: Page }
-const { page } = Astro.props;
+interface Props {
+  page: Page;
+  /** Optional above-the-fold LCP image to preload (e.g. the homepage hero). */
+  preloadImage?: string;
+  /** Responsive `imagesrcset` for the preloaded LCP image (must match the <img>). */
+  preloadImageSrcset?: string;
+  /** `imagesizes` for the preloaded LCP image (must match the <img> sizes). */
+  preloadImageSizes?: string;
+}
+const { page, preloadImage, preloadImageSrcset, preloadImageSizes } = Astro.props;
 const site = SITE.url;
 const jsonLd = buildJsonLd(page, site);
 // Default social-share image when a page doesn't set its own. Absolute URL —
@@ -35,9 +44,22 @@ const ogImage = page.seo.ogImage ?? `${site}/hero.jpg`;
     <meta name="twitter:description" content={page.seo.description} />
     <meta name="twitter:image" content={ogImage} />
     <title>{page.seo.title}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    {/* Self-hosted fonts (see src/styles/fonts.css) — preload the two families so the
+        LCP text swaps fast; no render-blocking third-party Google Fonts stylesheet. */}
+    <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin />
+    {/* Preload the above-the-fold LCP image with its responsive srcset so the browser
+        fetches the right variant on the critical path (matches the hero <img>). */}
+    {preloadImage && (
+      <link
+        rel="preload"
+        as="image"
+        href={preloadImage}
+        imagesrcset={preloadImageSrcset}
+        imagesizes={preloadImageSizes}
+        fetchpriority="high"
+      />
+    )}
     <script type="application/ld+json" set:html={jsonLd} is:inline />
     <!-- Penny chat bubble — Shadow-DOM widget, see site-bubble/README.md -->
     <script defer src="https://bubble.founderfirst.one/bubble.js" is:inline></script>

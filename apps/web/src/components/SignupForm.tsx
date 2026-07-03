@@ -1,6 +1,10 @@
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-import { track } from "../lib/analytics";
+
+// @supabase/supabase-js and posthog-js (via ../lib/analytics) are the two heaviest
+// deps on this island. They're only needed on submit — a user interaction, never at
+// first paint — so we dynamic-import them inside the handler. This keeps the hero's
+// hydration bundle tiny and off the LCP/TBT critical path (the ~100K Supabase +
+// ~180K PostHog chunks no longer load eagerly with the above-the-fold form).
 
 /**
  * Waitlist signup — a React island (Astro renders it interactive). Calls the
@@ -25,6 +29,7 @@ export default function SignupForm({ source, ctaLabel }: { source: string; ctaLa
       const ref = new URLSearchParams(window.location.search).get("ref");
       let slug: string | null = null;
       if (URL && ANON) {
+        const { createClient } = await import("@supabase/supabase-js");
         const db = createClient(URL, ANON);
         const { data, error } = await db.rpc("signup_to_waitlist", {
           p_email: email, p_source: source, p_referred_by: ref, p_slug_seed: null,
@@ -42,7 +47,9 @@ export default function SignupForm({ source, ctaLabel }: { source: string; ctaLa
         }
       }
       // Conversion event for the learning loop — PostHog auto-attaches any active
-      // experiment flag, so this attributes the signup to its variant.
+      // experiment flag, so this attributes the signup to its variant. Imported
+      // lazily so posthog-js stays off the first-paint path.
+      const { track } = await import("../lib/analytics");
       track("signup", { source });
       setState("done");
       setMsg("You're in! Taking you to your welcome page…");

@@ -1,0 +1,37 @@
+/* Self-hosted, latin-subset variable fonts — served from apps/web/public/fonts/.
+ *
+ * Replaces the render-blocking Google Fonts <link> in the <head> (that cross-origin
+ * CSS + font request chain was on the LCP critical path). One woff2 per family covers
+ * the full weight range (variable fonts), so Inter (400–700) and Fraunces (400–700)
+ * cost two same-origin, preloadable requests instead of a third-party stylesheet.
+ *
+ * `font-display: swap` — text paints immediately in the fallback (see the token stacks
+ * in packages/design-system/tokens.css: --font-sans / --font-display) and swaps to the
+ * webfont when ready, so the LCP text never waits on a font download.
+ *
+ * These declare the SAME families the design-system tokens reference; this file only
+ * wires the local files to those names. Do not hardcode a family name elsewhere — use
+ * var(--font-sans) / var(--font-display) from tokens.css.
+ */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 800; /* variable range */
+  font-display: swap;
+  src: url("/fonts/inter-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191,
+    U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 400 700; /* variable range */
+  font-display: swap;
+  src: url("/fonts/fraunces-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191,
+    U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}

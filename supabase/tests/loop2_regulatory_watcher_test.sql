@@ -84,7 +84,8 @@ select throws_ok($$
     'LOOP2TEST-DOR','sole_prop',2025,'annual_return', date '2027-01-01',
     jsonb_build_object('kind','annual_return','label','forged','due_month',1,'due_day',1),
     'https://evil.example','regulatory_watcher')
-$$, '42501', 'authenticated role CANNOT call supersede_filing_obligation (service_role only)');
+$$, '42501', 'permission denied for function supersede_filing_obligation',
+   'authenticated role CANNOT call supersede_filing_obligation (service_role only)');
 reset role;
 
 select * from finish();

@@ -8,15 +8,16 @@
  * computeMetric → ties to the cent), and the penny-thread fn only phrases it in
  * Penny's live 'app' voice. An out-of-scope question is declined, never invented.
  *
- * The thread is where the week's ≤5 asks surface (honest budget line), not a
- * separate inbox. All copy is COPY.thread (CENTRAL-1 grep gate); Penny's answer
- * prose is the live persona.
+ * Owner-INITIATED questions here are NOT interruptions (Nik, 3 Jul), so they do
+ * NOT consume the ≤5/week interruption budget — that budget governs Penny's own
+ * low-confidence asks (surfaced in Categorize), so the thread shows a plain,
+ * non-numeric hint, not a counter it doesn't govern (Wave-3 audit F2). All copy
+ * is COPY.thread (CENTRAL-1 grep gate); Penny's answer prose is the live persona.
  */
 import { useRef, useState } from "react";
 import type { JournalEntry } from "./types";
-import { askPennyThread, usePennyActivity, useAskBudget, type ThreadFact } from "./api";
+import { askPennyThread, usePennyActivity, type ThreadFact } from "./api";
 import { computeMetric, routeMessage } from "./thread";
-import { useBehaviorConfig, CONFIG_DEFAULTS } from "../copy";
 import { COPY } from "../copy";
 
 type Turn = { id: number; who: "you" | "penny"; text: string; pending?: boolean };
@@ -29,10 +30,6 @@ export default function PennyThread({
   orgId: string; entries: JournalEntry[]; canWrite: boolean;
 }) {
   const activity = usePennyActivity(orgId);
-  const budgetQ = useAskBudget(orgId);
-  const cfg = useBehaviorConfig(orgId).data ?? CONFIG_DEFAULTS;
-  const spent = budgetQ.data?.spent ?? 0;
-  const budget = cfg.asks_per_week;
 
   const [turns, setTurns] = useState<Turn[]>([
     { id: 0, who: "penny", text: COPY.thread.greeting },
@@ -105,9 +102,7 @@ export default function PennyThread({
           <span className="p-mark p-mark-sm" aria-hidden="true">P</span> {COPY.thread.title}
         </h2>
         <p className="muted sm">{COPY.thread.lead}</p>
-        <p className="thread-budget muted sm">
-          {spent > 0 ? COPY.thread.budgetSpent(spent, budget) : COPY.thread.budgetClear(budget)}
-        </p>
+        <p className="thread-budget muted sm">{COPY.thread.askHint}</p>
       </div>
 
       <div className="thread-turns" role="log" aria-live="polite">

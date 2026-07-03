@@ -152,8 +152,9 @@ touches: supabase/migrations + seeds; consumers land in their own cards
 decision-needed: none (design follows tax-research keys; Nik reviews the seed format in the PR)
 
 ## LOOP-2 · Regulatory-watcher routine (law changes → reviewed seed PRs)
-status: unclaimed
-blocked-by: CENTRAL-2 (needs the effective-dated tables to write diffs against)
+status: **PR open** · branch loop/loop-2-regulatory-watcher
+blocked-by: ~~CENTRAL-2~~ RESOLVED — effective-dated filing_obligations +
+  supersede_filing_obligation() / filing_obligations_for() are on main
 goal: a tax-law/deadline change becomes ONE reviewed seed PR that updates every app on
   merge — never a code sweep, never hardcoded (Roadmap principle 3c).
 workflow: Nik/CPA · "a law changed" · watcher PR arrives w/ citation + affected-consumer
@@ -163,10 +164,19 @@ spec: scheduled loop routine (weekly; daily Jan–Apr) with a source list (IRS n
   effective-dated superseding seed rows + citation + consumer-impact list as a PR flagged
   `decision-needed`; NEVER self-merge; false-positive-safe (no detection = no PR, log only).
 acceptance:
-  - [ ] Replay test: feeding it the 2026 OBBBA 1099 change produces the correct seed-diff PR
-  - [ ] PR template carries citation, effective dates, affected consumers
-  - [ ] Cannot merge without human approval (branch protection / decision-needed flow)
-decision-needed: none to build; every PR it produces IS a decision for Nik
+  - [x] Replay test: feeding it the 2026 OBBBA 1099 change produces the correct seed-diff PR
+    (scripts/regulatory-watcher/replay-test.ts · `pnpm check:reg-watcher` — 22 assertions green)
+  - [x] PR template carries citation, effective dates, affected consumers (pr.ts prBody() +
+    the new "Law change" section in .github/PULL_REQUEST_TEMPLATE.md)
+  - [x] Cannot merge without human approval (watcher opens a DRAFT PR labelled
+    `decision-needed`, never self-merges; supersede is service_role-only — pgTAP proves it)
+build: scripts/regulatory-watcher/ (sources.json registry · detect.ts pure core · fetch.ts
+  probe+inject · pr.ts body · run.ts CLI) + .github/workflows/regulatory-watcher.yml
+  (weekly + daily Jan–Apr cron) + loop2_regulatory_watcher_test.sql + AUDIT ledger row.
+decision-needed: none to build; every PR it produces IS a decision for Nik. Follow-up
+  decision-needed for Nik: turn on automated free-text/LLM extraction (today the routine
+  probes sources + accepts human/agent-confirmed changes via REG_WATCHER_SIGNALS — safest
+  default; auto-extraction adds an inference dep + a false-positive budget, Nik's call).
 
 ## W1.3-A · Tax mapping RESEARCH (report + architecture spec — NO build)
 status: **✅ SIGNED OFF (Nik, 3 Jul)** — all 8 questions resolved (see the doc's "Decisions"

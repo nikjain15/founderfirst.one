@@ -1,0 +1,54 @@
+{
+  "_meta": {
+    "purpose": "LOOP-2 watched-source registry (DATA, not code — Roadmap 3c step 3). The regulatory watcher polls these official + trade sources on cadence; adding a source or a jurisdiction is a row edit, never a code change. `governs` scopes each source to the obligation_keys it can legitimately speak to — a page can never produce a diff for an obligation it does not govern (false-positive guard).",
+    "cadence": "weekly by default; seasonal_daily runs additionally each day 1 Jan – 15 Apr (filing season).",
+    "extend": "US-FED first; states fill demand-first as pure rows (jurisdiction_code US-CA, US-NY, ...)."
+  },
+  "rows": [
+    {
+      "id": "irs_newsroom",
+      "label": "IRS Newsroom (news releases)",
+      "url": "https://www.irs.gov/newsroom",
+      "kind": "irs_newsroom",
+      "jurisdiction_code": "US-FED",
+      "governs": ["1099_nec_issue", "annual_return", "extension", "q1_estimate", "q2_estimate", "q3_estimate", "q4_estimate"],
+      "cadence": "weekly"
+    },
+    {
+      "id": "irs_1099_nec_instructions",
+      "label": "IRS Form 1099-NEC instructions (revision page)",
+      "url": "https://www.irs.gov/forms-pubs/about-form-1099-nec",
+      "kind": "form_instructions",
+      "jurisdiction_code": "US-FED",
+      "governs": ["1099_nec_issue"],
+      "cadence": "weekly"
+    },
+    {
+      "id": "irs_estimated_tax",
+      "label": "IRS Form 1040-ES instructions (estimated-tax due dates)",
+      "url": "https://www.irs.gov/forms-pubs/about-form-1040-es",
+      "kind": "form_instructions",
+      "jurisdiction_code": "US-FED",
+      "governs": ["q1_estimate", "q2_estimate", "q3_estimate", "q4_estimate"],
+      "cadence": "seasonal_daily"
+    },
+    {
+      "id": "irs_filing_season",
+      "label": "IRS filing-season deadline announcements",
+      "url": "https://www.irs.gov/filing",
+      "kind": "irs_newsroom",
+      "jurisdiction_code": "US-FED",
+      "governs": ["annual_return", "extension"],
+      "cadence": "seasonal_daily"
+    },
+    {
+      "id": "trade_press_tax",
+      "label": "Trade press (Journal of Accountancy / Avalara / Tax Foundation) — early signal, always corroborate with the primary IRS source before merge",
+      "url": "https://www.journalofaccountancy.com/topics/tax.html",
+      "kind": "trade_press",
+      "jurisdiction_code": "US-FED",
+      "governs": ["1099_nec_issue", "annual_return", "extension"],
+      "cadence": "weekly"
+    }
+  ]
+}

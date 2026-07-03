@@ -12,7 +12,12 @@ const page = await getHomepage();
 const sections = [...page.sections].sort((a, b) => a.position - b.position);
 const experiments = await getRunningExperiments();
 ---
-<Base page={page}>
+<Base
+  page={page}
+  preloadImage="/hero-800.webp"
+  preloadImageSrcset="/hero-800.webp 800w, /hero-1600.webp 1600w"
+  preloadImageSizes="(max-width: 1000px) 100vw, 1000px"
+>
   <Nav />
   {sections.map((section) => <Section section={section} experiment={experiments[section.type]} />)}
   <Footer />

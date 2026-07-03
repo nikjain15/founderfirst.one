@@ -1,8 +1,40 @@
 {
-  "_meta": { "table": "tax_jurisdictions", "primary_key": "code" },
+  "_meta": {
+    "table": "tax_jurisdictions",
+    "primary_key": "code",
+    "params_note": "params is YEAR-KEYED (\"2025\": {…}). It is the designed home for jurisdiction-scoped, LAW-DERIVED estimated-tax RATE params (W2.4): self_employment (SECA), income_tax (blended-effective ESTIMATE rate), safe_harbor (IRC §6654), set_aside guidance, and corporate (flat rate). Every year block carries a citation. A rate change or a new year is a seed-file edit — never an inline constant in app code (centralization gate; Roadmap 3c). State rows carry only the state-specific blocks (income_tax + safe_harbor); the app folds them on top of federal. Amounts are in minor units (cents)."
+  },
   "rows": [
-    { "code": "US-FED", "name": "United States — Federal (IRS)", "country_code": "US", "currency": "USD", "parent_code": null, "sort_order": 10 },
-    { "code": "US-CA", "name": "California — Franchise Tax Board", "country_code": "US", "currency": "USD", "parent_code": "US-FED", "sort_order": 20 },
+    {
+      "code": "US-FED", "name": "United States — Federal (IRS)", "country_code": "US", "currency": "USD", "parent_code": null, "sort_order": 10,
+      "params": {
+        "2025": {
+          "citation": "https://www.irs.gov/forms-pubs/about-form-1040-es",
+          "self_employment": {
+            "net_earnings_factor": 0.9235,
+            "rate": 0.153,
+            "ss_wage_base_minor": 17610000,
+            "ss_rate": 0.124,
+            "medicare_rate": 0.029,
+            "deduction_factor": 0.5
+          },
+          "income_tax": { "effective_rate": 0.22, "note": "blended-effective estimate, not a bracket calculation" },
+          "safe_harbor": { "current_year_pct": 0.90, "prior_year_pct": 1.00, "prior_year_pct_high_agi": 1.10, "high_agi_threshold_minor": 15000000 },
+          "set_aside": { "default_pct": 0.30 },
+          "corporate": { "effective_rate": 0.21, "safe_harbor_current_year_pct": 1.00, "no_self_employment": true }
+        }
+      }
+    },
+    {
+      "code": "US-CA", "name": "California — Franchise Tax Board", "country_code": "US", "currency": "USD", "parent_code": "US-FED", "sort_order": 20,
+      "params": {
+        "2025": {
+          "citation": "https://www.ftb.ca.gov/pay/estimated-tax-payments.html",
+          "income_tax": { "effective_rate": 0.06, "note": "blended-effective CA estimate, added on top of federal" },
+          "safe_harbor": { "current_year_pct": 0.90, "prior_year_pct": 1.00, "prior_year_pct_high_agi": 1.10, "high_agi_threshold_minor": 15000000 }
+        }
+      }
+    },
     { "code": "CA-FED", "name": "Canada — Revenue Agency (CRA)", "country_code": "CA", "currency": "CAD", "parent_code": null, "sort_order": 30 }
   ]
 }

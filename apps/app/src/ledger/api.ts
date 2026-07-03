@@ -8,6 +8,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getClient } from "../lib/supabase";
 import type { AccountType, AccountingPeriod, JournalEntry, LedgerAccount } from "./types";
+import type { TaxBasis } from "./estimatedTax";
 
 // ── reads ───────────────────────────────────────────────────────────────────
 export function useAccounts(orgId: string | undefined) {
@@ -776,6 +777,39 @@ export function useUpcomingDeadlines(orgId: string | undefined, horizonDays = 90
       });
       if (error) throw error;
       return (data ?? []) as FilingDeadline[];
+    },
+  });
+}
+
+// ── estimated quarterly tax (W2.4) ────────────────────────────────────────────
+// The rate params + org tax profile come from the kernel via the grounded
+// estimated_tax_basis RPC (tax_jurisdictions.params, year-keyed, LAW-DERIVED). The
+// estimate itself is computed in the app (estimatedTax.ts) from the same paginated
+// ledger the Reports tab renders — no rate is ever hardcoded in TS.
+
+/** The tax basis (entity + jurisdiction + resolved year params) for an org. */
+export function useEstimatedTaxBasis(orgId: string | undefined, taxYear: number) {
+  return useQuery({
+    queryKey: ["estimated-tax-basis", orgId, taxYear],
+    enabled: Boolean(orgId),
+    staleTime: 60_000,
+    queryFn: async (): Promise<TaxBasis | null> => {
+      const sb = getClient();
+      const { data, error } = await sb.rpc("estimated_tax_basis", {
+        p_org_id: orgId,
+        p_tax_year: taxYear,
+      });
+      if (error) throw error;
+      const row = (data ?? [])[0] as
+        | { entity_type: string | null; jurisdiction_code: string; currency: string; params: unknown }
+        | undefined;
+      if (!row) return null;
+      return {
+        entity_type: row.entity_type,
+        jurisdiction_code: row.jurisdiction_code,
+        currency: row.currency,
+        params: (row.params ?? {}) as TaxBasis["params"],
+      };
     },
   });
 }

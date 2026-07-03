@@ -1110,3 +1110,116 @@ export const tagEntryVendor = (
 
 export const untagEntryVendor = (org_id: string, entry_id: string) =>
   invoke("nec-tracking", { op: "untag_entry", org_id, entry_id });
+
+// ── Invoicing + AR (W4.3) ─────────────────────────────────────────────────────
+// Opt-in, off by default. Reads go direct under RLS (can_access_org); every write
+// funnels through the `invoicing` edge fn (service_role RPCs), which posts the
+// AR/revenue/cash ledger entries and — on send/nudge — emails via the shared
+// email infra. The nudge cadence is DATA (platform_config), read via
+// useBehaviorConfig, never hardcoded here.
+export type InvoiceStatus = "draft" | "sent" | "partial" | "paid" | "void";
+
+export interface InvoiceLineInput {
+  description: string;
+  quantity_milli?: number;    // qty × 1000 (3dp); defaults to 1000 (= 1)
+  unit_price_minor: number;
+}
+export interface Invoice {
+  id: string;
+  number: string;
+  status: InvoiceStatus;
+  customer_name: string;
+  customer_email: string | null;
+  issue_date: string;
+  due_date: string;
+  currency: string;
+  memo: string | null;
+  total_minor: number;
+  amount_paid_minor: number;
+  sent_at: string | null;
+  last_nudge_at: string | null;
+}
+export interface InvoicingSettings { enabled: boolean; nudges_enabled: boolean; }
+export interface ArAgingBucket { bucket: string; invoice_count: number; balance_minor: number; }
+
+/** The org's invoicing opt-in flags (defaults off when no row exists). */
+export function useInvoicingSettings(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["invoicing-settings", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<InvoicingSettings> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("org_invoicing_settings").select("enabled, nudges_enabled")
+        .eq("org_id", orgId!).maybeSingle();
+      if (error) throw error;
+      return { enabled: Boolean(data?.enabled), nudges_enabled: Boolean(data?.nudges_enabled) };
+    },
+  });
+}
+
+/** Every invoice for the org, newest first. */
+export function useInvoices(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["invoices", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<Invoice[]> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("invoices")
+        .select("id, number, status, customer_name, customer_email, issue_date, due_date, currency, memo, total_minor, amount_paid_minor, sent_at, last_nudge_at")
+        .eq("org_id", orgId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Invoice[];
+    },
+  });
+}
+
+/** AR aging buckets (0-30 / 31-60 / 61-90 / 90+) over open balances. */
+export function useArAging(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["ar-aging", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<ArAgingBucket[]> => {
+      const sb = getClient();
+      const { data, error } = await sb.rpc("invoice_ar_aging", { p_org: orgId });
+      if (error) throw error;
+      return (data ?? []) as ArAgingBucket[];
+    },
+  });
+}
+
+export function useInvoicingRefresh(orgId: string | undefined) {
+  const qc = useQueryClient();
+  return () => {
+    for (const key of ["invoices", "ar-aging", "invoicing-settings", "ledger-entries"]) {
+      void qc.invalidateQueries({ queryKey: [key, orgId] });
+    }
+  };
+}
+
+export const setInvoicingSettings = (org_id: string, patch: Partial<InvoicingSettings>) =>
+  invoke<{ settings: InvoicingSettings }>("invoicing", { op: "settings", org_id, ...patch });
+
+export const upsertInvoice = (input: {
+  org_id: string; invoice_id?: string | null;
+  customer_name: string; customer_email?: string | null;
+  due_date?: string | null; issue_date?: string | null;
+  currency?: string | null; memo?: string | null;
+  revenue_account_id?: string | null; lines: InvoiceLineInput[];
+}) => invoke<{ invoice: Invoice }>("invoicing", { op: "upsert", ...input });
+
+export const sendInvoice = (org_id: string, invoice_id: string) =>
+  invoke<{ invoice: Invoice; emailed: boolean }>("invoicing", { op: "send", org_id, invoice_id });
+
+export const payInvoice = (
+  org_id: string, invoice_id: string, amount_minor: number, method?: string, paid_date?: string,
+) => invoke<{ invoice: Invoice }>("invoicing", { op: "pay", org_id, invoice_id, amount_minor, method, paid_date });
+
+export const voidInvoice = (org_id: string, invoice_id: string, memo?: string) =>
+  invoke<{ invoice: Invoice }>("invoicing", { op: "void", org_id, invoice_id, memo });
+
+/** Send AR reminders to overdue opt-in invoices at the config cadence. */
+export const runInvoiceNudges = (org_id: string) =>
+  invoke<{ nudged: number; cadence: number }>("invoicing", { op: "nudge", org_id });

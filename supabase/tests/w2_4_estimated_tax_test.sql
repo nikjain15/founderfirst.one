@@ -26,9 +26,15 @@ insert into memberships (user_id, org_id, role, status) values
   ('00000000-0000-0000-0000-0000000e4001', '00000000-0000-0000-0000-0000000e40b2', 'owner', 'active');
 
 -- Fed Co is a sole-prop in the federal jurisdiction; Cal Co is a sole-prop in CA.
+-- A trigger auto-creates an org_accounting_settings row on org insert, so upsert
+-- onto the existing row rather than double-inserting (would violate the PK).
 insert into org_accounting_settings (org_id, home_currency, entity_type, jurisdiction_code) values
   ('00000000-0000-0000-0000-0000000e40b1', 'USD', 'sole_prop', 'US-FED'),
-  ('00000000-0000-0000-0000-0000000e40b2', 'USD', 'sole_prop', 'US-CA');
+  ('00000000-0000-0000-0000-0000000e40b2', 'USD', 'sole_prop', 'US-CA')
+on conflict (org_id) do update set
+  home_currency     = excluded.home_currency,
+  entity_type       = excluded.entity_type,
+  jurisdiction_code = excluded.jurisdiction_code;
 
 -- ── 1. params seeded on tax_jurisdictions (year-keyed, cited) ─────────────────
 select ok(

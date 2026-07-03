@@ -1,6 +1,11 @@
 /**
  * W2.4 estimated-tax derivations.
  *
+ * kernel-ok: this test exercises the per-tax-regime computation branches, so it
+ * necessarily names the specific entity keys (sole_prop / partnership / s_corp /
+ * c_corp / nonprofit) whose estimate math differs. It is not an inlined display
+ * list — it verifies the regime-specific logic in estimatedTax.ts.
+ *
  * Proves the acceptance list:
  *  1. The estimate is GROUNDED on the P&L net income — feeding the same entries
  *     through profitAndLoss and through estimateForYear ties to the cent.

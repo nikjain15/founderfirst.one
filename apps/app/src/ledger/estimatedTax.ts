@@ -72,6 +72,10 @@ export interface TaxBasis {
 // nonprofit has no estimated income tax. S-corp profit is NOT SE-taxable (owners
 // take reasonable wages via payroll, outside this estimate) — so it uses the
 // income-tax-only path, same as a shareholder would for the pass-through.
+// kernel-ok: tax computation branches on entity tax-regime semantics, not a data
+// list. The estimate math is fundamentally different per regime (SE tax on
+// pass-through profit vs. the flat corporate path vs. no estimate at all); these
+// sets encode that computation, not a UI/display enumeration of entity types.
 const SE_ENTITIES = new Set(["sole_prop", "partnership"]);
 const CORPORATE_ENTITIES = new Set(["c_corp"]);
 const NO_ESTIMATE_ENTITIES = new Set(["nonprofit"]);

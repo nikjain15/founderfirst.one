@@ -36,9 +36,15 @@
 -- by an object RLS policy that resolves the owning org from the object path
 -- (`<org_id>/<receipt_id>.<ext>`) and checks can_access_org. The edge fn uploads
 -- with the service role (bypasses RLS) and hands the app a short-lived signed URL.
-insert into storage.buckets (id, name, public)
-values ('receipts', 'receipts', false)
-on conflict (id) do nothing;
+-- Bound the asset at the bucket level too (defense-in-depth with the edge fn):
+-- 10 MB max, raster image types only — SVG is excluded (it can carry script and
+-- would execute when rendered from a signed URL).
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('receipts', 'receipts', false, 10485760,
+        array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'])
+on conflict (id) do update
+  set file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
 
 -- Path convention: the first path segment is the org id. can_access_org on that
 -- segment gates both read and (defensive) direct writes. Service-role writes in

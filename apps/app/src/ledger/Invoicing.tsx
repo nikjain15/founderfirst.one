@@ -176,7 +176,13 @@ function InvoiceRow({
           )}
         </td>
       </tr>
-      {paying && (
+      {paying && (() => {
+        // Client-side cap: the server RPC rejects over-balance payments, but give
+        // immediate feedback here. Entered amount is clamped to the remaining
+        // balance on Apply; a note shows when the entry exceeds it.
+        const entered = parseMoneyToMinor(amt);
+        const overpaying = entered != null && entered > balance;
+        return (
         <tr className="inv-pay-row">
           <td colSpan={7}>
             <div className="inv-pay">
@@ -186,14 +192,19 @@ function InvoiceRow({
               </label>
               <button className="primary sm" disabled={busy}
                 onClick={() => {
-                  const minor = parseMoneyToMinor(amt) ?? balance;
+                  // Clamp to the balance so we never post an overpayment.
+                  const minor = Math.min(parseMoneyToMinor(amt) ?? balance, balance);
                   run(() => payInvoice(orgId, inv.id, minor)).then(() => { setPaying(false); setAmt(""); });
                 }}>{I.applyPayment}</button>
               <button className="ghost sm" onClick={() => setPaying(false)}>{I.cancel}</button>
             </div>
+            {overpaying && (
+              <p className="inv-pay-note muted">{I.overpayment(formatMoney(balance, inv.currency))}</p>
+            )}
           </td>
         </tr>
-      )}
+        );
+      })()}
     </>
   );
 }

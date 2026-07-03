@@ -3,11 +3,12 @@
 -- links it to a ledger entry + writes ledger_audit, the "one live receipt per
 -- entry" unique index holds, autoattach_receipt records a penny_activity feed row
 -- (reusing the W3.2 pipeline with the new 'receipt_matched' kind), detach unlinks
--- without touching the ledger, dismiss discards, and the readers are RLS-scoped.
--- Everything rolls back.
+-- without touching the ledger, and dismiss discards. Readers are can_access_org-
+-- gated (JWT context, not exercised here); we assert the underlying table state,
+-- as the W3.2 test does for penny_activity. Everything rolls back.
 
 begin;
-select plan(15);
+select plan(16);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -51,10 +52,13 @@ select is(
       and action = 'receipt.capture' and target_type = 'receipt'),
   1, 'record_receipt writes a receipt.capture audit row');
 
--- appears in the unmatched queue reader.
+-- appears in the unmatched queue (the reader is can_access_org-gated, which needs
+-- a JWT context pgTAP doesn't set; assert the underlying state directly, as the
+-- W3.2 test does for penny_activity).
 select is(
-  (select count(*)::int from list_unmatched_receipts('00000000-0000-0000-0000-0000000000f3', 50)),
-  1, 'the unmatched receipt shows in list_unmatched_receipts');
+  (select count(*)::int from receipts
+    where org_id = '00000000-0000-0000-0000-0000000000f3' and status = 'unmatched'),
+  1, 'the captured receipt is in the unmatched state');
 
 -- ── attach_receipt: links to the entry + audit-logs ──────────────────────────
 create temp table _a as
@@ -70,13 +74,16 @@ select is(
       and action = 'receipt.attach' and target_type = 'receipt'),
   1, 'attach_receipt writes a receipt.attach audit row');
 
--- visible ON the transaction (the row indicator reader).
+-- visible ON the transaction (the row indicator's underlying state).
 select is(
-  (select count(*)::int from receipt_for_entry('00000000-0000-0000-0000-0000000000f3', (select id from _e1))),
-  1, 'the receipt is visible on its transaction via receipt_for_entry');
+  (select count(*)::int from receipts
+    where org_id = '00000000-0000-0000-0000-0000000000f3'
+      and entry_id = (select id from _e1) and status = 'attached'),
+  1, 'the receipt is linked to its transaction (visible on the row)');
 select is(
-  (select count(*)::int from list_unmatched_receipts('00000000-0000-0000-0000-0000000000f3', 50)),
-  0, 'an attached receipt leaves the unmatched queue');
+  (select count(*)::int from receipts
+    where org_id = '00000000-0000-0000-0000-0000000000f3' and status = 'unmatched'),
+  0, 'an attached receipt leaves the unmatched state');
 
 -- ── idempotent re-attach to the SAME entry is a no-op ────────────────────────
 select lives_ok($$
@@ -103,9 +110,9 @@ select * from autoattach_receipt(
   (select id from _r2), (select id from _e2), 'exact', 0.92, 'Filed your $45.99 receipt from Staples.');
 select is((select kind from _fa), 'receipt_matched', 'auto-attach records a receipt_matched feed row');
 select is(
-  (select count(*)::int from list_penny_activity('00000000-0000-0000-0000-0000000000f3', 50)
-    where kind = 'receipt_matched'),
-  1, 'the receipt attach shows in the Penny-did-this feed');
+  (select count(*)::int from penny_activity
+    where org_id = '00000000-0000-0000-0000-0000000000f3' and kind = 'receipt_matched'),
+  1, 'the receipt attach is recorded in the Penny-did-this feed');
 
 -- ── detach unlinks WITHOUT touching the ledger entry ─────────────────────────
 create temp table _tb_before as

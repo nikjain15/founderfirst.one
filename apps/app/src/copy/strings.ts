@@ -548,11 +548,13 @@ export const COPY = {
     plaid: "your bank",
   },
 
-  // ── Payout splitting (W4.1) — the "your Stripe/Shopify deposit is really sales
-  //    minus fees minus refunds" upload. Owner-facing, no accounting jargon: talk
-  //    about a deposit and where the money went, never "debit/credit/journal". ──
+  // ── Payout splitting (W4.1 + W4.1-B) — the "your Stripe / Shopify / PayPal /
+  //    Square / Amazon deposit is really sales minus fees minus refunds" upload.
+  //    Owner-facing, no accounting jargon: talk about a deposit and where the
+  //    money went, never "debit/credit/journal". Provider names come from the
+  //    connector registry, never this copy (centralization). ──
   payouts: {
-    sectionTitle: "Split a Stripe or Shopify payout",
+    sectionTitle: "Split a payout from where you sell",
     lead:
       "A payout lands in your bank as one deposit, but it's really your sales minus fees and refunds. Upload the payout report and Penny records each part correctly.",
     disabled: "You have read-only access — importing payouts is disabled.",
@@ -561,8 +563,9 @@ export const COPY = {
     comingSoon: "coming soon",
     // step 2 — upload
     uploadFor: (name: string) => `Upload your ${name} payout report`,
-    uploadHint: "Export the payout (or balance) report as CSV and drop it in.",
-    chooseFile: "Choose a CSV file…",
+    uploadHint:
+      "Export the payout, settlement, or balance report from your provider's dashboard and drop it in — CSV and tab-separated files both work.",
+    chooseFile: "Choose a report file…",
     fileSummary: (rows: number, filename: string) => `${rows} rows · ${filename}`,
     readFileError: "Couldn't read that file.",
     parseError: (msg: string) => `We couldn't read that report: ${msg}`,

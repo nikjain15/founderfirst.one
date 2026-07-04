@@ -282,8 +282,9 @@ function Connections({
           <p className="muted">{COPY.connections.importDisabled}</p>
         )}
       </section>
-      {/* Split a payout (W4.1) — a Stripe/Shopify deposit is really sales − fees −
-          refunds; this splits it correctly. Nested here, not a new top-level tab. */}
+      {/* Split a payout (W4.1 + W4.1-B) — a Stripe / Shopify / PayPal / Square /
+          Amazon deposit is really sales − fees − refunds; this splits it
+          correctly. Nested here, not a new top-level tab. */}
       <section className="connections-block">
         <h2 className="section-h">{COPY.payouts.sectionTitle}</h2>
         <PayoutUpload orgId={orgId} canWrite={canWrite} accounts={accounts} />

@@ -39,7 +39,10 @@ insert into ledger_accounts (id, org_id, code, name, type) values
 -- ── connector-registry rows are seeded by the migration ──────────────────────
 select ok(exists(select 1 from connectors where key = 'stripe'  and category = 'commerce'), 'stripe connector registered');
 select ok(exists(select 1 from connectors where key = 'shopify' and category = 'commerce'), 'shopify connector registered');
-select is((select status from connectors where key = 'paypal'), 'planned', 'paypal registered as planned');
+-- W4.1-B (20260706120000): paypal/square/amazon flipped planned → available once
+-- their report parsers shipped; the tile contract is guarded app-side by
+-- regression.payout-providers.test.ts (available ⇒ parser exists).
+select is((select status from connectors where key = 'paypal'), 'available', 'paypal registered as available (W4.1-B)');
 
 -- ── 1. post a Stripe payout: gross 8000, fees 292, refunds 1000 → net 6708 ────
 create temp table _p1 as

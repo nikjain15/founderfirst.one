@@ -10,15 +10,18 @@
  * normalized component buckets the ledger RPC (post_ecommerce_payout) posts.
  *
  * ── EXTENSIBILITY (Nik 3 Jul: integrate the MAJOR providers) ─────────────────
- * Adding PayPal / Square / Amazon = a connector-registry row (in the migration)
- * + one `PayoutParser` here. The split MATH is provider-agnostic and lives in
+ * All five majors ship here: Stripe · Shopify (W4.1) + PayPal · Square · Amazon
+ * (W4.1-B) — each one is a connector-registry seed row + one parser + one
+ * `PAYOUT_PARSERS` entry. The split MATH is provider-agnostic and lives in
  * `componentsFromRows`; each parser only knows how to CLASSIFY its own report
  * rows into the shared `PayoutRowKind`. No rewrite — a new provider is data + a
  * classifier, never a change to the posting path.
  *
- * File/report import is the fallback + starting point (no OAuth lead time): the
- * Stripe balance-transactions report and the Shopify payout report are parsed
- * from their exported CSV rows. An API path can feed the SAME `PayoutRow[]` later.
+ * File/report import is the fallback + starting point (no OAuth lead time):
+ * Stripe balance-transactions CSV, Shopify payout CSV, PayPal transaction CSV,
+ * Square payout-details CSV, and Amazon's tab-delimited V2 flat-file settlement
+ * report. An API sync path can feed the SAME `PayoutRow[]` later (gated on
+ * provider credentials Nik is registering — explicit follow-up, not this card).
  */
 
 /** Registered commerce providers (mirror the connector-registry `key`s). */
@@ -231,21 +234,196 @@ export function shopifyRowsFrom(rows: ShopifyPayoutRow[]): PayoutRow[] {
   return out;
 }
 
-/** Registry of report parsers, keyed by provider. Adding a provider = one entry. */
-export const PAYOUT_PARSERS: Partial<Record<PayoutProvider, { rowsFrom: (rows: any[]) => PayoutRow[] }>> = {
-  stripe: { rowsFrom: stripeRowsFrom },
-  shopify: { rowsFrom: shopifyRowsFrom },
-};
+// ═══════════════════════════════════════════════════════════════════════════
+// PayPal — transaction / activity report CSV (W4.1-B, file-import first)
+//
+// Format: the PayPal transaction report ("Activity download" / Transactions
+// report), whose balance-affecting rows carry Type, Status, Currency, Gross,
+// Fee, Net and Transaction ID columns. Format doc:
+//   https://developer.paypal.com/docs/reports/reference/transactions-report/
+//
+// POLARITY (differs from Stripe/Shopify — the fixture tests pin this):
+//   • Fee is SIGNED from the merchant's side: a fee on a sale is NEGATIVE,
+//     a fee credited back on a refund is POSITIVE.
+//   • Net = Gross + Fee on every row.
+//   • A refund row's Gross is NEGATIVE.
+//   • "General Withdrawal" / transfer-to-bank rows are the payout leaving
+//     PayPal — the net line itself, never a component (mirrors Stripe `payout`).
+// ═══════════════════════════════════════════════════════════════════════════
+export interface PayPalTxnRow {
+  type: string;
+  gross: string | number; // signed
+  fee: string | number; // signed (fee on a sale is negative)
+}
+
+/** The withdrawal/transfer of the payout itself — excluded from the split AND
+ *  from the report-net sum (it IS the net, not a component of it). */
+function isPayPalTransferRow(type: string): boolean {
+  const t = type.trim().toLowerCase();
+  return t.includes("withdrawal") || t.includes("transfer to bank");
+}
+
+/**
+ * Classify one signed gross/fee pair into normalized rows. Shared by the PayPal
+ * and Square parsers, whose reports both state `net = gross + fee` with a signed
+ * fee column — the classification preserves each row's signed contribution, so
+ * Σcomponents always equals Σ(gross+fee) and the payout ties by construction.
+ */
+function splitSignedGrossFee(
+  rowKind: "sale" | "refund" | "adjustment",
+  grossMinor: number,
+  feeMinor: number,
+  ref: string,
+): PayoutRow[] {
+  const out: PayoutRow[] = [];
+  if (rowKind === "sale") {
+    if (grossMinor !== 0) out.push({ kind: "sale", amountMinor: Math.abs(grossMinor), ref });
+    // a sale's fee is withheld (negative) → fee bucket; a positive fee on a sale
+    // (rare correction) increases the deposit → signed adjustment
+    if (feeMinor < 0) out.push({ kind: "fee", amountMinor: -feeMinor, ref: `${ref}:fee` });
+    else if (feeMinor > 0) out.push({ kind: "adjustment", amountMinor: feeMinor, ref: `${ref}:fee` });
+  } else if (rowKind === "refund") {
+    if (grossMinor !== 0) out.push({ kind: "refund", amountMinor: Math.abs(grossMinor), ref });
+    // fee movement on a refund row is the provider's fee credit-back (usually +,
+    // sometimes 0/none) — a signed adjustment either way
+    if (feeMinor !== 0) out.push({ kind: "adjustment", amountMinor: feeMinor, ref: `${ref}:fee` });
+  } else {
+    if (grossMinor !== 0) out.push({ kind: "adjustment", amountMinor: grossMinor, ref });
+    if (feeMinor < 0) out.push({ kind: "fee", amountMinor: -feeMinor, ref: `${ref}:fee` });
+    else if (feeMinor > 0) out.push({ kind: "adjustment", amountMinor: feeMinor, ref: `${ref}:fee` });
+  }
+  return out;
+}
+
+export function paypalRowsFrom(rows: PayPalTxnRow[]): PayoutRow[] {
+  const out: PayoutRow[] = [];
+  for (const raw of rows) {
+    const t = (raw.type || "").toString().trim().toLowerCase();
+    if (isPayPalTransferRow(t)) continue; // the payout line itself
+    const gross = toMinor(raw.gross);
+    const fee = toMinor(raw.fee);
+    if (gross === 0 && fee === 0) continue;
+    let kind: "sale" | "refund" | "adjustment";
+    if (t.includes("refund")) kind = "refund";
+    else if (t.includes("chargeback") || t.includes("reversal") || t.includes("dispute") || t.includes("hold"))
+      kind = "adjustment";
+    else if (gross > 0) kind = "sale"; // Express Checkout Payment, Website Payment, …
+    else kind = "adjustment"; // any other negative mover (adjustments, fees debited)
+    out.push(...splitSignedGrossFee(kind, gross, fee, raw.type));
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Square — payout (transfer) report CSV (W4.1-B, file-import first)
+//
+// Format: the Square Dashboard transfer/payout details export — per-payment rows
+// with Type (Charge / Refund / Adjustment / …), Gross Amount, Fees, Net Amount,
+// Transaction ID, Payout ID columns. Format doc:
+//   https://squareup.com/help/us/en/article/5104-transfer-reports
+//
+// POLARITY (fixture tests pin this): Fees are NEGATIVE on charges, and
+// Net Amount = Gross Amount + Fees on every row (same signed-fee model as
+// PayPal, opposite of Stripe/Shopify's positive fee column).
+// ═══════════════════════════════════════════════════════════════════════════
+export interface SquarePayoutRow {
+  type: string;
+  gross: string | number; // "Gross Amount", signed
+  fees: string | number; // "Fees", signed (negative on charges)
+}
+
+export function squareRowsFrom(rows: SquarePayoutRow[]): PayoutRow[] {
+  const out: PayoutRow[] = [];
+  for (const raw of rows) {
+    const t = (raw.type || "").toString().trim().toLowerCase();
+    // a deposit/transfer row is the payout itself, not a component
+    if (t === "deposit" || t === "transfer" || t === "payout") continue;
+    const gross = toMinor(raw.gross);
+    const fees = toMinor(raw.fees);
+    if (gross === 0 && fees === 0) continue;
+    let kind: "sale" | "refund" | "adjustment";
+    if (t === "charge" || t === "payment" || t === "sale") kind = "sale";
+    else if (t === "refund") kind = "refund";
+    else kind = "adjustment"; // Adjustment / Dispute / Held funds / …
+    out.push(...splitSignedGrossFee(kind, gross, fees, raw.type));
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Amazon — flat-file settlement report V2 (W4.1-B, file-import first)
+//
+// Format: GET_V2_SETTLEMENT_REPORT_DATA_FLAT_FILE — TAB-delimited; header row
+// includes settlement-id, settlement-start-date, settlement-end-date,
+// deposit-date, total-amount, currency, transaction-type, order-id, amount-type,
+// amount-description, amount, posted-date. Format doc:
+//   https://developer-docs.amazon.com/sp-api/docs/report-type-values-settlement
+//
+// SHAPE: the FIRST data row is the settlement SUMMARY — total-amount is the
+// actual bank deposit and transaction-type is empty (it's the reconcile target,
+// not a component). Every later row is ONE signed amount component:
+//   transaction-type=Order,  amount-type=ItemPrice  (+) → gross sale
+//   transaction-type=Order,  amount-type=ItemFees   (−) → fee (Commission, FBA…)
+//   transaction-type=Refund, amount-type=ItemPrice  (−) → refund
+//   transaction-type=Refund, fee reversals          (+) → adjustment
+//   ServiceFee / Subscription Fee rows              (−) → fee
+//   everything else (Adjustment, other-transaction, Promotion…) → signed adjustment
+// Every mapping preserves the row's SIGNED contribution, so Σcomponents equals
+// Σamounts and ties to total-amount exactly when the file is complete — a
+// truncated upload fails the reconcile check instead of posting a wrong split.
+// ═══════════════════════════════════════════════════════════════════════════
+export interface AmazonSettlementRow {
+  transactionType: string; // "transaction-type"
+  amountType: string; // "amount-type"
+  amount: string | number; // signed decimal
+}
+
+export function amazonRowsFrom(rows: AmazonSettlementRow[]): PayoutRow[] {
+  const out: PayoutRow[] = [];
+  for (const raw of rows) {
+    const t = (raw.transactionType || "").toString().trim().toLowerCase();
+    if (!t) continue; // the settlement summary row (reconcile target, not a component)
+    const at = (raw.amountType || "").toString().trim().toLowerCase();
+    const amt = toMinor(raw.amount);
+    if (amt === 0) continue;
+    const ref = `${raw.transactionType}:${raw.amountType}`;
+    if (t === "order") {
+      if (at.includes("fee")) out.push(amt < 0 ? { kind: "fee", amountMinor: -amt, ref } : { kind: "adjustment", amountMinor: amt, ref });
+      else if (at.includes("promotion")) out.push({ kind: "adjustment", amountMinor: amt, ref });
+      else if (amt > 0) out.push({ kind: "sale", amountMinor: amt, ref });
+      else out.push({ kind: "adjustment", amountMinor: amt, ref });
+    } else if (t === "refund") {
+      if (amt < 0 && !at.includes("fee")) out.push({ kind: "refund", amountMinor: -amt, ref });
+      else out.push({ kind: "adjustment", amountMinor: amt, ref }); // fee reversals (+) et al, signed
+    } else if (t.includes("fee")) {
+      // ServiceFee / subscription-fee rows: a withheld fee when negative
+      out.push(amt < 0 ? { kind: "fee", amountMinor: -amt, ref } : { kind: "adjustment", amountMinor: amt, ref });
+    } else {
+      out.push({ kind: "adjustment", amountMinor: amt, ref }); // Adjustment / other-transaction / …
+    }
+  }
+  return out;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CSV → PayoutComponents bridge (the upload UI's parse path).
 //
-// The upload surface (PayoutUpload.tsx) hands us the already-parsed CSV (headers
-// + string rows, from import/csv.ts) plus the provider key. This turns that into
-// the normalized PayoutComponents the RPC consumes AND reconciles it against the
-// report's own net (when the export carries a net column) so a parse bug surfaces
-// to the owner BEFORE anything posts — never a silent plug (LEARNINGS #16). Kept
-// DB-free + pure so the whole preview is unit-testable in node.
+// The upload surface (PayoutUpload.tsx) hands us the already-parsed report
+// (headers + string rows, from import/csv.ts — which also sniffs the delimiter,
+// so Amazon's TAB-delimited settlement file arrives here the same shape as a
+// comma CSV) plus the provider key. Each provider's adapter maps ITS report
+// columns onto its typed rows, runs its parser, and totals the report's own net
+// for the reconcile check — so a parse bug surfaces to the owner BEFORE anything
+// posts, never a silent plug (LEARNINGS #16). Kept DB-free + pure so the whole
+// preview is unit-testable in node.
+//
+// FORMULA-INJECTION NOTE (import discipline, see export.ts + #211): report cells
+// only ever become (a) integer minor units via toMinor — a formula string like
+// "=SUM(A1:A9)" is NOT money and throws, surfacing as a parse error, or (b) a
+// classification match against known lowercase type names — an unrecognized
+// (possibly hostile) type string classifies as a signed adjustment or is
+// ignored; the raw string itself never reaches the ledger. Everything the RPC
+// posts is numbers + server-built memos; exports re-neutralize on the way out.
 // ═══════════════════════════════════════════════════════════════════════════
 
 /** A parsed CSV as import/csv.ts produces it (kept local to avoid a UI import). */
@@ -265,30 +443,28 @@ export interface ParsedPayout {
   rowCount: number;
 }
 
-/** Case/space-insensitive header lookup → column index, or -1. */
+/** What a provider's report adapter extracts from an uploaded file. */
+export interface PayoutReportParse {
+  rows: PayoutRow[];
+  /** The net the report itself declares, in minor units, when it carries one. */
+  reportedNetMinor: number | null;
+}
+
+/** Case/space/dash-insensitive header lookup → column index, or -1 ("Gross Amount",
+ *  "transaction-type", "Fee" all normalize). */
 function colIndex(headers: string[], ...names: string[]): number {
-  const norm = (s: string) => s.trim().toLowerCase().replace(/[\s_]+/g, "");
+  const norm = (s: string) => s.trim().toLowerCase().replace(/[\s_-]+/g, "");
   const want = names.map(norm);
   return headers.findIndex((h) => want.includes(norm(h)));
 }
 
-/**
- * Map a provider's parsed CSV into typed raw rows, run its parser, and total the
- * report's own net column for the reconcile check. Provider column names mirror
- * the Stripe balance-transactions export and the Shopify payout export.
- */
-export function parsePayoutCsv(
-  provider: PayoutProvider,
-  payoutId: string,
-  payoutDate: string,
-  currency: string,
+/** Shared type/amount/fee/net mapping — the Stripe balance-transactions export
+ *  and the Shopify payout export both fit it (positive fee column). */
+function typeAmountFeeCsv(
   csv: ParsedPayoutCsv,
-): ParsedPayout {
-  const parser = PAYOUT_PARSERS[provider];
-  if (!parser) throw new Error(`no report parser for provider ${provider}`);
+  rowsFrom: (raw: { type: string; Type: string; amount: string; Amount: string; fee: string; Fee: string }[]) => PayoutRow[],
+): PayoutReportParse {
   const { headers, rows } = csv;
-
-  // Locate the columns each provider's parser needs, plus a net column if present.
   const cType = colIndex(headers, "type");
   const cAmount = colIndex(headers, "amount", "gross");
   const cFee = colIndex(headers, "fee", "fees");
@@ -296,9 +472,6 @@ export function parsePayoutCsv(
   if (cType < 0 || cAmount < 0) {
     throw new Error("report is missing a Type and/or Amount column");
   }
-
-  // Build the provider's typed raw shape from the CSV cells. Both current parsers
-  // (Stripe balance-txn, Shopify payout) read type/amount/fee, so one mapping serves.
   const raw = rows.map((r) => ({
     type: r[cType] ?? "",
     Type: r[cType] ?? "",
@@ -307,15 +480,110 @@ export function parsePayoutCsv(
     fee: cFee >= 0 ? (r[cFee] ?? "0") : "0",
     Fee: cFee >= 0 ? (r[cFee] ?? "0") : "0",
   }));
+  const reportedNetMinor = cNet >= 0 ? rows.reduce((s, r) => s + toMinor(r[cNet] ?? "0"), 0) : null;
+  return { rows: rowsFrom(raw), reportedNetMinor };
+}
 
-  const normalized = parser.rowsFrom(raw as any[]);
-  const components = componentsFromRows(provider, payoutId, payoutDate, currency, normalized);
-
-  let reportedNetMinor: number | null = null;
-  if (cNet >= 0) {
-    reportedNetMinor = rows.reduce((s, r) => s + toMinor(r[cNet] ?? "0"), 0);
+/** PayPal transaction/activity CSV → Type / Gross / Fee (+ Net). Withdrawal
+ *  (transfer-to-bank) rows are the payout line itself — excluded from BOTH the
+ *  split and the report-net sum, so the remaining rows reconcile to the deposit. */
+function paypalCsv(csv: ParsedPayoutCsv): PayoutReportParse {
+  const { headers, rows } = csv;
+  const cType = colIndex(headers, "type");
+  const cGross = colIndex(headers, "gross");
+  const cFee = colIndex(headers, "fee");
+  const cNet = colIndex(headers, "net");
+  if (cType < 0 || cGross < 0) {
+    throw new Error("report is missing a Type and/or Gross column — export the PayPal transaction (activity) CSV");
   }
-  const reconciles = reportedNetMinor == null ? true : reportedNetMinor === components.netMinor;
+  const component = rows.filter((r) => !isPayPalTransferRow(r[cType] ?? ""));
+  const raw: PayPalTxnRow[] = component.map((r) => ({
+    type: r[cType] ?? "",
+    gross: r[cGross] ?? "0",
+    fee: cFee >= 0 ? (r[cFee] ?? "0") : "0",
+  }));
+  const reportedNetMinor = cNet >= 0 ? component.reduce((s, r) => s + toMinor(r[cNet] ?? "0"), 0) : null;
+  return { rows: paypalRowsFrom(raw), reportedNetMinor };
+}
 
-  return { components, reportedNetMinor, reconciles, rowCount: normalized.length };
+/** Square transfer/payout details CSV → Type / Gross Amount / Fees (+ Net Amount). */
+function squareCsv(csv: ParsedPayoutCsv): PayoutReportParse {
+  const { headers, rows } = csv;
+  const cType = colIndex(headers, "type");
+  const cGross = colIndex(headers, "gross amount", "gross");
+  const cFees = colIndex(headers, "fees", "fee");
+  const cNet = colIndex(headers, "net amount", "net");
+  if (cType < 0 || cGross < 0) {
+    throw new Error("report is missing a Type and/or Gross Amount column — export the Square payout (transfer) details CSV");
+  }
+  const raw: SquarePayoutRow[] = rows.map((r) => ({
+    type: r[cType] ?? "",
+    gross: r[cGross] ?? "0",
+    fees: cFees >= 0 ? (r[cFees] ?? "0") : "0",
+  }));
+  const reportedNetMinor = cNet >= 0 ? rows.reduce((s, r) => s + toMinor(r[cNet] ?? "0"), 0) : null;
+  return { rows: squareRowsFrom(raw), reportedNetMinor };
+}
+
+/** Amazon V2 flat-file settlement report (tab-delimited) → transaction-type /
+ *  amount-type / amount, with the summary row's total-amount as the reported net. */
+function amazonCsv(csv: ParsedPayoutCsv): PayoutReportParse {
+  const { headers, rows } = csv;
+  const cTxnType = colIndex(headers, "transaction-type");
+  const cAmountType = colIndex(headers, "amount-type");
+  const cAmount = colIndex(headers, "amount");
+  const cTotal = colIndex(headers, "total-amount");
+  if (cTxnType < 0 || cAmount < 0) {
+    throw new Error("report is missing transaction-type and/or amount columns — upload the Amazon V2 flat-file settlement report");
+  }
+  const raw: AmazonSettlementRow[] = rows.map((r) => ({
+    transactionType: r[cTxnType] ?? "",
+    amountType: cAmountType >= 0 ? (r[cAmountType] ?? "") : "",
+    amount: r[cAmount] ?? "0",
+  }));
+  // the summary row (no transaction-type) declares the actual deposit in total-amount
+  let reportedNetMinor: number | null = null;
+  if (cTotal >= 0) {
+    const summary = rows.find((r) => (r[cTxnType] ?? "").trim() === "" && (r[cTotal] ?? "").trim() !== "");
+    if (summary) reportedNetMinor = toMinor(summary[cTotal]);
+  }
+  return { rows: amazonRowsFrom(raw), reportedNetMinor };
+}
+
+/**
+ * Registry of report adapters, keyed by provider — adding a provider = one
+ * parser + one entry here (+ its connector-registry seed row). The upload UI
+ * derives which tiles are LIVE from this registry (`hasPayoutParser`) + the
+ * connector registry's status — never from a hardcoded provider list.
+ */
+export const PAYOUT_PARSERS: Partial<Record<PayoutProvider, { fromCsv: (csv: ParsedPayoutCsv) => PayoutReportParse }>> = {
+  stripe: { fromCsv: (csv) => typeAmountFeeCsv(csv, stripeRowsFrom) },
+  shopify: { fromCsv: (csv) => typeAmountFeeCsv(csv, shopifyRowsFrom) },
+  paypal: { fromCsv: paypalCsv },
+  square: { fromCsv: squareCsv },
+  amazon: { fromCsv: amazonCsv },
+};
+
+/** Does a report parser exist for this connector key? (registry-driven tiles) */
+export function hasPayoutParser(key: string): boolean {
+  return key in PAYOUT_PARSERS;
+}
+
+/**
+ * Parse an uploaded report for a provider: adapter → normalized rows → split
+ * components, reconciled against the report's own declared net when present.
+ */
+export function parsePayoutCsv(
+  provider: PayoutProvider,
+  payoutId: string,
+  payoutDate: string,
+  currency: string,
+  csv: ParsedPayoutCsv,
+): ParsedPayout {
+  const adapter = PAYOUT_PARSERS[provider];
+  if (!adapter) throw new Error(`no report parser for provider ${provider}`);
+  const { rows, reportedNetMinor } = adapter.fromCsv(csv);
+  const components = componentsFromRows(provider, payoutId, payoutDate, currency, rows);
+  const reconciles = reportedNetMinor == null ? true : reportedNetMinor === components.netMinor;
+  return { components, reportedNetMinor, reconciles, rowCount: rows.length };
 }

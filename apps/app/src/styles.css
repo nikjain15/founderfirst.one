@@ -269,7 +269,8 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
 }
 .create-org .seg button.on {
   background: var(--brand-tint);
-  color: var(--brand);
+  /* --brand-strong (not --brand) for text on --brand-tint — WCAG AA 4.5:1 (axe a11y gate). */
+  color: var(--brand-strong);
   border-color: transparent;
 }
 /* "+ New organization" now lives in the org switcher (APP_PRINCIPLES §5) — a
@@ -302,7 +303,8 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
   color: var(--ink-2);
   border-color: var(--line);
 }
-.invite-cpa .seg button.on { background: var(--brand-tint); color: var(--brand); border-color: transparent; }
+/* --brand-strong (not --brand) for text on --brand-tint — WCAG AA 4.5:1 (axe a11y gate). */
+.invite-cpa .seg button.on { background: var(--brand-tint); color: var(--brand-strong); border-color: transparent; }
 .invite-link {
   font-size: var(--fs-ui);
   color: var(--ink-2);

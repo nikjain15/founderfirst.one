@@ -1,10 +1,14 @@
 name: App E2E
 
-# Authenticated smoke test for the unified app (apps/app — the books/categorize/
-# import surface). The app is built with VITE_E2E=1 + a throwaway test account's
-# credentials, so it auto-signs-in with a REAL session (apps/app/src/lib/devAuth.ts);
-# we then drive the authed UI headlessly and screenshot the categorize/ledger view.
-# This is how the app's authed screens get verified without a human + magic link.
+# Authenticated smoke + responsive + a11y gate for the unified app (apps/app — the
+# books/categorize/import surface). The app is built with VITE_E2E=1 + a throwaway
+# test account's credentials, so it auto-signs-in with a REAL session
+# (apps/app/src/lib/devAuth.ts); we then drive the authed UI headlessly and, for
+# every owner surface: screenshot it, sweep the full responsive width ladder
+# (no horizontal overflow, 320→1920), and run an axe-core accessibility scan that
+# FAILS on any serious/critical WCAG A/AA violation. This is how the app's authed
+# screens get verified — render + responsive + a11y — without a human + magic link,
+# closing the standing "auth-walled → a11y only static-checked" gap (docs/AUDIT.md).
 #
 # Required CI config (Settings → Secrets and variables → Actions):
 #   secrets.E2E_APP_EMAIL / E2E_APP_PASSWORD — a throwaway Supabase user with an org
@@ -52,7 +56,7 @@ jobs:
           VITE_DEV_APP_PASSWORD:  ${{ secrets.E2E_APP_PASSWORD }}
         run: pnpm --dir apps/app build
 
-      - name: App E2E smoke
+      - name: App E2E smoke + responsive + a11y
         run: node tools/app-e2e/run.mjs
 
       - name: Upload screenshots

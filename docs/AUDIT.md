@@ -102,7 +102,10 @@ P1 = guideline breach / UX regression / real risk · P2 = polish.
 
 ### 7. accessibility — REAL BROWSER CHECK
 - **axe scan** clean on key pages (admin support/audience/quality, marketing,
-  Penny widget).
+  Penny widget) **and every authed owner surface of `apps/app`** — the `app-e2e`
+  gate injects axe-core on the real authed DOM (Home · Review · Reports incl.
+  cash-flow + lender package · Connections incl. invoicing · Journal · Reconcile)
+  and fails on any serious/critical WCAG 2.0/2.1 A+AA violation.
 - **Keyboard** — full Tab traversal, visible `:focus-visible`, dropdowns/drawers
   close on Esc + outside-click, no focus traps, logical order.
 - **Semantics** — landmarks/roles, `label`↔input association, button vs link
@@ -277,8 +280,8 @@ CI-green; 61 W4 Vitest tests + the W4.1/W4.3 pgTAP suites pass.
 | ia_ux / usability gate | 🟢 pass (1 P2) | invoicing nests under Connections (opt-in, OFF by default — no new top-level nav ✔); cash-flow/package are report tabs. **F3 (P2):** owner sees a 5-bucket AR aging (invoice view) and a 4-bucket AR aging (lender package) — different by design (due-date vs entry-date) but visually inconsistent. |
 | copy / voice / centralization | 🟢 pass | nudge cadence is DATA (`platform_config.invoice_nudge_cadence_days=7`, mirrored in `CONFIG_DEFAULTS`); no rate/threshold/fee-% literals in W4 code; rescue page: 0 exclamations, no competitor names, no guarantees, uses `SITE`. |
 | design_system | 🟢 pass | no inline hex / magic px in new components; rescue uses `Base` layout + tokens. |
-| responsive | 🟢 pass (static) | no fixed-px horizontal layouts in the new tabs/rescue; full width-ladder browser walk = standing gap (auth-walled app; static-only). |
-| a11y | 🟡 pass w/ note | invoicing table/pay-row use labels; full axe scan of new surfaces is the standing browser gap. |
+| responsive | 🟢 pass | no fixed-px horizontal layouts in the new tabs/rescue; **the auth-walled width-ladder gap is now CLOSED** — `app-e2e` sweeps every owner surface overflow-free across 320→1920 on the real authed DOM. |
+| a11y | 🟢 pass | invoicing table/pay-row use labels; **the auth-walled a11y gap is now CLOSED** — `app-e2e` runs a live axe-core WCAG A/AA scan on every owner surface, failing on serious/critical. |
 | reliability / observability | 🟢 pass | send posts books first, emails after (email failure never un-posts — comment + code order confirmed); aging returns a stable 5-bucket shape even when empty. |
 | tests | 🟢 pass | 61 Vitest (payouts/cashFlow/package/invoiceMath/export) + `w4_1_ecommerce_payouts_test.sql` (16) + `w4_3_invoicing_test.sql` (21) — idempotency, tie-out, reconcile-guard, overpayment, void/reversal, auth-gate, aging, config-driven nudge all covered. |
 | copy_docs / seo | 🟢 pass | rescue.astro has unique title/description via `Base`; admin/app surfaces noindex (excluded). |
@@ -370,10 +373,15 @@ ratchet). Wave 4 invalidates the standing "Wave 4 not built" gap from Program 1.
    `csvCell` util + a test that a leading-space formula is neutralized, so every export inherits it.)
 
 ### Standing gaps carried forward (NOT covered by this program)
-- **Full width-ladder browser walk** of the new invoicing / cash-flow / package tabs and the
-  rescue page across the auth wall (static responsive check only — same gap as Programs 1–4).
-- **axe / a11y browser scan** of the invoicing pay-row + report tabs (labels present statically;
-  no automated scan).
+- **Full width-ladder browser walk** of the owner surfaces across the auth wall — **CLOSED**
+  by the `app-e2e` gate (`tools/app-e2e/run.mjs`): every owner surface (Home · Review incl.
+  receipts · Reports incl. cash-flow + lender package · Connections incl. invoicing · Journal ·
+  Reconcile) is swept overflow-free across the full 320→1920 ladder on the real authed DOM.
+  (rescue page is public → covered by `test:responsive`.)
+- **axe / a11y browser scan** across the auth wall — **CLOSED** by the same `app-e2e` gate:
+  each owner surface gets a live axe-core WCAG 2.0/2.1 A+AA scan that FAILS the build on any
+  serious/critical violation (moderate/minor logged as advisories). This retires the a11y
+  browser gap flagged in every Program 1–5 audit ("auth-walled → a11y only static-checked").
 - **Invoice email deliverability** — the `invoicing` edge fn's Resend send path + nudge dispatch
   are not exercised end-to-end here (SECDEF/idempotency/config verified in code; live email = a
   manual/integration check, like Wave-3's nudge path).

@@ -11,7 +11,13 @@
  *   3. assert NO horizontal overflow across the FULL width ladder (320 → 1920,
  *      apps/admin/RESPONSIVE.md) — a clipped column or a fixed-px grid that overruns
  *      any device width fails the gate, so "responsive across all devices" is enforced,
- *   4. screenshot every screen at desktop AND mobile for the CI artifact.
+ *   4. run an axe-core accessibility scan on every screen and FAIL on any
+ *      serious/critical violation (WCAG 2.0/2.1 A + AA). This closes the standing
+ *      gap flagged in every wave audit (docs/AUDIT.md): the app is auth-walled, so
+ *      its a11y was only ever static-checked — never a live axe walk of the real
+ *      authed DOM. Now it is, on the same authed session as the render/responsive
+ *      checks, so "accessible across every owner surface" is an enforced gate.
+ *   5. screenshot every screen at desktop AND mobile for the CI artifact.
  *
  * It deliberately does NOT approve categories or import a file — those mutate the
  * ledger and spend AI tokens, which would make the gate flaky. This proves auth +
@@ -30,6 +36,10 @@ import { chromium } from "playwright";
 
 const ROOT = resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const DIST = resolve(ROOT, "apps/app/dist");      // vite build output (base = /app/)
+// axe-core is a small, standard a11y engine (pinned devDep). We read its bundled
+// source once and inject it into the page per screen, then run it against the real
+// authed DOM. Resolved from the installed package so the version tracks package.json.
+const AXE_SRC = await readFile(resolve(ROOT, "node_modules/axe-core/axe.min.js"), "utf8");
 const ARTIFACTS = resolve(fileURLToPath(new URL("./artifacts/", import.meta.url)));
 const MOBILE = { width: 390, height: 844 };        // iPhone-class; for the mobile screenshot
 const DESKTOP = { width: 1280, height: 900 };
@@ -133,6 +143,48 @@ async function sweepWidths(label) {
   }
   if (bad.length) fail(`${label}: horizontal overflow at ${bad.join(", ")}`);
   else ok(`${label}: no overflow across ${LADDER.length} widths (${LADDER[0]}–${LADDER[LADDER.length - 1]}px)`);
+}
+
+/** The a11y invariant: axe-core finds NO serious/critical WCAG 2.0/2.1 A+AA
+ *  violation on the current authed screen. Injects the bundled axe engine, runs it
+ *  against the live DOM, and fails the gate on any serious/critical impact (moderate/
+ *  minor are logged as advisories, not gating — same severity line as CI a11y gates
+ *  elsewhere). Names each violating rule + node count so the fix is actionable. */
+async function a11yScan(label) {
+  await page.setViewportSize(DESKTOP);
+  await page.waitForTimeout(150);
+  // Inject axe fresh each call (a client-side route swap can drop injected globals).
+  await page.evaluate((src) => {
+    if (!window.axe) { const s = document.createElement("script"); s.textContent = src; document.head.appendChild(s); }
+  }, AXE_SRC).catch(() => {});
+  const res = await page.evaluate(async () => {
+    if (!window.axe) return { error: "axe failed to load" };
+    const r = await window.axe.run(document, {
+      runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] },
+      resultTypes: ["violations"],
+    });
+    return {
+      violations: r.violations.map((v) => ({
+        id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.length,
+        sample: v.nodes.slice(0, 2).map((n) => (n.target || []).join(" ")),
+      })),
+    };
+  }).catch((e) => ({ error: String(e?.message || e) }));
+  if (res.error) { fail(`${label} a11y: ${res.error}`); return; }
+  const gating = res.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+  const advisory = res.violations.filter((v) => v.impact !== "serious" && v.impact !== "critical");
+  if (advisory.length) {
+    console.log(`  ℹ️ ${label} a11y advisories (not gating): ` +
+      advisory.map((v) => `${v.id}[${v.impact},×${v.nodes}]`).join(", "));
+  }
+  if (gating.length) {
+    for (const v of gating) {
+      console.log(`  ✗ ${v.id} (${v.impact}) — ${v.help} · ${v.nodes} node(s) · e.g. ${v.sample.join(" | ")}`);
+    }
+    fail(`${label} a11y: ${gating.length} serious/critical violation(s) — ${gating.map((v) => v.id).join(", ")}`);
+  } else {
+    ok(`${label}: axe clean (no serious/critical WCAG A/AA violations)`);
+  }
 }
 
 /** W1.2 — download a report and assert a real file arrives, period-stamped.
@@ -427,6 +479,7 @@ try {
       // W3.5 — Receipt capture + match is nested in Review (no new top-level tab).
       if (s.key === "review") await verifyReceiptCapture();
       await page.screenshot({ path: join(ARTIFACTS, `desktop-${s.key}.png`), fullPage: true });
+      await a11yScan(s.label);                     // axe-core WCAG A/AA, fail on serious/critical
       await sweepWidths(s.label);                 // 320 → 1920, every ladder width
       await page.setViewportSize(MOBILE);
       await page.waitForTimeout(150);

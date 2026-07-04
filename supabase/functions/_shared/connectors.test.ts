@@ -9,7 +9,7 @@
  *   2. QBO/Xero authorize-URL builders emit the right client_id + redirect_uri +
  *      scopes (well-formed connect URL, no consent needed to assert this).
  */
-import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { assert, assertEquals, assertThrows } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { plaidSecret } from "./plaid.ts";
 import { authorizeUrl as qboAuthorizeUrl, QBO_SCOPE, QBO_AUTHORIZE } from "./qbo.ts";
 import { authorizeUrl as xeroAuthorizeUrl, XERO_SCOPE, XERO_AUTHORIZE } from "./xero.ts";
@@ -76,6 +76,34 @@ Deno.test("plaidSecret: falls back to bare PLAID_SECRET when env-specific absent
       PLAID_SECRET: "legacy-key",
     },
     () => assertEquals(plaidSecret(), "legacy-key"),
+  );
+});
+
+Deno.test("plaidSecret: production env WITHOUT a production secret FAILS LOUD (never falls back to a bare/sandbox PLAID_SECRET)", () => {
+  // Incident guard: a bare PLAID_SECRET is, per our deploy history, the SANDBOX
+  // secret. If an operator flips PLAID_ENV=production but forgets to set
+  // PLAID_SECRET_PRODUCTION, silently using the sandbox key against
+  // production.plaid.com is a real incident. Must throw, not return sandbox creds.
+  withEnv(
+    {
+      PLAID_ENV: "production",
+      PLAID_SECRET_SANDBOX: "sbx-key",
+      PLAID_SECRET_PRODUCTION: undefined,
+      PLAID_SECRET: "sbx-key", // legacy single-secret deploy = the sandbox key
+    },
+    () => assertThrows(() => plaidSecret(), Error, "PLAID_SECRET_PRODUCTION"),
+  );
+});
+
+Deno.test("plaidSecret: production env WITH the production secret returns it and never the fallback", () => {
+  withEnv(
+    {
+      PLAID_ENV: "production",
+      PLAID_SECRET_SANDBOX: "sbx-key",
+      PLAID_SECRET_PRODUCTION: "prod-key",
+      PLAID_SECRET: "sbx-key",
+    },
+    () => assertEquals(plaidSecret(), "prod-key"),
   );
 });
 

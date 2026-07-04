@@ -4,7 +4,8 @@
  * Secrets come from the fn environment (never hardcoded, never the browser):
  *   PLAID_CLIENT_ID, plus the Plaid secret — selected by PLAID_ENV: production
  *   reads PLAID_SECRET_PRODUCTION, sandbox/development read PLAID_SECRET_SANDBOX
- *   (a bare PLAID_SECRET is honoured as a fallback for older deploys),
+ *   (a bare PLAID_SECRET is honoured as a fallback ONLY in sandbox/development;
+ *   in production a missing PLAID_SECRET_PRODUCTION throws rather than falling back),
  *   PLAID_ENV (defaults 'sandbox').
  * Base URL is chosen by PLAID_ENV; this build targets sandbox. Production requires
  * Plaid's app review (a Nik step before >10 live users) — flip PLAID_ENV and set
@@ -21,13 +22,23 @@ const API_BASE = () => {
 const CLIENT_ID = () => Deno.env.get("PLAID_CLIENT_ID") ?? "";
 // Pick the secret by env so a single deploy holds both keys. Production uses the
 // production secret; sandbox/development use the sandbox secret. A bare
-// PLAID_SECRET remains a fallback for older single-secret deploys.
+// PLAID_SECRET remains a fallback for older single-secret deploys — but ONLY in
+// sandbox/development. In production the bare fallback is (per our deploy history)
+// the SANDBOX key, so calling production.plaid.com with it is a real incident:
+// we FAIL LOUD instead of silently authenticating with the wrong-env secret.
 export const plaidSecret = () => {
   const env = PLAID_ENV();
-  const specific = env === "production"
-    ? Deno.env.get("PLAID_SECRET_PRODUCTION")
-    : Deno.env.get("PLAID_SECRET_SANDBOX");
-  return specific ?? Deno.env.get("PLAID_SECRET") ?? "";
+  if (env === "production") {
+    const prod = Deno.env.get("PLAID_SECRET_PRODUCTION");
+    if (!prod) {
+      throw new Error(
+        "PLAID_SECRET_PRODUCTION is not set but PLAID_ENV=production — refusing to " +
+          "fall back to a sandbox/legacy PLAID_SECRET against production.plaid.com",
+      );
+    }
+    return prod;
+  }
+  return Deno.env.get("PLAID_SECRET_SANDBOX") ?? Deno.env.get("PLAID_SECRET") ?? "";
 };
 const SECRET = () => plaidSecret();
 

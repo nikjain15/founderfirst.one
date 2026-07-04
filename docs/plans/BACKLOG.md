@@ -54,8 +54,12 @@ OPS-1 (#199) live Lighthouse ≥90, Plaid production application (Nik human step
 - ⭐ **NEW P0: PENNY-UX** — penny.founderfirst.one is a mess (fonts not on the design system, empty
   tabs, many connectors broken). Do a rigorous audit + overhaul to the founderfirst.one/admin
   standard BEFORE the roadmap-v2 phases. See PENNY-UX-0 card below.
-- **Multi-currency (#216 D1–D7)** — Nik reviewing the plain-English questions; answers pending →
-  W5.4 build stays blocked until then.
+- **Multi-currency (#216 D1–D7)** — ✅ ALL ANSWERED 4 Jul (see multi-currency-design.md §8):
+  D1 scope confirmed · D2 full currency catalog · D3 systematic rates (fx_rates ECB snapshot
+  primary in v1, manual = override only) · D4 auto-revalue at close + auto-reverse · D5 infer +
+  is_monetary override · D6 EVERYTHING in v1 (ledger + invoices + payouts) · D7 per-org opt-in
+  flag. W5.4 build is UNBLOCKED; sequence it per the 4-Jul priorities (PENNY-UX wave gate first,
+  then Nik slots it against roadmap-v2 A→C→D→E→B).
 - **All future work runs in a NEW 24/7 loop chat** via the launchd durable loop (this chat set it up).
 
 ## PENNY-UX-0 · Rigorous audit of penny.founderfirst.one (P0 — do FIRST)
@@ -799,7 +803,9 @@ acceptance: CI test proves the send path builds+dispatches correctly; a document
 decision-needed: none to build the harness (a real live-send to a production address is a Nik step)
 
 ## W5.4 · Multi-currency DESIGN PLAN (plan-only — NO build)
-status: plan merged (pr:#216) — BUILD blocked:awaiting-Nik-answers (D1–D7)
+status: plan merged (pr:#216) — D1–D7 ANSWERED by Nik 4 Jul (design doc §8) → build UNBLOCKED;
+  card the build (full v1 scope: ledger + invoices + payouts, per-org flag) after the PENNY-UX
+  wave gate, sequenced against roadmap-v2 by Nik
 goal: a design doc for multi-currency (invoices/payouts/ledger) for Nik to approve BEFORE any code.
 spec: docs/plans/ doc with a `Status: DRAFT — awaiting Nik sign-off` header covering: base vs transaction currency,
   FX-rate source options, realized/unrealized FX gain-loss posting, presentation, and the decisions Nik must make.

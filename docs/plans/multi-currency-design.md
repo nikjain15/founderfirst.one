@@ -1,4 +1,4 @@
-> Status: DRAFT — awaiting Nik sign-off · 2026-07-03 · Owner: Nik
+> Status: APPROVED — D1–D7 answered by Nik 2026-07-04 (§8) · Owner: Nik
 
 # Multi-currency — design plan (W5.4)
 
@@ -286,31 +286,38 @@ verify the base-balance trigger + a mixed-currency post from the response body �
 
 ---
 
-## 8. Decisions Nik must make
+## 8. Decisions — ANSWERED by Nik, 4 Jul 2026
 
-- **D1 — Scope of "multi".** Confirm: one immutable base currency per org, foreign
-  *transactions* only (no multi-base consolidation, no base-currency change). This
-  plan assumes yes.
-- **D2 — Currency precision & catalog.** Do we support currencies with ≠2 minor
-  digits (JPY 0, BHD/KWD 3)? If yes, we add a `currencies` catalog with
-  `minor_unit` and generalize `money.ts` `decimalToMinor` (today hard-2-dp). If
-  no, we restrict to 2-dp currencies and say so.
-- **D3 — Rate source.** Approve the sequence **manual (A) first, daily snapshot (B)
-  second**, and pick B's free source (ECB daily reference rates recommended vs. a
-  keyed free-tier API). Live-per-call (C) is rejected — confirm.
-- **D4 — Unrealized revaluation policy.** Auto-post at period close **and
-  auto-reverse** next period (recommended, standard), or manual/opt-in? And is
-  revaluation part of the close action or a separate step?
-- **D5 — Monetary classification.** Approve the rule for which accounts revalue
-  (cash/AR/AP/loans = monetary; fixed assets/prepaid/equity = non-monetary), via a
-  `is_monetary` flag or account-type inference.
-- **D6 — Invoicing/payouts in scope for v1?** Do foreign-currency **invoices** and
-  **payouts** ship with the first multi-currency release (realized FX on
-  settlement), or does v1 cover manual journal entries only and invoicing/payouts
-  follow?
-- **D7 — Rollout.** Global gate-lift for all orgs, or a per-org
-  `multi_currency_enabled` flag so it's opt-in while we dogfood (recommended —
-  keeps every existing org single-currency until turned on)?
+- **D1 — Scope of "multi". ✅ CONFIRMED.** One immutable base currency per org,
+  foreign *transactions* only. No multi-base consolidation, no base-currency
+  change after books exist.
+- **D2 — Currency precision & catalog. ✅ FULL CATALOG.** Support ≠2-minor-digit
+  currencies (JPY 0, BHD/KWD 3): add the seeded `currencies` catalog with
+  `minor_unit` and generalize `money.ts` `decimalToMinor` off the hard-2-dp
+  assumption in the same build.
+- **D3 — Rate source. ✅ SYSTEMATIC (system-driven from day one).** Nik: *"I want
+  this to be systematic."* The `fx_rates` daily snapshot table (ECB daily
+  reference rates — public, keyless, re-based arithmetically to each org's home
+  currency) ships **in v1 as the primary source**; rates auto-fill from the
+  snapshot. A manually entered rate is the **override** (e.g. to match the bank's
+  actual settlement rate), never the default path. Resolution order stands:
+  explicit rate on the call → `fx_rates` snapshot for the line's date → error
+  asking for a rate (never silently 1 for a foreign line). Live-per-call (C)
+  stays rejected.
+- **D4 — Unrealized revaluation policy. ✅ AUTO AT CLOSE + AUTO-REVERSE.**
+  Revaluation is part of the close action; the adjustment auto-reverses at the
+  start of the next period. Both are first-class reversing entries.
+- **D5 — Monetary classification. ✅ INFER + FLAG OVERRIDE.** Default from account
+  type (cash/AR/AP/loans = monetary; fixed assets/prepaid/equity = non-monetary)
+  with an `is_monetary` override flag for edge-case accounts.
+- **D6 — Invoicing/payouts in scope for v1? ✅ EVERYTHING IN V1.** Ledger +
+  foreign-currency invoices (realized FX on settlement) + foreign-currency
+  payouts all ship in the first multi-currency release. Card the build
+  accordingly — this is the largest of the scoping options, so the wave-gate
+  stress pass must cover all three surfaces (§9).
+- **D7 — Rollout. ✅ PER-ORG OPT-IN FLAG.** `multi_currency_enabled` per org; the
+  single-currency guard stays active for every org until its flag is flipped.
+  Dogfood on a test org first, then enable per customer.
 
 ---
 

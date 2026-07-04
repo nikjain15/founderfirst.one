@@ -288,9 +288,9 @@ actually share their books.
 | Owner · Advanced — Journal / CoA / Reconcile / Periods / Rules | 🟢 working | posting via the form works; real empty states; **clipped off-screen on phones (F3)** |
 | Owner · Settings (`/settings`) | 🟢 working | invite + approval toggle; axe clean |
 | Onboarding (3 steps, kernel tiles) | 🟢 working | full walk created the audit org + 18-account CoA; axe clean at each step; **no accountant/practice path (F10)** |
-| Org switcher · + New organization · account menu | 🟢 working | business/practice types both create; **no "+ Add client" for CPAs (F4)** |
+| Org switcher · + New organization · account menu | 🟢 working | business/practice types both create; **F4 FIXED (PENNY-UX-4):** firm contexts also show "+ Add client" (guided request flow; app-e2e gated) |
 | CPA · client books — Overview / Categorize(+Rules) / Books(Journal·Accounts·Import·Reconcile·Periods) / Reports | 🟢 working | reached only via the corrected accept URL (F1); every sub renders; axe clean; **stale "no activity" takeaway (F8)** |
-| CPA · Practice home (firm) | 🟢 working | renders queue empty state; **its copy points at an affordance that doesn't exist (F4)** |
+| CPA · Practice home (firm) | 🟢 working | renders queue empty state; **F4 FIXED (PENNY-UX-4):** empty copy now names the real "+ Add client" switcher affordance (app-e2e asserts copy⇄affordance match) |
 | CPA · invite accept (`/accept?token=`) | 🟢 working | route itself works — only the *generated link* is wrong (F1) |
 | Staff · `/staff` console | 🟢 working | org directory + entry counts; break-glass NOT exercised (mutating, audited) |
 | Staff wall for non-staff · unknown routes · login | 🟢 working | owner at `/staff` gets the wall; unknown route → `/`; login wall clean (F9 type-scale nit) |
@@ -350,6 +350,19 @@ owner-initiated invites. **Repro:** create a firm → Practice home → follow i
 instruction. **Fix (decision-needed):** either an "+ Add client" switcher item for
 firm contexts (e.g. a "send your client this request" flow) or honest copy telling
 the CPA to have the client invite them from *their* Connections tab.
+**FIXED (PENNY-UX-4, 4 Jul — Nik chose BUILD):** "+ Add client" now lives in the
+switcher for firm contexts only, as a guided flow honest about the machinery: it
+produces a **request link** (`/settings?invite_cpa=<CPA email>`) + a send-along
+message; the client's owner opens it and their existing invite-your-accountant form
+arrives **pre-filled** (strictly validated, never auto-submitted, review notice
+shown) — owner still picks access and sends, CPA accepts, authorization unchanged
+(engagements stay owner-invited; no new server path, no migration). Practice-home
+empty copy now names this affordance. Gated by app-e2e (firm switcher shows the
+item · panel renders the link · owner form pre-fills · submit reaches the `invites`
+fn 201) + Vitest (`org/addClientRequest.test.ts` producer/resolver round-trip +
+copy⇄affordance match). **Residual (not covered):** a client NOT yet on Penny loses
+the `invite_cpa` param through onboarding (they land on setup, not the invite form)
+— the send-along message carries manual steps for that path.
 
 **F5 · P1 · Serious axe violation on the General-ledger report: scrollable region
 not keyboard-accessible.** `apps/app/src/ledger/Ledger.tsx:1178` — the GL `.table-wrap`
@@ -836,7 +849,7 @@ integrator merges in waves. Baseline = `main` after pre-onboarding #1–#15.
 | 7 | Opening balances import | 0 | 1 | opening-balance row missing an account silently folds into the OBE plug → "balanced" but wrong, success shown. | 🟢 | [#135](../../pull/135) |
 | 8 | Chart of accounts | 0 | 2 | unvalidated `account.currency` → malformed `char(3)` crashes `Intl.NumberFormat` → books view dies; cross-tenant `parent_id`. ISO constraint + cycle guard. | 🟢 | [#137](../../pull/137) |
 | 9 | Auth, session & routing | 0 | — | passed hardening; micro-fixes only. | 🟢 | [#133](../../pull/133) |
-| 10 | Invites & engagements | 0 | 1 | invite accept was token-only, not email-bound; re-engage/no-demote lifecycle gaps. **3 Jul (PENNY-UX-1 F1, P0):** the *generated* accept link itself was dead — `invites` fn emitted the app's retired `/app/accept` base → router catch-all → onboarding, token lost. Fixed to `/accept?token=…`; app-e2e now gates the generated-link → Accept-route → token-consumed path on the prod-shaped `--base=/` build. | 🟢 | [#134](../../pull/134) |
+| 10 | Invites & engagements | 0 | 1 | invite accept was token-only, not email-bound; re-engage/no-demote lifecycle gaps. **3 Jul (PENNY-UX-1 F1, P0):** the *generated* accept link itself was dead — `invites` fn emitted the app's retired `/app/accept` base → router catch-all → onboarding, token lost. Fixed to `/accept?token=…`; app-e2e now gates the generated-link → Accept-route → token-consumed path on the prod-shaped `--base=/` build. **4 Jul (PENNY-UX-4 F4, P1):** firm-side "+ Add client" added as a client-side request artifact over this same machinery — the owner's `/settings` invite form pre-fills from a validated `invite_cpa` param (never auto-submitted; review notice); app-e2e gates firm-affordance → pre-filled owner form → `invites` 201. No new server path. | 🟢 | [#134](../../pull/134) |
 | 11 | CPA lens / access scope | 0 | 1 | approval-settings write path missing; read-only CPA scope otherwise held. | 🟢 | [#141](../../pull/141) |
 | 12 | QBO / Xero connect & sync | 1 | 3 | provider-commit DEAD ON ARRIVAL (qbo/xero source hit opening-balance branch → `no_cutover_date`); double-post on re-pull; JPY ×100. | 🟢 | [#142](../../pull/142) |
 | 13 | Onboarding & org creation | 0 | 1 | org-create not atomic (partial org on failure). `create_org_atomic`. | 🟢 | [#136](../../pull/136) |

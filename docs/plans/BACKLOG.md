@@ -117,7 +117,8 @@ blocked-by: PENNY-UX-5 (Ledger.tsx), PENNY-UX-6 (styles.css)
 spec: activity takeaway counts entries; Login heading on the app scale; APP_PRINCIPLES §0/§3 refreshed to nav.ts reality.
 
 ## PENNY-UX-8 · Stub payout tiles (P2)
-status: blocked:decision-needed — Nik: flag off PayPal/Square/Amazon tiles or bless the coming-soon pattern.
+status: pr:#225 — resolved by W4.1-B (Nik 4 Jul: integrate the majors now): PayPal/Square/Amazon
+  got real report parsers and their tiles went LIVE via the registry; no flag-off needed (F11 closed).
 
 Rules: builders claim the top `unclaimed` card whose `blocked-by` is clear, set
 `claimed:<session-tag>`, work ONLY that card in their own worktree, and exit by setting
@@ -715,7 +716,9 @@ touches: apps/web (marketing — disjoint from app)
 decision-needed: none to build (target-event list + exact CTA copy = Nik can refine post-draft)
 
 ## W4.1 · E-commerce payout splitting (Shopify/Stripe)
-status: merged (pr:#207 framework + pr:#213 payout-upload UI)
+status: merged (pr:#207 framework + pr:#213 payout-upload UI) · **W4.1-B** (PayPal + Square +
+  Amazon file-import, registry-driven tiles, migration 20260706120000) pr:#225 — API sync per
+  provider is the follow-up once Nik's credentials land
 blocked-by: W4.2 nice-to-have not required; independent of it
 goal: Shopify/Stripe payouts split into gross sales, fees, refunds, COGS — not one lump deposit
   (theme #6). The #1 e-commerce bookkeeping pain.

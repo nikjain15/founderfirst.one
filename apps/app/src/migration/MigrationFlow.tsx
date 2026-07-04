@@ -131,7 +131,8 @@ export default function MigrationFlow({
                 ? COPY.migration.tbTies
                 : COPY.migration.tbVariance(formatMoney(comparison.totalVariance))}
             </p>
-            <div className="table-wrap">
+            {/* PENNY-UX-5 — scrollable region must be keyboard-reachable (axe: scrollable-region-focusable) */}
+            <div className="table-wrap" tabIndex={0} role="region" aria-label={COPY.migration.tbTableAria}>
               <table className="migration-tb">
                 <thead>
                   <tr>

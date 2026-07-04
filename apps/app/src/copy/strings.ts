@@ -304,6 +304,8 @@ export const COPY = {
     typeLabel: "Type",
     adding: "Adding…",
     addAccountSubmit: "Add account",
+    // ── PENNY-UX-5 · keyboard-accessible scroll region (APPENDED — additive key) ──
+    tableAria: "Chart of accounts",
   },
 
   // ── Journal ────────────────────────────────────────────────────────────────
@@ -430,6 +432,8 @@ export const COPY = {
     pkgIncludes: "Includes P&L · balance sheet · cash flow · AR/AP aging · cover sheet",
     pkgArAging: "Accounts receivable aging",
     pkgApAging: "Accounts payable aging",
+    // ── PENNY-UX-5 · keyboard-accessible scroll region (APPENDED — additive key) ──
+    glTableAria: "General ledger detail",
   },
 
   // ── Periods ────────────────────────────────────────────────────────────────
@@ -438,6 +442,8 @@ export const COPY = {
     noPeriodsBody: "Periods are created automatically the first time you post into a month.",
     close: "Close",
     reopen: "Reopen",
+    // ── PENNY-UX-5 · keyboard-accessible scroll region (APPENDED — additive key) ──
+    tableAria: "Accounting periods",
   },
 
   // ── Import flow ────────────────────────────────────────────────────────────
@@ -626,6 +632,8 @@ export const COPY = {
     doneTitle: "Migration complete.",
     doneBody: (date: string) => `Your history is in and your books start ${date}. Penny will help you keep them tidy from here.`,
     errorGeneric: "Something went wrong — reload and try again.",
+    // ── PENNY-UX-5 · keyboard-accessible scroll region (APPENDED — additive key) ──
+    tbTableAria: "Trial balance comparison",
   },
 
   // ── Account type labels (owner-facing chart-of-accounts groupings) ─────────
@@ -689,6 +697,8 @@ export const COPY = {
     confirmDelete: "Remove rule",
     confirmCancel: "Keep it",
     deleteError: "Couldn't remove that rule. Try again.",
+    // ── PENNY-UX-5 · keyboard-accessible scroll region (APPENDED — additive key) ──
+    tableAria: "Penny's learned rules",
   },
 
   // ── CPA Practice home (card W1.4) ──────────────────────────────────────────
@@ -836,6 +846,9 @@ export const COPY = {
     homeReconciled: (n: number) =>
       `Reconciled ✓ — ${n} ${n === 1 ? "account" : "accounts"} tied to statement.`,
     homeReconciledDate: (date: string) => `Last reconciled ${date}.`,
+    // ── PENNY-UX-5 · keyboard-accessible scroll regions (APPENDED — additive keys) ──
+    matchedTableAria: "Matched statement lines",
+    unmatchedTableAria: "Unmatched statement lines",
   },
 
   // ── W3.4 · Owner Home ("am I okay?") pulse ─────────────────────────────────
@@ -1131,6 +1144,8 @@ export const COPY = {
     removeLine: "Remove line",
     totalPrefix: "Total:",
     saveDraft: "Save draft",
+    // ── PENNY-UX-5 · keyboard-accessible scroll region (APPENDED — additive key) ──
+    tableAria: "Invoices",
   },
 } as const;
 

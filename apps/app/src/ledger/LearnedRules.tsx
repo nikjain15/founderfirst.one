@@ -44,7 +44,8 @@ export default function LearnedRules({ orgId, canWrite }: { orgId: string; canWr
       </div>
       <p className="muted rules-lead">{COPY.rules.lead}</p>
       {!canWrite && <p className="muted sm">{COPY.rules.readOnlyNote}</p>}
-      <div className="table-wrap">
+      {/* PENNY-UX-5 — scrollable region must be keyboard-reachable (axe: scrollable-region-focusable) */}
+      <div className="table-wrap" tabIndex={0} role="region" aria-label={COPY.rules.tableAria}>
         <div className="rules-head" role="row">
           <span role="columnheader">{COPY.rules.colPattern}</span>
           <span role="columnheader">{COPY.rules.colAccount}</span>

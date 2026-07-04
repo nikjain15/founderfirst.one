@@ -230,7 +230,8 @@ export default function Reconcile({
           {liveMatches.length > 0 && (
             <section className="reconcile-matched">
               <h3>{C.matchedTitle} · {C.matchedCount(liveMatches.length)}</h3>
-              <div className="table-wrap">
+              {/* PENNY-UX-5 — scrollable region must be keyboard-reachable (axe: scrollable-region-focusable) */}
+              <div className="table-wrap" tabIndex={0} role="region" aria-label={C.matchedTableAria}>
                 <table>
                   <thead><tr><th>{C.colAmount}</th><th /></tr></thead>
                   <tbody>
@@ -259,7 +260,8 @@ export default function Reconcile({
             ) : (
               <>
                 <p className="muted">{C.unmatchedLead}</p>
-                <div className="table-wrap">
+                {/* PENNY-UX-5 — scrollable region must be keyboard-reachable (axe: scrollable-region-focusable) */}
+                <div className="table-wrap" tabIndex={0} role="region" aria-label={C.unmatchedTableAria}>
                   <table>
                     <thead><tr><th>{C.colDate}</th><th>{C.colDescription}</th><th>{C.colAmount}</th><th /></tr></thead>
                     <tbody>

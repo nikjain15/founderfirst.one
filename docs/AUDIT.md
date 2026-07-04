@@ -105,7 +105,14 @@ P1 = guideline breach / UX regression / real risk · P2 = polish.
   Penny widget) **and every authed owner surface of `apps/app`** — the `app-e2e`
   gate injects axe-core on the real authed DOM (Home · Review · Reports incl.
   cash-flow + lender package · Connections incl. invoicing · Journal · Reconcile)
-  and fails on any serious/critical WCAG 2.0/2.1 A+AA violation.
+  and fails on any serious/critical WCAG 2.0/2.1 A+AA violation. Since PENNY-UX-5
+  the Reports scan clicks through **all 7 report sub-views** (P&L · Trial balance ·
+  Balance sheet · Cash flow · General ledger · 1099-NEC · Lender package), not just
+  the tab default — sub-views behind a switcher are otherwise invisible to the gate.
+- **Scrollable regions** (`.table-wrap`, any `overflow: auto` container without
+  focusable children) carry `tabindex="0"` + `role="region"` + a copy-catalog
+  `aria-label`, so keyboard users can reach and arrow-scroll them
+  (axe `scrollable-region-focusable`, PENNY-UX-5/F5).
 - **Keyboard** — full Tab traversal, visible `:focus-visible`, dropdowns/drawers
   close on Esc + outside-click, no focus traps, logical order.
 - **Semantics** — landmarks/roles, `label`↔input association, button vs link
@@ -593,6 +600,11 @@ ratchet). Wave 4 invalidates the standing "Wave 4 not built" gap from Program 1.
   each owner surface gets a live axe-core WCAG 2.0/2.1 A+AA scan that FAILS the build on any
   serious/critical violation (moderate/minor logged as advisories). This retires the a11y
   browser gap flagged in every Program 1–5 audit ("auth-walled → a11y only static-checked").
+  **Extended by PENNY-UX-5:** the walk now clicks all 7 report sub-views (the GL view's
+  serious `scrollable-region-focusable` violation — Program 6 finding F5 — lived behind the
+  switcher, invisible to a default-view-only scan) and asserts the GL scroll region stays
+  keyboard-focusable. All 8 `.table-wrap` scroll regions in `apps/app` now carry
+  `tabindex`/`role="region"`/copy-catalog `aria-label`.
 - **Invoice email deliverability** — the `invoicing` edge fn's Resend send path + nudge dispatch
   are not exercised end-to-end here (SECDEF/idempotency/config verified in code; live email = a
   manual/integration check, like Wave-3's nudge path).

@@ -55,3 +55,20 @@ export const isTabLive = (id: ConsoleTabId): boolean =>
 export type ConsoleView = "console" | "denied";
 export const consoleView = (isStaff: boolean): ConsoleView =>
   isStaff ? "console" : "denied";
+
+/**
+ * The /admin ROUTE decision, factored out of the AdminRoute wrapper so the
+ * fail-closed invariant is asserted without a DOM. The route gate must never
+ * render the console until the is_platform_staff() check has RESOLVED true:
+ *   - while the check is loading   → "loading" (never the console — fail closed)
+ *   - if the check errors          → "error"   (never conflated with "not staff",
+ *                                                and never the console)
+ *   - resolved, non-staff/absent   → "denied"
+ *   - resolved staff               → "console"
+ * The DATABASE (is_platform_staff() in every staff RPC) is the real control; a
+ * fail-open here would still expose no tenant data, but must not flash the shell.
+ */
+export type AdminRouteState = { isLoading: boolean; isError: boolean; isStaff: boolean };
+export type AdminRouteView = "loading" | "error" | "console" | "denied";
+export const adminRouteView = ({ isLoading, isError, isStaff }: AdminRouteState): AdminRouteView =>
+  isLoading ? "loading" : isError ? "error" : consoleView(isStaff);

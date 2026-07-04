@@ -10,7 +10,8 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  CONSOLE_TABS, DEFAULT_CONSOLE_TAB, consoleView, isConsoleTab, isTabLive, type ConsoleTabId,
+  CONSOLE_TABS, DEFAULT_CONSOLE_TAB, adminRouteView, consoleView,
+  isConsoleTab, isTabLive, type ConsoleTabId,
 } from "./nav";
 import { COPY } from "../copy";
 import { SITE } from "@ff/site";
@@ -63,6 +64,47 @@ describe("admin console access gate (IA-3 · staff-only)", () => {
 
   it("shows the console to a platform-staff session", () => {
     expect(consoleView(true)).toBe("console");
+  });
+});
+
+describe("admin console ROUTE gate (IA-3 · must FAIL CLOSED before the check resolves)", () => {
+  // The whole value of a scaffold gate is that it never renders the console — or
+  // fetches its data — until is_platform_staff() has resolved true. These assert
+  // the AdminRoute wrapper's decision (App.tsx uses adminRouteView) for every
+  // React-Query state, so a future refactor can't silently make it fail open.
+  it("shows only the loader while the staff check is loading (never the console)", () => {
+    expect(adminRouteView({ isLoading: true, isError: false, isStaff: false })).toBe("loading");
+    // Even if a stale/optimistic value says staff, a still-loading check must gate.
+    expect(adminRouteView({ isLoading: true, isError: false, isStaff: true })).toBe("loading");
+  });
+
+  it("shows an error (not the console, not the wall) when the check errors", () => {
+    expect(adminRouteView({ isLoading: false, isError: true, isStaff: false })).toBe("error");
+    // A transient error must never conflate to 'not staff' NOR flash the console.
+    expect(adminRouteView({ isLoading: false, isError: true, isStaff: true })).toBe("error");
+  });
+
+  it("denies a resolved non-staff session", () => {
+    expect(adminRouteView({ isLoading: false, isError: false, isStaff: false })).toBe("denied");
+  });
+
+  it("renders the console only for a resolved platform-staff session", () => {
+    expect(adminRouteView({ isLoading: false, isError: false, isStaff: true })).toBe("console");
+  });
+
+  it("never yields 'console' unless the check resolved staff (exhaustive fail-closed sweep)", () => {
+    for (const isLoading of [true, false]) {
+      for (const isError of [true, false]) {
+        for (const isStaff of [true, false]) {
+          const view = adminRouteView({ isLoading, isError, isStaff });
+          if (view === "console") {
+            expect({ isLoading, isError, isStaff }).toEqual({
+              isLoading: false, isError: false, isStaff: true,
+            });
+          }
+        }
+      }
+    }
   });
 });
 

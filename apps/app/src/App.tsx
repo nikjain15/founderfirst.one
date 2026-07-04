@@ -10,6 +10,7 @@ import Settings from "./routes/Settings";
 import Accept from "./routes/Accept";
 import StaffHome from "./staff/StaffHome";
 import AdminConsole from "./admin/AdminConsole";
+import { adminRouteView } from "./admin/nav";
 import { useIsPlatformStaff } from "./staff/api";
 import { COPY } from "./copy";
 
@@ -88,17 +89,22 @@ function StaffRoute() {
 // authoritative. A transient access-check error must not read as "not staff".
 function AdminRoute() {
   const { data, isLoading, isError } = useIsPlatformStaff();
-  if (isLoading) return <div className="center muted">{COPY.common.loading}</div>;
-  if (isError) {
-    return (
-      <div className="empty" role="alert">
-        <p className="empty-title">{COPY.errors.verifyAccessFailed}</p>
-        <p className="muted">{COPY.errors.verifyAccessBody}</p>
-        <p><button type="button" onClick={() => window.location.reload()}>{COPY.common.tryAgain}</button></p>
-      </div>
-    );
+  // Fail closed: never render the console until the check RESOLVES (adminRouteView).
+  switch (adminRouteView({ isLoading, isError, isStaff: Boolean(data) })) {
+    case "loading":
+      return <div className="center muted">{COPY.common.loading}</div>;
+    case "error":
+      return (
+        <div className="empty" role="alert">
+          <p className="empty-title">{COPY.errors.verifyAccessFailed}</p>
+          <p className="muted">{COPY.errors.verifyAccessBody}</p>
+          <p><button type="button" onClick={() => window.location.reload()}>{COPY.common.tryAgain}</button></p>
+        </div>
+      );
+    default:
+      // "console" | "denied" — AdminConsole renders the shell or the Staff-only wall.
+      return <AdminConsole isStaff={Boolean(data)} />;
   }
-  return <AdminConsole isStaff={Boolean(data)} />;
 }
 
 // Routes wrapped in an error boundary keyed by pathname, so a render crash in one

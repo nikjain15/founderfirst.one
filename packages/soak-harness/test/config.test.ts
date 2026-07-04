@@ -25,6 +25,27 @@ describe("soak config — prod fence", () => {
     expect(() => assertLiveRunAllowed(cfg)).toThrow(/SUPABASE_URL/);
   });
 
+  it("refuses a prod URL even when SOAK_TARGET=sandbox (URL is ground truth, not the label)", () => {
+    // The exact prod ref an operator might paste while mislabelling the run "sandbox".
+    const cfg = loadConfig({
+      SOAK_TARGET: "sandbox",
+      SOAK_FIXTURE_PREFIX: "soak-20260704-",
+      SUPABASE_URL: "https://ejqsfzggyfsjzrcevlnq.supabase.co",
+      SUPABASE_SERVICE_ROLE_KEY: "svc",
+    });
+    expect(() => assertLiveRunAllowed(cfg)).toThrow(/PRODUCTION/i);
+  });
+
+  it("refuses a prod ref regardless of casing / URL shape", () => {
+    const cfg = loadConfig({
+      SOAK_TARGET: "sandbox",
+      SOAK_FIXTURE_PREFIX: "soak-20260704-",
+      SUPABASE_URL: "https://EJQSFZGGYFSJZRCEVLNQ.supabase.co/rest/v1/",
+      SUPABASE_SERVICE_ROLE_KEY: "svc",
+    });
+    expect(() => assertLiveRunAllowed(cfg)).toThrow(/PRODUCTION/i);
+  });
+
   it("allows a live run when fully and explicitly configured for sandbox", () => {
     const cfg = loadConfig({
       SOAK_TARGET: "sandbox",

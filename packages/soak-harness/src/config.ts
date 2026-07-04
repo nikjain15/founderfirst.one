@@ -24,6 +24,20 @@ export interface SoakConfig {
   target: string;
 }
 
+/**
+ * Known production Supabase project refs that the soak driver must NEVER touch,
+ * regardless of what SOAK_TARGET claims. The prod ref is well-known across the
+ * repo (docs, workers, host-setup), so an operator who mislabels a prod URL as
+ * "sandbox" must still be stopped. Extend this list, never the fence's trust.
+ */
+export const PROD_PROJECT_REFS: readonly string[] = ["ejqsfzggyfsjzrcevlnq"];
+
+/** True when the URL points at a known production project ref (any casing/host). */
+export function isProdUrl(url: string): boolean {
+  const u = (url || "").toLowerCase();
+  return PROD_PROJECT_REFS.some((ref) => u.includes(ref.toLowerCase()));
+}
+
 const num = (v: string | undefined, d: number): number => {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? n : d;
@@ -61,5 +75,13 @@ export function assertLiveRunAllowed(cfg: SoakConfig): void {
   }
   if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {
     throw new Error("refusing to run live soak: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set");
+  }
+  // Fail CLOSED on a prod URL even when the operator labelled the run "sandbox".
+  // SOAK_TARGET is an operator claim; the URL is ground truth. If they disagree,
+  // the URL wins and we refuse — a mislabelled prod flood is the worst outcome.
+  if (isProdUrl(cfg.supabaseUrl)) {
+    throw new Error(
+      "refusing to run live soak: SUPABASE_URL points at a known PRODUCTION project ref — the soak driver must never touch prod, no matter what SOAK_TARGET says",
+    );
   }
 }

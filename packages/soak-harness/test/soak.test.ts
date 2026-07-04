@@ -76,6 +76,38 @@ describe("soak harness — ledger invariants under concurrency (CI smoke)", () =
   });
 });
 
+// A DELIBERATELY BROKEN backend: it ignores the idempotency key and mints a fresh
+// row on every call (the double-reversal / lock-free P0 class from LEARNINGS). If
+// the assertions have teeth, this MUST make assertLedgerInvariants fail — proving
+// the harness would actually catch a real double-post rather than rubber-stamp it.
+class DoublePostingBackend implements PostBackend {
+  private seq = 0;
+  async post(_req: Parameters<PostBackend["post"]>[0]) {
+    await Promise.resolve();
+    return { id: `dup-${this.seq++}`, created: true };
+  }
+}
+
+describe("soak harness — the assertion has teeth (negative control)", () => {
+  it("assertLedgerInvariants FAILS no_double_post when a backend double-posts", async () => {
+    const plan = smokePlan();
+    const report = await run(new DoublePostingBackend(), plan);
+    // every call reported created ⇒ created (400) != distinctKeys (100)
+    expect(report.created).toBe(plan.totalEntries);
+    const checks = assertLedgerInvariants(report, { debits: 1, credits: 1, balanced: true });
+    const noDouble = checks.find((c) => c.name === "no_double_post");
+    expect(noDouble?.pass, noDouble?.detail).toBe(false);
+  });
+
+  it("assertLedgerInvariants FAILS tie_out_balances when the books don't tie", async () => {
+    const model = new LedgerModel();
+    const report = await run(new ModelBackend(model), smokePlan());
+    const checks = assertLedgerInvariants(report, { debits: 100, credits: 99, balanced: false });
+    const tie = checks.find((c) => c.name === "tie_out_balances");
+    expect(tie?.pass, tie?.detail).toBe(false);
+  });
+});
+
 describe("soak harness — plaid ingest dedup under concurrency (CI smoke)", () => {
   it("re-pulled transactions are no-ops: dedup on (org, external_id)", async () => {
     const model = new PlaidIngestModel();

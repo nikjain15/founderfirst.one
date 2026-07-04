@@ -187,20 +187,50 @@ export function paypalApiRows(txns: PayPalTransactionApi[]): PayPalTxnRow[] {
   });
 }
 
+/** Does this event code map to the withdrawal/transfer-to-bank line (the net)? */
+function isPayPalWithdrawalEvent(code: string): boolean {
+  const t = paypalTypeForEvent(code, 0).toLowerCase();
+  return t.includes("withdrawal") || t.includes("transfer to bank");
+}
+
 /**
  * A PayPal payout (batch id + its transactions) → PayoutComponents. Reuses
  * paypalRowsFrom + componentsFromRows — the SAME split as the CSV path. The
  * withdrawal/transfer row is excluded by paypalRowsFrom (it IS the net), so the
  * component rows reconcile to the deposit.
+ *
+ * RECONCILE (RT-230): when the window carries a withdrawal/transfer-to-bank row
+ * we reconcile our split net against Σ(withdrawal magnitudes) — the money that
+ * actually left PayPal — NOT against our own computed net (which would be a
+ * tautology that can never fail, hiding a mapping bug; LEARNINGS #16). When the
+ * transactions span more than one currency we refuse to sum across them
+ * (multi-currency is a separate card) and flag reconciles=false so the caller
+ * skips rather than silently mis-summing into one currency.
  */
 export function paypalPayoutToComponents(
   payoutId: string,
   payoutDate: string,
   currency: string,
   txns: PayPalTransactionApi[],
-): { components: PayoutComponents; reportedNetMinor: number } {
+): { components: PayoutComponents; reportedNetMinor: number | null; reconciles: boolean } {
   const id = apiPayoutId(payoutId);
+  const currencies = new Set<string>();
+  let withdrawalNetMinor = 0;
+  let sawWithdrawal = false;
+  for (const t of txns) {
+    const info = t.transaction_info ?? {};
+    const cc = info.transaction_amount?.currency_code;
+    if (cc) currencies.add(cc.toString());
+    if (isPayPalWithdrawalEvent(info.transaction_event_code ?? "")) {
+      sawWithdrawal = true;
+      withdrawalNetMinor += Math.abs(toMinor(info.transaction_amount?.value ?? "0"));
+    }
+  }
   const rows = paypalRowsFrom(paypalApiRows(txns));
   const components = componentsFromRows("paypal", id, payoutDate, currency, rows);
-  return { components, reportedNetMinor: components.netMinor };
+  const multiCurrency = currencies.size > 1;
+  const reportedNetMinor = sawWithdrawal ? withdrawalNetMinor : null;
+  const reconciles =
+    !multiCurrency && (reportedNetMinor == null ? true : reportedNetMinor === components.netMinor);
+  return { components, reportedNetMinor, reconciles };
 }

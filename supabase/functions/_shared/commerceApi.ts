@@ -197,6 +197,85 @@ export function paypalRow(eventCode: string, gross: number, fee: number): Row[] 
   return splitSignedGrossFee(kind, gross, fee);
 }
 
+/** Is this event code the withdrawal/transfer-to-bank line (the payout net itself)? */
+function isPayPalWithdrawal(eventCode: string): boolean {
+  const type = paypalTypeForEvent(eventCode, 0);
+  return type.includes("withdrawal") || type.includes("transfer to bank");
+}
+
+/** One PayPal transaction-search detail, shape we consume. */
+export interface PayPalDetail {
+  transaction_info?: {
+    transaction_event_code?: string;
+    transaction_amount?: { value?: string; currency_code?: string } | null;
+    fee_amount?: { value?: string } | null;
+  } | null;
+}
+
+/**
+ * Pure roll-up of PayPal transaction-search details → a CommercePayout, with a
+ * GENUINE reconcile target and multi-currency detection. Extracted from the fetch
+ * so it is unit-testable without network (red-team RT-230).
+ *
+ *  • reconcile target = Σ(withdrawal/transfer-to-bank row magnitudes) when the
+ *    window carries a withdrawal line — that IS the money that left PayPal, the
+ *    same net the CSV path reconciles to. Only when NO withdrawal row is present
+ *    (the window has no settlement) do we fall back to self-net (a partial window
+ *    the caller must treat with care — it will still be flagged reconciles=true
+ *    only because there is nothing to check against). This replaces the previous
+ *    `reportedNetMinor = c.net` tautology that could never fail (LEARNINGS #16).
+ *  • if transactions span MORE THAN ONE currency, we do NOT sum across them —
+ *    multi-currency payouts are a separate card; we flag reconciles=false so the
+ *    caller SKIPS rather than mis-summing into one currency.
+ */
+export function paypalPayoutFromDetails(
+  details: PayPalDetail[],
+  payoutDate: string,
+  fallbackPayoutId: string,
+): CommercePayout | null {
+  if (details.length === 0) return null;
+  const rows: Row[] = [];
+  const currencies = new Set<string>();
+  let withdrawalNetMinor = 0;
+  let sawWithdrawal = false;
+  let currency = "USD";
+  for (const d of details) {
+    const info = d.transaction_info ?? {};
+    const ga = info.transaction_amount ?? {};
+    const fa = info.fee_amount ?? {};
+    const code = String(info.transaction_event_code ?? "");
+    const gross = toMinor(String(ga.value ?? "0"));
+    const fee = toMinor(String(fa.value ?? "0"));
+    if (ga.currency_code) {
+      currencies.add(String(ga.currency_code));
+      currency = String(ga.currency_code);
+    }
+    if (isPayPalWithdrawal(code)) {
+      sawWithdrawal = true;
+      // a withdrawal moves money OUT (negative gross); its magnitude is the net
+      withdrawalNetMinor += Math.abs(gross);
+      continue;
+    }
+    rows.push(...paypalRow(code, gross, fee));
+  }
+  const c = componentsOf(rows);
+  const multiCurrency = currencies.size > 1;
+  // genuine reconcile: when the window carries a withdrawal, our split net must
+  // equal what actually left PayPal; never a tautology.
+  const reportedNetMinor = sawWithdrawal ? withdrawalNetMinor : null;
+  const reconciles =
+    !multiCurrency && (reportedNetMinor == null ? true : reportedNetMinor === c.net);
+  return {
+    provider: "paypal",
+    payoutId: payoutId(fallbackPayoutId),
+    payoutDate,
+    currency: multiCurrency ? "MIXED" : currency,
+    grossMinor: c.gross, feesMinor: c.fees, refundsMinor: c.refunds, adjustMinor: c.adjust, netMinor: c.net,
+    reportedNetMinor,
+    reconciles,
+  };
+}
+
 /**
  * Pull PayPal transactions for a settlement window (read-only) and roll them into
  * ONE CommercePayout keyed by the window's payout id (batch/settlement id passed
@@ -220,26 +299,7 @@ export async function fetchPayPalPayout(
     "Authorization": `Bearer ${token}`,
     "Content-Type": "application/json",
   });
-  const details = (resp.transaction_details as Array<Record<string, unknown>> | undefined) ?? [];
-  if (details.length === 0) return null;
-  const rows: Row[] = [];
-  let currency = "USD";
-  for (const d of details) {
-    const info = (d.transaction_info as Record<string, unknown> | undefined) ?? {};
-    const ga = (info.transaction_amount as { value?: string; currency_code?: string } | undefined) ?? {};
-    const fa = (info.fee_amount as { value?: string } | undefined) ?? {};
-    if (ga.currency_code) currency = String(ga.currency_code);
-    rows.push(...paypalRow(String(info.transaction_event_code ?? ""), toMinor(String(ga.value ?? "0")), toMinor(String(fa.value ?? "0"))));
-  }
-  const c = componentsOf(rows);
+  const details = (resp.transaction_details as PayPalDetail[] | undefined) ?? [];
   const id = payoutId(windowPayoutId ?? `paypal:${startIso.slice(0, 10)}`);
-  return {
-    provider: "paypal",
-    payoutId: id,
-    payoutDate: isoDate(endIso),
-    currency,
-    grossMinor: c.gross, feesMinor: c.fees, refundsMinor: c.refunds, adjustMinor: c.adjust, netMinor: c.net,
-    reportedNetMinor: c.net,
-    reconciles: true,
-  };
+  return paypalPayoutFromDetails(details, isoDate(endIso), id);
 }

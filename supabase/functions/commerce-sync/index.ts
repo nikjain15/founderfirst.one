@@ -47,6 +47,14 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
+  // Captured before any post: any entry whose created_at predates this request
+  // was an idempotency hit (post_journal_entry returns the ORIGINAL row on a
+  // key collision) — a robust duplicate signal that does not depend on how long
+  // ago the original was posted (the old >10s heuristic mislabelled a payout
+  // posted <10s earlier as freshly-posted, lying in the very response meant to
+  // prove exactly-once).
+  const requestStart = Date.now();
+
   const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
   const svc = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: u } = await svc.auth.getUser(jwt);
@@ -112,7 +120,8 @@ Deno.serve(async (req) => {
       continue;
     }
     const created = (data as { created_at?: string } | null)?.created_at;
-    const duplicate = created ? Date.now() - new Date(created).getTime() > 10_000 : false;
+    // predates this request → the RPC returned a pre-existing entry (dedup hit).
+    const duplicate = created ? new Date(created).getTime() < requestStart : false;
     synced.push({ payoutId: p.payoutId, netMinor: p.netMinor, duplicate, reconciles: true, posted: !duplicate });
   }
 

@@ -95,6 +95,12 @@ P1 = guideline breach / UX regression / real risk · P2 = polish.
   `documentElement.scrollWidth > innerWidth` is **false** at every width.
 - **No hardcoded px widths** in horizontal layouts — `clamp()`/`minmax()`/
   `flex-wrap`/`grid auto-fit` instead.
+- **Tab strips / horizontal nav** at narrow widths either **wrap** (all items
+  visible) or scroll **with a visible affordance** (edge-fade / indicator). A
+  hidden-scrollbar `overflow-x` strip passes the overflow check while clipping
+  items invisibly — that's a FAIL (PENNY-UX-3/F3; `.ledger-tabs` carries the
+  `.table-wrap` edge-fade at ≤640px and the app-e2e PENNY-UX-3 check gates it
+  at 375px).
 - **Tables** inside `.table-wrap` (scroll + edge fade).
 - **Tap targets** ≥ 44×44 (`--tap-min`); **inputs** ≥ 16px (no iOS zoom).
 - **Fixed elements** (Penny bubble, cookie banner) don't cover CTAs at any width.
@@ -336,7 +342,12 @@ on iOS-style hidden scrollbars. The overflow *gate* passes (the strip scrolls, t
 page doesn't), which is exactly why no CI catches it. Same class applies to the CPA
 Books sub-strip. **Repro:** owner org at 375px → tab row ends at "Connections".
 **Fix:** wrap to a second row at narrow widths (`flex-wrap`) or add the `.table-wrap`
-edge-fade affordance to `.ledger-tabs`.
+edge-fade affordance to `.ledger-tabs`. **FIXED (PENNY-UX-3):** `.ledger-tabs` (sub-strip
+included — shared class) carries the `.table-wrap` edge-fade at ≤640px, fade covers keyed
+to `var(--paper)` (the body background, so no cover artifact); the app-e2e PENNY-UX-3
+check (`verifyTabStripDiscoverability`) is the regression net — at 375px a strip that
+overflows without a *rendered* fade (computed `background-image`) fails the gate, and
+`#ltab-advanced` must stay reachable.
 
 **F4 · P1 · A CPA cannot actually add a client — the promised "+ Add client" job
 doesn't exist, and the Practice-home empty state points at it.**
@@ -613,6 +624,13 @@ ratchet). Wave 4 invalidates the standing "Wave 4 not built" gap from Program 1.
   receipts · Reports incl. cash-flow + lender package · Connections incl. invoicing · Journal ·
   Reconcile) is swept overflow-free across the full 320→1920 ladder on the real authed DOM.
   (rescue page is public → covered by `test:responsive`.)
+  **Extended by PENNY-UX-3:** overflow-free is necessary but not sufficient — a
+  hidden-scrollbar tab strip passes the sweep while clipping tabs off-screen (Program 6
+  finding F3: Advanced at right=432 in a 375px viewport). `.ledger-tabs` now carries the
+  `.table-wrap` edge-fade affordance at ≤640px (Books sub-strip included), and the app-e2e
+  PENNY-UX-3 check gates discoverability at 375px: a strip that overflows must actually
+  render the fade (computed `background-image`, not just a stylesheet rule) and
+  `#ltab-advanced` must stay reachable.
 - **axe / a11y browser scan** across the auth wall — **CLOSED** by the same `app-e2e` gate:
   each owner surface gets a live axe-core WCAG 2.0/2.1 A+AA scan that FAILS the build on any
   serious/critical violation (moderate/minor logged as advisories). This retires the a11y

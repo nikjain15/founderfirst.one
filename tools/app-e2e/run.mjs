@@ -35,7 +35,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 const ROOT = resolve(fileURLToPath(new URL("../../", import.meta.url)));
-const DIST = resolve(ROOT, "apps/app/dist");      // vite build output (base = /app/)
+const DIST = resolve(ROOT, "apps/app/dist");      // vite build output (base=/, prod parity — see app-e2e.yml)
 // axe-core is a small, standard a11y engine (pinned devDep). We read its bundled
 // source once and inject it into the page per screen, then run it against the real
 // authed DOM. Resolved from the installed package so the version tracks package.json.
@@ -487,6 +487,67 @@ try {
     }
   }
   }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // PENNY-UX-1 (P0) — the invite accept link resolves (docs/AUDIT.md Program 6 F1).
+  // The owner's "Share with your accountant" link is window.location.origin +
+  // accept_path (apps/app/src/org/InviteCpa.tsx), where accept_path comes from the
+  // `invites` edge fn. The live break: the fn emitted the app's RETIRED base
+  // ("/app/accept?token=…") while the app serves from "/" with Accept at "/accept",
+  // so the copied link fell into the router catch-all → silent redirect to
+  // onboarding, token never consumed. This block pins BOTH halves of the contract,
+  // independent of what's deployed (the prod fn lags until the integration gate):
+  //   (a) producer — the fn source in THIS tree generates "/accept?token=…";
+  //   (b) resolver — navigating the built app to exactly that generated path lands
+  //       ON the Accept route (pathname stays /accept, the accept screen renders
+  //       its live engagement status) and the route CONSUMES the token: the page
+  //       calls the invites-accept fn with the same token — precisely what the
+  //       catch-all redirect used to drop. A namespaced fake token keeps this
+  //       non-mutating (prod answers invalid_token / 404; no row is touched).
+  // Append-only block — self-contained, shares no state with the loop above.
+  if (authed) {
+    const fnSrc = await readFile(resolve(ROOT, "supabase/functions/invites/index.ts"), "utf8");
+    const m = fnSrc.match(/accept_path:\s*`([^`$]*)\$\{token\}`/);
+    const genPrefix = m ? m[1] : null;
+    if (genPrefix === "/accept?token=") {
+      ok("PENNY-UX-1: invites fn generates accept_path \"/accept?token=…\" (matches the app's Accept route at base /)");
+    } else {
+      fail(`PENNY-UX-1: invites fn generates accept_path "${genPrefix ?? "<not found>"}…" — must be "/accept?token=" (the app serves from "/"; anything else dies in the router catch-all)`);
+    }
+    // Guard: this check only means something against the prod-shaped base=/ build
+    // (what deploy-penny ships). A legacy /app/ build routes /app/accept and would
+    // mask the live behavior — exactly how F1 slipped past the old gate.
+    const indexHtml = await readFile(join(DIST, "index.html"), "utf8");
+    if (/(src|href)="\/app\//.test(indexHtml)) {
+      fail("PENNY-UX-1: apps/app/dist is a legacy base=/app/ build — build with `vite build --base=/` (prod parity, see app-e2e.yml) so the accept-link check exercises prod routing");
+    } else if (genPrefix) {
+      const fakeToken = "pennyux1-e2e-not-a-real-invite"; // unknown token → invites-accept 404s, nothing mutated
+      const acceptCall = page
+        .waitForRequest((r) => r.url().includes("/functions/v1/invites-accept"), { timeout: 20_000 })
+        .catch(() => null);
+      await page.setViewportSize(DESKTOP);
+      await page.goto(`http://127.0.0.1:${port}${genPrefix}${fakeToken}`, { waitUntil: "networkidle", timeout: 60_000 });
+      await page.waitForTimeout(500);
+      const landed = new URL(page.url()).pathname;
+      if (landed === "/accept") ok("PENNY-UX-1: the generated link lands on the Accept route (no catch-all redirect)");
+      else fail(`PENNY-UX-1: the generated link landed on "${landed}" — the router catch-all swallowed it (onboarding instead of Accept, the F1 dead-link behavior)`);
+      if (await page.locator(".auth-card [role=status]").count().catch(() => 0)) {
+        ok("PENNY-UX-1: the Accept screen renders its live engagement status");
+      } else {
+        fail("PENNY-UX-1: the Accept screen did not render (.auth-card [role=status] missing)");
+      }
+      const req = await acceptCall;
+      let sentToken = null;
+      try { sentToken = JSON.parse(req?.postData() ?? "{}")?.token ?? null; } catch { /* not JSON */ }
+      if (sentToken === fakeToken) ok("PENNY-UX-1: the Accept route consumed the token (invites-accept called with it — nothing lost in routing)");
+      else fail("PENNY-UX-1: the token from the generated link was never consumed (no invites-accept call carried it)");
+      await page.screenshot({ path: join(ARTIFACTS, "pennyux1-invite-accept.png"), fullPage: true });
+      // Leave the app back on its entry screen for any block appended after this one.
+      await page.goto(base, { waitUntil: "networkidle", timeout: 60_000 }).catch(() => {});
+      await page.waitForTimeout(800);
+    }
+  }
+  // ── end PENNY-UX-1 ─────────────────────────────────────────────────────────
 
   if (consoleErrors.length) console.log(`\nℹ️ ${consoleErrors.length} browser console error(s) logged above (not gating).`);
 } catch (e) {

@@ -211,6 +211,44 @@ async function verifyReportDownload() {
   }
 }
 
+// ── PENNY-UX-5 — BEGIN (append-only block; do not fold into the code above) ──
+/** PENNY-UX-5 — walk ALL report sub-views with axe, not just the tab default.
+ *  The audit's F5 (serious `scrollable-region-focusable` on the GL `.table-wrap`)
+ *  slipped because the a11y gate only ever scanned the Reports tab's default view
+ *  (P&L) — the six other views behind the `.report-seg` switcher were never
+ *  visited. This walk clicks every report view (P&L · Trial balance · Balance
+ *  sheet · Cash flow · General ledger · 1099-NEC · Lender package), runs the same
+ *  serious/critical-gating axe scan on each, and additionally asserts the GL
+ *  scroll region is keyboard-focusable (tabindex) — the exact F5 regression.
+ *  Labels mirror apps/app/src/copy/strings.ts COPY.reports.* (the copy catalog). */
+const REPORT_VIEWS_UX5 = [
+  "P&L", "Trial balance", "Balance sheet", "Cash flow",
+  "General ledger", "1099-NEC", "Lender package",
+];
+async function walkReportViewsA11y() {
+  await page.setViewportSize(DESKTOP);
+  const seg = page.locator(".report-seg");
+  if (!(await seg.count().catch(() => 0))) { fail("Reports: no report view switcher (.report-seg)"); return; }
+  for (const name of REPORT_VIEWS_UX5) {
+    const btn = seg.getByRole("button", { name, exact: true });
+    if (!(await btn.count().catch(() => 0))) { fail(`Reports: view switcher missing "${name}"`); continue; }
+    await btn.first().click().catch(() => {});
+    await page.waitForTimeout(400);
+    if (name === "General ledger") {
+      // F5 regression net: the GL scroll region must be reachable by keyboard.
+      const focusable = await page.locator(".reports .table-wrap[tabindex='0']").count().catch(() => 0);
+      const hasWrap = await page.locator(".reports .table-wrap").count().catch(() => 0);
+      if (hasWrap && !focusable) fail("Reports · General ledger: .table-wrap is not keyboard-focusable (no tabindex) — F5 regressed");
+      else ok("Reports · General ledger: scroll region is keyboard-focusable" + (hasWrap ? "" : " (empty state — no table)"));
+    }
+    await a11yScan(`Reports · ${name}`);           // same serious/critical gate as every screen
+  }
+  // Leave the switcher back on the default view so later assertions see P&L.
+  await seg.getByRole("button", { name: REPORT_VIEWS_UX5[0], exact: true }).first().click().catch(() => {});
+  await page.waitForTimeout(200);
+}
+// ── PENNY-UX-5 — END ──────────────────────────────────────────────────────────
+
 /** W2.1 — Catch-up mode renders inside Connections and its guided flow advances.
  *  Non-mutating happy path: the "Catch me up" hero + "Get me caught up" CTA render;
  *  clicking Start reveals the "Drop in your files" step (the file-drop). Proves the
@@ -474,6 +512,8 @@ try {
       // W1.2 — Reports must export a real file in ≤ 3 taps (pick period → Download).
       // Assert the download event fires with a period-stamped filename.
       if (s.key === "reports") await verifyReportDownload();
+      // PENNY-UX-5 — axe walk across ALL 7 report sub-views (not just the default).
+      if (s.key === "reports") await walkReportViewsA11y();
       // W2.1 — Catch-up mode is the guided "get me caught up" job on Connections.
       if (s.key === "connections") await verifyCatchUpEntry();
       // W3.5 — Receipt capture + match is nested in Review (no new top-level tab).

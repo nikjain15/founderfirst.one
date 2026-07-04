@@ -7,7 +7,7 @@
  * REG scenario RV2A1-WORKSHEET-TIEOUT (AUDIT.md ledger): worksheet ties to ledger.
  */
 import { describe, expect, it } from "vitest";
-import { buildWorksheet, worksheetTiesOut } from "./worksheet";
+import { buildWorksheet, taxYearDateFilter, worksheetTiesOut } from "./worksheet";
 import type { AccountResolution, TaxFormLine } from "./types";
 import type { JournalEntry, JournalLine, Side } from "../ledger/types";
 
@@ -139,5 +139,47 @@ describe("RV2A1-WORKSHEET-TIEOUT — worksheet ties to the ledger to the cent", 
     const ws = buildWorksheet(META, LINES, overridden, entries);
     expect(ws.lines.find((l) => l.line_key === "advertising")!.resolved_by).toBe("override");
     expect(ws.lines.find((l) => l.line_key === "meals")!.resolved_by).toBe("rule");
+  });
+});
+
+/**
+ * RED-TEAM P0 — tax-period boundary leak. Without a date filter scoped to the form's
+ * tax year, activity from other years rolls onto THIS year's return lines. The tie-out
+ * still passes (Σ traced entries == line) but the money is for the WRONG period — a
+ * "review-ready" lie. Filing.tsx must pass taxYearDateFilter(activeForm.tax_year).
+ *
+ * REG scenario RV2A1-WORKSHEET-PERIOD-SCOPE (AUDIT.md ledger).
+ */
+describe("RV2A1-WORKSHEET-PERIOD-SCOPE — a form only carries its own tax year", () => {
+  const resolutions = [res(ACCT.ads, "advertising"), res(ACCT.cash, null, "unmapped")];
+  // Same $700 ad expense booked in three different years.
+  const multiYear: JournalEntry[] = [
+    entry("2024-12-31", [line(ACCT.ads, "D", 70_000), line(ACCT.cash, "C", 70_000)], { memo: "2024 ads" }),
+    entry("2025-06-15", [line(ACCT.ads, "D", 70_000), line(ACCT.cash, "C", 70_000)], { memo: "2025 ads" }),
+    entry("2026-01-01", [line(ACCT.ads, "D", 70_000), line(ACCT.cash, "C", 70_000)], { memo: "2026 ads" }),
+  ];
+
+  it("REPRO: with no date filter, prior/next-year entries leak onto the line", () => {
+    const ws = buildWorksheet(META, LINES, resolutions, multiYear); // no filter — the bug
+    const ads = ws.lines.find((l) => l.line_key === "advertising")!;
+    expect(ads.amount_minor).toBe(210_000); // all three years summed — WRONG for a 2025 return
+    expect(worksheetTiesOut(ws)).toBe(true); // and it "ties" — the lie
+  });
+
+  it("FIX: scoping to the tax year keeps only that year's activity", () => {
+    const ws = buildWorksheet(META, LINES, resolutions, multiYear, taxYearDateFilter(2025));
+    const ads = ws.lines.find((l) => l.line_key === "advertising")!;
+    expect(ads.amount_minor).toBe(70_000); // only the 2025 entry
+    expect(ads.source_entries).toHaveLength(1);
+    expect(ads.source_entries[0].memo).toBe("2025 ads");
+    expect(worksheetTiesOut(ws)).toBe(true);
+  });
+
+  it("the tax-year filter is inclusive on both calendar boundaries", () => {
+    const f = taxYearDateFilter(2025);
+    expect(f("2025-01-01")).toBe(true);  // first day in
+    expect(f("2025-12-31")).toBe(true);  // last day in
+    expect(f("2024-12-31")).toBe(false); // day before out
+    expect(f("2026-01-01")).toBe(false); // day after out
   });
 });

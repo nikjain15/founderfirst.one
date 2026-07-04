@@ -94,6 +94,20 @@ export interface Worksheet {
 }
 
 /**
+ * Inclusive calendar-year entry-date predicate for a given tax year: keeps entries
+ * dated on-or-within [YYYY-01-01 .. YYYY-12-31]. Entry dates are ISO 'YYYY-MM-DD'
+ * strings (lexicographically ordered), so a plain string compare is exact — no Date
+ * parsing / timezone drift. This is the scoping the Filing surface MUST apply so a
+ * form's lines only carry that year's activity (see Filing.tsx). Pure date math, no
+ * law facts (fiscal-year returns are a later refinement).
+ */
+export function taxYearDateFilter(taxYear: number): (entryDate: string) => boolean {
+  const lo = `${taxYear}-01-01`;
+  const hi = `${taxYear}-12-31`;
+  return (d) => d >= lo && d <= hi;
+}
+
+/**
  * Build the return worksheet for one org × form × tax-year, tracing each line down to
  * the journal entries behind it.
  *

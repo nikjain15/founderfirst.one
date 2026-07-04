@@ -13,7 +13,7 @@ import { formatMoney } from "../ledger/money";
 import {
   useOrgTaxProfile, useTaxForms, useTaxFormLines, useTaxResolution,
 } from "./api";
-import { buildWorksheet, worksheetTiesOut, type WorksheetLine, type WorksheetSource } from "./worksheet";
+import { buildWorksheet, taxYearDateFilter, worksheetTiesOut, type WorksheetLine, type WorksheetSource } from "./worksheet";
 import { COPY } from "../copy";
 
 export default function Filing({ orgId, entries }: { orgId: string; entries: JournalEntry[] }) {
@@ -32,13 +32,19 @@ export default function Filing({ orgId, entries }: { orgId: string; entries: Jou
 
   const worksheet = useMemo(() => {
     if (!activeForm || !lines.data || !resolution.data) return null;
+    // Scope entries to the form's tax year. WITHOUT this, activity from every other
+    // year rolls onto this year's return lines: the tie-out still passes (Σ entries ==
+    // line) but the money is for the wrong period — a "review-ready" lie. Calendar-year
+    // scoping mirrors the seeded engine's tax_year (fiscal-year returns are a later
+    // refinement); the bounds are pure date math, not a law literal.
+    const yearFilter = taxYearDateFilter(activeForm.tax_year);
     return buildWorksheet(
       {
         jurisdiction_code: profile.data?.jurisdiction_code ?? "",
         form_code: activeForm.form_code, entity_type: activeForm.entity_type,
         tax_year: activeForm.tax_year, form_name: activeForm.name,
       },
-      lines.data, resolution.data, entries,
+      lines.data, resolution.data, entries, yearFilter,
     );
   }, [activeForm, lines.data, resolution.data, entries, profile.data]);
 

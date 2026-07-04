@@ -1,0 +1,40 @@
+name: Edge function tests (Deno)
+
+# Runs the CI-safe Deno unit/harness tests for Supabase edge functions.
+# These are pure, network-free tests (fetch/env/DB are stubbed) — no secrets,
+# no live Resend, no real inboxes. Added with W5.3 so the email send path
+# (_shared/send.harness.test.ts) is proven in CI, not verified-in-code-only.
+#
+# Scope: the shared _shared/*.test.ts suite (email harness + any future shared
+# unit tests). Per-function tests that pull npm deps (e.g. penny-thread's
+# @types/node) need `deno install` first and are out of scope for this gate.
+
+on:
+  pull_request:
+    paths:
+      - "supabase/functions/**"
+      - ".github/workflows/deno-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+      - ".github/workflows/deno-tests.yml"
+  workflow_dispatch:
+
+jobs:
+  deno-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check + run shared edge-function tests
+        # --allow-env: the harness sets/reads RESEND_API_KEY / NOTIFY_FROM on a
+        # per-test basis and restores them. No --allow-net: the send path is
+        # stubbed, so a real network call would (correctly) fail the test.
+        run: |
+          deno check supabase/functions/_shared/send.harness.test.ts
+          deno test --allow-env supabase/functions/_shared/

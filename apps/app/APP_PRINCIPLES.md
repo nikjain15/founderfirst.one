@@ -13,9 +13,13 @@ tenancy / permission design) — that doc says *who can see what*; this doc says
 
 ## 0. Baseline discipline (read first — real drift bit us here)
 
-- **`main` == production.** The Penny app deploys from `main`. As of 1 Jul 2026, `main` carries the
-  grouped nav (`MAIN_TABS` = Overview · Categorize · Books · Reports, with `BOOKS_SUBS` = Journal ·
-  Accounts · Import · Periods in [ledger/Ledger.tsx](src/ledger/Ledger.tsx)) — this is what is live.
+- **`main` == production.** The Penny app deploys from `main`. As of 4 Jul 2026, the nav is pure
+  data in [ledger/nav.ts](src/ledger/nav.ts) (`OWNER_TABS` / `CPA_TABS`, projected per lens by
+  [ledger/Ledger.tsx](src/ledger/Ledger.tsx)) — this is what is live: **owner** = Home · Review ·
+  Reports · Connections + Advanced (Journal · Chart of accounts · Reconcile · Periods · Rules);
+  **CPA** = Overview · Categorize (Categorize · Rules) · Books (Journal · Accounts · Import ·
+  Reconcile · Periods) · Reports. Changing the nav = editing `nav.ts`, then updating §2/§3 here
+  (LEARNINGS #7: change a behavior → update what the system says about itself).
 - **`deploy-finish` is stale** for the app IA: it still has the older flat 7-tab `ALL_TABS`. **Do
   not build the IA work on `deploy-finish`** — branch from `main` (a fresh worktree) so your
   baseline equals prod. Editing the stale branch is how a redesign silently regresses live nav.
@@ -49,7 +53,7 @@ give each its real nav.
 | **Review** | "What needs a decision from me?" | The single action queue. Today: confirm Penny's categorizations. Later: approve a bill, an unmatched deposit. Everything that needs the owner funnels here (badge with count). |
 | **Reports** | "Show me the money" | P&L, Balance sheet, plain-language. Sub-segment: P&L · Trial balance · Balance sheet. Later: cash flow, tax summary. |
 | **Connections** | "Bring in / share my data" | Permanent tab. Bank + accounting connectors, history import, **Invite accountant**. (This absorbs the old `Import` tab and the `InviteCpa` sidebar.) |
-| **Advanced** *(secondary)* | The raw ledger for hands-on owners | Visually de-emphasized. Exposes **Journal · Chart of accounts · Periods** — the accountant-grade views. Present but never in the owner's face. |
+| **Advanced** *(secondary)* | The raw ledger for hands-on owners | Visually de-emphasized. Exposes **Journal · Chart of accounts · Reconcile · Periods · Rules** (`OWNER_TABS` in [ledger/nav.ts](src/ledger/nav.ts)) — the accountant-grade views. Present but never in the owner's face. |
 
 **Why:** an owner is not an accountant. Journal / Chart of Accounts / period-close are accountant
 tools — kept reachable (owner's decision was "show under Advanced") but out of the default path so
@@ -67,8 +71,11 @@ the owner's mental model stays a handful of plain words.
   client owner's own invite-your-accountant form (`/settings?invite_cpa=…`) — the owner
   reviews, picks access, and sends; the CPA accepts. No firm-side server path creates a
   client org or engagement.
-- **Per-client tabs, in accounting-workflow order:**
-  **Journal · Categorize · Chart of accounts · Reports (with Trial balance) · Periods (close & lock).**
+- **Per-client tabs, in accounting-workflow order** (shipped shape, `CPA_TABS` in
+  [ledger/nav.ts](src/ledger/nav.ts)): **Overview · Categorize (Categorize · Rules) · Books
+  (Journal · Accounts · Import · Reconcile · Periods) · Reports.** Categorize's queue sub is
+  write-only (read-only engagements still see Rules); Books groups the record→reconcile→close
+  surfaces so the primary strip stays four tabs wide.
 - Read-only vs. full comes from the engagement (`access`); write affordances hide on read-only and
   the server refuses anyway (ARCHITECTURE §4.3). No cross-client leakage.
 

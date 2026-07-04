@@ -94,12 +94,12 @@ spec: map the 9 undefined vars (--fs-sm/xs/caption --ink-1 --r-sm --radius-1/2 -
   tokens in apps/app/src/styles.css; add `check:css-vars` grep gate to CI so the class can't recur.
 
 ## PENNY-UX-3 · Mobile tab-strip discoverability (P1)
-status: pr:#224
+status: merged (pr:#224)
 blocked-by: PENNY-UX-2 (styles.css chain) — merged (pr:#221), clear
 spec: `.ledger-tabs` wraps or edge-fades at ≤640px so Advanced/subs are visibly reachable; ladder screenshot diff in app-e2e.
 
 ## PENNY-UX-4 · CPA "+ Add client" affordance (P1)
-status: blocked:decision-needed — Nik picks the mechanism (switcher affordance vs honest empty copy)
+status: merged (pr:#226) — Nik decided 4 Jul: BUILD (guided request flow in org switcher)
 spec: either "+ Add client" in the org switcher for firm contexts, or Practice-home empty copy stops promising it.
 
 ## PENNY-UX-5 · Focusable scroll regions + full report axe walk (P1)
@@ -107,7 +107,7 @@ status: merged (pr:#222)
 spec: tabindex/role/label on scrollable .table-wraps (Ledger.tsx); app-e2e axe walk visits all 7 report views.
 
 ## PENNY-UX-6 · Touch targets ≥44px (P2)
-status: pr:#227
+status: merged (pr:#227)
 blocked-by: PENNY-UX-3 (styles.css chain) — merged (pr:#224)
 spec: sub-tabs, sm/seg buttons, brand link to ≥44px via padding (keep density).
 

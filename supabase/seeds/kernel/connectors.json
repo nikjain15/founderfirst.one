@@ -1,7 +1,7 @@
 {
   "_meta": {
     "table": "connectors",
-    "description": "Connector/provider registry behind ONE provider interface (Roadmap 3b). Consumed by the Connections tab, the marketing 'works with' strip, and import flows. Adding a provider = one interface impl + one row here. Keys 'qbo'/'xero' match the external_provider enum; 'plaid' is the bank-feed provider (W2.3); category 'commerce' rows are the payout-splitting providers (W4.1/W4.1-B) — a commerce tile goes live when status='available' AND a report parser is registered in apps/app/src/ecommerce/payouts.ts. logo_ref points at a design-system asset id — never an inline URL/SVG.",
+    "description": "Connector/provider registry behind ONE provider interface (Roadmap 3b). Consumed by the Connections tab, the marketing 'works with' strip, and import flows. Adding a provider = one interface impl + one row here. Keys 'qbo'/'xero' match the external_provider enum; 'plaid' is the bank-feed provider (W2.3); category 'commerce' rows are the payout-splitting providers (W4.1/W4.1-B) — a commerce tile goes live when status='available' AND a report parser is registered in apps/app/src/ecommerce/payouts.ts. The 'api_sync' capability (W4.1-C/D, square+paypal) means a read-only SANDBOX API pull exists (apps/app/src/ecommerce/apiSync.ts + supabase/functions/commerce-sync) that posts the SAME split as file import and dedups exactly-once on the shared ext:<provider>:payout:<id> key. logo_ref points at a design-system asset id — never an inline URL/SVG.",
     "primary_key": "key"
   },
   "rows": [
@@ -60,8 +60,8 @@
       "name": "PayPal",
       "category": "commerce",
       "logo_ref": "connector.paypal",
-      "capabilities": ["payout_split", "report_import"],
-      "scopes": [],
+      "capabilities": ["payout_split", "report_import", "api_sync"],
+      "scopes": ["https://uri.paypal.com/services/reporting/search/read"],
       "status": "available",
       "sort_order": 30
     },
@@ -70,8 +70,8 @@
       "name": "Square",
       "category": "commerce",
       "logo_ref": "connector.square",
-      "capabilities": ["payout_split", "report_import"],
-      "scopes": [],
+      "capabilities": ["payout_split", "report_import", "api_sync"],
+      "scopes": ["PAYOUTS_READ"],
       "status": "available",
       "sort_order": 40
     },

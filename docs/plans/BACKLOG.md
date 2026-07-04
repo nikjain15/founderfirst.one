@@ -112,8 +112,8 @@ blocked-by: PENNY-UX-3 (styles.css chain) — merged (pr:#224)
 spec: sub-tabs, sm/seg buttons, brand link to ≥44px via padding (keep density).
 
 ## PENNY-UX-7 · Copy/pattern honesty batch (P2)
-status: unclaimed
-blocked-by: PENNY-UX-5 (Ledger.tsx), PENNY-UX-6 (styles.css)
+status: pr:#228
+blocked-by: PENNY-UX-5 (Ledger.tsx) — merged (pr:#222), PENNY-UX-6 (styles.css) — merged (pr:#227); clear
 spec: activity takeaway counts entries; Login heading on the app scale; APP_PRINCIPLES §0/§3 refreshed to nav.ts reality.
 
 ## PENNY-UX-8 · Stub payout tiles (P2)

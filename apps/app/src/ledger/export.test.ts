@@ -237,6 +237,33 @@ describe("CSV formula-injection defense", () => {
     // A negative amount is a number, not a formula — must be left as-is.
     expect(csvCellIsNumberSafe()).toBe(true);
   });
+
+  // Leading-whitespace bypass: Excel/Sheets trim leading spaces/tabs/newlines
+  // before parsing, so " =HYPERLINK(...)" (space then trigger) still executes.
+  // The neutralizer must inspect the first NON-whitespace char, not just char 0.
+  it.each([
+    ["leading space", " =HYPERLINK(\"http://evil\")"],
+    ["leading tab", "\t=cmd|'/c calc'!A1"],
+    ["multiple spaces", "   +evil()"],
+    ["leading newline", "\n@SUM(A1)"],
+    ["space then minus", " -1+1"],
+  ])("neutralizes a formula hidden behind %s (memo cell)", (_label, memo) => {
+    // A memo is a user-controlled text cell carried through GL detail.
+    const e = [entry("2026-05-01", [
+      line(ACCT.cash, "D", 100_00),
+      line(ACCT.sales, "C", 100_00),
+    ], { memo })];
+    const csv = toCsv("gl", e, CTX);
+    const rows = parseCsv(csv);
+    const cell = rows.flat().find((c) => c.includes(memo.trimStart()));
+    // The neutralized cell exists and carries a leading tab BEFORE the whitespace,
+    // so the spreadsheet reads the whole thing as literal text, not a formula.
+    expect(cell).toBeDefined();
+    expect(cell!.startsWith("\t")).toBe(true);
+    // No CSV field may begin (after quoting) with the raw whitespace+trigger — the
+    // tab guard must be the very first character of the field content.
+    expect(cell!.replace(/^\t/, "").trimStart()).toBe(memo.trimStart());
+  });
 });
 
 // Guard: a negative amount cell like "-300.00" must survive untouched.

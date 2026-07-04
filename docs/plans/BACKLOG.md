@@ -59,7 +59,7 @@ OPS-1 (#199) live Lighthouse ≥90, Plaid production application (Nik human step
 - **All future work runs in a NEW 24/7 loop chat** via the launchd durable loop (this chat set it up).
 
 ## PENNY-UX-0 · Rigorous audit of penny.founderfirst.one (P0 — do FIRST)
-status: claimed:loop-orch-0703
+status: pr:#220 (audit complete — 1 P0 · 4 P1 · 7 P2; fixtures for cleanup listed in the ledger)
 goal: a complete findings ledger of everything wrong with the live authed app — the input that
   drives the PENNY-UX fix cards. Nothing is fixed in this card; it AUDITS.
 spec: exercise every lens (owner/CPA/staff) × every tab/route × the full width ladder (RESPONSIVE.md)
@@ -77,6 +77,47 @@ acceptance:
   - [ ] Ranked findings + a concrete PENNY-UX-1..N fix-card list for the loop to build next
 decision-needed: none to audit
 touches: read-only audit + docs/AUDIT.md (a fixer card set follows)
+
+### PENNY-UX fix cards (from the PENNY-UX-0 audit, PR #220 — full specs in docs/AUDIT.md § PENNY-UX findings)
+Shared-file map (LEARNINGS #24): styles.css = UX-2→UX-3→UX-6 serialize · Ledger.tsx = UX-5→UX-7
+serialize · tools/app-e2e/run.mjs shared UX-1/UX-5 (append-only delimited blocks, union-merge at gate).
+
+## PENNY-UX-1 · Invite accept link resolves (P0)
+status: claimed:loop-orch-0703
+spec: `accept_path` → `/accept?token=…` in supabase/functions/invites/index.ts (write-don't-deploy;
+  fn deploy at the gate per LEARNINGS #23); app-e2e asserts generated link reaches Accept + engagement renders.
+workflow: owner · "invite my accountant" · send link → CPA lands on Accept → books shared, 2 taps
+
+## PENNY-UX-2 · Zero unresolved CSS vars + gate (P1)
+status: claimed:loop-orch-0703
+spec: map the 9 undefined vars (--fs-sm/xs/caption --ink-1 --r-sm --radius-1/2 --surface/-2) to real
+  tokens in apps/app/src/styles.css; add `check:css-vars` grep gate to CI so the class can't recur.
+
+## PENNY-UX-3 · Mobile tab-strip discoverability (P1)
+status: unclaimed
+blocked-by: PENNY-UX-2 (styles.css chain)
+spec: `.ledger-tabs` wraps or edge-fades at ≤640px so Advanced/subs are visibly reachable; ladder screenshot diff in app-e2e.
+
+## PENNY-UX-4 · CPA "+ Add client" affordance (P1)
+status: blocked:decision-needed — Nik picks the mechanism (switcher affordance vs honest empty copy)
+spec: either "+ Add client" in the org switcher for firm contexts, or Practice-home empty copy stops promising it.
+
+## PENNY-UX-5 · Focusable scroll regions + full report axe walk (P1)
+status: claimed:loop-orch-0703
+spec: tabindex/role/label on scrollable .table-wraps (Ledger.tsx); app-e2e axe walk visits all 7 report views.
+
+## PENNY-UX-6 · Touch targets ≥44px (P2)
+status: unclaimed
+blocked-by: PENNY-UX-3 (styles.css chain)
+spec: sub-tabs, sm/seg buttons, brand link to ≥44px via padding (keep density).
+
+## PENNY-UX-7 · Copy/pattern honesty batch (P2)
+status: unclaimed
+blocked-by: PENNY-UX-5 (Ledger.tsx), PENNY-UX-6 (styles.css)
+spec: activity takeaway counts entries; Login heading on the app scale; APP_PRINCIPLES §0/§3 refreshed to nav.ts reality.
+
+## PENNY-UX-8 · Stub payout tiles (P2)
+status: blocked:decision-needed — Nik: flag off PayPal/Square/Amazon tiles or bless the coming-soon pattern.
 
 Rules: builders claim the top `unclaimed` card whose `blocked-by` is clear, set
 `claimed:<session-tag>`, work ONLY that card in their own worktree, and exit by setting

@@ -8,7 +8,7 @@
 -- as the W3.2 test does for penny_activity. Everything rolls back.
 
 begin;
-select plan(16);
+select plan(21);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -113,6 +113,47 @@ select is(
   (select count(*)::int from penny_activity
     where org_id = '00000000-0000-0000-0000-0000000000f3' and kind = 'receipt_matched'),
   1, 'the receipt attach is recorded in the Penny-did-this feed');
+
+-- ── REG-W3-F5: feed dedup/undo key off the receipt_id FK, not a summary LIKE ──
+-- Audit Program 4, F5: dedup/undo used `summary like '%uuid%'` over free-text
+-- copy. These assert the fix — the feed row carries a real receipt_id FK, dedup
+-- is a no-op on retry keyed off it, and (the regression teeth) dedup + undo still
+-- work when the summary's `[uuid]` suffix is REMOVED (the copy-change failure the
+-- old LIKE could never survive).
+select is(
+  (select receipt_id from _fa), (select id from _r2),
+  'the feed row carries the real receipt_id foreign key (not just a summary suffix)');
+
+-- Strip the `[uuid]` suffix the old LIKE relied on — the FK path must not care.
+update penny_activity
+   set summary = 'Filed your receipt.'   -- no bracketed uuid anymore
+ where org_id = '00000000-0000-0000-0000-0000000000f3' and kind = 'receipt_matched';
+
+-- Dedup on retry: with the suffix gone, a second autoattach for the SAME receipt
+-- must still be a no-op (one feed row). Under the old LIKE this created a duplicate.
+select lives_ok($$
+  select autoattach_receipt(
+    '00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-0000000000f3',
+    (select id from _r2), (select id from _e2), 'exact', 0.92, 'Filed again.')$$,
+  're-autoattach for the same receipt does not error (idempotent)');
+select is(
+  (select count(*)::int from penny_activity
+    where org_id = '00000000-0000-0000-0000-0000000000f3'
+      and kind = 'receipt_matched' and receipt_id = (select id from _r2)),
+  1, 'dedup keyed off receipt_id yields exactly one feed row even with the suffix stripped');
+
+-- Undo: detach the auto-attached receipt; its feed row must be marked undone via
+-- the FK even though the summary no longer contains the uuid.
+select detach_receipt(
+  '00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-0000000000f3', (select id from _r2));
+select is(
+  (select count(*)::int from penny_activity
+    where org_id = '00000000-0000-0000-0000-0000000000f3'
+      and receipt_id = (select id from _r2) and undone_at is not null),
+  1, 'detach marks the feed row undone via receipt_id (survives a copy change)');
+select is(
+  (select status from receipts where id = (select id from _r2)),
+  'unmatched', 'the auto-attached receipt returns to the unmatched queue on detach');
 
 -- ── detach unlinks WITHOUT touching the ledger entry ─────────────────────────
 create temp table _tb_before as

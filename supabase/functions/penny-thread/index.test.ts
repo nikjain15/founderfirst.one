@@ -10,7 +10,8 @@
  */
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
-  money, metricPhrase, personaOverride, DECLINE_DEFAULT, CONNECT_BOOKS_DEFAULT,
+  money, metricPhrase, personaOverride, groundingViolation,
+  DECLINE_DEFAULT, CONNECT_BOOKS_DEFAULT,
   type GroundedFact,
 } from "../_shared/thread/route.ts";
 
@@ -51,6 +52,28 @@ Deno.test("personaOverride: a persona edit changes the deterministic decline cop
     personaOverride(edited, "empty"),
     "Hook up your bank and I'll start reading your books.",
   );
+});
+
+Deno.test("REG-W3-F4: grounding guard rejects an EXTRA invented number/percent", () => {
+  // Audit Program 4, F4: the old guard only asserted the correct figure was PRESENT,
+  // so a reply that also invented a percentage/estimate passed through. The guard
+  // must now reject any percent or any money token other than the single allowed one.
+  const allowed = money(20000); // "$200.00"
+
+  // A legit, on-contract reply is NOT a violation.
+  assertEquals(groundingViolation(`You spent ${allowed} in Q2 2026.`, allowed), false);
+  assertEquals(groundingViolation(`Net income was ${allowed}.`, allowed), false);
+  // Bare integers (years, quarters, counts) must not trip it.
+  assertEquals(groundingViolation(`As of 2026 across 12 accounts, cash is ${allowed}.`, allowed), false);
+
+  // The F4 repro: correct figure present, but an invented percentage tags along.
+  assertEquals(groundingViolation(`You spent ${allowed}, about 15% of revenue.`, allowed), true);
+  assertEquals(groundingViolation(`${allowed} — roughly 15 percent of income.`, allowed), true);
+  // An extra, un-grounded money figure is a violation even with the right one present.
+  assertEquals(groundingViolation(`${allowed} this quarter, up from $150.00.`, allowed), true);
+  // The negative/parenthesized allowed form still passes; a different one fails.
+  assertEquals(groundingViolation(`Net income was ${money(-500)}.`, money(-500)), false);
+  assertEquals(groundingViolation(`Net income was ${money(-500)} vs $99.00 last month.`, money(-500)), true);
 });
 
 Deno.test("baked fallback copy is Q&A-appropriate (not the categorize prompt)", () => {

@@ -35,6 +35,7 @@ export interface ReceiptMatch {
   dateDelta: number; // |days| between receipt and entry (0 for exact)
   amount_minor: number; // the entry magnitude matched
   exactTies: number; // # of same-date+amount candidates (≥2 = ambiguous → confirm, never auto-attach)
+  fuzzyTies: number; // # of same-amount candidates within the window that a fuzzy pass can't tell apart (≥2 = ambiguous → confirm). 0 for a resolved exact match.
 }
 
 /** Whole-day difference between two YYYY-MM-DD dates (UTC, calendar days). */
@@ -71,18 +72,24 @@ export function matchReceipt(
   const exactTies = sameAmount.filter((c) => dayDiff(receipt.receipt_date!, c.entry_date) === 0);
   if (exactTies.length > 0) {
     const exact = exactTies[0];
-    return { entry_id: exact.entry_id, kind: "exact", dateDelta: 0, amount_minor: Math.abs(exact.amount_minor), exactTies: exactTies.length };
+    return { entry_id: exact.entry_id, kind: "exact", dateDelta: 0, amount_minor: Math.abs(exact.amount_minor), exactTies: exactTies.length, fuzzyTies: 0 };
   }
 
-  // Pass 2: FUZZY within ±windowDays, nearest date wins.
-  let best: EntryCandidate | null = null;
-  let bestDelta = Infinity;
-  for (const c of sameAmount) {
-    const d = dayDiff(receipt.receipt_date, c.entry_date);
-    if (d <= windowDays && d < bestDelta) { best = c; bestDelta = d; }
-  }
-  if (!best) return null;
-  return { entry_id: best.entry_id, kind: "fuzzy", dateDelta: bestDelta, amount_minor: Math.abs(best.amount_minor), exactTies: 0 };
+  // Pass 2: FUZZY within ±windowDays, nearest date wins. But a same-amount
+  // collision on DIFFERENT dates is just as ambiguous as an exact same-date tie
+  // (F3): a receipt on Jul-2 sits equidistant from same-amount txns on Jul-1 and
+  // Jul-3 — the fuzzy pass would silently pick one. So we count how many in-window
+  // same-amount candidates share the BEST (nearest) delta; ≥2 means the fuzzy pass
+  // cannot attribute the receipt to one txn over another → surface the tie so the
+  // tier gate downgrades to a confirm card rather than auto-attach to the first.
+  const inWindow = sameAmount
+    .map((c) => ({ c, d: dayDiff(receipt.receipt_date!, c.entry_date) }))
+    .filter((x) => x.d <= windowDays);
+  if (inWindow.length === 0) return null;
+  const bestDelta = Math.min(...inWindow.map((x) => x.d));
+  const atBest = inWindow.filter((x) => x.d === bestDelta);
+  const best = atBest[0].c;
+  return { entry_id: best.entry_id, kind: "fuzzy", dateDelta: bestDelta, amount_minor: Math.abs(best.amount_minor), exactTies: 0, fuzzyTies: atBest.length };
 }
 
 /**
@@ -134,6 +141,9 @@ export function receiptTier(
 ): Tier {
   // Ambiguous exact ties can never auto-attach — surface as a confirm card.
   if (match.kind === "exact" && match.exactTies >= 2) return "low";
+  // Ambiguous fuzzy ties (F3): a same-amount collision on different dates equidistant
+  // from the receipt is just as unattributable as a same-date exact tie → confirm card.
+  if (match.kind === "fuzzy" && match.fuzzyTies >= 2) return "low";
   // A single unambiguous exact match is HIGH only if the vendor corroborates OR
   // the confidence clears the config high cutoff — otherwise it confirms.
   if (match.kind === "exact" && ctx.vendorCorroborated) return "high";

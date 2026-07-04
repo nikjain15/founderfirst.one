@@ -824,7 +824,7 @@ integrator merges in waves. Baseline = `main` after pre-onboarding #1–#15.
 | 7 | Opening balances import | 0 | 1 | opening-balance row missing an account silently folds into the OBE plug → "balanced" but wrong, success shown. | 🟢 | [#135](../../pull/135) |
 | 8 | Chart of accounts | 0 | 2 | unvalidated `account.currency` → malformed `char(3)` crashes `Intl.NumberFormat` → books view dies; cross-tenant `parent_id`. ISO constraint + cycle guard. | 🟢 | [#137](../../pull/137) |
 | 9 | Auth, session & routing | 0 | — | passed hardening; micro-fixes only. | 🟢 | [#133](../../pull/133) |
-| 10 | Invites & engagements | 0 | 1 | invite accept was token-only, not email-bound; re-engage/no-demote lifecycle gaps. | 🟢 | [#134](../../pull/134) |
+| 10 | Invites & engagements | 0 | 1 | invite accept was token-only, not email-bound; re-engage/no-demote lifecycle gaps. **3 Jul (PENNY-UX-1 F1, P0):** the *generated* accept link itself was dead — `invites` fn emitted the app's retired `/app/accept` base → router catch-all → onboarding, token lost. Fixed to `/accept?token=…`; app-e2e now gates the generated-link → Accept-route → token-consumed path on the prod-shaped `--base=/` build. | 🟢 | [#134](../../pull/134) |
 | 11 | CPA lens / access scope | 0 | 1 | approval-settings write path missing; read-only CPA scope otherwise held. | 🟢 | [#141](../../pull/141) |
 | 12 | QBO / Xero connect & sync | 1 | 3 | provider-commit DEAD ON ARRIVAL (qbo/xero source hit opening-balance branch → `no_cutover_date`); double-post on re-pull; JPY ×100. | 🟢 | [#142](../../pull/142) |
 | 13 | Onboarding & org creation | 0 | 1 | org-create not atomic (partial org on failure). `create_org_atomic`. | 🟢 | [#136](../../pull/136) |

@@ -54,7 +54,14 @@ jobs:
           VITE_E2E:               "1"
           VITE_DEV_APP_EMAIL:     ${{ secrets.E2E_APP_EMAIL }}
           VITE_DEV_APP_PASSWORD:  ${{ secrets.E2E_APP_PASSWORD }}
-        run: pnpm --dir apps/app build
+        # --base=/ = prod parity: deploy-penny (pages.yml) ships apps/app to
+        # penny.founderfirst.one built with `vite build --base=/`. The vite.config
+        # default (/app/) is the app's RETIRED base — testing it is exactly how the
+        # dead invite-accept link (PENNY-UX-1) slipped past this gate: /app/accept
+        # resolved under the legacy base but 404s-into-onboarding on prod routing.
+        # (No `--` before the flag — pnpm would pass a literal "--" to vite, which
+        # then ignores --base. Verified: this form yields root-based /assets/ URLs.)
+        run: pnpm --dir apps/app build --base=/
 
       - name: App E2E smoke + responsive + a11y
         run: node tools/app-e2e/run.mjs

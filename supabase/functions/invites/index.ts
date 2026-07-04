@@ -101,5 +101,10 @@ Deno.serve(async (req) => {
   });
   if (invErr) return json({ error: "invite_failed", detail: invErr.message }, 400);
 
-  return json({ token, accept_path: `/app/accept?token=${token}` }, 201);
+  // accept_path is joined with window.location.origin by the app (InviteCpa.tsx),
+  // and the app serves from "/" (penny.founderfirst.one, deploy-penny builds with
+  // --base=/) with the Accept route at /accept. The old "/app/accept" prefix — the
+  // app's retired base — fell into the router catch-all → onboarding, token lost
+  // (PENNY-UX-1 / F1). The app-e2e gate pins this producer+resolver contract.
+  return json({ token, accept_path: `/accept?token=${token}` }, 201);
 });

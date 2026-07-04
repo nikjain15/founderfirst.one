@@ -886,6 +886,7 @@ integrator merges in waves. Baseline = `main` after pre-onboarding #1–#15.
 | 13 | Onboarding & org creation | 0 | 1 | org-create not atomic (partial org on failure). `create_org_atomic`. | 🟢 | [#136](../../pull/136) |
 | 14 | Data export & erasure (GDPR) | 0 | 1 | export truncated at 1000 rows (same paging class as #3). Paginated to 1500+. | 🟢 | [#130](../../pull/130) |
 | 15 | Platform-staff / break-glass | 0 | 1 | `open_break_glass` not gated on editor tier. Gated + audit-logged. | 🟢 | [#140](../../pull/140) |
+| 16 | Load / soak — ledger post RPC + Plaid sync (RV2-E) | — | — | `packages/soak-harness/` drives N concurrent posts over shared idempotency keys and asserts no double-post (`created == distinct keys`), tie-out balances, Plaid dedup on `(org,external_id)`, and records latency/error percentiles. CI-safe smoke (`.github/workflows/soak-harness.yml`) runs the assertions against a faithful in-memory model of `post_journal_entry`; the live sandbox driver runs the same runner against the real RPC. Runbook: `docs/plans/production-readiness-runbook.md`. | ⬜ (smoke green; live sandbox soak operator-run) | this PR |
 
 **Totals:** 8 P0, ~19 P1 confirmed and fixed. 12/15 fully closed (live + on `main`);
 2 (#131, #139) captured onto `main` + prod-reconciled by **[#156](../../pull/156)**; 1 (#143)
@@ -912,7 +913,7 @@ Carry these into the next audit cycle; they are the backlog for coverage, not de
 | **UI click-through** of periods, categorize, import | all 15 audits were API/RPC-level; no browser walk of the actual screens | add an E2E-driven UI audit pass |
 | **Isolation F3** — `can_access_org` SECURITY DEFINER per-row seqscan on `journal_lines` (anon GET ~3s) | DoS surface; flagged, not fixed | index / rewrite the access check |
 | **CSV F4** — re-importing the same file double-posts (no dedup) | real user footgun | **RESOLVED** — policy = skip dupes; same-source content-key (CSV re-upload) + **cross-source** content-hash dedup (`20260704040000`, W2 gate fix) so the same real txn from CSV+Plaid posts once |
-| **Load / volume** — behavior at 10k–100k entries, concurrent orgs | only correctness tested, not scale | perf audit with seeded large orgs |
+| **Load / volume** — behavior at 10k–100k entries, concurrent orgs | only correctness tested, not scale | **harness landed (RV2-E, row 16)** — `packages/soak-harness/` proves no double-post + tie-out under concurrency (CI smoke); still to do: run the live sandbox soak at 10k–100k volume + a perf audit with seeded large orgs |
 | ~~**The whole top-half of the product**~~ — reconciliation UI, tax-line mapping, CPA workqueue, exports, depreciation | **BUILT in Wave 1** (Program 2 above); no longer "not built yet" | now ⬜ ledger rows, per-PR red-teamed, **stress-pass pending** — scheduled in [STRESS_TEST_TRACKER.md](STRESS_TEST_TRACKER.md) |
 | **Wave 2 not built** — catch-up mode (W2.1), QBO one-click migration (W2.2), Plaid bank feeds (W2.3), Penny in-app thread + trust-tiered cards (W3.x) | genuinely not built yet → nothing to stress-test | see [FULL_BOOKKEEPING_ROADMAP.md](plans/FULL_BOOKKEEPING_ROADMAP.md) Waves 2–4 |
 | **W1.3-B CPA mapping-edit UI deferred** | the tax-mapping *engine* shipped (W1.3-B); the CPA per-account mapping-edit *UI* was deferred | build + stress the edit UI when carded |

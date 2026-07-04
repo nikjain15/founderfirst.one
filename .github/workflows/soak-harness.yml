@@ -1,0 +1,54 @@
+name: Soak harness (CI smoke)
+
+# CI-safe smoke test for the load/soak harness (@ff/soak-harness, RV2-E).
+# Pure, DB-free, network-free: the concurrency + idempotency + tie-out assertions
+# run against the in-memory model (packages/soak-harness/src/model.ts), which is a
+# faithful reimplementation of the post_journal_entry guarantees. The LIVE soak
+# driver (src/soak.ts) is sandbox-only and is NOT run here — CI needs no secrets.
+#
+# The full-scale live run is operator-invoked against a sandbox project with
+# namespaced fixtures — see docs/plans/production-readiness-runbook.md.
+
+on:
+  pull_request:
+    paths:
+      - "packages/soak-harness/**"
+      - ".github/workflows/soak-harness.yml"
+  push:
+    branches: [main]
+    paths:
+      - "packages/soak-harness/**"
+      - ".github/workflows/soak-harness.yml"
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: Vitest smoke + typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm --dir packages/soak-harness exec tsc -p tsconfig.json
+
+      - name: Run soak-harness smoke suite
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --dir packages/soak-harness test --reporter=verbose 2>&1 | tee soak-vitest.log
+
+      - name: Upload red report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-harness-report
+          path: soak-vitest.log
+          if-no-files-found: ignore

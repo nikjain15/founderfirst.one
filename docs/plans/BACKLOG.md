@@ -107,8 +107,8 @@ status: merged (pr:#222)
 spec: tabindex/role/label on scrollable .table-wraps (Ledger.tsx); app-e2e axe walk visits all 7 report views.
 
 ## PENNY-UX-6 · Touch targets ≥44px (P2)
-status: unclaimed
-blocked-by: PENNY-UX-3 (styles.css chain) — not yet merged
+status: pr:#227
+blocked-by: PENNY-UX-3 (styles.css chain) — merged (pr:#224)
 spec: sub-tabs, sm/seg buttons, brand link to ≥44px via padding (keep density).
 
 ## PENNY-UX-7 · Copy/pattern honesty batch (P2)

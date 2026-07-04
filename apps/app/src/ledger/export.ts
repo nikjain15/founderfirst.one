@@ -78,10 +78,18 @@ function csvAmount(minor: number): string {
 // categorization). Neutralize by prefixing a tab so the spreadsheet treats it as
 // literal text. Numeric amount cells are emitted by csvAmount (e.g. "-300.00")
 // and must NOT be mangled, so pure numbers are exempted.
+//
+// Leading whitespace does NOT disarm a formula: Excel/Sheets trim leading spaces
+// (and tabs/newlines) before parsing, so " =HYPERLINK(...)" still executes. Per
+// OWASP CSV-injection guidance we inspect the FIRST NON-WHITESPACE character —
+// if that is a trigger the whole cell (whitespace included) is neutralized.
 const NUMERIC_RE = /^-?\d+(\.\d+)?$/;
+// First non-whitespace char is a formula trigger (=, +, -, @). \s covers space,
+// tab, CR, LF, and other Unicode whitespace the spreadsheet may also strip.
+const FORMULA_RE = /^\s*[=+\-@]/;
 function neutralize(s: string): string {
   if (NUMERIC_RE.test(s)) return s;
-  return /^[=+\-@\t\r]/.test(s) ? `\t${s}` : s;
+  return FORMULA_RE.test(s) ? `\t${s}` : s;
 }
 function csvCell(v: string | number): string {
   const s = neutralize(String(v));

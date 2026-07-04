@@ -1071,6 +1071,7 @@ export const COPY = {
     paymentAmount: "Amount received",
     applyPayment: "Apply",
     cancel: "Cancel",
+    overpayment: (balance: string) => `That's more than the ${balance} balance. We'll apply the full balance.`,
     // form
     customerName: "Customer name",
     customerEmail: "Customer email",

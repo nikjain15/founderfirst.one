@@ -276,6 +276,9 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
 /* "+ New organization" now lives in the org switcher (APP_PRINCIPLES §5) — a
    footer action in the menu + an inline create panel under the top bar. */
 .orgsw-foot { margin-top: 0.25rem; padding-top: 0.35rem; border-top: var(--bw-hair) solid var(--line); }
+/* PENNY-UX-4: two footer actions ("+ Add client" above "+ New organization") —
+   only the first draws the separator; siblings sit flush. */
+.orgsw-foot + .orgsw-foot { margin-top: 0; padding-top: 0; border-top: 0; }
 .orgsw-create { color: var(--brand-strong); font-weight: var(--fw-medium); justify-content: flex-start; }
 .topbar-create { border-top: var(--bw-hair) solid var(--line); background: var(--paper); }
 .topbar-create-inner {
@@ -284,6 +287,28 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
   display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;
 }
 .topbar-create-inner .create-org { margin-top: 0; }
+
+/* ── PENNY-UX-4 · "+ Add client" guided flow (firm contexts, top-bar panel) ── */
+.add-client {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(100%, 34rem);
+}
+.add-client h3 { margin: 0; font-size: var(--fs-h3); }
+.add-client-intro, .add-client-note { margin: 0; font-size: var(--fs-ui); }
+.add-client-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.add-client-actions button { min-height: var(--tap-min); }
+
+/* Owner-side notice when the invite form is pre-filled from a request link. */
+.invite-prefill {
+  margin: 0;
+  font-size: var(--fs-ui);
+  color: var(--ink-2);
+  background: var(--brand-tint);
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--r-card);
+}
 
 /* ── invite CPA ──────────────────────────────────────────────── */
 .invite-cpa {

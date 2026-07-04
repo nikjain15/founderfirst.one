@@ -357,9 +357,11 @@ async function ensureBooks() {
   const anon = capturedAnonKey;
   if (!anon) { fail("ensureBooks: could not capture the Supabase anon key from app traffic"); return; }
 
-  // Resolve the org the app is showing (first membership org).
+  // Resolve the org the app is showing. PENNY-UX-4: the account now ALSO owns a
+  // firm fixture (created below, named to sort last), so order by name to match
+  // ActiveOrgProvider's default (orgs[0] of `.order("name")`) — not table order.
   const membRes = await page.evaluate(async ([sbUrl, token, anon]) => {
-    const r = await fetch(`${sbUrl}/rest/v1/organizations?select=id&limit=1`, {
+    const r = await fetch(`${sbUrl}/rest/v1/organizations?select=id&type=eq.business&order=name.asc&limit=1`, {
       headers: { apikey: anon, Authorization: `Bearer ${token}` },
     });
     return { status: r.status, body: await r.json().catch(() => null) };
@@ -588,6 +590,191 @@ try {
     }
   }
   // ── end PENNY-UX-1 ─────────────────────────────────────────────────────────
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // PENNY-UX-4 (P1) — CPA "+ Add client" in the org switcher (docs/AUDIT.md
+  // Program 6 F4). There is NO server path that lets a firm create a client org
+  // or engagement — engagements exist only via owner-invite → CPA-accept. So the
+  // firm-side "+ Add client" produces a REQUEST artifact: a link to the owner's
+  // own /settings invite form, pre-filled with the CPA's email (`invite_cpa`
+  // param). This block proves BOTH halves live:
+  //   (a) producer — a firm context (namespaced fixture, create-if-absent) shows
+  //       "+ Add client" in the switcher; the guided panel renders the request
+  //       link with the right shape; the Practice-home empty copy names the SAME
+  //       affordance (F4's dead-end instruction is gone);
+  //   (b) resolver — an owner opening a request link gets the invite form
+  //       pre-filled + the review notice, and submitting reaches the machinery's
+  //       FIRST SERVER RESPONSE: the `invites` fn answers 201 with an accept
+  //       link. ⚠️ Mutation footprint (namespaced): one `invites` row per run
+  //       (email pennyux4-e2e-cpa@example.com, expires in 7 days, never accepted
+  //       — the fn sends no email) + a ONE-TIME firm org "zzz-pennyux4-practice"
+  //       (create_org_atomic is capped + deduped; the name sorts after
+  //       "[E2E] …" so the app's orgs[0]-by-name default stays the business).
+  // Append-only block — self-contained; shares only the ok/fail/a11yScan/
+  // sweepWidths helpers and leaves the app back on the business org at base.
+  if (authed) {
+    const FIRM_NAME_UX4 = "zzz-pennyux4-practice";
+    const PREFILL_EMAIL_UX4 = "pennyux4-e2e-cpa@example.com";
+
+    // Session + anon key, read the same way ensureBooks does (self-contained).
+    const ctx4 = await page.evaluate(() => {
+      let token = null, ref = null;
+      for (const k of Object.keys(localStorage)) {
+        const m = k.match(/^sb-(.+)-auth-token$/);
+        if (!m) continue;
+        try {
+          const v = JSON.parse(localStorage.getItem(k) || "null");
+          if (v?.access_token) { token = v.access_token; ref = m[1]; }
+        } catch { /* skip */ }
+      }
+      return { token, ref };
+    });
+    if (!ctx4?.token || !ctx4?.ref || !capturedAnonKey) {
+      fail("PENNY-UX-4: could not read the authed session / anon key");
+    } else {
+      const sbUrl4 = `https://${ctx4.ref}.supabase.co`;
+
+      // Fixture: create-if-absent the namespaced firm via the SAME write path the
+      // app uses (`orgs` fn → create_org_atomic; idempotent by lookup-first).
+      const firmLookup = await page.evaluate(async ([sbUrl, token, anon, name]) => {
+        const r = await fetch(
+          `${sbUrl}/rest/v1/organizations?select=id&type=eq.firm&name=eq.${encodeURIComponent(name)}&limit=1`,
+          { headers: { apikey: anon, Authorization: `Bearer ${token}` } },
+        );
+        return { status: r.status, body: await r.json().catch(() => null) };
+      }, [sbUrl4, ctx4.token, capturedAnonKey, FIRM_NAME_UX4]);
+      let firmId = Array.isArray(firmLookup.body) && firmLookup.body[0]?.id;
+      if (!firmId) {
+        const created = await page.evaluate(async ([sbUrl, token, anon, name]) => {
+          const r = await fetch(`${sbUrl}/functions/v1/orgs`, {
+            method: "POST",
+            headers: { apikey: anon, Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "firm", name }),
+          });
+          return { status: r.status, body: await r.json().catch(() => null) };
+        }, [sbUrl4, ctx4.token, capturedAnonKey, FIRM_NAME_UX4]);
+        firmId = created.body?.org?.id;
+        if (created.status === 201 && firmId) ok("PENNY-UX-4: firm fixture created (one-time, namespaced)");
+        else fail(`PENNY-UX-4: firm fixture create failed (status ${created.status}: ${JSON.stringify(created.body)})`);
+      } else {
+        ok("PENNY-UX-4: firm fixture already present (no create needed)");
+      }
+
+      if (firmId) {
+        // Fresh load so the switcher's org query includes the firm.
+        await page.setViewportSize(DESKTOP);
+        await page.goto(base, { waitUntil: "networkidle", timeout: 60_000 });
+        await page.locator(".orgsw-trigger").waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
+
+        // (a0) Business (owner) context must NOT offer "+ Add client".
+        await page.locator(".orgsw-trigger").click().catch(() => {});
+        await page.waitForTimeout(300);
+        const addInOwnerCtx = await page.getByRole("button", { name: "+ Add client" }).count().catch(() => 0);
+        if (addInOwnerCtx) fail("PENNY-UX-4: '+ Add client' leaked into a business/owner context (firm-only affordance)");
+        else ok("PENNY-UX-4: owner context does not show '+ Add client' (firm-only)");
+
+        // (a1) Switch to the firm from the open switcher.
+        const firmOption = page.locator(".orgsw-menu .orgsw-item", { hasText: FIRM_NAME_UX4 }).first();
+        if (!(await firmOption.count().catch(() => 0))) {
+          fail("PENNY-UX-4: firm fixture missing from the switcher list");
+        } else {
+          await firmOption.click().catch(() => {});
+          await page.waitForTimeout(800);
+
+          // (a2) Practice home renders; its empty copy names the affordance that
+          // now exists (the exact F4 dead-end this card closes). The firm has no
+          // clients, so the "No clients yet" state must show and say "+ Add client".
+          const practice = page.locator(".practice");
+          if (!(await practice.count().catch(() => 0))) {
+            fail("PENNY-UX-4: Practice home did not render for the firm context");
+          } else {
+            // The firm has no clients — wait out the queue/counts loading state.
+            await page.locator(".practice .ledger-empty").waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
+            const emptyText = await page.locator(".practice .ledger-empty").innerText().catch(() => "");
+            if (emptyText.includes("+ Add client") && emptyText.toLowerCase().includes("switcher")) {
+              ok("PENNY-UX-4: Practice-home empty copy points at the real switcher affordance (F4 honest)");
+            } else {
+              fail(`PENNY-UX-4: Practice-home empty copy doesn't match the affordance — got: "${emptyText.slice(0, 160)}"`);
+            }
+          }
+
+          // (a3) Firm context shows "+ Add client"; the guided panel renders the
+          // request link with the resolver's exact shape.
+          await page.locator(".orgsw-trigger").click().catch(() => {});
+          await page.waitForTimeout(300);
+          const addBtn = page.getByRole("button", { name: "+ Add client" });
+          if (!(await addBtn.count().catch(() => 0))) {
+            fail("PENNY-UX-4: firm context has no '+ Add client' in the switcher");
+          } else {
+            ok("PENNY-UX-4: firm context shows '+ Add client' in the switcher");
+            await addBtn.first().click().catch(() => {});
+            await page.waitForTimeout(400);
+            const panel = page.locator(".topbar-create .add-client");
+            if (!(await panel.count().catch(() => 0))) {
+              fail("PENNY-UX-4: '+ Add client' did not open the guided panel");
+            } else {
+              const linkText = await panel.locator(".invite-link code").innerText().catch(() => "");
+              if (linkText.includes("/settings?invite_cpa=")) {
+                ok("PENNY-UX-4: the panel renders the request link (/settings?invite_cpa=…)");
+              } else {
+                fail(`PENNY-UX-4: request link malformed — got "${linkText.slice(0, 120)}"`);
+              }
+              await page.screenshot({ path: join(ARTIFACTS, "pennyux4-add-client-panel.png"), fullPage: true });
+              await a11yScan("PENNY-UX-4: firm + Add client panel");
+              await sweepWidths("PENNY-UX-4: firm + Add client panel");
+            }
+          }
+
+          // (a4) Back to the business org (leave state tidy for later blocks).
+          await page.setViewportSize(DESKTOP);
+          await page.locator(".orgsw-trigger").click().catch(() => {});
+          await page.waitForTimeout(300);
+          // First option that ISN'T the firm = the business (options render in the
+          // app's name order; don't assume the seeded org's exact name).
+          const bizOption = page.locator(".orgsw-menu .orgsw-item")
+            .filter({ hasNotText: FIRM_NAME_UX4 }).first();
+          if (await bizOption.count().catch(() => 0)) await bizOption.click().catch(() => {});
+          else await page.keyboard.press("Escape").catch(() => {});
+          await page.waitForTimeout(500);
+        }
+
+        // (b) Resolver: an owner opening a request link lands on the pre-filled
+        // invite form; submitting reaches the machinery's FIRST SERVER RESPONSE.
+        await page.goto(
+          `http://127.0.0.1:${port}/settings?invite_cpa=${encodeURIComponent(PREFILL_EMAIL_UX4)}`,
+          { waitUntil: "networkidle", timeout: 60_000 },
+        );
+        await page.locator(".invite-cpa").waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
+        const prefilled = await page.locator(".invite-cpa input[type=email]").inputValue().catch(() => "");
+        if (prefilled === PREFILL_EMAIL_UX4) ok("PENNY-UX-4: request link pre-fills the owner's invite form");
+        else fail(`PENNY-UX-4: invite form not pre-filled (got "${prefilled}")`);
+        if (await page.locator(".invite-prefill").count().catch(() => 0)) {
+          ok("PENNY-UX-4: the review-the-address notice renders on prefill");
+        } else {
+          fail("PENNY-UX-4: no review notice on the pre-filled form");
+        }
+        const invResp = page.waitForResponse(
+          (r) => new URL(r.url()).pathname.endsWith("/functions/v1/invites") && r.request().method() === "POST",
+          { timeout: 20_000 },
+        ).catch(() => null);
+        await page.locator(".invite-cpa button[type=submit]").click().catch(() => {});
+        const resp = await invResp;
+        if (resp && resp.status() === 201) {
+          const body = await resp.json().catch(() => null);
+          if (body?.accept_path) ok("PENNY-UX-4: flow reached its first server response — invites fn 201 with an accept link (owner-initiated, unchanged authz)");
+          else fail("PENNY-UX-4: invites fn 201 but no accept_path in the body");
+        } else {
+          fail(`PENNY-UX-4: invite submit did not reach a 201 from the invites fn (status ${resp ? resp.status() : "none"})`);
+        }
+        await page.screenshot({ path: join(ARTIFACTS, "pennyux4-owner-prefilled-invite.png"), fullPage: true });
+
+        // Leave the app on its entry screen for any block appended after this one.
+        await page.goto(base, { waitUntil: "networkidle", timeout: 60_000 }).catch(() => {});
+        await page.waitForTimeout(800);
+      }
+    }
+  }
+  // ── end PENNY-UX-4 ─────────────────────────────────────────────────────────
 
   if (consoleErrors.length) console.log(`\nℹ️ ${consoleErrors.length} browser console error(s) logged above (not gating).`);
 } catch (e) {

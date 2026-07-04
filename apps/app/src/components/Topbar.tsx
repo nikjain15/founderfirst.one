@@ -9,6 +9,7 @@ import { useIsPlatformStaff } from "../staff/api";
 import AccountMenu from "./AccountMenu";
 import OrgSwitcher from "./OrgSwitcher";
 import CreateOrg from "../org/CreateOrg";
+import AddClient from "../org/AddClient";
 import { useClientCounts } from "../lenses/practiceQueue";
 import { SITE } from "@ff/site";
 import { COPY } from "../copy";
@@ -27,6 +28,10 @@ export default function Topbar() {
   // "+ New organization" opens an inline panel under the bar (APP_PRINCIPLES §5) —
   // launched from the org switcher, not stapled to the page body.
   const [creating, setCreating] = useState(false);
+  // "+ Add client" (PENNY-UX-4) — the CPA's add-a-client job, firm contexts only
+  // (APP_PRINCIPLES §3). Same panel slot as create; opening one closes the other.
+  const [addingClient, setAddingClient] = useState(false);
+  const isFirm = activeOrg?.type === "firm";
 
   const roleLabel = roleInfo
     ? roleInfo.lens === "owner" ? COPY.nav.roleOwner : roleInfo.canWrite ? COPY.nav.roleCpa : COPY.nav.roleCpaReadonly
@@ -41,7 +46,9 @@ export default function Topbar() {
         </Link>
 
         <OrgSwitcher orgs={orgs} activeOrg={activeOrg} onSelect={setActiveOrgId}
-          onCreateOrg={() => setCreating(true)} counts={counts} />
+          onCreateOrg={() => { setAddingClient(false); setCreating(true); }}
+          onAddClient={isFirm ? () => { setCreating(false); setAddingClient(true); } : undefined}
+          counts={counts} />
 
         <span className="spacer" />
 
@@ -67,6 +74,14 @@ export default function Topbar() {
           <div className="topbar-create-inner">
             <CreateOrg onDone={() => setCreating(false)} />
             <button className="ghost sm" onClick={() => setCreating(false)}>{COPY.common.cancel}</button>
+          </div>
+        </div>
+      )}
+      {addingClient && isFirm && (
+        <div className="topbar-create">
+          <div className="topbar-create-inner">
+            <AddClient />
+            <button className="ghost sm" onClick={() => setAddingClient(false)}>{COPY.common.cancel}</button>
           </div>
         </div>
       )}

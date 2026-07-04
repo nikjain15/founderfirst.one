@@ -62,7 +62,11 @@ the owner's mental model stays a handful of plain words.
 - **Practice home** (firm level) is the CPA's landing: which clients need review, what's
   uncategorized/unreconciled, upcoming period closes/deadlines — ranked across all clients.
 - The **org switcher is the CPA's client list**; picking a client opens that client's books.
-  **"+ Add client"** lives in the switcher (see §5).
+  **"+ Add client"** lives in the switcher (see §5). It opens a guided *request* flow
+  (PENNY-UX-4): engagements stay owner-invited, so the CPA sends a link that pre-fills the
+  client owner's own invite-your-accountant form (`/settings?invite_cpa=…`) — the owner
+  reviews, picks access, and sends; the CPA accepts. No firm-side server path creates a
+  client org or engagement.
 - **Per-client tabs, in accounting-workflow order:**
   **Journal · Categorize · Chart of accounts · Reports (with Trial balance) · Periods (close & lock).**
 - Read-only vs. full comes from the engagement (`access`); write affordances hide on read-only and

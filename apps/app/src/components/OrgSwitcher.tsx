@@ -28,12 +28,15 @@ function Check() {
 }
 
 export default function OrgSwitcher({
-  orgs, activeOrg, onSelect, onCreateOrg, counts,
+  orgs, activeOrg, onSelect, onCreateOrg, onAddClient, counts,
 }: {
   orgs: Org[]; activeOrg: Org | null; onSelect: (id: string) => void;
   // "+ New organization" / "+ Add client" lives here (APP_PRINCIPLES §5), not on
   // the page body — the switcher is where a user goes to change which books they're in.
   onCreateOrg?: () => void;
+  // "+ Add client" (PENNY-UX-4) — passed only in firm/CPA contexts (APP_PRINCIPLES
+  // §3): opens the guided request flow, since engagements are owner-invited.
+  onAddClient?: () => void;
   // Optional per-org open-item counts (CPA practice: badge each client's work).
   counts?: Record<string, number>;
 }) {
@@ -115,6 +118,19 @@ export default function OrgSwitcher({
               </button>
             </li>
           ))}
+          {onAddClient && (
+            // PENNY-UX-4: the CPA's "add a client" job (firm contexts only). Same
+            // non-option treatment as "+ New organization" below — an action, not a
+            // selectable org, so role="presentation" keeps the listbox valid ARIA.
+            <li className="orgsw-foot" role="presentation">
+              <button
+                type="button" className="orgsw-item orgsw-create"
+                onClick={() => { setOpen(false); triggerRef.current?.focus(); onAddClient(); }}
+              >
+                {COPY.nav.addClient}
+              </button>
+            </li>
+          )}
           {onCreateOrg && (
             // Not a selectable option — it's an action. role="presentation" keeps the
             // listbox's children valid (a bare <li> inside role="listbox" is invalid

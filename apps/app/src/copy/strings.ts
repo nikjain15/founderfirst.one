@@ -76,6 +76,8 @@ export const COPY = {
     selectOrg: "Select organization",
     newOrg: "+ New organization",
     orgsAria: "Organizations",
+    // ── PENNY-UX-4 · CPA "+ Add client" (APPENDED — additive key) ─────────────
+    addClient: "+ Add client",
   },
 
   // ── Org create ─────────────────────────────────────────────────────────────
@@ -108,6 +110,12 @@ export const COPY = {
     submit: "Invite CPA",
     errSend: "Could not send invite.",
     linkLabel: "Invite link (send to your accountant):",
+    // ── PENNY-UX-4 · pre-filled from an accountant's request link (APPENDED — additive keys) ──
+    // Shown when /settings?invite_cpa=<email> pre-fills the form. The owner still
+    // reviews the address, chooses access, and sends — nothing is automatic.
+    prefillNotice:
+      "Your accountant sent you this request. Check the email address is really theirs, choose what they can do, then send the invite.",
+    prefillAria: "Accountant request notice",
   },
 
   // ── Approval setting ───────────────────────────────────────────────────────
@@ -713,8 +721,11 @@ export const COPY = {
     allClearBody:
       "Nothing needs you across your clients right now. New items land here as they come in.",
     noClientsTitle: "No clients yet",
+    // PENNY-UX-4 (F4): copy now matches a real affordance — "+ Add client" lives in
+    // the switcher and sends the client a request; the engagement itself is still
+    // created by the client's owner inviting you (the only path to access).
     noClientsBody:
-      "Add your first client from the switcher above and their work will show up here.",
+      "Open the switcher above and choose “+ Add client” to send a client your request. When they invite you and you accept, their books show up here.",
     // Section headers
     queueHeading: "Across your clients",
     clientsHeading: "Clients",
@@ -1146,6 +1157,30 @@ export const COPY = {
     saveDraft: "Save draft",
     // ── PENNY-UX-5 · keyboard-accessible scroll region (APPENDED — additive key) ──
     tableAria: "Invoices",
+  },
+
+  // ── PENNY-UX-4 · CPA "+ Add client" guided flow (APPENDED — additive section) ──
+  // The honest mechanism (F4): engagements are created ONLY when a client's owner
+  // invites the CPA and the CPA accepts — no server path lets a firm create a
+  // client's books. So "+ Add client" produces the request that starts that flow:
+  // a link that lands the client's owner on their own invite-your-accountant form,
+  // pre-filled with this CPA's email. The owner reviews, picks access, and sends.
+  addClient: {
+    heading: "Add a client",
+    intro:
+      "Clients connect their books from their side — they invite you, you accept, and their books appear in your practice. Send them this request to start it.",
+    linkLabel: "Your request link",
+    linkAria: "Client request link",
+    copyLink: "Copy link",
+    copyMessage: "Copy a message to send",
+    copied: "Copied",
+    copyFailed: "Couldn't copy — select the text and copy it yourself.",
+    notOnPennyYet:
+      "If your client isn't on Penny yet, they'll set up their business first — the message below walks them through it.",
+    message: (link: string, email: string) =>
+      `Hi — I keep my clients' books with Penny. To connect yours, open this link and send me an invite: ${link}\n\nNew to Penny? Sign in at that link, set up your business, then go to Settings and invite your accountant at ${email}.`,
+    noEmail:
+      "We couldn't read your sign-in email, so we can't build your request link. Ask your client to invite you from their Settings instead.",
   },
 } as const;
 

@@ -104,11 +104,11 @@ a.ghost, a.ghost:visited { color: var(--ink-2); }
 .migration-step h4 { font-size: var(--fs-body); margin: 0; }
 .migration-batches { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 .migration-batches li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
-.migration-tb { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.migration-tb { width: 100%; border-collapse: collapse; font-size: var(--fs-label); }
 .migration-tb th, .migration-tb td { padding: var(--space-1) var(--space-2); text-align: left; border-bottom: 1px solid var(--line-2); }
 .migration-tb th.num, .migration-tb td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .migration-tb tr.tb-variance td { background: var(--amber-bg); color: var(--amber-strong); }
-.tb-tag { display: inline-block; margin-left: var(--space-2); font-size: var(--fs-xs); color: var(--ink-3); }
+.tb-tag { display: inline-block; margin-left: var(--space-2); font-size: var(--fs-micro); color: var(--ink-3); }
 
 /* ── authed shell ────────────────────────────────────────────── */
 .shell { min-height: 100dvh; display: flex; flex-direction: column; }
@@ -566,7 +566,7 @@ button.ghost.sm, .ghost.sm {
 .report-date input {
   min-height: var(--tap-min); font-size: var(--fs-ui);
   padding: 0.35rem 0.5rem; border: var(--bw-hair) solid var(--line);
-  border-radius: var(--r-sm); background: var(--white); color: var(--ink);
+  border-radius: var(--r-card); background: var(--white); color: var(--ink);
 }
 .report-dl { display: inline-flex; gap: 0.5rem; margin-left: auto; }
 
@@ -1004,7 +1004,7 @@ button.ghost.sm, .ghost.sm {
 .catchup-files { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
 .catchup-files li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .catchup-questions { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
-.catchup-questions .cq-memo { color: var(--ink-1); }
+.catchup-questions .cq-memo { color: var(--ink); }
 .catchup-spinner {
   width: 1.6rem; height: 1.6rem; margin-top: var(--space-3);
   border: 2px solid var(--line); border-top-color: var(--brand);
@@ -1048,14 +1048,14 @@ button.ghost.sm, .ghost.sm {
   display: flex; flex-direction: column; gap: var(--space-1);
   align-items: flex-start; text-align: left;
   padding: var(--pad-card); min-height: var(--tap-min);
-  background: var(--paper); color: var(--ink-1);
+  background: var(--paper); color: var(--ink);
   border: var(--bw-hair) solid var(--line); border-radius: var(--r-card);
   width: 100%;
 }
 .onb-tile:hover { border-color: var(--brand); }
 .onb-tile.on { border-color: var(--brand); background: var(--brand-tint); }
-.onb-tile-label { font-weight: var(--fw-semibold); color: var(--ink-1); }
-.onb-tile-desc { font-size: var(--fs-sm); }
+.onb-tile-label { font-weight: var(--fw-semibold); color: var(--ink); }
+.onb-tile-desc { font-size: var(--fs-label); }
 .onb-link {
   background: transparent; border: none; color: var(--brand-strong);
   font-weight: var(--fw-medium); min-height: var(--tap-min); padding: var(--space-1) var(--space-2);
@@ -1079,19 +1079,19 @@ button.ghost.sm, .ghost.sm {
 .receipt-paste { display: flex; flex-direction: column; gap: 0.5rem; }
 .receipt-paste-input {
   width: 100%; font-size: var(--fs-input); min-height: var(--tap-min);
-  padding: 0.6rem; border: 1px solid var(--line); border-radius: var(--radius-2);
-  background: var(--surface); color: var(--ink-1); resize: vertical;
+  padding: 0.6rem; border: 1px solid var(--line); border-radius: var(--r-card);
+  background: var(--white); color: var(--ink); resize: vertical;
 }
 .receipt-outcome {
   display: flex; flex-direction: column; gap: 0.15rem;
-  padding: 0.7rem 0.9rem; border-radius: var(--radius-2);
-  border: 1px solid var(--line); background: var(--surface-2);
+  padding: 0.7rem 0.9rem; border-radius: var(--r-card);
+  border: 1px solid var(--line); background: var(--paper);
 }
 .receipt-outcome.ok { border-color: var(--brand); }
 .receipt-confirm {
   display: flex; flex-direction: column; gap: 0.5rem;
-  padding: 0.8rem 0.9rem; border-radius: var(--radius-2);
-  border: 1px solid var(--line); background: var(--surface-2);
+  padding: 0.8rem 0.9rem; border-radius: var(--r-card);
+  border: 1px solid var(--line); background: var(--paper);
 }
 .receipt-candidate {
   display: grid; grid-template-columns: minmax(84px, auto) 1fr auto;
@@ -1102,7 +1102,7 @@ button.ghost.sm, .ghost.sm {
 .receipts-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .receipt-item {
   padding: 0.6rem 0.8rem; border: 1px solid var(--line);
-  border-radius: var(--radius-2); background: var(--surface);
+  border-radius: var(--r-card); background: var(--white);
 }
 .receipt-item-head { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: space-between; }
 .receipt-item-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
@@ -1111,19 +1111,19 @@ button.ghost.sm, .ghost.sm {
 .receipt-pick {
   width: 100%; display: grid; grid-template-columns: minmax(84px, auto) 1fr;
   gap: 0.6rem; text-align: left; min-height: var(--tap-min);
-  padding: 0.4rem 0.6rem; border: 1px solid transparent; border-radius: var(--radius-1);
-  background: none; cursor: pointer; color: var(--ink-1);
+  padding: 0.4rem 0.6rem; border: 1px solid transparent; border-radius: var(--r-card);
+  background: none; cursor: pointer; color: var(--ink);
 }
-.receipt-pick:hover { border-color: var(--line); background: var(--surface-2); }
+.receipt-pick:hover { border-color: var(--line); background: var(--paper); }
 .receipt-badge { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .receipt-chip {
   display: inline-flex; align-items: center; gap: 0.25rem;
-  padding: 0.15rem 0.5rem; border-radius: var(--radius-1);
-  background: var(--surface-2); border: 1px solid var(--line);
-  font-size: var(--fs-caption); color: var(--ink-2);
+  padding: 0.15rem 0.5rem; border-radius: var(--r-card);
+  background: var(--paper); border: 1px solid var(--line);
+  font-size: var(--fs-micro); color: var(--ink-2);
 }
 .rc-date { color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rc-memo { color: var(--ink-1); overflow: hidden; text-overflow: ellipsis; }
+.rc-memo { color: var(--ink); overflow: hidden; text-overflow: ellipsis; }
 .rc-amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 @media (max-width: 480px) {
@@ -1151,8 +1151,8 @@ button.ghost.sm, .ghost.sm {
   background: var(--white);
 }
 .thread-turn { display: flex; flex-direction: column; gap: 2px; max-width: 100%; }
-.thread-turn .turn-who { font-size: var(--fs-xs); color: var(--ink-3); font-weight: var(--fw-semibold); }
-.thread-turn .turn-text { font-size: var(--fs-body); color: var(--ink-1); line-height: 1.5; word-break: break-word; }
+.thread-turn .turn-who { font-size: var(--fs-micro); color: var(--ink-3); font-weight: var(--fw-semibold); }
+.thread-turn .turn-text { font-size: var(--fs-body); color: var(--ink); line-height: 1.5; word-break: break-word; }
 .thread-turn.t-you { align-items: flex-end; text-align: right; }
 .thread-turn.t-you .turn-text { color: var(--ink); }
 .thread-turn.is-pending .turn-text { color: var(--ink-3); font-style: italic; }
@@ -1184,7 +1184,7 @@ button.ghost.sm, .ghost.sm {
 .kpi-btn.t-warn { border-color: var(--amber); }
 
 .home-summary { display: flex; flex-direction: column; gap: var(--space-1); }
-.home-summary-text { color: var(--ink-1); font-size: var(--fs-body); margin: 0; }
+.home-summary-text { color: var(--ink); font-size: var(--fs-body); margin: 0; }
 
 .home-deadlines { display: flex; flex-direction: column; gap: var(--space-2); }
 .deadlines-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
@@ -1193,7 +1193,7 @@ button.ghost.sm, .ghost.sm {
   gap: var(--space-2); padding: var(--space-2) 0;
   border-bottom: var(--bw-hair) solid var(--line-2);
 }
-.deadline-row .dl-label { color: var(--ink-1); font-weight: var(--fw-semibold); min-width: 0; }
+.deadline-row .dl-label { color: var(--ink); font-weight: var(--fw-semibold); min-width: 0; }
 .deadline-row .dl-due { color: var(--ink-3); font-size: var(--fs-ui); }
 .deadline-row.is-soon .dl-due { color: var(--amber-strong); font-weight: var(--fw-semibold); }
 
@@ -1211,7 +1211,7 @@ button.ghost.sm, .ghost.sm {
 /* Estimated quarterly taxes (W2.4) — grounded on the same P&L + kernel rates. */
 .home-estimated-tax { display: flex; flex-direction: column; gap: var(--space-2); }
 .et-headline { display: flex; flex-direction: column; gap: var(--space-1); }
-.et-headline .et-amount { color: var(--ink-1); font-size: var(--fs-h3); font-weight: var(--fw-bold); }
+.et-headline .et-amount { color: var(--ink); font-size: var(--fs-h3); font-weight: var(--fw-bold); }
 .et-headline.t-warn .et-amount { color: var(--amber-strong); }
 .et-setaside { color: var(--ink-2); margin: 0; }
 .et-breakdown { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
@@ -1220,9 +1220,9 @@ button.ghost.sm, .ghost.sm {
   gap: var(--space-2);
 }
 .et-line .et-line-label { color: var(--ink-2); min-width: 0; }
-.et-line .et-line-amt { color: var(--ink-1); font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; }
+.et-line .et-line-amt { color: var(--ink); font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; }
 .et-line.et-total { border-top: var(--bw-hair) solid var(--line-2); padding-top: var(--space-1); }
-.et-line.et-total .et-line-label { color: var(--ink-1); font-weight: var(--fw-semibold); }
+.et-line.et-total .et-line-label { color: var(--ink); font-weight: var(--fw-semibold); }
 .et-deadline { color: var(--ink-3); margin: 0; }
 .et-deadline.is-soon { color: var(--amber-strong); font-weight: var(--fw-semibold); }
 .et-penalty { margin: 0; }

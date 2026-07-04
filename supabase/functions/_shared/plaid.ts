@@ -55,10 +55,13 @@ async function plaid<T = Record<string, unknown>>(path: string, body: Record<str
 // The JWT payload carries request_body_sha256; we recompute it over the RAW body
 // and compare, so a forged body (even with a stale-but-valid JWT) is rejected.
 // Returns true only if signature + body hash + freshness all check out.
-const b64urlToBytes = (s: string): Uint8Array => {
+// Return a Uint8Array over a concrete ArrayBuffer so it satisfies BufferSource
+// under deno v2.x's stricter lib types (a plain `new Uint8Array(n)` is typed
+// Uint8Array<ArrayBufferLike>, which crypto.subtle.verify rejects).
+const b64urlToBytes = (s: string) => {
   const pad = s.length % 4 === 0 ? "" : "=".repeat(4 - (s.length % 4));
   const b = atob(s.replace(/-/g, "+").replace(/_/g, "/") + pad);
-  const out = new Uint8Array(b.length);
+  const out = new Uint8Array(new ArrayBuffer(b.length));
   for (let i = 0; i < b.length; i++) out[i] = b.charCodeAt(i);
   return out;
 };
@@ -84,8 +87,10 @@ export async function verifyPlaidJwt(jwt: string, rawBody: string): Promise<bool
     { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"],
   );
   const sig = b64urlToBytes(parts[2]);
-  const signed = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
-  const okSig = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, pub, sig, signed);
+  const signed = new Uint8Array(new TextEncoder().encode(`${parts[0]}.${parts[1]}`));
+  const okSig = await crypto.subtle.verify(
+    { name: "ECDSA", hash: "SHA-256" }, pub, sig.buffer, signed.buffer,
+  );
   if (!okSig) return false;
 
   const payload = JSON.parse(new TextDecoder().decode(b64urlToBytes(parts[1]))) as

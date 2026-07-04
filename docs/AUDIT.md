@@ -295,11 +295,11 @@ actually share their books.
 | Owner · Settings (`/settings`) | 🟢 working | invite + approval toggle; axe clean |
 | Onboarding (3 steps, kernel tiles) | 🟢 working | full walk created the audit org + 18-account CoA; axe clean at each step; **no accountant/practice path (F10)** |
 | Org switcher · + New organization · account menu | 🟢 working | business/practice types both create; **F4 FIXED (PENNY-UX-4):** firm contexts also show "+ Add client" (guided request flow; app-e2e gated) |
-| CPA · client books — Overview / Categorize(+Rules) / Books(Journal·Accounts·Import·Reconcile·Periods) / Reports | 🟢 working | reached only via the corrected accept URL (F1); every sub renders; axe clean; **stale "no activity" takeaway (F8)** |
+| CPA · client books — Overview / Categorize(+Rules) / Books(Journal·Accounts·Import·Reconcile·Periods) / Reports | 🟢 working | reached only via the corrected accept URL (F1); every sub renders; axe clean; **F8 FIXED (PENNY-UX-7):** takeaway now counts entries |
 | CPA · Practice home (firm) | 🟢 working | renders queue empty state; **F4 FIXED (PENNY-UX-4):** empty copy now names the real "+ Add client" switcher affordance (app-e2e asserts copy⇄affordance match) |
 | CPA · invite accept (`/accept?token=`) | 🟢 working | route itself works — only the *generated link* is wrong (F1) |
 | Staff · `/staff` console | 🟢 working | org directory + entry counts; break-glass NOT exercised (mutating, audited) |
-| Staff wall for non-staff · unknown routes · login | 🟢 working | owner at `/staff` gets the wall; unknown route → `/`; login wall clean (F9 type-scale nit) |
+| Staff wall for non-staff · unknown routes · login | 🟢 working | owner at `/staff` gets the wall; unknown route → `/`; login wall clean; **F9 FIXED (PENNY-UX-7):** heading on `.page-title` |
 
 Empty/placeholder tabs: **none found** — every tab renders real content or an
 intentional, actionable empty state.
@@ -399,19 +399,24 @@ beacon), but it pollutes every console capture and can mask real failures in
 debugging sessions. Advisory: consider disabling RUM for the app zone or accepting
 the noise knowingly.
 
-**F8 · P2 · Dishonest "no activity" takeaway with posted entries.** CPA/owner
-Overview shows "No activity yet — import your history or post your first entry to
-get started" (`copy/strings.ts:177`) while the same panel lists 2 posted entries —
-`hasActivity` is derived from P&L income/expense only (`Ledger.tsx:381,471-473`), so
+**F8 · P2 · Dishonest "no activity" takeaway with posted entries.** — **CLOSED by
+PENNY-UX-7 (pr:#228)**: `hasActivity` now derives from the same entries the
+Latest-activity panel renders (pure `hasLedgerActivity` in `ledger/overview.ts`,
+unit-tested with a balance-sheet-only fixture), so the takeaway can only claim
+"no activity" when the panel shows "No entries yet." Original finding: CPA/owner
+Overview showed "No activity yet — import your history or post your first entry to
+get started" (`copy/strings.ts:177`) while the same panel listed 2 posted entries —
+`hasActivity` was derived from P&L income/expense only (`Ledger.tsx:381,471-473`), so
 balance-sheet-only books (opening balances, transfers) read as "no activity".
-**Fix:** derive from `entries.length` (or reword to "no income or spending yet" —
-which the Home pulse already gets right).
 
-**F9 · P2 · Login heading uses the billboard type scale on a bare `<h1>`.**
+**F9 · P2 · Login heading uses the billboard type scale on a bare `<h1>`.** —
+**CLOSED by PENNY-UX-7 (pr:#228)**: the heading now uses the shared `.page-title`
+(the restrained authed scale from design-system typography.css); the per-card
+`--fs-h2` font-size rule is gone (only a margin tighten remains). Original finding:
 `apps/app/src/routes/Login.tsx:50` + `styles.css:47` (`--fs-h2`, measured 44px).
 The design-system reserves `--fs-h1/2/3` for public heroes; authed/app screens use
 `.page-title`. Contained (the auth card is the one pre-authed screen, and it *is*
-styled — not the raw 64px), but it's the only heading in the app off-pattern.
+styled — not the raw 64px), but it was the only heading in the app off-pattern.
 
 **F10 · P2 · First-run onboarding has no accountant path.** Onboarding hard-codes
 `type:"business"` (`apps/app/src/onboarding/Onboarding.tsx:68-71`) and asks "What's
@@ -430,13 +435,17 @@ the registry⇄parser contract so an available-but-parserless (dead) tile can't 
 Original finding: `PayoutUpload.tsx:54-58` rendered the three as disabled `coming
 soon` tiles (`copy/strings.ts:547`) against rubric §9.
 
-**F12 · P2 · APP_PRINCIPLES baseline drift.** `apps/app/APP_PRINCIPLES.md` §0 still
-describes `main` as the grouped `MAIN_TABS = Overview · Categorize · Books · Reports`
-nav for *both* lenses; live/`main` owner nav is Home · Review · Reports · Connections
-+ Advanced (with Rules/Reconcile subs), CPA is Overview · Categorize(+Rules) ·
-Books(5 subs) · Reports via `ledger/nav.ts` — and §3's flat five-tab CPA list never
-shipped. Update §0/§3 to match `nav.ts` (LEARNINGS #7: change behavior → update what
-the system says about itself).
+**F12 · P2 · APP_PRINCIPLES baseline drift.** — **CLOSED by PENNY-UX-7 (pr:#228)**:
+§0, §2's Advanced row, and §3 now state the shipped `ledger/nav.ts` reality
+(`OWNER_TABS` = Home · Review · Reports · Connections + Advanced with Journal ·
+CoA · Reconcile · Periods · Rules; `CPA_TABS` = Overview · Categorize(+Rules) ·
+Books(5 subs) · Reports) and point nav edits at `nav.ts` + this doc. Original
+finding: `apps/app/APP_PRINCIPLES.md` §0 still described `main` as the grouped
+`MAIN_TABS = Overview · Categorize · Books · Reports` nav for *both* lenses;
+live/`main` owner nav is Home · Review · Reports · Connections + Advanced (with
+Rules/Reconcile subs), CPA is Overview · Categorize(+Rules) · Books(5 subs) ·
+Reports via `ledger/nav.ts` — and §3's flat five-tab CPA list never shipped
+(LEARNINGS #7: change behavior → update what the system says about itself).
 
 ### Connector status matrix (live-probed, sandbox; no production OAuth filed)
 
@@ -470,7 +479,7 @@ UX-1, UX-2, UX-5 are mutually disjoint — start in parallel.
 | **PENNY-UX-4** (P1, **decision-needed**) | The CPA "add a client" job exists or the copy stops promising it: "+ Add client" switcher affordance for firm contexts, or honest Practice-home empty copy | `components/OrgSwitcher.tsx`, `lenses/PracticeHome.tsx`, `copy/strings.ts` | Nik decision on mechanism |
 | **PENNY-UX-5** (P1) | Keyboard-accessible scroll regions + full-report a11y coverage: `tabindex`/`role`/label on scrollable `.table-wrap`s; app-e2e axe walk clicks all 7 report views | `apps/app/src/ledger/Ledger.tsx`, `tools/app-e2e/run.mjs` | — |
 | **PENNY-UX-6** (P2) | Touch targets ≥44px on sub-tabs, `sm`/seg buttons, brand link (padding-led, density kept) | `apps/app/src/styles.css` | UX-3 |
-| **PENNY-UX-7** (P2) | Copy/pattern honesty batch: activity takeaway counts entries (F8); Login heading on the app scale (F9); APP_PRINCIPLES §0/§3 refreshed to `nav.ts` reality (F12) | `ledger/Ledger.tsx`, `copy/strings.ts`, `routes/Login.tsx`, `styles.css`, `APP_PRINCIPLES.md` | UX-5 (Ledger.tsx), UX-6 (styles.css) |
+| **PENNY-UX-7** (P2) — **CLOSED (pr:#228)** | Copy/pattern honesty batch: activity takeaway counts entries (F8); Login heading on the app scale (F9); APP_PRINCIPLES §0/§3 refreshed to `nav.ts` reality (F12) | `ledger/Ledger.tsx`, `ledger/overview.ts(+test)`, `routes/Login.tsx`, `styles.css`, `APP_PRINCIPLES.md` | UX-5 (Ledger.tsx), UX-6 (styles.css) — both merged |
 | **PENNY-UX-8** (P2) — **CLOSED by W4.1-B** | Stub payout tiles: resolved by Nik's 4-Jul "integrate the majors now" — PayPal/Square/Amazon got real parsers and the tiles went live (F11 closed); no flag-off needed | `ecommerce/payouts.ts`, `ecommerce/PayoutUpload.tsx` | — |
 
 Post-fix cleanup (not a card): purge the `PENNYUX-AUDIT` orgs + `pennyux-audit-*`

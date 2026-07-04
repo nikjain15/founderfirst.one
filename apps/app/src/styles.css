@@ -44,7 +44,9 @@ body {
   font-weight: var(--fw-bold);
   font-size: var(--fs-h2);
 }
-.auth-card h1 { font-size: var(--fs-h2); margin: 0; }
+/* The login heading rides the shared .page-title scale (typography.css) — no
+   per-card font-size (F9). Only the margin is tightened for the compact card. */
+.auth-card .page-title { margin: 0; }
 .auth-card form { display: flex; flex-direction: column; gap: 0.75rem; }
 
 input {

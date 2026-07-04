@@ -47,7 +47,9 @@ export default function Login() {
           </p>
         ) : (
           <form onSubmit={submit}>
-            <h1>{COPY.auth.signIn}</h1>
+            {/* .page-title = the authed type scale (design-system "Authed surfaces");
+                never a bare <h1>, which sits on the public billboard scale. */}
+            <h1 className="page-title">{COPY.auth.signIn}</h1>
             <p className="muted">{COPY.auth.signInLead}</p>
             <input
               type="email"

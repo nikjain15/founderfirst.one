@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      axe-core:
+        specifier: 4.12.1
+        version: 4.12.1
       playwright:
         specifier: ^1.45.0
         version: 1.61.1
@@ -1381,6 +1384,10 @@ packages:
     resolution: {integrity: sha512-baeSswPC5ZYvhGDoj25L2FuzKRWMgx105FetOPQVJFMCAp0o08OonYC7AhwsFdhvp7GapqjnC1Fe3lKb2lupYw==}
     engines: {node: ^18.17.1 || ^20.3.0 || >=21.0.0, npm: '>=9.6.5', pnpm: '>=7.1.0'}
     hasBin: true
+
+  axe-core@4.12.1:
+    resolution: {integrity: sha512-s7iGf5GaVMxEG0ENN9x+xTr7GFZCb1ZP/1uATUpCEK2X78nDB3RwbtFCo9pGAf9ru+VwoQ464DkaLEeRM08wJA==}
+    engines: {node: '>=4'}
 
   axobject-query@4.1.0:
     resolution: {integrity: sha512-qIj0G9wZbMGNLjLmg1PT6v2mE9AH2zlnADJD/2tC6E00hgmhUOfEB6greHPAfLRSufHqROIUTkw6E+M3lH0PTQ==}
@@ -3673,6 +3680,8 @@ snapshots:
       - supports-color
       - terser
       - typescript
+
+  axe-core@4.12.1: {}
 
   axobject-query@4.1.0: {}
 

@@ -376,6 +376,24 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
   display: flex; gap: clamp(18px, 2.4vw, 32px); overflow-x: auto;
   border-bottom: var(--bw-hair) solid var(--line);
 }
+/* PENNY-UX-3 — the strip already scrolls at narrow widths, but nothing signaled
+   there was more to scroll to, so the de-emphasized Advanced tab (pushed to the
+   far right below) could sit off-screen with zero cue. Edge-fade affordance,
+   same technique as apps/admin's .table-wrap (RESPONSIVE.md), scoped to the
+   phone breakpoint where the strip is most likely to overflow. */
+@media (max-width: 640px) {
+  .ledger-tabs {
+    background-image:
+      linear-gradient(to right, var(--paper), var(--paper)),
+      linear-gradient(to right, var(--paper), var(--paper)),
+      linear-gradient(to right, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0)),
+      linear-gradient(to left, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0));
+    background-position: left center, right center, left center, right center;
+    background-repeat: no-repeat;
+    background-size: 20px 100%, 20px 100%, 12px 100%, 12px 100%;
+    background-attachment: local, local, scroll, scroll;
+  }
+}
 .ledger-tab {
   min-height: var(--tap-min, 44px);
   background: transparent; color: var(--ink-3);

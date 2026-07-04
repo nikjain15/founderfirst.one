@@ -137,9 +137,12 @@ a.ghost, a.ghost:visited { color: var(--ink-2); }
   .orgsw-menu { left: 0; right: 0; max-width: none; }
 }
 /* Brand wordmark — sans (Inter), like admin's brand; the P-mark carries the
-   identity. It's a link home (logo → home), so kill the anchor blue/underline. */
+   identity. It's a link home (logo → home), so kill the anchor blue/underline.
+   PENNY-UX-6: it's an interactive target — ≥44px tall (RESPONSIVE.md rule 4);
+   the bar is already that tall (the org-switcher trigger is 44px), so no growth. */
 .topbar .brand {
   display: inline-flex; align-items: center; gap: 0.5rem;
+  min-height: var(--tap-min);
   font-weight: var(--fw-bold); font-size: var(--fs-body); letter-spacing: -0.01em;
   color: var(--ink); text-decoration: none;
 }
@@ -168,7 +171,7 @@ a.ghost, a.ghost:visited { color: var(--ink-2); }
 }
 .orgsw-item {
   display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%;
-  min-height: 2.6rem; padding: 0.45rem 0.6rem;
+  min-height: var(--tap-min); padding: 0.45rem 0.6rem; /* PENNY-UX-6: ≥44px tap target */
   background: transparent; color: var(--ink-2); border: 0; border-radius: var(--r-card);
   text-align: left; cursor: pointer; font-size: var(--fs-ui);
 }
@@ -203,7 +206,7 @@ a.ghost, a.ghost:visited { color: var(--ink-2); }
 .acct-sep:first-child, .acct-sep + .acct-sep { display: none; } /* no leading/duplicate dividers */
 .acct-item {
   display: flex; align-items: center; gap: 0.4rem; width: 100%;
-  min-height: 2.4rem; padding: 0.4rem 0.6rem;
+  min-height: var(--tap-min); padding: 0.4rem 0.6rem; /* PENNY-UX-6: ≥44px tap target */
   background: transparent; color: var(--ink-2); border: 0; border-radius: var(--r-card);
   text-align: left; text-decoration: none; font-size: var(--fs-ui); cursor: pointer; white-space: nowrap;
 }
@@ -407,7 +410,9 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
 /* Books sub-tabs — a lighter, smaller strip nested under the "Books" main tab so
    the two levels read as a hierarchy, not two identical rows. */
 .ledger-subtabs { margin-top: 1rem; gap: clamp(14px, 2vw, 26px); border-bottom-color: var(--line-2); }
-.ledger-subtabs .ledger-tab { font-size: var(--fs-label); min-height: 2.4rem; color: var(--ink-3); }
+/* PENNY-UX-6 (F6): the smaller type keeps the hierarchy; the tap target must not
+   shrink with it — inherit .ledger-tab's min-height: var(--tap-min), no override. */
+.ledger-subtabs .ledger-tab { font-size: var(--fs-label); color: var(--ink-3); }
 .ledger-subtabs .ledger-tab.on { color: var(--ink); border-bottom-color: var(--ink); }
 .ledger-subpanel { margin-top: 1rem; }
 
@@ -441,7 +446,8 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
 .invite-nudge-text { flex: 1 1 16rem; }
 .invite-nudge-actions { display: inline-flex; align-items: center; gap: 0.4rem; }
 .invite-nudge-x {
-  min-height: 2rem; width: 2rem; padding: 0; line-height: 1;
+  /* PENNY-UX-6: dismiss “×” is a real target — ≥44px both ways (glyph stays small). */
+  min-height: var(--tap-min); min-width: var(--tap-min); padding: 0; line-height: 1;
   background: transparent; color: var(--ink-3); border: 0; border-radius: var(--r-pill);
   font-size: var(--fs-body);
 }
@@ -452,8 +458,10 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
   display: flex; align-items: center; justify-content: space-between;
   gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem;
 }
+/* PENNY-UX-6 (F6): `sm` keeps the compact type + padding (density is the point),
+   but the tap target stays ≥44px — never shrink min-height below var(--tap-min). */
 button.ghost.sm, .ghost.sm {
-  min-height: 2.25rem; padding: 0.35rem 0.7rem; font-size: var(--fs-ui);
+  min-height: var(--tap-min); padding: 0.35rem 0.7rem; font-size: var(--fs-ui);
 }
 .ghost.sm.danger { color: var(--error); border-color: var(--error); }
 .error.sm, .muted.sm { font-size: var(--fs-ui); }
@@ -520,7 +528,7 @@ button.ghost.sm, .ghost.sm {
   letter-spacing: var(--ls-chip); padding-bottom: 0.2rem;
 }
 .line-del {
-  min-height: 2.25rem; background: transparent; color: var(--ink-3);
+  min-height: var(--tap-min); background: transparent; color: var(--ink-3); /* PENNY-UX-6 */
   border: var(--bw-hair) solid var(--line); border-radius: var(--r-pill); padding: 0;
 }
 .line-del:disabled { opacity: 0.4; }
@@ -568,7 +576,7 @@ button.ghost.sm, .ghost.sm {
 }
 .report-seg button {
   flex: 0 0 auto; white-space: nowrap;
-  min-height: 2.25rem; background: var(--white); color: var(--ink-3);
+  min-height: var(--tap-min); background: var(--white); color: var(--ink-3); /* PENNY-UX-6 */
   border: none; border-radius: 0; padding: 0.4rem 0.9rem; font-size: var(--fs-ui); font-weight: var(--fw-semibold);
 }
 .report-seg button.on { background: var(--ink); color: var(--paper); }
@@ -618,6 +626,7 @@ button.ghost.sm, .ghost.sm {
   flex-direction: row; align-items: center; gap: 0.4rem;
   align-self: flex-end; min-height: var(--tap-min);
 }
+/* The checkbox glyph stays small — its ≥44px target is the wrapping label above. */
 .report-date.pkg-compare input { min-height: auto; }
 .report-date.pkg-compare span {
   text-transform: none; letter-spacing: normal;
@@ -889,9 +898,11 @@ button.ghost.sm, .ghost.sm {
 .takeaway-watch .takeaway-dot { background: var(--amber); }
 .takeaway-text { flex: 1 1 auto; color: var(--ink); }
 .takeaway-text strong { font-weight: var(--fw-semibold); }
+/* PENNY-UX-6: keep the text-link look but not the text-link hit area — inherit the
+   base button min-height (var(--tap-min)) instead of opting out with min-height: 0. */
 .takeaway-action {
   flex: none; text-decoration: none; font-weight: var(--fw-medium); color: var(--ink);
-  white-space: nowrap; background: transparent; border: 0; padding: 0; cursor: pointer; min-height: 0;
+  white-space: nowrap; background: transparent; border: 0; padding: 0; cursor: pointer;
 }
 .takeaway-action:hover:not(:disabled) { text-decoration: underline; background: transparent; }
 @media (max-width: 640px) {

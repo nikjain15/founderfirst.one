@@ -253,6 +253,145 @@ pgTAP suite, a lint script) so the class can't recur silently. The sweep-1
 examples: pagination (#18) → Vitest in `apps/app`; timestamp collisions →
 `unique-timestamps` CI; tenant predicate → `check:tenant`.
 
+## Program 7 — roadmap-v2 Wave 1 — wave-gate audit (4 Jul 2026)
+
+The roadmap-v2 Wave-1 pre-deploy gate (LOOP_PROMPT rule 9): the 14-dimension rubric
++ an adversarial cross-PR stress pass, run on a **COMBINED integration branch** (not
+per-PR) so failures that only appear in combination are caught before the loop ramps.
+MODE=safe — this program **audits and reports only; it does not merge or deploy.**
+
+**Wave under gate (4 PRs):** **#231** `loop/connector-enablement-plaid-qbo-xero`
+(Plaid env/secret wiring: `PLAID_SECRET_{SANDBOX,PRODUCTION}` selection, prod-missing =
+fail-loud; QBO/Xero authorize-URL tests) · **#232** `loop/rv2-a1-filing-worksheet`
+(RV2-A1 return worksheet per form, per-line drill-down to journal entries, tie-out) ·
+**#233** `loop/ia3-admin-console-scaffold` (internal admin console at `penny…/admin`,
+staff-gated, additive parallel-run) · **#234** `loop/rv2-e-production-readiness`
+(soak/load harness + observability + DR runbook). **#230**
+`loop/w41cd-square-paypal-api` (Square/PayPal API sync) is **quarantined** (open product
+decision) — audited here ONLY for isolation.
+
+### GATE VERDICT: 🟢 GO — 0 P0, **1 P1 (non-blocking)**, 2 P2.
+
+The combined branch **built and tested clean as a unit.** All four branches merged off
+`origin/main` with **zero conflicts** — the overlapping files (`copy/strings.ts`,
+`styles.css`, `App.tsx`, `docs/AUDIT.md`) are genuinely additive and git auto-resolved
+them; every addition was verified present post-merge (no silent drop). On the combined
+tree: `tsc --noEmit` clean; **386 apps/app Vitest pass (38 files)**; **20 soak-harness
+Vitest pass**; **11 deno shared-fn tests pass** (Plaid secret selection incl. the
+prod-fail-loud case + QBO/Xero authorize URLs + observability); and every static gate is
+green — `check:css-vars` (868 refs resolve, the F2 regression net), `check:app-strings`
+(no user-facing literals), `check:law-literals` (232 files, none), `check:tenant`,
+`check:kernel-seed`, `check:css`, and `loop-preflight` (no migration-timestamp
+collisions). No failure appears only in combination.
+
+The **one P1** is a single-line accessibility regression on the new (staff-only, noindex)
+admin console — the exact PENNY-UX-5/F5 pattern (`scrollable-region-focusable`)
+re-introduced on one surface that the app-e2e axe gate doesn't walk. It carries **no data
+risk and touches no owner/CPA surface**, so it does not block deploy — but per the trust
+cluster (a11y is never P2) it is P1 and should be fixed before or immediately after merge.
+
+### Per-dimension summary (Wave-1 blast radius, combined branch)
+
+| Dimension | Verdict | Notes |
+|---|---|---|
+| **security** | 🟢 pass | Admin console reuses the SAME `is_platform_staff()` DB control as `/staff` (`App.tsx:91` `useIsPlatformStaff`), and the client gate is **fail-closed**: `adminRouteView` (`admin/nav.ts:73`) returns `loading`/`error` — never `console` — until the check RESOLVES true; a transient error is NEVER conflated with "not staff" (unit-tested, `admin/nav.test.ts`). Overview data comes from the existing `staff_list_orgs` RPC (server re-checks). Plaid secret selection **fails loud in production** when `PLAID_SECRET_PRODUCTION` is absent — never falls back to a bare/sandbox key (`plaid.ts`, deno-tested). Soak driver holds the service-role key **server-side only** (never imported by app code, `driver.ts:6`). No forged-actor / world-readable surface introduced. |
+| **data_integrity** | 🟢 pass | Filing worksheet is a **projection, never a write** (`worksheet.ts:7`); each line's amount == Σ of its traced source-entry contributions (`worksheetTiesOut`, `worksheet.ts:208`), asserted by Vitest incl. `RV2A1-WORKSHEET-TIEOUT`. **Red-team P0 already fixed in-PR:** the worksheet is tax-year-scoped (`taxYearDateFilter`, applied at `Filing.tsx:40`) — WITHOUT it, other years' activity rolls onto the return while still "tying out" (a review-ready lie); regression-locked (`RV2A1-WORKSHEET-PERIOD-SCOPE`). Soak harness proves **no double-post** under concurrency (`created == distinct idempotency keys`) + tie-out + Plaid `(org,external_id)` dedup (CI smoke green). |
+| **performance** | 🟢 pass | Filing consumes the SAME fully-paginated `useEntries(org.id)` that feeds Reports (`Ledger.tsx:123,252`) — no `max_rows=1000` truncation cliff (LEARNINGS #18). Worksheet build is a single O(entries×lines) pass, memoised. Soak harness is the explicit load-testing surface (10k–100k deferred to a live sandbox run). |
+| **ia_ux / usability gate** | 🟢 pass | Filing nests under **Advanced** (owner) / a review tab (CPA) — **no new top-level nav**. Admin console is a NEW top-level `/admin` route but staff-only + additive parallel-run (founderfirst.one/admin stays authoritative) — no owner/CPA IA change. Console tabs: Overview live-wired, four are honest parallel-run placeholders linking to the live admin (no dead "coming soon" owner-facing destination). |
+| **copy / voice / centralization** | 🟢 pass | **Zero exclamation marks, zero competitor names** in the new filing/admin copy (grep clean). All strings via `COPY`/`copy/strings.ts` (`check:app-strings` green); **no law literals** in the tax surface (`check:law-literals` green — facts come from the seeded engine). |
+| **design_system** | 🟢 pass | **No inline hex, no magic-px font-size, no fixed-px `grid-template-columns`** in the new `styles.css` blocks (filing + admin console) — grep clean; console CSS is explicitly tokens-only. **`check:css-vars` green** (F2 net): every new `var(--x)` resolves. |
+| **responsive** | 🟢 pass | New tables scroll inside `.table-wrap` (fluid-first, no fixed-px horizontal layout). Admin console tab strip reuses `.ledger-tabs` — inherits the PENNY-UX-3 edge-fade discoverability affordance for free. |
+| **a11y** | 🟨 **1 P1** | Filing worksheet tables all carry `tabindex={0}` + `role="region"` + `aria-label` (the F5 pattern, correct on all 3). **F-WG1 (P1):** the admin console Overview `.table-wrap` (`AdminConsole.tsx:155`) is the ONLY `.table-wrap` in the entire app missing that treatment — an `axe scrollable-region-focusable` (serious) violation on narrow widths. Contained to a staff-only surface the app-e2e axe gate doesn't walk. |
+| **reliability / observability** | 🟢 pass | Admin route wrapped in the pathname-keyed error boundary; access-check error renders a recoverable `role="alert"` retry, not a white-screen. New `observability.ts` (`slog`/`timed`) emits one structured JSON line per event with fn/event/level (deno-tested). Loop-heartbeat fn added. |
+| **tests** | 🟢 pass | +new Vitest: `worksheet.test.ts`, `admin/nav.test.ts` (15), soak `config`/`observability`/`soak` (20); +deno `connectors.test.ts` (8, incl. prod-fail-loud) + `observability.test.ts` (3). All green on the combined tree. |
+| **copy_docs / seo** | 🟢 pass | Both new surfaces are noindex (authed app). DR runbook (`docs/plans/production-readiness-runbook.md`) + soak README added; ledger rows added for RV2-A1 and RV2-E (see below). |
+| **dead_code** | 🟢 pass | Console placeholders are intentional, labelled parallel-run tabs linking to live admin — not shipped "coming soon" stubs. No orphaned exports introduced. |
+
+### Ranked findings (verified on the combined branch — `file:line` + repro)
+
+**F-WG1 · P1 · The internal admin console's Overview table is the one scrollable region
+in the app missing keyboard access — `axe scrollable-region-focusable` (serious).**
+`apps/app/src/admin/AdminConsole.tsx:155` renders `<div className="table-wrap">` with **no**
+`tabIndex={0}` / `role="region"` / `aria-label`, while **every other** `.table-wrap` in
+`apps/app/src` (Invoicing, LearnedRules, Ledger ×3, ReconcileView ×2, Filing ×3,
+MigrationFlow) carries all three — this is the graduated PENNY-UX-5/F5 fix, and the console
+is the sole regression. The inner `<table>` has an `aria-label` but axe flags the **scroll
+container**, not the table. **Repro:** open `/admin` as staff, narrow to a width where the
+org table overflows horizontally → a keyboard-only user cannot focus/arrow-scroll it; an axe
+scan reports the serious violation. It slips CI because the app-e2e axe walk covers owner
+surfaces, not the staff console. **Why non-blocking:** staff-only, noindex, no data risk,
+does not touch any owner/CPA surface. **Fix (one line):** add
+`tabIndex={0} role="region" aria-label={C.overview.tableAria}` to the `.table-wrap` (reuse
+the existing `tableAria` string), and extend the app-e2e axe walk to `/admin` so the class
+can't recur on the console.
+
+**F-WG2 · P2 · The four admin-console job tabs are parallel-run placeholders (by design)
+but link out to the still-authoritative live admin.** `apps/app/src/admin/nav.ts:30-36`
+marks Support/Audience/Analytics/Penny `live:false`. This is intentional and honest for the
+Phase-0 scaffold (documented `ia-3-admin-console-migration.md §3`), not a shipped dead
+destination — flagged only so the ledger row tracks that these tabs are NOT yet wired to
+real data (coverage boundary), and the migration must flip them before founderfirst.one/admin
+is retired.
+
+**F-WG3 · P2 · Soak harness at 10k–100k volume is not yet exercised — CI runs the smoke
+model only.** `packages/soak-harness/` proves no-double-post + tie-out under concurrency
+against a faithful in-memory model of `post_journal_entry` (CI-safe smoke, green); the live
+sandbox driver runs the SAME runner against the real RPC but is **operator-run** and has not
+been driven at volume. This is the intended scope of the PR (the harness lands; the live soak
+is a follow-up), but the "load/volume at 10k–100k" standing gap in the NOT-covered table stays
+open until a live sandbox soak runs. No defect — a coverage boundary.
+
+### Merge-sequencing & combined-branch integration
+
+- **Merge order is FREE — no serialization required.** All four branches fast-forward /
+  merge off `origin/main` with **zero conflicts**; the shared-file edits
+  (`copy/strings.ts`, `styles.css`, `App.tsx`, `docs/AUDIT.md`) are strictly additive and
+  were verified intact after the combined merge (filing + admin string keys present, both
+  filing and admin CSS blocks present, both `App.tsx` route imports present, both new ledger
+  rows present). **Recommended sequence (lowest-risk first): #231 → #234 → #232 → #233**
+  — infra/wiring before UI, but any order is safe. Re-run the combined `tsc` + Vitest after
+  the last merge as the belt-and-braces check.
+- **No non-trivial (semantic) conflict found** — nothing to escalate to the integrator.
+
+### #230 isolation (quarantine confirmed)
+
+**#230 shares ZERO files** with the four wave PRs (`comm -12` on the two changed-file sets is
+empty). Its registry change (`connectors.json` / `_generated.sql`: adds the `api_sync`
+capability to the existing square/paypal rows) is additive and touched by no wave PR — #231
+edits only `plaid.ts` + a test and does **not** touch the registry. #230's migration
+(`20260707020000`) is later than main's max and collides with nothing in the wave.
+**Conclusion: the four PRs can merge and deploy without #230, and nothing in them silently
+breaks if #230 stays quarantined.** #230 remains held on its open product decision.
+
+### GO / NO-GO
+
+**🟢 GO to deploy the wave** (#231, #232, #233, #234). The combined branch built and tested
+clean as a unit; the trust cluster (security / data-integrity) is materially clean — the
+worksheet is projection-only with an enforced tax-year scope and cent-level tie-out, the
+admin gate is fail-closed on the same DB control as `/staff`, the Plaid prod secret fails
+loud, and the soak fence fails closed on a prod URL even when mislabelled "sandbox". The lone
+P1 (F-WG1) is a one-line staff-only a11y fix with no data risk and does not block deploy —
+land it in the same wave if trivial, otherwise as an immediate fast-follow, and extend the
+app-e2e axe walk to `/admin`. **Safe merge sequence:** #231 → #234 → #232 → #233 (any order
+works). **Deploy blockers: none.**
+
+### Coverage delta — Wave-1 ledger rows
+
+| # | Surface | Permanent test | Status |
+|---|---|---|---|
+| WG.231 | Connector env/secret wiring (Plaid sandbox/prod secret selection; QBO/Xero authorize URLs) | `connectors.test.ts` (8, incl. prod-fail-loud) | 🟢 wave-gated; no defect |
+| WG.232 | RV2-A1 Filing worksheet (per-form, per-line ledger drill-down, tie-out, tax-year scope) | `worksheet.test.ts` (REG `RV2A1-WORKSHEET-TIEOUT` + `-PERIOD-SCOPE`) | 🟢 wave-gated; no defect (red-team P0 fixed in-PR) |
+| WG.233 | Internal admin console scaffold (staff-gated, fail-closed, parallel-run) | `admin/nav.test.ts` (15) | 🟨 wave-gated; **F-WG1 P1 a11y** (staff-only, non-blocking) |
+| WG.234 | Load/soak harness + observability + DR runbook | soak `config`/`observability`/`soak` Vitest (20) + `observability.test.ts` (3) | 🟢 wave-gated; live 10k–100k soak = open coverage boundary (F-WG3) |
+
+### What this gate did NOT cover (standing gaps)
+- **Live 10k–100k sandbox soak** — CI ran the in-memory smoke model only (F-WG3).
+- **Admin console browser/axe walk** — the app-e2e axe gate does not visit `/admin`; F-WG1
+  was found by static analysis + the graduated-pattern comparison, not a live axe run.
+- **QBO/Xero/Plaid OAuth completion** — authorize URLs tested; full OAuth is not automatable
+  (LEARNINGS #10), covered separately by SYNCTEST.
+- **#230 Square/PayPal API sync** — quarantined; isolation verified, functionality not audited.
+
 ## Program 6 — PENNY-UX findings (Jul 2026)
 
 Card **PENNY-UX-0**: a rigorous browser audit of the LIVE app at `penny.founderfirst.one`
@@ -298,6 +437,8 @@ actually share their books.
 | CPA · client books — Overview / Categorize(+Rules) / Books(Journal·Accounts·Import·Reconcile·Periods) / Reports | 🟢 working | reached only via the corrected accept URL (F1); every sub renders; axe clean; **F8 FIXED (PENNY-UX-7):** takeaway now counts entries |
 | CPA · Practice home (firm) | 🟢 working | renders queue empty state; **F4 FIXED (PENNY-UX-4):** empty copy now names the real "+ Add client" switcher affordance (app-e2e asserts copy⇄affordance match) |
 | CPA · invite accept (`/accept?token=`) | 🟢 working | route itself works — only the *generated link* is wrong (F1) |
+| CPA · Filing — return worksheet per form (RV2-A1) | 🟨 unit-tested | new surface: per-form worksheet (Schedule C / 1120-S / 1065), every line drills down to the exact ledger entries; tie-out to the cent covered by Vitest (`worksheet.test.ts`, REG `RV2A1-WORKSHEET-TIEOUT`). **Red-team P0 fixed:** worksheet had NO tax-year scoping — every year's activity leaked onto the selected form's lines while still "tying out" (a review-ready lie); `Filing.tsx` now applies `taxYearDateFilter(tax_year)`, REG `RV2A1-WORKSHEET-PERIOD-SCOPE`. Multi-currency mis-sum is a non-issue (books single-currency by DB trigger, per reports.ts). Still needs a live stress pass (unmapped surfacing, drill-down UX, width-ladder). Structured export / e-file are deferred later steps. |
+| Owner · Advanced — Filing (view) | ⬜ untested | same worksheet, owner-view, nested under Advanced (no new top-level nav); stress pass pending |
 | Staff · `/staff` console | 🟢 working | org directory + entry counts; break-glass NOT exercised (mutating, audited) |
 | Staff wall for non-staff · unknown routes · login | 🟢 working | owner at `/staff` gets the wall; unknown route → `/`; login wall clean; **F9 FIXED (PENNY-UX-7):** heading on `.page-title` |
 
@@ -886,6 +1027,7 @@ integrator merges in waves. Baseline = `main` after pre-onboarding #1–#15.
 | 13 | Onboarding & org creation | 0 | 1 | org-create not atomic (partial org on failure). `create_org_atomic`. | 🟢 | [#136](../../pull/136) |
 | 14 | Data export & erasure (GDPR) | 0 | 1 | export truncated at 1000 rows (same paging class as #3). Paginated to 1500+. | 🟢 | [#130](../../pull/130) |
 | 15 | Platform-staff / break-glass | 0 | 1 | `open_break_glass` not gated on editor tier. Gated + audit-logged. | 🟢 | [#140](../../pull/140) |
+| 16 | Load / soak — ledger post RPC + Plaid sync (RV2-E) | — | — | `packages/soak-harness/` drives N concurrent posts over shared idempotency keys and asserts no double-post (`created == distinct keys`), tie-out balances, Plaid dedup on `(org,external_id)`, and records latency/error percentiles. CI-safe smoke (`.github/workflows/soak-harness.yml`) runs the assertions against a faithful in-memory model of `post_journal_entry`; the live sandbox driver runs the same runner against the real RPC. Runbook: `docs/plans/production-readiness-runbook.md`. | ⬜ (smoke green; live sandbox soak operator-run) | this PR |
 
 **Totals:** 8 P0, ~19 P1 confirmed and fixed. 12/15 fully closed (live + on `main`);
 2 (#131, #139) captured onto `main` + prod-reconciled by **[#156](../../pull/156)**; 1 (#143)
@@ -912,7 +1054,7 @@ Carry these into the next audit cycle; they are the backlog for coverage, not de
 | **UI click-through** of periods, categorize, import | all 15 audits were API/RPC-level; no browser walk of the actual screens | add an E2E-driven UI audit pass |
 | **Isolation F3** — `can_access_org` SECURITY DEFINER per-row seqscan on `journal_lines` (anon GET ~3s) | DoS surface; flagged, not fixed | index / rewrite the access check |
 | **CSV F4** — re-importing the same file double-posts (no dedup) | real user footgun | **RESOLVED** — policy = skip dupes; same-source content-key (CSV re-upload) + **cross-source** content-hash dedup (`20260704040000`, W2 gate fix) so the same real txn from CSV+Plaid posts once |
-| **Load / volume** — behavior at 10k–100k entries, concurrent orgs | only correctness tested, not scale | perf audit with seeded large orgs |
+| **Load / volume** — behavior at 10k–100k entries, concurrent orgs | only correctness tested, not scale | **harness landed (RV2-E, row 16)** — `packages/soak-harness/` proves no double-post + tie-out under concurrency (CI smoke); still to do: run the live sandbox soak at 10k–100k volume + a perf audit with seeded large orgs |
 | ~~**The whole top-half of the product**~~ — reconciliation UI, tax-line mapping, CPA workqueue, exports, depreciation | **BUILT in Wave 1** (Program 2 above); no longer "not built yet" | now ⬜ ledger rows, per-PR red-teamed, **stress-pass pending** — scheduled in [STRESS_TEST_TRACKER.md](STRESS_TEST_TRACKER.md) |
 | **Wave 2 not built** — catch-up mode (W2.1), QBO one-click migration (W2.2), Plaid bank feeds (W2.3), Penny in-app thread + trust-tiered cards (W3.x) | genuinely not built yet → nothing to stress-test | see [FULL_BOOKKEEPING_ROADMAP.md](plans/FULL_BOOKKEEPING_ROADMAP.md) Waves 2–4 |
 | **W1.3-B CPA mapping-edit UI deferred** | the tax-mapping *engine* shipped (W1.3-B); the CPA per-account mapping-edit *UI* was deferred | build + stress the edit UI when carded |

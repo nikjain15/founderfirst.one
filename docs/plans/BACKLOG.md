@@ -94,7 +94,7 @@ spec: map the 9 undefined vars (--fs-sm/xs/caption --ink-1 --r-sm --radius-1/2 -
   tokens in apps/app/src/styles.css; add `check:css-vars` grep gate to CI so the class can't recur.
 
 ## PENNY-UX-3 · Mobile tab-strip discoverability (P1)
-status: claimed:loop-orch-0704
+status: pr:#224
 blocked-by: PENNY-UX-2 (styles.css chain) — merged (pr:#221), clear
 spec: `.ledger-tabs` wraps or edge-fades at ≤640px so Advanced/subs are visibly reachable; ladder screenshot diff in app-e2e.
 

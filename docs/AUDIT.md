@@ -284,7 +284,7 @@ actually share their books.
 | Owner · Home (empty books — e2e1-maria) | 🟢 working | correct setup nudge + invite nudge; Penny declines gracefully |
 | Owner · Review (suggestions + categorize + receipts) | 🟢 working | real empty states; photo/paste capture renders |
 | Owner · Reports — P&L / TB / BS / CF / GL / 1099 / package | 🟢 working | all 7 views render; CSV download delivers period-stamped file; **GL view has a serious axe violation (F5)** |
-| Owner · Connections (catch-up · import · Plaid · QBO/Xero · payouts · invoicing · invite) | 🟢 working | all 8 sections render; catch-up advances to drop-files; **invite link broken (F1)**; **stub payout tiles (F11)** |
+| Owner · Connections (catch-up · import · Plaid · QBO/Xero · payouts · invoicing · invite) | 🟢 working | all 8 sections render; catch-up advances to drop-files; **invite link broken (F1)**; payout tiles all live — 5 providers via file-import (F11 closed by W4.1-B) |
 | Owner · Advanced — Journal / CoA / Reconcile / Periods / Rules | 🟢 working | posting via the form works; real empty states; **clipped off-screen on phones (F3)** |
 | Owner · Settings (`/settings`) | 🟢 working | invite + approval toggle; axe clean |
 | Onboarding (3 steps, kernel tiles) | 🟢 working | full walk created the audit org + 18-account CoA; axe clean at each step; **no accountant/practice path (F10)** |
@@ -410,12 +410,14 @@ practice". Fine for the current owner-first funnel; worth an explicit "I'm an
 accountant" link when CPA acquisition starts. (Decision-needed; usability gate —
 no new onboarding question without Nik.)
 
-**F11 · P2 · "COMING SOON" stub tiles shipped in the payout splitter.**
-`apps/app/src/ecommerce/PayoutUpload.tsx:54-58` renders PayPal / Square / Amazon as
-disabled tiles tagged `coming soon` (`copy/strings.ts:547`). Rubric §9: no
-coming-soon destinations shipped (the Program-5 ledger described these as registry
-rows, *not shipped UI* — they are visible UI on prod). Low harm (disabled, honest),
-but either flag them off or accept and amend the rubric/ledger wording.
+**F11 · P2 · "COMING SOON" stub tiles shipped in the payout splitter.** — **CLOSED
+by W4.1-B** (Nik 4 Jul: integrate the majors now): PayPal / Square / Amazon got real
+report parsers + registry rows flipped to `available`, so the tiles are live upload
+flows. Enablement is registry-driven (`status='available'` + `hasPayoutParser`), the
+hardcoded `PARSEABLE` list is gone, and `regression.payout-providers.test.ts` guards
+the registry⇄parser contract so an available-but-parserless (dead) tile can't recur.
+Original finding: `PayoutUpload.tsx:54-58` rendered the three as disabled `coming
+soon` tiles (`copy/strings.ts:547`) against rubric §9.
 
 **F12 · P2 · APP_PRINCIPLES baseline drift.** `apps/app/APP_PRINCIPLES.md` §0 still
 describes `main` as the grouped `MAIN_TABS = Overview · Categorize · Books · Reports`
@@ -434,7 +436,9 @@ the system says about itself).
 | **Xero** (import/migrate) | 🟢 wired — OAuth reachable ("to continue to FounderFirst") | `connect` fn → `login.xero.com` authorize page for the app's client id. Awaiting re-consent per the granular-scopes change |
 | **Stripe** (payout splitting) | 🟢 working — upload-a-payout-report parser (no OAuth by design) | provider tile enabled; W4.1 Vitest/pgTAP cover the split math |
 | **Shopify** (payout splitting) | 🟢 working — same upload model | provider tile enabled |
-| PayPal / Square / Amazon | ⬜ not built — disabled "coming soon" tiles (F11) | `PayoutUpload.tsx:54-58` |
+| **PayPal** (payout splitting) | 🟢 built (W4.1-B) — transaction-CSV parser (signed-fee polarity), file-import first; API sync = follow-up gated on Nik's provider credentials | tile registry-driven (`status='available'` + `hasPayoutParser`); `payouts.paypal.test.ts` covers split/reconcile/injection; needs a live stress pass with a real export |
+| **Square** (payout splitting) | 🟢 built (W4.1-B) — payout-details-CSV parser (signed-fee polarity), file-import first; API sync = follow-up | same registry-driven tile; `payouts.square.test.ts`; needs a live stress pass with a real export |
+| **Amazon** (payout splitting) | 🟢 built (W4.1-B) — V2 flat-file settlement parser (tab-delimited; summary-row reconcile), file-import first; API sync = follow-up | same registry-driven tile; `payouts.amazon.test.ts` incl. truncated-file reconcile failure; needs a live stress pass with a real settlement file |
 
 OAuth completion is not automatable from the harness (LEARNINGS #10) — statuses above
 are judged from the live UI + captured fn/network responses + the code paths, per the
@@ -456,7 +460,7 @@ UX-1, UX-2, UX-5 are mutually disjoint — start in parallel.
 | **PENNY-UX-5** (P1) | Keyboard-accessible scroll regions + full-report a11y coverage: `tabindex`/`role`/label on scrollable `.table-wrap`s; app-e2e axe walk clicks all 7 report views | `apps/app/src/ledger/Ledger.tsx`, `tools/app-e2e/run.mjs` | — |
 | **PENNY-UX-6** (P2) | Touch targets ≥44px on sub-tabs, `sm`/seg buttons, brand link (padding-led, density kept) | `apps/app/src/styles.css` | UX-3 |
 | **PENNY-UX-7** (P2) | Copy/pattern honesty batch: activity takeaway counts entries (F8); Login heading on the app scale (F9); APP_PRINCIPLES §0/§3 refreshed to `nav.ts` reality (F12) | `ledger/Ledger.tsx`, `copy/strings.ts`, `routes/Login.tsx`, `styles.css`, `APP_PRINCIPLES.md` | UX-5 (Ledger.tsx), UX-6 (styles.css) |
-| **PENNY-UX-8** (P2, decision-needed lean) | Stub payout tiles: flag off PayPal/Square/Amazon or bless the pattern (rubric §9 + Program-5 ledger wording amended to match) | `ecommerce/PayoutUpload.tsx` or docs | — |
+| **PENNY-UX-8** (P2) — **CLOSED by W4.1-B** | Stub payout tiles: resolved by Nik's 4-Jul "integrate the majors now" — PayPal/Square/Amazon got real parsers and the tiles went live (F11 closed); no flag-off needed | `ecommerce/payouts.ts`, `ecommerce/PayoutUpload.tsx` | — |
 
 Post-fix cleanup (not a card): purge the `PENNYUX-AUDIT` orgs + `pennyux-audit-*`
 users listed above once UX-1's e2e assertion covers the invite path.

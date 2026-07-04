@@ -2,11 +2,11 @@
  * PayoutUpload (W4.1) — the payout-splitting upload surface, nested under
  * Connections (APP_PRINCIPLES: no new top-level tab; nest under an existing job).
  *
- * THE JOB (owner-facing): a Stripe/Shopify payout hits the bank as one lump
- * deposit that is really gross sales − fees − refunds. Recorded as a single
- * deposit, revenue and fees are silently wrong. This flow splits it correctly in
- * ≤3 taps: pick provider → upload the report + name the payout → confirm the
- * preview. Nothing posts until "Record this payout".
+ * THE JOB (owner-facing): a Stripe / Shopify / PayPal / Square / Amazon payout
+ * hits the bank as one lump deposit that is really gross sales − fees − refunds.
+ * Recorded as a single deposit, revenue and fees are silently wrong. This flow
+ * splits it correctly in ≤3 taps: pick provider → upload the report + name the
+ * payout → confirm the preview. Nothing posts until "Record this payout".
  *
  * Parsing + the split MATH live in payouts.ts (pure, unit-tested). The preview is
  * shown BEFORE posting and reconciled against the report's own net so a wrong
@@ -20,14 +20,14 @@ import { parseCsv, type ParsedCsv } from "../import/csv";
 import { formatMoney } from "../ledger/money";
 import { postEcommercePayout, useConnectors } from "../ledger/api";
 import type { LedgerAccount } from "../ledger/types";
-import { parsePayoutCsv, type ParsedPayout, type PayoutProvider } from "./payouts";
+import { hasPayoutParser, parsePayoutCsv, type ParsedPayout, type PayoutProvider } from "./payouts";
 import { COPY } from "../copy";
 
 const today = () => new Date().toLocaleDateString("en-CA");
 
-// Providers that actually have a report parser today (registry status can list
-// more as coming-soon; we only enable the ones payouts.ts can parse).
-const PARSEABLE: ReadonlySet<string> = new Set(["stripe", "shopify"]);
+// Report files we accept: provider CSVs + Amazon's tab-delimited settlement
+// flat file (.txt/.tsv). import/csv.ts sniffs the delimiter either way.
+const REPORT_FILE_ACCEPT = ".csv,.txt,.tsv,text/csv,text/tab-separated-values,text/plain";
 
 export default function PayoutUpload({
   orgId, canWrite, accounts,
@@ -45,7 +45,11 @@ export default function PayoutUpload({
         <p className="muted sm">{COPY.payouts.lead}</p>
         <div className="payout-providers" role="group" aria-label={COPY.payouts.pickProvider}>
           {(connectors.data ?? []).map((c) => {
-            const enabled = c.status === "available" && PARSEABLE.has(c.key);
+            // Registry-driven, never a hardcoded provider list: a tile is LIVE
+            // when its connector row says 'available' AND a report parser is
+            // registered in payouts.ts (PAYOUT_PARSERS). Flip a provider on by
+            // seeding its row + adding its parser — zero component edits.
+            const enabled = c.status === "available" && hasPayoutParser(c.key);
             return (
               <button
                 key={c.key}
@@ -123,17 +127,21 @@ function PayoutForm({
     f.text().then((t) => setCsv(parseCsv(t))).catch(() => setErr(COPY.payouts.readFileError));
   }
 
+  // The payout reference feeds the ext:<provider>:payout:<id> idempotency key —
+  // trim it so " po_1 " and "po_1" can't mint two different keys (double-post).
+  const payoutRef = payoutId.trim();
+
   // Parse + reconcile the preview live. A parse error (missing columns, bad money)
   // is shown to the owner and blocks posting.
   const parsed = useMemo<{ p: ParsedPayout | null; error: string | null }>(() => {
-    if (!csv || !payoutId || !payoutDate) return { p: null, error: null };
+    if (!csv || !payoutRef || !payoutDate) return { p: null, error: null };
     try {
       const currency = accounts.find((a) => a.id === bankId)?.currency ?? "USD";
-      return { p: parsePayoutCsv(provider, payoutId, payoutDate, currency, csv), error: null };
+      return { p: parsePayoutCsv(provider, payoutRef, payoutDate, currency, csv), error: null };
     } catch (e) {
       return { p: null, error: COPY.payouts.parseError((e as Error).message) };
     }
-  }, [csv, payoutId, payoutDate, bankId, provider, accounts]);
+  }, [csv, payoutRef, payoutDate, bankId, provider, accounts]);
 
   const canPost = Boolean(parsed.p && bankId && !busy);
 
@@ -143,7 +151,7 @@ function PayoutForm({
     try {
       const c = parsed.p.components;
       const r = await postEcommercePayout({
-        org_id: orgId, provider, payout_id: payoutId, payout_date: payoutDate,
+        org_id: orgId, provider, payout_id: payoutRef, payout_date: payoutDate,
         bank_account_id: bankId,
         gross_minor: c.grossMinor, fees_minor: c.feesMinor,
         refunds_minor: c.refundsMinor, adjust_minor: c.adjustMinor,
@@ -178,7 +186,7 @@ function PayoutForm({
 
       {!csv ? (
         <label className="file-drop">
-          <input type="file" accept=".csv,text/csv" onChange={onFile} />
+          <input type="file" accept={REPORT_FILE_ACCEPT} onChange={onFile} />
           <span>{COPY.payouts.chooseFile}</span>
         </label>
       ) : (

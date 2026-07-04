@@ -14,6 +14,20 @@ it off `origin/main`, verifies CI green, and opens a PR.
     on any P0/red/decision. Flip by `echo deploy > scripts/loop/MODE` (no reinstall).
 - `com.founderfirst.build-loop.plist` — launchd job (RunAtLoad + every 30 min).
 
+
+## Prerequisite — headless subscription auth (one-time)
+The loop's claude sessions run under launchd, which CANNOT read the interactive Keychain login,
+and `secrets.env`'s `ANTHROPIC_API_KEY` is deliberately unset by `run-loop.sh` (spend policy:
+subscription-only, never the metered API). Headless auth therefore needs a long-lived
+subscription OAuth token:
+
+```bash
+claude setup-token           # browser OAuth, approve once; prints sk-ant-oat01-...
+echo 'CLAUDE_CODE_OAUTH_TOKEN=<paste-token>' >> ~/.config/founderfirst/secrets.env
+```
+`run-loop.sh` sources `secrets.env` with `set -a`, so the token is exported to each iteration
+and the CLI uses the subscription. Without it every iteration dies with a 401.
+
 ## Install (Nik runs these once, at the machine)
 ```bash
 chmod +x "scripts/loop/run-loop.sh"

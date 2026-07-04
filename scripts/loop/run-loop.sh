@@ -31,6 +31,10 @@ trap 'rmdir "$LOCKDIR" 2>/dev/null' EXIT
 cd "$REPO" || exit 1
 # Secrets (SUPABASE_ACCESS_TOKEN, service role, provider keys, LOOP_HEARTBEAT_TOKEN, ...)
 set -a; . "$HOME/.config/founderfirst/secrets.env" 2>/dev/null; set +a
+# Spend policy (LOOP_PROMPT rule 11): subscription-only. secrets.env carries an
+# ANTHROPIC_API_KEY for other services; it must NEVER auth the loop's claude
+# sessions (metered API). Unset so the CLI falls back to the subscription login.
+unset ANTHROPIC_API_KEY
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$HOME/Library/pnpm:$PATH"
 
 MODE="$(tr -d '[:space:]' < "$MODE_FILE" 2>/dev/null || echo safe)"

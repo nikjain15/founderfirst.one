@@ -534,6 +534,54 @@ export const COPY = {
     plaid: "your bank",
   },
 
+  // ── Payout splitting (W4.1) — the "your Stripe/Shopify deposit is really sales
+  //    minus fees minus refunds" upload. Owner-facing, no accounting jargon: talk
+  //    about a deposit and where the money went, never "debit/credit/journal". ──
+  payouts: {
+    sectionTitle: "Split a Stripe or Shopify payout",
+    lead:
+      "A payout lands in your bank as one deposit, but it's really your sales minus fees and refunds. Upload the payout report and Penny records each part correctly.",
+    disabled: "You have read-only access — importing payouts is disabled.",
+    // step 1 — provider
+    pickProvider: "Which payout is this?",
+    comingSoon: "coming soon",
+    // step 2 — upload
+    uploadFor: (name: string) => `Upload your ${name} payout report`,
+    uploadHint: "Export the payout (or balance) report as CSV and drop it in.",
+    chooseFile: "Choose a CSV file…",
+    fileSummary: (rows: number, filename: string) => `${rows} rows · ${filename}`,
+    readFileError: "Couldn't read that file.",
+    parseError: (msg: string) => `We couldn't read that report: ${msg}`,
+    payoutIdLabel: "Payout reference",
+    payoutIdHint: "The payout ID from your dashboard — this keeps a re-upload from posting twice.",
+    payoutIdPlaceholder: "e.g. po_1a2b3c",
+    payoutDateLabel: "Deposit date",
+    bankAccountLabel: "Deposited into",
+    // step 3 — preview the split
+    previewTitle: "Here's how this payout breaks down",
+    rowGross: "Gross sales",
+    rowFees: "Processing fees",
+    rowRefunds: "Refunds & returns",
+    rowAdjust: "Other adjustments",
+    rowNet: "Net deposit to your bank",
+    reconcilesOk: "This ties out to your report exactly.",
+    reconcilesBad: (computed: string, reported: string) =>
+      `This doesn't match your report yet — our split comes to ${computed} but the report's net is ${reported}. Check you picked the right report before posting.`,
+    rowsClassified: (n: number) => `${n} report rows read`,
+    // actions
+    back: "Back",
+    post: "Record this payout",
+    posting: "Recording…",
+    // results
+    doneTitle: "Payout recorded.",
+    doneBody:
+      "Your sales, fees, and refunds are booked separately and the net deposit matches your bank. You can see it in the Journal.",
+    duplicateTitle: "Already imported.",
+    duplicateBody:
+      "This payout was recorded before, so nothing was posted again — your books already have it. Re-uploading is always safe.",
+    backToBooks: "Back to the books",
+  },
+
   // ── W2.2 one-click migration (QBO history + trial-balance comparison) ───────
   migration: {
     heading: "Bring your full history over",

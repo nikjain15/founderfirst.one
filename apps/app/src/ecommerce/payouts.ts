@@ -236,3 +236,86 @@ export const PAYOUT_PARSERS: Partial<Record<PayoutProvider, { rowsFrom: (rows: a
   stripe: { rowsFrom: stripeRowsFrom },
   shopify: { rowsFrom: shopifyRowsFrom },
 };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CSV → PayoutComponents bridge (the upload UI's parse path).
+//
+// The upload surface (PayoutUpload.tsx) hands us the already-parsed CSV (headers
+// + string rows, from import/csv.ts) plus the provider key. This turns that into
+// the normalized PayoutComponents the RPC consumes AND reconciles it against the
+// report's own net (when the export carries a net column) so a parse bug surfaces
+// to the owner BEFORE anything posts — never a silent plug (LEARNINGS #16). Kept
+// DB-free + pure so the whole preview is unit-testable in node.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** A parsed CSV as import/csv.ts produces it (kept local to avoid a UI import). */
+export interface ParsedPayoutCsv {
+  headers: string[];
+  rows: string[][];
+}
+
+/** The result of parsing an uploaded report: the split + optional reported net. */
+export interface ParsedPayout {
+  components: PayoutComponents;
+  /** Net the report itself declares (Σ of its net column), if present, in minor units. */
+  reportedNetMinor: number | null;
+  /** True when the report carried a net column AND it ties to our computed net. */
+  reconciles: boolean;
+  /** How many report rows were classified into a bucket (ignored rows excluded). */
+  rowCount: number;
+}
+
+/** Case/space-insensitive header lookup → column index, or -1. */
+function colIndex(headers: string[], ...names: string[]): number {
+  const norm = (s: string) => s.trim().toLowerCase().replace(/[\s_]+/g, "");
+  const want = names.map(norm);
+  return headers.findIndex((h) => want.includes(norm(h)));
+}
+
+/**
+ * Map a provider's parsed CSV into typed raw rows, run its parser, and total the
+ * report's own net column for the reconcile check. Provider column names mirror
+ * the Stripe balance-transactions export and the Shopify payout export.
+ */
+export function parsePayoutCsv(
+  provider: PayoutProvider,
+  payoutId: string,
+  payoutDate: string,
+  currency: string,
+  csv: ParsedPayoutCsv,
+): ParsedPayout {
+  const parser = PAYOUT_PARSERS[provider];
+  if (!parser) throw new Error(`no report parser for provider ${provider}`);
+  const { headers, rows } = csv;
+
+  // Locate the columns each provider's parser needs, plus a net column if present.
+  const cType = colIndex(headers, "type");
+  const cAmount = colIndex(headers, "amount", "gross");
+  const cFee = colIndex(headers, "fee", "fees");
+  const cNet = colIndex(headers, "net");
+  if (cType < 0 || cAmount < 0) {
+    throw new Error("report is missing a Type and/or Amount column");
+  }
+
+  // Build the provider's typed raw shape from the CSV cells. Both current parsers
+  // (Stripe balance-txn, Shopify payout) read type/amount/fee, so one mapping serves.
+  const raw = rows.map((r) => ({
+    type: r[cType] ?? "",
+    Type: r[cType] ?? "",
+    amount: r[cAmount] ?? "0",
+    Amount: r[cAmount] ?? "0",
+    fee: cFee >= 0 ? (r[cFee] ?? "0") : "0",
+    Fee: cFee >= 0 ? (r[cFee] ?? "0") : "0",
+  }));
+
+  const normalized = parser.rowsFrom(raw as any[]);
+  const components = componentsFromRows(provider, payoutId, payoutDate, currency, normalized);
+
+  let reportedNetMinor: number | null = null;
+  if (cNet >= 0) {
+    reportedNetMinor = rows.reduce((s, r) => s + toMinor(r[cNet] ?? "0"), 0);
+  }
+  const reconciles = reportedNetMinor == null ? true : reportedNetMinor === components.netMinor;
+
+  return { components, reportedNetMinor, reconciles, rowCount: normalized.length };
+}

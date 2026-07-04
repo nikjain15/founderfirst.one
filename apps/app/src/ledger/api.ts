@@ -460,6 +460,63 @@ export const commitImportBatch = (org_id: string, batch_id: string) =>
 export const discardImportBatch = (org_id: string, batch_id: string) =>
   invoke<{ result: ImportBatch }>("imports", { op: "discard", org_id, batch_id });
 
+// ── connector registry (CENTRAL-2) — platform knowledge, public-read ─────────
+// The commerce provider list for the payout-upload surface comes from HERE, not
+// a hardcoded array: adding PayPal/Square/Amazon is a registry row, no UI change
+// (centralization). status 'available' = usable now; 'planned'/'beta' = shown as
+// coming-soon. logo_ref is a design-system asset id (never an inline URL).
+export interface Connector {
+  key: string;
+  name: string;
+  category: string;
+  logo_ref: string | null;
+  capabilities: string[];
+  status: "available" | "beta" | "planned";
+  sort_order: number;
+}
+
+export function useConnectors(category?: string) {
+  return useQuery({
+    queryKey: ["connectors", category ?? "all"],
+    queryFn: async (): Promise<Connector[]> => {
+      const sb = getClient();
+      let q = sb
+        .from("connectors")
+        .select("key,name,category,logo_ref,capabilities,status,sort_order")
+        .order("sort_order");
+      if (category) q = q.eq("category", category);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as Connector[];
+    },
+  });
+}
+
+// ── e-commerce payout splitting (W4.1) — posts a split payout via the RPC ─────
+export interface PayoutPostInput {
+  org_id: string;
+  provider: string;
+  payout_id: string;
+  payout_date: string;
+  bank_account_id: string;
+  gross_minor: number;
+  fees_minor?: number;
+  refunds_minor?: number;
+  adjust_minor?: number;
+  net_minor?: number | null;
+  currency?: string | null;
+  memo?: string | null;
+}
+
+/** Post a split payout. `duplicate:true` = the payout was already imported (no double-post). */
+export const postEcommercePayout = (input: PayoutPostInput) =>
+  invoke<{ entry: JournalEntry; duplicate: boolean }>("payouts", { op: "post", ...input });
+
+/** Reverse a previously-imported payout (the correction path for a restated report). */
+export const reverseEcommercePayout = (input: {
+  org_id: string; provider: string; payout_id: string; date?: string; memo?: string;
+}) => invoke<{ entry: JournalEntry }>("payouts", { op: "reverse", ...input });
+
 // ── external accounting connections (QBO/Xero) ────────────────────────────────
 export type ExternalProvider = "qbo" | "xero";
 // Plaid is a bank-feed connection (link-token flow, not OAuth redirect); it shares

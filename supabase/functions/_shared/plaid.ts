@@ -2,12 +2,13 @@
  * Plaid API helpers (SANDBOX build — Roadmap §W2.3). Mirrors _shared/qbo.ts.
  *
  * Secrets come from the fn environment (never hardcoded, never the browser):
- *   PLAID_CLIENT_ID, PLAID_SECRET (the integrator sets this to the SANDBOX secret
- *   from ~/.config/founderfirst/secrets.env → PLAID_SECRET_SANDBOX at deploy),
+ *   PLAID_CLIENT_ID, plus the Plaid secret — selected by PLAID_ENV: production
+ *   reads PLAID_SECRET_PRODUCTION, sandbox/development read PLAID_SECRET_SANDBOX
+ *   (a bare PLAID_SECRET is honoured as a fallback for older deploys),
  *   PLAID_ENV (defaults 'sandbox').
  * Base URL is chosen by PLAID_ENV; this build targets sandbox. Production requires
- * Plaid's app review (a Nik step before >10 live users) — flip PLAID_ENV +
- * PLAID_SECRET to production then.
+ * Plaid's app review (a Nik step before >10 live users) — flip PLAID_ENV and set
+ * PLAID_SECRET_PRODUCTION then; no code change needed to switch envs.
  */
 const PLAID_ENV = () => Deno.env.get("PLAID_ENV") ?? "sandbox";
 const API_BASE = () => {
@@ -18,7 +19,17 @@ const API_BASE = () => {
   }
 };
 const CLIENT_ID = () => Deno.env.get("PLAID_CLIENT_ID") ?? "";
-const SECRET = () => Deno.env.get("PLAID_SECRET") ?? "";
+// Pick the secret by env so a single deploy holds both keys. Production uses the
+// production secret; sandbox/development use the sandbox secret. A bare
+// PLAID_SECRET remains a fallback for older single-secret deploys.
+export const plaidSecret = () => {
+  const env = PLAID_ENV();
+  const specific = env === "production"
+    ? Deno.env.get("PLAID_SECRET_PRODUCTION")
+    : Deno.env.get("PLAID_SECRET_SANDBOX");
+  return specific ?? Deno.env.get("PLAID_SECRET") ?? "";
+};
+const SECRET = () => plaidSecret();
 
 // Webhook target: Plaid POSTs item/transaction events here. Defaults to the
 // deployed plaid-webhook fn; override with PLAID_WEBHOOK_URL if fronted by a tunnel.

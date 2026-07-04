@@ -444,6 +444,44 @@ export const COPY = {
     glTableAria: "General ledger detail",
   },
 
+  // ── Filing worksheet (RV2-A1) ──────────────────────────────────────────────
+  filing: {
+    eyebrow: "Filing",
+    heading: "Return worksheet",
+    lead: "Review each return line before you file — every figure traces back to the exact transactions behind it.",
+    profileNeededTitle: "Tell us how this business files",
+    profileNeededBody: "Set the entity type and tax jurisdiction so we can build the right return.",
+    noFormsTitle: "No return available yet",
+    noFormsBody: "We do not have a seeded return for this entity type and jurisdiction yet.",
+    formLabel: "Return",
+    yearLabel: "Tax year",
+    loading: "Building the worksheet…",
+    loadError: "Could not load the worksheet.",
+    reviewReady: "Every account with activity lands on a line — this return is ready to review.",
+    notReviewReady: (n: number) =>
+      `${n} account${n === 1 ? "" : "s"} with activity ${n === 1 ? "does" : "do"} not map to a line yet — ask your accountant to map ${n === 1 ? "it" : "them"} before filing.`,
+    colLine: "Line",
+    colDescription: "Description",
+    colAmount: "Amount",
+    lineTableAria: "Return lines",
+    sourcesTableAria: "Transactions behind this line",
+    drillOpen: (n: number) => `Show ${n} transaction${n === 1 ? "" : "s"}`,
+    drillClose: "Hide transactions",
+    srcDate: "Date",
+    srcAccount: "Account",
+    srcMemo: "Description",
+    srcAmount: "Amount",
+    noSources: "No transactions on this line for this period.",
+    unmappedHeading: "Not yet on the return",
+    unmappedLead: "These accounts have activity but no return line. They are shown, never dropped.",
+    mappedByOverride: "Mapped by your accountant",
+    mappedByRule: "Mapped automatically",
+    tiesNote: "Traced transactions add up to each line to the cent.",
+    doesNotTie: "A line does not reconcile to its transactions — do not file from this yet.",
+    emptyTitle: "Nothing to file yet",
+    emptyBody: "Post entries and map your accounts to see the return take shape.",
+  },
+
   // ── Periods ────────────────────────────────────────────────────────────────
   periods: {
     noPeriodsTitle: "No periods yet",
@@ -674,6 +712,7 @@ export const COPY = {
     import: "Import",
     rules: "Rules",
     reconcile: "Reconcile",
+    filing: "Filing",
   },
 
   // ── Learned rules (W1.6 — Categorize → Rules) ──────────────────────────────

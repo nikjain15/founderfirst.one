@@ -104,7 +104,8 @@ export default function Invoicing({ orgId, canWrite }: { orgId: string; canWrite
       {invoices.isLoading ? <p className="muted">{I.loading}</p>
         : (invoices.data ?? []).length === 0 ? <p className="muted">{I.empty}</p>
         : (
-          <div className="table-wrap">
+          // PENNY-UX-5 — scrollable region must be keyboard-reachable (axe: scrollable-region-focusable)
+          <div className="table-wrap" tabIndex={0} role="region" aria-label={I.tableAria}>
             <table className="invoices-table">
               <thead>
                 <tr>

@@ -532,7 +532,8 @@ function Accounts({
       {live.length === 0 ? (
         <Empty title={COPY.accounts.noAccountsTitle} body={COPY.accounts.noAccountsBody} />
       ) : (
-        <div className="table-wrap">
+        // PENNY-UX-5 — scrollable region must be keyboard-reachable (axe: scrollable-region-focusable)
+        <div className="table-wrap" tabIndex={0} role="region" aria-label={COPY.accounts.tableAria}>
           {groups.map((g) => (
             <div className="coa-group" key={g.type}>
               <div className="coa-type">{COPY.accountTypes[g.type]}</div>
@@ -1175,7 +1176,8 @@ function GeneralLedgerReport({ entries, filter }: { entries: JournalEntry[]; fil
   if (rows.length === 0) return <Empty title={COPY.reports.glEmptyTitle} body={COPY.reports.glEmptyBody} />;
   return (
     <div className="report">
-      <div className="table-wrap">
+      {/* PENNY-UX-5 — the widest report; keyboard users must be able to focus + arrow-scroll it (F5) */}
+      <div className="table-wrap" tabIndex={0} role="region" aria-label={COPY.reports.glTableAria}>
         <div className="report-table gl">
           <div className="report-head gl-head">
             <span>{COPY.reports.glColDate}</span>
@@ -1246,7 +1248,8 @@ function Periods({
   return (
     <div className="periods">
       {err && <p className="error sm">{err}</p>}
-      <div className="table-wrap">
+      {/* PENNY-UX-5 — scrollable region must be keyboard-reachable (axe: scrollable-region-focusable) */}
+      <div className="table-wrap" tabIndex={0} role="region" aria-label={COPY.periods.tableAria}>
         {periods.map((p) => (
           <div className="period-row" key={p.id}>
             <span className="p-range">{p.period_start} → {p.period_end}</span>

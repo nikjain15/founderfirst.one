@@ -1306,3 +1306,28 @@ button.ghost.sm, .ghost.sm {
   .penny-did-row { grid-template-columns: 1fr auto; row-gap: var(--space-1); }
   .penny-did-row .pd-source { grid-column: 1 / -1; }
 }
+
+/* ── Internal admin console (IA-3 · penny/admin) ────────────────────────────
+   Additive scaffold styles. Reuses the ledger/staff shell + ink-active
+   .ledger-tabs; only the Overview table and the parallel-run placeholder are
+   console-specific. Tokens only — no inline hex/px (CLAUDE.md). */
+.admin-console .console-overview { margin-top: var(--space-4); }
+.admin-console .console-overview .section-h { margin-top: 0; }
+.console-table { width: 100%; border-collapse: collapse; font-size: var(--fs-ui); }
+.console-table th, .console-table td {
+  text-align: left; padding: 0.55rem 0.75rem;
+  border-bottom: var(--bw-hair) solid var(--line-2);
+}
+.console-table th {
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip);
+  color: var(--ink-3); font-weight: 600;
+}
+.console-table td.num, .console-table th.num {
+  text-align: right; font-variant-numeric: tabular-nums;
+}
+.console-placeholder {
+  margin-top: var(--space-4); padding: var(--pad-card);
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-card);
+  background: var(--brand-soft);
+  display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start;
+}

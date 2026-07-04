@@ -32,6 +32,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { sendEmail } from "../_shared/send.ts";
 import type { Brand } from "../_shared/email.ts";
 import { escapeHtml } from "../_shared/email.ts";
+import { invoicePdfBytes, invoicePdfFilename, type PdfLine } from "../_shared/invoicePdf.ts";
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -224,6 +226,7 @@ async function emailInvoice(
   const { data: lines } = await svc.from("invoice_lines")
     .select("description, quantity_milli, unit_price_minor, amount_minor")
     .eq("invoice_id", inv.id).eq("org_id", orgId).order("position", { ascending: true });
+  const lineList = (lines ?? []) as unknown as InvoiceLine[];
   const balance = inv.total_minor - inv.amount_paid_minor;
   const vars = {
     number: inv.number,
@@ -231,14 +234,44 @@ async function emailInvoice(
     amount: money(balance, inv.currency),
     due: inv.due_date,
   };
+
+  // Attach the invoice as a PDF (W5.1). Built here from the SAME invoice + lines
+  // the HTML body renders, so the attachment can never disagree with the email.
+  // A PDF/base64 failure must NOT block the send — fall back to HTML-only.
+  let attachments;
+  try {
+    const bytes = invoicePdfBytes(
+      {
+        number: inv.number,
+        customer_name: inv.customer_name,
+        issue_date: inv.issue_date,
+        due_date: inv.due_date,
+        currency: inv.currency,
+        memo: inv.memo,
+        total_minor: inv.total_minor,
+        amount_paid_minor: inv.amount_paid_minor,
+      },
+      lineList as unknown as PdfLine[],
+      { orgName: "", generatedOn: new Date().toISOString().slice(0, 10), reminder },
+    );
+    attachments = [{
+      filename: invoicePdfFilename(inv.number),
+      content: encodeBase64(bytes),
+      contentType: "application/pdf",
+    }];
+  } catch (_e) {
+    attachments = undefined;
+  }
+
   const result = await sendEmail({
     supa: svc,
     key: reminder ? "invoice_nudge" : "invoice_sent",
     to: [inv.customer_email],
     trigger: reminder ? "cron" : "admin",
     vars,
+    attachments,
     ctaHref: `${APP_URL}/i/${inv.id}`,
-    buildBody: (brand) => invoiceBody(inv, (lines ?? []) as unknown as InvoiceLine[], brand, reminder),
+    buildBody: (brand) => invoiceBody(inv, lineList, brand, reminder),
     buildText: () =>
       `${reminder ? "Reminder: invoice" : "Invoice"} ${inv.number} for ${inv.customer_name}\n` +
       `Amount due: ${money(balance, inv.currency)} (due ${inv.due_date}).\n` +

@@ -218,9 +218,21 @@ export async function renderEmail(input: RenderInput): Promise<Rendered> {
   });
 }
 
+/** A file attached to the email. `content` is base64 (Resend's format). Built
+ *  by the caller (e.g. the invoice PDF) — send.ts just carries it to Resend. */
+export interface Attachment {
+  filename: string;
+  /** base64-encoded file bytes. */
+  content: string;
+  /** optional MIME type; Resend infers from the filename when omitted. */
+  contentType?: string;
+}
+
 export interface SendInput extends RenderInput {
   to: string[];
   trigger: Trigger;
+  /** Optional file attachments (e.g. the invoice PDF). Same for every chunk. */
+  attachments?: Attachment[];
 }
 
 export interface SendResult {
@@ -235,6 +247,15 @@ export interface SendResult {
 export async function sendEmail(input: SendInput): Promise<SendResult> {
   const { supa, key, to, trigger } = input;
   const rendered = await renderEmail(input);
+  // Map our Attachment shape to Resend's ({ filename, content(base64), content_type? }).
+  // Drop empty/malformed ones so a bad attachment can never brick the send.
+  const resendAttachments = (input.attachments ?? [])
+    .filter((a) => a && a.filename && a.content)
+    .map((a) => ({
+      filename: a.filename,
+      content: a.content,
+      ...(a.contentType ? { content_type: a.contentType } : {}),
+    }));
 
   const resendKey = Deno.env.get("RESEND_API_KEY");
   // Keep the verified From identity from the secret — never override the sender
@@ -264,7 +285,11 @@ export async function sendEmail(input: SendInput): Promise<SendResult> {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, ...envelope, subject: rendered.subject, html: rendered.html, text: rendered.text }),
+      body: JSON.stringify({
+        from, ...envelope,
+        subject: rendered.subject, html: rendered.html, text: rendered.text,
+        ...(resendAttachments.length ? { attachments: resendAttachments } : {}),
+      }),
     });
     const respBody: any = await res.json().catch(() => ({}));
     if (res.ok) {

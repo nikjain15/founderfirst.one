@@ -461,25 +461,39 @@ The ambiguity guard only fires on **exact same-date** ties (`match.exactTies>=2`
 `exactTies=0`, and if the parsed vendor corroborates, the tier clears `confidence_high` →
 **auto-attach to a possibly-wrong entry**. **Repro:** $42.00 "Acme" on Jul-1 and again on
 Jul-3; a receipt dated Jul-2 fuzzy-matches both, picks one, vendor corroborates →
-auto-attach. P2: detach is 1-tap, metadata-only, ledger untouched. **Fix:** count fuzzy
-ties at the best delta and downgrade to a confirm card when >1. → regression stub REG-W3-F3.
+auto-attach. P2: detach is 1-tap, metadata-only, ledger untouched. **Fixed (W5.2):**
+`matchReceipt` now counts same-amount candidates within the window sharing the best
+(nearest) delta into a new `fuzzyTies` field; `receiptTier` downgrades to a confirm card
+(LOW) when `fuzzyTies>=2` — mirroring the existing `exactTies` guard. → regression
+**REG-W3-F3** live in `apps/app/src/ledger/receiptMatch.test.ts` (the Jul-1/Jul-3 vs Jul-2
+collision reports `fuzzyTies=2` and never reaches HIGH, even vendor-corroborated; a single
+nearest candidate still auto-attaches — no over-downgrade). Edge fn `matcher.ts` copy synced.
 
 **F4 · P2 · Grounding post-check allows an extra invented number.**
 `supabase/functions/penny-thread/index.ts:198` — the guard only asserts the correct money
 string is *present* (`!text.includes(money(fact.amountMinor))`). A reply "…$200.00, about
 15% of revenue" passes though the prompt forbids percentages/estimates. Can never corrupt
 the server-computed stated fact (`index.ts:146`) ⇒ P2, but the header's "hallucinated
-number is structurally impossible" overstates. **Fix:** reject any currency/percent token
-other than the single allowed `money(fact.amountMinor)`; fall back to the deterministic
-phrasing. → regression stub REG-W3-F4 (adversarial: extra-number reply is rejected).
+number is structurally impossible" overstates. **Fixed (W5.2):** new pure
+`groundingViolation(text, allowedMoney)` in `_shared/thread/route.ts` rejects any percentage
+(`\d%`/"percent") and any currency-shaped token other than the single allowed figure; the
+guard now falls back to the deterministic phrasing when the reply violates OR omits the
+figure. Conservative — bare integers (years/quarters/counts) don't trip it. → regression
+**REG-W3-F4** in `supabase/functions/penny-thread/index.test.ts` (Deno): "$200.00, about 15%
+of revenue" and an extra `$150.00` are rejected; on-contract replies pass.
 
 **F5 · P2 · Receipt feed-row idempotency via `LIKE '%uuid%'` substring, not a key.**
 `supabase/migrations/20260705030000_w3_5_receipts.sql:244-247,287-290` — `autoattach_receipt`
 / `detach_receipt` dedupe + undo the feed row with `summary like '%'||p_receipt_id||'%'`
 against free-text owner copy, vs. W3.2's proper `entry_id=` key (`20260705010000:120`). No
 security impact; a future copy change dropping the `[uuid]` suffix silently breaks
-dedup/undo. **Fix:** add a nullable `receipt_id uuid` column to `penny_activity` and key
-off it. → regression stub REG-W3-F5.
+dedup/undo. **Fixed (W5.2):** new migration `20260706090000_w3_5_receipt_activity_fk.sql`
+adds a nullable `receipt_id uuid` FK to `penny_activity` (+ index, + backfill from the old
+`[uuid]` suffix) and `CREATE OR REPLACE`s `autoattach_receipt`/`detach_receipt` to dedup/undo
+off `receipt_id =` (the deployed migration is untouched — write-don't-deploy). → regression
+**REG-W3-F5** in `supabase/tests/w3_5_receipts_test.sql` (pgTAP): asserts the feed row carries
+the real FK, then STRIPS the `[uuid]` summary suffix and proves dedup (one row on retry) and
+undo (feed row marked undone) still work — the copy-change failure the old LIKE couldn't survive.
 
 **Advisory (P2/robustness, no stub):** onboarding diagnostic `nudgeTarget` uses
 `startsWith` over entity keys — a future prefix-colliding seed token could mis-suggest an
@@ -501,10 +515,10 @@ each below got the pass (finder → verifier) — those with findings carry the 
 | # | Surface | Permanent test | Status |
 |---|---|---|---|
 | W3.2 | Trust-tiered autonomy (feed · auto-post · undo · ≤5 budget) | `w3_2_trust_tiered_test.sql` + `apps/app/src/ledger/*tier*` Vitest | 🟢 stress-passed; **F1 (P1)** open |
-| W3.1 | Penny thread in-app (grounded Q&A) | `thread.test.ts` + `regression.thread-server-authority.test.ts` | 🟢 stress-passed; **F2 (P1) / F4 (P2)** open |
+| W3.1 | Penny thread in-app (grounded Q&A) | `thread.test.ts` + `regression.thread-server-authority.test.ts` + `penny-thread/index.test.ts` (REG-W3-F4) | 🟢 stress-passed; **F2 (P1)** open; **F4 (P2) FIXED (W5.2)** |
 | W3.3 | 3-step onboarding (kernel entity/industry + CoA seed) | onboarding Vitest + `20260705020000` pgTAP; `check:kernel-seed` gate | 🟢 stress-passed; no defect (seed-order deploy note) |
 | W3.4 | Owner Home / am-I-okay pulse | `homePulse.test.ts` | 🟢 stress-passed; no defect |
-| W3.5 | Receipt capture + match | `receiptMatch.test.ts` + `w3_5_receipts_test.sql` | 🟢 stress-passed; **F3 / F5 (P2)** open (supersedes the Wave-1 ⬜ W3.5 row) |
+| W3.5 | Receipt capture + match | `receiptMatch.test.ts` (REG-W3-F3) + `w3_5_receipts_test.sql` (REG-W3-F5) | 🟢 stress-passed; **F3 / F5 (P2) FIXED (W5.2)** (supersedes the Wave-1 ⬜ W3.5 row) |
 
 **Coverage delta:** +4 new ledger rows (W3.1/2/3/4) + W3.5 promoted from ⬜ (Program 2) to
 stress-passed. 0 P0, 2 P1, 3 P2 — all with a permanent regression stub (REG-W3-F1…F5) to

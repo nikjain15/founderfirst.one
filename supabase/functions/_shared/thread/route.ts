@@ -219,6 +219,39 @@ export function metricPhrase(f: GroundedFact): string {
   }
 }
 
+/**
+ * Grounding guard (audit Program 4, F4). The model is told to state ONE money
+ * figure — the server-computed one — and to add no other numbers, estimates, or
+ * percentages. This checks the reply for that contract and returns true if it is
+ * VIOLATED, so the caller can fall back to the deterministic (correct) phrasing.
+ *
+ * A violation is any of:
+ *   • a percentage claim (`15%`, `15 %`, or the word "percent") — always forbidden,
+ *   • a currency token ($-prefixed OR the `($x.xx)` negative form) that isn't the
+ *     single allowed figure.
+ *
+ * Deliberately conservative to avoid nuking legitimate answers: bare integers
+ * (years like "2026", quarters like "Q2", account counts) do NOT trip it — only
+ * money-shaped and percent-shaped tokens do. The allowed figure is compared after
+ * stripping formatting so "$200.00" / "($200.00)" / "200.00" all count as allowed.
+ */
+export function groundingViolation(text: string, allowedMoney: string): boolean {
+  const norm = (s: string) => s.replace(/[^0-9.]/g, ""); // digits + decimal only
+  const allowed = norm(allowedMoney);
+
+  // Any percentage is forbidden outright (the prompt bans percentages/estimates).
+  if (/\d\s*%/.test(text) || /\bpercent\b/i.test(text)) return true;
+
+  // Every currency-shaped token must be the allowed figure.
+  //  - $-prefixed:            $1,234.50 / $200 / $200.00
+  //  - parenthesized negative: ($200.00)
+  const moneyTokens = text.match(/\$\s?[\d,]+(?:\.\d+)?|\(\s?\$?[\d,]+(?:\.\d+)?\s?\)/g) ?? [];
+  for (const tok of moneyTokens) {
+    if (norm(tok) !== allowed) return true;
+  }
+  return false;
+}
+
 // Baked deterministic decline / connect-books copy. The live 'app' persona may
 // override each via a labeled line so editing the persona changes the thread's
 // deterministic output (P2-2); absent an override these baked defaults are used.

@@ -33,7 +33,7 @@ import { resolveOnDeno } from "../_shared/inference/deno.ts";
 import { orgTenant } from "../_shared/inference/core.ts";
 import { getAppPersona, APP_THREAD_PERSONA_BASE } from "../_shared/appPersona.ts";
 import {
-  routeMessage, computeMetric, money, metricPhrase, personaOverride,
+  routeMessage, computeMetric, money, metricPhrase, personaOverride, groundingViolation,
   DECLINE_DEFAULT, CONNECT_BOOKS_DEFAULT,
   type GroundedFact, type JournalEntry,
 } from "../_shared/thread/route.ts";
@@ -193,9 +193,14 @@ async function phrase(
     );
     const text = (result.text ?? "").trim();
     if (!text) return deterministic;
-    // Grounding guard: if the model emitted a money figure that isn't the computed
-    // one, distrust it and return the deterministic (correct) phrasing.
-    if (fact && !text.includes(money(fact.amountMinor))) return deterministic;
+    // Grounding guard (F4): the reply must (a) contain the computed figure AND
+    // (b) contain NO other money token, percentage, or estimate. A reply like
+    // "…$200.00, about 15% of revenue" invents the 15% though the correct figure
+    // is present — distrust it and fall back to the deterministic (correct) phrasing.
+    if (fact) {
+      const allowed = money(fact.amountMinor);
+      if (!text.includes(allowed) || groundingViolation(text, allowed)) return deterministic;
+    }
     return text;
   } catch {
     return deterministic;

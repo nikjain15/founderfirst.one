@@ -52,6 +52,8 @@ echo "===== $TS  iteration start (mode=$MODE) =====" >>"$LOG_DIR/build-loop.log"
 
 claude -p "You are the FounderFirst build-loop orchestrator, ONE iteration. Read docs/plans/LOOP_PROMPT.md, CLAUDE.md, LEARNINGS.md, docs/plans/BACKLOG.md.
 
+NOTE: you are running INSIDE the current loop iteration — the single-flight lock at ~/Library/Logs/founderfirst/build-loop.lock.d is held by YOUR OWN parent run-loop.sh; its existence (or the parent PID) is expected and is NOT a competing iteration. Never stand down because of it.
+
 Pick the TOP unclaimed card in docs/plans/BACKLOG.md whose blocked-by is clear and that has NO decision-needed marker. If none qualify, log 'no buildable cards' and exit cleanly (do nothing else). Otherwise:
 - worktree OFF fresh origin/main (git fetch first; deploy-finish is STALE), branch loop/<card>.
 - build it + tests, follow the usability + centralization gates, run scripts/loop-preflight.sh, verify CI GREEN before reporting (never trust 'running'; watch tee-without-pipefail false-greens).

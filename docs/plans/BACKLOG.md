@@ -2,6 +2,76 @@
 
 > Status: **active** · 2 Jul 2026 · Owner: Nik
 
+## Wave 2 — COMPLETE + DEPLOYED (3 Jul 2026)
+W2.1/W2.2/W2.3 shipped earlier; **W2.4 (PR #202) + W2.5 (PR #201) merged to main, migrations
+`20260706020000`+`20260706030000` applied to prod (ledger in sync), edge fns `nec-tracking`
+(new) + `report-export` (redeploy) live, DB objects verified.** Next gate: **Wave-3 audit**
+before Wave 4. Open follow-ups (non-blocking): W2.4 blended-rate confirm (seed-tunable),
+OPS-1 (#199) live Lighthouse ≥90, Plaid production application (Nik human step).
+
+## Nik decisions log (3 Jul 2026)
+- **W1.3-A tax mapping — SIGNED OFF.** Yes to all research recommendations (1120 lines seeded
+  w/ deferred package polish · generic CSV+PDF v1, per-suite serializers fast-follow · CPAs
+  edit mappings, owners view · Penny M-1 adjustments = propose-with-approval · Canada = paper
+  proof only). **Year-end CPA package = bundled into the core subscription** (not a separately
+  priced artifact) — overridable later if GTM wants it priced.
+- **CSV F4 (re-import dedup) — DECIDED.** Per-row idempotency key on content hash: skip exact
+  duplicate rows on re-import, report "N skipped" (mirrors the QBO/Plaid `ext:` dedup discipline).
+- **W2.1 catch-up pricing — DECIDED.** Flat price per year of backlog (exact $ = GTM detail on
+  the marketing card, not a build blocker). See W2.1.
+- **Spend ceiling — NONE.** Subscription-only; on a rate/usage limit, pause and resume in a
+  fresh session; never escalate to the metered API (LOOP_PROMPT rule 12).
+- **Plaid production — Nik human step.** File the production application on the Plaid dashboard
+  (sandbox already live; prod has review lead time). Not a build blocker for sandbox work.
+- **IA-3 — DEFERRED** until Wave 1 sign-off (plan doc PR #198 left dormant).
+
+### Nik answers (3 Jul, part 2) — pricing philosophy + Wave-4 scope
+- ⭐ **STANDING PRICING PRINCIPLE: everything is part of the core product — NO extra charges,
+  NO add-ons, NO separately-priced artifacts.** Overrides earlier pricing recs: the year-end CPA
+  package (W1.3-A), catch-up mode (W2.1), and the lender/DD package (W4.4) are all **bundled into
+  the core subscription**, not priced separately. Any future "should we charge for X" = the answer
+  is NO unless Nik explicitly reopens it.
+- **W4.1 e-commerce — integrate with the MAJOR providers (all the biggies), not just one.** Build a
+  provider-agnostic payout-splitting framework (connector registry from CENTRAL-2) and implement the
+  big platforms — Stripe + Shopify first (largest), then PayPal / Square / Amazon etc. API-based where
+  available, file/report import as fallback. Extensible = adding a provider is config + a parser, not a rewrite.
+- **W4.3 invoicing — in the core bundle; reuse the EXISTING email infra** (verify it can send invoices;
+  if it works, use it — do not add a new email provider).
+- **W4.4 lender/DD package — bundled** (build the generator; no pricing gate).
+- **W2.4 estimated-tax blended rate (fed 22% / CA 6%) — CONFIRMED** as the v1 default (seed-tunable).
+- **Loop MODE while unattended — still unanswered → defaulting to `safe`** (build + green PRs, never
+  deploys to prod). Flip to `deploy` only on Nik's explicit go.
+
+### Nik answers (4 Jul) — next-phase direction + P0
+- **Roadmap-v2 order = A → C → D → E → B** (close filing mission · deeper CPA practice-OS ·
+  AP/bill-pay · production-readiness · admin console LAST). Detail in docs/plans/roadmap-v2.md.
+- ⭐ **NEW P0: PENNY-UX** — penny.founderfirst.one is a mess (fonts not on the design system, empty
+  tabs, many connectors broken). Do a rigorous audit + overhaul to the founderfirst.one/admin
+  standard BEFORE the roadmap-v2 phases. See PENNY-UX-0 card below.
+- **Multi-currency (#216 D1–D7)** — Nik reviewing the plain-English questions; answers pending →
+  W5.4 build stays blocked until then.
+- **All future work runs in a NEW 24/7 loop chat** via the launchd durable loop (this chat set it up).
+
+## PENNY-UX-0 · Rigorous audit of penny.founderfirst.one (P0 — do FIRST)
+status: claimed:loop-orch-0703
+goal: a complete findings ledger of everything wrong with the live authed app — the input that
+  drives the PENNY-UX fix cards. Nothing is fixed in this card; it AUDITS.
+spec: exercise every lens (owner/CPA/staff) × every tab/route × the full width ladder (RESPONSIVE.md)
+  using the authed E2E path (tools/app-e2e devAuth; test users e2e1-*). For each surface record:
+  (a) design-system compliance — fonts/type scale, `.eyebrow`+`.page-title` header pattern vs bare
+  `<h1>`, tokens vs inline hex/px, spacing, the admin-parity nav; (b) EMPTY/placeholder tabs with no
+  real content; (c) every connector (QBO/Xero/Plaid/Stripe/Shopify) tried end-to-end — which work,
+  which error, which are dead; (d) a11y (reuse the axe gate) + responsive overflow; (e) broken links/
+  routes/console errors. Rank P0/P1/P2 with file:line + repro. Output = a docs PR adding a PENNY-UX
+  findings section to docs/AUDIT.md + a proposed fix-card list (PENNY-UX-1..N).
+acceptance:
+  - [ ] Every owner + CPA tab/route visited; each marked working / broken / empty with evidence
+  - [ ] Every connector's real status recorded (works E2E / errors / not wired)
+  - [ ] Design-system violations enumerated per surface (vs packages/design-system + RESPONSIVE.md)
+  - [ ] Ranked findings + a concrete PENNY-UX-1..N fix-card list for the loop to build next
+decision-needed: none to audit
+touches: read-only audit + docs/AUDIT.md (a fixer card set follows)
+
 Rules: builders claim the top `unclaimed` card whose `blocked-by` is clear, set
 `claimed:<session-tag>`, work ONLY that card in their own worktree, and exit by setting
 `pr:#NNN` or `blocked:<reason>`. Cards with `decision-needed` are SKIPPED by builders and
@@ -555,3 +625,143 @@ touches: apps/app (new capture surface in Home/Review + transaction row), a rece
 decision-needed: none for photo/text. **Voice + email-in capture are explicitly OUT of this
   card** (Roadmap: voice later) — if wanted, a separate `decision-needed: Nik` card. Receipt
   asset storage location (Supabase Storage bucket) confirmed in the PR, not invented per-file
+
+# Wave 4 — vertical + expansion (carded 3 Jul; Wave-3 gate CLEAR, 0 P0)
+
+> Roadmap §Wave-4. All build OFF main, PR-only, into the APP_PRINCIPLES nav (no new top-level
+> tab without Nik), centralization + usability gates apply, kernel/config/persona are the only
+> sources of truth. Next free migration timestamp >= 20260706050000.
+
+## W4.2 · Cash-flow statement (GAAP indirect)
+status: unclaimed
+blocked-by: — (reads the shipped ledger; demo util/cash-flow.js is the interaction spec)
+goal: owner/CPA sees a GAAP indirect cash-flow statement (operating/investing/financing) tying
+  to the P&L + balance-sheet deltas — the last of the big-three statements (theme #8).
+workflow: CPA · "where did the cash go?" · Reports → Cash flow → period → ties to BS/P&L · ≤3 taps
+spec: indirect method from existing journal data (net income + non-cash adjustments + working-
+  capital deltas); reuse the W1.2 export machinery (add a `cf` ReportKind, CSV+PDF); pagination
+  discipline (RPTTEST). Demo apps/demo/util/cash-flow.js = the algorithm reference, rebuilt on
+  real data. Ties to the cent against BS period deltas.
+acceptance:
+  - [ ] Cash-flow statement ties to BS cash delta + P&L to the cent (seeded test)
+  - [ ] Exports CSV+PDF via the W1.2 machinery; period-scoped; audit-logged
+  - [ ] Responsive; tokens only; copy from 'app' persona
+tests: Vitest tie-out; E2E; REG scenario
+touches: apps/app/src/ledger/{reports.ts,export.ts,Ledger.tsx} (SHARED export module — additive, declare)
+decision-needed: none
+
+## W4.5 · Rescue-migration landing pages (Bench/Heard-style)
+status: unclaimed
+blocked-by: — (marketing site apps/web; fully disjoint from all app cards)
+goal: SEO/GEO landing pages targeting owners whose bookkeeper shut down (Bench/Heard-style
+  events) — "we'll rescue your books" — feeding Signals. Theme #10 / marketing.
+workflow: prospect · "my bookkeeper vanished" · lands on a rescue page → clear value + CTA → waitlist/contact
+spec: apps/web (Astro) new landing route(s) from @ff/content source of truth; on-brand (VOICE.md,
+  BLOG_PRINCIPLES structure), SITE constants (no hardcoded URL/email), tokens only; SEO/GEO meta +
+  sitemap + llms.txt entry; fast-template perf (OPS-1 standard: ≥90). Copy shame-free, on-voice.
+acceptance:
+  - [ ] Rescue landing page(s) live under apps/web, in sitemap + llms.txt, ≥90 perf
+  - [ ] SITE constants + tokens only (no hardcoded contact/URL/hex); VOICE.md compliant
+  - [ ] Responsive on the full width ladder
+tests: build clean; responsive check; link/CTA works
+touches: apps/web (marketing — disjoint from app)
+decision-needed: none to build (target-event list + exact CTA copy = Nik can refine post-draft)
+
+## W4.1 · E-commerce payout splitting (Shopify/Stripe)
+status: unclaimed
+blocked-by: W4.2 nice-to-have not required; independent of it
+goal: Shopify/Stripe payouts split into gross sales, fees, refunds, COGS — not one lump deposit
+  (theme #6). The #1 e-commerce bookkeeping pain.
+spec: parse payout/settlement reports (Stripe balance transactions, Shopify payouts) into
+  component journal lines (sales / processing fees / refunds / COGS adjustment) with per-row
+  idempotency (`ext:stripe:<txn>` discipline); reversal-based corrections. Connector registry
+  (CENTRAL-2) for provider metadata. Grounded, records to ai_decisions where inference is used.
+acceptance:
+  - [ ] A sample Stripe payout splits into correct component entries, ties to the cent (test)
+  - [ ] Idempotent re-import (no double-post); refunds/fee reversals handled via reversal path
+tests: Vitest split logic; pgTAP on the post RPC; REG scenario
+touches: apps/app import/categorize + a payout-parse path (declare)
+decision-needed: RESOLVED (Nik 3 Jul) — integrate the MAJOR providers (Stripe + Shopify first,
+  then PayPal/Square/Amazon), provider-agnostic framework via connector registry; API where
+  available + file-import fallback. Bundled (no extra charge).
+
+## W4.3 · Invoicing + AR nudges (modular, opt-in)
+status: unclaimed
+blocked-by: —
+goal: owners send invoices + get paid faster with gentle AR nudges (theme #9). Modular/opt-in —
+  off by default, nests under an existing job, no new top-level nav.
+spec: invoice entity + line items, send (email), status (draft/sent/paid/overdue), AR aging that
+  posts to the ledger correctly (revenue recognition + AR), opt-in nudge cadence from config.
+  Voice from 'app' persona. Careful ledger integration (AR account, payment application).
+acceptance:
+  - [ ] Create → send → mark paid posts correct AR/revenue entries, ties out (test)
+  - [ ] Nudge cadence from config; opt-in; owner interruption budget respected
+tests: Vitest + pgTAP on AR posting; E2E; REG scenario
+touches: apps/app (new invoicing surface, ledger AR path)
+decision-needed: RESOLVED (Nik 3 Jul) — in the CORE bundle (no add-on charge); reuse the EXISTING
+  email infra (verify it can send invoices; if it works, use it — no new provider).
+
+## W4.4 · Lender / due-diligence-ready package
+status: unclaimed
+blocked-by: W4.2 (cash-flow statement is part of the package)
+goal: a lender/DD-ready financial package (theme #10) — the three statements + supporting
+  schedules + period comparatives, export-clean, priced artifact like the year-end package.
+spec: package generator riding W1.2 + W4.2 export machinery: P&L, BS, cash-flow, AR/AP aging,
+  comparatives, cover sheet; entity-stamped; audit-logged. Reuses everything; adds assembly + cover.
+acceptance:
+  - [ ] Package assembles all statements + comparatives, ties to the cent, exports CSV+PDF
+  - [ ] Audit-logged; read_only CPA can generate
+tests: Vitest assembly; E2E; REG scenario
+touches: apps/app export/package (SHARED — additive, declare)
+decision-needed: RESOLVED (Nik 3 Jul) — BUNDLED into the core product (no separate price). Build the generator.
+
+# Wave 5 — post-roadmap hardening + fast-follows (carded 3 Jul; all 4 roadmap waves shipped)
+
+> Nik selected all four workstreams (polish/fast-follows · a11y gate · real-world hardening · roadmap v2).
+> The durable launchd loop (safe mode) works these top-down. `safe` = build + GREEN PR only, never deploy.
+> IN FLIGHT (in-session, will PR — do NOT re-claim): a11y+responsive E2E gate · W4.1 payout upload UI.
+> HUMAN STEPS (not loop cards — Nik does these): Plaid production application + QBO production readiness
+> (OAuth/prod keys on the provider dashboards). Loop preps code only, never files prod apps.
+
+## W5.1 · Invoice PDF attachment (W4.3 fast-follow)
+status: unclaimed
+goal: invoices go out as a PDF attachment (today they're branded HTML only — send.ts has no attachments field).
+spec: extend supabase/functions/_shared/send.ts to carry a PDF attachment (Resend supports `attachments`);
+  generate the invoice PDF via the existing export/PDF machinery; attach on the `invoice_sent`/nudge path.
+acceptance: invoice email includes a correct PDF; existing HTML body unchanged; no new provider; test proves attach path.
+decision-needed: none
+
+## W5.2 · Wave-3 audit P2 fixes (F3-F5) + Wave-4 F3 note
+status: unclaimed
+goal: clear the carried Wave-3 P2 regression stubs (F3 receipt same-amount/diff-date auto-attach; F4 grounding
+  extra-number pass-through; F5 receipt undo LIKE-substring key) + reconcile the Wave-4 F3 dual AR-aging schemes.
+spec: see docs/AUDIT.md Programs 4-5 findings; each has a REG-W3-F*/REG-W4-F* stub — fix + convert stub to a real scenario.
+acceptance: each finding fixed + its regression scenario green; no behavior regressions.
+decision-needed: none (F3 Wave-4 aging is by-design — only align presentation/labels, do not merge the two schemes)
+
+## W5.3 · Email deliverability test harness
+status: unclaimed
+goal: an automated end-to-end test that the invoice/nudge/notification email path actually sends (Resend), so
+  "email works" stops being verified-in-code-only.
+spec: a test/harness that exercises sendEmail() against a test inbox / Resend sandbox (or a mocked-then-live toggle);
+  wire a CI-safe version (mock) + a documented manual live-send check. Do not spam real users.
+acceptance: CI test proves the send path builds+dispatches correctly; a documented manual live-send step for Nik.
+decision-needed: none to build the harness (a real live-send to a production address is a Nik step)
+
+## W5.4 · Multi-currency DESIGN PLAN (plan-only — NO build)
+status: unclaimed
+goal: a design doc for multi-currency (invoices/payouts/ledger) for Nik to approve BEFORE any code.
+spec: docs/plans/ doc with a `Status: DRAFT — awaiting Nik sign-off` header covering: base vs transaction currency,
+  FX-rate source options, realized/unrealized FX gain-loss posting, presentation, and the decisions Nik must make.
+  Survey how the ledger/invoicing/payouts currently guard single-currency. NO code, NO migration.
+acceptance: one docs PR with the plan + an explicit "Decisions Nik must make" section.
+decision-needed: none to draft (the plan IS the surfacing of decisions)
+
+## W5.5 · Roadmap v2 draft (plan-only — NO build)
+status: unclaimed
+goal: a short proposal of the next big bets now that Waves 1-4 shipped, for Nik to direct.
+spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signals demand + the mission "CPA files
+  taxes from Penny" gaps still open), each with rough scope/impact/risk, ending in "what to prioritize — Nik".
+  Do NOT commit to scope or build anything.
+acceptance: one concise docs PR; options not decisions.
+decision-needed: none to draft (Nik picks the direction from it)

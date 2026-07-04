@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.founderfirst.build-loop</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/nikjain/Documents/FounderFirst_Building Products/scripts/loop/run-loop.sh</string>
+  </array>
+
+  <!-- Run at load, then every 30 minutes. run-loop.sh single-flights via an atomic mkdir lock,
+       so a long iteration is never doubled up. -->
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>1800</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/nikjain/Library/Logs/founderfirst/build-loop.out</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/nikjain/Library/Logs/founderfirst/build-loop.err</string>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>

@@ -2,6 +2,12 @@
 
 > Status: **active** · 2 Jul 2026 · Owner: Nik
 
+> ⚠️ **STATUS RECONCILIATION (loop-orch, 3 Jul):** every card below PENNY-UX-0 that shipped in
+> Waves 1–5 is now marked `merged` with its PR. Builders: the ONLY claimable work is PENNY-UX-*
+> cards (as they are carded from the PENNY-UX-0 audit) and roadmap-v2 phase cards (order
+> A → C → D → E → B) once carded. If a card says `unclaimed` but describes something that exists
+> on main, assume a stale status — verify via `gh pr list --state merged` before building.
+
 ## Wave 2 — COMPLETE + DEPLOYED (3 Jul 2026)
 W2.1/W2.2/W2.3 shipped earlier; **W2.4 (PR #202) + W2.5 (PR #201) merged to main, migrations
 `20260706020000`+`20260706030000` applied to prod (ledger in sync), edge fns `nec-tracking`
@@ -101,7 +107,7 @@ Status values: `unclaimed` · `claimed:<tag>` · `pr:#NNN` · `red-teamed` · `m
 ---
 
 ## LOOP-1 · Build dashboard (/admin → Build tab)
-status: unclaimed
+status: merged (pr:#173 — live on main)
 goal: Nik tracks the whole loop from ONE page, ≤15-min freshness, never hops between chats.
 spec: Roadmap §4.7. Tables `loop_runs` + `loop_events` (migration, write-don't-deploy) +
   heartbeat edge fn (bearer-token auth: a shared secret `LOOP_HEARTBEAT_TOKEN` set as a
@@ -118,7 +124,7 @@ touches: apps/admin (new route + nav), supabase/migrations, supabase/functions (
 decision-needed: none
 
 ## REG-1 · Regression scenario pack v1 (back-fill the 15 stress features)
-status: unclaimed
+status: merged (pr:#175 — nightly regression.yml live)
 goal: every finding in docs/STRESS_TEST_TRACKER.md + docs/stress/* + LEARNINGS.md becomes a
   permanent automated scenario; nightly full-suite run; product can never silently re-break.
 spec: Roadmap §4.2 regression-engineer role. Extend existing pgTAP (supabase/tests) +
@@ -137,7 +143,7 @@ touches: supabase/tests, apps/app tests, .github/workflows (SHARED CI — declar
 decision-needed: none
 
 ## IA-1 · Owner lens nav restructure (APP_PRINCIPLES Phase 1)
-status: pr:#174  ← LAND FIRST among app-UI cards (touches the shared files everything builds into)
+status: merged (pr:#174)
 goal: owner navigates by plain-language jobs: Home · Review · Reports · Connections +
   de-emphasized Advanced (Journal · CoA · Periods); "+ New organization" → org switcher.
 workflow: owner · "find anything I need" · any job reachable in ≤2 taps from Home; zero
@@ -164,7 +170,7 @@ status: **DEFERRED until after Wave 1 ships (Nik, 3 Jul)** — do not card the m
 decision-needed: none until Wave 1 closes (then: Nik approves the migration plan)
 
 ## CENTRAL-1 · Centralize apps/app copy, Penny language, and behavior thresholds
-status: pr:#176 (stacked on #174/IA-1)
+status: merged (pr:#176)
 blocked-by: IA-1 (do the copy sweep once, on the NEW nav, not twice)
 goal: change voice/copy/thresholds without code changes (standing principle #3) — the three
   ❌ rows in the roadmap registry.
@@ -186,7 +192,7 @@ touches: apps/app broadly (SHARED — sequence right after IA-1, before feature 
 decision-needed: none
 
 ## CENTRAL-2 · Knowledge kernel schema + seeds (entities · sectors · filing calendar · vendor priors · connector registry)
-status: pr:#177 (schema + idempotent loader + seeds + one consumer + 3 CI gates + pgTAP)
+status: merged (pr:#177)
 blocked-by: — (schema card; W1.3-B, W2.4, W3.3 BUILD AGAINST these tables — land the schema
   before those cards start, or they'll each invent their own)
 scope note (Nik, 3 Jul, LOCKED): the seed TARGET is **every sector/persona we build ×
@@ -222,7 +228,7 @@ touches: supabase/migrations + seeds; consumers land in their own cards
 decision-needed: none (design follows tax-research keys; Nik reviews the seed format in the PR)
 
 ## LOOP-2 · Regulatory-watcher routine (law changes → reviewed seed PRs)
-status: **PR open** · branch loop/loop-2-regulatory-watcher
+status: merged (pr:#200 — watcher live; auto-extraction decision still open for Nik)
 blocked-by: ~~CENTRAL-2~~ RESOLVED — effective-dated filing_obligations +
   supersede_filing_obligation() / filing_obligations_for() are on main
 goal: a tax-law/deadline change becomes ONE reviewed seed PR that updates every app on
@@ -271,7 +277,7 @@ acceptance:
 decision-needed: Nik reviews output (that IS the gate)
 
 ## W1.2 · Report exports (TB / P&L / BS / GL detail → CSV + PDF)
-status: unclaimed
+status: merged (pr:#179)
 blocked-by: IA-1 (builds into the new Reports tab; shares Ledger.tsx)
 goal: CPA downloads a period-stamped financial package clean enough to hand to tax software.
 workflow: CPA · year-end handoff · Reports → pick period → Download = 3 taps, one file
@@ -288,7 +294,7 @@ touches: apps/app/src/ledger/* (SHARED — declare)
 decision-needed: none
 
 ## W1.6 · Learned-rules management UI
-status: unclaimed
+status: merged (pr:#178)
 blocked-by: IA-1 (shares Ledger/Categorize surfaces)
 goal: owner/CPA sees every categorization rule Penny has learned and can delete bad ones.
 workflow: CPA (primary) · "stop a bad rule" · Categorize → Rules → delete + confirm = 3 taps;
@@ -304,7 +310,7 @@ touches: apps/app/src/ledger/Categorize.tsx, categorize fn (SHARED — declare)
 decision-needed: none
 
 ## W1.1 · Bank reconciliation
-status: unclaimed
+status: merged (pr:#183)
 blocked-by: IA-1 (surfaces in CPA workflow tabs + owner Advanced). ⚠️ NO `reconciliations`
   table exists today (prod has only `import_batches` / `import_rows` / `ai_reconcile_runs`) —
   this card CREATES the reconciliation schema (write-don't-deploy migration), it does not
@@ -328,7 +334,7 @@ touches: apps/app/src/ledger/* + new fn (SHARED — declare)
 decision-needed: none
 
 ## W1.4 · CPA Practice home (= IA-2, merged) — ranked workqueue across clients
-status: unclaimed
+status: merged (pr:#180)
 blocked-by: IA-1
 goal: CPA's firm-level landing (APP_PRINCIPLES §3): one ranked list across clients — pending
   review · uncategorized · unreconciled · flagged · upcoming closes — clearable in ≤2 taps;
@@ -347,7 +353,7 @@ touches: apps/app/src/lenses/CpaLens.tsx (SHARED — declare)
 decision-needed: none
 
 ## W1.5 · CPA collaboration primitives (flag · note · add-txn · reclass suggestion)
-status: unclaimed
+status: merged (pr:#182)
 blocked-by: W1.4 (surfaces in the workqueue + owner needs-a-look)
 goal: CPA can flag+annotate entries, add missing transactions (owner acknowledges), and
   suggest reclassifications the owner approves — all audit-logged.
@@ -360,7 +366,7 @@ tests: pgTAP on RPCs; E2E round-trip; REG scenarios
 decision-needed: none
 
 ## W2.1 · Catch-up mode
-status: unclaimed
+status: merged (pr:#188)
 blocked-by: W1.1 (reconciliation proves the catch-up is right)
 goal: the #1 Signals wedge — years-behind owners get organized without shame or a $10k quote.
 workflow: owner · "get me caught up" · drop files → Penny works → owner answers only batched
@@ -378,7 +384,7 @@ acceptance:
   - [ ] Priced as flat-per-year (billing/packaging reflects it)
 
 ## W2.2 · QBO migration (one-click, with history)
-status: unclaimed
+status: merged (pr:#187)
 blocked-by: Wave 0 done — the sync provider-commit + per-row dedup fixes are on `main`
   (migration `20260630161500_sync_provider_commit_and_dedup.sql`, deployed). NB: PR #142
   itself closed UNMERGED; its fixes were re-landed via the reconcile PRs, so verify connector
@@ -392,7 +398,7 @@ acceptance:
 decision-needed: none (OAuth consent = human step at run time)
 
 ## W2.3 · Plaid bank feeds
-status: in-review (PR loop/w2-3-plaid-feeds) — sandbox build complete; production app-review is a Nik step before >10 live users. ✅ Nik created the Plaid account 2 Jul; keys in
+status: merged (pr:#186 — sandbox live; Plaid production application FILED by Nik 3 Jul, awaiting Plaid review)
   `~/.config/founderfirst/secrets.env` (PLAID_CLIENT_ID / PLAID_SECRET_SANDBOX /
   PLAID_SECRET_PRODUCTION / PLAID_ENV=sandbox). Integrator sets Supabase fn secrets at
   deploy time. Build sandbox-only; file the production application early (review lead time).
@@ -440,7 +446,7 @@ capture surface — they only share the tier pipeline W3.2 already established).
 W3.1/W3.4/W3.5 before W3.2 — they'd each re-invent the feed/tier plumbing.
 
 ## W3.2 · Trust-tiered autonomy (the ≤5-asks/week approval rework)
-status: unclaimed  ← LAND FIRST among Wave-3 cards (establishes the tier pipeline + feed the others read)
+status: merged (pr:#193)
 blocked-by: IA-1 (Review tab is the surface), CENTRAL-1 (tier thresholds + asks/week budget
   live in `platform_config`; "Penny did this" copy in the 'app' persona), CENTRAL-2 (vendor
   priors feed the high-confidence path). NB: reuses the trust-tier CONFIG already built in
@@ -488,7 +494,7 @@ decision-needed: none (Roadmap §W3.2 locked the tier model + ≤5 budget). If a
   approval-card VARIANT beyond the 4 named seems needed → `decision-needed: Nik` (don't invent)
 
 ## W3.1 · Penny thread in-app (conversational activity + Q&A on real books)
-status: unclaimed
+status: merged (pr:#196)
 blocked-by: W3.2 (the thread shows the "Penny did this" feed + asks the low-confidence
   questions the tiering produces), CENTRAL-1 (the 'app' persona is Penny's in-app language —
   live, no redeploy, the proven bubble/Discord pattern)
@@ -523,7 +529,7 @@ decision-needed: whether the thread gets any nav entry point beyond Home/Review 
   (no new top-level tab without sign-off; default is to nest it in Home)
 
 ## W3.3 · Minimal 3-step onboarding (name → entity → industry; rest in-journey)
-status: unclaimed
+status: merged (pr:#194)
 blocked-by: CENTRAL-2 (entity_types + industries seeds — onboarding READS the kernel, no
   hardcoded lists), CENTRAL-1 ('app' persona for the diagnostic/step copy). NOT blocked-by
   W3.2 — fully disjoint surface (create-org flow), builds in parallel.
@@ -557,7 +563,7 @@ decision-needed: none (3-step scope + in-journey deferral locked). Any 4th onboa
   → **Nik**
 
 ## W3.4 · Owner Home / dashboard upgrade (am-I-okay pulse)
-status: unclaimed
+status: merged (pr:#195)
 blocked-by: W3.2 (Home hosts the "Penny did this" feed + weekly digest the tiering produces),
   CENTRAL-2 (coming-up deadlines read `filing_obligations`; no hardcoded dates), CENTRAL-1
   (summary copy from the 'app' persona). Disjoint from W3.1 → parallel after W3.2.
@@ -593,7 +599,7 @@ decision-needed: none (reuses existing data + kernel). If Home wants a metric wi
   source (e.g. a new "tax-readiness %" formula not derivable from current data) → **Nik**
 
 ## W3.5 · Receipt capture + match
-status: built (loop/w3-5-receipts) — PR open
+status: merged (pr:#197)
 blocked-by: W3.2 (a parsed receipt becomes a trust-tiered item — high-confidence auto-matches
   + shows in the feed, low-confidence becomes an approval card), CENTRAL-1 ('app' persona for
   capture/confirm copy)
@@ -633,7 +639,7 @@ decision-needed: none for photo/text. **Voice + email-in capture are explicitly 
 > sources of truth. Next free migration timestamp >= 20260706050000.
 
 ## W4.2 · Cash-flow statement (GAAP indirect)
-status: unclaimed
+status: merged (pr:#206)
 blocked-by: — (reads the shipped ledger; demo util/cash-flow.js is the interaction spec)
 goal: owner/CPA sees a GAAP indirect cash-flow statement (operating/investing/financing) tying
   to the P&L + balance-sheet deltas — the last of the big-three statements (theme #8).
@@ -651,7 +657,7 @@ touches: apps/app/src/ledger/{reports.ts,export.ts,Ledger.tsx} (SHARED export mo
 decision-needed: none
 
 ## W4.5 · Rescue-migration landing pages (Bench/Heard-style)
-status: unclaimed
+status: merged (pr:#205)
 blocked-by: — (marketing site apps/web; fully disjoint from all app cards)
 goal: SEO/GEO landing pages targeting owners whose bookkeeper shut down (Bench/Heard-style
   events) — "we'll rescue your books" — feeding Signals. Theme #10 / marketing.
@@ -668,7 +674,7 @@ touches: apps/web (marketing — disjoint from app)
 decision-needed: none to build (target-event list + exact CTA copy = Nik can refine post-draft)
 
 ## W4.1 · E-commerce payout splitting (Shopify/Stripe)
-status: unclaimed
+status: merged (pr:#207 framework + pr:#213 payout-upload UI)
 blocked-by: W4.2 nice-to-have not required; independent of it
 goal: Shopify/Stripe payouts split into gross sales, fees, refunds, COGS — not one lump deposit
   (theme #6). The #1 e-commerce bookkeeping pain.
@@ -686,7 +692,7 @@ decision-needed: RESOLVED (Nik 3 Jul) — integrate the MAJOR providers (Stripe 
   available + file-import fallback. Bundled (no extra charge).
 
 ## W4.3 · Invoicing + AR nudges (modular, opt-in)
-status: unclaimed
+status: merged (pr:#208 + pr:#214 PDF attach)
 blocked-by: —
 goal: owners send invoices + get paid faster with gentle AR nudges (theme #9). Modular/opt-in —
   off by default, nests under an existing job, no new top-level nav.
@@ -702,7 +708,7 @@ decision-needed: RESOLVED (Nik 3 Jul) — in the CORE bundle (no add-on charge);
   email infra (verify it can send invoices; if it works, use it — no new provider).
 
 ## W4.4 · Lender / due-diligence-ready package
-status: unclaimed
+status: merged (pr:#209)
 blocked-by: W4.2 (cash-flow statement is part of the package)
 goal: a lender/DD-ready financial package (theme #10) — the three statements + supporting
   schedules + period comparatives, export-clean, priced artifact like the year-end package.
@@ -724,7 +730,7 @@ decision-needed: RESOLVED (Nik 3 Jul) — BUNDLED into the core product (no sepa
 > (OAuth/prod keys on the provider dashboards). Loop preps code only, never files prod apps.
 
 ## W5.1 · Invoice PDF attachment (W4.3 fast-follow)
-status: unclaimed
+status: merged (pr:#214)
 goal: invoices go out as a PDF attachment (today they're branded HTML only — send.ts has no attachments field).
 spec: extend supabase/functions/_shared/send.ts to carry a PDF attachment (Resend supports `attachments`);
   generate the invoice PDF via the existing export/PDF machinery; attach on the `invoice_sent`/nudge path.
@@ -732,7 +738,7 @@ acceptance: invoice email includes a correct PDF; existing HTML body unchanged; 
 decision-needed: none
 
 ## W5.2 · Wave-3 audit P2 fixes (F3-F5) + Wave-4 F3 note
-status: unclaimed
+status: merged (pr:#215)
 goal: clear the carried Wave-3 P2 regression stubs (F3 receipt same-amount/diff-date auto-attach; F4 grounding
   extra-number pass-through; F5 receipt undo LIKE-substring key) + reconcile the Wave-4 F3 dual AR-aging schemes.
 spec: see docs/AUDIT.md Programs 4-5 findings; each has a REG-W3-F*/REG-W4-F* stub — fix + convert stub to a real scenario.
@@ -740,7 +746,7 @@ acceptance: each finding fixed + its regression scenario green; no behavior regr
 decision-needed: none (F3 Wave-4 aging is by-design — only align presentation/labels, do not merge the two schemes)
 
 ## W5.3 · Email deliverability test harness
-status: unclaimed
+status: merged (pr:#218 — manual live-send step remains for Nik)
 goal: an automated end-to-end test that the invoice/nudge/notification email path actually sends (Resend), so
   "email works" stops being verified-in-code-only.
 spec: a test/harness that exercises sendEmail() against a test inbox / Resend sandbox (or a mocked-then-live toggle);
@@ -749,7 +755,7 @@ acceptance: CI test proves the send path builds+dispatches correctly; a document
 decision-needed: none to build the harness (a real live-send to a production address is a Nik step)
 
 ## W5.4 · Multi-currency DESIGN PLAN (plan-only — NO build)
-status: unclaimed
+status: plan merged (pr:#216) — BUILD blocked:awaiting-Nik-answers (D1–D7)
 goal: a design doc for multi-currency (invoices/payouts/ledger) for Nik to approve BEFORE any code.
 spec: docs/plans/ doc with a `Status: DRAFT — awaiting Nik sign-off` header covering: base vs transaction currency,
   FX-rate source options, realized/unrealized FX gain-loss posting, presentation, and the decisions Nik must make.
@@ -758,7 +764,7 @@ acceptance: one docs PR with the plan + an explicit "Decisions Nik must make" se
 decision-needed: none to draft (the plan IS the surfacing of decisions)
 
 ## W5.5 · Roadmap v2 draft (plan-only — NO build)
-status: unclaimed
+status: merged (pr:#217 — Nik picked order A → C → D → E → B, 4 Jul)
 goal: a short proposal of the next big bets now that Waves 1-4 shipped, for Nik to direct.
 spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signals demand + the mission "CPA files
   taxes from Penny" gaps still open), each with rough scope/impact/risk, ending in "what to prioritize — Nik".

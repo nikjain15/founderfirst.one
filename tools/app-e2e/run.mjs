@@ -249,6 +249,44 @@ async function walkReportViewsA11y() {
 }
 // ── PENNY-UX-5 — END ──────────────────────────────────────────────────────────
 
+// ── PENNY-UX-3 — BEGIN (append-only block; do not fold into the code above) ──
+/** PENNY-UX-3 — mobile tab-strip discoverability (docs/AUDIT.md PENNY-UX findings).
+ *  `.ledger-tabs` already scrolls horizontally at narrow widths, but nothing
+ *  signaled there was more to scroll to — the de-emphasized Advanced tab
+ *  (pushed to the far right, styles.css `#ltab-advanced`) could sit off-screen
+ *  with zero visual cue. Fix is a CSS edge-fade (styles.css, ≤640px, same
+ *  technique as apps/admin's `.table-wrap`). Proves the strip genuinely
+ *  overflows at a phone width, the fade is actually rendered (not just present
+ *  in the stylesheet), and the de-emphasized tab stays reachable in the DOM. */
+async function verifyTabStripDiscoverability() {
+  await page.setViewportSize({ width: 375, height: 844 }); // narrowest phone ≤640px in the ladder
+  await page.waitForTimeout(150);
+  const strip = page.locator(".ledger-tabs").first();
+  if (!(await strip.count().catch(() => 0))) { fail("PENNY-UX-3: .ledger-tabs not found at mobile width"); return; }
+  const metrics = await strip.evaluate((el) => ({
+    overflows: el.scrollWidth > el.clientWidth + 1,
+    bgImage: getComputedStyle(el).backgroundImage,
+  }));
+  if (!metrics.overflows) {
+    ok("PENNY-UX-3: tab strip fits at 375px — no scroll affordance needed");
+  } else if (metrics.bgImage === "none") {
+    fail("PENNY-UX-3: tab strip overflows at 375px with no edge-fade affordance (background-image: none)");
+  } else {
+    ok("PENNY-UX-3: tab strip overflows at 375px and renders the edge-fade affordance");
+  }
+  if (await page.locator("#ltab-advanced").count().catch(() => 0)) {
+    ok("PENNY-UX-3: the de-emphasized Advanced tab is still present/reachable in the DOM at mobile width");
+  } else {
+    fail("PENNY-UX-3: #ltab-advanced missing at mobile width");
+  }
+  await page.screenshot({ path: join(ARTIFACTS, "pennyux3-tabstrip-mobile.png") }).catch(() => {});
+  // Restore DESKTOP — this check runs inside the per-screen loop, before that
+  // screen's own desktop screenshot/a11y scan, which expect DESKTOP sizing.
+  await page.setViewportSize(DESKTOP);
+  await page.waitForTimeout(150);
+}
+// ── PENNY-UX-3 — END ──────────────────────────────────────────────────────────
+
 /** W2.1 — Catch-up mode renders inside Connections and its guided flow advances.
  *  Non-mutating happy path: the "Catch me up" hero + "Get me caught up" CTA render;
  *  clicking Start reveals the "Drop in your files" step (the file-drop). Proves the
@@ -511,6 +549,8 @@ try {
       if (s.key === "home") await verifyOwnerHomePulse();
       // W3.1 — the Penny thread lives on Home (nested, no new top-level tab).
       if (s.key === "home") await verifyPennyThread();
+      // PENNY-UX-3 — mobile tab-strip discoverability (once; the strip is shared nav).
+      if (s.key === "home") await verifyTabStripDiscoverability();
       // W1.2 — Reports must export a real file in ≤ 3 taps (pick period → Download).
       // Assert the download event fires with a period-stamped filename.
       if (s.key === "reports") await verifyReportDownload();

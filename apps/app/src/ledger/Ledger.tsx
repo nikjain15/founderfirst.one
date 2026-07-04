@@ -19,6 +19,7 @@ import {
   downloadReport, rangeFilter, type ExportContext, type ReportKind, type ReportScope,
 } from "./export";
 import { formatMoney, formatMoneyShort, parseMoneyToMinor } from "./money";
+import { hasLedgerActivity } from "./overview";
 import { ACCOUNT_TYPES } from "./types";
 import ImportFlow from "../import/ImportFlow";
 import CatchUpFlow from "../catchup/CatchUpFlow";
@@ -379,7 +380,7 @@ function Overview({
         pending={pending}
         uncategorized={uncategorized}
         netIncome={pnl.netIncome}
-        hasActivity={pnl.totalIncome !== 0 || pnl.totalExpense !== 0}
+        hasActivity={hasLedgerActivity(entries)}
         onReview={onReview}
         onCategorize={onCategorize}
       />

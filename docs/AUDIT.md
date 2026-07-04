@@ -240,6 +240,217 @@ pgTAP suite, a lint script) so the class can't recur silently. The sweep-1
 examples: pagination (#18) → Vitest in `apps/app`; timestamp collisions →
 `unique-timestamps` CI; tenant predicate → `check:tenant`.
 
+## Program 6 — PENNY-UX findings (Jul 2026)
+
+Card **PENNY-UX-0**: a rigorous browser audit of the LIVE app at `penny.founderfirst.one`
+— every lens (owner / CPA / staff) × every tab/route/report view × the full
+RESPONSIVE.md width ladder (320→1920), on real authed sessions (minted via the
+documented generate-link → verify → hash-URL flow), with a live axe-core WCAG A/AA
+scan, per-surface console/network capture, tap-target measurement, and connector
+probes — plus static design-system greps of `apps/app/src`. Audit-only: no fixes in
+this card. **Every mutation stayed inside clearly-namespaced audit fixtures**
+(created through the normal app flows — onboarding, journal form, invite form,
+org switcher):
+
+- audit orgs: `PENNYUX-AUDIT Books` `00330666-2bc9-4118-af5b-5554c9aaeb21` (business,
+  18 kernel-seeded accounts + 2 UI-posted entries), `PENNYUX-AUDIT Firm`
+  `05ddd4c6-07d6-4679-bc01-3669117c9a36` (firm) — **purge after the fix cards land**
+- audit users: `pennyux-audit-owner@e2e.founderfirst.test`
+  (`5ad81a7d-d489-47ba-9a5e-a1fa7cece26d`), `pennyux-audit-cpa@e2e.founderfirst.test`
+  (`932fc16b-60ca-4f78-91a2-81cc67bee44a`); plus read-only use of the seeded
+  `e2e1-maria` / `e2e1-staff` accounts. No real customer org touched.
+
+**Verdict: 1 P0, 4 P1, 7 P2.** The product is in strong shape on the machine-gated
+dimensions — **zero horizontal overflow at all 13 ladder widths on every surface
+audited, zero console/page errors on every route** (only the benign Cloudflare
+`/cdn-cgi/rum` beacon abort), onboarding → seeded books → posted entries → reports →
+CSV export all work end-to-end live, and the Penny thread answered a grounded
+question correctly. The P0 is a dead cross-persona flow the happy-path gates don't
+walk: **the invite-your-accountant link 404s into onboarding**, so an owner cannot
+actually share their books.
+
+### Per-surface status (all live-authed, desktop + width ladder + axe)
+
+| Lens · surface | Status | Notes |
+|---|---|---|
+| Owner · Home (pulse + Penny thread + feed) | 🟢 working | KPIs, deadlines, thread answers grounded Q; axe clean; no overflow |
+| Owner · Home (empty books — e2e1-maria) | 🟢 working | correct setup nudge + invite nudge; Penny declines gracefully |
+| Owner · Review (suggestions + categorize + receipts) | 🟢 working | real empty states; photo/paste capture renders |
+| Owner · Reports — P&L / TB / BS / CF / GL / 1099 / package | 🟢 working | all 7 views render; CSV download delivers period-stamped file; **GL view has a serious axe violation (F5)** |
+| Owner · Connections (catch-up · import · Plaid · QBO/Xero · payouts · invoicing · invite) | 🟢 working | all 8 sections render; catch-up advances to drop-files; **invite link broken (F1)**; **stub payout tiles (F11)** |
+| Owner · Advanced — Journal / CoA / Reconcile / Periods / Rules | 🟢 working | posting via the form works; real empty states; **clipped off-screen on phones (F3)** |
+| Owner · Settings (`/settings`) | 🟢 working | invite + approval toggle; axe clean |
+| Onboarding (3 steps, kernel tiles) | 🟢 working | full walk created the audit org + 18-account CoA; axe clean at each step; **no accountant/practice path (F10)** |
+| Org switcher · + New organization · account menu | 🟢 working | business/practice types both create; **no "+ Add client" for CPAs (F4)** |
+| CPA · client books — Overview / Categorize(+Rules) / Books(Journal·Accounts·Import·Reconcile·Periods) / Reports | 🟢 working | reached only via the corrected accept URL (F1); every sub renders; axe clean; **stale "no activity" takeaway (F8)** |
+| CPA · Practice home (firm) | 🟢 working | renders queue empty state; **its copy points at an affordance that doesn't exist (F4)** |
+| CPA · invite accept (`/accept?token=`) | 🟢 working | route itself works — only the *generated link* is wrong (F1) |
+| Staff · `/staff` console | 🟢 working | org directory + entry counts; break-glass NOT exercised (mutating, audited) |
+| Staff wall for non-staff · unknown routes · login | 🟢 working | owner at `/staff` gets the wall; unknown route → `/`; login wall clean (F9 type-scale nit) |
+
+Empty/placeholder tabs: **none found** — every tab renders real content or an
+intentional, actionable empty state.
+
+### Ranked findings (live-reproduced; `file:line` from a fresh `origin/main` worktree)
+
+**F1 · P0 · The "invite your accountant" accept link is dead — the whole owner→CPA
+sharing flow fails end-to-end on the live app.**
+`supabase/functions/invites/index.ts:104` returns
+`accept_path: '/app/accept?token=…'` — the app's *old* base. The app now lives at
+`penny.founderfirst.one` with base `/` (`apps/app/src/App.tsx:136`), so the link the
+owner copies (`InviteCpa.tsx:26` = `window.location.origin + accept_path` =
+`https://penny.founderfirst.one/app/accept?token=…`) hits the router's catch-all
+(`App.tsx:122`) → silent redirect to `/` → token never consumed, never stashed.
+**Repro (live):** Connections → Share with your accountant → invite → open the shown
+link as the invitee → lands on *onboarding*, no engagement created. Navigating the
+same token to `/accept?token=…` accepts fine and the full CPA lens renders — proving
+the path string is the only break. **Fix:** return `/accept?token=${token}` (and add
+an app-e2e assertion that the *generated* link resolves to the Accept route).
+
+**F2 · P1 · Nine undefined CSS variables in the app stylesheet — receipt, migration,
+catch-up, onboarding and thread surfaces silently lose their intended styles.**
+`apps/app/src/styles.css` uses vars that resolve nowhere (no fallback, not in
+`packages/design-system/tokens.css` nor the app sheet): `--fs-sm` (107, 1058),
+`--fs-xs` (111, 1154), `--fs-caption` (1123), `--ink-1` (1007, 1051, 1057, …),
+`--r-sm` (569), `--radius-1` (1114, 1121), `--radius-2` (1082, 1087, 1093),
+`--surface` (1083, 1105), `--surface-2` (1088, 1094, 1117). Effect: `border-radius`
+→ 0, `background` → transparent, `font-size` → inherited body size on the receipt
+capture/queue/chips, migration TB table, onboarding tiles, thread turns. Violates
+rubric §8 ("no undefined CSS vars") and the tokens-only rule. **Fix:** map each to a
+real token (`--fs-label`/`--fs-ui`, `--ink`/`--ink-2`, `--r-card`/`--r-ctl`,
+`--paper`/`--white`); consider a CI grep that every `var(--x)` in app CSS resolves.
+
+**F3 · P1 · On phones the Advanced tab is clipped off-screen with no scroll
+affordance — the accountant-grade ledger is undiscoverable for owners on mobile.**
+`apps/app/src/styles.css:350-353` — `.ledger-tabs { display:flex; overflow-x:auto }`
+with `white-space:nowrap` tabs and no edge-fade/indicator. Measured live at 375px:
+`Advanced` sits at `right=432px` (viewport 375), `stripScrollable:true` — invisible
+on iOS-style hidden scrollbars. The overflow *gate* passes (the strip scrolls, the
+page doesn't), which is exactly why no CI catches it. Same class applies to the CPA
+Books sub-strip. **Repro:** owner org at 375px → tab row ends at "Connections".
+**Fix:** wrap to a second row at narrow widths (`flex-wrap`) or add the `.table-wrap`
+edge-fade affordance to `.ledger-tabs`.
+
+**F4 · P1 · A CPA cannot actually add a client — the promised "+ Add client" job
+doesn't exist, and the Practice-home empty state points at it.**
+APP_PRINCIPLES §3/§5 pin `"+ Add client" lives in the switcher`; the switcher only
+offers `+ New organization` (`apps/app/src/components/OrgSwitcher.tsx:128`,
+`copy/strings.ts:77`), which creates an org the CPA *owns* (owner lens) — not a
+client engagement. Meanwhile the Practice home empty state says "Add your first
+client from the switcher above" (`lenses/PracticeHome.tsx:51-52`,
+`copy/strings.ts:705-707`) — a dead-end instruction, since engagements are
+owner-initiated invites. **Repro:** create a firm → Practice home → follow its own
+instruction. **Fix (decision-needed):** either an "+ Add client" switcher item for
+firm contexts (e.g. a "send your client this request" flow) or honest copy telling
+the CPA to have the client invite them from *their* Connections tab.
+
+**F5 · P1 · Serious axe violation on the General-ledger report: scrollable region
+not keyboard-accessible.** `apps/app/src/ledger/Ledger.tsx:1178` — the GL `.table-wrap`
+(`styles.css:445`, `overflow-x:auto`) has no `tabindex`/role, so keyboard users
+cannot scroll the widest report. axe: `scrollable-region-focusable` (serious),
+live on the audit org's GL view. It slipped because the `app-e2e` a11y gate scans the
+Reports *tab default* (P&L) but never clicks through the report sub-views. **Fix:**
+`tabindex="0"` + `role="region"` + `aria-label` on scrollable `.table-wrap`s (same
+pattern as the tabpanels), and extend the app-e2e axe walk across all 7 report views.
+
+**F6 · P2 · Systemic sub-44px touch targets on authed surfaces.** Measured live at
+1280 and unchanged at phone widths: Books/Advanced sub-tabs 38px
+(`styles.css:367` `min-height:2.4rem` overrides `--tap-min`), `.ghost.sm` buttons
+36px (New entry, Download CSV/PDF, Close period, Connect a bank/QBO/Xero, staff
+"Open →"), `.report-seg` buttons 36px, top-bar brand link 30px, thread suggestion
+chips 36px. RESPONSIVE.md rule 3 (`≥44×44`) is met by the *primary* tab strip and
+inputs but not these. **Fix:** lift `min-height` to `var(--tap-min)` on sub-tabs /
+`sm` variants / seg buttons (padding, not font, so density holds).
+
+**F7 · P2 · Cloudflare RUM beacon noise.** `POST /cdn-cgi/rum` aborts
+(`net::ERR_ABORTED`) on route transitions on every page — benign (Web-Analytics
+beacon), but it pollutes every console capture and can mask real failures in
+debugging sessions. Advisory: consider disabling RUM for the app zone or accepting
+the noise knowingly.
+
+**F8 · P2 · Dishonest "no activity" takeaway with posted entries.** CPA/owner
+Overview shows "No activity yet — import your history or post your first entry to
+get started" (`copy/strings.ts:177`) while the same panel lists 2 posted entries —
+`hasActivity` is derived from P&L income/expense only (`Ledger.tsx:381,471-473`), so
+balance-sheet-only books (opening balances, transfers) read as "no activity".
+**Fix:** derive from `entries.length` (or reword to "no income or spending yet" —
+which the Home pulse already gets right).
+
+**F9 · P2 · Login heading uses the billboard type scale on a bare `<h1>`.**
+`apps/app/src/routes/Login.tsx:50` + `styles.css:47` (`--fs-h2`, measured 44px).
+The design-system reserves `--fs-h1/2/3` for public heroes; authed/app screens use
+`.page-title`. Contained (the auth card is the one pre-authed screen, and it *is*
+styled — not the raw 64px), but it's the only heading in the app off-pattern.
+
+**F10 · P2 · First-run onboarding has no accountant path.** Onboarding hard-codes
+`type:"business"` (`apps/app/src/onboarding/Onboarding.tsx:68-71`) and asks "What's
+your business called?" — a CPA signing up cold (no invite, e.g. after F1 bites) can
+only create a *business* or must discover switcher → New organization → "CPA
+practice". Fine for the current owner-first funnel; worth an explicit "I'm an
+accountant" link when CPA acquisition starts. (Decision-needed; usability gate —
+no new onboarding question without Nik.)
+
+**F11 · P2 · "COMING SOON" stub tiles shipped in the payout splitter.**
+`apps/app/src/ecommerce/PayoutUpload.tsx:54-58` renders PayPal / Square / Amazon as
+disabled tiles tagged `coming soon` (`copy/strings.ts:547`). Rubric §9: no
+coming-soon destinations shipped (the Program-5 ledger described these as registry
+rows, *not shipped UI* — they are visible UI on prod). Low harm (disabled, honest),
+but either flag them off or accept and amend the rubric/ledger wording.
+
+**F12 · P2 · APP_PRINCIPLES baseline drift.** `apps/app/APP_PRINCIPLES.md` §0 still
+describes `main` as the grouped `MAIN_TABS = Overview · Categorize · Books · Reports`
+nav for *both* lenses; live/`main` owner nav is Home · Review · Reports · Connections
++ Advanced (with Rules/Reconcile subs), CPA is Overview · Categorize(+Rules) ·
+Books(5 subs) · Reports via `ledger/nav.ts` — and §3's flat five-tab CPA list never
+shipped. Update §0/§3 to match `nav.ts` (LEARNINGS #7: change behavior → update what
+the system says about itself).
+
+### Connector status matrix (live-probed, sandbox; no production OAuth filed)
+
+| Connector | Real status | Evidence (live) |
+|---|---|---|
+| **Plaid** (bank feeds) | 🟢 wired, sandbox — link-token + Link UI verified; exchange/sync not completed in this audit | `plaid-link-token` fn → 200 `link-sandbox-…` token; Plaid Link iframe renders. Ongoing sync/webhook paths not exercised (would post to the ledger) |
+| **QuickBooks** (import/migrate) | 🟢 wired — OAuth reachable; end-to-end sync covered by SYNCTEST (PR #142 fixes on main) | `connect` fn returns a valid `authorize_url` → real Intuit sign-in for the app's client id opens |
+| **Xero** (import/migrate) | 🟢 wired — OAuth reachable ("to continue to FounderFirst") | `connect` fn → `login.xero.com` authorize page for the app's client id. Awaiting re-consent per the granular-scopes change |
+| **Stripe** (payout splitting) | 🟢 working — upload-a-payout-report parser (no OAuth by design) | provider tile enabled; W4.1 Vitest/pgTAP cover the split math |
+| **Shopify** (payout splitting) | 🟢 working — same upload model | provider tile enabled |
+| PayPal / Square / Amazon | ⬜ not built — disabled "coming soon" tiles (F11) | `PayoutUpload.tsx:54-58` |
+
+OAuth completion is not automatable from the harness (LEARNINGS #10) — statuses above
+are judged from the live UI + captured fn/network responses + the code paths, per the
+card. No dead buttons found: every connector button either works or opens the real
+provider flow.
+
+### Proposed fix cards — PENNY-UX-1..8 (sequenced per LEARNINGS #24)
+
+Shared-file collision map: `styles.css` (UX-2 → UX-3 → UX-6 serialize),
+`Ledger.tsx` (UX-5 → UX-7 serialize), `copy/strings.ts` (UX-4/UX-7 coordinate).
+UX-1, UX-2, UX-5 are mutually disjoint — start in parallel.
+
+| Card | Goal | Scope / touches | Blocked by |
+|---|---|---|---|
+| **PENNY-UX-1** (P0) | Invite accept link resolves: `accept_path` → `/accept?token=…`; app-e2e asserts the generated link reaches the Accept route and the engagement renders | `supabase/functions/invites/index.ts` (deploy fn per LEARNINGS #23), `tools/app-e2e/run.mjs` | — |
+| **PENNY-UX-2** (P1) | Zero unresolved CSS vars: map the 9 undefined vars to real tokens; add a `check:css-vars` grep gate so the class can't recur | `apps/app/src/styles.css`, `package.json` script, CI | — |
+| **PENNY-UX-3** (P1) | Mobile nav discoverability: `.ledger-tabs` wraps (or edge-fades) at ≤640px so Advanced/subs are visibly reachable; ladder-walk screenshot diff in app-e2e | `apps/app/src/styles.css` | UX-2 |
+| **PENNY-UX-4** (P1, **decision-needed**) | The CPA "add a client" job exists or the copy stops promising it: "+ Add client" switcher affordance for firm contexts, or honest Practice-home empty copy | `components/OrgSwitcher.tsx`, `lenses/PracticeHome.tsx`, `copy/strings.ts` | Nik decision on mechanism |
+| **PENNY-UX-5** (P1) | Keyboard-accessible scroll regions + full-report a11y coverage: `tabindex`/`role`/label on scrollable `.table-wrap`s; app-e2e axe walk clicks all 7 report views | `apps/app/src/ledger/Ledger.tsx`, `tools/app-e2e/run.mjs` | — |
+| **PENNY-UX-6** (P2) | Touch targets ≥44px on sub-tabs, `sm`/seg buttons, brand link (padding-led, density kept) | `apps/app/src/styles.css` | UX-3 |
+| **PENNY-UX-7** (P2) | Copy/pattern honesty batch: activity takeaway counts entries (F8); Login heading on the app scale (F9); APP_PRINCIPLES §0/§3 refreshed to `nav.ts` reality (F12) | `ledger/Ledger.tsx`, `copy/strings.ts`, `routes/Login.tsx`, `styles.css`, `APP_PRINCIPLES.md` | UX-5 (Ledger.tsx), UX-6 (styles.css) |
+| **PENNY-UX-8** (P2, decision-needed lean) | Stub payout tiles: flag off PayPal/Square/Amazon or bless the pattern (rubric §9 + Program-5 ledger wording amended to match) | `ecommerce/PayoutUpload.tsx` or docs | — |
+
+Post-fix cleanup (not a card): purge the `PENNYUX-AUDIT` orgs + `pennyux-audit-*`
+users listed above once UX-1's e2e assertion covers the invite path.
+
+### What this audit did NOT cover (standing gaps)
+- **Break-glass open/close** — read-only discipline: opening a grant writes
+  `break_glass_grants`/`admin_audit`; the console UI around it is verified, the flow isn't.
+- **Plaid exchange → categorize** end-to-end (needs Link completion; ledger-mutating).
+- **QBO/Xero OAuth completion + pull** (LEARNINGS #10; covered separately by SYNCTEST).
+- **read_only CPA engagement UI** — only a `full` engagement was walked; read-only
+  affordance-hiding is unit/pgTAP-covered but not browser-walked here.
+- **Keyboard-only traversal** beyond axe (roving tabindex reviewed in code, not driven).
+- **Real-device rendering** (iOS Safari scrollbar behavior asserted from spec, headless Chromium used).
+
 ## Program 5 — Wave 4 wave-gate audit (money-in + reporting layer, 3 Jul 2026)
 
 The Wave-4 gate (LOOP_PROMPT hard-rule #8): the 14-dimension rubric + an adversarial

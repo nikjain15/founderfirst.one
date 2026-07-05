@@ -240,6 +240,54 @@ coverage delta: new AUDIT ledger row (multi-currency) ⬜ untested → stress pa
   entries revalue at close, reverse next period, reports tie in base currency; single-currency
   org unaffected).
 
+# SEC — production auth hardening (surfaced by the Intuit app-review questionnaire, 5 Jul)
+> Today penny.founderfirst.one auth = passwordless email one-time-code (Supabase `signInWithOtp`)
+> — single factor, no Captcha, no MFA. Honest answers on the Intuit questionnaire (5 Jul) flagged
+> these as gaps to build. Nik: add to backlog.
+
+## SEC-1 · Multi-factor authentication (MFA) for owner + CPA login
+status: unclaimed
+blocked-by: — (auth is Supabase; TOTP/factor enrolment is native)
+workflow: owner/CPA · "protect my books" · Settings → Security → enable MFA → enrol authenticator
+  (TOTP) → next login prompts for the 6-digit code; recovery codes issued. ≤1 owner-ask, opt-in
+  first then promotable to required per-org.
+goal: add a real second factor on top of the email OTP. Use Supabase Auth MFA (TOTP factor
+  enrolment + challenge/verify) — no new provider. Per-org policy: optional → required (CPAs
+  handling many clients' books should be able to mandate it). Recovery codes + a re-enrol path.
+  Deliver so the Intuit "MFA?" answer can honestly become Yes.
+centralization: MFA policy (optional/required) = per-org config row, not hardcoded; all copy from
+  live personas. No inline hex/px (tokens.css); .eyebrow+.page-title headers.
+coverage delta: new AUDIT ledger row (auth-mfa) ⬜ untested → stress pass (enrol → challenge →
+  wrong-code reject → recovery-code path → per-org required-policy enforced; no lockout bypass).
+
+## SEC-2 · Bot protection / Captcha on authentication
+status: unclaimed
+blocked-by: — (independent of SEC-1)
+workflow: anonymous · "sign in / request code" · the login + OTP-request form runs an invisible
+  bot check before dispatching an email; a human sees nothing extra, bots/abuse are blocked.
+goal: add Captcha / bot protection to the auth entry points (login + OTP request) to stop
+  credential-stuffing and email-bombing the OTP endpoint. Prefer Cloudflare Turnstile (we're on
+  Cloudflare — no new vendor) wired into Supabase Auth's captcha hook, or an equivalent invisible
+  challenge. Rate-limit the OTP-request path regardless. Lets the Intuit "Captcha?" answer become
+  Yes honestly.
+centralization: Turnstile site/secret keys = env/secrets, never inlined; rate-limit thresholds =
+  config, not magic numbers.
+coverage delta: new AUDIT ledger row (auth-botprotect) ⬜ untested → stress pass (challenge
+  required before OTP dispatch; rapid-fire OTP requests rate-limited; legit human flow unaffected).
+
+## CONN-2 · Capture QBO intuit_tid for troubleshooting
+status: unclaimed
+blocked-by: — (small change to the QBO edge fns)
+context: Intuit recommends capturing the `intuit_tid` response header on every QBO API call so
+  their support can trace issues. We don't today (qbo-callback/qbo-connect/qbo-import). Honest
+  questionnaire answer = No; this makes it Yes.
+goal: read the `intuit_tid` response header on all QBO API responses and store it in our shareable
+  error/request logs (Supabase fn logs + any request-audit row), so it can be produced for Intuit
+  support when troubleshooting. Small, additive.
+centralization: log field name/config centralized; no inline literals.
+coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
+  call (success + error path).
+
 ## CONN-1 · QBO production hosting IP (static-egress proxy) — Nik + infra
 status: unclaimed (deferred — sandbox unaffected)
 blocked-by: — (not blocking any build; production QBO is Intuit-review-gated anyway)

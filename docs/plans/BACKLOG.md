@@ -8,6 +8,17 @@
 > A → C → D → E → B) once carded. If a card says `unclaimed` but describes something that exists
 > on main, assume a stale status — verify via `gh pr list --state merged` before building.
 
+> ⚠️ **STATUS RECONCILIATION #2 (loop-orch, 5 Jul):** roadmap-v2 Wave 2 (RV2-A2/C1/D1) and Wave 3
+> (W5.4/SEC-1/SEC-2/CONN-2) both shipped via combined integration PRs (#243, #248) — each
+> individual card's own PR (#239–#241, #244–#247) shows `CLOSED` in `gh pr view` (superseded by
+> the integration branch), which reads as unmerged unless you check the integration PR itself.
+> **Always check the integration PR, not just the feature PR, before concluding a card is still
+> open.** PENNY-UX-9 also shipped (pr:#251 — audit found the IA already conformant; added CI
+> design-conformance guards instead of a restructure). IQ-1/IQ-2 have GREEN PRs (#255/#253) folded
+> into open integration pr:#256, awaiting Nik's merge (not further buildable). All statuses below
+> corrected to match. Remaining real buildable work: **W5.4-FX** (ECB fx-rate fetcher — schema
+> shipped, no fetcher exists yet) is the top unclaimed, unblocked, non-decision-needed card.
+
 ## Wave 2 — COMPLETE + DEPLOYED (3 Jul 2026)
 W2.1/W2.2/W2.3 shipped earlier; **W2.4 (PR #202) + W2.5 (PR #201) merged to main, migrations
 `20260706020000`+`20260706030000` applied to prod (ledger in sync), edge fns `nec-tracking`
@@ -171,7 +182,11 @@ The first slice of A/E/B + connector enablement is live on `main` (== prod), wav
 > Nik human steps, not silently dropped.
 
 ## RV2-A2 · Structured per-suite tax export (A fast-follow)
-status: unclaimed
+status: merged (pr:#239, folded into Wave-2 integration pr:#243) — Drake/UltraTax/generic
+  CSV+PDF serializers live in apps/app/src/tax/{taxExport,serializers}.ts; K-1 package
+  generation is NOT built (seed-only placeholder fields) — real gap, needs its own follow-up
+  card if wanted; no filing-export audit-log row exists yet either (report-export has one,
+  this doesn't) — also a follow-up, not re-opening this card
 blocked-by: — (RV2-A1 worksheet shipped, pr:#232; builds on the same filing/worksheet layer)
 workflow: CPA · year-end filing · open client → Filing → pick form/suite → Download import file →
   re-keys NOTHING into Drake/Lacerte/ProConnect = 3 taps, one file
@@ -186,7 +201,7 @@ coverage delta: new AUDIT ledger row (filing-export) ⬜ untested → stress pas
   sample return through the export format; assert line totals tie to the worksheet and to the TB).
 
 ## RV2-C1 · CPA practice-OS depth — firm-level month-end close (C)
-status: unclaimed
+status: merged (pr:#240, folded into Wave-2 integration pr:#243)
 blocked-by: — (Wave 1 CPA lens + IA-2 Practice home + exports all shipped)
 scope-decision: Nik 4 Jul — optimize for **both firms and single owners** (not either/or).
 workflow: CPA · month-end close across many clients · Practice home → batch-select clients →
@@ -205,7 +220,7 @@ coverage delta: new AUDIT ledger row (cpa-practice-os) ⬜ untested → stress p
   tenant bleed).
 
 ## RV2-D1 · AP / bill-pay — TRACKING ONLY (D)
-status: unclaimed
+status: merged (pr:#241, folded into Wave-2 integration pr:#243)
 blocked-by: — (vendors W2.5 + receipt capture W3.5 shipped)
 scope-decision: Nik 4 Jul — **tracking-only, NEVER moves money** (no money transmission, no
   payments partner). Payroll stays out (→ Gusto). If any sub-task would move funds, it is
@@ -223,7 +238,8 @@ coverage delta: new AUDIT ledger row (ap-billpay) ⬜ untested → stress pass (
   code path initiates a fund transfer).
 
 ## W5.4 · Multi-currency (D1–D7 answered — build unblocked)
-status: pr:#244 (GREEN — all 11 checks pass; awaiting Nik review/merge, safe mode)
+status: merged (pr:#244, folded into Wave-3 integration pr:#248); follow-up W5.4-FX (ECB
+  fetcher) still unclaimed below — fx_rates ships empty until that lands
 blocked-by: — (D1–D7 answered by Nik 4 Jul; full plan in docs/plans/multi-currency-design.md §8)
 slot: cross-cutting (ledger + invoices + payouts) — sequence against A/C/D per orchestrator +
   Nik; per-org opt-in flag means it ships dark until enabled, so it can run in parallel.
@@ -252,7 +268,8 @@ scope note (this PR): ledger (rate resolution, base-balance invariant, period-cl
 > these as gaps to build. Nik: add to backlog.
 
 ## SEC-1 · Multi-factor authentication (MFA) for owner + CPA login
-status: pr:#245
+status: merged (pr:#245, folded into Wave-3 integration pr:#248); see SEC-1-CPACLOSE below
+  for the still-open cpa-close MFA-gating decision
 blocked-by: — (auth is Supabase; TOTP/factor enrolment is native)
 workflow: owner/CPA · "protect my books" · Settings → Security → enable MFA → enrol authenticator
   (TOTP) → next login prompts for the 6-digit code; recovery codes issued. ≤1 owner-ask, opt-in
@@ -267,7 +284,8 @@ coverage delta: new AUDIT ledger row (auth-mfa) ⬜ untested → stress pass (en
   wrong-code reject → recovery-code path → per-org required-policy enforced; no lockout bypass).
 
 ## SEC-2 · Bot protection / Captcha on authentication
-status: pr:#246
+status: merged (pr:#246, folded into Wave-3 integration pr:#248); captcha is fail-open until
+  Nik sets the Turnstile keys — see SEC-2-KEYS below
 blocked-by: — (independent of SEC-1)
 workflow: anonymous · "sign in / request code" · the login + OTP-request form runs an invisible
   bot check before dispatching an email; a human sees nothing extra, bots/abuse are blocked.
@@ -282,7 +300,7 @@ coverage delta: new AUDIT ledger row (auth-botprotect) ⬜ untested → stress p
   required before OTP dispatch; rapid-fire OTP requests rate-limited; legit human flow unaffected).
 
 ## CONN-2 · Capture QBO intuit_tid for troubleshooting
-status: pr:#247 CI-green (11/11 checks pass) — safe mode, awaiting Nik to merge (loop-orch-0705, migration 20260707090000_conn2_intuit_tid)
+status: merged (pr:#247, folded into Wave-3 integration pr:#248; migration 20260707090000_conn2_intuit_tid)
 blocked-by: — (small change to the QBO edge fns)
 context: Intuit recommends capturing the `intuit_tid` response header on every QBO API call so
   their support can trace issues. We don't today (qbo-callback/qbo-connect/qbo-import). Honest
@@ -294,6 +312,40 @@ centralization: log field name/config centralized; no inline literals.
 coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
   call (success + error path).
 
+# NEXT WAVE — activate shipped-but-dark features (buildable, 5 Jul)
+> W5.4 (multi-currency) and SEC-2 (captcha) shipped but are inert until their data/keys exist.
+> These cards make already-deployed features actually usable. Disjoint lanes → fan out.
+
+## W5.4-FX · ECB daily FX-rate feed (activates multi-currency)
+status: unclaimed
+blocked-by: — (W5.4 fx_rates table + rate resolution shipped; only the automatic feed is missing)
+lane: supabase/functions + supabase/migrations (disjoint from app-UI/marketing lanes)
+workflow: owner/CPA (multi-currency orgs) · "my foreign transactions convert at real rates
+  automatically" · rates refresh daily with no manual entry; a missing rate still fails loud
+  (never silently 1) per D3.
+goal: build the systematic FX feed W5.4's design (D3) specified but did not ship: a scheduled edge
+  fn (pg_cron or the existing cron pattern — no new infra) that fetches the ECB daily reference
+  rates (eurofxref-daily.xml / api) and upserts them into `fx_rates` as source='ecb', effective-dated,
+  idempotent. Manual entry remains an override; a missing/stale rate still raises per the D3
+  fail-loud contract (do NOT weaken it). Cross-rate via EUR base where ECB doesn't quote a pair
+  directly (document the triangulation).
+centralization: the feed URL + refresh cadence + staleness threshold = platform_config, not inlined;
+  currency catalog stays the seeded source of truth.
+coverage delta: new AUDIT ledger row (fx-feed) — assert: daily upsert is idempotent (re-run = no dup);
+  a fetched ECB rate resolves a foreign posting; a missing pair still fails loud; cross-rate math ties.
+
+## IQ-1-CLEANUP · Null legacy plaintext QBO tokens (post-verify) — DEFERRED
+status: blocked:verify-encrypted-path-live-with-a-real-token
+blocked-by: a real QBO (re)connect that populates + round-trips an encrypted token in prod (the one
+  existing conn was tokenless at deploy, so encrypt/decrypt hasn't been exercised on live data yet)
+lane: supabase/migrations
+goal: the deferred follow-up from IQ-1 — once a real token has been encrypted + decrypted live in
+  prod (verify via ext_connection_secrets on a reconnected org), ship a migration that NULLs the
+  legacy plaintext access_token/refresh_token columns (kept until now for rollback safety). Do NOT
+  run this until the encrypted path is proven on real live data.
+coverage delta: extend the qbo-hardening AUDIT row — assert no plaintext token column is readable/
+  populated post-cleanup; decrypt still returns the token.
+
 # INTUIT-QUALITY — QBO app-assessment hardening (5-Jul audit; right-for-our-product only)
 > A read-only-Accounting compliance audit (against Intuit's App Assessment + security policies)
 > confirmed our posture is strong — CSRF state nonce, proactive refresh, secrets server-side,
@@ -302,7 +354,8 @@ coverage delta: extend the connector AUDIT row — assert intuit_tid is captured
 > excluded). Building these closes the assessment credibly and hardens quality.
 
 ## IQ-1 · QBO connection hardening (tokens-at-rest + resilience + revoke)
-status: claimed:loop-insession-5jul (building — do not re-claim)
+status: pr:#255 (GREEN — all checks pass; folded into open integration pr:#256; safe mode,
+  awaiting Nik to merge)
 blocked-by: — (all in the QBO edge fns / _shared/qbo.ts — ONE builder owns this domain to avoid collisions)
 workflow: owner/CPA · "my QuickBooks stays connected and my data is safe" · connect once → imports
   survive throttling + brief token expiry → disconnect actually revokes at Intuit; invisible to the user.
@@ -328,7 +381,8 @@ coverage delta: new AUDIT ledger row (qbo-hardening) — assert: encrypted token
   stale state rejected; unknown classification does NOT post as expense.
 
 ## IQ-2 · Connections UX — broken-connection banner + Reconnect + in-app support
-status: claimed:loop-insession-5jul (building — do not re-claim)
+status: pr:#253 (GREEN — all checks pass; folded into open integration pr:#256; safe mode,
+  awaiting Nik to merge)
 blocked-by: — (apps/app UI only — disjoint from IQ-1's edge-fn work; safe to build in parallel)
 workflow: owner/CPA · "Penny told me my QuickBooks needs reconnecting, one tap fixes it" · a broken
   connection (status='error'/invalid_grant) shows a clear banner on Connections + a Reconnect CTA;

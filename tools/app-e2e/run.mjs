@@ -490,6 +490,9 @@ async function verifyPennyThread() {
   } catch {
     fail("Penny thread: no answer turn within timeout");
   }
+  // Close the dock so it doesn't overlay later checks / screenshots.
+  await page.locator(".penny-dock-close").first().click().catch(() => {});
+  await page.waitForTimeout(150);
 }
 
 /** Idempotently ensure the E2E org has BOOKS (≥1 account + ≥1 posted entry).

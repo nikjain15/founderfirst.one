@@ -44,33 +44,33 @@ export default function PennyDock({
       </button>
 
       {open && (
-        <>
-          <div className="penny-dock-scrim" onClick={() => setOpen(false)} aria-hidden="true" />
-          <aside
-            id="penny-dock-panel"
-            className="penny-dock"
-            role="dialog"
-            aria-label={COPY.thread.title}
-          >
-            <div className="penny-dock-head">
-              <span className="penny-dock-title">
-                <span className="p-mark p-mark-sm" aria-hidden="true">P</span> {COPY.thread.title}
-              </span>
-              <button
-                type="button"
-                className="penny-dock-close ghost sm"
-                aria-label={COPY.thread.dockClose}
-                onClick={() => setOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="penny-dock-body">
-              {/* key={orgId} → switching books loads that org's remembered history. */}
-              <PennyThread key={orgId} orgId={orgId} entries={entries} canWrite={canWrite} compact />
-            </div>
-          </aside>
-        </>
+        // Non-modal — a standing chat you can keep open while you move between tabs
+        // (no page-blocking scrim). Esc / ✕ / the launcher close it.
+        <aside
+          id="penny-dock-panel"
+          className="penny-dock"
+          role="dialog"
+          aria-label={COPY.thread.title}
+        >
+          <div className="penny-dock-head">
+            <span className="penny-dock-title">
+              <span className="p-mark p-mark-sm" aria-hidden="true">P</span> {COPY.thread.title}
+            </span>
+            <button
+              type="button"
+              className="penny-dock-close ghost sm"
+              aria-label={COPY.thread.dockClose}
+              onClick={() => setOpen(false)}
+            >
+              ✕
+            </button>
+          </div>
+          {/* tabIndex → the scroll region is keyboard-reachable (axe). */}
+          <div className="penny-dock-body" tabIndex={0}>
+            {/* key={orgId} → switching books loads that org's remembered history. */}
+            <PennyThread key={orgId} orgId={orgId} entries={entries} canWrite={canWrite} compact />
+          </div>
+        </aside>
       )}
     </>
   );

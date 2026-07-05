@@ -1474,10 +1474,6 @@ button.ghost.sm, .ghost.sm {
   .penny-launcher-label { display: none; }
 }
 
-.penny-dock-scrim {
-  position: fixed; inset: 0; z-index: 65;
-  background: rgba(0, 0, 0, 0.12);
-}
 .penny-dock {
   position: fixed; z-index: 70;
   right: var(--space-4); bottom: var(--space-4);

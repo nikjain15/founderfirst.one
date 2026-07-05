@@ -240,6 +240,21 @@ coverage delta: new AUDIT ledger row (multi-currency) ⬜ untested → stress pa
   entries revalue at close, reverse next period, reports tie in base currency; single-currency
   org unaffected).
 
+## CONN-1 · QBO production hosting IP (static-egress proxy) — Nik + infra
+status: unclaimed (deferred — sandbox unaffected)
+blocked-by: — (not blocking any build; production QBO is Intuit-review-gated anyway)
+context: Intuit's "Tell us where your app is hosted" step (required for PRODUCTION keys only)
+  demands a fixed Country + IP range. Our QBO calls originate from Supabase Edge Functions +
+  Cloudflare = no static egress IP, so there is no correct value to enter (Nik left it blank
+  4 Jul night — sandbox/development keys work WITHOUT this step). Xero redirect URI saved + live;
+  QBO sandbox Redirect URI (…/functions/v1/qbo-callback) set.
+goal: when we go to PRODUCTION QBO, stand up a small static-IP egress proxy (or NAT) for the
+  server-to-server QBO API calls, register that IP range in the Intuit hosting step, and complete
+  the production-credentials checklist. Deliberate infra task — do NOT guess an IP range (a wrong/
+  broad range is a security-review liability). Same pattern will inform any other provider that
+  IP-allowlists.
+centralization: the QBO API base + egress config = env/secrets, never inlined.
+
 ## PENNY-UX-9 · Owner + CPA IA restructure to the /admin design standard (POST-DEPLOY)
 status: unclaimed
 blocked-by: RV2-A2, RV2-C1, RV2-D1, W5.4 — do this AFTER all four Wave-2 features are merged +

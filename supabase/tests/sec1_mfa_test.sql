@@ -40,13 +40,16 @@ insert into engagements (id, firm_org_id, client_org_id, status, access, initiat
 -- ════════════════════════════════════════════════════════════════════════════
 select is(
   (select mfa_required from set_org_accounting_settings(
-    '00000000-0000-0000-0000-0000000005c1', '00000000-0000-0000-0000-0000000005b1',
-    null, null, null, true)),
+    p_actor => '00000000-0000-0000-0000-0000000005c1',
+    p_org   => '00000000-0000-0000-0000-0000000005b1',
+    p_mfa_required => true)),
   true, 'SEC1-POLICY: the owner can flip mfa_required on');
 
 select throws_ok($$
-  select set_org_accounting_settings('00000000-0000-0000-0000-0000000005c2',
-    '00000000-0000-0000-0000-0000000005b1', null, null, null, false)
+  select set_org_accounting_settings(
+    p_actor => '00000000-0000-0000-0000-0000000005c2',
+    p_org   => '00000000-0000-0000-0000-0000000005b1',
+    p_mfa_required => false)
 $$, '42501', null, 'SEC1-POLICY: a CPA (non-owner) cannot change mfa_required');
 
 select is(

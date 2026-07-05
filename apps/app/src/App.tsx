@@ -7,7 +7,10 @@ import { AppErrorBoundary } from "./lib/ErrorBoundary";
 import Login from "./routes/Login";
 import Home from "./routes/Home";
 import Settings from "./routes/Settings";
+import Security from "./routes/Security";
 import Accept from "./routes/Accept";
+import MfaChallengeGate from "./security/MfaChallengeGate";
+import OrgMfaGate from "./security/OrgMfaGate";
 import StaffHome from "./staff/StaffHome";
 import AdminConsole from "./admin/AdminConsole";
 import { adminRouteView } from "./admin/nav";
@@ -48,7 +51,10 @@ function RequireAuth({ children }: { children: ReactNode }) {
     sessionStorage.removeItem(RETURN_KEY);
     if (returnTo !== here) return <Navigate to={returnTo} replace />;
   }
-  return <>{children}</>;
+  // A verified MFA factor means every session must reach aal2 before anything
+  // else renders (SEC-1) — applies to every protected route, including Security
+  // itself (its own "use a recovery code" option is inside the gate already).
+  return <MfaChallengeGate>{children}</MfaChallengeGate>;
 }
 
 // An already-signed-in user has no business on /login — bounce them to their
@@ -138,7 +144,9 @@ function AppRoutes() {
           element={
             <RequireAuth>
               <ActiveOrgProvider>
-                <Home />
+                <OrgMfaGate>
+                  <Home />
+                </OrgMfaGate>
               </ActiveOrgProvider>
             </RequireAuth>
           }
@@ -149,6 +157,16 @@ function AppRoutes() {
             <RequireAuth>
               <ActiveOrgProvider>
                 <Settings />
+              </ActiveOrgProvider>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/security"
+          element={
+            <RequireAuth>
+              <ActiveOrgProvider>
+                <Security />
               </ActiveOrgProvider>
             </RequireAuth>
           }

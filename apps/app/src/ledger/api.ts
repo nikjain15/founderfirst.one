@@ -393,6 +393,7 @@ export interface OrgAccountingSettings {
   home_currency: string;
   fiscal_year_start_month: number;
   multi_currency_enabled: boolean;
+  mfa_required: boolean;
 }
 
 /** The owner's accounting settings for an org (RLS-readable to anyone who can
@@ -405,7 +406,7 @@ export function useOrgSettings(orgId: string | undefined) {
       const sb = getClient();
       const { data, error } = await sb
         .from("org_accounting_settings")
-        .select("org_id,cpa_posts_require_approval,home_currency,fiscal_year_start_month,multi_currency_enabled")
+        .select("org_id,cpa_posts_require_approval,home_currency,fiscal_year_start_month,multi_currency_enabled,mfa_required")
         .eq("org_id", orgId)
         .maybeSingle();
       if (error) throw error;
@@ -420,6 +421,7 @@ export const setOrgSettings = (input: {
   home_currency?: string;
   fiscal_year_start_month?: number;
   multi_currency_enabled?: boolean;
+  mfa_required?: boolean;
 }) => invoke<{ settings: OrgAccountingSettings }>("org-settings", { op: "set", ...input });
 
 // ── currency catalog (W5.4 — reference data, global not org-scoped) ──────────

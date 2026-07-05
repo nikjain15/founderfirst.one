@@ -1540,3 +1540,37 @@ button.ghost.sm, .ghost.sm {
 .bill-form-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .bill-form-total { font-size: var(--fs-ui); font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; }
 .bill-form-actions { display: inline-flex; gap: var(--space-2); }
+
+/* ── Security (SEC-1: two-factor authentication) ───────────────────────────── */
+.security { max-width: 32rem; }
+.security-status, .security-enroll, .security-recovery { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
+.security-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.security-qr { width: min(12rem, 100%); height: auto; align-self: flex-start; border: var(--bw-hair) solid var(--line); border-radius: var(--r-card); padding: 0.5rem; background: var(--white); }
+.security-secret {
+  font-family: var(--font-mono); font-size: var(--fs-micro); word-break: break-all;
+  background: var(--brand-soft); color: var(--ink-2); padding: 0.5rem 0.7rem; border-radius: var(--r-card);
+  align-self: flex-start;
+}
+.security-confirm {
+  margin-top: 1rem; padding: 0.75rem 0.9rem;
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-card);
+  background: var(--white); box-shadow: var(--shadow-card);
+  display: flex; flex-direction: column; gap: 0.4rem;
+}
+.security-confirm-title { margin: 0; font-weight: var(--fw-bold); color: var(--ink); }
+.security-confirm-actions { display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap; }
+.security-recovery-list {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.5rem;
+  list-style: none; margin: 0; padding: 0.75rem; background: var(--brand-soft); border-radius: var(--r-card);
+}
+.security-recovery-list code { font-family: var(--font-mono); font-size: var(--fs-ui); }
+
+/* ── MFA login step-up challenge (blocks the whole app until resolved) ────── */
+.mfa-challenge-screen { min-height: 100dvh; display: grid; place-items: center; padding: var(--page-pad-x); }
+.mfa-challenge-card {
+  width: min(100%, 24rem); background: var(--paper); border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); padding: var(--pad-card);
+  display: flex; flex-direction: column; gap: 0.75rem;
+}
+.mfa-challenge-card form { display: flex; flex-direction: column; gap: 0.75rem; }
+.mfa-challenge-link { align-self: flex-start; }

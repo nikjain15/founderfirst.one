@@ -3,7 +3,7 @@
  * ARCHITECTURE.md §6, §8). The owner-facing home for the CPA approval gate.
  *
  * POST { op:'set', org_id, cpa_posts_require_approval?, home_currency?,
- *        fiscal_year_start_month?, multi_currency_enabled? }
+ *        fiscal_year_start_month?, multi_currency_enabled?, mfa_required? }
  *
  * org_accounting_settings denies client writes (RLS oas_nowrite); the only
  * sanctioned write is set_org_accounting_settings, which runs as service role and
@@ -56,7 +56,8 @@ Deno.serve(async (req) => {
     ? body.fiscal_year_start_month : null;
   const multiCcy = typeof body?.multi_currency_enabled === "boolean"
     ? body.multi_currency_enabled : null;
-  if (approval === null && homeCcy === null && fyMonth === null && multiCcy === null) {
+  const mfaRequired = typeof body?.mfa_required === "boolean" ? body.mfa_required : null;
+  if (approval === null && homeCcy === null && fyMonth === null && multiCcy === null && mfaRequired === null) {
     return json({ error: "nothing_to_set" }, 400);
   }
 
@@ -67,6 +68,7 @@ Deno.serve(async (req) => {
     p_home_currency: homeCcy,
     p_fiscal_year_start_month: fyMonth,
     p_multi_currency_enabled: multiCcy,
+    p_mfa_required: mfaRequired,
   });
   if (error) {
     const status = error.code === "42501" ? 403

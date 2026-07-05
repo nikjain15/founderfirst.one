@@ -597,7 +597,7 @@ Reports via `ledger/nav.ts` — and §3's flat five-tab CPA list never shipped
 | **Xero** (import/migrate) | 🟢 wired — OAuth reachable ("to continue to FounderFirst") | `connect` fn → `login.xero.com` authorize page for the app's client id. Awaiting re-consent per the granular-scopes change |
 | **Stripe** (payout splitting) | 🟢 working — upload-a-payout-report parser (no OAuth by design) | provider tile enabled; W4.1 Vitest/pgTAP cover the split math |
 | **Shopify** (payout splitting) | 🟢 working — same upload model | provider tile enabled |
-| **PayPal** (payout splitting) | 🟢 built (W4.1-B) — transaction-CSV parser (signed-fee polarity), file-import first; API sync = follow-up gated on Nik's provider credentials | tile registry-driven (`status='available'` + `hasPayoutParser`); `payouts.paypal.test.ts` covers split/reconcile/injection; needs a live stress pass with a real export |
+| **PayPal** (payout splitting) | 🟢 built (W4.1-B CSV + W4.1-C/D API sync, sandbox read-only) — transaction-CSV parser (signed-fee polarity) + Transaction-Search API; **exactly-once anchor = transfer-to-bank (withdrawal) txn id on BOTH paths (Option A, RT-230 resolved)**; a not-yet-withdrawn window is skipped, not posted | tile registry-driven (`status='available'` + `hasPayoutParser`); `payouts.paypal.test.ts` + `apiSync*.test.ts` cover split/reconcile/exactly-once/skip/injection; needs a live stress pass with a real export |
 | **Square** (payout splitting) | 🟢 built (W4.1-B) — payout-details-CSV parser (signed-fee polarity), file-import first; API sync = follow-up | same registry-driven tile; `payouts.square.test.ts`; needs a live stress pass with a real export |
 | **Amazon** (payout splitting) | 🟢 built (W4.1-B) — V2 flat-file settlement parser (tab-delimited; summary-row reconcile), file-import first; API sync = follow-up | same registry-driven tile; `payouts.amazon.test.ts` incl. truncated-file reconcile failure; needs a live stress pass with a real settlement file |
 
@@ -743,6 +743,7 @@ below got the pass (finder → verifier); those with findings carry the finding 
 | # | Surface | Permanent test | Status |
 |---|---|---|---|
 | W4.1 | E-commerce payout splitting (provider-agnostic; Stripe/Shopify; post/reverse RPCs) | `w4_1_ecommerce_payouts_test.sql` (16) + `apps/app/src/ecommerce/payouts.test.ts` (12) | 🟢 stress-passed; no defect |
+| W4.1-C/D | Square + PayPal **API payout sync** (sandbox, read-only) — API JSON → same split as CSV; posts via `post_ecommerce_payout` | `apiSync.test.ts` + `apiSync.redteam.test.ts` + `commerceApi.{test,redteam.test}.ts` (Deno) + `regression.api-sync.test.ts` | 🟢 stress-passed; **RT-230 PayPal exactly-once (P0) RESOLVED** (see below); multi-currency skip + genuine reconcile intact |
 | W4.2 | Cash-flow statement (GAAP indirect, `cf` kind) | `apps/app/src/ledger/cashFlow.test.ts` (13) + `export.test.ts` CF tie-out | 🟢 stress-passed; no defect |
 | W4.3 | Invoicing + AR (invoices/lines/payments; aging; opt-in nudges) | `w4_3_invoicing_test.sql` (21) + `invoiceMath.test.ts` (10) | 🟢 stress-passed; **F1 / F3 (P2)** open |
 | W4.4 | Lender / due-diligence package (`pkg` kind; statements + aging + comparatives + cover) | `apps/app/src/ledger/package.test.ts` (9) | 🟢 stress-passed; no defect |
@@ -752,6 +753,25 @@ below got the pass (finder → verifier); those with findings carry the finding 
 **Coverage delta:** +5 new ledger rows (W4.1–W4.5). 0 P0, 0 P1, 3 P2 — each with a permanent
 regression stub (REG-W4-F1…F3) to be authored into `regression_pack` at fix time (the coverage
 ratchet). Wave 4 invalidates the standing "Wave 4 not built" gap from Program 1.
+
+**RT-230 · PayPal API↔CSV exactly-once (P0) — RESOLVED (Option A, Nik 4 Jul).**
+An API-pulled PayPal payout and the SAME payout uploaded via CSV did **not** collapse:
+the CSV path keyed on the user-typed batch id while the API path (Transaction Search has
+no native batch id) synthesized `paypal:<startdate>`, so the same payout posted **twice**
+(Square was fine — real payout id both sides). **Fix:** BOTH paths now derive the payout's
+exactly-once anchor from the **transfer-to-bank (withdrawal) transaction id** — the actual
+money movement that IS the payout. One shared derivation (`paypalCanonicalPayoutId`, keyed
+on PayPal event code **T0400/T04xx**, mirrored named-constant on the Deno side) feeds the
+same `ext:paypal:payout:<withdrawal-txn-id>` key from `apiSync.ts`, `payouts.ts` (CSV), and
+`_shared/commerceApi.ts`. A window with **no** withdrawal transaction (money still in the
+PayPal balance, not yet paid out) is **not** a completed payout: it is **skipped**, never
+posted under a synthesized id (mirrors "non-reconciling → skip, never plug", LEARNINGS #16).
+The RT-230 genuine-reconcile (vs. the old self-net tautology) and multi-currency-skip guards
+are kept intact. → **regression scenario REG-W4-F5** (locked in tests): the SAME PayPal
+payout via API + CSV derives the IDENTICAL id and collapses to ONE post to the cent
+(`apiSync.test.ts` ⭐ exactly-once, `regression.api-sync.test.ts`); and a not-yet-withdrawn
+window is skipped on both paths (`apiSync.test.ts`, `payouts.paypal.test.ts`,
+`commerceApi.redteam.test.ts`).
 
 ### Proposed LEARNINGS additions (retro)
 1. **A server-enforced invariant still needs a client-side guard for the *user*, not the data.**

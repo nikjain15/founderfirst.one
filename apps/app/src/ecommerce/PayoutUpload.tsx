@@ -131,27 +131,38 @@ function PayoutForm({
   // trim it so " po_1 " and "po_1" can't mint two different keys (double-post).
   const payoutRef = payoutId.trim();
 
+  // PayPal derives its exactly-once anchor from the report's transfer-to-bank line
+  // (Option A), so the manual reference is optional there; every other provider
+  // still keys on the reference the owner types.
+  const idIsDerived = provider === "paypal";
+
   // Parse + reconcile the preview live. A parse error (missing columns, bad money)
   // is shown to the owner and blocks posting.
   const parsed = useMemo<{ p: ParsedPayout | null; error: string | null }>(() => {
-    if (!csv || !payoutRef || !payoutDate) return { p: null, error: null };
+    if (!csv || (!payoutRef && !idIsDerived) || !payoutDate) return { p: null, error: null };
     try {
       const currency = accounts.find((a) => a.id === bankId)?.currency ?? "USD";
       return { p: parsePayoutCsv(provider, payoutRef, payoutDate, currency, csv), error: null };
     } catch (e) {
       return { p: null, error: COPY.payouts.parseError((e as Error).message) };
     }
-  }, [csv, payoutRef, payoutDate, bankId, provider, accounts]);
+  }, [csv, payoutRef, idIsDerived, payoutDate, bankId, provider, accounts]);
 
-  const canPost = Boolean(parsed.p && bankId && !busy);
+  // A PayPal report with no transfer-to-bank line is not a completed payout — the
+  // preview shows why and posting is blocked (never a synthesized id → no double-post).
+  const skipReason = parsed.p?.skip?.reason ?? null;
+  const canPost = Boolean(parsed.p && !skipReason && bankId && !busy);
 
   async function doPost() {
     if (!parsed.p) return;
     setBusy(true); setErr(null);
     try {
       const c = parsed.p.components;
+      // Use the components' payoutId — for PayPal this is the derived transfer-to-
+      // bank txn id (Option A), for others it is the trimmed reference. Never the
+      // raw typed ref, so the CSV and API paths key on the identical anchor.
       const r = await postEcommercePayout({
-        org_id: orgId, provider, payout_id: payoutRef, payout_date: payoutDate,
+        org_id: orgId, provider, payout_id: c.payoutId, payout_date: payoutDate,
         bank_account_id: bankId,
         gross_minor: c.grossMinor, fees_minor: c.feesMinor,
         refunds_minor: c.refundsMinor, adjust_minor: c.adjustMinor,
@@ -208,12 +219,15 @@ function PayoutForm({
                 </select>
               </label>
             </div>
-            <p className="muted sm" id="payout-id-hint">{COPY.payouts.payoutIdHint}</p>
+            <p className="muted sm" id="payout-id-hint">{idIsDerived ? COPY.payouts.payoutIdHintDerived : COPY.payouts.payoutIdHint}</p>
           </div>
 
           {parsed.error && <p className="error sm" role="alert">{parsed.error}</p>}
+          {skipReason === "paypal_not_withdrawn" && (
+            <p className="error sm" role="alert">{COPY.payouts.notWithdrawn}</p>
+          )}
 
-          {parsed.p && (
+          {parsed.p && !skipReason && (
             <div className="payout-preview">
               <h3 className="section-h">{COPY.payouts.previewTitle}</h3>
               <div className="payout-split">

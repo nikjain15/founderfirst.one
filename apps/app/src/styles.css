@@ -647,6 +647,63 @@ button.ghost.sm, .ghost.sm {
 .gl-date { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .gl-acct, .gl-memo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* filing worksheet (RV2-A1) — return lines with per-line drill-down to the ledger.
+   Fluid-first: the tables scroll inside their own .table-wrap on narrow phones; no
+   fixed pixel columns in a horizontal layout (RESPONSIVE.md). */
+.filing { max-width: 48rem; }
+.filing-head .sub { margin-top: 0.2rem; }
+.filing-controls { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 0.75rem 0; }
+.filing-form { display: flex; flex-direction: column; gap: 0.2rem; }
+.filing-form span {
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip); color: var(--ink-3);
+}
+.filing-form select {
+  min-height: var(--tap-min); font-size: var(--fs-input);
+  padding: 0.35rem 0.5rem; border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); background: var(--white); color: var(--ink);
+}
+.filing-ready { font-size: var(--fs-ui); margin: 0.3rem 0 0.6rem; }
+
+.worksheet-table { min-width: min(34rem, 100%); }
+.worksheet-head, .worksheet-row {
+  display: grid; grid-template-columns: minmax(3rem, 5rem) minmax(0, 1fr) minmax(6rem, 8rem);
+  gap: 0.6rem; align-items: center;
+}
+.worksheet-head {
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip);
+  color: var(--ink-3); padding-bottom: 0.3rem; border-bottom: var(--bw-hair) solid var(--line);
+}
+.worksheet-line { border-bottom: var(--bw-hair) solid var(--line-2); }
+.worksheet-row {
+  width: 100%; text-align: left; padding: 0.5rem 0;
+  background: transparent; color: var(--ink); border: none; border-radius: 0;
+}
+.worksheet-row-btn { min-height: var(--tap-min); cursor: pointer; }
+.worksheet-row-btn:hover:not(:disabled) { background: var(--brand-soft); }
+.worksheet-row-btn:disabled { cursor: default; }
+.w-code { color: var(--ink-3); font-family: var(--font-mono); font-size: var(--fs-ui); }
+.w-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; gap: 0.4rem; align-items: center; }
+.w-badge {
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip);
+  color: var(--ink-3); border: var(--bw-hair) solid var(--line); border-radius: var(--r-pill); padding: 0 0.4rem; white-space: nowrap;
+}
+.w-amt, .num { text-align: right; font-variant-numeric: tabular-nums; }
+.w-caret { color: var(--ink-3); }
+
+.worksheet-sources { padding: 0 0 0.6rem; }
+.worksheet-src-table { min-width: min(38rem, 100%); }
+.worksheet-src-head, .worksheet-src-row {
+  display: grid;
+  grid-template-columns: 6rem minmax(7rem, 1fr) minmax(6rem, 1.4fr) minmax(5rem, 7rem);
+  gap: 0.5rem; padding: 0.3rem 0; border-bottom: var(--bw-hair) solid var(--line-2);
+}
+.worksheet-src-head {
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip); color: var(--ink-3);
+}
+.s-date { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.s-acct, .s-memo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.worksheet-unmapped { margin-top: 1.25rem; }
+
 /* periods */
 .period-row {
   display: grid; grid-template-columns: 1fr auto auto; gap: 0.6rem; align-items: center;

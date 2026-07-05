@@ -62,6 +62,7 @@ const KNOWN_ENTITY_TYPES = new Set([
 interface Line {
   line_key: string; line_code?: string | null; label: string; section: string;
   kind?: string; sort?: number; deductible_pct?: number | null; flows_to?: string | null; notes?: string | null;
+  export_codes?: Record<string, string> | null; // RV2-A2: per-suite import codes (DATA)
 }
 interface Rule { priority: number; match_kind: string; match_value: string; line_key: string; }
 interface FormSeed {
@@ -138,15 +139,15 @@ begin
   // lines: upsert on (form, line_key)
   for (const l of f.lines) {
     lines.push(`  insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, ${sqlStr(l.line_key)}, ${sqlStr(l.line_code ?? null)}, ${sqlStr(l.label)}, ${sqlStr(l.section)},
      ${sqlStr(l.sort ?? 0)}, ${sqlStr(l.kind ?? "amount")}, ${sqlStr(l.deductible_pct ?? null)},
-     ${sqlStr(l.flows_to ?? null)}, ${sqlStr(l.notes ?? null)})
+     ${sqlStr(l.flows_to ?? null)}, ${sqlStr(l.notes ?? null)}, ${sqlStr(l.export_codes ?? {})})
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;`);
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;`);
   }
   // rules carry no stable external key → clear + reinsert this form's seed rules.
   lines.push(`  delete from public.tax_mapping_rules where form_id = v_form and is_seed;`);

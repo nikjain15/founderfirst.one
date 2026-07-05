@@ -11,12 +11,18 @@
  * refused server-side (ARCHITECTURE §4.3). Ranking + access come from the RPCs,
  * never re-derived here.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   ageLabel, useClientCounts, usePracticeQueue,
   type ClientCounts, type QueueItem,
 } from "./practiceQueue";
+import MonthEndClose from "./MonthEndClose";
 import { COPY } from "../copy";
+
+/** The firm landing has two modes, toggled in-page (no new top-level nav):
+ *  the ranked cross-client work queue (W1.4), and the firm-level month-end close
+ *  (RV2-C1). Both operate over the SAME firm client set. */
+type Mode = "queue" | "close";
 
 /** open(clientOrgId, surface) — switch to a client's books on a specific tab. */
 export default function PracticeHome({
@@ -25,6 +31,7 @@ export default function PracticeHome({
   firm: { id: string; name: string };
   open: (clientOrgId: string, surface: QueueItem["surface"]) => void;
 }) {
+  const [mode, setMode] = useState<Mode>("queue");
   const queue = usePracticeQueue(firm.id);
   const counts = useClientCounts(firm.id);
 
@@ -39,10 +46,34 @@ export default function PracticeHome({
   return (
     <section className="lens practice">
       <header className="ledger-head">
-        <p className="eyebrow lens-eyebrow">{COPY.practice.eyebrow}</p>
-        <h1 className="page-title">{COPY.practice.title}</h1>
+        <p className="eyebrow lens-eyebrow">
+          {mode === "close" ? COPY.monthEnd.eyebrow : COPY.practice.eyebrow}
+        </p>
+        <h1 className="page-title">
+          {mode === "close" ? COPY.monthEnd.title : COPY.practice.title}
+        </h1>
+        {/* Mode toggle — nests month-end close under the firm home, no new nav. */}
+        <div className="me-mode" role="tablist" aria-label={COPY.monthEnd.eyebrow}>
+          <button
+            type="button" role="tab" aria-selected={mode === "queue"}
+            className={`me-mode-tab${mode === "queue" ? " is-active" : ""}`}
+            onClick={() => setMode("queue")}
+          >
+            {COPY.monthEnd.modeQueue}
+          </button>
+          <button
+            type="button" role="tab" aria-selected={mode === "close"}
+            className={`me-mode-tab${mode === "close" ? " is-active" : ""}`}
+            onClick={() => setMode("close")}
+          >
+            {COPY.monthEnd.modeClose}
+          </button>
+        </div>
       </header>
 
+      {mode === "close" && <MonthEndClose firm={firm} open={open} />}
+
+      {mode === "queue" && <>
       {error && <p className="error" role="alert">{COPY.practice.loadError}</p>}
       {loading && !error && <p className="muted">{COPY.practice.loading}</p>}
 
@@ -92,6 +123,7 @@ export default function PracticeHome({
           )}
         </>
       )}
+      </>}
     </section>
   );
 }

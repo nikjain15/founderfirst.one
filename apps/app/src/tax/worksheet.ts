@@ -51,6 +51,9 @@ export interface WorksheetSource {
   account_id: string;
   account_code: string | null;
   account_name: string;
+  /** the account's ledger type — carried so a structured export (RV2-A2) can split
+   *  debit/credit by the true normalcy (section alone is ambiguous for balance-sheet). */
+  account_type: AccountResolution["account_type"];
   /** signed, natural-side minor units this entry contributes to the line */
   amount_minor: number;
 }
@@ -162,7 +165,7 @@ export function buildWorksheet(
       const src: WorksheetSource = {
         entry_id: e.id, entry_date: e.entry_date, memo: e.memo,
         account_id: r.account_id, account_code: r.account_code, account_name: r.account_name,
-        amount_minor: contribution,
+        account_type: r.account_type, amount_minor: contribution,
       };
       const line = r.resolved_by !== "unmapped" && r.line_key ? ensureLine(r.line_key) : null;
       if (line) {

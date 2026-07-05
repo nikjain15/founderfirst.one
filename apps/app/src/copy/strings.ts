@@ -277,6 +277,13 @@ export const COPY = {
     shareWithAccountant: "Share with your accountant",
     inviteLead: "Invite your accountant to your books — you control full or read-only access.",
     accountantManagedByOwner: "Your accountant relationship is managed by the business owner.",
+    // ── Always-reachable in-app support (IQ-2) ────────────────────────────────
+    // A calm, discoverable "we're here" line on Connections + error states.
+    // The address is ALWAYS SITE.email — never hardcode it (centralization gate).
+    supportLead: "Stuck on a connection, or something not adding up?",
+    supportLink: "Contact support",
+    supportAria: (email: string) => `Contact support at ${email}`,
+    supportSubject: "Help with my Penny connections",
   },
 
   // ── Catch-up mode (W2.1) — the shame-free "get me caught up" guided flow. Years
@@ -659,6 +666,16 @@ export const COPY = {
     bankNothingNew: "No new transactions since the last sync.",
     syncNow: "Sync now",
     bankCancelled: "Bank connection canceled — nothing was linked.",
+    // ── Broken connection (IQ-2) — token expired / access revoked ─────────────
+    // Honest, no-blame: the connection dropped, here's the one tap that fixes it.
+    // Never leave the owner on stale books with no path forward.
+    brokenHeading: "A connection needs reconnecting",
+    brokenLead: (label: string) =>
+      `Penny lost access to ${label} — this usually happens after a password change or when access quietly expires. Your books are safe; new transactions just won't come in until you reconnect.`,
+    reconnect: (label: string) => `Reconnect ${label}`,
+    reconnecting: "Opening…",
+    reconnectManual: (label: string) =>
+      `${label} can't be reconnected here yet — reconnect it from where you first linked it, or reach out and we'll help.`,
   },
 
   // ── Provider labels (QBO / Xero / bank feeds) ──────────────────────────────

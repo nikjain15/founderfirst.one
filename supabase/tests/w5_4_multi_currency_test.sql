@@ -130,12 +130,12 @@ select is(
 --       phase2_ledger_test's established pattern for journal_lines_balanced.
 select throws_ok($$
   insert into journal_entries (id, org_id, entry_date, period_id, status, source, idempotency_key, posted_by) values
-    ('00000000-0000-0000-0000-0000000fa1e', '00000000-0000-0000-0000-0000000000fa', '2026-01-01',
+    ('00000000-0000-0000-0000-0000000fa1e0', '00000000-0000-0000-0000-0000000000fa', '2026-01-01',
      (select id from accounting_periods where org_id = '00000000-0000-0000-0000-0000000000fa' order by period_start limit 1),
      'posted', 'manual', 'mc:base-imbalance', '00000000-0000-0000-0000-0000000000f1');
   insert into journal_lines (entry_id, org_id, account_id, amount_minor, currency, side, base_amount_minor, fx_rate) values
-    ('00000000-0000-0000-0000-0000000fa1e', '00000000-0000-0000-0000-0000000000fa', '00000000-0000-0000-0000-00000000fa01', 1000, 'USD', 'D', 1000, 1),
-    ('00000000-0000-0000-0000-0000000fa1e', '00000000-0000-0000-0000-0000000000fa', '00000000-0000-0000-0000-00000000fa03', 1000, 'USD', 'C', 999,  1);
+    ('00000000-0000-0000-0000-0000000fa1e0', '00000000-0000-0000-0000-0000000000fa', '00000000-0000-0000-0000-00000000fa01', 1000, 'USD', 'D', 1000, 1),
+    ('00000000-0000-0000-0000-0000000fa1e0', '00000000-0000-0000-0000-0000000000fa', '00000000-0000-0000-0000-00000000fa03', 1000, 'USD', 'C', 999,  1);
   -- per-transaction-currency invariant still holds (1000 USD D = 1000 USD C);
   -- only the base leg is corrupted (1000 <> 999) — isolates invariant 2.
   set constraints journal_lines_base_balanced immediate;

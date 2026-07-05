@@ -450,7 +450,7 @@ begin
   -- foreign sub-balance only shows up by grouping on l.currency.
   for v_acct in
     select a.id, l.currency as l_ccy,
-           coalesce(sum(case when l.side = 'D' then l.base_amount_minor else -l.base_amount_minor end), 0) as carried_base,
+           coalesce(sum(case when l.side = 'D' then coalesce(l.base_amount_minor, l.amount_minor) else -coalesce(l.base_amount_minor, l.amount_minor) end), 0) as carried_base,
            coalesce(sum(case when l.side = 'D' then l.amount_minor      else -l.amount_minor end), 0)      as face_amount
     from ledger_accounts a
     join journal_lines l on l.account_id = a.id

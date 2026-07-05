@@ -54,9 +54,20 @@ alter table org_accounting_settings
 -- ── journal_lines: base-currency equivalent + rate provenance (design §3) ────
 -- base_amount_minor = amount_minor when currency == home (fx_rate = 1) — the
 -- identity every existing row already satisfies, so the backfill is exact.
+--
+-- Deliberately NULLABLE (not NOT NULL): (1) a system-generated FX plug/
+-- revaluation line has amount_minor=0 and NO single transaction rate — fx_rate
+-- IS meaningfully null there, not a magic value; (2) plenty of existing pgTAP
+-- fixtures + other call sites insert into journal_lines directly (bypassing
+-- post_journal_entry) without knowing about these new columns at all — making
+-- them NOT NULL with no row-aware default would break every one of them.
+-- Every consumer (assert_entry_base_balanced, run_period_fx_revaluation,
+-- reports.ts) reads via coalesce(base_amount_minor, amount_minor), so a NULL
+-- row (home-currency by construction, since the gate blocks anything else for
+-- an opted-out org) behaves identically to an explicit backfilled one.
 alter table journal_lines
   add column base_amount_minor bigint,
-  add column fx_rate            numeric,
+  add column fx_rate            numeric default 1,
   add column fx_rate_source     text,      -- 'home' | 'manual' | 'fx_rates:<source>' | 'residual'
   add column fx_rate_date       date;
 
@@ -67,9 +78,6 @@ update journal_lines
  where base_amount_minor is null;
 
 alter table journal_lines
-  alter column base_amount_minor set not null,
-  alter column fx_rate set not null,
-  alter column fx_rate set default 1,
   add constraint journal_lines_base_amount_minor_check check (base_amount_minor >= 0);
 
 -- Same ISO-shape guard the CoA integrity pass added to ledger_accounts.currency
@@ -100,8 +108,8 @@ declare
   v_debit bigint;
   v_credit bigint;
 begin
-  select coalesce(sum(case when side = 'D' then base_amount_minor else 0 end), 0),
-         coalesce(sum(case when side = 'C' then base_amount_minor else 0 end), 0)
+  select coalesce(sum(case when side = 'D' then coalesce(base_amount_minor, amount_minor) else 0 end), 0),
+         coalesce(sum(case when side = 'C' then coalesce(base_amount_minor, amount_minor) else 0 end), 0)
     into v_debit, v_credit
     from journal_lines where entry_id = v_entry;
   if v_debit <> v_credit then

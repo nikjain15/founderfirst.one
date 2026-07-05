@@ -312,6 +312,40 @@ centralization: log field name/config centralized; no inline literals.
 coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
   call (success + error path).
 
+# NEXT WAVE — activate shipped-but-dark features (buildable, 5 Jul)
+> W5.4 (multi-currency) and SEC-2 (captcha) shipped but are inert until their data/keys exist.
+> These cards make already-deployed features actually usable. Disjoint lanes → fan out.
+
+## W5.4-FX · ECB daily FX-rate feed (activates multi-currency)
+status: unclaimed
+blocked-by: — (W5.4 fx_rates table + rate resolution shipped; only the automatic feed is missing)
+lane: supabase/functions + supabase/migrations (disjoint from app-UI/marketing lanes)
+workflow: owner/CPA (multi-currency orgs) · "my foreign transactions convert at real rates
+  automatically" · rates refresh daily with no manual entry; a missing rate still fails loud
+  (never silently 1) per D3.
+goal: build the systematic FX feed W5.4's design (D3) specified but did not ship: a scheduled edge
+  fn (pg_cron or the existing cron pattern — no new infra) that fetches the ECB daily reference
+  rates (eurofxref-daily.xml / api) and upserts them into `fx_rates` as source='ecb', effective-dated,
+  idempotent. Manual entry remains an override; a missing/stale rate still raises per the D3
+  fail-loud contract (do NOT weaken it). Cross-rate via EUR base where ECB doesn't quote a pair
+  directly (document the triangulation).
+centralization: the feed URL + refresh cadence + staleness threshold = platform_config, not inlined;
+  currency catalog stays the seeded source of truth.
+coverage delta: new AUDIT ledger row (fx-feed) — assert: daily upsert is idempotent (re-run = no dup);
+  a fetched ECB rate resolves a foreign posting; a missing pair still fails loud; cross-rate math ties.
+
+## IQ-1-CLEANUP · Null legacy plaintext QBO tokens (post-verify) — DEFERRED
+status: blocked:verify-encrypted-path-live-with-a-real-token
+blocked-by: a real QBO (re)connect that populates + round-trips an encrypted token in prod (the one
+  existing conn was tokenless at deploy, so encrypt/decrypt hasn't been exercised on live data yet)
+lane: supabase/migrations
+goal: the deferred follow-up from IQ-1 — once a real token has been encrypted + decrypted live in
+  prod (verify via ext_connection_secrets on a reconnected org), ship a migration that NULLs the
+  legacy plaintext access_token/refresh_token columns (kept until now for rollback safety). Do NOT
+  run this until the encrypted path is proven on real live data.
+coverage delta: extend the qbo-hardening AUDIT row — assert no plaintext token column is readable/
+  populated post-cleanup; decrypt still returns the token.
+
 # INTUIT-QUALITY — QBO app-assessment hardening (5-Jul audit; right-for-our-product only)
 > A read-only-Accounting compliance audit (against Intuit's App Assessment + security policies)
 > confirmed our posture is strong — CSRF state nonce, proactive refresh, secrets server-side,

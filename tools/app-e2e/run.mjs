@@ -33,6 +33,7 @@ import { stat, mkdir, readFile } from "node:fs/promises";
 import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { mintE2ESession, injectSession } from "../e2e-lib/mintSession.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const DIST = resolve(ROOT, "apps/app/dist");      // vite build output (base=/, prod parity — see app-e2e.yml)
@@ -84,6 +85,31 @@ const browser = await chromium.launch();
 // acceptDownloads so the W1.2 export-download assertion can capture the file.
 const context = await browser.newContext({ viewport: DESKTOP, acceptDownloads: true });
 const page = await context.newPage();
+
+// ── Captcha-exempt auth (SEC-2) ────────────────────────────────────────────
+// Turnstile now guards signInWithPassword, so the devAuth shim can no longer log
+// in from CI. Instead mint a session for the E2E account via the service-role
+// admin API (bypasses captcha) and inject it into the page BEFORE navigation, so
+// the app boots already authed. Node-only: E2E_SERVICE_ROLE_KEY never touches the
+// client bundle (it's not a VITE_ var). Falls back to the in-app devAuth path when
+// the key is absent (harmless when captcha is off — e.g. a local project).
+if (process.env.E2E_SERVICE_ROLE_KEY) {
+  try {
+    const minted = await mintE2ESession({
+      supabaseUrl: process.env.VITE_SUPABASE_URL,
+      anonKey: process.env.VITE_SUPABASE_ANON_KEY,
+      serviceRoleKey: process.env.E2E_SERVICE_ROLE_KEY,
+      email: process.env.E2E_APP_EMAIL || process.env.VITE_DEV_APP_EMAIL,
+    });
+    await injectSession(page, minted);
+    ok(`minted a captcha-exempt session for ${process.env.E2E_APP_EMAIL || process.env.VITE_DEV_APP_EMAIL} (service-role; no password sign-in)`);
+  } catch (e) {
+    fail("session mint failed: " + (e?.message || e));
+  }
+} else {
+  console.log("  ℹ️ E2E_SERVICE_ROLE_KEY unset — relying on the in-app devAuth password sign-in (only works with captcha OFF)");
+}
+
 const consoleErrors = [];
 page.on("console", (m) => { if (m.type() === "error") { consoleErrors.push(m.text()); console.log("  [browser error]", m.text()); } });
 page.on("pageerror", (e) => { consoleErrors.push(String(e)); console.log("  [page error]", String(e)); });

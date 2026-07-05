@@ -294,7 +294,57 @@ centralization: log field name/config centralized; no inline literals.
 coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
   call (success + error path).
 
-# Wave-3 follow-ups (from the 5-Jul deploy — non-blocking)
+# INTUIT-QUALITY — QBO app-assessment hardening (5-Jul audit; right-for-our-product only)
+> A read-only-Accounting compliance audit (against Intuit's App Assessment + security policies)
+> confirmed our posture is strong — CSRF state nonce, proactive refresh, secrets server-side,
+> strong tenant isolation, intuit_tid capture, server-side MFA all COVERED. These are the genuine
+> remaining gaps that fit our product (payments/payroll/discovery-doc items are N-A/optional and
+> excluded). Building these closes the assessment credibly and hardens quality.
+
+## IQ-1 · QBO connection hardening (tokens-at-rest + resilience + revoke)
+status: unclaimed
+blocked-by: — (all in the QBO edge fns / _shared/qbo.ts — ONE builder owns this domain to avoid collisions)
+workflow: owner/CPA · "my QuickBooks stays connected and my data is safe" · connect once → imports
+  survive throttling + brief token expiry → disconnect actually revokes at Intuit; invisible to the user.
+goal: harden the QBO integration per the audit:
+  1. **Tokens at rest** (biggest exposure): move external_connections.access_token/refresh_token to
+     Supabase Vault / pgsodium (encrypt on write, decrypt only server-side in the qbo fns). SAFE
+     migration: encrypt existing rows in-place, dual-read during transition, no live-connection break.
+  2. **Retry + backoff** on 429/5xx in qboQuery/qboQueryAll, honor `Retry-After`; throttle paged pulls
+     so a large historical import survives QBO rate limits.
+  3. **Reactive refresh-on-401**: on a 401 from a QBO query, refresh the access token once and retry
+     before failing (complements the existing proactive time-based refresh).
+  4. **Disconnect revokes at Intuit**: add a qbo-disconnect edge fn that calls Intuit's token-revocation
+     endpoint and sets status='revoked' (don't leave a live grant).
+  5. **Expire the OAuth `state` nonce**: reject a callback whose `pending` connection row is older than
+     ~10 min (needs a created_at check; state is already single-use + unique).
+  6. **Unknown account Classification → review, not silent 'expense'**: mapQboAccountType must NOT
+     silently bucket an unknown QBO classification as expense (silent wrong books) — route it to the
+     uncategorized/holding path or flag for mapping review.
+centralization: retry thresholds / backoff / state-TTL = config (platform_config), not magic numbers;
+  QBO endpoints stay in _shared/qbo.ts; no secrets inlined.
+coverage delta: new AUDIT ledger row (qbo-hardening) — assert: encrypted tokens unreadable by
+  `authenticated`; 429→backoff→success; 401→refresh→retry; disconnect calls revoke + sets revoked;
+  stale state rejected; unknown classification does NOT post as expense.
+
+## IQ-2 · Connections UX — broken-connection banner + Reconnect + in-app support
+status: unclaimed
+blocked-by: — (apps/app UI only — disjoint from IQ-1's edge-fn work; safe to build in parallel)
+workflow: owner/CPA · "Penny told me my QuickBooks needs reconnecting, one tap fixes it" · a broken
+  connection (status='error'/invalid_grant) shows a clear banner on Connections + a Reconnect CTA;
+  a Contact-support link is always reachable. Nests under existing Connections — no new top-level nav.
+goal: the audit's assessment-required UX gaps:
+  1. Connections surface reads external_connections.status/last_error and, when a connection is
+     broken (status='error'), shows an honest banner + one-click **Reconnect** (re-runs the connect
+     flow) — so users are never stranded on stale data with no path to fix.
+  2. An always-reachable in-app **Contact support** affordance using SITE.email (founder@founderfirst.one)
+     — reachable from Connections + error states (today it only appears in a couple of error strings).
+centralization: all copy from live personas/COPY + SITE.email (never a hardcoded address); tokens.css
+  for all visuals; .eyebrow+.page-title headers.
+coverage delta: extend the connectors AUDIT row — assert a broken connection renders the banner +
+  Reconnect CTA, and the support link resolves to SITE.email.
+
+
 
 ## W5.4-FX · ECB fx-rate feed (fx_rates is empty; no fetcher yet)
 status: unclaimed

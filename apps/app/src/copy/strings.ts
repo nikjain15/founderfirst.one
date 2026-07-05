@@ -1482,6 +1482,37 @@ export const COPY = {
         "This is a read-only directory. To view a tenant's books, open a time-boxed, audited break-glass window from the platform console.",
       openConsole: "Open the platform console",
     },
+    // Support — slice 1's live-wired tab. Reads the SAME list_tickets RPC the
+    // live admin inbox reads; labels mirror the admin inbox (no drift).
+    support: {
+      heading: "What needs you",
+      sub: "Tickets the bot couldn't close on its own. Highest priority first.",
+      loading: "Loading tickets…",
+      error: "Couldn't load the inbox.",
+      empty: "Quiet queue. Nothing waiting.",
+      total: (n: number) => `${n} ${n === 1 ? "ticket" : "tickets"}`,
+      // Status filter chips — mirror the live admin inbox exactly.
+      filters: {
+        open: "open",
+        in_progress: "in progress",
+        resolved: "resolved",
+        all: "all",
+      },
+      colSubject: "Ticket",
+      colChannel: "Channel",
+      colTopic: "Topic",
+      colContact: "Contact",
+      colMessages: "Messages",
+      noSubject: "(no subject)",
+      noTopic: "—",
+      noContact: "no contact",
+      messages: (n: number) => `${n} message${n === 1 ? "" : "s"}`,
+      tableAria: "Support tickets",
+      filtersAria: "Filter tickets by status",
+      openInAdmin: "Open this ticket in the live admin",
+      liveNote:
+        "This reads the same inbox as the live admin. Replies still happen in the live admin until that module reaches parity here.",
+    },
     // Parallel-run placeholder shown on tabs not yet mirrored in-product.
     placeholder: {
       badge: "Parallel-run",

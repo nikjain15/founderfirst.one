@@ -4,16 +4,17 @@
  *
  * The console mirrors the founderfirst.one/admin IA one-for-one — the SAME four
  * primary jobs + a ⚙️ Settings menu (apps/admin/ADMIN_PRINCIPLES.md: jobs-not-
- * tools, 4–5 fixed tabs). This scaffold ships the shell and gate; per the
- * migration plan (docs/plans/ia-3-admin-console-migration.md §3) exactly ONE
- * read-only tab (Overview) is wired to real data to prove the React-Query rail,
- * and the four admin-mirror tabs are honest parallel-run placeholders that link
- * to the still-authoritative live admin. Additive: founderfirst.one/admin is
- * untouched and stays live.
+ * tools, 4–5 fixed tabs). The shell + gate shipped in the scaffold; slice 1
+ * (docs/plans/ia-3-admin-console-migration.md §3) wires the FIRST admin-mirror
+ * tab — Support — to the SAME `list_tickets` RPC the live admin inbox reads (one
+ * source of truth, no fork), alongside the Overview home. The remaining
+ * admin-mirror tabs stay honest parallel-run placeholders that link to the
+ * still-authoritative live admin. Additive: founderfirst.one/admin is untouched
+ * and stays live.
  */
 
-/** Every console tab id. `overview` is the live-wired module; the four job tabs
- *  mirror the live admin IA and are parallel-run placeholders in this phase. */
+/** Every console tab id. `overview` + `support` are live-wired; the rest mirror
+ *  the live admin IA and are parallel-run placeholders in this phase. */
 export type ConsoleTabId = "overview" | "support" | "audience" | "analytics" | "penny";
 
 export interface ConsoleTab {
@@ -29,7 +30,7 @@ export interface ConsoleTab {
  */
 export const CONSOLE_TABS: ConsoleTab[] = [
   { id: "overview", live: true },
-  { id: "support", live: false },
+  { id: "support", live: true }, // slice 1: wired to the live admin's list_tickets
   { id: "audience", live: false },
   { id: "analytics", live: false },
   { id: "penny", live: false },

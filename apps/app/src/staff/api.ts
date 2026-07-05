@@ -17,6 +17,28 @@ export interface BreakGlassWindow {
   opened_at: string; expires_at: string; closed_at: string | null; active: boolean;
 }
 
+/**
+ * A support ticket, exactly the shape the founderfirst.one/admin inbox reads.
+ * SAME source of truth as the live admin: the `list_tickets` SECURITY-DEFINER RPC
+ * over `support_tickets`/`support_contacts` (apps/admin/src/lib/supabase.ts →
+ * listTickets). No duplicate data path — the console mirrors, it does not fork.
+ */
+export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
+export interface StaffTicket {
+  id: string;
+  status: TicketStatus;
+  priority: "p1" | "p2" | "p3";
+  channel: "discord" | "web";
+  subject: string;
+  first_message: string;
+  contact_email: string | null;
+  contact_discord: string | null;
+  topic: string | null;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+}
+
 export function useIsPlatformStaff() {
   return useQuery({
     queryKey: ["is-platform-staff"],
@@ -37,6 +59,26 @@ export function useStaffOrgs(enabled = true) {
       const { data, error } = await getClient().rpc("staff_list_orgs");
       if (error) throw error;
       return (data ?? []) as StaffOrg[];
+    },
+  });
+}
+
+/**
+ * Support tickets for the console's Support tab. Reads the SAME `list_tickets`
+ * RPC the live admin inbox reads — one source of truth, no fork. Any platform
+ * staff is on the admins allow-list, so the RPC's auth check passes for them.
+ * `status` mirrors the admin inbox's status filter (undefined = all).
+ */
+export function useStaffTickets(status: TicketStatus | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ["staff-tickets", status ?? "all"],
+    enabled,
+    queryFn: async (): Promise<StaffTicket[]> => {
+      const { data, error } = await getClient().rpc("list_tickets", {
+        p_status: status ?? null,
+      });
+      if (error) throw error;
+      return (data ?? []) as StaffTicket[];
     },
   });
 }

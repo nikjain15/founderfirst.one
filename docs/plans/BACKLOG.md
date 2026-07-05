@@ -294,6 +294,37 @@ centralization: log field name/config centralized; no inline literals.
 coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
   call (success + error path).
 
+# Wave-3 follow-ups (from the 5-Jul deploy — non-blocking)
+
+## W5.4-FX · ECB fx-rate feed (fx_rates is empty; no fetcher yet)
+status: unclaimed
+blocked-by: — (W5.4 shipped; multi-currency is per-org opt-in + OFF by default, so this breaks nothing until an org enables MC)
+context: W5.4 shipped the `fx_rates` table + resolvers + "missing rate FAILS LOUD, never posts at 1"
+  (D3), but there is NO edge fn / cron that populates fx_rates from the ECB daily snapshot. Table is
+  empty in prod. The moment an org enables multi-currency and posts a foreign-currency txn, the
+  resolver correctly raises (by design) — but there's nothing to resolve against.
+goal: build the ECB daily-snapshot fetcher (scheduled edge fn / existing cron pattern — no new
+  vendor) that upserts the ISO rate table into `fx_rates` with source provenance, + a manual-override
+  entry path (D3). Backfill a starting snapshot. THEN multi-currency is truly usable end-to-end.
+centralization: ECB endpoint + schedule = config/secret, never inline; rate rows are systematic data.
+coverage delta: extend the multi-currency AUDIT row — assert the fetcher upserts dated rates + a
+  foreign-currency post resolves against a fetched rate (and still fails loud when none exists).
+
+## SEC-2-KEYS · Cloudflare Turnstile keys (Nik) — captcha is dark until set
+status: unclaimed (Nik human step)
+context: SEC-2 shipped + is wired to signInWithOtp, but no TURNSTILE_SITE_KEY / TURNSTILE_SECRET is
+  set, so captcha is fail-open (login works normally, rate-limit still active). To turn bot protection
+  ON: Nik creates a Cloudflare Turnstile widget → set TURNSTILE_SITE_KEY (frontend env / pages.yml)
+  + TURNSTILE_SECRET (supabase fn secret) → redeploy. Then the Intuit "Captcha?" answer is truly Yes.
+
+## SEC-1-CPACLOSE · Decide MFA-gating for the CPA batch-close path
+status: decision-needed (Nik)
+context: SEC-1 server-side MFA enforcement gates the 10 single-org write edge fns, but `cpa-close`
+  operates on firm_id + a list of client_org_ids (not one org), so it was intentionally NOT edge-gated
+  (the can_write_org_as DB guard still applies to RPCs routing through it). Decide: should the CPA
+  firm-user's session be required aal2 for batch close when their firm requires MFA? If yes → gate
+  cpa-close on the firm user's org MFA policy. Small follow-up once decided.
+
 ## CONN-1 · QBO production hosting IP (static-egress proxy) — Nik + infra
 status: unclaimed (deferred — sandbox unaffected)
 blocked-by: — (not blocking any build; production QBO is Intuit-review-gated anyway)

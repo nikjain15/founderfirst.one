@@ -41,6 +41,12 @@ jobs:
       - name: Check CSS vars resolve
         run: pnpm check:css-vars
 
+      # PENNY-UX-9 gate: every authed <h1> must carry .page-title (the restrained
+      # authed heading scale). A bare <h1> inherits the public billboard scale
+      # (up to 64px) and silently breaks the authed heading ladder (rule 14).
+      - name: Check authed headings
+        run: pnpm check:authed-headings
+
       # The copy/config/persona layer's unit tests (catalog integrity, config
       # coercion + fallback, threshold banding).
       - name: App unit tests

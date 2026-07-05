@@ -18,6 +18,12 @@ export const SITE = {
   /** Public contact address — used in legal pages, footer, support copy. */
   email: "founder@founderfirst.one",
   discord: "https://discord.gg/DGJdd6AEjH",
+  /**
+   * The live internal admin surface (founderfirst.one/admin). During the IA-3
+   * parallel-run, the in-product console at penny.founderfirst.one/admin mirrors
+   * it module by module and links back here for surfaces not yet mirrored.
+   */
+  adminUrl: "https://founderfirst.one/admin",
 } as const;
 
 /**

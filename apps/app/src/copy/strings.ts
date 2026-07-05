@@ -70,6 +70,7 @@ export const COPY = {
     roleCpaReadonly: "CPA · read-only",
     settings: "Settings",
     staffConsole: "Staff console",
+    adminConsole: "Internal admin",
     signOut: "Sign out",
     accountMenuAria: "Account menu",
     switchOrgAria: "Switch organization",
@@ -1223,6 +1224,59 @@ export const COPY = {
       `Hi — I keep my clients' books with Penny. To connect yours, open this link and send me an invite: ${link}\n\nNew to Penny? Sign in at that link, set up your business, then go to Settings and invite your accountant at ${email}.`,
     noEmail:
       "We couldn't read your sign-in email, so we can't build your request link. Ask your client to invite you from their Settings instead.",
+  },
+
+  // ── Internal admin console (IA-3 · penny.founderfirst.one/admin) ────────────
+  // The in-product console for platform staff. Mirrors the live admin IA; during
+  // the parallel-run only Overview is wired to real data — the rest link out to
+  // the still-authoritative founderfirst.one/admin.
+  console: {
+    eyebrow: "Internal",
+    title: "Admin console",
+    sub: "Run operations from inside Penny. Staff only — the database enforces access.",
+    staffChip: "Staff · parallel-run with the live admin",
+    tabsAria: "Admin console sections",
+    settings: "Settings",
+    // Tab labels — mirror the live admin's primary nav.
+    tabs: {
+      overview: "Overview",
+      support: "Support",
+      audience: "Audience",
+      analytics: "Analytics",
+      penny: "Penny",
+    },
+    // Overview — the one live-wired module this phase (reads staff_list_orgs).
+    overview: {
+      heading: "Organizations",
+      loading: "Loading organizations…",
+      error: "Couldn't load the directory.",
+      total: (n: number) => `${n} ${n === 1 ? "organization" : "organizations"}`,
+      empty: "No organizations yet.",
+      searchAria: "Search organizations",
+      searchPlaceholder: "Search organizations…",
+      colName: "Organization",
+      colType: "Type",
+      colEntries: "Entries",
+      tableAria: "Organizations",
+      breakGlassNote:
+        "This is a read-only directory. To view a tenant's books, open a time-boxed, audited break-glass window from the platform console.",
+      openConsole: "Open the platform console",
+    },
+    // Parallel-run placeholder shown on tabs not yet mirrored in-product.
+    placeholder: {
+      badge: "Parallel-run",
+      body: (label: string) =>
+        `${label} is live in the admin surface. We're mirroring it into this console module by module — nothing has moved, and the live admin stays authoritative until each module reaches parity.`,
+      openLive: "Open in the live admin",
+    },
+    // Access wall for a signed-in non-staff user who reaches /admin.
+    denied: {
+      title: "Staff only",
+      body: "This console is for FounderFirst platform staff.",
+      back: "Back to Penny",
+    },
+    backToPenny: "Back to Penny",
+    roleStaff: "Platform staff",
   },
 } as const;
 

@@ -9,6 +9,8 @@ import Home from "./routes/Home";
 import Settings from "./routes/Settings";
 import Accept from "./routes/Accept";
 import StaffHome from "./staff/StaffHome";
+import AdminConsole from "./admin/AdminConsole";
+import { adminRouteView } from "./admin/nav";
 import { useIsPlatformStaff } from "./staff/api";
 import { COPY } from "./copy";
 
@@ -81,6 +83,30 @@ function StaffRoute() {
   return <StaffHome isStaff={Boolean(data)} />;
 }
 
+// The internal admin console (IA-3, penny.founderfirst.one/admin) — its own
+// top-level, staff-only route, gated by the SAME is_platform_staff() check as
+// /staff. Additive parallel-run: founderfirst.one/admin stays live and
+// authoritative. A transient access-check error must not read as "not staff".
+function AdminRoute() {
+  const { data, isLoading, isError } = useIsPlatformStaff();
+  // Fail closed: never render the console until the check RESOLVES (adminRouteView).
+  switch (adminRouteView({ isLoading, isError, isStaff: Boolean(data) })) {
+    case "loading":
+      return <div className="center muted">{COPY.common.loading}</div>;
+    case "error":
+      return (
+        <div className="empty" role="alert">
+          <p className="empty-title">{COPY.errors.verifyAccessFailed}</p>
+          <p className="muted">{COPY.errors.verifyAccessBody}</p>
+          <p><button type="button" onClick={() => window.location.reload()}>{COPY.common.tryAgain}</button></p>
+        </div>
+      );
+    default:
+      // "console" | "denied" — AdminConsole renders the shell or the Staff-only wall.
+      return <AdminConsole isStaff={Boolean(data)} />;
+  }
+}
+
 // Routes wrapped in an error boundary keyed by pathname, so a render crash in one
 // view shows a recoverable message instead of blanking the SPA, and navigating
 // away clears it.
@@ -96,6 +122,14 @@ function AppRoutes() {
           element={
             <RequireAuth>
               <StaffRoute />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <RequireAuth>
+              <AdminRoute />
             </RequireAuth>
           }
         />

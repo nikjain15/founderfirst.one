@@ -16,6 +16,7 @@ describe("behavior config defaults", () => {
       asks_per_week: 5,
       digest_cadence_days: 7,
       invoice_nudge_cadence_days: 7,
+      bill_payment_terms_days: 30,
     });
   });
 });

@@ -49,6 +49,12 @@ export const COPY = {
     inviteFailed: (email: string) =>
       `We couldn't accept this invite — it may be expired or already used. Still stuck? Email ${email} and we'll sort it out.`,
     inviteAccepted: "Invite accepted — taking you in…",
+    captchaRequired: "Complete the check above, then send the link.",
+    rateLimited: (retryAfterSeconds: number) => {
+      const minutes = Math.ceil(retryAfterSeconds / 60);
+      const wait = minutes <= 1 ? "a minute" : `${minutes} minutes`;
+      return `Too many attempts for this email — try again in ${wait}.`;
+    },
   },
 
   // ── Home / workspaces ──────────────────────────────────────────────────────

@@ -48,6 +48,9 @@ body {
    per-card font-size (F9). Only the margin is tightened for the compact card. */
 .auth-card .page-title { margin: 0; }
 .auth-card form { display: flex; flex-direction: column; gap: 0.75rem; }
+/* Turnstile renders size:"flexible" (fills this) — never a fixed 300px, which
+   would overflow the 320px width-ladder floor (RESPONSIVE.md). */
+.turnstile-widget { width: 100%; }
 
 input {
   font-size: var(--fs-input);

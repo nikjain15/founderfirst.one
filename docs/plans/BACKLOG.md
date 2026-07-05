@@ -267,7 +267,7 @@ coverage delta: new AUDIT ledger row (auth-mfa) ⬜ untested → stress pass (en
   wrong-code reject → recovery-code path → per-org required-policy enforced; no lockout bypass).
 
 ## SEC-2 · Bot protection / Captcha on authentication
-status: unclaimed
+status: pr:#246
 blocked-by: — (independent of SEC-1)
 workflow: anonymous · "sign in / request code" · the login + OTP-request form runs an invisible
   bot check before dispatching an email; a human sees nothing extra, bots/abuse are blocked.

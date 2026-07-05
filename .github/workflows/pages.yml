@@ -96,6 +96,10 @@ jobs:
           VITE_POSTHOG_HOST:      ${{ vars.VITE_POSTHOG_HOST }}
           VITE_GA_ID:             ${{ vars.VITE_GA_ID }}
           VITE_ADMIN_EMAIL:       ${{ vars.VITE_ADMIN_EMAIL }}
+          # Cloudflare Turnstile site key (card SEC-2) — public, so a repo var
+          # not a secret. Unset = login forms skip the captcha widget (SEC-2 is
+          # additive/degrades gracefully, same as the other optional vars here).
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
           # apps/web (Astro) reads PUBLIC_* — same values, Astro's client prefix.
           PUBLIC_SUPABASE_URL:      ${{ vars.VITE_SUPABASE_URL }}
           PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
@@ -138,8 +142,9 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build apps/app (base=/)
         env:
-          VITE_SUPABASE_URL:      ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL:       ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY:  ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
         run: pnpm -C apps/app exec vite build --base=/
       - name: SPA redirects
         run: printf '/* /index.html 200\n' > apps/app/dist/_redirects

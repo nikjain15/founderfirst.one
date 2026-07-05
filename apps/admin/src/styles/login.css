@@ -29,6 +29,10 @@
   line-height: 1.55;
 }
 
+/* Turnstile renders size:"flexible" (fills this) — never a fixed 300px, which
+   would overflow the 320px width-ladder floor (RESPONSIVE.md). */
+.turnstile-widget { width: 100%; margin: 14px 0; }
+
 .login-status {
   font-size: var(--fs-label);
   color: var(--ink-3);

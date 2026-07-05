@@ -79,7 +79,7 @@ export function useTaxFormLines(formId: string | undefined) {
       const sb = getClient();
       const { data, error } = await sb
         .from("tax_form_lines")
-        .select("line_key,line_code,label,section,sort_order,kind,deductible_pct,flows_to,notes")
+        .select("line_key,line_code,label,section,sort_order,kind,deductible_pct,flows_to,notes,export_codes")
         .eq("form_id", formId)
         .order("sort_order", { ascending: true });
       if (error) throw error;

@@ -805,6 +805,63 @@ export const COPY = {
     queueAria: "Cross-client work queue",
   },
 
+  // ── Firm-level month-end close (card RV2-C1) ───────────────────────────────
+  // The practice-OS view: batch-select clients, see close readiness, run the
+  // close across many at once, chase missing docs. VOICE.md — calm, plain, no
+  // exclamation marks, no jargon the CPA does not already use.
+  monthEnd: {
+    // The mode toggle on the practice home (queue ⇄ month-end)
+    modeQueue: "Work queue",
+    modeClose: "Month-end close",
+    eyebrow: "Month-end close",
+    title: "Close the books",
+    intro: "Pick the clients you're closing this month. A clean client closes in one step; anything that needs a look shows why.",
+    loading: "Checking each client's books…",
+    loadError: "Couldn't load your close checklist. Try again.",
+    emptyTitle: "Nothing to close",
+    emptyBody:
+      "No client has an open period ready to close right now. Closed months and clients without an open period don't show here.",
+    // Column / status labels
+    readyChip: "Ready",
+    exceptionChip: "Needs a look",
+    overdueChip: "Overdue",
+    periodLabel: (start: string, end: string) => `${start} → ${end}`,
+    noPeriod: "No open period",
+    // Blocker labels (the checklist items that must be zero to close)
+    blocker: {
+      uncategorized: "to categorize",
+      unreconciled: "to reconcile",
+      pending_review: "to approve",
+      open_flags: "flagged",
+    } as Record<string, string>,
+    blockerCount: (n: number, label: string) => `${n} ${label}`,
+    docBadge: (n: number) => `${n} ${n === 1 ? "doc chased" : "docs chased"}`,
+    // Selection + batch action
+    selectAllReady: "Select all ready",
+    clearSelection: "Clear",
+    selectedCount: (n: number) => `${n} selected`,
+    closeSelected: (n: number) => (n === 1 ? "Close 1 client" : `Close ${n} clients`),
+    closing: "Closing…",
+    openClient: "Open books",
+    // Doc-chase rail
+    chaseDocs: "Request docs",
+    chaseFor: (name: string) => `Request docs from ${name}`,
+    chaseNotePlaceholder: "Add a note (optional)…",
+    chaseSend: "Send request",
+    chaseSending: "Sending…",
+    chaseCancel: "Cancel",
+    chaseSent: "Request sent",
+    // Batch result summary
+    resultClosed: (n: number) => (n === 1 ? "1 client closed" : `${n} clients closed`),
+    resultBlocked: (n: number) => `${n} skipped — still had items to clear`,
+    resultForbidden: (n: number) => `${n} skipped — you don't have close access`,
+    resultSkipped: (n: number) => `${n} already closed`,
+    resultNone: "Nothing was closed.",
+    // A11y
+    rowSelectAria: (name: string) => `Select ${name} for closing`,
+    listAria: "Month-end close checklist",
+  },
+
   // ── CPA collaboration primitives (card W1.5) ───────────────────────────────
   // How a CPA collaborates without moving money unilaterally, and how the owner
   // sees that activity as trust-tiered "needs-a-look" items. VOICE.md — calm,

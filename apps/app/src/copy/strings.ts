@@ -481,6 +481,14 @@ export const COPY = {
     doesNotTie: "A line does not reconcile to its transactions — do not file from this yet.",
     emptyTitle: "Nothing to file yet",
     emptyBody: "Post entries and map your accounts to see the return take shape.",
+    // ── RV2-A2 · structured per-suite export (APPENDED — additive keys) ──
+    exportHeading: "Download for tax software",
+    exportLead: "Hand this return to your tax software without re-keying a single line. Pick the format your software imports.",
+    exportSuiteLabel: "Format",
+    exportButton: "Download import file",
+    exportNotReady: "Map every account first — an unmapped account would land on the wrong line. This export unlocks once the return is review-ready.",
+    exportDoesNotTie: "This return does not reconcile to its transactions yet — the export is held until it ties out.",
+    exportDone: (name: string) => `Downloaded ${name}. Import it into your tax software; the totals already tie to the ledger.`,
   },
 
   // ── Periods ────────────────────────────────────────────────────────────────

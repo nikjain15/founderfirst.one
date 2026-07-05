@@ -22,7 +22,10 @@ import { useAuth } from "../auth/AuthProvider";
 import AccountMenu from "../components/AccountMenu";
 import { SITE } from "@ff/site";
 import { COPY } from "../copy";
-import { useStaffOrgs, type StaffOrg } from "../staff/api";
+import {
+  useStaffOrgs, useStaffTickets,
+  type StaffOrg, type StaffTicket, type TicketStatus,
+} from "../staff/api";
 import { CONSOLE_TABS, DEFAULT_CONSOLE_TAB, consoleView, isTabLive, type ConsoleTabId } from "./nav";
 
 const C = COPY.console;
@@ -60,7 +63,9 @@ export default function AdminConsole({ isStaff }: { isStaff: boolean }) {
 
           <ConsoleTabs active={tab} onSelect={setTab} />
 
-          {isTabLive(tab) ? <Overview /> : <Placeholder tab={tab} />}
+          {isTabLive(tab)
+            ? (tab === "support" ? <Support /> : <Overview />)
+            : <Placeholder tab={tab} />}
         </section>
       </main>
     </div>
@@ -173,6 +178,88 @@ function Overview() {
               </table>
             </div>
           )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Support — slice-1 live-wired tab. Reads the SAME list_tickets RPC the live ──
+//    admin inbox reads (one source of truth). Read-only here: replies still land
+//    in the live admin until that module reaches parity.
+const SUPPORT_FILTERS: (TicketStatus | undefined)[] = ["open", "in_progress", "resolved", undefined];
+
+function Support() {
+  const [status, setStatus] = useState<TicketStatus | undefined>("open");
+  const tickets = useStaffTickets(status);
+  const rows = tickets.data ?? [];
+  const S = C.support;
+
+  return (
+    <div className="console-support" role="tabpanel" aria-labelledby="console-support">
+      <h3 className="section-h">{S.heading}</h3>
+      <p className="muted sm">{S.sub}</p>
+      <p className="muted sm">{S.liveNote}</p>
+
+      <nav className="console-filters" role="group" aria-label={S.filtersAria}>
+        {SUPPORT_FILTERS.map((f) => {
+          const key = f ?? "all";
+          return (
+            <button
+              key={key} type="button"
+              className={`chip${status === f ? " on" : ""}`}
+              aria-pressed={status === f}
+              onClick={() => setStatus(f)}
+            >
+              {S.filters[key as keyof typeof S.filters]}
+            </button>
+          );
+        })}
+      </nav>
+
+      {tickets.isLoading ? (
+        <p className="muted">{S.loading}</p>
+      ) : tickets.isError ? (
+        <p className="error">{S.error}</p>
+      ) : rows.length === 0 ? (
+        <div className="ledger-empty"><p className="muted">{S.empty}</p></div>
+      ) : (
+        <>
+          <div className="panel-toolbar">
+            <span className="muted">{S.total(rows.length)}</span>
+          </div>
+          <div className="table-wrap" tabIndex={0} role="region" aria-label={S.tableAria}>
+            <table className="console-table">
+              <thead>
+                <tr>
+                  <th>{S.colSubject}</th>
+                  <th>{S.colChannel}</th>
+                  <th>{S.colTopic}</th>
+                  <th>{S.colContact}</th>
+                  <th className="num">{S.colMessages}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((t: StaffTicket) => (
+                  <tr key={t.id}>
+                    <td>
+                      <span className={`priority-pill ${t.priority}`}>{t.priority.toUpperCase()}</span>{" "}
+                      <a
+                        className="ghost" href={`${SITE.adminUrl}/support/${t.id}`}
+                        target="_blank" rel="noreferrer" title={S.openInAdmin}
+                      >
+                        {t.subject || S.noSubject}
+                      </a>
+                    </td>
+                    <td>{t.channel}</td>
+                    <td>{t.topic || S.noTopic}</td>
+                    <td>{t.contact_email || t.contact_discord || S.noContact}</td>
+                    <td className="num">{t.message_count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </div>

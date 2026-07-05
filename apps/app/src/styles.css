@@ -1497,6 +1497,29 @@ button.ghost.sm, .ghost.sm {
   display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start;
 }
 
+/* Support tab (IA-3 slice 1) — reads the same list_tickets the live admin does. */
+.admin-console .console-support { margin-top: var(--space-4); }
+.admin-console .console-support .section-h { margin-top: 0; }
+.console-filters {
+  display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-3) 0;
+}
+.console-filters .chip {
+  font-size: var(--fs-ui); text-transform: capitalize;
+  min-height: var(--tap-min); padding: 0.35rem 0.85rem;
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-pill);
+  background: var(--paper); color: var(--ink-2); cursor: pointer;
+}
+.console-filters .chip.on {
+  background: var(--ink); color: var(--paper); border-color: var(--ink);
+}
+.console-support .priority-pill {
+  display: inline-block; font-size: var(--fs-micro); font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-chip); padding: 0.1rem 0.4rem; border-radius: var(--r-pill);
+  background: var(--line-2); color: var(--ink-2); vertical-align: middle;
+}
+.console-support .priority-pill.p1 { background: var(--error-bg); color: var(--error); }
+.console-support .priority-pill.p2 { background: var(--amber-bg); color: var(--amber-strong); }
+
 /* ── Bills / AP — TRACKING ONLY (RV2-D1), nested under Connections. Tokens only;
       the money-OUT twin of invoicing. No inline hex / magic px. ─────────────── */
 .bills { display: flex; flex-direction: column; gap: var(--space-3); }

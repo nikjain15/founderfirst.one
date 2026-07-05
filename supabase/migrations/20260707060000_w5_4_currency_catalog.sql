@@ -71,11 +71,11 @@ alter table journal_lines
   add column fx_rate_source     text,      -- 'home' | 'manual' | 'fx_rates:<source>' | 'residual'
   add column fx_rate_date       date;
 
-update journal_lines
-   set base_amount_minor = amount_minor,
-       fx_rate            = 1,
-       fx_rate_source      = 'home'
- where base_amount_minor is null;
+-- NOTE: no backfill UPDATE of existing rows. journal_lines is append-only
+-- (trigger journal_lines_immutable blocks UPDATE), and every consumer reads
+-- coalesce(base_amount_minor, amount_minor) — so a NULL row (home-currency by
+-- construction) behaves identically to an explicit backfill. Backfilling would
+-- both violate the append-only guard on prod and be a no-op semantically.
 
 alter table journal_lines
   add constraint journal_lines_base_amount_minor_check check (base_amount_minor >= 0);

@@ -6,7 +6,7 @@
 -- rolls back. Run: `supabase test db`.
 
 begin;
-select plan(27);
+select plan(28);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -194,9 +194,17 @@ select ok(
 select is(
   _acct_base_asof('00000000-0000-0000-0000-00000000fa04', '2026-03-31'::date), 6750::bigint,
   'Foreign Bank revalues to £50.00 @ 1.35 = $67.50 base AS OF the closing period end');
+-- Unrealized FX nets TWO effects at this close: Foreign Bank's $2.50 GAIN
+-- (credit 250, from its 1.30->1.35 revaluation) AND a $5.00 LOSS (debit 500)
+-- on the shared Cash account's own un-reconverted GBP balance — the invoice
+-- payment test (#17-19) left 10000 GBP sitting in Cash at the 1.40 settlement
+-- rate (base 14000), which THIS SAME close also revalues to 1.35 (base
+-- 13500, delta -500) since Cash never got converted back to home currency.
+-- Net signed (D-C) = 500 - 250 = +250 — proving the revaluation sweep isn't
+-- scoped to one hand-picked account; it finds every open foreign balance.
 select is(
   _acct_base_asof(resolve_unrealized_fx_account('00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-0000000000fa'), '2026-03-31'::date),
-  -250::bigint, 'Unrealized FX is credited the $2.50 revaluation gain AS OF the closing period end');
+  250::bigint, 'Unrealized FX nets the Foreign Bank gain (-250) and the Cash-GBP-balance loss (+500) AS OF the closing period end');
 select is(
   _acct_base('00000000-0000-0000-0000-00000000fa04'), 6500::bigint,
   'the cumulative balance (incl. the next-period auto-reverse already posted) is back to the pre-revaluation carrying value');
@@ -226,9 +234,13 @@ select post_journal_entry('00000000-0000-0000-0000-0000000000f1', '00000000-0000
     jsonb_build_object('account_id','00000000-0000-0000-0000-00000000fb01','amount_minor',500,'side','D'),
     jsonb_build_object('account_id','00000000-0000-0000-0000-00000000fb02','amount_minor',500,'side','C')));
 select is(
-  (select array_agg(distinct (base_amount_minor, fx_rate)) from journal_lines
+  (select array_agg(distinct base_amount_minor) from journal_lines
     where entry_id = (select id from journal_entries where org_id = '00000000-0000-0000-0000-0000000000fb' and idempotency_key = 'mc:legacy-home')),
-  array[row(500::bigint, 1::numeric)], 'an org that never opts in still gets base_amount_minor = amount_minor, fx_rate = 1');
+  array[500::bigint], 'an org that never opts in still gets base_amount_minor = amount_minor');
+select is(
+  (select array_agg(distinct fx_rate) from journal_lines
+    where entry_id = (select id from journal_entries where org_id = '00000000-0000-0000-0000-0000000000fb' and idempotency_key = 'mc:legacy-home')),
+  array[1::numeric], 'an org that never opts in still gets fx_rate = 1');
 
 select * from finish();
 rollback;

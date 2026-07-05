@@ -57,18 +57,24 @@ Deno.serve(async (req) => {
     .eq("id", connId).eq("org_id", orgId).eq("provider", "qbo").maybeSingle();
   if (!conn || conn.status !== "active") return json({ error: "no_active_connection" }, 404);
 
+  // CONN-2: last intuit_tid seen this request (success or error) — persisted to
+  // external_connections so it can be produced for Intuit support troubleshooting.
+  let lastTid: string | null = null;
+  const noteTid = (tid: string | null) => { if (tid) lastTid = tid; };
+  const persistTid = () => svc.from("external_connections").update({ last_intuit_tid: lastTid }).eq("id", conn.id);
+
   let access = conn.access_token as string;
   if (!conn.token_expires_at || new Date(conn.token_expires_at).getTime() < Date.now() + 60_000) {
     try {
-      const t = await refreshToken(conn.refresh_token as string);
+      const t = await refreshToken(conn.refresh_token as string, noteTid);
       access = t.access_token;
       await svc.from("external_connections").update({
         access_token: t.access_token, refresh_token: t.refresh_token,
         token_expires_at: new Date(Date.now() + (t.expires_in - 60) * 1000).toISOString(),
-        updated_at: new Date().toISOString(),
+        last_intuit_tid: lastTid, updated_at: new Date().toISOString(),
       }).eq("id", conn.id);
     } catch (e) {
-      await svc.from("external_connections").update({ status: "error", last_error: (e as Error).message }).eq("id", conn.id);
+      await svc.from("external_connections").update({ status: "error", last_error: (e as Error).message, last_intuit_tid: lastTid }).eq("id", conn.id);
       return json({ error: "token_refresh_failed", detail: (e as Error).message }, 502);
     }
   }
@@ -77,7 +83,7 @@ Deno.serve(async (req) => {
 
   // ── shared: pull + upsert the chart of accounts, return QBO id → ledger id ──
   async function pullChartOfAccounts(): Promise<{ map: Map<string, string>; count: number }> {
-    const acctResp = await qboQuery(realm, "select * from Account maxresults 1000", access);
+    const acctResp = await qboQuery(realm, "select * from Account maxresults 1000", access, noteTid);
     const accounts: QboAccount[] = acctResp?.QueryResponse?.Account ?? [];
     const map = new Map<string, string>();
     for (const a of accounts) {
@@ -99,8 +105,8 @@ Deno.serve(async (req) => {
       const { map: qboIdToOurId, count: acctCount } = await pullChartOfAccounts();
 
       // Full history (all pages), not just the first 500.
-      const purchases: QboTxn[] = await qboQueryAll(realm, "Purchase", access);
-      const deposits: QboTxn[] = await qboQueryAll(realm, "Deposit", access);
+      const purchases: QboTxn[] = await qboQueryAll(realm, "Purchase", access, { onTid: noteTid });
+      const deposits: QboTxn[] = await qboQueryAll(realm, "Deposit", access, { onTid: noteTid });
 
       // Primary bank = the account most transactions clear through.
       const bankCount = new Map<string, number>();
@@ -154,7 +160,7 @@ Deno.serve(async (req) => {
       let providerTb: { name: string; debit_minor: number; credit_minor: number }[] = [];
       let providerTbAsOf: string | null = null;
       try {
-        const tb = await qboTrialBalance(realm, access);
+        const tb = await qboTrialBalance(realm, access, undefined, noteTid);
         providerTb = tb.rows;
         providerTbAsOf = tb.asOf;
       } catch (_e) { /* TB report is best-effort; migration still proceeds without it */ }
@@ -166,19 +172,21 @@ Deno.serve(async (req) => {
       });
       if (migErr) return json({ error: migErr.message }, 400);
 
+      await persistTid();
       return json({
         migration_id: (mig as { id: string })?.id, batch_ids: batchIds,
         accounts: acctCount, txn_count: txnCount, years,
         provider_tb_rows: providerTb.length, provider_tb_as_of: providerTbAsOf,
       }, 200);
     } catch (e) {
+      await persistTid();
       return json({ error: "migration_failed", detail: (e as Error).message }, 502);
     }
   }
 
   try {
     // 1. chart of accounts → upsert; map QBO account Id → our ledger id
-    const acctResp = await qboQuery(realm, "select * from Account maxresults 1000", access);
+    const acctResp = await qboQuery(realm, "select * from Account maxresults 1000", access, noteTid);
     const accounts: QboAccount[] = acctResp?.QueryResponse?.Account ?? [];
     const qboIdToOurId = new Map<string, string>();
     const bankCount = new Map<string, number>();
@@ -194,8 +202,8 @@ Deno.serve(async (req) => {
     }
 
     // 2. transactions: Purchases (out) + Deposits (in)
-    const purchases: QboTxn[] = (await qboQuery(realm, "select * from Purchase maxresults 500", access))?.QueryResponse?.Purchase ?? [];
-    const deposits: QboTxn[] = (await qboQuery(realm, "select * from Deposit maxresults 500", access))?.QueryResponse?.Deposit ?? [];
+    const purchases: QboTxn[] = (await qboQuery(realm, "select * from Purchase maxresults 500", access, noteTid))?.QueryResponse?.Purchase ?? [];
+    const deposits: QboTxn[] = (await qboQuery(realm, "select * from Deposit maxresults 500", access, noteTid))?.QueryResponse?.Deposit ?? [];
     for (const p of purchases) { const b = p.AccountRef?.value; if (b) bankCount.set(b, (bankCount.get(b) ?? 0) + 1); }
     for (const d of deposits) { const b = d.DepositToAccountRef?.value; if (b) bankCount.set(b, (bankCount.get(b) ?? 0) + 1); }
     const primaryBankQboId = [...bankCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
@@ -229,12 +237,14 @@ Deno.serve(async (req) => {
       if (rowsErr) return json({ error: rowsErr.message }, 400);
     }
 
+    await persistTid();
     return json({
       batch_id: batchId, accounts: upserted, rows: rows.length,
       ready: rows.filter((r) => r.status === "ready").length,
       note: "Accounts imported. Transactions on the primary bank account are staged for preview; review and commit in the Import tab.",
     }, 200);
   } catch (e) {
+    await persistTid();
     return json({ error: "import_failed", detail: (e as Error).message }, 502);
   }
 });

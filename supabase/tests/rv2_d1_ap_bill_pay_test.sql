@@ -138,8 +138,8 @@ select is(
 -- Only bill2 is open (20000); the AP ledger account should equal the sum of open
 -- AP-aging balances (credit balance −20000 == 20000 owed).
 select is(
-  (select coalesce(sum(balance_minor),0) from bill_ap_aging('00000000-0000-0000-0000-0000000000b1', '2026-05-01'::date)),
-  -_acct_bal_all('00000000-0000-0000-0000-00000000c020'),
+  (select coalesce(sum(balance_minor),0)::bigint from bill_ap_aging('00000000-0000-0000-0000-0000000000b1', '2026-05-01'::date)),
+  (-_acct_bal_all('00000000-0000-0000-0000-00000000c020'))::bigint,
   'AP aging total ties to the AP ledger account balance');
 
 -- ── 20. AP owed per vendor ties to the 1099 vendor (SAME store, no dup) ───────

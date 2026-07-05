@@ -24,7 +24,16 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { ECB_DAILY_URL_DEFAULT, ECB_HIST90_URL_DEFAULT, parseEcbXml, toFxRateRows } from "../_shared/ecbFx.ts";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  ECB_DAILY_URL_DEFAULT,
+  ECB_HIST90_URL_DEFAULT,
+  FX_STALENESS_DAYS_DEFAULT,
+  isStale,
+  latestAsOf,
+  parseEcbXml,
+  toFxRateRows,
+} from "../_shared/ecbFx.ts";
 import { slog, timed } from "../_shared/observability.ts";
 
 const CORS_HEADERS = {
@@ -40,8 +49,29 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-const ECB_DAILY_URL = Deno.env.get("ECB_FX_DAILY_URL") ?? ECB_DAILY_URL_DEFAULT;
-const ECB_HIST90_URL = Deno.env.get("ECB_FX_HIST90_URL") ?? ECB_HIST90_URL_DEFAULT;
+/** platform_config.behavior tunables, via get_fx_feed_config() — falls back to
+ *  the same baked defaults ecbFx.ts exports if the config fetch itself fails
+ *  (CENTRAL-1 pattern: never let a config-read failure break the feature). */
+interface FxFeedConfig {
+  fx_feed_daily_url?: string;
+  fx_feed_hist90_url?: string;
+  fx_feed_staleness_days_warn?: number;
+}
+
+async function loadFeedConfig(
+  service: SupabaseClient,
+): Promise<{ dailyUrl: string; hist90Url: string; stalenessDaysWarn: number }> {
+  const { data, error } = await service.rpc("get_fx_feed_config");
+  const cfg = (data ?? {}) as FxFeedConfig;
+  if (error || !data) {
+    return { dailyUrl: ECB_DAILY_URL_DEFAULT, hist90Url: ECB_HIST90_URL_DEFAULT, stalenessDaysWarn: FX_STALENESS_DAYS_DEFAULT };
+  }
+  return {
+    dailyUrl: cfg.fx_feed_daily_url ?? ECB_DAILY_URL_DEFAULT,
+    hist90Url: cfg.fx_feed_hist90_url ?? ECB_HIST90_URL_DEFAULT,
+    stalenessDaysWarn: cfg.fx_feed_staleness_days_warn ?? FX_STALENESS_DAYS_DEFAULT,
+  };
+}
 
 const MAX_ATTEMPTS = 3;
 const BACKOFF_BASE_MS = 500;
@@ -94,10 +124,17 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const result = await timed("fx-rates-fetch", "ecb_fetch", async () => {
-      const fetchUrl = mode === "backfill" ? ECB_HIST90_URL : ECB_DAILY_URL;
+      const cfg = await loadFeedConfig(service);
+      const fetchUrl = mode === "backfill" ? cfg.hist90Url : cfg.dailyUrl;
       const xml = await fetchWithRetry(fetchUrl);
       const days = parseEcbXml(xml);
       if (days.length === 0) throw new Error("ecb_parse_empty");
+
+      const freshest = latestAsOf(days);
+      const today = new Date().toISOString().slice(0, 10);
+      if (freshest && isStale(freshest, today, cfg.stalenessDaysWarn)) {
+        slog("fx-rates-fetch", "feed_stale", "warn", { mode, freshest, today, threshold_days: cfg.stalenessDaysWarn });
+      }
 
       const { data: catalog, error: catErr } = await service
         .from("currencies").select("code").eq("is_active", true);
@@ -108,14 +145,14 @@ const handler = async (req: Request): Promise<Response> => {
       if (skipped.length) {
         slog("fx-rates-fetch", "unsupported_currencies_skipped", "warn", { mode, codes: skipped.join(",") });
       }
-      if (rows.length === 0) return { days: days.length, upserted: 0, skipped };
+      if (rows.length === 0) return { days: days.length, upserted: 0, skipped, freshest };
 
       const { error: upErr } = await service
         .from("fx_rates")
         .upsert(rows, { onConflict: "base_currency,quote_currency,as_of,source" });
       if (upErr) throw new Error(`upsert_failed: ${upErr.message}`);
 
-      return { days: days.length, upserted: rows.length, skipped };
+      return { days: days.length, upserted: rows.length, skipped, freshest };
     }, { mode });
 
     return json({ ok: true, mode, ...result });

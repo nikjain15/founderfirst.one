@@ -13,6 +13,16 @@
 --      Function daily (mirrors changelog_trigger_digest exactly — same
 --      shared-secret-from-Vault idiom, same fail-silent-if-unset guard so a
 --      missing secret can never turn into a cron error spam).
+--   4. The feed's own tunables (URLs + staleness-warn threshold) as
+--      platform_config (CENTRAL-1 pattern, mirrors get_qbo_config()) — never
+--      inlined — via get_fx_feed_config(), read by the Edge Function with the
+--      same value baked as its fallback so behavior is identical whether or
+--      not the fetch has landed. The refresh CADENCE is the pg_cron job's own
+--      schedule (already data, editable via cron.alter_job — no code change).
+--      Cross-rate math (a pair ECB doesn't quote directly) is NOT new here:
+--      resolve_fx_rate (20260707070000) already triangulates through the EUR
+--      snapshot base (v_to/v_from) for every pair — this migration only
+--      populates that snapshot, it does not change the math.
 --
 -- One-time setup (safe to re-run this migration once secrets exist):
 --   1. supabase functions deploy fx-rates-fetch
@@ -127,3 +137,29 @@ begin
   perform cron.schedule('fx-rates-daily-fetch', '30 16 * * *', 'select fx_rates_trigger_fetch(''daily'');');
 end;
 $$;
+
+-- ── 4. Feed tunables as platform_config (CENTRAL-1 pattern) — extend the
+-- existing singleton, merge don't clobber (mirrors SEC-2's otp_rate_limit add).
+insert into platform_config (id, behavior)
+values (true, jsonb_build_object(
+  'fx_feed_daily_url',          'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml',
+  'fx_feed_hist90_url',         'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml',
+  'fx_feed_staleness_days_warn', 3
+))
+on conflict (id) do update
+  set behavior = platform_config.behavior || excluded.behavior;
+
+-- Read-only accessor (the edge fn fetches this; non-sensitive operational
+-- tunables, same shape/reasoning as get_qbo_config()). Defaults here MUST
+-- match ECB_DAILY_URL_DEFAULT/ECB_HIST90_URL_DEFAULT/FX_STALENESS_DAYS_DEFAULT
+-- in _shared/ecbFx.ts — the baked fallback used if this fetch hasn't landed.
+create or replace function get_fx_feed_config()
+returns jsonb language sql security definer set search_path = public as $$
+  select jsonb_build_object(
+    'fx_feed_daily_url',           coalesce(behavior->>'fx_feed_daily_url', 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml'),
+    'fx_feed_hist90_url',          coalesce(behavior->>'fx_feed_hist90_url', 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml'),
+    'fx_feed_staleness_days_warn', coalesce((behavior->>'fx_feed_staleness_days_warn')::int, 3)
+  )
+  from platform_config where id = true;
+$$;
+grant execute on function get_fx_feed_config() to service_role, authenticated;

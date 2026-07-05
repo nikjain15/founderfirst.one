@@ -317,22 +317,40 @@ coverage delta: extend the connector AUDIT row — assert intuit_tid is captured
 > These cards make already-deployed features actually usable. Disjoint lanes → fan out.
 
 ## W5.4-FX · ECB daily FX-rate feed (activates multi-currency)
-status: unclaimed
+status: built, opening PR (loop-insession-5jul) — migration 20260708000000_w5_4_fx_fx_rates_fetch.sql
+  + supabase/functions/fx-rates-fetch (+ _shared/ecbFx.ts pure parser); write-don't-deploy, safe mode,
+  NOT deployed. Note: there was a duplicate card (this file briefly had two "W5.4-FX" entries after a
+  concurrent carding pass) — consolidated into this one; the older duplicate is removed, not two PRs.
 blocked-by: — (W5.4 fx_rates table + rate resolution shipped; only the automatic feed is missing)
 lane: supabase/functions + supabase/migrations (disjoint from app-UI/marketing lanes)
 workflow: owner/CPA (multi-currency orgs) · "my foreign transactions convert at real rates
   automatically" · rates refresh daily with no manual entry; a missing rate still fails loud
   (never silently 1) per D3.
 goal: build the systematic FX feed W5.4's design (D3) specified but did not ship: a scheduled edge
-  fn (pg_cron or the existing cron pattern — no new infra) that fetches the ECB daily reference
-  rates (eurofxref-daily.xml / api) and upserts them into `fx_rates` as source='ecb', effective-dated,
-  idempotent. Manual entry remains an override; a missing/stale rate still raises per the D3
-  fail-loud contract (do NOT weaken it). Cross-rate via EUR base where ECB doesn't quote a pair
-  directly (document the triangulation).
-centralization: the feed URL + refresh cadence + staleness threshold = platform_config, not inlined;
-  currency catalog stays the seeded source of truth.
-coverage delta: new AUDIT ledger row (fx-feed) — assert: daily upsert is idempotent (re-run = no dup);
-  a fetched ECB rate resolves a foreign posting; a missing pair still fails loud; cross-rate math ties.
+  fn (pg_cron + pg_net, mirrors the existing `changelog_trigger_digest()` cron pattern — no new infra)
+  that fetches the ECB daily reference rates (eurofxref-daily.xml, + a one-time eurofxref-hist-90d.xml
+  backfill) and upserts them into `fx_rates` as source='ECB' (kept uppercase — matches the column's
+  existing shipped default and the W5.4 test fixtures; not worth a breaking rename), filtered against
+  the currencies catalog. Manual entry remains an override (`set_manual_fx_rate`, admin-gated): the
+  resolver now prefers an exact-date manual row over the ECB snapshot for that date, and also falls
+  back to the most recent available row (either source) otherwise — so manual entries bridge a real
+  ECB gap (bank holiday), not just correct one. A missing/stale rate still raises per the D3 fail-loud
+  contract (unchanged). Cross-rate via the EUR base was ALREADY implemented in `resolve_fx_rate`
+  (v_to/v_from) before this card — this card only populates the snapshot it reads from.
+centralization: the feed's daily/hist90 URLs + staleness-warn threshold live in `platform_config`
+  (`get_fx_feed_config()`, mirrors `get_qbo_config()` — admin-tunable, no redeploy); the refresh
+  cadence is the pg_cron job's own schedule (already data, editable via SQL); currency catalog stays
+  the seeded source of truth.
+coverage delta: extends the multi-currency AUDIT row with a `fx-rates-fetch (W5.4-FX)` row — asserts:
+  manual-override admin gate + idempotent upsert · resolver exact-date-override precedence + gap-
+  bridging fallback · unknown pair still fails loud (NULL) · cron trigger never raises with no secret
+  · `get_fx_feed_config()` reflects `platform_config` live · pure XML-parser + staleness-math unit
+  tests (Deno, network-free). A daily-upsert-is-idempotent assertion against a LIVE ECB fetch is not
+  pgTAP-provable (no network in CI) — proven instead by the upsert's `on conflict` key + the Deno
+  parser/shaper tests; a live smoke-test is the deploy-time verification step (write-don't-deploy here).
+scope note: `set_manual_fx_rate` is admin-gated and callable today (admin session / SQL), but has no
+  admin-console FORM yet — disclosed, not silently dropped; building one is new admin-console surface,
+  out of scope for this card.
 
 ## IQ-1-CLEANUP · Null legacy plaintext QBO tokens (post-verify) — DEFERRED
 status: blocked:verify-encrypted-path-live-with-a-real-token
@@ -397,30 +415,6 @@ centralization: all copy from live personas/COPY + SITE.email (never a hardcoded
   for all visuals; .eyebrow+.page-title headers.
 coverage delta: extend the connectors AUDIT row — assert a broken connection renders the banner +
   Reconnect CTA, and the support link resolves to SITE.email.
-
-
-
-## W5.4-FX · ECB fx-rate feed (fx_rates is empty; no fetcher yet)
-status: built, opening PR (loop-insession-5jul) — migration
-  20260708000000_w5_4_fx_fx_rates_fetch.sql + supabase/functions/fx-rates-fetch; write-don't-deploy,
-  safe mode, not deployed
-blocked-by: — (W5.4 shipped; multi-currency is per-org opt-in + OFF by default, so this breaks nothing until an org enables MC)
-workflow: owner/CPA · enable multi-currency (per-org opt-in) → post a foreign-currency transaction →
-  it resolves against a real daily rate instead of erroring `fx_rate_required` — invisible when it
-  works, a filed-away infra fix, zero new taps/nav/onboarding questions
-context: W5.4 shipped the `fx_rates` table + resolvers + "missing rate FAILS LOUD, never posts at 1"
-  (D3), but there is NO edge fn / cron that populates fx_rates from the ECB daily snapshot. Table is
-  empty in prod. The moment an org enables multi-currency and posts a foreign-currency txn, the
-  resolver correctly raises (by design) — but there's nothing to resolve against.
-goal: build the ECB daily-snapshot fetcher (scheduled edge fn / existing cron pattern — no new
-  vendor) that upserts the ISO rate table into `fx_rates` with source provenance, + a manual-override
-  entry path (D3). Backfill a starting snapshot. THEN multi-currency is truly usable end-to-end.
-centralization: ECB endpoint + schedule = config/secret, never inline; rate rows are systematic data.
-coverage delta: extend the multi-currency AUDIT row — assert the fetcher upserts dated rates + a
-  foreign-currency post resolves against a fetched rate (and still fails loud when none exists).
-scope note: the manual-override RPC (`set_manual_fx_rate`) is admin-gated and callable today (via an
-  admin session / SQL), but has NO admin-console form yet — a disclosed follow-up, not silently
-  dropped, since building one would add new admin-console surface out of scope for this card.
 
 ## SEC-2-KEYS · Cloudflare Turnstile keys (Nik) — captcha is dark until set
 status: unclaimed (Nik human step)

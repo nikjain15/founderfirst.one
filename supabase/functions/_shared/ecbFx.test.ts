@@ -4,7 +4,7 @@
  * single-quoted variant to prove the lenient-quote parsing actually works.
  */
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { parseEcbXml, toFxRateRows } from "./ecbFx.ts";
+import { isStale, latestAsOf, parseEcbXml, toFxRateRows } from "./ecbFx.ts";
 
 const DAILY_FIXTURE = `<?xml version="1.0" encoding="UTF-8"?>
 <gesmes:Envelope xmlns:gesmes="http://www.gesmes.org/xml/2002-08-01" xmlns="http://www.ecb.int/vocabulary/2002-08-01/eurofxref">
@@ -78,4 +78,16 @@ Deno.test("toFxRateRows on an empty day list yields no rows and no skips", () =>
   const { rows, skipped } = toFxRateRows([], new Set(["USD"]));
   assertEquals(rows.length, 0);
   assertEquals(skipped.length, 0);
+});
+
+Deno.test("latestAsOf picks the max date regardless of input order", () => {
+  assertEquals(latestAsOf(parseEcbXml(HIST_FIXTURE)), "2026-07-03");
+  assertEquals(latestAsOf([]), null);
+});
+
+Deno.test("isStale: within the threshold is fresh, past it is stale, no data is always stale", () => {
+  assertEquals(isStale("2026-07-03", "2026-07-04", 3), false); // 1 day old
+  assertEquals(isStale("2026-07-03", "2026-07-07", 3), true); // 4 days old
+  assertEquals(isStale("2026-07-03", "2026-07-06", 3), false); // exactly 3 days — not OVER threshold
+  assertEquals(isStale(null, "2026-07-07", 3), true);
 });

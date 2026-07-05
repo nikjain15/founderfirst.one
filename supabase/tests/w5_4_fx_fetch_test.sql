@@ -5,7 +5,7 @@
 -- no network access. Everything here rolls back. Run: `supabase test db`.
 
 begin;
-select plan(13);
+select plan(15);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -105,6 +105,18 @@ select ok(
 select lives_ok(
   $$select fx_rates_trigger_fetch('daily')$$,
   'fx_rates_trigger_fetch() is a silent no-op (never raises) when the shared secret is unset'
+);
+
+-- ── 7. the feed's tunables are real config (CENTRAL-1), not inlined ─────────
+select is(
+  (get_fx_feed_config()->>'fx_feed_staleness_days_warn')::int,
+  3, 'get_fx_feed_config() reads the seeded staleness threshold from platform_config'
+);
+
+update platform_config set behavior = behavior || '{"fx_feed_staleness_days_warn": 7}'::jsonb where id = true;
+select is(
+  (get_fx_feed_config()->>'fx_feed_staleness_days_warn')::int,
+  7, 'raising the threshold in platform_config takes effect immediately, no redeploy'
 );
 
 select * from finish();

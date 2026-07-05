@@ -16,8 +16,12 @@
  * (the CI job runs with no --allow-net).
  */
 
+// Baked fallback — MUST match get_fx_feed_config()'s defaults
+// (20260708000000_w5_4_fx_fx_rates_fetch.sql) so behavior is identical
+// whether or not the config fetch has landed.
 export const ECB_DAILY_URL_DEFAULT = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml";
 export const ECB_HIST90_URL_DEFAULT = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml";
+export const FX_STALENESS_DAYS_DEFAULT = 3;
 
 export interface EcbDay {
   asOf: string; // ISO date, e.g. "2026-07-03"
@@ -79,4 +83,20 @@ export function toFxRateRows(
     }
   }
   return { rows, skipped: [...skipped].sort() };
+}
+
+/** The most recent as_of date across every parsed day, or null if there are none. */
+export function latestAsOf(days: EcbDay[]): string | null {
+  return days.reduce<string | null>((max, d) => (max === null || d.asOf > max ? d.asOf : max), null);
+}
+
+/**
+ * Is the freshest snapshot older than the staleness-warn threshold relative
+ * to `today`? Pure date-string math (no timezone surprises) — both inputs are
+ * plain "YYYY-MM-DD" dates, compared in whole days.
+ */
+export function isStale(latest: string | null, today: string, thresholdDays: number): boolean {
+  if (latest === null) return true;
+  const ageMs = Date.parse(`${today}T00:00:00Z`) - Date.parse(`${latest}T00:00:00Z`);
+  return ageMs / 86_400_000 > thresholdDays;
 }

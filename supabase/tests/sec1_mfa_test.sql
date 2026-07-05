@@ -15,7 +15,7 @@
 -- All rolls back.
 
 begin;
-select plan(29);
+select plan(32);
 
 -- ── fixtures: owner + a non-owner (CPA via engagement) + an outsider ─────────
 insert into auth.users (id, email, aud, role) values
@@ -180,6 +180,33 @@ select is(session_is_aal2(), true,
 select is(
   can_write_org_as('00000000-0000-0000-0000-0000000005c1', '00000000-0000-0000-0000-0000000005b1'),
   true, 'FIX2: the service_role write path is unaffected by the aal gate');
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- SEC-1-CPACLOSE — the cpa-close batch-close gate is keyed on the CPA firm user's
+-- OWN firm org policy. The edge fn (which holds the caller's JWT) calls
+-- mfaSatisfied(svc, jwt, firm_org) → org_requires_mfa(firm_org) + the aal claim.
+-- The aal branch is exercised in the deno test (index.test.ts); here we prove the
+-- DB-side input the gate reads: org_requires_mfa reflects the FIRM org's own flag,
+-- independent of any client org, so a firm that enables MFA gates its own close.
+-- ════════════════════════════════════════════════════════════════════════════
+-- Firm ...05f1 opts in; a second firm stays opted out.
+insert into organizations (id, type, name, created_by) values
+  ('00000000-0000-0000-0000-0000000005f2', 'firm', 'Sec1FirmNoMfa', '00000000-0000-0000-0000-0000000005c2');
+
+select is(org_requires_mfa('00000000-0000-0000-0000-0000000005f1'), false,
+  'CPACLOSE: firm org defaults to NOT requiring MFA (opt-in preserved)');
+
+update org_accounting_settings set mfa_required = true
+  where org_id = '00000000-0000-0000-0000-0000000005f1';
+-- no settings row yet for f1? ensure the flag is set via the owner RPC path shape.
+insert into org_accounting_settings (org_id, mfa_required)
+  values ('00000000-0000-0000-0000-0000000005f1', true)
+  on conflict (org_id) do update set mfa_required = true;
+
+select is(org_requires_mfa('00000000-0000-0000-0000-0000000005f1'), true,
+  'CPACLOSE: a firm that enabled mfa_required → org_requires_mfa true (its own close is gated)');
+select is(org_requires_mfa('00000000-0000-0000-0000-0000000005f2'), false,
+  'CPACLOSE: a firm that did NOT enable MFA is unaffected (its batch-close is never gated)');
 
 select * from finish();
 rollback;

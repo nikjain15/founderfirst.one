@@ -11,7 +11,7 @@
 -- them directly with each actor passed in — no SET ROLE.
 
 begin;
-select plan(24);
+select plan(25);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -169,13 +169,19 @@ select is(
 --        payments/transfer table and no such side effect in the schema. We prove
 --        the recorded payment's journal entry is balanced (a bookkeeping record,
 --        not a disbursement) and that bill_payments carries no external ref.
+-- count the recorded-payment entries whose D/C do NOT net to zero — must be 0.
+-- (aggregate over the per-entry net so the scalar is always a single 0, never
+--  NULL when there are no unbalanced entries).
 select is(
-  (select count(*)::int from bill_payments bp
-     join journal_entries je on je.id = bp.post_entry_id
-     join journal_lines jl on jl.entry_id = je.id
-     where bp.org_id = '00000000-0000-0000-0000-0000000000b1'
-     group by je.id
-     having sum(case when jl.side='D' then jl.amount_minor else -jl.amount_minor end) <> 0),
+  (select count(*)::int from (
+     select je.id
+       from bill_payments bp
+       join journal_entries je on je.id = bp.post_entry_id
+       join journal_lines jl on jl.entry_id = je.id
+      where bp.org_id = '00000000-0000-0000-0000-0000000000b1'
+      group by je.id
+     having sum(case when jl.side='D' then jl.amount_minor else -jl.amount_minor end) <> 0
+   ) unbalanced),
   0, 'every recorded-payment journal entry is balanced (a record, not a transfer)');
 
 -- ── 24. can_write is required to record a payment (a stranger cannot) ─────────

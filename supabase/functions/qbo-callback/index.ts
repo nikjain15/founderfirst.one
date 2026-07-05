@@ -32,15 +32,31 @@ Deno.serve(async (req) => {
 
   const svc = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: conn } = await svc
-    .from("external_connections").select("id, org_id").eq("state", state).eq("provider", "qbo").maybeSingle();
-  if (!conn) return back({ provider: "qbo", status: "error", message: "That connection request wasn't recognized (or expired)." });
+    .from("external_connections").select("id, org_id, status, created_at").eq("state", state).eq("provider", "qbo").maybeSingle();
+  if (!conn || conn.status !== "pending")
+    return back({ provider: "qbo", status: "error", message: "That connection request wasn't recognized (or expired)." });
+
+  // IQ-1: expire the OAuth state — reject a callback whose pending row is older
+  // than the centralized TTL (state is already single-use + unique; this bounds
+  // the replay window for an intercepted redirect).
+  const { data: cfg } = await svc.rpc("get_qbo_config", {});
+  const ttlMin = Number((cfg as { qbo_state_ttl_minutes?: number } | null)?.qbo_state_ttl_minutes ?? 10);
+  const ageMs = Date.now() - new Date(conn.created_at as string).getTime();
+  if (ageMs > ttlMin * 60_000) {
+    await svc.from("external_connections").update({ status: "error", state: null, last_error: "oauth_state_expired" }).eq("id", conn.id);
+    return back({ provider: "qbo", status: "error", message: "That connection request expired. Please try connecting again." });
+  }
 
   let lastTid: string | null = null;
   try {
     const tok = await exchangeCode(code, (tid) => { if (tid) lastTid = tid; });
     const expires = new Date(Date.now() + (tok.expires_in - 60) * 1000).toISOString();
+    // IQ-1: encrypt tokens at rest — set_qbo_tokens writes *_enc + nulls plaintext.
+    const { error: tokErr } = await svc.rpc("set_qbo_tokens", {
+      p_connection: conn.id, p_access: tok.access_token, p_refresh: tok.refresh_token, p_expires: expires,
+    });
+    if (tokErr) throw new Error(tokErr.message);
     const { error: upErr } = await svc.from("external_connections").update({
-      access_token: tok.access_token, refresh_token: tok.refresh_token, token_expires_at: expires,
       realm_id: realmId, tenant_name: `QuickBooks company ${realmId}`, scope: "com.intuit.quickbooks.accounting",
       status: "active", state: null, last_error: null, last_intuit_tid: lastTid, updated_at: new Date().toISOString(),
     }).eq("id", conn.id);

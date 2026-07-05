@@ -483,6 +483,47 @@ new top-level nav was added (usability gate respected).
   into two standing CI gates. Responsive (width ladder) stays covered by
   `responsive.yml`; this pass made **zero CSS/layout changes**, so no new scroll risk.
 
+### PENNY-UX-10 — owner app declutter + full responsive pass (Jul 2026)
+
+Nik (5 Jul) reviewed the LIVE owner app and flagged it as **cluttered, hard to read,
+not minimalist like `founderfirst.one/admin`, and not responsive across devices** —
+PENNY-UX-9 added CI design guards but did not reduce density or verify mobile. This
+pass is a **design/density + responsive** pass on the `apps/app` owner lens (no
+rewrite; every handler preserved).
+
+**What changed (layout / hierarchy / copy + CSS only):**
+- **Connections** — the mega single-scroll (Catch-up · Import · Payout · Invoicing ·
+  Bills · Share) is regrouped into **four scannable clusters** (`.connections-cluster`,
+  `Ledger.tsx` `Connections`): *Get your data in · Sales channels · Money in & out ·
+  Sharing*, each an `.eyebrow` over compact cards. Per-card titles dropped from the
+  billboard `<h2 className="section-h">` to a restrained `.conn-block-h` (UI-scale).
+  **No new top-level nav** — all sub-nav nests under the existing Connections tab.
+- **Review** — the stacked SuggestionInbox + Categorize + Receipts empty states were
+  full-height billboards (`.empty` / `.ledger-empty` with `<h3>` + prose). Collapsed
+  to a **compact one-line state** (`CompactEmpty` = dot + one line + optional action),
+  so an all-quiet Review is a few tidy rows, not three billboards. Copy trimmed to
+  VOICE (dropped the "All caught up 🎉" flourish for a plain one-liner).
+- **Home** — the oversized brand-tint Ask-Penny slab (`.penny-thread`) right-sized:
+  tighter padding, shorter turn log (24rem→18rem), hairline border on `--white` (not
+  a heavy `--brand-tint` fill), so it reads as a calm panel, not a billboard.
+- All new visuals use **tokens.css only** (no inline hex/px), and all new copy routes
+  through the **COPY catalog** (`check:app-strings` green).
+
+**Coverage delta (extends the PENNY-UX rows):**
+- **`regression.connections-wiring.test.ts`** (app suite, REG) — locks that the
+  Connections restructure keeps every connect/import/upload/toggle surface rendered
+  (`CatchUpFlow`/`ImportFlow`/`PayoutUpload`/`Invoicing`/`Bills`/`InviteCpa`) with its
+  action callbacks (`onDone`/`onImported`/`onInvite`) and `canWrite` gating — the
+  card's "MUST NOT break functionality" gate as a standing contract.
+- **`app-e2e.yml`** (`tools/app-e2e/run.mjs`) — a `verifyConnectionsClusters` walk
+  asserts the 4 clusters + their eyebrow labels + all 5 handler surfaces render in the
+  live authed DOM, then the **existing full width-ladder sweep** (320→1920, every
+  ladder step, `sweepWidths`) + axe scan on Home · Review · Reports · Connections ·
+  Journal · Reconcile proves **no horizontal scroll at any width** on every owner view
+  — so "responsive across all devices" stays an enforced gate on this declutter.
+- `designConformance.test.ts` (no bare authed `<h1>`, no inline hex) + `check:*`
+  guards continue green after the pass.
+
 ### Ranked findings (live-reproduced; `file:line` from a fresh `origin/main` worktree)
 
 **F1 · P0 · The "invite your accountant" accept link is dead — the whole owner→CPA

@@ -14,6 +14,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { COPY } from "../copy";
+import { CompactEmpty } from "./CompactEmpty";
 import { formatMoney } from "./money";
 import type { LedgerAccount } from "./types";
 import {
@@ -57,13 +58,12 @@ export function SuggestionInbox({
   if (q.isError) return <p className="error sm">{COPY.collab.inboxError}</p>;
   const items = q.data ?? [];
   if (items.length === 0) {
+    // PENNY-UX-10 — compact one-line empty (not a full-height billboard); this
+    // surface stacks with Categorize + Receipts on Review, so keep it to one row.
     return (
       <div className="collab-inbox">
         <p className="eyebrow">{COPY.collab.inboxEyebrow}</p>
-        <div className="empty">
-          <h3>{COPY.collab.inboxEmptyTitle}</h3>
-          <p className="muted">{COPY.collab.inboxEmptyBody}</p>
-        </div>
+        <CompactEmpty text={COPY.collab.inboxEmptyLine} />
       </div>
     );
   }

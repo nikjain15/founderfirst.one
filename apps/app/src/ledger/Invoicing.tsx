@@ -15,7 +15,7 @@
  */
 import { useState } from "react";
 import {
-  useInvoices, useArAging, useInvoicingSettings, useInvoicingRefresh,
+  useInvoices, useArAging, useInvoicingSettings, useInvoicingRefresh, useOrgSettings, useCurrencies,
   setInvoicingSettings, upsertInvoice, sendInvoice, payInvoice, voidInvoice, runInvoiceNudges,
   type Invoice, type InvoiceLineInput,
 } from "./api";
@@ -29,9 +29,12 @@ const emptyLine = (): LineDraft => ({ description: "", qty: "1", unitPrice: "" }
 
 export default function Invoicing({ orgId, canWrite }: { orgId: string; canWrite: boolean }) {
   const settings = useInvoicingSettings(orgId);
+  const orgSettings = useOrgSettings(orgId);
   const invoices = useInvoices(orgId);
   const aging = useArAging(orgId);
   const refresh = useInvoicingRefresh(orgId);
+  const multiCurrency = orgSettings.data?.multi_currency_enabled ?? false;
+  const homeCurrency = orgSettings.data?.home_currency ?? "USD";
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -95,7 +98,7 @@ export default function Invoicing({ orgId, canWrite }: { orgId: string; canWrite
         <button className="primary" onClick={() => setCreating(true)}>{I.newInvoice}</button>
       )}
       {creating && (
-        <InvoiceForm busy={busy}
+        <InvoiceForm busy={busy} multiCurrency={multiCurrency} homeCurrency={homeCurrency}
           onCancel={() => setCreating(false)}
           onSave={(input) => run(async () => { await upsertInvoice({ org_id: orgId, ...input }); setCreating(false); })} />
       )}
@@ -211,18 +214,20 @@ function InvoiceRow({
 }
 
 function InvoiceForm({
-  busy, onCancel, onSave,
+  busy, multiCurrency, homeCurrency, onCancel, onSave,
 }: {
-  busy: boolean; onCancel: () => void;
+  busy: boolean; multiCurrency: boolean; homeCurrency: string; onCancel: () => void;
   onSave: (input: {
     customer_name: string; customer_email?: string | null;
-    due_date?: string | null; lines: InvoiceLineInput[];
+    due_date?: string | null; currency?: string | null; lines: InvoiceLineInput[];
   }) => void;
 }) {
   const [customer, setCustomer] = useState("");
   const [email, setEmail] = useState("");
   const [due, setDue] = useState("");
+  const [currency, setCurrency] = useState(homeCurrency);
   const [lines, setLines] = useState<LineDraft[]>([emptyLine()]);
+  const currencies = useCurrencies();
 
   const parsed: InvoiceLineInput[] = lines
     .map((l) => ({
@@ -246,6 +251,15 @@ function InvoiceForm({
         <label>{I.dueDate}
           <input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
         </label>
+        {multiCurrency && (
+          <label>{I.currency}
+            <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+              {(currencies.data ?? [{ code: homeCurrency, name: homeCurrency, minor_unit: 2 }]).map((c) => (
+                <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
       <div className="invoice-form-lines">
         {lines.map((l, i) => (
@@ -265,7 +279,7 @@ function InvoiceForm({
         <button className="ghost sm" onClick={() => setLines((ls) => [...ls, emptyLine()])}>{I.addLine}</button>
       </div>
       <div className="invoice-form-foot">
-        <span className="invoice-form-total">{I.totalPrefix} {formatMoney(total)}</span>
+        <span className="invoice-form-total">{I.totalPrefix} {formatMoney(total, currency)}</span>
         <span className="invoice-form-actions">
           <button className="ghost" onClick={onCancel}>{I.cancel}</button>
           <button className="primary" disabled={!valid || busy}
@@ -273,6 +287,7 @@ function InvoiceForm({
               customer_name: customer.trim(),
               customer_email: email.trim() || null,
               due_date: due || null,
+              currency: multiCurrency ? currency : null,
               lines: parsed,
             })}>{I.saveDraft}</button>
         </span>

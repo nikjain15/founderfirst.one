@@ -3,7 +3,7 @@
  * ARCHITECTURE.md §6, §8). The owner-facing home for the CPA approval gate.
  *
  * POST { op:'set', org_id, cpa_posts_require_approval?, home_currency?,
- *        fiscal_year_start_month? }
+ *        fiscal_year_start_month?, multi_currency_enabled?, mfa_required? }
  *
  * org_accounting_settings denies client writes (RLS oas_nowrite); the only
  * sanctioned write is set_org_accounting_settings, which runs as service role and
@@ -14,6 +14,7 @@
  * could be honoured by the ledger write-path but never turned on by the product.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { mfaSatisfied } from "../_shared/mfaGate.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -48,13 +49,18 @@ Deno.serve(async (req) => {
   if (op !== "set") return json({ error: "bad_op" }, 400);
   if (!orgId) return json({ error: "bad_org" }, 400);
 
+  if (!(await mfaSatisfied(svc, jwt, orgId))) return json({ error: "mfa_required", code: "mfa_required" }, 403);
+
   // Pass only the fields the caller actually sent (null = leave unchanged).
   const approval = typeof body?.cpa_posts_require_approval === "boolean"
     ? body.cpa_posts_require_approval : null;
   const homeCcy = typeof body?.home_currency === "string" ? body.home_currency : null;
   const fyMonth = Number.isInteger(body?.fiscal_year_start_month)
     ? body.fiscal_year_start_month : null;
-  if (approval === null && homeCcy === null && fyMonth === null) {
+  const multiCcy = typeof body?.multi_currency_enabled === "boolean"
+    ? body.multi_currency_enabled : null;
+  const mfaRequired = typeof body?.mfa_required === "boolean" ? body.mfa_required : null;
+  if (approval === null && homeCcy === null && fyMonth === null && multiCcy === null && mfaRequired === null) {
     return json({ error: "nothing_to_set" }, 400);
   }
 
@@ -64,6 +70,8 @@ Deno.serve(async (req) => {
     p_cpa_posts_require_approval: approval,
     p_home_currency: homeCcy,
     p_fiscal_year_start_month: fyMonth,
+    p_multi_currency_enabled: multiCcy,
+    p_mfa_required: mfaRequired,
   });
   if (error) {
     const status = error.code === "42501" ? 403

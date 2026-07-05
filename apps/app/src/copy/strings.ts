@@ -49,6 +49,12 @@ export const COPY = {
     inviteFailed: (email: string) =>
       `We couldn't accept this invite — it may be expired or already used. Still stuck? Email ${email} and we'll sort it out.`,
     inviteAccepted: "Invite accepted — taking you in…",
+    captchaRequired: "Complete the check above, then send the link.",
+    rateLimited: (retryAfterSeconds: number) => {
+      const minutes = Math.ceil(retryAfterSeconds / 60);
+      const wait = minutes <= 1 ? "a minute" : `${minutes} minutes`;
+      return `Too many attempts for this email — try again in ${wait}.`;
+    },
   },
 
   // ── Home / workspaces ──────────────────────────────────────────────────────
@@ -127,9 +133,76 @@ export const COPY = {
     errUpdate: "Could not update setting.",
   },
 
+  // ── Multi-currency setting (W5.4) ───────────────────────────────────────────
+  multiCurrency: {
+    heading: "Other currencies",
+    checkboxAria: "Let this business bill and hold money in other currencies",
+    label: "Let me bill customers and hold money in currencies other than my home currency.",
+    hint: "Your reports always show one home currency — Penny converts and tracks the difference.",
+    errUpdate: "Could not update setting.",
+  },
+
   // ── Settings page ──────────────────────────────────────────────────────────
   settings: {
     eyebrow: "Settings",
+  },
+
+  // ── Security (SEC-1: two-factor authentication) ───────────────────────────
+  security: {
+    menuLabel: "Security",
+    eyebrow: "Security",
+    heading: "Two-factor authentication",
+    lead: "Add a second step when you sign in — a code from an authenticator app on your phone.",
+    statusOn: "Two-factor authentication is on.",
+    statusOff: "Two-factor authentication is off.",
+    enable: "Turn on two-factor authentication",
+    disable: "Turn off two-factor authentication",
+    disabling: "Turning off…",
+    confirmDisableTitle: "Turn off two-factor authentication?",
+    confirmDisableBody: "You'll only need your email code to sign in from now on. You can turn it back on any time.",
+    confirmDisableConfirm: "Turn off",
+    loadError: "Couldn't load your security settings just now.",
+    // ── enroll flow ───────────────────────────────────────────────────────────
+    enrollLead: "Scan this with your authenticator app, then enter the 6-digit code it shows.",
+    qrAria: "Authenticator QR code",
+    secretLabel: "Or enter this key by hand:",
+    codeAria: "6-digit code",
+    codePlaceholder: "123456",
+    confirmCode: "Confirm code",
+    confirming: "Confirming…",
+    enrollFailed: "That code didn't match — check your authenticator app and try again.",
+    enrollError: "Couldn't start setup. Try again.",
+    cancelSetup: "Cancel setup",
+    // ── recovery codes ────────────────────────────────────────────────────────
+    recoveryHeading: "Save your recovery codes",
+    recoveryLead: "If you ever lose your authenticator, one of these one-time codes gets you back in. Save them somewhere safe — you won't see them again.",
+    recoveryCodesRemaining: (n: number) => `${n} recovery code${n === 1 ? "" : "s"} left.`,
+    recoverySavedConfirm: "I've saved these codes",
+    recoveryRegenerate: "Generate new recovery codes",
+    recoveryGenerateError: "Couldn't generate recovery codes. Try again.",
+    // ── login step-up challenge ───────────────────────────────────────────────
+    challengeHeading: "Enter your authenticator code",
+    challengeLead: "Enter the 6-digit code from your authenticator app to finish signing in.",
+    challengeSubmit: "Verify",
+    challengeVerifying: "Verifying…",
+    challengeFailed: "That code didn't match. Try again.",
+    useRecoveryCode: "Use a recovery code instead",
+    recoveryCodeAria: "Recovery code",
+    recoveryCodePlaceholder: "XXXXX-XXXXX",
+    recoverySubmit: "Verify recovery code",
+    recoveryVerifying: "Checking…",
+    recoveryInvalid: "That recovery code didn't work — check for typos, or it may already be used.",
+    recoveryResetDone: "Your authenticator was reset. Sign in again and set up two-factor authentication from Security when you're ready.",
+    backToCode: "← Back to code",
+    // ── per-org required policy (owner control, in Settings) ─────────────────
+    policyHeading: "Require two-factor authentication",
+    policyCheckboxAria: "Require two-factor authentication for everyone with access to this organization",
+    policyLabel: "Everyone with access to these books must set up two-factor authentication.",
+    policyErrUpdate: "Could not update setting.",
+    // ── org-required gate (blocks access until the user enrols) ──────────────
+    orgRequiredTitle: "This organization requires two-factor authentication",
+    orgRequiredBody: "The owner has required two-factor authentication for everyone with access to these books. Set it up to continue.",
+    orgRequiredCta: "Set up two-factor authentication",
   },
 
   // ── Error boundary ─────────────────────────────────────────────────────────
@@ -1320,6 +1393,7 @@ export const COPY = {
     customerName: "Customer name",
     customerEmail: "Customer email",
     dueDate: "Due date",
+    currency: "Currency", // shown only when multi-currency is on (W5.4)
     lineDescription: "Description",
     lineQty: "Qty",
     linePrice: "Unit price",

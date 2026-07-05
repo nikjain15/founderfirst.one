@@ -10,6 +10,7 @@
  * actor comes from the verified JWT.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { mfaSatisfied } from "../_shared/mfaGate.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -50,6 +51,8 @@ Deno.serve(async (req) => {
   const entryId = String(body?.entry_id ?? "");
   const idemKey = String(body?.idempotency_key ?? "");
   if (!orgId) return json({ error: "bad_org" }, 400);
+
+  if (!(await mfaSatisfied(svc, jwt, orgId))) return json({ error: "mfa_required", code: "mfa_required" }, 403);
   if (!entryId) return json({ error: "bad_entry" }, 400);
   if (!idemKey) return json({ error: "missing_idempotency_key" }, 400);
 

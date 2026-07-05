@@ -4,15 +4,18 @@
  */
 import { useState, type FormEvent } from "react";
 import { getClient } from "../lib/supabase";
-import { hasSupabase } from "../lib/env";
+import { hasSupabase, hasTurnstile, TURNSTILE_SITE_KEY } from "../lib/env";
 import { SITE } from "@ff/site";
 import { COPY } from "../copy";
+import { Turnstile } from "../auth/Turnstile";
+import { canDispatchOtp } from "../auth/otpGate";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const submit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
@@ -22,12 +25,38 @@ export default function Login() {
     }
     setBusy(true);
     setError(null);
+    const client = getClient();
     // Trim stray whitespace — a leading/trailing space otherwise sends to an
     // address that never receives the link, with no feedback to the user.
-    const { error: err } = await getClient().auth.signInWithOtp({
-      email: email.trim(),
+    const trimmed = email.trim();
+
+    // Server-side rate limit (card SEC-2) — checked before dispatch, independent
+    // of Turnstile, so rapid-fire requests are refused even if bot-verified.
+    const { data: rateLimitRaw, error: rateLimitErr } = await client.rpc(
+      "check_and_record_otp_attempt",
+      { p_email: trimmed },
+    );
+    if (rateLimitErr) {
+      setBusy(false);
+      setError(rateLimitErr.message);
+      return;
+    }
+    const rateLimit = rateLimitRaw as { allowed: true } | { allowed: false; retry_after_seconds: number };
+
+    const gate = canDispatchOtp({ hasTurnstile, captchaToken, rateLimit });
+    if (!gate.ok) {
+      setBusy(false);
+      setError(gate.reason === "captcha_required" ? COPY.auth.captchaRequired : COPY.auth.rateLimited(gate.retryAfterSeconds));
+      return;
+    }
+
+    const { error: err } = await client.auth.signInWithOtp({
+      email: trimmed,
       // base-aware: "/app/" on founderfirst.one/app/, "/" on penny.founderfirst.one
-      options: { emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}` },
+      options: {
+        emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`,
+        captchaToken: captchaToken ?? undefined,
+      },
     });
     setBusy(false);
     if (err) setError(err.message);
@@ -61,6 +90,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+            {hasTurnstile && <Turnstile siteKey={TURNSTILE_SITE_KEY} onToken={setCaptchaToken} />}
             <button type="submit" disabled={busy || !email}>
               {busy ? COPY.auth.sending : COPY.auth.emailMeLink}
             </button>

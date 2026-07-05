@@ -10,6 +10,7 @@
  * direct under RLS.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { mfaSatisfied } from "../_shared/mfaGate.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -45,6 +46,8 @@ Deno.serve(async (req) => {
   if (!orgId) return json({ error: "bad_org" }, 400);
   if (!periodId) return json({ error: "bad_period" }, 400);
   if (action !== "close" && action !== "reopen") return json({ error: "bad_action" }, 400);
+
+  if (!(await mfaSatisfied(svc, jwt, orgId))) return json({ error: "mfa_required", code: "mfa_required" }, 403);
 
   const fn = action === "close" ? "close_accounting_period" : "reopen_accounting_period";
   const { data, error } = await svc.rpc(fn, {

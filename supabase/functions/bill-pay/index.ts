@@ -30,6 +30,7 @@
  */
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { mfaSatisfied } from "../_shared/mfaGate.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -72,6 +73,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const op = String(body?.op ?? "");
   const orgId = String(body?.org_id ?? "");
+  if (orgId && !(await mfaSatisfied(svc, jwt, orgId))) return json({ error: "mfa_required", code: "mfa_required" }, 403);
   if (!UUID_RE.test(orgId)) return json({ error: "bad_org" }, 400);
 
   const rpc = async (fn: string, args: Record<string, unknown>) => {

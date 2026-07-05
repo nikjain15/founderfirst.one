@@ -35,18 +35,19 @@ Deno.serve(async (req) => {
     .from("external_connections").select("id, org_id").eq("state", state).eq("provider", "qbo").maybeSingle();
   if (!conn) return back({ provider: "qbo", status: "error", message: "That connection request wasn't recognized (or expired)." });
 
+  let lastTid: string | null = null;
   try {
-    const tok = await exchangeCode(code);
+    const tok = await exchangeCode(code, (tid) => { if (tid) lastTid = tid; });
     const expires = new Date(Date.now() + (tok.expires_in - 60) * 1000).toISOString();
     const { error: upErr } = await svc.from("external_connections").update({
       access_token: tok.access_token, refresh_token: tok.refresh_token, token_expires_at: expires,
       realm_id: realmId, tenant_name: `QuickBooks company ${realmId}`, scope: "com.intuit.quickbooks.accounting",
-      status: "active", state: null, last_error: null, updated_at: new Date().toISOString(),
+      status: "active", state: null, last_error: null, last_intuit_tid: lastTid, updated_at: new Date().toISOString(),
     }).eq("id", conn.id);
     if (upErr) throw new Error(upErr.message);
     return back({ provider: "qbo", status: "connected", org: conn.org_id });
   } catch (e) {
-    await svc.from("external_connections").update({ status: "error", last_error: (e as Error).message }).eq("id", conn.id);
+    await svc.from("external_connections").update({ status: "error", last_error: (e as Error).message, last_intuit_tid: lastTid }).eq("id", conn.id);
     return back({ provider: "qbo", status: "error", message: (e as Error).message });
   }
 });

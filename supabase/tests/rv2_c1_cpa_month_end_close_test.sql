@@ -50,16 +50,16 @@ insert into ledger_accounts (id, org_id, code, name, type) values
 
 -- periods: the month being closed (May) — OPEN + past-due for every client.
 insert into accounting_periods (id, org_id, period_start, period_end, status) values
-  ('00000000-0000-0000-0000-0000000000CA1', '00000000-0000-0000-0000-0000000000CA', date '2026-05-01', date '2026-05-31', 'open'),  -- A: clean
-  ('00000000-0000-0000-0000-0000000000CB1', '00000000-0000-0000-0000-0000000000CB', date '2026-05-01', date '2026-05-31', 'open'),  -- B: blocked
-  ('00000000-0000-0000-0000-0000000000CD1', '00000000-0000-0000-0000-0000000000CD', date '2026-05-01', date '2026-05-31', 'open'),  -- D: read_only
-  ('00000000-0000-0000-0000-0000000000CE1', '00000000-0000-0000-0000-0000000000CE', date '2026-05-01', date '2026-05-31', 'open'),  -- E: other firm
+  ('00000000-0000-0000-0000-0000000CA100', '00000000-0000-0000-0000-0000000000CA', date '2026-05-01', date '2026-05-31', 'open'),  -- A: clean
+  ('00000000-0000-0000-0000-0000000CB100', '00000000-0000-0000-0000-0000000000CB', date '2026-05-01', date '2026-05-31', 'open'),  -- B: blocked
+  ('00000000-0000-0000-0000-0000000CD100', '00000000-0000-0000-0000-0000000000CD', date '2026-05-01', date '2026-05-31', 'open'),  -- D: read_only
+  ('00000000-0000-0000-0000-0000000CE100', '00000000-0000-0000-0000-0000000000CE', date '2026-05-01', date '2026-05-31', 'open'),  -- E: other firm
   -- A has a LATER open period (June) — must survive closing May (roll-forward).
-  ('00000000-0000-0000-0000-0000000000CA2', '00000000-0000-0000-0000-0000000000CA', date '2026-06-01', date '2026-06-30', 'open');
+  ('00000000-0000-0000-0000-0000000CA200', '00000000-0000-0000-0000-0000000000CA', date '2026-06-01', date '2026-06-30', 'open');
 
 -- Client B gets a blocker: a posted entry on 9999 (uncategorized) inside May.
 insert into journal_entries (id, org_id, entry_date, period_id, status, source, idempotency_key, posted_by) values
-  ('00000000-0000-0000-0000-0000000CB001', '00000000-0000-0000-0000-0000000000CB', date '2026-05-12', '00000000-0000-0000-0000-0000000000CB1', 'posted', 'csv', 'b-uc-1', '00000000-0000-0000-0000-0000000000c1');
+  ('00000000-0000-0000-0000-0000000CB001', '00000000-0000-0000-0000-0000000000CB', date '2026-05-12', '00000000-0000-0000-0000-0000000CB100', 'posted', 'csv', 'b-uc-1', '00000000-0000-0000-0000-0000000000c1');
 insert into journal_lines (entry_id, org_id, account_id, amount_minor, side) values
   ('00000000-0000-0000-0000-0000000CB001', '00000000-0000-0000-0000-0000000000CB', '00000000-0000-0000-0000-00000000C9B9', 3000, 'D');
 
@@ -120,29 +120,29 @@ select is((select result from batch_res where client_org_id = '00000000-0000-000
 
 -- Effect on the actual period rows: only A's May period is closed.
 select is(
-  (select status from accounting_periods where id = '00000000-0000-0000-0000-0000000000CA1'),
+  (select status from accounting_periods where id = '00000000-0000-0000-0000-0000000CA100'),
   'closed'::period_status, 'A''s May period is now closed');
 select is(
-  (select status from accounting_periods where id = '00000000-0000-0000-0000-0000000000CB1'),
+  (select status from accounting_periods where id = '00000000-0000-0000-0000-0000000CB100'),
   'open'::period_status, 'B''s May period is STILL open (blocked never closed)');
 select is(
-  (select status from accounting_periods where id = '00000000-0000-0000-0000-0000000000CD1'),
+  (select status from accounting_periods where id = '00000000-0000-0000-0000-0000000CD100'),
   'open'::period_status, 'D''s May period is STILL open (read_only refused)');
 select is(
-  (select status from accounting_periods where id = '00000000-0000-0000-0000-0000000000CE1'),
+  (select status from accounting_periods where id = '00000000-0000-0000-0000-0000000CE100'),
   'open'::period_status, 'E''s period is untouched — cross-tenant isolation holds');
 
 -- ROLL-FORWARD: A's JUNE period must be untouched by closing May.
 select is(
-  (select status from accounting_periods where id = '00000000-0000-0000-0000-0000000000CA2'),
+  (select status from accounting_periods where id = '00000000-0000-0000-0000-0000000CA200'),
   'open'::period_status, 'A''s June period stays open — closing May rolls forward, not over');
 
 -- close_by / audit: A's close was attributed to the actor and audit-logged.
 select is(
-  (select closed_by from accounting_periods where id = '00000000-0000-0000-0000-0000000000CA1'),
+  (select closed_by from accounting_periods where id = '00000000-0000-0000-0000-0000000CA100'),
   '00000000-0000-0000-0000-0000000000c1'::uuid, 'A''s close is attributed to the firm_admin actor');
 select ok(
-  exists (select 1 from ledger_audit where target_id = '00000000-0000-0000-0000-0000000000CA1'
+  exists (select 1 from ledger_audit where target_id = '00000000-0000-0000-0000-0000000CA100'
             and action = 'period.close' and detail->>'via' = 'batch_close'),
   'batch close writes a period.close audit row tagged via=batch_close');
 

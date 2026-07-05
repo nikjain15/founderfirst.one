@@ -14,8 +14,13 @@
  * separate, human-gated step (W4.1-C/D scope boundary).
  *
  * ⭐ EXACTLY-ONCE: the caller posts each payout via post_ecommerce_payout using
- * the provider's NATIVE payout id (payoutId below). The CSV upload path uses that
- * same native id, so both collapse on `ext:<provider>:payout:<id>` — one entry.
+ * the payout id below. Square HAS a native payout id (used verbatim). PayPal has
+ * NONE (Transaction Search groups by date window), so BOTH the API path and the
+ * CSV path key each PayPal payout on the TRANSFER-TO-BANK (withdrawal) transaction
+ * id — the actual money movement that IS the payout (Option A, Nik 4 Jul) — so
+ * both collapse on `ext:paypal:payout:<withdrawal-txn-id>`. A window with no
+ * withdrawal transaction is NOT a completed payout and is SKIPPED (returns null),
+ * never posted under a synthesized date-based id (which double-posted before).
  */
 
 /** A normalized payout ready for post_ecommerce_payout — minor units throughout. */
@@ -169,12 +174,31 @@ async function paypalToken(clientId: string, secret: string): Promise<string> {
   return String(((await res.json()) as { access_token?: string }).access_token ?? "");
 }
 
+// PayPal transfer-to-bank (withdrawal) event code — the exactly-once anchor for a
+// PayPal payout (Option A). Named so no path inlines the literal (centralization).
+const PAYPAL_WITHDRAWAL_EVENT_CODE = "T0400";
+const PAYPAL_WITHDRAWAL_EVENT_PREFIX = "T04";
+
 function paypalTypeForEvent(code: string, signedGrossMinor: number): string {
   const c = (code ?? "").trim().toUpperCase();
   if (c.startsWith("T11")) return "refund";
-  if (c === "T0400" || c.startsWith("T04")) return "general withdrawal";
+  if (c === PAYPAL_WITHDRAWAL_EVENT_CODE || c.startsWith(PAYPAL_WITHDRAWAL_EVENT_PREFIX)) return "general withdrawal";
   if (c.startsWith("T20") || c.startsWith("T03")) return "adjustment";
   return signedGrossMinor >= 0 ? "payment" : "adjustment";
+}
+
+/**
+ * The ONE canonical PayPal payout id (Option A): the transfer-to-bank (withdrawal)
+ * transaction id. Mirrors paypalCanonicalPayoutId in apps/app/src/ecommerce/payouts.ts
+ * (the Deno _shared tree can't import the app tree; the app-side apiSync.test keeps
+ * the two in lockstep). Returns null when there is no withdrawal txn id to key on
+ * → the caller skips (money not yet withdrawn = not a completed payout).
+ */
+function paypalCanonicalPayoutId(withdrawalTxnIds: string[]): string | null {
+  const ids = withdrawalTxnIds.map((s) => (s ?? "").toString().trim()).filter((s) => s.length > 0);
+  if (ids.length === 0) return null;
+  ids.sort();
+  return ids[0];
 }
 
 export function toMinor(v: string): number {
@@ -206,6 +230,7 @@ function isPayPalWithdrawal(eventCode: string): boolean {
 /** One PayPal transaction-search detail, shape we consume. */
 export interface PayPalDetail {
   transaction_info?: {
+    transaction_id?: string;
     transaction_event_code?: string;
     transaction_amount?: { value?: string; currency_code?: string } | null;
     fee_amount?: { value?: string } | null;
@@ -214,16 +239,16 @@ export interface PayPalDetail {
 
 /**
  * Pure roll-up of PayPal transaction-search details → a CommercePayout, with a
- * GENUINE reconcile target and multi-currency detection. Extracted from the fetch
- * so it is unit-testable without network (red-team RT-230).
+ * GENUINE reconcile target, multi-currency detection, and the Option-A exactly-
+ * once anchor. Extracted from the fetch so it is unit-testable without network.
  *
- *  • reconcile target = Σ(withdrawal/transfer-to-bank row magnitudes) when the
- *    window carries a withdrawal line — that IS the money that left PayPal, the
- *    same net the CSV path reconciles to. Only when NO withdrawal row is present
- *    (the window has no settlement) do we fall back to self-net (a partial window
- *    the caller must treat with care — it will still be flagged reconciles=true
- *    only because there is nothing to check against). This replaces the previous
- *    `reportedNetMinor = c.net` tautology that could never fail (LEARNINGS #16).
+ *  • payout id (Option A) = the transfer-to-bank (withdrawal) transaction id — the
+ *    money movement that IS the payout, identical on the CSV export. When the
+ *    window has NO withdrawal txn id, it is NOT a completed payout: we return null
+ *    so the caller SKIPS (never a synthesized date-based id, which double-posted).
+ *    The `_windowLabel` arg is a human label only, never the idempotency anchor.
+ *  • reconcile target = Σ(withdrawal magnitudes) — the money that left PayPal, the
+ *    same net the CSV path reconciles to (never the self-net tautology; LEARNINGS #16).
  *  • if transactions span MORE THAN ONE currency, we do NOT sum across them —
  *    multi-currency payouts are a separate card; we flag reconciles=false so the
  *    caller SKIPS rather than mis-summing into one currency.
@@ -231,11 +256,12 @@ export interface PayPalDetail {
 export function paypalPayoutFromDetails(
   details: PayPalDetail[],
   payoutDate: string,
-  fallbackPayoutId: string,
+  _windowLabel: string,
 ): CommercePayout | null {
   if (details.length === 0) return null;
   const rows: Row[] = [];
   const currencies = new Set<string>();
+  const withdrawalTxnIds: string[] = [];
   let withdrawalNetMinor = 0;
   let sawWithdrawal = false;
   let currency = "USD";
@@ -254,20 +280,22 @@ export function paypalPayoutFromDetails(
       sawWithdrawal = true;
       // a withdrawal moves money OUT (negative gross); its magnitude is the net
       withdrawalNetMinor += Math.abs(gross);
+      withdrawalTxnIds.push(String(info.transaction_id ?? ""));
       continue;
     }
     rows.push(...paypalRow(code, gross, fee));
   }
+  // Option A: no completed payout without a transfer-to-bank txn id to key on.
+  const canonicalId = paypalCanonicalPayoutId(withdrawalTxnIds);
+  if (!sawWithdrawal || canonicalId == null) return null;
   const c = componentsOf(rows);
   const multiCurrency = currencies.size > 1;
-  // genuine reconcile: when the window carries a withdrawal, our split net must
-  // equal what actually left PayPal; never a tautology.
-  const reportedNetMinor = sawWithdrawal ? withdrawalNetMinor : null;
-  const reconciles =
-    !multiCurrency && (reportedNetMinor == null ? true : reportedNetMinor === c.net);
+  // genuine reconcile: our split net must equal what actually left PayPal.
+  const reportedNetMinor = withdrawalNetMinor;
+  const reconciles = !multiCurrency && reportedNetMinor === c.net;
   return {
     provider: "paypal",
-    payoutId: payoutId(fallbackPayoutId),
+    payoutId: payoutId(canonicalId),
     payoutDate,
     currency: multiCurrency ? "MIXED" : currency,
     grossMinor: c.gross, feesMinor: c.fees, refundsMinor: c.refunds, adjustMinor: c.adjust, netMinor: c.net,
@@ -278,8 +306,10 @@ export function paypalPayoutFromDetails(
 
 /**
  * Pull PayPal transactions for a settlement window (read-only) and roll them into
- * ONE CommercePayout keyed by the window's payout id (batch/settlement id passed
- * by the caller, or the start-date as a stable fallback). Sandbox only.
+ * ONE CommercePayout. Exactly-once anchor = the transfer-to-bank (withdrawal)
+ * transaction id inside the window (Option A), derived by paypalPayoutFromDetails
+ * — NOT the date window. `windowPayoutId` is only a human label for logs. A window
+ * with no withdrawal returns null (money not yet withdrawn → skip). Sandbox only.
  */
 export async function fetchPayPalPayout(
   clientId: string,
@@ -300,6 +330,6 @@ export async function fetchPayPalPayout(
     "Content-Type": "application/json",
   });
   const details = (resp.transaction_details as PayPalDetail[] | undefined) ?? [];
-  const id = payoutId(windowPayoutId ?? `paypal:${startIso.slice(0, 10)}`);
-  return paypalPayoutFromDetails(details, isoDate(endIso), id);
+  const label = windowPayoutId ?? `paypal-window:${startIso.slice(0, 10)}`;
+  return paypalPayoutFromDetails(details, isoDate(endIso), label);
 }

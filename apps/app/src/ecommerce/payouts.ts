@@ -256,11 +256,54 @@ export interface PayPalTxnRow {
   fee: string | number; // signed (fee on a sale is negative)
 }
 
+// ── PayPal exactly-once anchor (Option A, Nik 4 Jul) ─────────────────────────
+// A PayPal settlement window has NO native "payout/batch id" the way Square or
+// Stripe do (Transaction Search groups by date range, not by settlement). The
+// ONE thing that is the same on both the API pull and the CSV export — and that
+// IS the actual payout — is the TRANSFER-TO-BANK (General Withdrawal) transaction
+// that moves the balance out to the owner's bank. We key every PayPal payout on
+// THAT transaction's id, so the API path and a CSV upload of the same payout
+// derive the identical `ext:paypal:payout:<id>` key and collapse to one post.
+//
+// The withdrawal is PayPal event code T0400 (and the T04xx family). Named here so
+// no path inlines the literal (centralization gate).
+export const PAYPAL_WITHDRAWAL_EVENT_CODE = "T0400";
+export const PAYPAL_WITHDRAWAL_EVENT_PREFIX = "T04";
+/** Substrings that identify the withdrawal/transfer-to-bank row by its human type. */
+export const PAYPAL_TRANSFER_TYPE_HINTS = ["withdrawal", "transfer to bank"] as const;
+
 /** The withdrawal/transfer of the payout itself — excluded from the split AND
  *  from the report-net sum (it IS the net, not a component of it). */
 function isPayPalTransferRow(type: string): boolean {
   const t = type.trim().toLowerCase();
-  return t.includes("withdrawal") || t.includes("transfer to bank");
+  return PAYPAL_TRANSFER_TYPE_HINTS.some((h) => t.includes(h));
+}
+
+/** Is this PayPal transaction_event_code the transfer-to-bank (withdrawal)? */
+export function isPayPalWithdrawalEventCode(code: string): boolean {
+  const c = (code ?? "").toString().trim().toUpperCase();
+  return c === PAYPAL_WITHDRAWAL_EVENT_CODE || c.startsWith(PAYPAL_WITHDRAWAL_EVENT_PREFIX);
+}
+
+/**
+ * Derive the ONE canonical PayPal payout id (Option A) from the transfer-to-bank
+ * transaction ids seen in a settlement window. This is the single source of truth
+ * both the API path and the CSV path call, so the same payout collapses to one
+ * `ext:paypal:payout:<id>` key regardless of how it was ingested.
+ *
+ * Returns null when the window has NO withdrawal (money still sitting in the
+ * PayPal balance, not yet paid out) — that is NOT a completed payout, so the
+ * caller must SKIP it rather than synthesize a date-based id and post an
+ * incomplete payout (mirrors the "non-reconciling → skip, never plug" rule).
+ *
+ * If a window somehow carries more than one withdrawal, we use the FIRST by a
+ * stable sort so the id is deterministic across paths/re-pulls.
+ */
+export function paypalCanonicalPayoutId(withdrawalTxnIds: string[]): string | null {
+  const ids = withdrawalTxnIds.map((s) => (s ?? "").toString().trim()).filter((s) => s.length > 0);
+  if (ids.length === 0) return null;
+  ids.sort();
+  return ids[0];
 }
 
 /**
@@ -441,6 +484,13 @@ export interface ParsedPayout {
   reconciles: boolean;
   /** How many report rows were classified into a bucket (ignored rows excluded). */
   rowCount: number;
+  /**
+   * Set (with a reason) when this report is NOT a completed payout that can be
+   * posted — currently PayPal windows with no transfer-to-bank transaction (money
+   * still in the PayPal balance, not yet withdrawn). The caller MUST NOT post; it
+   * shows the reason instead of synthesizing an id (avoids the old double-post).
+   */
+  skip?: { reason: "paypal_not_withdrawn" };
 }
 
 /** What a provider's report adapter extracts from an uploaded file. */
@@ -448,6 +498,15 @@ export interface PayoutReportParse {
   rows: PayoutRow[];
   /** The net the report itself declares, in minor units, when it carries one. */
   reportedNetMinor: number | null;
+  /**
+   * The canonical payout id an adapter DERIVES from the report itself (PayPal:
+   * the transfer-to-bank transaction id — see paypalCanonicalPayoutId). When an
+   * adapter sets this, it OVERRIDES the caller-supplied payoutId so the CSV and
+   * API paths share one exactly-once anchor. `null` means "no completed payout in
+   * this report" (e.g. PayPal window not yet withdrawn) → the caller must skip.
+   * `undefined` means the adapter does not derive an id (use the caller's id).
+   */
+  canonicalPayoutId?: string | null;
 }
 
 /** Case/space/dash-insensitive header lookup → column index, or -1 ("Gross Amount",
@@ -493,17 +552,25 @@ function paypalCsv(csv: ParsedPayoutCsv): PayoutReportParse {
   const cGross = colIndex(headers, "gross");
   const cFee = colIndex(headers, "fee");
   const cNet = colIndex(headers, "net");
+  const cTxnId = colIndex(headers, "transaction id", "transactionid", "txn id");
   if (cType < 0 || cGross < 0) {
     throw new Error("report is missing a Type and/or Gross column — export the PayPal transaction (activity) CSV");
   }
-  const component = rows.filter((r) => !isPayPalTransferRow(r[cType] ?? ""));
+  const isTransfer = (r: string[]) => isPayPalTransferRow(r[cType] ?? "");
+  const component = rows.filter((r) => !isTransfer(r));
   const raw: PayPalTxnRow[] = component.map((r) => ({
     type: r[cType] ?? "",
     gross: r[cGross] ?? "0",
     fee: cFee >= 0 ? (r[cFee] ?? "0") : "0",
   }));
   const reportedNetMinor = cNet >= 0 ? component.reduce((s, r) => s + toMinor(r[cNet] ?? "0"), 0) : null;
-  return { rows: paypalRowsFrom(raw), reportedNetMinor };
+  // Option A: the canonical payout id is the transfer-to-bank (withdrawal) row's
+  // Transaction ID — the same money movement the API path keys on. No Transaction
+  // ID column, or no withdrawal row → derivation yields null and the caller skips.
+  const withdrawalTxnIds =
+    cTxnId >= 0 ? rows.filter(isTransfer).map((r) => r[cTxnId] ?? "") : [];
+  const canonicalPayoutId = paypalCanonicalPayoutId(withdrawalTxnIds);
+  return { rows: paypalRowsFrom(raw), reportedNetMinor, canonicalPayoutId };
 }
 
 /** Square transfer/payout details CSV → Type / Gross Amount / Fees (+ Net Amount). */
@@ -582,8 +649,17 @@ export function parsePayoutCsv(
 ): ParsedPayout {
   const adapter = PAYOUT_PARSERS[provider];
   if (!adapter) throw new Error(`no report parser for provider ${provider}`);
-  const { rows, reportedNetMinor } = adapter.fromCsv(csv);
-  const components = componentsFromRows(provider, payoutId, payoutDate, currency, rows);
+  const { rows, reportedNetMinor, canonicalPayoutId } = adapter.fromCsv(csv);
+  // When the adapter derives its own exactly-once anchor from the report (PayPal:
+  // the transfer-to-bank txn id), it OVERRIDES the caller-supplied id so the CSV
+  // and API paths collapse to one post. `null` = no completed payout → skip.
+  const derivesId = canonicalPayoutId !== undefined;
+  const effectiveId = derivesId ? (canonicalPayoutId ?? "") : payoutId;
+  const components = componentsFromRows(provider, effectiveId, payoutDate, currency, rows);
   const reconciles = reportedNetMinor == null ? true : reportedNetMinor === components.netMinor;
-  return { components, reportedNetMinor, reconciles, rowCount: rows.length };
+  const skip =
+    derivesId && canonicalPayoutId == null && provider === "paypal"
+      ? { reason: "paypal_not_withdrawn" as const }
+      : undefined;
+  return { components, reportedNetMinor, reconciles, rowCount: rows.length, skip };
 }

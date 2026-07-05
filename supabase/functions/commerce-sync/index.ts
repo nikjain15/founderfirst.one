@@ -87,8 +87,13 @@ Deno.serve(async (req) => {
       const now = new Date();
       const end = body?.end_date ? new Date(String(body.end_date)) : now;
       const start = body?.start_date ? new Date(String(body.start_date)) : new Date(end.getTime() - 31 * 864e5);
+      // Option A: fetchPayPalPayout keys the payout on the transfer-to-bank
+      // (withdrawal) transaction id and returns null when the window has no
+      // withdrawal — money still in the PayPal balance, NOT a completed payout.
+      // We surface that as an explicit skip rather than a silent empty result.
       const one = await fetchPayPalPayout(clientId, secret, start.toISOString(), end.toISOString(), body?.window_payout_id ? String(body.window_payout_id) : undefined);
-      payouts = one ? [one] : [];
+      if (!one) return json({ synced: [], skipped: 1, skip_reason: "paypal_not_withdrawn" }, 200);
+      payouts = [one];
     }
   } catch (e) {
     return json({ error: "provider_fetch_failed", detail: (e as Error).message }, 502);

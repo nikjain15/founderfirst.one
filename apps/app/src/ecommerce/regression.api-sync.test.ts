@@ -93,22 +93,27 @@ describe("REG W4.1-C/D: api_sync registry ⇄ mapping contract", () => {
     expect(api.adjustMinor).toBe(csv.adjustMinor);
   });
 
-  it("⭐ PayPal: API pull and CSV upload of the same batch share id + split", () => {
+  it("⭐ PayPal: API pull and CSV upload of the same payout share id + split", () => {
+    // Option A: both paths key on the transfer-to-bank (withdrawal) txn id (WREG),
+    // NOT the caller ref (deliberately different) — so they collapse to one post.
     const txns: PayPalTransactionApi[] = [
-      { transaction_info: { transaction_event_code: "T0006", transaction_amount: { value: "50.00", currency_code: "USD" }, fee_amount: { value: "-1.80" } } },
-      { transaction_info: { transaction_event_code: "T0006", transaction_amount: { value: "120.00" }, fee_amount: { value: "-3.78" } } },
-      { transaction_info: { transaction_event_code: "T1107", transaction_amount: { value: "-20.00" }, fee_amount: { value: "0.70" } } },
-      { transaction_info: { transaction_event_code: "T0400", transaction_amount: { value: "-145.12" }, fee_amount: { value: "0" } } },
+      { transaction_info: { transaction_id: "R1", transaction_event_code: "T0006", transaction_amount: { value: "50.00", currency_code: "USD" }, fee_amount: { value: "-1.80" } } },
+      { transaction_info: { transaction_id: "R2", transaction_event_code: "T0006", transaction_amount: { value: "120.00" }, fee_amount: { value: "-3.78" } } },
+      { transaction_info: { transaction_id: "R3", transaction_event_code: "T1107", transaction_amount: { value: "-20.00" }, fee_amount: { value: "0.70" } } },
+      { transaction_info: { transaction_id: "WREG", transaction_event_code: "T0400", transaction_amount: { value: "-145.12" }, fee_amount: { value: "0" } } },
     ];
-    const api = paypalPayoutToComponents("BATCH-REG", "2026-06-30", "USD", txns).components;
+    const apiRes = paypalPayoutToComponents("some-window", "2026-06-30", "USD", txns);
+    if (apiRes.skip) throw new Error("expected a completed payout");
+    const api = apiRes.components;
     const csvText = [
-      `Type,Gross,Fee,Net`,
-      `Website Payment,50.00,-1.80,48.20`,
-      `Website Payment,120.00,-3.78,116.22`,
-      `Refund,-20.00,0.70,-19.30`,
-      `General Withdrawal,-145.12,0,-145.12`,
+      `Type,Gross,Fee,Net,Transaction ID`,
+      `Website Payment,50.00,-1.80,48.20,R1`,
+      `Website Payment,120.00,-3.78,116.22,R2`,
+      `Refund,-20.00,0.70,-19.30,R3`,
+      `General Withdrawal,-145.12,0,-145.12,WREG`,
     ].join("\n");
-    const csv = parsePayoutCsv("paypal", "BATCH-REG", "2026-06-30", "USD", parseCsv(csvText)).components;
+    const csv = parsePayoutCsv("paypal", "different-ref", "2026-06-30", "USD", parseCsv(csvText)).components;
+    expect(api.payoutId).toBe("WREG");
     expect(api.payoutId).toBe(csv.payoutId);
     expect(api.netMinor).toBe(csv.netMinor);
     expect(api.grossMinor).toBe(csv.grossMinor);

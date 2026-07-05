@@ -20,10 +20,16 @@
  * ─────────────────────────────────────────
  * The ledger RPC keys every payout on `ext:<provider>:payout:<payout_id>`
  * (unique per org). Exactly-once across the API and CSV paths is therefore a
- * matter of BOTH paths deriving the SAME native payout id for the same provider
- * payout. `apiPayoutId(provider, native)` is the ONE place that id is derived, so
- * an API pull of Square payout `PO-9F2K` and a CSV upload of the same `PO-9F2K`
- * collapse to a single posted entry. See apiSync.test.ts.
+ * matter of BOTH paths deriving the SAME payout id for the same provider payout:
+ *   • Square HAS a native payout id → both paths use it verbatim (apiPayoutId).
+ *   • PayPal has NO native settlement/batch id (Transaction Search groups by date
+ *     window), so BOTH paths derive the id from the transfer-to-bank (withdrawal)
+ *     transaction id via paypalCanonicalPayoutId — the actual money movement that
+ *     IS the payout (Option A, Nik 4 Jul). A window with no withdrawal is not a
+ *     completed payout and is SKIPPED, never posted under a synthesized id.
+ * So an API pull of Square `PO-9F2K` and a CSV of the same collapse to one entry,
+ * and a PayPal API pull and CSV of the same payout collapse on the withdrawal txn
+ * id. See apiSync.test.ts.
  *
  * This module is pure + DB-free (no fetch, no Supabase) so the whole mapping is
  * unit-testable in node, exactly like payouts.ts. The edge function
@@ -33,6 +39,8 @@
 
 import {
   componentsFromRows,
+  isPayPalWithdrawalEventCode,
+  paypalCanonicalPayoutId,
   paypalRowsFrom,
   squareRowsFrom,
   toMinor,
@@ -187,50 +195,60 @@ export function paypalApiRows(txns: PayPalTransactionApi[]): PayPalTxnRow[] {
   });
 }
 
-/** Does this event code map to the withdrawal/transfer-to-bank line (the net)? */
-function isPayPalWithdrawalEvent(code: string): boolean {
-  const t = paypalTypeForEvent(code, 0).toLowerCase();
-  return t.includes("withdrawal") || t.includes("transfer to bank");
-}
-
 /**
- * A PayPal payout (batch id + its transactions) → PayoutComponents. Reuses
+ * A PayPal settlement window's transactions → PayoutComponents. Reuses
  * paypalRowsFrom + componentsFromRows — the SAME split as the CSV path. The
  * withdrawal/transfer row is excluded by paypalRowsFrom (it IS the net), so the
  * component rows reconcile to the deposit.
  *
- * RECONCILE (RT-230): when the window carries a withdrawal/transfer-to-bank row
- * we reconcile our split net against Σ(withdrawal magnitudes) — the money that
- * actually left PayPal — NOT against our own computed net (which would be a
- * tautology that can never fail, hiding a mapping bug; LEARNINGS #16). When the
- * transactions span more than one currency we refuse to sum across them
- * (multi-currency is a separate card) and flag reconciles=false so the caller
- * skips rather than silently mis-summing into one currency.
+ * ⭐ EXACTLY-ONCE (Option A, Nik 4 Jul): the payout id is DERIVED from the
+ * transfer-to-bank (withdrawal) transaction id via the shared
+ * paypalCanonicalPayoutId — the exact money movement the CSV export also carries.
+ * The `_windowLabel` arg is only a human label for logs, NEVER the idempotency
+ * anchor; PayPal Transaction Search has no native batch id, so keying on the
+ * date-window label is what caused an API pull and a CSV upload of the SAME
+ * payout to post TWICE. When the window has NO withdrawal transaction the money
+ * has not left PayPal yet — this is NOT a completed payout, so we return
+ * `skip:'not_withdrawn'` and the caller MUST NOT post (no synthesized id).
+ *
+ * RECONCILE (RT-230): when a withdrawal is present we reconcile our split net
+ * against Σ(withdrawal magnitudes) — the money that actually left PayPal — NOT
+ * against our own computed net (a tautology that can never fail; LEARNINGS #16).
+ * Multi-currency windows are refused (reconciles=false) so the caller skips
+ * rather than mis-summing into one currency (a separate card).
  */
 export function paypalPayoutToComponents(
-  payoutId: string,
+  _windowLabel: string,
   payoutDate: string,
   currency: string,
   txns: PayPalTransactionApi[],
-): { components: PayoutComponents; reportedNetMinor: number | null; reconciles: boolean } {
-  const id = apiPayoutId(payoutId);
+):
+  | { components: PayoutComponents; reportedNetMinor: number | null; reconciles: boolean; skip?: undefined }
+  | { components: null; reportedNetMinor: null; reconciles: false; skip: "not_withdrawn" } {
   const currencies = new Set<string>();
   let withdrawalNetMinor = 0;
   let sawWithdrawal = false;
+  const withdrawalTxnIds: string[] = [];
   for (const t of txns) {
     const info = t.transaction_info ?? {};
     const cc = info.transaction_amount?.currency_code;
     if (cc) currencies.add(cc.toString());
-    if (isPayPalWithdrawalEvent(info.transaction_event_code ?? "")) {
+    if (isPayPalWithdrawalEventCode(info.transaction_event_code ?? "")) {
       sawWithdrawal = true;
       withdrawalNetMinor += Math.abs(toMinor(info.transaction_amount?.value ?? "0"));
+      withdrawalTxnIds.push(info.transaction_id ?? "");
     }
   }
+  // Option A: no completed payout without a transfer-to-bank txn id to key on.
+  const canonicalId = paypalCanonicalPayoutId(withdrawalTxnIds);
+  if (!sawWithdrawal || canonicalId == null) {
+    return { components: null, reportedNetMinor: null, reconciles: false, skip: "not_withdrawn" };
+  }
+  const id = apiPayoutId(canonicalId);
   const rows = paypalRowsFrom(paypalApiRows(txns));
   const components = componentsFromRows("paypal", id, payoutDate, currency, rows);
   const multiCurrency = currencies.size > 1;
-  const reportedNetMinor = sawWithdrawal ? withdrawalNetMinor : null;
-  const reconciles =
-    !multiCurrency && (reportedNetMinor == null ? true : reportedNetMinor === components.netMinor);
+  const reportedNetMinor = withdrawalNetMinor;
+  const reconciles = !multiCurrency && reportedNetMinor === components.netMinor;
   return { components, reportedNetMinor, reconciles };
 }

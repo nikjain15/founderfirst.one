@@ -15,16 +15,18 @@ import { describe, expect, it } from "vitest";
 import { paypalPayoutToComponents, type PayPalTransactionApi } from "./apiSync";
 
 const GOOD: PayPalTransactionApi[] = [
-  { transaction_info: { transaction_event_code: "T0006", transaction_amount: { value: "50.00", currency_code: "USD" }, fee_amount: { value: "-1.80" } } },
-  { transaction_info: { transaction_event_code: "T0006", transaction_amount: { value: "120.00", currency_code: "USD" }, fee_amount: { value: "-3.78" } } },
-  { transaction_info: { transaction_event_code: "T1107", transaction_amount: { value: "-20.00", currency_code: "USD" }, fee_amount: { value: "0.70" } } },
-  // the withdrawal line — the actual net leaving PayPal (145.12)
-  { transaction_info: { transaction_event_code: "T0400", transaction_amount: { value: "-145.12", currency_code: "USD" }, fee_amount: { value: "0" } } },
+  { transaction_info: { transaction_id: "TX1", transaction_event_code: "T0006", transaction_amount: { value: "50.00", currency_code: "USD" }, fee_amount: { value: "-1.80" } } },
+  { transaction_info: { transaction_id: "TX2", transaction_event_code: "T0006", transaction_amount: { value: "120.00", currency_code: "USD" }, fee_amount: { value: "-3.78" } } },
+  { transaction_info: { transaction_id: "TX3", transaction_event_code: "T1107", transaction_amount: { value: "-20.00", currency_code: "USD" }, fee_amount: { value: "0.70" } } },
+  // the withdrawal line — the actual net leaving PayPal (145.12); its txn id is the anchor
+  { transaction_info: { transaction_id: "WTX", transaction_event_code: "T0400", transaction_amount: { value: "-145.12", currency_code: "USD" }, fee_amount: { value: "0" } } },
 ];
 
 describe("RT-230 PayPal API sync — genuine reconcile (not a tautology)", () => {
   it("reconciles against the withdrawal line, not against its own net", () => {
     const r = paypalPayoutToComponents("BATCH-RT", "2026-06-30", "USD", GOOD);
+    if (r.skip) throw new Error("expected a completed payout");
+    expect(r.components.payoutId).toBe("WTX"); // Option A anchor = withdrawal txn id
     expect(r.reportedNetMinor).toBe(14512); // Σ withdrawal magnitudes, NOT self-net
     expect(r.components.netMinor).toBe(14512);
     expect(r.reconciles).toBe(true);
@@ -39,6 +41,7 @@ describe("RT-230 PayPal API sync — genuine reconcile (not a tautology)", () =>
         : t,
     );
     const r = paypalPayoutToComponents("BATCH-RT", "2026-06-30", "USD", corrupt);
+    if (r.skip) throw new Error("expected a completed payout");
     expect(r.reportedNetMinor).toBe(14512);
     expect(r.components.netMinor).not.toBe(14512);
     expect(r.reconciles).toBe(false); // caught, so the caller SKIPS (never posts)
@@ -46,11 +49,19 @@ describe("RT-230 PayPal API sync — genuine reconcile (not a tautology)", () =>
 
   it("does NOT silently sum a multi-currency window — flags it for skip", () => {
     const mixed: PayPalTransactionApi[] = [
-      { transaction_info: { transaction_event_code: "T0006", transaction_amount: { value: "50.00", currency_code: "USD" }, fee_amount: { value: "-1.80" } } },
-      { transaction_info: { transaction_event_code: "T0006", transaction_amount: { value: "40.00", currency_code: "EUR" }, fee_amount: { value: "-1.50" } } },
-      { transaction_info: { transaction_event_code: "T0400", transaction_amount: { value: "-86.70", currency_code: "USD" }, fee_amount: { value: "0" } } },
+      { transaction_info: { transaction_id: "TX1", transaction_event_code: "T0006", transaction_amount: { value: "50.00", currency_code: "USD" }, fee_amount: { value: "-1.80" } } },
+      { transaction_info: { transaction_id: "TX2", transaction_event_code: "T0006", transaction_amount: { value: "40.00", currency_code: "EUR" }, fee_amount: { value: "-1.50" } } },
+      { transaction_info: { transaction_id: "WTX", transaction_event_code: "T0400", transaction_amount: { value: "-86.70", currency_code: "USD" }, fee_amount: { value: "0" } } },
     ];
     const r = paypalPayoutToComponents("BATCH-MIX", "2026-06-30", "USD", mixed);
+    if (r.skip) throw new Error("multi-currency still HAS a withdrawal — should not skip");
     expect(r.reconciles).toBe(false); // multi-currency → skip, not a silent mis-sum
+  });
+
+  it("SKIPS a window with no transfer-to-bank line (money not yet withdrawn)", () => {
+    const notWithdrawn = GOOD.slice(0, 3); // drop the withdrawal row
+    const r = paypalPayoutToComponents("BATCH-RT", "2026-06-30", "USD", notWithdrawn);
+    expect(r.skip).toBe("not_withdrawn");
+    expect(r.components).toBeNull();
   });
 });

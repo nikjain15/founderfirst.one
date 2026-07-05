@@ -80,19 +80,23 @@ describe("PayPal CSV end-to-end (parseCsv → parsePayoutCsv)", () => {
   });
 
   it("re-parsing the identical file yields identical components (idempotent re-import)", () => {
-    const a = parsePayoutCsv("paypal", "pp_dup", "2026-06-30", "USD", parseCsv(text));
-    const b = parsePayoutCsv("paypal", "pp_dup", "2026-06-30", "USD", parseCsv(text));
-    expect(a).toEqual(b);
-    // the ledger idempotency anchor is provider + payout id — stable across re-uploads
-    expect(`ext:${a.components.provider}:payout:${a.components.payoutId}`).toBe("ext:paypal:payout:pp_dup");
+    // Option A: the anchor is the transfer-to-bank (withdrawal) row's Transaction
+    // ID — NOT the caller-supplied ref (which differs here on purpose).
+    const a = parsePayoutCsv("paypal", "pp_dup_A", "2026-06-30", "USD", parseCsv(text));
+    const b = parsePayoutCsv("paypal", "pp_dup_B", "2026-06-30", "USD", parseCsv(text));
+    expect(a.components.payoutId).toBe("3IJ56789KL012345I"); // the withdrawal txn id
+    expect(a.components.payoutId).toBe(b.components.payoutId); // stable across re-uploads
+    expect(`ext:${a.components.provider}:payout:${a.components.payoutId}`).toBe(
+      "ext:paypal:payout:3IJ56789KL012345I",
+    );
+    expect(a.skip).toBeUndefined();
   });
 
-  it("flags a report whose Net column does not tie (truncated/wrong file, never plugged)", () => {
-    const truncated = text.split("\n").slice(0, 3).join("\n"); // lost the refund + chargeback rows
-    const r = parsePayoutCsv("paypal", "pp_trunc", "2026-06-30", "USD", parseCsv(truncated));
-    expect(r.reconciles).toBe(true); // Σnet of the remaining rows still self-ties …
-    expect(r.components.netMinor).not.toBe(7033); // … but NOT to the real deposit —
-    // the owner sees $160.10, not $70.33, and the bank-match step catches it.
+  it("SKIPS a report with no transfer-to-bank line (money not yet withdrawn — no id, no post)", () => {
+    const noWithdrawal = text.split("\n").slice(0, 3).join("\n"); // header + 2 sales, no withdrawal
+    const r = parsePayoutCsv("paypal", "pp_trunc", "2026-06-30", "USD", parseCsv(noWithdrawal));
+    expect(r.skip?.reason).toBe("paypal_not_withdrawn"); // caller blocks posting
+    expect(r.components.payoutId).toBe(""); // no synthesized id — nothing to key on
   });
 
   it("throws (not plugs) when the Gross column is missing", () => {

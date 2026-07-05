@@ -67,15 +67,20 @@ describe("Square API payout → components", () => {
 
 // ── PayPal: transaction-search rows mirroring the activity-CSV fixture ────────
 const PP_TXNS: PayPalTransactionApi[] = [
-  { transaction_info: { transaction_event_code: "T0006", transaction_amount: { value: "50.00", currency_code: "USD" }, fee_amount: { value: "-1.80" } } },
-  { transaction_info: { transaction_event_code: "T0006", transaction_amount: { value: "120.00", currency_code: "USD" }, fee_amount: { value: "-3.78" } } },
-  { transaction_info: { transaction_event_code: "T1107", transaction_amount: { value: "-20.00", currency_code: "USD" }, fee_amount: { value: "0.70" } } }, // refund + fee credit-back
-  { transaction_info: { transaction_event_code: "T0400", transaction_amount: { value: "-145.12", currency_code: "USD" }, fee_amount: { value: "0" } } }, // withdrawal = the payout line
+  { transaction_info: { transaction_id: "TX1", transaction_event_code: "T0006", transaction_amount: { value: "50.00", currency_code: "USD" }, fee_amount: { value: "-1.80" } } },
+  { transaction_info: { transaction_id: "TX2", transaction_event_code: "T0006", transaction_amount: { value: "120.00", currency_code: "USD" }, fee_amount: { value: "-3.78" } } },
+  { transaction_info: { transaction_id: "TX3", transaction_event_code: "T1107", transaction_amount: { value: "-20.00", currency_code: "USD" }, fee_amount: { value: "0.70" } } }, // refund + fee credit-back
+  // withdrawal = the payout line; its transaction id is the Option-A exactly-once anchor
+  { transaction_info: { transaction_id: "TX4", transaction_event_code: "T0400", transaction_amount: { value: "-145.12", currency_code: "USD" }, fee_amount: { value: "0" } } },
 ];
 
 describe("PayPal API payout → components", () => {
   it("classifies event codes and ties to net (gross − fees − refunds ± adj)", () => {
-    const { components: c } = paypalPayoutToComponents("PAYOUTBATCH-77", "2026-06-30", "USD", PP_TXNS);
+    const res = paypalPayoutToComponents("paypal-window:2026-06-30", "2026-06-30", "USD", PP_TXNS);
+    if (res.skip) throw new Error("expected a completed payout");
+    const c = res.components;
+    // Option A: the payout id is the transfer-to-bank txn id, NOT the window label
+    expect(c.payoutId).toBe("TX4");
     expect(c.grossMinor).toBe(5000 + 12000);
     expect(c.feesMinor).toBe(180 + 378);
     expect(c.refundsMinor).toBe(2000);
@@ -129,13 +134,42 @@ describe("exactly-once: API and CSV ingest of the SAME payout collapse to one po
       `2026-06-30,Refund,-20.00,0.70,-19.30,TX3`,
       `2026-06-30,General Withdrawal,-145.12,0,-145.12,TX4`,
     ].join("\n");
+    // The caller-supplied ref differs ("PAYOUTBATCH-77" vs "some-window") on
+    // purpose — under Option A BOTH paths ignore it and key on the transfer-to-
+    // bank txn id (TX4), which is what makes them collapse to ONE post. (Before
+    // the fix the CSV keyed on the batch id and the API on paypal:<date>, so the
+    // same payout posted TWICE — this test pins that they now agree.)
     const csv = parsePayoutCsv("paypal", "PAYOUTBATCH-77", "2026-06-30", "USD", parseCsv(csvText));
-    const api = paypalPayoutToComponents("PAYOUTBATCH-77", "2026-06-30", "USD", PP_TXNS);
+    const api = paypalPayoutToComponents("some-window", "2026-06-30", "USD", PP_TXNS);
+    if (api.skip) throw new Error("expected a completed payout");
 
+    expect(csv.components.payoutId).toBe("TX4");
+    expect(api.components.payoutId).toBe("TX4");
     expect(api.components.payoutId).toBe(csv.components.payoutId);
+    expect(csv.skip).toBeUndefined();
     expect(api.components.netMinor).toBe(csv.components.netMinor);
     expect(api.components.grossMinor).toBe(csv.components.grossMinor);
     expect(api.components.feesMinor).toBe(csv.components.feesMinor);
+    // the shared idempotency key is identical → post_ecommerce_payout collapses them
+    expect(`ext:paypal:payout:${api.components.payoutId}`).toBe(`ext:paypal:payout:${csv.components.payoutId}`);
+  });
+
+  it("PayPal: a window with NO transfer-to-bank line is SKIPPED (not posted)", () => {
+    // money still sitting in the PayPal balance — no withdrawal txn to key on.
+    const notWithdrawn: PayPalTransactionApi[] = [
+      { transaction_info: { transaction_id: "TX1", transaction_event_code: "T0006", transaction_amount: { value: "50.00", currency_code: "USD" }, fee_amount: { value: "-1.80" } } },
+    ];
+    const api = paypalPayoutToComponents("some-window", "2026-06-30", "USD", notWithdrawn);
+    expect(api.skip).toBe("not_withdrawn");
+    expect(api.components).toBeNull();
+
+    // the same not-yet-withdrawn report via CSV is likewise skipped, never posted.
+    const csvText = [
+      `Date,Type,Gross,Fee,Net,Transaction ID`,
+      `2026-06-30,Express Checkout Payment,50.00,-1.80,48.20,TX1`,
+    ].join("\n");
+    const csv = parsePayoutCsv("paypal", "ignored-ref", "2026-06-30", "USD", parseCsv(csvText));
+    expect(csv.skip?.reason).toBe("paypal_not_withdrawn");
   });
 
   it("apiPayoutId trims so a whitespace-differing id still collides to one key", () => {

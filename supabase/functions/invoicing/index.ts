@@ -173,6 +173,7 @@ Deno.serve(async (req) => {
         const r = await rpc("apply_invoice_payment", {
           p_invoice_id: invoiceId, p_amount_minor: amount,
           p_paid_date: body.paid_date ?? null, p_method: body.method ?? null,
+          p_fx_rate: typeof body.fx_rate === "number" ? body.fx_rate : null,
         });
         if (r.error) return fail(r.error);
         return json({ invoice: r.data });

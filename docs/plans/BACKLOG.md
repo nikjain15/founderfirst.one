@@ -223,7 +223,7 @@ coverage delta: new AUDIT ledger row (ap-billpay) ⬜ untested → stress pass (
   code path initiates a fund transfer).
 
 ## W5.4 · Multi-currency (D1–D7 answered — build unblocked)
-status: unclaimed
+status: claimed:loop-orch-w54
 blocked-by: — (D1–D7 answered by Nik 4 Jul; full plan in docs/plans/multi-currency-design.md §8)
 slot: cross-cutting (ledger + invoices + payouts) — sequence against A/C/D per orchestrator +
   Nik; per-org opt-in flag means it ships dark until enabled, so it can run in parallel.
@@ -239,6 +239,12 @@ centralization: currency catalog + fx_rates are seeded/systematic data, never in
 coverage delta: new AUDIT ledger row (multi-currency) ⬜ untested → stress pass (mixed-currency
   entries revalue at close, reverse next period, reports tie in base currency; single-currency
   org unaffected).
+scope note (this PR): ledger (rate resolution, base-balance invariant, period-close revaluation
+  + auto-reverse) and invoicing (foreign-currency invoices, realized FX on settlement) ship in
+  full per D6. E-commerce payouts (post_ecommerce_payout, W4.1/W4.1-B) are NOT yet FX-aware —
+  they still derive their currency from home_currency by construction, so an opted-in org is
+  unaffected, not broken — but a genuinely foreign-currency payout is a disclosed follow-up card,
+  not silently dropped (LOOP_PROMPT "no silent caps").
 
 ## CONN-1 · QBO production hosting IP (static-egress proxy) — Nik + infra
 status: unclaimed (deferred — sandbox unaffected)

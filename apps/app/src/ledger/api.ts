@@ -392,6 +392,7 @@ export interface OrgAccountingSettings {
   cpa_posts_require_approval: boolean;
   home_currency: string;
   fiscal_year_start_month: number;
+  multi_currency_enabled: boolean;
 }
 
 /** The owner's accounting settings for an org (RLS-readable to anyone who can
@@ -404,7 +405,7 @@ export function useOrgSettings(orgId: string | undefined) {
       const sb = getClient();
       const { data, error } = await sb
         .from("org_accounting_settings")
-        .select("org_id,cpa_posts_require_approval,home_currency,fiscal_year_start_month")
+        .select("org_id,cpa_posts_require_approval,home_currency,fiscal_year_start_month,multi_currency_enabled")
         .eq("org_id", orgId)
         .maybeSingle();
       if (error) throw error;
@@ -418,7 +419,30 @@ export const setOrgSettings = (input: {
   cpa_posts_require_approval?: boolean;
   home_currency?: string;
   fiscal_year_start_month?: number;
+  multi_currency_enabled?: boolean;
 }) => invoke<{ settings: OrgAccountingSettings }>("org-settings", { op: "set", ...input });
+
+// ── currency catalog (W5.4 — reference data, global not org-scoped) ──────────
+export interface Currency { code: string; name: string; minor_unit: number; }
+
+/** The seeded ISO-4217 catalog (supabase/migrations/20260707060000). Global
+ *  reference data, cached hard (it changes about as often as the ISO list does). */
+export function useCurrencies() {
+  return useQuery({
+    queryKey: ["currencies"],
+    staleTime: Infinity,
+    queryFn: async (): Promise<Currency[]> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("currencies")
+        .select("code,name,minor_unit")
+        .eq("is_active", true)
+        .order("code");
+      if (error) throw error;
+      return (data ?? []) as Currency[];
+    },
+  });
+}
 
 // ── history import (Phase 3) ──────────────────────────────────────────────────
 export type ImportSource = "csv" | "bank_statement" | "trial_balance" | "opening_balances";
@@ -1272,7 +1296,8 @@ export const sendInvoice = (org_id: string, invoice_id: string) =>
 
 export const payInvoice = (
   org_id: string, invoice_id: string, amount_minor: number, method?: string, paid_date?: string,
-) => invoke<{ invoice: Invoice }>("invoicing", { op: "pay", org_id, invoice_id, amount_minor, method, paid_date });
+  fx_rate?: number,
+) => invoke<{ invoice: Invoice }>("invoicing", { op: "pay", org_id, invoice_id, amount_minor, method, paid_date, fx_rate });
 
 export const voidInvoice = (org_id: string, invoice_id: string, memo?: string) =>
   invoke<{ invoice: Invoice }>("invoicing", { op: "void", org_id, invoice_id, memo });

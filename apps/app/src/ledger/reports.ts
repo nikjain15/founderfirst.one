@@ -40,8 +40,13 @@ export function accountBalances(
         credit: 0,
         net: 0,
       };
-      if (l.side === "D") cur.debit += l.amount_minor;
-      else cur.credit += l.amount_minor;
+      // Base-currency equivalent (W5.4): a single-currency org has
+      // base_amount_minor === amount_minor, so this is a no-op for it; a
+      // multi-currency org's mixed-currency lines now net correctly instead
+      // of adding e.g. GBP cents to USD cents (design §6).
+      const baseMinor = l.base_amount_minor ?? l.amount_minor;
+      if (l.side === "D") cur.debit += baseMinor;
+      else cur.credit += baseMinor;
       cur.net = cur.debit - cur.credit;
       map.set(l.account_id, cur);
     }
@@ -109,9 +114,10 @@ export interface GlRow {
   account: string; // "code · name" (or name)
   entry_date: string;
   memo: string;
-  debit: number; // minor units (0 if this line is a credit)
-  credit: number; // minor units (0 if this line is a debit)
-  balance: number; // running debit-positive balance within the account
+  currency: string; // the line's OWN transaction currency (design §6: show both)
+  debit: number; // transaction-currency minor units (0 if this line is a credit)
+  credit: number; // transaction-currency minor units (0 if this line is a debit)
+  balance: number; // running debit-positive BASE-currency balance within the account
 }
 
 /**
@@ -127,7 +133,7 @@ export function generalLedger(
 ): GlRow[] {
   interface Flat {
     account_id: string; account: string; entry_date: string; created: string;
-    memo: string; side: "D" | "C"; amount: number;
+    memo: string; side: "D" | "C"; amount: number; currency: string; base: number;
   }
   const flat: Flat[] = [];
   for (const e of entries) {
@@ -143,6 +149,8 @@ export function generalLedger(
         memo: l.memo ?? e.memo ?? "",
         side: l.side,
         amount: l.amount_minor,
+        currency: l.currency,
+        base: l.base_amount_minor ?? l.amount_minor,
       });
     }
   }
@@ -157,12 +165,17 @@ export function generalLedger(
   let balance = 0;
   for (const r of flat) {
     if (r.account_id !== curAccount) { curAccount = r.account_id; balance = 0; }
-    balance += r.side === "D" ? r.amount : -r.amount;
+    // The running balance is BASE-currency (design §6) — the transaction-
+    // currency amount alone can't be summed across a shared account that
+    // holds more than one currency (e.g. a single AR account across
+    // USD + GBP invoices) without adding cents of different currencies.
+    balance += r.side === "D" ? r.base : -r.base;
     rows.push({
       account_id: r.account_id,
       account: r.account,
       entry_date: r.entry_date,
       memo: r.memo,
+      currency: r.currency,
       debit: r.side === "D" ? r.amount : 0,
       credit: r.side === "C" ? r.amount : 0,
       balance,
@@ -522,7 +535,8 @@ export function arApAging(
       const name = l.account?.name ?? "—";
       const code = l.account?.code ?? null;
       if (!matchesAny(code, name, patterns)) continue;
-      const signed = l.side === openSide ? l.amount_minor : -l.amount_minor;
+      const baseMinor = l.base_amount_minor ?? l.amount_minor;
+      const signed = l.side === openSide ? baseMinor : -baseMinor;
       const acc = perAccount.get(l.account_id) ?? { code, name, posts: [] };
       acc.posts.push({ age, signedMinor: signed });
       perAccount.set(l.account_id, acc);

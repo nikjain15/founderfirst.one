@@ -9,6 +9,7 @@ import Topbar from "../components/Topbar";
 import { useActiveOrg } from "../org/ActiveOrgProvider";
 import InviteCpa from "../org/InviteCpa";
 import ApprovalSetting from "../org/ApprovalSetting";
+import MultiCurrencySetting from "../org/MultiCurrencySetting";
 import { COPY } from "../copy";
 
 export default function Settings() {
@@ -32,6 +33,7 @@ export default function Settings() {
             <div className="ledger-settings">
               <InviteCpa orgId={activeOrg.id} />
               <ApprovalSetting orgId={activeOrg.id} />
+              <MultiCurrencySetting orgId={activeOrg.id} />
             </div>
           </section>
         )}

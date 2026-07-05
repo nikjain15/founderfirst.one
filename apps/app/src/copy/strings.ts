@@ -127,6 +127,15 @@ export const COPY = {
     errUpdate: "Could not update setting.",
   },
 
+  // ── Multi-currency setting (W5.4) ───────────────────────────────────────────
+  multiCurrency: {
+    heading: "Other currencies",
+    checkboxAria: "Let this business bill and hold money in other currencies",
+    label: "Let me bill customers and hold money in currencies other than my home currency.",
+    hint: "Your reports always show one home currency — Penny converts and tracks the difference.",
+    errUpdate: "Could not update setting.",
+  },
+
   // ── Settings page ──────────────────────────────────────────────────────────
   settings: {
     eyebrow: "Settings",
@@ -1199,6 +1208,7 @@ export const COPY = {
     customerName: "Customer name",
     customerEmail: "Customer email",
     dueDate: "Due date",
+    currency: "Currency", // shown only when multi-currency is on (W5.4)
     lineDescription: "Description",
     lineQty: "Qty",
     linePrice: "Unit price",

@@ -347,8 +347,13 @@ coverage delta: extend the connectors AUDIT row — assert a broken connection r
 
 
 ## W5.4-FX · ECB fx-rate feed (fx_rates is empty; no fetcher yet)
-status: unclaimed
+status: built, opening PR (loop-insession-5jul) — migration
+  20260708000000_w5_4_fx_fx_rates_fetch.sql + supabase/functions/fx-rates-fetch; write-don't-deploy,
+  safe mode, not deployed
 blocked-by: — (W5.4 shipped; multi-currency is per-org opt-in + OFF by default, so this breaks nothing until an org enables MC)
+workflow: owner/CPA · enable multi-currency (per-org opt-in) → post a foreign-currency transaction →
+  it resolves against a real daily rate instead of erroring `fx_rate_required` — invisible when it
+  works, a filed-away infra fix, zero new taps/nav/onboarding questions
 context: W5.4 shipped the `fx_rates` table + resolvers + "missing rate FAILS LOUD, never posts at 1"
   (D3), but there is NO edge fn / cron that populates fx_rates from the ECB daily snapshot. Table is
   empty in prod. The moment an org enables multi-currency and posts a foreign-currency txn, the
@@ -359,6 +364,9 @@ goal: build the ECB daily-snapshot fetcher (scheduled edge fn / existing cron pa
 centralization: ECB endpoint + schedule = config/secret, never inline; rate rows are systematic data.
 coverage delta: extend the multi-currency AUDIT row — assert the fetcher upserts dated rates + a
   foreign-currency post resolves against a fetched rate (and still fails loud when none exists).
+scope note: the manual-override RPC (`set_manual_fx_rate`) is admin-gated and callable today (via an
+  admin session / SQL), but has NO admin-console form yet — a disclosed follow-up, not silently
+  dropped, since building one would add new admin-console surface out of scope for this card.
 
 ## SEC-2-KEYS · Cloudflare Turnstile keys (Nik) — captcha is dark until set
 status: unclaimed (Nik human step)

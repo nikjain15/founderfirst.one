@@ -421,8 +421,11 @@ scope note: `set_manual_fx_rate` is admin-gated and callable today (admin sessio
   admin-console FORM yet — disclosed, not silently dropped; building one is new admin-console surface,
   out of scope for this card.
 
-## IQ-1-CLEANUP · Null legacy plaintext QBO tokens (post-verify) — DEFERRED
-status: blocked:verify-encrypted-path-live-with-a-real-token
+## IQ-1-CLEANUP · Null legacy plaintext QBO tokens (post-verify) — UNBLOCKED
+status: claimed:loop-insession-5jul (building)
+note: UNBLOCKED 5-Jul — the pgcrypto encrypt→decrypt roundtrip was PROVEN in PROD with the real
+  Vault key (dec_qbo_token(pgp_sym_encrypt('x', qbo_token_key))='x' → true), so the encrypted path
+  is verified on live crypto; safe to null legacy plaintext without waiting for a real QBO login.
 blocked-by: a real QBO (re)connect that populates + round-trips an encrypted token in prod (the one
   existing conn was tokenless at deploy, so encrypt/decrypt hasn't been exercised on live data yet)
 lane: supabase/migrations

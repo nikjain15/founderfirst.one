@@ -284,6 +284,18 @@ export const COPY = {
     shareWithAccountant: "Share with your accountant",
     inviteLead: "Invite your accountant to your books — you control full or read-only access.",
     accountantManagedByOwner: "Your accountant relationship is managed by the business owner.",
+    // Chooser (owner-calm redesign) — Connections defaults to a short menu of jobs;
+    // picking one opens ONLY that flow full-width, with a back link to the menu. One
+    // thing at a time, like the demo — no more wall of expanded wizards.
+    back: "← Connections",
+    menu: {
+      importDesc: "Upload a CSV, connect your bank, or pull from QuickBooks or Xero.",
+      catchUpDesc: "Behind on your books? Penny gets each year sorted.",
+      payoutDesc: "Turn a Stripe, Shopify, PayPal, Square or Amazon deposit into sales, fees and refunds.",
+      invoicingDesc: "Send invoices and get paid, with gentle reminders.",
+      billsDesc: "Track what you owe and when it's due.",
+      inviteDesc: "Give your accountant full or read-only access.",
+    },
     // ── Always-reachable in-app support (IQ-2) ────────────────────────────────
     // A calm, discoverable "we're here" line on Connections + error states.
     // The address is ALWAYS SITE.email — never hardcode it (centralization gate).

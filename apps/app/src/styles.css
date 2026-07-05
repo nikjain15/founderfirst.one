@@ -448,6 +448,41 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
 .conn-block-h { margin: 0; font-size: var(--fs-body); font-weight: var(--fw-semibold); color: var(--ink); }
 .connections-block .invite-cpa { margin-top: 0; border-top: 0; padding-top: 0; }
 
+/* ── Connections chooser (owner-calm redesign) ───────────────────────────────
+   Default Connections is a short menu of jobs; picking one opens ONLY that flow.
+   One thing at a time, like the demo — no wall of expanded wizards. */
+.conn-chooser { gap: var(--space-5); }
+.conn-menu { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+/* A job row — reset the base <button> box (it would flood --brand) into a calm,
+   full-width card that reads like an admin list row. */
+.conn-menu-item {
+  display: flex; align-items: center; gap: var(--space-3);
+  width: 100%; text-align: left;
+  min-height: var(--tap-min, 44px);
+  padding: var(--space-3) var(--space-4);
+  background: var(--white); color: var(--ink);
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-card);
+  font-weight: var(--fw-regular);
+  cursor: pointer;
+}
+.conn-menu-item:hover:not(:disabled) { background: var(--brand-soft); border-color: var(--brand-soft); }
+.conn-menu-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.conn-menu-title { font-size: var(--fs-body); font-weight: var(--fw-semibold); color: var(--ink); }
+.conn-menu-desc { font-size: var(--fs-micro); }
+.conn-menu-chevron { flex: none; font-size: var(--fs-h3); color: var(--ink-2); line-height: 1; }
+/* Opened flow — a back link over the flow's own title. */
+.conn-flow { gap: var(--space-4); }
+.conn-back {
+  align-self: flex-start;
+  min-height: auto; padding: var(--space-1) 0;
+  background: transparent; color: var(--ink-2);
+  border: 0; border-radius: 0;
+  font-size: var(--fs-ui); font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+.conn-back:hover:not(:disabled) { background: transparent; color: var(--ink); }
+.conn-flow-title { margin: 0; }
+
 /* Settings tab — owner-only controls (invite accountant, review-before-post).
    The sections carry their own top border/margin for stacking; drop it on the
    first one so the panel starts clean. */

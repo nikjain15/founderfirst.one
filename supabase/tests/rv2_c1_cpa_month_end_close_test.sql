@@ -146,12 +146,14 @@ select ok(
             and action = 'period.close' and detail->>'via' = 'batch_close'),
   'batch close writes a period.close audit row tagged via=batch_close');
 
--- Idempotency / re-run: closing A again → 'skipped' (already closed, not error).
+-- Idempotency / re-run: closing A again is a safe no-op. A's May period is closed
+-- so no OPEN covering period remains → 'not_found' (nothing to close), never a
+-- double-close or an error.
 select is(
   (select result from cpa_batch_close_periods(
      '00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000C0',
      array['00000000-0000-0000-0000-0000000000CA']::uuid[], date '2026-05-31', false)),
-  'skipped', 're-closing an already-closed client → skipped (idempotent, no double-close)');
+  'not_found', 're-closing an already-closed client is a safe no-op (no open period → not_found, no double-close)');
 
 -- ── service_role reality: the write RPC must NOT depend on auth.uid() ─────────
 -- In prod the edge fn calls as service_role, where auth.uid() is NULL. cpa_batch_
@@ -167,6 +169,8 @@ select is(
      '00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000C0',
      array['00000000-0000-0000-0000-0000000000CD']::uuid[], date '2026-05-31', false)),
   'closed', 'batch close authorizes on p_actor (not auth.uid()) — works under service_role');
+-- Restore D to read_only so the doc-chase forbidden assertion below is honest.
+update engagements set access = 'read_only' where id = '00000000-0000-0000-0000-0000000000d3';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-0000000000c1","email":"admin@firmc.dev","role":"authenticated"}';
 
 -- ════════════════════════════════════════════════════════════════════════════

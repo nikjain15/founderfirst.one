@@ -240,6 +240,34 @@ coverage delta: new AUDIT ledger row (multi-currency) ⬜ untested → stress pa
   entries revalue at close, reverse next period, reports tie in base currency; single-currency
   org unaffected).
 
+## PENNY-UX-9 · Owner + CPA IA restructure to the /admin design standard (POST-DEPLOY)
+status: unclaimed
+blocked-by: RV2-A2, RV2-C1, RV2-D1, W5.4 — do this AFTER all four Wave-2 features are merged +
+  deployed (the new tax-export / practice-OS / AP-bills / multi-currency surfaces must exist
+  before we restructure the IA around them). Nik ask, 4 Jul night.
+scope-decision: Nik 4 Jul — revisit penny.founderfirst.one from the OWNER and CPA perspective;
+  arrange/structure the tabs; match founderfirst.one/admin EXACTLY on font · alignment ·
+  minimalist approach · tokens.
+workflow: owner · "everything I need is where I expect it, and it looks as clean as /admin" ·
+  Home → any job in ≤2 taps, zero empty/duplicate tabs · CPA · Practice home → per-client
+  workflow tabs, same visual language. NO new top-level nav / onboarding question / owner jargon
+  without Nik (usability gate); nest new Wave-2 surfaces (Filing export, AP/Bills, multi-currency
+  toggle) under existing jobs, do NOT add tabs.
+goal: a fresh owner+CPA IA/design pass on the LIVE app now that Wave-2 shipped. FIRST re-audit
+  every tab per lens (owner: Home·Review·Reports·Connections+Advanced; CPA: Practice home +
+  workflow tabs) — list which tabs need restructuring, which are empty/duplicative, where the new
+  Wave-2 features should nest. THEN bring the whole app to the founderfirst.one/admin standard:
+  the authed header/nav pattern (.eyebrow + .page-title (+.page-sub) from components/typography.css
+  — NEVER a bare <h1>; ink-active section tabs, sans wordmark), tokens.css for ALL font/color/
+  spacing/radius (no inline hex/px/one-off sizes), RESPONSIVE.md width ladder at every breakpoint,
+  minimalist layout, real content in every tab. Extends the PENNY-UX-0 audit (PR #220) — reuse its
+  ledger; this is the second, post-feature pass.
+centralization: all copy/Penny-language from live personas + CENTRAL-1 config; all visual values
+  from tokens.css. Tuning must be an edit (token/persona/config), not a per-file PR.
+coverage delta: extend the PENNY-UX AUDIT ledger rows (per-lens IA + design-conformance) — assert
+  zero unresolved CSS vars, zero bare <h1> on authed pages, no horizontal scroll on the width
+  ladder, every tab has real content.
+
 ---
 
 ## LOOP-1 · Build dashboard (/admin → Build tab)

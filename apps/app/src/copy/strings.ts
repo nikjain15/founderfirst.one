@@ -481,6 +481,14 @@ export const COPY = {
     doesNotTie: "A line does not reconcile to its transactions — do not file from this yet.",
     emptyTitle: "Nothing to file yet",
     emptyBody: "Post entries and map your accounts to see the return take shape.",
+    // ── RV2-A2 · structured per-suite export (APPENDED — additive keys) ──
+    exportHeading: "Download for tax software",
+    exportLead: "Hand this return to your tax software without re-keying a single line. Pick the format your software imports.",
+    exportSuiteLabel: "Format",
+    exportButton: "Download import file",
+    exportNotReady: "Map every account first — an unmapped account would land on the wrong line. This export unlocks once the return is review-ready.",
+    exportDoesNotTie: "This return does not reconcile to its transactions yet — the export is held until it ties out.",
+    exportDone: (name: string) => `Downloaded ${name}. Import it into your tax software; the totals already tie to the ledger.`,
   },
 
   // ── Periods ────────────────────────────────────────────────────────────────
@@ -803,6 +811,63 @@ export const COPY = {
     allClearChip: "All clear",
     openClientAria: (name: string) => `Open ${name}'s books`,
     queueAria: "Cross-client work queue",
+  },
+
+  // ── Firm-level month-end close (card RV2-C1) ───────────────────────────────
+  // The practice-OS view: batch-select clients, see close readiness, run the
+  // close across many at once, chase missing docs. VOICE.md — calm, plain, no
+  // exclamation marks, no jargon the CPA does not already use.
+  monthEnd: {
+    // The mode toggle on the practice home (queue ⇄ month-end)
+    modeQueue: "Work queue",
+    modeClose: "Month-end close",
+    eyebrow: "Month-end close",
+    title: "Close the books",
+    intro: "Pick the clients you're closing this month. A clean client closes in one step; anything that needs a look shows why.",
+    loading: "Checking each client's books…",
+    loadError: "Couldn't load your close checklist. Try again.",
+    emptyTitle: "Nothing to close",
+    emptyBody:
+      "No client has an open period ready to close right now. Closed months and clients without an open period don't show here.",
+    // Column / status labels
+    readyChip: "Ready",
+    exceptionChip: "Needs a look",
+    overdueChip: "Overdue",
+    periodLabel: (start: string, end: string) => `${start} → ${end}`,
+    noPeriod: "No open period",
+    // Blocker labels (the checklist items that must be zero to close)
+    blocker: {
+      uncategorized: "to categorize",
+      unreconciled: "to reconcile",
+      pending_review: "to approve",
+      open_flags: "flagged",
+    } as Record<string, string>,
+    blockerCount: (n: number, label: string) => `${n} ${label}`,
+    docBadge: (n: number) => `${n} ${n === 1 ? "doc chased" : "docs chased"}`,
+    // Selection + batch action
+    selectAllReady: "Select all ready",
+    clearSelection: "Clear",
+    selectedCount: (n: number) => `${n} selected`,
+    closeSelected: (n: number) => (n === 1 ? "Close 1 client" : `Close ${n} clients`),
+    closing: "Closing…",
+    openClient: "Open books",
+    // Doc-chase rail
+    chaseDocs: "Request docs",
+    chaseFor: (name: string) => `Request docs from ${name}`,
+    chaseNotePlaceholder: "Add a note (optional)…",
+    chaseSend: "Send request",
+    chaseSending: "Sending…",
+    chaseCancel: "Cancel",
+    chaseSent: "Request sent",
+    // Batch result summary
+    resultClosed: (n: number) => (n === 1 ? "1 client closed" : `${n} clients closed`),
+    resultBlocked: (n: number) => `${n} skipped — still had items to clear`,
+    resultForbidden: (n: number) => `${n} skipped — you don't have close access`,
+    resultSkipped: (n: number) => `${n} already closed`,
+    resultNone: "Nothing was closed.",
+    // A11y
+    rowSelectAria: (name: string) => `Select ${name} for closing`,
+    listAria: "Month-end close checklist",
   },
 
   // ── CPA collaboration primitives (card W1.5) ───────────────────────────────
@@ -1152,6 +1217,62 @@ export const COPY = {
     pennyLabel: "Penny",
   },
 
+  // ── Bills / AP — TRACKING ONLY (RV2-D1) — nested under Connections, opt-in,
+  //    off by default. Records what you owe + records payments; NEVER moves money.
+  //    Voice: warm, plain, no accounting jargon up top, no exclamation marks.
+  bills: {
+    sectionTitle: "Paying bills",
+    optInLead: "Keep track of what you owe and when it's due, and note when you've paid. This only keeps your books tidy — it never moves any money for you. Turn it on when you're ready — it stays off until you do.",
+    enableCta: "Turn on bill tracking",
+    loading: "Loading your bills…",
+    genericError: "Something went wrong. Try again.",
+    empty: "No bills yet. Add one to start tracking what you owe.",
+    newBill: "Add a bill",
+    // AP aging
+    noOutstanding: "Nothing owed right now.",
+    owedTitle: (amount: string) => `${amount} you owe`,
+    bucketLabel: (bucket: string) =>
+      bucket === "current" ? "Not yet due"
+      : bucket === "90+" ? "90+ days"
+      : `${bucket} days`,
+    // table
+    colNumber: "Bill",
+    colVendor: "Vendor",
+    colDue: "Due",
+    colTotal: "Total",
+    colBalance: "Balance",
+    colStatus: "Status",
+    colActions: "Actions",
+    statusLabel: (s: string) =>
+      s === "draft" ? "Draft"
+      : s === "open" ? "Owed"
+      : s === "partial" ? "Part paid"
+      : s === "paid" ? "Paid"
+      : s === "void" ? "Voided" : s,
+    enter: "Enter",           // move a draft into what-you-owe
+    recordPayment: "Record payment",
+    void: "Void",
+    // payment inline — note copy reinforces this only records, never sends money
+    paymentAmount: "Amount paid",
+    paymentNote: "This only records the payment in your books. It does not send any money.",
+    applyPayment: "Record",
+    cancel: "Cancel",
+    overpayment: (balance: string) => `That's more than the ${balance} balance. We'll record the full balance.`,
+    // form
+    vendorLabel: "Vendor",
+    vendorPlaceholder: "Choose a vendor",
+    noVendorHint: "Add a vendor in the 1099 area first, then pick them here.",
+    dueDate: "Due date",
+    lineDescription: "Description",
+    lineQty: "Qty",
+    linePrice: "Unit price",
+    addLine: "Add line",
+    removeLine: "Remove line",
+    totalPrefix: "Total:",
+    saveDraft: "Save draft",
+    tableAria: "Bills",
+    needVendorToEnter: "Pick a vendor before entering this bill.",
+  },
   // ── Invoicing + AR (W4.3) — nested under Connections, opt-in, off by default.
   //    Voice: warm, plain, no accounting jargon up top, no exclamation marks.
   invoicing: {

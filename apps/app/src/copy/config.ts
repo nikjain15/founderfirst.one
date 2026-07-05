@@ -27,6 +27,11 @@ export interface BehaviorConfig {
   digest_cadence_days: number;
   /** Days between AR reminder nudges for an overdue invoice (W4.3). */
   invoice_nudge_cadence_days: number;
+  /** Days after a period's end that an unclosed period reads as "overdue" for a
+   *  firm's month-end SLA / responsiveness tracking (RV2-C1, Signal #3). */
+  close_sla_days: number;
+  /** Default payment terms (days until due) for a new bill (RV2-D1 AP tracking). */
+  bill_payment_terms_days: number;
 }
 
 /** Baked fallback — MUST match the platform_config seed in the migration. */
@@ -37,6 +42,8 @@ export const CONFIG_DEFAULTS: BehaviorConfig = {
   asks_per_week: 5,
   digest_cadence_days: 7,
   invoice_nudge_cadence_days: 7,
+  close_sla_days: 10,
+  bill_payment_terms_days: 30,
 };
 
 const KEYS = Object.keys(CONFIG_DEFAULTS) as (keyof BehaviorConfig)[];

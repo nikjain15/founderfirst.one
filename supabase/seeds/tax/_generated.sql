@@ -26,315 +26,315 @@ begin
                   params = excluded.params, citation = excluded.citation
   returning id into v_form;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'gross_sales', '3A/8000', 'Gross sales, commissions or fees', 'income',
      10, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'other_income', '8230', 'Other income', 'income',
      20, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'gross_income', '8299', 'Gross business income', 'income',
      30, 'subtotal', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs_opening_inventory', '8300', 'Opening inventory', 'cogs',
      40, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs_purchases', '8320', 'Purchases during the year', 'cogs',
      41, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs_direct_wages', '8340', 'Direct wage costs', 'cogs',
      42, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs_subcontracts', '8360', 'Subcontracts', 'cogs',
      43, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'advertising', '8521', 'Advertising', 'deductions',
      50, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'meals', '8523', 'Meals and entertainment', 'deductions',
      51, 'amount', 50,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'bad_debts', '8590', 'Bad debts', 'deductions',
      52, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'insurance', '8690', 'Insurance', 'deductions',
      53, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'interest_bank', '8710', 'Interest and bank charges', 'deductions',
      54, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'taxes_licences', '8760', 'Business taxes, licences and memberships', 'deductions',
      55, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'office', '8810', 'Office expenses', 'deductions',
      56, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'supplies', '8811', 'Office stationery and supplies', 'deductions',
      57, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'professional_fees', '8860', 'Professional fees (legal, accounting)', 'deductions',
      58, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'management_admin', '8871', 'Management and administration fees', 'deductions',
      59, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'rent', '8910', 'Rent', 'deductions',
      60, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'repairs', '8960', 'Repairs and maintenance', 'deductions',
      61, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'wages', '9060', 'Salaries, wages and benefits', 'deductions',
      62, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'property_taxes', '9180', 'Property taxes', 'deductions',
      63, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'travel', '9200', 'Travel expenses', 'deductions',
      64, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'utilities', '9220', 'Utilities (incl. telephone)', 'deductions',
      65, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'fuel_non_vehicle', '9224', 'Fuel costs (except motor vehicles)', 'deductions',
      66, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'delivery_freight', '9275', 'Delivery, freight and express', 'deductions',
      67, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'motor_vehicle', '9281', 'Motor vehicle expenses (not CCA)', 'deductions',
      68, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'other_expenses', '9270', 'Other expenses', 'deductions',
      69, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'total_expenses', '9368', 'Total expenses', 'deductions',
      70, 'subtotal', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cca', '9936', 'Capital cost allowance (Area A)', 'deductions',
      71, 'computed', null,
-     null, 'CPA computes CCA; book depreciation is an M-1 adjustment, not a mapping')
+     null, 'CPA computes CCA; book depreciation is an M-1 adjustment, not a mapping', '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'business_use_of_home', '9945', 'Business-use-of-home expenses', 'deductions',
      72, 'computed', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'net_income', '9946', 'Your net income (loss)', 'deductions',
      73, 'subtotal', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   delete from public.tax_mapping_rules where form_id = v_form and is_seed;
   insert into public.tax_mapping_rules (form_id, priority, match_kind, match_value, line_key, is_seed)
   values (v_form, 20, 'account_tag', 'meals', 'meals', true);
@@ -374,145 +374,145 @@ begin
                   params = excluded.params, citation = excluded.citation
   returning id into v_form;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'gross_receipts', '1a', 'Gross receipts or sales', 'income',
      10, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'other_income', '5', 'Other income (loss)', 'income',
      30, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs_purchases', '3560·2', 'Purchases (Cost of Goods Sold, form 3560)', 'cogs',
      42, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'salaries_wages', '10', 'Salaries and wages (non-partner)', 'deductions',
      90, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'guaranteed_payments', '11', 'Guaranteed payments to partners', 'deductions',
      100, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'rent', '13', 'Rent', 'deductions',
      130, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'taxes_licenses', '14', 'Taxes and licenses', 'deductions',
      140, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'interest', '15', 'Interest', 'deductions',
      150, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'meals', '20·meals', 'Deductible meals', 'deductions',
      195, 'amount', 50,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'other_deductions', '20', 'Other deductions (attached statement)', 'deductions',
      200, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_cash', 'L·1', 'Cash', 'balance_sheet',
      300, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_other_assets', 'L·13', 'Other assets', 'balance_sheet',
      340, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_other_liabilities', 'L·17', 'Other current liabilities', 'balance_sheet',
      360, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_partners_capital', 'L·21', 'Partners'' capital accounts', 'balance_sheet',
      370, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   delete from public.tax_mapping_rules where form_id = v_form and is_seed;
   insert into public.tax_mapping_rules (form_id, priority, match_kind, match_value, line_key, is_seed)
   values (v_form, 10, 'account_code_range', '4000-4099', 'gross_receipts', true);
@@ -554,295 +554,295 @@ begin
                   params = excluded.params, citation = excluded.citation
   returning id into v_form;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'gross_receipts', '1a', 'Gross receipts or sales', 'income',
      10, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-1a","ultratax":"P1-1a"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'returns_allowances', '1b', 'Returns and allowances', 'income',
      15, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-1b","ultratax":"P1-1b"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'other_income', '7', 'Other income (loss)', 'income',
      30, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-7","ultratax":"P1-7"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs', '2', 'Cost of goods sold (Form 1125-A)', 'cogs',
      40, 'computed', null,
-     null, null)
+     null, null, '{"drake":"P1-2","ultratax":"P1-2"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs_purchases', '1125A·2', 'Purchases (Form 1125-A)', 'cogs',
      42, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-1125A-2","ultratax":"P1-1125A-2"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'salaries_wages', '9', 'Salaries and wages (non-partner)', 'deductions',
      90, 'amount', null,
-     null, 'Partners are NOT W-2 employees — never mix guaranteed payments here')
+     null, 'Partners are NOT W-2 employees — never mix guaranteed payments here', '{"drake":"P1-9","ultratax":"P1-9"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'guaranteed_payments', '10', 'Guaranteed payments to partners', 'deductions',
      100, 'amount', null,
-     null, 'Must never be mixed into line 9 wages')
+     null, 'Must never be mixed into line 9 wages', '{"drake":"P1-10","ultratax":"P1-10"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'repairs', '11', 'Repairs and maintenance', 'deductions',
      110, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-11","ultratax":"P1-11"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'bad_debts', '12', 'Bad debts', 'deductions',
      120, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-12","ultratax":"P1-12"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'rent', '13', 'Rent', 'deductions',
      130, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-13","ultratax":"P1-13"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'taxes_licenses', '14', 'Taxes and licenses', 'deductions',
      140, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-14","ultratax":"P1-14"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'interest', '15', 'Interest', 'deductions',
      150, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-15","ultratax":"P1-15"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'depreciation', '16a', 'Depreciation (Form 4562)', 'deductions',
      160, 'computed', null,
-     null, 'CPA/W1.3-C computes')
+     null, 'CPA/W1.3-C computes', '{"drake":"P1-16a","ultratax":"P1-16a"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'retirement_plans', '18', 'Retirement plans', 'deductions',
      180, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-18","ultratax":"P1-18"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'employee_benefits', '19', 'Employee benefit programs', 'deductions',
      190, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-19","ultratax":"P1-19"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'meals', '20·meals', 'Deductible meals (in other deductions)', 'deductions',
      195, 'amount', 50,
-     null, null)
+     null, null, '{"drake":"P1-20-meals","ultratax":"P1-20-meals"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'other_deductions', '20', 'Other deductions (attached statement)', 'deductions',
      200, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-20","ultratax":"P1-20"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'penalties_fines', null, 'Penalties and fines (not deductible)', 'deductions',
      205, 'info', 0,
-     'disallowed', null)
+     'disallowed', null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_cash', 'L·1', 'Cash', 'balance_sheet',
      300, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-L-1","ultratax":"P1-L-1"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_ar', 'L·2a', 'Trade notes and accounts receivable', 'balance_sheet',
      310, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-L-2a","ultratax":"P1-L-2a"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_inventory', 'L·3', 'Inventories', 'balance_sheet',
      320, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-L-3","ultratax":"P1-L-3"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_fixed_assets', 'L·9a', 'Buildings and other depreciable assets', 'balance_sheet',
      330, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-L-9a","ultratax":"P1-L-9a"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_other_assets', 'L·13', 'Other assets', 'balance_sheet',
      340, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-L-13","ultratax":"P1-L-13"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_ap', 'L·15', 'Accounts payable', 'balance_sheet',
      350, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-L-15","ultratax":"P1-L-15"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_other_liabilities', 'L·17', 'Other current liabilities', 'balance_sheet',
      360, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-L-17","ultratax":"P1-L-17"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_partners_capital', 'L·21', 'Partners'' capital accounts', 'balance_sheet',
      370, 'amount', null,
-     null, null)
+     null, null, '{"drake":"P1-L-21","ultratax":"P1-L-21"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'm2_contributions', 'M2·contrib', 'Partner capital contributions', 'equity_rollforward',
      400, 'info', null,
-     null, 'tag owner:<id> for per-partner tax-basis capital (mandatory since 2020)')
+     null, 'tag owner:<id> for per-partner tax-basis capital (mandatory since 2020)', '{"drake":"P1-M2-contrib","ultratax":"P1-M2-contrib"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'm2_distributions', 'M2·dist', 'Partner distributions', 'equity_rollforward',
      410, 'info', null,
-     null, 'tag owner:<id> for per-partner K-1 item L')
+     null, 'tag owner:<id> for per-partner K-1 item L', '{"drake":"P1-M2-dist","ultratax":"P1-M2-dist"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'k1_capital', 'K1·L', 'Partner capital account (K-1 item L)', 'info',
      500, 'info', null,
-     null, null)
+     null, null, '{"drake":"P1-K1-L","ultratax":"P1-K1-L"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   delete from public.tax_mapping_rules where form_id = v_form and is_seed;
   insert into public.tax_mapping_rules (form_id, priority, match_kind, match_value, line_key, is_seed)
   values (v_form, 10, 'account_code_range', '4000-4099', 'gross_receipts', true);
@@ -906,295 +906,295 @@ begin
                   params = excluded.params, citation = excluded.citation
   returning id into v_form;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'gross_receipts', '1a', 'Gross receipts or sales', 'income',
      10, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'returns_allowances', '1b', 'Returns and allowances', 'income',
      15, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'other_income', '10', 'Other income', 'income',
      30, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs', '2', 'Cost of goods sold (Form 1125-A)', 'cogs',
      40, 'computed', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs_purchases', '1125A·2', 'Purchases (Form 1125-A)', 'cogs',
      42, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'officer_comp', '12', 'Compensation of officers (Form 1125-E)', 'deductions',
      120, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'salaries_wages', '13', 'Salaries and wages', 'deductions',
      130, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'repairs', '14', 'Repairs and maintenance', 'deductions',
      140, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'bad_debts', '15', 'Bad debts', 'deductions',
      150, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'rents', '16', 'Rents', 'deductions',
      160, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'taxes_licenses', '17', 'Taxes and licenses', 'deductions',
      170, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'interest', '18', 'Interest', 'deductions',
      180, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'charitable', '19', 'Charitable contributions', 'deductions',
      190, 'amount', null,
-     null, '10% taxable-income limit is an M-1 adjustment, not a mapping')
+     null, '10% taxable-income limit is an M-1 adjustment, not a mapping', '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'depreciation', '20', 'Depreciation (Form 4562)', 'deductions',
      200, 'computed', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'advertising', '22', 'Advertising', 'deductions',
      220, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'pension_profit_sharing', '23', 'Pension, profit-sharing plans', 'deductions',
      230, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'employee_benefits', '24', 'Employee benefit programs', 'deductions',
      240, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'meals', '26·meals', 'Deductible meals (in other deductions)', 'deductions',
      255, 'amount', 50,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'other_deductions', '26', 'Other deductions (attached statement)', 'deductions',
      260, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'penalties_fines', null, 'Penalties and fines (not deductible)', 'deductions',
      265, 'info', 0,
-     'disallowed', null)
+     'disallowed', null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_cash', 'L·1', 'Cash', 'balance_sheet',
      300, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_ar', 'L·2a', 'Trade notes and accounts receivable', 'balance_sheet',
      310, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_inventory', 'L·3', 'Inventories', 'balance_sheet',
      320, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_fixed_assets', 'L·10a', 'Buildings and other depreciable assets', 'balance_sheet',
      330, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_other_assets', 'L·14', 'Other assets', 'balance_sheet',
      340, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_ap', 'L·16', 'Accounts payable', 'balance_sheet',
      350, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_other_liabilities', 'L·18', 'Other current liabilities', 'balance_sheet',
      360, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_capital_stock', 'L·22', 'Capital stock', 'balance_sheet',
      370, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_retained_earnings', 'L·25', 'Retained earnings', 'balance_sheet',
      380, 'amount', null,
-     null, null)
+     null, null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   delete from public.tax_mapping_rules where form_id = v_form and is_seed;
   insert into public.tax_mapping_rules (form_id, priority, match_kind, match_value, line_key, is_seed)
   values (v_form, 10, 'account_code_range', '4000-4099', 'gross_receipts', true);
@@ -1254,325 +1254,325 @@ begin
                   params = excluded.params, citation = excluded.citation
   returning id into v_form;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'gross_receipts', '1a', 'Gross receipts or sales', 'income',
      10, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-1a","ultratax":"SS-1a"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'returns_allowances', '1b', 'Returns and allowances', 'income',
      15, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-1b","ultratax":"SS-1b"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'other_income', '5', 'Other income (loss)', 'income',
      30, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-5","ultratax":"SS-5"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs', '2', 'Cost of goods sold (Form 1125-A)', 'cogs',
      40, 'computed', null,
-     null, null)
+     null, null, '{"drake":"SS-2","ultratax":"SS-2"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs_purchases', '1125A·2', 'Purchases (Form 1125-A)', 'cogs',
      42, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-1125A-2","ultratax":"SS-1125A-2"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'officer_comp', '7', 'Compensation of officers (Form 1125-E)', 'deductions',
      70, 'amount', null,
-     null, 'Officer W-2 comp — must be separable from line 8 staff wages (reasonable-comp audit issue). 1125-E when receipts >= threshold.')
+     null, 'Officer W-2 comp — must be separable from line 8 staff wages (reasonable-comp audit issue). 1125-E when receipts >= threshold.', '{"drake":"SS-7","ultratax":"SS-7"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'salaries_wages', '8', 'Salaries and wages (less employment credits)', 'deductions',
      80, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-8","ultratax":"SS-8"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'repairs', '9', 'Repairs and maintenance', 'deductions',
      90, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-9","ultratax":"SS-9"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'bad_debts', '10', 'Bad debts', 'deductions',
      100, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-10","ultratax":"SS-10"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'rents', '11', 'Rents', 'deductions',
      110, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-11","ultratax":"SS-11"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'taxes_licenses', '12', 'Taxes and licenses', 'deductions',
      120, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-12","ultratax":"SS-12"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'interest', '13', 'Interest', 'deductions',
      130, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-13","ultratax":"SS-13"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'depreciation', '14', 'Depreciation (Form 4562)', 'deductions',
      140, 'computed', null,
-     null, 'CPA/W1.3-C computes; book depreciation delta is an M-1 adjustment')
+     null, 'CPA/W1.3-C computes; book depreciation delta is an M-1 adjustment', '{"drake":"SS-14","ultratax":"SS-14"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'advertising', '16', 'Advertising', 'deductions',
      160, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-16","ultratax":"SS-16"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'pension_profit_sharing', '17', 'Pension, profit-sharing plans', 'deductions',
      170, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-17","ultratax":"SS-17"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'employee_benefits', '18', 'Employee benefit programs', 'deductions',
      180, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-18","ultratax":"SS-18"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'meals', '19·meals', 'Deductible meals (in other deductions)', 'deductions',
      185, 'amount', 50,
-     null, null)
+     null, null, '{"drake":"SS-19-meals","ultratax":"SS-19-meals"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'other_deductions', '19', 'Other deductions (attached statement)', 'deductions',
      190, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-19","ultratax":"SS-19"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'penalties_fines', null, 'Penalties and fines (not deductible)', 'deductions',
      195, 'info', 0,
-     'disallowed', null)
+     'disallowed', null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_cash', 'L·1', 'Cash', 'balance_sheet',
      300, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-L-1","ultratax":"SS-L-1"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_ar', 'L·2a', 'Trade notes and accounts receivable', 'balance_sheet',
      310, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-L-2a","ultratax":"SS-L-2a"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_inventory', 'L·3', 'Inventories', 'balance_sheet',
      320, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-L-3","ultratax":"SS-L-3"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_fixed_assets', 'L·10a', 'Buildings and other depreciable assets', 'balance_sheet',
      330, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-L-10a","ultratax":"SS-L-10a"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_other_assets', 'L·14', 'Other assets', 'balance_sheet',
      340, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-L-14","ultratax":"SS-L-14"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_ap', 'L·16', 'Accounts payable', 'balance_sheet',
      350, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-L-16","ultratax":"SS-L-16"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_other_liabilities', 'L·18', 'Other current liabilities', 'balance_sheet',
      360, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-L-18","ultratax":"SS-L-18"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_loans', 'L·19', 'Loans from shareholders', 'balance_sheet',
      365, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-L-19","ultratax":"SS-L-19"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_capital_stock', 'L·22', 'Capital stock', 'balance_sheet',
      370, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-L-22","ultratax":"SS-L-22"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'sch_l_retained_earnings', 'L·24', 'Retained earnings', 'balance_sheet',
      380, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SS-L-24","ultratax":"SS-L-24"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'm2_contributions', 'M2·contrib', 'Shareholder contributions (AAA/basis feed)', 'equity_rollforward',
      400, 'info', null,
-     null, 'tag owner:<id> for per-shareholder basis')
+     null, 'tag owner:<id> for per-shareholder basis', '{"drake":"SS-M2-contrib","ultratax":"SS-M2-contrib"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'm2_distributions', 'M2·7', 'Distributions (Schedule M-2 / AAA)', 'equity_rollforward',
      410, 'info', null,
-     null, 'tag owner:<id> for per-shareholder AAA roll-forward')
+     null, 'tag owner:<id> for per-shareholder AAA roll-forward', '{"drake":"SS-M2-7","ultratax":"SS-M2-7"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'k1_officer_comp', 'K1·note', 'Officer comp summary (K-1 support)', 'info',
      500, 'info', null,
-     null, null)
+     null, null, '{"drake":"SS-K1-note","ultratax":"SS-K1-note"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   delete from public.tax_mapping_rules where form_id = v_form and is_seed;
   insert into public.tax_mapping_rules (form_id, priority, match_kind, match_value, line_key, is_seed)
   values (v_form, 10, 'account_code_range', '4000-4099', 'gross_receipts', true);
@@ -1638,295 +1638,295 @@ begin
                   params = excluded.params, citation = excluded.citation
   returning id into v_form;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'gross_receipts', '1', 'Gross receipts or sales', 'income',
      10, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-1","ultratax":"SC-1"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'returns_allowances', '2', 'Returns and allowances', 'income',
      20, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-2","ultratax":"SC-2"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'other_income', '6', 'Other income', 'income',
      30, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-6","ultratax":"SC-6"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs', '4', 'Cost of goods sold (from Part III line 42)', 'cogs',
      40, 'computed', null,
-     null, null)
+     null, null, '{"drake":"SC-4","ultratax":"SC-4"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs_purchases', 'Part III·36', 'Purchases less cost of items withdrawn', 'cogs',
      42, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-P3-36","ultratax":"SC-P3-36"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs_labor', 'Part III·37', 'Cost of labor', 'cogs',
      43, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-P3-37","ultratax":"SC-P3-37"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'cogs_materials', 'Part III·38', 'Materials and supplies', 'cogs',
      44, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-P3-38","ultratax":"SC-P3-38"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'advertising', '8', 'Advertising', 'deductions',
      80, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-8","ultratax":"SC-8"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'car_truck', '9', 'Car and truck expenses', 'deductions',
      90, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-9","ultratax":"SC-9"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'commissions_fees', '10', 'Commissions and fees', 'deductions',
      100, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-10","ultratax":"SC-10"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'contract_labor', '11', 'Contract labor', 'deductions',
      110, 'amount', null,
-     null, '1099-NEC candidate feed')
+     null, '1099-NEC candidate feed', '{"drake":"SC-11","ultratax":"SC-11"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'depreciation', '13', 'Depreciation and section 179 (Form 4562)', 'deductions',
      130, 'computed', null,
-     null, 'CPA computes via Form 4562; book depreciation is an M-1 adjustment, not a mapping (W1.3-C)')
+     null, 'CPA computes via Form 4562; book depreciation is an M-1 adjustment, not a mapping (W1.3-C)', '{"drake":"SC-13","ultratax":"SC-13"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'insurance', '15', 'Insurance (other than health)', 'deductions',
      150, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-15","ultratax":"SC-15"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'interest_other', '16b', 'Interest — other', 'deductions',
      160, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-16b","ultratax":"SC-16b"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'legal_professional', '17', 'Legal and professional services', 'deductions',
      170, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-17","ultratax":"SC-17"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'office_expense', '18', 'Office expense', 'deductions',
      180, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-18","ultratax":"SC-18"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'rent_other', '20b', 'Rent or lease — other business property', 'deductions',
      200, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-20b","ultratax":"SC-20b"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'repairs', '21', 'Repairs and maintenance', 'deductions',
      210, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-21","ultratax":"SC-21"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'supplies', '22', 'Supplies', 'deductions',
      220, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-22","ultratax":"SC-22"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'taxes_licenses', '23', 'Taxes and licenses', 'deductions',
      230, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-23","ultratax":"SC-23"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'travel', '24a', 'Travel', 'deductions',
      240, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-24a","ultratax":"SC-24a"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'meals', '24b', 'Deductible meals', 'deductions',
      245, 'amount', 50,
-     null, null)
+     null, null, '{"drake":"SC-24b","ultratax":"SC-24b"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'utilities', '25', 'Utilities', 'deductions',
      250, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-25","ultratax":"SC-25"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'wages', '26', 'Wages (less employment credits)', 'deductions',
      260, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-26","ultratax":"SC-26"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'other_expenses', '27a', 'Other expenses (itemized statement)', 'deductions',
      270, 'amount', null,
-     null, null)
+     null, null, '{"drake":"SC-27a","ultratax":"SC-27a"}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'penalties_fines', null, 'Penalties and fines (not deductible)', 'deductions',
      275, 'info', 0,
-     'disallowed', null)
+     'disallowed', null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'owner_health_insurance', null, 'Self-employed health insurance', 'info',
      900, 'info', null,
-     '1040 Schedule 1', null)
+     '1040 Schedule 1', null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'owner_retirement', null, 'Self-employed SEP/SIMPLE/qualified plans', 'info',
      905, 'info', null,
-     '1040 Schedule 1', null)
+     '1040 Schedule 1', null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   insert into public.tax_form_lines
-    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes)
+    (form_id, line_key, line_code, label, section, sort_order, kind, deductible_pct, flows_to, notes, export_codes)
   values
     (v_form, 'owner_draws', null, 'Owner draws (equity — not deductible)', 'info',
      910, 'info', null,
-     'disallowed', null)
+     'disallowed', null, '{}'::jsonb)
   on conflict (form_id, line_key) do update set
     line_code = excluded.line_code, label = excluded.label, section = excluded.section,
     sort_order = excluded.sort_order, kind = excluded.kind, deductible_pct = excluded.deductible_pct,
-    flows_to = excluded.flows_to, notes = excluded.notes;
+    flows_to = excluded.flows_to, notes = excluded.notes, export_codes = excluded.export_codes;
   delete from public.tax_mapping_rules where form_id = v_form and is_seed;
   insert into public.tax_mapping_rules (form_id, priority, match_kind, match_value, line_key, is_seed)
   values (v_form, 10, 'account_code_range', '4000-4099', 'gross_receipts', true);

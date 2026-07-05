@@ -28,6 +28,11 @@ export interface TaxFormLine {
   deductible_pct: number | null; // null = 100
   flows_to: string | null; // null | a form name | 'disallowed'
   notes?: string | null;
+  /** Per-suite tax-software import code for THIS line, seeded per suite+year
+   *  (tax_form_lines.export_codes → { drake: 'S-08', ultratax: 'S-08', ... }).
+   *  DATA, never a code literal in the app: a suite's published code revision is a
+   *  seed edit. Absent/empty ⇒ the serializer falls back to the display line_code. */
+  export_codes?: Record<string, string> | null;
 }
 
 /** One account's resolution (mirrors resolve_account_tax_lines output). */
@@ -61,7 +66,13 @@ export interface MappedLine {
   deductible_pct: number | null;
   flows_to: string | null;
   amount_minor: number; // Σ of feeding account amounts (book basis; M-1 applies deductibility)
-  accounts: Array<{ account_id: string; account_code: string | null; account_name: string; amount_minor: number }>;
+  accounts: Array<{
+    account_id: string; account_code: string | null; account_name: string; amount_minor: number;
+    /** the account's ledger type — the AUTHORITATIVE debit/credit normalcy for TB-shaped
+     *  exports (a balance_sheet section holds BOTH assets and liabilities, so section is
+     *  not a safe proxy). Optional for back-compat; serializers fall back to section. */
+    account_type?: AccountType;
+  }>;
 }
 
 /** The full mapped return for one org × form × year. */

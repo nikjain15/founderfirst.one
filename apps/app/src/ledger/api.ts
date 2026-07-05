@@ -1280,3 +1280,113 @@ export const voidInvoice = (org_id: string, invoice_id: string, memo?: string) =
 /** Send AR reminders to overdue opt-in invoices at the config cadence. */
 export const runInvoiceNudges = (org_id: string) =>
   invoke<{ nudged: number; cadence: number }>("invoicing", { op: "nudge", org_id });
+
+// ── AP / bill-pay — TRACKING ONLY (RV2-D1) ────────────────────────────────────
+// The money-OUT half, symmetric with invoicing. Opt-in, off by default. Records
+// what the org OWES and RECORDS payments as bookkeeping entries — it NEVER moves
+// money (no payments provider, no transfer API). Reads go direct under RLS
+// (can_access_org); every write funnels through the `bill-pay` edge fn
+// (service_role RPCs), which posts the Expense/AP/Cash ledger entries. Vendors
+// are the EXISTING 1099 vendor store (useVendors above) — one source, no dup.
+export type BillStatus = "draft" | "open" | "partial" | "paid" | "void";
+
+export interface BillLineInput {
+  description: string;
+  quantity_milli?: number;    // qty × 1000 (3dp); defaults to 1000 (= 1)
+  unit_price_minor: number;
+}
+export interface Bill {
+  id: string;
+  number: string;
+  status: BillStatus;
+  vendor_id: string | null;
+  vendor_name_cache: string | null;
+  bill_date: string;
+  due_date: string;
+  currency: string;
+  memo: string | null;
+  total_minor: number;
+  amount_paid_minor: number;
+  entered_at: string | null;
+}
+export interface ApSettings { enabled: boolean; }
+export interface ApAgingBucket { bucket: string; bill_count: number; balance_minor: number; }
+
+/** The org's AP opt-in flag (defaults off when no row exists). */
+export function useApSettings(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["ap-settings", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<ApSettings> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("org_ap_settings").select("enabled")
+        .eq("org_id", orgId!).maybeSingle();
+      if (error) throw error;
+      return { enabled: Boolean(data?.enabled) };
+    },
+  });
+}
+
+/** Every bill for the org, newest first. */
+export function useBills(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["bills", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<Bill[]> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("bills")
+        .select("id, number, status, vendor_id, vendor_name_cache, bill_date, due_date, currency, memo, total_minor, amount_paid_minor, entered_at")
+        .eq("org_id", orgId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Bill[];
+    },
+  });
+}
+
+/** AP aging buckets (current / 1-30 / 31-60 / 61-90 / 90+) over open balances. */
+export function useApAging(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["ap-aging", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async (): Promise<ApAgingBucket[]> => {
+      const sb = getClient();
+      const { data, error } = await sb.rpc("bill_ap_aging", { p_org: orgId });
+      if (error) throw error;
+      return (data ?? []) as ApAgingBucket[];
+    },
+  });
+}
+
+export function useApRefresh(orgId: string | undefined) {
+  const qc = useQueryClient();
+  return () => {
+    for (const key of ["bills", "ap-aging", "ap-settings", "ledger-entries"]) {
+      void qc.invalidateQueries({ queryKey: [key, orgId] });
+    }
+  };
+}
+
+export const setApSettings = (org_id: string, patch: Partial<ApSettings>) =>
+  invoke<{ settings: ApSettings }>("bill-pay", { op: "settings", org_id, ...patch });
+
+export const upsertBill = (input: {
+  org_id: string; bill_id?: string | null;
+  vendor_id?: string | null;
+  due_date?: string | null; bill_date?: string | null;
+  currency?: string | null; memo?: string | null;
+  expense_account_id?: string | null; lines: BillLineInput[];
+}) => invoke<{ bill: Bill }>("bill-pay", { op: "upsert", ...input });
+
+export const enterBill = (org_id: string, bill_id: string) =>
+  invoke<{ bill: Bill }>("bill-pay", { op: "enter", org_id, bill_id });
+
+/** RECORD a payment against a bill (books a Dr AP / Cr Cash entry). Moves NO money. */
+export const recordBillPayment = (
+  org_id: string, bill_id: string, amount_minor: number, method?: string, paid_date?: string,
+) => invoke<{ bill: Bill }>("bill-pay", { op: "pay", org_id, bill_id, amount_minor, method, paid_date });
+
+export const voidBill = (org_id: string, bill_id: string, memo?: string) =>
+  invoke<{ bill: Bill }>("bill-pay", { op: "void", org_id, bill_id, memo });

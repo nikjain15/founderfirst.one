@@ -27,6 +27,7 @@ import Categorize from "./Categorize";
 import Receipts, { ReceiptBadge } from "./Receipts";
 import OwnerHome from "./OwnerHome";
 import Invoicing from "./Invoicing";
+import Bills from "./Bills";
 import PayoutUpload from "../ecommerce/PayoutUpload";
 import LearnedRules from "./LearnedRules";
 import PennyThread from "./PennyThread";
@@ -249,7 +250,7 @@ export default function Ledger({
                 onCategorize={() => goto("review")} />
             )}
             {surface === "reports" && <Reports entries={entries.data ?? []} org={org} />}
-            {surface === "filing" && <Filing orgId={org.id} entries={entries.data ?? []} />}
+            {surface === "filing" && <Filing orgId={org.id} entries={entries.data ?? []} orgName={org.name} />}
           </div>
         </div>
       )}
@@ -298,6 +299,13 @@ function Connections({
       <section className="connections-block">
         <h2 className="section-h">{COPY.invoicing.sectionTitle}</h2>
         <Invoicing orgId={orgId} canWrite={canWrite} />
+      </section>
+      {/* Paying bills (RV2-D1) — AP tracking, nested here (not a new top-level
+          tab). TRACKING ONLY: records what you owe + records payments, never
+          moves money. Opt-in, off by default. */}
+      <section className="connections-block">
+        <h2 className="section-h">{COPY.bills.sectionTitle}</h2>
+        <Bills orgId={orgId} canWrite={canWrite} />
       </section>
       <section className="connections-block">
         <h2 className="section-h">{COPY.connections.shareWithAccountant}</h2>

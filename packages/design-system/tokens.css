@@ -146,6 +146,8 @@
   /* Soft "floating card" elevation — borderless white cards on a paper canvas. */
   --shadow-float:     0 1px 3px rgba(10, 10, 10, 0.05), 0 10px 30px rgba(10, 10, 10, 0.05);
   --shadow-float-lg:  0 1px 3px rgba(10, 10, 10, 0.05), 0 18px 44px rgba(10, 10, 10, 0.08);
+  /* Dimming scrim behind a centered modal / dialog. */
+  --scrim: rgba(10, 10, 10, 0.4);
 
   /* -- Structure: borders, layering, focus ---------------------------- */
   --bw-hair:   1px;     /* default hairline border */

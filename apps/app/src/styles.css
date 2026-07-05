@@ -704,6 +704,25 @@ button.ghost.sm, .ghost.sm {
 .s-acct, .s-memo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .worksheet-unmapped { margin-top: 1.25rem; }
 
+/* RV2-A2 · structured per-suite export */
+.filing-export {
+  margin-top: 1.5rem; padding-top: 1rem;
+  border-top: var(--bw-hair) solid var(--line);
+}
+.filing-export .sub { margin-top: 0.2rem; }
+.filing-export-controls {
+  display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin: 0.75rem 0 0.4rem;
+}
+.filing-export-suite { display: flex; flex-direction: column; gap: 0.2rem; }
+.filing-export-suite span {
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip); color: var(--ink-3);
+}
+.filing-export-suite select {
+  min-height: var(--tap-min); font-size: var(--fs-input);
+  padding: 0.35rem 0.5rem; border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); background: var(--white); color: var(--ink);
+}
+
 /* periods */
 .period-row {
   display: grid; grid-template-columns: 1fr auto auto; gap: 0.6rem; align-items: center;
@@ -1027,6 +1046,74 @@ button.ghost.sm, .ghost.sm {
   display: flex; align-items: center;
 }
 .pq-archive[open] > summary { margin-bottom: var(--space-2); }
+
+/* ── Firm-level month-end close (card RV2-C1) ─────────────────────────────── */
+/* Mode toggle on the practice home (queue ⇄ month-end) — ink-active tabs. */
+.me-mode { display: inline-flex; gap: var(--space-2); margin-top: var(--space-3); flex-wrap: wrap; }
+.me-mode-tab {
+  min-height: var(--tap-min); padding: var(--space-1) var(--space-3);
+  background: transparent; border: none; cursor: pointer;
+  color: var(--ink-3); font-size: var(--fs-ui); font-weight: var(--fw-medium);
+  border-bottom: 2px solid transparent;
+}
+.me-mode-tab.is-active { color: var(--ink); border-bottom-color: var(--ink); }
+
+.me-close { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
+.me-intro { margin: 0; }
+
+.me-bar {
+  display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;
+  padding-bottom: var(--space-2); border-bottom: var(--bw-hair) solid var(--line);
+}
+.me-sel-count { color: var(--ink-3); font-size: var(--fs-micro); margin-left: auto; }
+.me-close-btn { flex: none; }
+
+.me-result {
+  margin: 0; padding: var(--space-2) var(--space-3); border-radius: var(--r-card);
+  background: var(--amber-bg); color: var(--amber-strong); font-size: var(--fs-ui);
+}
+.me-result.ok { background: var(--brand-soft); color: var(--ink); }
+
+.me-list { list-style: none; margin: 0; padding: 0; }
+.me-row {
+  display: flex; align-items: flex-start; gap: var(--space-3);
+  padding: var(--space-3) 0; border-bottom: var(--bw-hair) solid var(--line);
+  flex-wrap: wrap;
+}
+.me-check { flex: none; display: flex; align-items: center; min-height: var(--tap-min); }
+.me-check input { width: var(--space-3); height: var(--space-3); }
+.me-main { flex: 1 1 14rem; min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.me-name-line { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+.me-name { font-weight: var(--fw-semibold); color: var(--ink); }
+.me-chip {
+  flex: none; padding: 0 var(--space-2); border-radius: var(--r-pill);
+  font-size: var(--fs-micro); font-weight: var(--fw-semibold);
+}
+.me-chip.ready { color: var(--ink); background: var(--brand-soft); }
+.me-chip.exception { color: var(--amber-strong); background: var(--amber-bg); }
+.me-chip.overdue { color: var(--error); background: var(--amber-bg); }
+.me-chip.ro { color: var(--ink-3); background: var(--brand-soft); text-transform: uppercase; letter-spacing: var(--ls-chip); }
+.me-sub { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; font-size: var(--fs-micro); color: var(--ink-3); }
+.me-blocker { color: var(--amber-strong); }
+.me-doc { color: var(--ink-3); }
+.me-actions { flex: none; display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+/* Doc-chase dialog — the client-communication rail. */
+.me-chase-overlay {
+  position: fixed; inset: 0; z-index: var(--z-drawer); display: grid; place-items: center;
+  background: var(--scrim); padding: var(--space-4);
+}
+.me-chase {
+  width: min(100%, 30rem); background: var(--white); color: var(--ink);
+  border-radius: var(--r-card); padding: var(--space-4);
+  display: flex; flex-direction: column; gap: var(--space-3);
+  box-shadow: var(--shadow-float);
+}
+.me-field { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--fs-ui); color: var(--ink-2); }
+.me-field > span { font-size: var(--fs-micro); color: var(--ink-3); }
+.me-field select, .me-field textarea { font-size: 1rem; width: 100%; min-height: var(--tap-min); }
+.me-chase-body { margin: 0; font-size: var(--fs-ui); }
+.me-chase-actions { display: flex; gap: var(--space-2); justify-content: flex-end; flex-wrap: wrap; }
 
 /* ── CPA collaboration primitives (card W1.5) ─────────────────────────────── */
 /* Owner needs-a-look inbox on the Review tab. */
@@ -1388,3 +1475,68 @@ button.ghost.sm, .ghost.sm {
   background: var(--brand-soft);
   display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start;
 }
+
+/* ── Bills / AP — TRACKING ONLY (RV2-D1), nested under Connections. Tokens only;
+      the money-OUT twin of invoicing. No inline hex / magic px. ─────────────── */
+.bills { display: flex; flex-direction: column; gap: var(--space-3); }
+.bills-optin { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
+
+/* AP aging strip — "what you owe" at a glance, split into buckets */
+.ap-aging { display: flex; flex-direction: column; gap: var(--space-2); }
+.ap-aging-title { font-size: var(--fs-ui); font-weight: var(--fw-medium); color: var(--ink-2); }
+.ap-aging-buckets { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.ap-bucket {
+  display: inline-flex; flex-direction: column; gap: 0.1rem;
+  padding: 0.4rem 0.65rem; border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); background: var(--white); min-width: 0;
+}
+.ap-bucket-label { font-size: var(--fs-micro); color: var(--ink-3); text-transform: uppercase; letter-spacing: var(--ls-chip); }
+.ap-bucket-amt { font-size: var(--fs-ui); font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; }
+
+/* Bills table — inside .table-wrap for horizontal scroll (RESPONSIVE.md) */
+.bills-table { width: 100%; border-collapse: collapse; font-size: var(--fs-ui); }
+.bills-table th, .bills-table td {
+  text-align: left; padding: var(--space-2) var(--space-3);
+  border-bottom: var(--bw-hair) solid var(--line-2); white-space: nowrap;
+}
+.bills-table th {
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip);
+  color: var(--ink-3); font-weight: var(--fw-medium);
+}
+.bills-table td.num, .bills-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.bill-actions { display: inline-flex; gap: 0.35rem; flex-wrap: wrap; }
+.bill-status {
+  display: inline-block; padding: 0.1rem 0.5rem; border-radius: var(--r-pill);
+  font-size: var(--fs-micro); background: var(--line-2); color: var(--ink-2);
+}
+.bill-status-open, .bill-status-partial { background: var(--amber-bg); color: var(--ink-2); }
+.bill-status-paid { background: var(--brand-soft); color: var(--ink-2); }
+.bill-status-void { color: var(--ink-3); }
+
+/* Inline "record payment" row */
+.bill-pay { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2); }
+.bill-pay label { display: flex; flex-direction: column; gap: 0.2rem; font-size: var(--fs-ui); color: var(--ink-3); }
+.bill-pay input { font-size: var(--fs-body); padding: 0.4rem 0.5rem; border: var(--bw-hair) solid var(--line); border-radius: var(--r-input, var(--r-card)); }
+.bill-pay-note { font-size: var(--fs-ui); margin: var(--space-1) 0 0; }
+
+/* New-bill form */
+.bill-form {
+  display: flex; flex-direction: column; gap: var(--space-3);
+  padding: var(--pad-card); border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); background: var(--white);
+}
+.bill-form-head { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.bill-form-head label { display: flex; flex-direction: column; gap: 0.2rem; font-size: var(--fs-ui); color: var(--ink-3); }
+.bill-form-head select, .bill-form-head input {
+  font-size: var(--fs-body); padding: 0.4rem 0.5rem;
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-input, var(--r-card));
+}
+.bill-form-lines { display: flex; flex-direction: column; gap: var(--space-2); }
+.bill-line { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.bill-line input { font-size: var(--fs-body); padding: 0.4rem 0.5rem; border: var(--bw-hair) solid var(--line); border-radius: var(--r-input, var(--r-card)); }
+.bill-line .bl-desc { flex: 3 1 12rem; min-width: 0; }
+.bill-line .bl-qty { flex: 1 1 4rem; min-width: 0; }
+.bill-line .bl-price { flex: 1 1 6rem; min-width: 0; }
+.bill-form-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.bill-form-total { font-size: var(--fs-ui); font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; }
+.bill-form-actions { display: inline-flex; gap: var(--space-2); }

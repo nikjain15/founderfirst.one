@@ -14,8 +14,8 @@
 > the integration branch), which reads as unmerged unless you check the integration PR itself.
 > **Always check the integration PR, not just the feature PR, before concluding a card is still
 > open.** PENNY-UX-9 also shipped (pr:#251 — audit found the IA already conformant; added CI
-> design-conformance guards instead of a restructure). IQ-1/IQ-2 have GREEN PRs (#255/#253) folded
-> into open integration pr:#256, awaiting Nik's merge (not further buildable). All statuses below
+> design-conformance guards instead of a restructure). IQ-1/IQ-2 merged (pr:#255/#253, folded into
+> integration pr:#256, merged 5 Jul while this reconciliation was in flight). All statuses below
 > corrected to match. Remaining real buildable work: **W5.4-FX** (ECB fx-rate fetcher — schema
 > shipped, no fetcher exists yet) is the top unclaimed, unblocked, non-decision-needed card.
 
@@ -320,8 +320,7 @@ coverage delta: extend the connector AUDIT row — assert intuit_tid is captured
 > excluded). Building these closes the assessment credibly and hardens quality.
 
 ## IQ-1 · QBO connection hardening (tokens-at-rest + resilience + revoke)
-status: pr:#255 (GREEN — all checks pass; folded into open integration pr:#256; safe mode,
-  awaiting Nik to merge)
+status: merged (pr:#255, folded into integration pr:#256)
 blocked-by: — (all in the QBO edge fns / _shared/qbo.ts — ONE builder owns this domain to avoid collisions)
 workflow: owner/CPA · "my QuickBooks stays connected and my data is safe" · connect once → imports
   survive throttling + brief token expiry → disconnect actually revokes at Intuit; invisible to the user.
@@ -347,8 +346,7 @@ coverage delta: new AUDIT ledger row (qbo-hardening) — assert: encrypted token
   stale state rejected; unknown classification does NOT post as expense.
 
 ## IQ-2 · Connections UX — broken-connection banner + Reconnect + in-app support
-status: pr:#253 (GREEN — all checks pass; folded into open integration pr:#256; safe mode,
-  awaiting Nik to merge)
+status: merged (pr:#253, folded into integration pr:#256)
 blocked-by: — (apps/app UI only — disjoint from IQ-1's edge-fn work; safe to build in parallel)
 workflow: owner/CPA · "Penny told me my QuickBooks needs reconnecting, one tap fixes it" · a broken
   connection (status='error'/invalid_grant) shows a clear banner on Connections + a Reconnect CTA;

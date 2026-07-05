@@ -28,6 +28,7 @@ if ! mkdir "$LOCKDIR" 2>/dev/null; then
 fi
 trap 'rmdir "$LOCKDIR" 2>/dev/null' EXIT
 
+# MODE is read from the checked-in iCloud repo (where Nik edits it); secrets too.
 cd "$REPO" || exit 1
 # Secrets (SUPABASE_ACCESS_TOKEN, service role, provider keys, LOOP_HEARTBEAT_TOKEN, ...)
 set -a; . "$HOME/.config/founderfirst/secrets.env" 2>/dev/null; set +a
@@ -38,6 +39,27 @@ unset ANTHROPIC_API_KEY
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$HOME/Library/pnpm:$PATH"
 
 MODE="$(tr -d '[:space:]' < "$MODE_FILE" 2>/dev/null || echo safe)"
+
+# The iCloud checkout under ~/Documents intermittently deadlocks git (mmap: Resource
+# deadlock avoided) — fetch/worktree there can hang. The loop therefore builds in a
+# DEDICATED clean clone outside iCloud, refreshed from origin each iteration. This is
+# the git-reliable working copy the claude session operates in.
+WORK_REPO="$HOME/.founderfirst/loop-repo"
+ORIGIN="git@github.com:nikjain15/founderfirst.one.git"
+if [ ! -d "$WORK_REPO/.git" ]; then
+  mkdir -p "$(dirname "$WORK_REPO")"
+  git clone "$ORIGIN" "$WORK_REPO" >>"$LOG_DIR/build-loop.log" 2>&1 || {
+    echo "$(date '+%F %T') clone failed; skip" >>"$LOG_DIR/build-loop.log"; exit 0; }
+fi
+# Refresh to a clean origin/main; prune stale loop/* worktrees from prior iterations.
+git -C "$WORK_REPO" worktree prune 2>/dev/null
+if ! git -C "$WORK_REPO" fetch --prune origin >>"$LOG_DIR/build-loop.log" 2>&1; then
+  echo "$(date '+%F %T') fetch failed; skip" >>"$LOG_DIR/build-loop.log"; exit 0
+fi
+git -C "$WORK_REPO" checkout -f main >>"$LOG_DIR/build-loop.log" 2>&1
+git -C "$WORK_REPO" reset --hard origin/main >>"$LOG_DIR/build-loop.log" 2>&1
+git -C "$WORK_REPO" clean -fdx -e node_modules >>"$LOG_DIR/build-loop.log" 2>&1
+cd "$WORK_REPO" || exit 1
 
 # Keep the Mac awake for the duration of THIS iteration only (no sudo needed).
 caffeinate -dimsu -w $$ &

@@ -302,7 +302,7 @@ coverage delta: extend the connector AUDIT row — assert intuit_tid is captured
 > excluded). Building these closes the assessment credibly and hardens quality.
 
 ## IQ-1 · QBO connection hardening (tokens-at-rest + resilience + revoke)
-status: unclaimed
+status: claimed:loop-insession-5jul (building — do not re-claim)
 blocked-by: — (all in the QBO edge fns / _shared/qbo.ts — ONE builder owns this domain to avoid collisions)
 workflow: owner/CPA · "my QuickBooks stays connected and my data is safe" · connect once → imports
   survive throttling + brief token expiry → disconnect actually revokes at Intuit; invisible to the user.
@@ -328,7 +328,7 @@ coverage delta: new AUDIT ledger row (qbo-hardening) — assert: encrypted token
   stale state rejected; unknown classification does NOT post as expense.
 
 ## IQ-2 · Connections UX — broken-connection banner + Reconnect + in-app support
-status: unclaimed
+status: claimed:loop-insession-5jul (building — do not re-claim)
 blocked-by: — (apps/app UI only — disjoint from IQ-1's edge-fn work; safe to build in parallel)
 workflow: owner/CPA · "Penny told me my QuickBooks needs reconnecting, one tap fixes it" · a broken
   connection (status='error'/invalid_grant) shows a clear banner on Connections + a Reconnect CTA;

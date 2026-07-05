@@ -461,17 +461,23 @@ async function verifyReceiptCapture() {
   }
 }
 
-/** W3.1 — the Penny thread renders on Home and answers a grounded question. The
- *  thread is nested in Home (no new top-level tab). We assert it renders, then ask
- *  a grounded books question via a suggested prompt and confirm Penny replies with
- *  a turn. The authoritative tie-out + "no invented number" checks are the Vitest
- *  suite (thread.test.ts); here we prove the surface is wired and answers a turn. */
+/** W3.1 / owner-calm — Penny is now a GLOBAL DOCK, not a slab on Home: a launcher on
+ *  every owner tab opens a slide-over hosting the same grounded conversation. We assert
+ *  the launcher is present, open it, then ask a grounded question via a suggested prompt
+ *  and confirm Penny replies with a turn. The authoritative tie-out + "no invented
+ *  number" checks are the Vitest suite (thread.test.ts); here we prove the wiring. */
 async function verifyPennyThread() {
   await page.setViewportSize(DESKTOP);
-  const thread = page.locator(".penny-thread");
-  if (!(await thread.count().catch(() => 0))) { fail("Home: Penny thread not rendered"); return; }
-  ok("Penny thread renders on Home (nested, no new top-level tab)");
-  const suggest = page.locator(".penny-thread .thread-suggest button").first();
+  const launcher = page.locator(".penny-launcher");
+  if (!(await launcher.count().catch(() => 0))) { fail("Penny launcher not present on the owner workspace"); return; }
+  ok("Penny launcher present (global dock, reachable from every owner tab)");
+  await launcher.first().click().catch(() => {});
+  await page.waitForTimeout(250);
+  const thread = page.locator(".penny-dock .penny-thread");
+  if (!(await thread.count().catch(() => 0))) { fail("Penny dock did not open its thread"); return; }
+  ok("Penny dock opens the standing conversation");
+  await page.screenshot({ path: join(ARTIFACTS, "penny-dock-desktop.png"), fullPage: true }).catch(() => {});
+  const suggest = page.locator(".penny-dock .thread-suggest button").first();
   if (!(await suggest.count().catch(() => 0))) { fail("Home: no thread suggestion prompt"); return; }
   await suggest.click().catch(() => {});
   // A "you" turn appears immediately; Penny's answer follows (local or via the fn).

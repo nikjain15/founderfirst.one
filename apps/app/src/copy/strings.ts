@@ -1305,6 +1305,10 @@ export const COPY = {
   thread: {
     title: "Ask Penny",
     lead: "Ask about your money — what you spent, brought in, or have on hand. Penny answers from your real books.",
+    // Global dock (owner-calm redesign) — Penny is no longer a slab on Home; she's a
+    // launcher present on every tab that opens this conversation, and she remembers it.
+    dockOpen: "Ask Penny",
+    dockClose: "Close Penny",
     // The idle greeting Penny opens with (structural; persona colors the answers).
     greeting: "Hi — I'm keeping an eye on your books. Ask me anything about your money, or see what I've handled below.",
     // Activity narration intro (links to the "Penny did this" feed just below).

@@ -14,7 +14,7 @@
  * non-numeric hint, not a counter it doesn't govern (Wave-3 audit F2). All copy
  * is COPY.thread (CENTRAL-1 grep gate); Penny's answer prose is the live persona.
  */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { JournalEntry } from "./types";
 import { askPennyThread, usePennyActivity, type ThreadFact } from "./api";
 import { computeMetric, routeMessage } from "./thread";
@@ -22,21 +22,46 @@ import { COPY } from "../copy";
 
 type Turn = { id: number; who: "you" | "penny"; text: string; pending?: boolean };
 
-let TURN_SEQ = 1;
+// Persist the conversation per org so Penny "remembers" — she's a standing chat, not
+// a slab that resets on every visit (owner-calm redesign). Local for now (survives
+// navigation + reload on this device); server-side cross-device history is a follow-up.
+const STORE_PREFIX = "ff.penny.thread.";
+const STORE_MAX = 100;
+
+function loadTurns(orgId: string): Turn[] {
+  try {
+    const raw = localStorage.getItem(STORE_PREFIX + orgId);
+    if (raw) {
+      const arr = JSON.parse(raw) as Turn[];
+      if (Array.isArray(arr) && arr.length) return arr;
+    }
+  } catch { /* ignore malformed/absent storage */ }
+  return [{ id: 0, who: "penny", text: COPY.thread.greeting }];
+}
 
 export default function PennyThread({
-  orgId, entries, canWrite,
+  orgId, entries, canWrite, compact = false,
 }: {
-  orgId: string; entries: JournalEntry[]; canWrite: boolean;
+  orgId: string; entries: JournalEntry[]; canWrite: boolean; compact?: boolean;
 }) {
   const activity = usePennyActivity(orgId);
 
-  const [turns, setTurns] = useState<Turn[]>([
-    { id: 0, who: "penny", text: COPY.thread.greeting },
-  ]);
+  const [turns, setTurns] = useState<Turn[]>(() => loadTurns(orgId));
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const listEnd = useRef<HTMLDivElement>(null);
+  // Monotonic id above anything restored from storage, so keys never collide.
+  const seq = useRef(Math.max(0, ...turns.map((t) => t.id)) + 1);
+
+  // Persist on every settled change (drop the transient "pending" turn).
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        STORE_PREFIX + orgId,
+        JSON.stringify(turns.filter((t) => !t.pending).slice(-STORE_MAX)),
+      );
+    } catch { /* storage full / unavailable — history just won't persist */ }
+  }, [turns, orgId]);
 
   function push(turn: Turn) {
     setTurns((t) => [...t, turn]);
@@ -48,7 +73,7 @@ export default function PennyThread({
     const q = text.trim();
     if (!q || busy) return;
     setInput("");
-    push({ id: TURN_SEQ++, who: "you", text: q });
+    push({ id: seq.current++, who: "you", text: q });
     setBusy(true);
 
     // Route + ground CLIENT-SIDE so the number is deterministic and ties to the
@@ -77,12 +102,12 @@ export default function PennyThread({
     // Greeting / activity are answered locally (no model spend). Questions +
     // unsupported turns go to the fn for Penny's voice (grounded fact or decline).
     if (localReply != null) {
-      push({ id: TURN_SEQ++, who: "penny", text: localReply });
+      push({ id: seq.current++, who: "penny", text: localReply });
       setBusy(false);
       return;
     }
 
-    const pendingId = TURN_SEQ++;
+    const pendingId = seq.current++;
     push({ id: pendingId, who: "penny", text: COPY.thread.sending, pending: true });
     try {
       const { text: reply } = await askPennyThread(orgId, q, fact);
@@ -96,14 +121,20 @@ export default function PennyThread({
   }
 
   return (
-    <section className="penny-thread" aria-label={COPY.thread.title}>
-      <div className="thread-head">
-        <h2 className="section-h">
-          <span className="p-mark p-mark-sm" aria-hidden="true">P</span> {COPY.thread.title}
-        </h2>
-        <p className="muted sm">{COPY.thread.lead}</p>
-        <p className="thread-budget muted sm">{COPY.thread.askHint}</p>
-      </div>
+    <section className={`penny-thread${compact ? " penny-thread-compact" : ""}`} aria-label={COPY.thread.title}>
+      {/* In the dock the panel header carries the title, so drop the in-thread head
+          to a single lead line; standalone (legacy) keeps the full heading block. */}
+      {compact ? (
+        <p className="muted sm thread-lead-compact">{COPY.thread.lead}</p>
+      ) : (
+        <div className="thread-head">
+          <h2 className="section-h">
+            <span className="p-mark p-mark-sm" aria-hidden="true">P</span> {COPY.thread.title}
+          </h2>
+          <p className="muted sm">{COPY.thread.lead}</p>
+          <p className="thread-budget muted sm">{COPY.thread.askHint}</p>
+        </div>
+      )}
 
       <div className="thread-turns" role="log" aria-live="polite">
         {turns.map((t) => (

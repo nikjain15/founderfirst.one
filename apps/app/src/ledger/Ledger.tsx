@@ -30,7 +30,7 @@ import Invoicing from "./Invoicing";
 import Bills from "./Bills";
 import PayoutUpload from "../ecommerce/PayoutUpload";
 import LearnedRules from "./LearnedRules";
-import PennyThread from "./PennyThread";
+import PennyDock from "./PennyDock";
 import PennyDidThis from "./PennyDidThis";
 import { SuggestionInbox, EntryCollab } from "./CollabUI";
 import ReconcileView from "./ReconcileView";
@@ -183,18 +183,15 @@ export default function Ledger({
               // dashboard; before any accounts exist it falls through to the shared
               // Overview's setup nudge. The CPA keeps the plain accounting Overview.
               nav === "owner" && (accounts.data?.length ?? 0) > 0 ? (
-                // Owner-with-books Home is the W3.4 pulse dashboard; the W3.1 Penny
-                // thread (grounded Q&A) nests beneath it on the same Home screen —
-                // it moved off Overview when the pulse took over this path.
-                <>
-                  <OwnerHome
-                    entries={entries.data ?? []} accounts={accounts.data ?? []}
-                    canWrite={canWrite} orgId={org.id}
-                    onReview={() => goto("review")}
-                    onRefresh={refresh}
-                  />
-                  <PennyThread orgId={org.id} entries={entries.data ?? []} canWrite={canWrite} />
-                </>
+                // Owner-with-books Home is the W3.4 pulse dashboard. Penny's grounded
+                // Q&A moved OFF Home into the global dock (owner-calm redesign) — she's
+                // reachable from every tab now, not a slab stapled to the bottom here.
+                <OwnerHome
+                  entries={entries.data ?? []} accounts={accounts.data ?? []}
+                  canWrite={canWrite} orgId={org.id}
+                  onReview={() => goto("review")}
+                  onRefresh={refresh}
+                />
               ) : (
                 <Overview
                   entries={entries.data ?? []} accounts={accounts.data ?? []}
@@ -253,6 +250,14 @@ export default function Ledger({
             {surface === "filing" && <Filing orgId={org.id} entries={entries.data ?? []} orgName={org.name} />}
           </div>
         </div>
+      )}
+
+      {/* Global Penny dock (owner-calm redesign) — one standing chat, reachable from
+          every owner tab, remembering this org's conversation. Owner-only; the CPA
+          navigates by ledger workflow, not a chat. Mounted once so it floats over
+          whichever tab is active and a question in flight survives a tab switch. */}
+      {nav === "owner" && !loading && !error && (
+        <PennyDock orgId={org.id} entries={entries.data ?? []} canWrite={canWrite} />
       )}
     </section>
   );
@@ -423,9 +428,8 @@ function Overview({
           body={COPY.overview.setupBody}
           action={canWrite ? { label: COPY.overview.goToConnections, onClick: onConnect } : undefined}
         />
-        {/* Penny is present from day one — she greets and can answer once books
-            exist (before then she declines gracefully). Owner-only, like below. */}
-        {nav === "owner" && <PennyThread orgId={orgId} entries={entries} canWrite={canWrite} />}
+        {/* Penny is present from day one via the global dock (owner-calm redesign) —
+            she greets and can answer once books exist. No slab on this screen. */}
       </>
     );
   }
@@ -475,14 +479,11 @@ function Overview({
         </ul>
       )}
 
-      {/* The Penny thread (W3.1) + "Penny did this" feed (W3.2) live on the owner's
-          Home — the conversational pulse. Owner-only: the CPA navigates by ledger
-          workflow, not a chat. The thread narrates the feed just beneath it. */}
+      {/* "Penny did this" feed (W3.2) stays on Home — a calm one-line record of what
+          she handled. Her Q&A conversation moved to the global dock (owner-calm
+          redesign). Owner-only: the CPA navigates by ledger workflow, not a chat. */}
       {nav === "owner" && (
-        <>
-          <PennyThread orgId={orgId} entries={entries} canWrite={canWrite} />
-          <PennyDidThis orgId={orgId} canWrite={canWrite} onChange={onChange} />
-        </>
+        <PennyDidThis orgId={orgId} canWrite={canWrite} onChange={onChange} />
       )}
     </div>
   );

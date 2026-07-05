@@ -1454,6 +1454,62 @@ button.ghost.sm, .ghost.sm {
   .thread-input button { flex: 1 1 100%; }
 }
 
+/* ── Global Penny dock (owner-calm redesign) ─────────────────────────────────
+   Penny is a launcher on every owner tab; clicking opens a slide-over panel that
+   hosts the same grounded conversation (remembered per org). One standing chat,
+   not a slab on Home. */
+.penny-launcher {
+  position: fixed; right: var(--space-4); bottom: var(--space-4); z-index: 60;
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-float);
+}
+.penny-launcher .p-mark-sm { background: var(--white); color: var(--brand); }
+.penny-launcher-label { font-size: var(--fs-ui); font-weight: var(--fw-semibold); }
+.penny-launcher.is-open { background: var(--brand-strong); }
+@media (max-width: 480px) {
+  /* Shrink to a round FAB on small phones so it never covers a CTA. */
+  .penny-launcher { padding: var(--space-3); }
+  .penny-launcher-label { display: none; }
+}
+
+.penny-dock-scrim {
+  position: fixed; inset: 0; z-index: 65;
+  background: rgba(0, 0, 0, 0.12);
+}
+.penny-dock {
+  position: fixed; z-index: 70;
+  right: var(--space-4); bottom: var(--space-4);
+  width: min(24rem, calc(100vw - 2 * var(--space-4)));
+  max-height: min(34rem, calc(100vh - 2 * var(--space-4)));
+  display: flex; flex-direction: column;
+  background: var(--white);
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-card);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+}
+.penny-dock-head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--bw-hair) solid var(--line);
+}
+.penny-dock-title { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: var(--fw-semibold); color: var(--ink); }
+.penny-dock-close { min-height: auto; padding: var(--space-1) var(--space-2); }
+.penny-dock-body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-3) var(--space-4); }
+/* The thread fills the dock body — no card chrome of its own inside the panel. */
+.penny-thread-compact { margin-top: 0; padding: 0; border: 0; background: transparent; }
+.penny-thread-compact .thread-turns { max-height: none; }
+.thread-lead-compact { margin: 0; }
+@media (max-width: 560px) {
+  /* Full-width bottom sheet on phones. */
+  .penny-dock {
+    right: 0; left: 0; bottom: 0;
+    width: 100%; max-height: 80vh;
+    border-radius: var(--r-card) var(--r-card) 0 0;
+  }
+}
+
 /* ── Owner Home — the "am I okay?" pulse (W3.4) ──────────────────────────────
    Fluid, tokens only, no fixed pixel widths (RESPONSIVE.md). The KPI grid reuses
    the shared auto-fit .kpis track so it can't overflow on the width ladder. */

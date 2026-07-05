@@ -61,6 +61,9 @@ export default function Topbar() {
             <Link className="acct-item" role="menuitem" to="/settings">{COPY.nav.settings}</Link>
           )}
           {isStaff.data && (
+            <Link className="acct-item" role="menuitem" to="/admin">{COPY.nav.adminConsole}</Link>
+          )}
+          {isStaff.data && (
             <Link className="acct-item" role="menuitem" to="/staff">{COPY.nav.staffConsole}</Link>
           )}
           <div className="acct-sep" />

@@ -122,11 +122,13 @@ select throws_ok($$
   select log_security_event('00000000-0000-0000-0000-0000000005c1', 'mfa.whatever', '{}'::jsonb)
 $$, '23514', null, 'SEC1-AUDIT: an unlisted action is rejected (check constraint)');
 
+set local role authenticated;
 set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-0000000005c9","email":"outsider@sec1.dev","role":"authenticated"}';
 select is(
   (select count(*)::int from security_audit where user_id='00000000-0000-0000-0000-0000000005c1'),
   0, 'SEC1-AUDIT-RLS: another user cannot read this user''s security_audit rows');
 reset "request.jwt.claims";
+reset role;
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- isolation: the write RPCs + raw table are NOT reachable by authenticated

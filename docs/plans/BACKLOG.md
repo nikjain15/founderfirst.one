@@ -276,7 +276,7 @@ coverage delta: new AUDIT ledger row (auth-botprotect) ⬜ untested → stress p
   required before OTP dispatch; rapid-fire OTP requests rate-limited; legit human flow unaffected).
 
 ## CONN-2 · Capture QBO intuit_tid for troubleshooting
-status: pr:#247 (loop-orch-0705, migration 20260707090000_conn2_intuit_tid)
+status: pr:#247 CI-green (11/11 checks pass) — safe mode, awaiting Nik to merge (loop-orch-0705, migration 20260707090000_conn2_intuit_tid)
 blocked-by: — (small change to the QBO edge fns)
 context: Intuit recommends capturing the `intuit_tid` response header on every QBO API call so
   their support can trace issues. We don't today (qbo-callback/qbo-connect/qbo-import). Honest

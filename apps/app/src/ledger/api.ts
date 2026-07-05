@@ -392,6 +392,7 @@ export interface OrgAccountingSettings {
   cpa_posts_require_approval: boolean;
   home_currency: string;
   fiscal_year_start_month: number;
+  mfa_required: boolean;
 }
 
 /** The owner's accounting settings for an org (RLS-readable to anyone who can
@@ -404,7 +405,7 @@ export function useOrgSettings(orgId: string | undefined) {
       const sb = getClient();
       const { data, error } = await sb
         .from("org_accounting_settings")
-        .select("org_id,cpa_posts_require_approval,home_currency,fiscal_year_start_month")
+        .select("org_id,cpa_posts_require_approval,home_currency,fiscal_year_start_month,mfa_required")
         .eq("org_id", orgId)
         .maybeSingle();
       if (error) throw error;
@@ -418,6 +419,7 @@ export const setOrgSettings = (input: {
   cpa_posts_require_approval?: boolean;
   home_currency?: string;
   fiscal_year_start_month?: number;
+  mfa_required?: boolean;
 }) => invoke<{ settings: OrgAccountingSettings }>("org-settings", { op: "set", ...input });
 
 // ── history import (Phase 3) ──────────────────────────────────────────────────

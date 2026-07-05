@@ -246,7 +246,7 @@ coverage delta: new AUDIT ledger row (multi-currency) ⬜ untested → stress pa
 > these as gaps to build. Nik: add to backlog.
 
 ## SEC-1 · Multi-factor authentication (MFA) for owner + CPA login
-status: unclaimed
+status: claimed:loop-orch-sec1-0705
 blocked-by: — (auth is Supabase; TOTP/factor enrolment is native)
 workflow: owner/CPA · "protect my books" · Settings → Security → enable MFA → enrol authenticator
   (TOTP) → next login prompts for the 6-digit code; recovery codes issued. ≤1 owner-ask, opt-in

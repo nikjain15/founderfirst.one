@@ -57,6 +57,7 @@ export default function Topbar() {
             <div className="acct-role">{roleLabel} · {activeOrg.name}</div>
           )}
           <div className="acct-sep" />
+          <Link className="acct-item" role="menuitem" to="/security">{COPY.security.menuLabel}</Link>
           {roleInfo?.lens === "owner" && (
             <Link className="acct-item" role="menuitem" to="/settings">{COPY.nav.settings}</Link>
           )}

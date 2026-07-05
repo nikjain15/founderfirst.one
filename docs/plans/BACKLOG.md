@@ -312,6 +312,74 @@ centralization: log field name/config centralized; no inline literals.
 coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
   call (success + error path).
 
+# PENNY-UX-10 + E-FILE (Nik 5-Jul: declutter + make responsive; card e-file Phase A)
+
+## PENNY-UX-10 · Owner app declutter + FULL responsive pass → /admin minimalist standard
+status: claimed:loop-insession-5jul (building)
+lane: apps/app (owner lens views + styles) — disjoint from EFILE-A1 (functions)
+context: Nik 5-Jul reviewed the LIVE owner app: **cluttered, hard to read, NOT clean/minimalist
+  like founderfirst.one/admin, AND not responsive across devices.** PENNY-UX-9 added CI design
+  guards but did NOT reduce density or fix mobile. Worst offenders (Nik screenshots): **Review**
+  (5+ stacked full-height sections w/ long empty-state prose) and **Connections** (a mega
+  single-scroll: Catch-me-up · Bring-in-data · Connect-bank · Connect-software · Split-payout ·
+  Getting-paid · Paying-bills · Share-accountant). Home's Ask-Penny block is oversized.
+  ⛔ MUST NOT break any existing functionality.
+workflow: owner (on ANY device) · "everything's easy to scan and act on" · each tab reads clean
+  like /admin — clear hierarchy, compact empty states, one primary action per section — and works
+  as well on a 375px phone as on desktop.
+goal: a DESIGN/DENSITY + RESPONSIVE pass (not a rewrite) to the founderfirst.one/admin standard:
+  1. **Reduce section density**: collapse verbose empty states to compact single-line states
+     (icon + one line + one action), not full-height billboards. Group related sections; use the
+     design-system card/section rhythm /admin uses.
+  2. **Connections**: restructure the mega-scroll into a scannable grouped layout (Get-data-in ·
+     Sell-channels · Money-in/out · Sharing) with tighter cards, less prose. Sub-nav/accordions only
+     if nested under the existing Connections tab (no new top-level nav). Every connect/upload/toggle
+     handler must still work.
+  3. **Review**: compact the approve / Penny-did / receipts stack; empty states one line each.
+  4. **Home**: right-size the Ask-Penny block; keep the setup prompt tight.
+  5. Apply the authed-header + tokens standard PENNY-UX-9 locked (.eyebrow + .page-title, ink tabs,
+     tokens.css only — NO inline hex/px/one-off sizes), and TRIM copy to VOICE (no wall of text).
+  6. ⭐ **FULL RESPONSIVE PASS (Nik: currently broken on devices) across the ENTIRE owner lens** —
+     Home · Review · Reports · Connections · Advanced + the section tab-strip + org switcher +
+     account menu. Follow apps/admin/RESPONSIVE.md: fluid-first (clamp/min/max/flex-wrap/grid
+     auto-fit), NO hardcoded px widths in horizontal layouts, tables in .table-wrap, ≥16px inputs,
+     ≥44px tap targets, tab-strip collapses/scrolls on narrow. Test EVERY view at the full width
+     ladder (320·360·375·414·480·540·640·768·834·1024·1280·1440·1920): at each,
+     document.documentElement.scrollWidth > innerWidth MUST be false (no horizontal scroll).
+gates: usability — NO new top-level nav / onboarding question / owner jargon; every existing
+  button/flow/handler preserved (regression-lock connect + upload + invoice + bill-tracking +
+  catch-up + payout handlers). Centralization — copy from COPY/personas; visuals tokens.css.
+  Existing stack only.
+coverage delta: extend the PENNY-UX AUDIT rows — assert: no bare authed <h1>, no inline hex, and
+  **no h-scroll at any width-ladder step across every owner view** (add a responsive assertion, and
+  drive the live width ladder where possible — reuse the responsive.yml harness/pattern); regression
+  test that Connections connect handlers (qbo/xero/bank/csv/payout/invoice/bill/catch-up) stay wired.
+  Before/after screenshot walkthrough (desktop + 375px mobile) in the PR.
+
+## EFILE-A1 · E-file Phase A spike — 1099-NEC transmittal via TaxBandits (sandbox)
+status: claimed:loop-insession-5jul (building)
+lane: supabase/functions + migrations — disjoint from PENNY-UX-10 (app-UI)
+context: e-file research (5 Jul) — no small-SaaS income-return API exists; Phase A = 1099/94x via a
+  partner API is the buyable, low-risk beachhead. Nik 5-Jul: do the Phase A spike. TaxBandits =
+  recommended vendor (clean REST + sandbox); Tax1099 backup. TaxBandits sandbox creds NOT yet
+  provisioned (Nik human step) → build against the documented API, creds from secrets/env; if creds
+  absent, transmit path is a dry-run/preview (NEVER a fake success). SPIKE (prove the path), not GA.
+workflow: owner/CPA · "file my 1099-NECs without leaving Penny" · Penny already tracks vendors +
+  1099 (W2.5) → review the 1099-NEC set → TIN-match pre-check → confirm-before-send (human gate) →
+  transmit via TaxBandits → ingest accept/reject → surface status. NEVER auto-transmit.
+goal: a spike mapping Penny's existing 1099 vendor data → the TaxBandits 1099-NEC create/transmit
+  payload, with: TIN matching pre-check, explicit human confirm-before-send gate, accept/reject
+  ingestion, and an IMMUTABLE submission+ack log. Build the TRUST GATE the research called for even
+  in the spike. Creds via env (TAXBANDITS_* — Nik provisions sandbox); no creds → dry-run preview.
+gates: ⛔ NEVER transmit without the human confirm gate; ⛔ never a fake/synth success — a missing
+  credential or a reject is surfaced honestly (fail-loud). Centralization — reuse the existing 1099
+  store (no duplicate vendor), TaxBandits base/keys from env not inlined. Existing stack only.
+  Migration (submission+ack log) timestamp AFTER 20260708000000 (use 20260708030000), unique,
+  write-don't-deploy.
+coverage delta: new AUDIT ledger row (efile-1099-spike) — assert: payload maps from the 1099 store;
+  TIN-match gates send; no transmit without confirm; a reject is ingested + surfaced (not swallowed);
+  immutable log records submission id + ack; no-creds → dry-run (no fake success).
+
 # NEXT WAVE — activate shipped-but-dark features (buildable, 5 Jul)
 > W5.4 (multi-currency) and SEC-2 (captcha) shipped but are inert until their data/keys exist.
 > These cards make already-deployed features actually usable. Disjoint lanes → fan out.

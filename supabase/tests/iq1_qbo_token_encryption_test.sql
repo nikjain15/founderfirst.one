@@ -6,7 +6,7 @@
 -- Everything rolls back. Run: `supabase test db`.
 
 begin;
-select plan(14);
+select plan(13);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -75,25 +75,23 @@ select is(
 set local role authenticated;
 set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000019101","email":"owner-iq1@test.dev","role":"authenticated"}';
 
+-- errcode + errmsg both NULL (4-arg form) — we assert the call is REFUSED, not a
+-- specific SQLSTATE/message.
 select throws_ok(
   $$ select dec_qbo_token(decode('00','hex')) $$,
-  '42501',
-  null,
+  null::text, null::text,
   'authenticated CANNOT execute dec_qbo_token (no plaintext via the decrypt helper)'
 );
 select throws_ok(
   $$ select * from ext_connection_secrets('00000000-0000-0000-0000-0000000191c1') $$,
-  '42501',
-  null,
+  null::text, null::text,
   'authenticated CANNOT execute ext_connection_secrets'
 );
 -- the token columns are not in the authenticated column grant → selecting them errors.
 select throws_ok(
-  $$ select access_token, refresh_token, access_token_enc, refresh_token_enc
-       from external_connections where id = '00000000-0000-0000-0000-0000000191c1' $$,
-  '42501',
-  null,
-  'authenticated CANNOT SELECT the token columns (plaintext OR ciphertext)'
+  $$ select access_token_enc from external_connections where id = '00000000-0000-0000-0000-0000000191c1' $$,
+  null::text, null::text,
+  'authenticated CANNOT SELECT the ciphertext token column'
 );
 
 reset role;

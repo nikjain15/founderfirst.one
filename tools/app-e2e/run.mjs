@@ -350,6 +350,36 @@ async function verifyTabStripDiscoverability() {
 }
 // ── PENNY-UX-3 — END ──────────────────────────────────────────────────────────
 
+// ── PENNY-UX-10 — BEGIN (append-only block) ────────────────────────────────────
+/** PENNY-UX-10 — the Connections mega-scroll is regrouped into four scannable
+ *  clusters (get-data-in · sell-channels · money-in/out · sharing). This asserts the
+ *  clustered layout actually renders (4 `.connections-cluster` sections, each with an
+ *  `.eyebrow` label) AND every handler-bearing surface survived the restructure — the
+ *  card's "MUST NOT break functionality" gate, proven against the live authed DOM
+ *  (the deterministic wiring contract is regression.connections-wiring.test.ts). */
+async function verifyConnectionsClusters() {
+  await page.setViewportSize(DESKTOP);
+  const clusters = await page.locator(".connections .connections-cluster").count().catch(() => 0);
+  if (clusters === 4) ok("PENNY-UX-10: Connections renders 4 grouped clusters (declutter)");
+  else fail(`PENNY-UX-10: expected 4 Connections clusters, found ${clusters}`);
+  const labels = await page.locator(".connections .conn-cluster-h").count().catch(() => 0);
+  if (labels >= 4) ok("PENNY-UX-10: each cluster carries an eyebrow label");
+  else fail(`PENNY-UX-10: expected ≥4 cluster labels, found ${labels}`);
+  // Every connect/upload/toggle surface must still be present in the DOM.
+  const surfaces = [
+    [".catchup", "catch-up import"],
+    [".import-flow", "CSV import + connect"],
+    [".payout-upload", "payout split"],
+    [".invoicing", "invoicing"],
+    [".bills", "bill tracking"],
+  ];
+  for (const [sel, name] of surfaces) {
+    if (await page.locator(`.connections ${sel}`).count().catch(() => 0)) ok(`PENNY-UX-10: ${name} surface present in Connections`);
+    else fail(`PENNY-UX-10: ${name} surface (${sel}) missing from Connections after the restructure`);
+  }
+}
+// ── PENNY-UX-10 — END ──────────────────────────────────────────────────────────
+
 /** W2.1 — Catch-up mode renders inside Connections and its guided flow advances.
  *  Non-mutating happy path: the "Catch me up" hero + "Get me caught up" CTA render;
  *  clicking Start reveals the "Drop in your files" step (the file-drop). Proves the
@@ -619,6 +649,8 @@ try {
       if (s.key === "reports") await verifyReportDownload();
       // PENNY-UX-5 — axe walk across ALL 7 report sub-views (not just the default).
       if (s.key === "reports") await walkReportViewsA11y();
+      // PENNY-UX-10 — Connections is regrouped into 4 clusters; every surface stays wired.
+      if (s.key === "connections") await verifyConnectionsClusters();
       // W2.1 — Catch-up mode is the guided "get me caught up" job on Connections.
       if (s.key === "connections") await verifyCatchUpEntry();
       // W3.5 — Receipt capture + match is nested in Review (no new top-level tab).

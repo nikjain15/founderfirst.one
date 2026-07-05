@@ -429,9 +429,23 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
 @media (max-width: 640px) { #ltab-advanced { margin-left: 0; } }
 
 /* ── Connections — one owner-facing "bring in / share my data" job that absorbs
-      the old Import tab + the InviteCpa sidebar (APP_PRINCIPLES §2). ─────────── */
-.connections { display: flex; flex-direction: column; gap: 2rem; }
-.connections-block { display: flex; flex-direction: column; gap: 0.75rem; }
+      the old Import tab + the InviteCpa sidebar (APP_PRINCIPLES §2).
+      PENNY-UX-10: grouped into four scannable clusters (get-data-in · sell-channels
+      · money-in/out · sharing) with the /admin eyebrow→cards rhythm, replacing the
+      flat billboard-<h2> mega-scroll. Tokens only, fluid, no fixed px. ─────────── */
+.connections { display: flex; flex-direction: column; gap: var(--space-8); }
+.connections-cluster { display: flex; flex-direction: column; gap: var(--space-4); }
+/* Cluster label — the section eyebrow, with a hairline under it (admin's section
+   rhythm) so each cluster reads as a group without a heavy heading. */
+.conn-cluster-h {
+  margin: 0 0 var(--space-1);
+  padding-bottom: var(--space-2);
+  border-bottom: var(--bw-hair) solid var(--line);
+}
+.connections-block { display: flex; flex-direction: column; gap: var(--space-3); }
+/* Per-card title — a restrained UI-scale label (not the billboard section-h), so a
+   cluster with two cards stays compact and scannable. */
+.conn-block-h { margin: 0; font-size: var(--fs-body); font-weight: var(--fw-semibold); color: var(--ink); }
 .connections-block .invite-cpa { margin-top: 0; border-top: 0; padding-top: 0; }
 
 /* Settings tab — owner-only controls (invite accountant, review-before-post).
@@ -747,6 +761,20 @@ button.ghost.sm, .ghost.sm {
 
 .ledger-empty { padding: 2rem 0; text-align: center; }
 .ledger-empty h3 { margin: 0 0 0.3rem; font-size: var(--fs-h3); }
+
+/* PENNY-UX-10 · compact empty state — a single scannable line (dot + one line +
+   optional action), NOT a full-height billboard. Used for the stacked Review
+   surfaces so an all-empty Review is three tidy rows, not three billboards. */
+.compact-empty {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-3) 0; color: var(--ink-3); font-size: var(--fs-ui);
+}
+.compact-empty .ce-dot {
+  flex: none; width: var(--space-2); height: var(--space-2);
+  border-radius: 50%; background: var(--income);
+}
+.compact-empty .ce-text { flex: 1 1 auto; min-width: 0; }
+.compact-empty .ce-action { flex: none; }
 
 @media (max-width: 640px) {
   /* Date hides on mobile, leaving memo · status · amount · caret — 4 tracks.
@@ -1353,23 +1381,26 @@ button.ghost.sm, .ghost.sm {
   .receipt-item-head { align-items: flex-start; }
 }
 
-/* ── Penny thread (W3.1) — grounded Q&A on the owner Home ────────────────────── */
+/* ── Penny thread (W3.1) — grounded Q&A on the owner Home ──────────────────────
+   PENNY-UX-10: right-sized — the block was an oversized full-width brand-tint slab.
+   Tighter padding, a shorter turn log, and a hairline (not a heavy tint) so it reads
+   as a calm panel on Home, not a billboard. Tokens only. */
 .penny-thread {
   margin-top: var(--space-5);
-  padding: var(--space-4);
-  border: 1px solid var(--line-2);
+  padding: var(--space-3) var(--space-4);
+  border: var(--bw-hair) solid var(--line);
   border-radius: var(--r-card);
-  background: var(--brand-tint);
-  display: flex; flex-direction: column; gap: var(--space-3);
+  background: var(--white);
+  display: flex; flex-direction: column; gap: var(--space-2);
 }
 .thread-head { display: flex; flex-direction: column; gap: var(--space-1); }
-.thread-head .section-h { display: flex; align-items: center; gap: var(--space-2); }
+.thread-head .section-h { display: flex; align-items: center; gap: var(--space-2); margin-top: 0; }
 .thread-budget { margin: 0; }
 .thread-turns {
   display: flex; flex-direction: column; gap: var(--space-2);
-  max-height: 24rem; overflow-y: auto;
+  max-height: 18rem; overflow-y: auto;
   padding: var(--space-2); border-radius: var(--r-card);
-  background: var(--white);
+  background: var(--paper);
 }
 .thread-turn { display: flex; flex-direction: column; gap: 2px; max-width: 100%; }
 .thread-turn .turn-who { font-size: var(--fs-micro); color: var(--ink-3); font-weight: var(--fw-semibold); }

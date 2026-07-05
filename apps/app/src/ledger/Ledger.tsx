@@ -270,53 +270,70 @@ function Connections({
 }) {
   return (
     <div className="connections">
-      {/* Catch-up mode (W2.1) — the guided "get me caught up" job for a years-behind
-          owner. Sits above the raw import: it orchestrates import → categorize →
-          reconcile → per-year package. Read-only viewers see the import copy inside. */}
-      <section className="connections-block">
-        <h2 className="section-h">{COPY.catchUp.entryTitle}</h2>
-        <CatchUpFlow orgId={orgId} canWrite={canWrite} accounts={accounts}
-          onDone={onReports ?? onImported} onReconcile={onReconcile} />
+      {/* PENNY-UX-10 — the old mega single-scroll is now four scannable clusters
+          (get-data-in · sell-channels · money-in/out · sharing). Each cluster is an
+          .eyebrow over compact cards; every connect/upload/toggle handler is
+          UNCHANGED — this is layout only. Section titles shrank from billboard <h2>
+          to the .conn-block-h label so the page reads like /admin. */}
+
+      {/* Get your data in — catch-up (guided) + raw import. */}
+      <section className="connections-cluster" aria-label={COPY.connections.clusterGetData}>
+        <p className="eyebrow conn-cluster-h">{COPY.connections.clusterGetData}</p>
+        <div className="connections-block">
+          {/* Catch-up mode (W2.1) — the guided "get me caught up" job for a years-behind
+              owner. Orchestrates import → categorize → reconcile → per-year package. */}
+          <h3 className="conn-block-h">{COPY.catchUp.entryTitle}</h3>
+          <CatchUpFlow orgId={orgId} canWrite={canWrite} accounts={accounts}
+            onDone={onReports ?? onImported} onReconcile={onReconcile} />
+        </div>
+        <div className="connections-block">
+          <h3 className="conn-block-h">{COPY.connections.bringInData}</h3>
+          {canWrite ? (
+            <ImportFlow orgId={orgId} accounts={accounts} onDone={onImported} />
+          ) : (
+            <p className="muted">{COPY.connections.importDisabled}</p>
+          )}
+        </div>
       </section>
-      <section className="connections-block">
-        <h2 className="section-h">{COPY.connections.bringInData}</h2>
-        {canWrite ? (
-          <ImportFlow orgId={orgId} accounts={accounts} onDone={onImported} />
-        ) : (
-          <p className="muted">{COPY.connections.importDisabled}</p>
-        )}
+
+      {/* Sales channels — split a payout (W4.1 + W4.1-B): a Stripe / Shopify /
+          PayPal / Square / Amazon deposit is really sales − fees − refunds. */}
+      <section className="connections-cluster" aria-label={COPY.connections.clusterSellChannels}>
+        <p className="eyebrow conn-cluster-h">{COPY.connections.clusterSellChannels}</p>
+        <div className="connections-block">
+          <h3 className="conn-block-h">{COPY.payouts.sectionTitle}</h3>
+          <PayoutUpload orgId={orgId} canWrite={canWrite} accounts={accounts} />
+        </div>
       </section>
-      {/* Split a payout (W4.1 + W4.1-B) — a Stripe / Shopify / PayPal / Square /
-          Amazon deposit is really sales − fees − refunds; this splits it
-          correctly. Nested here, not a new top-level tab. */}
-      <section className="connections-block">
-        <h2 className="section-h">{COPY.payouts.sectionTitle}</h2>
-        <PayoutUpload orgId={orgId} canWrite={canWrite} accounts={accounts} />
+
+      {/* Money in & out — getting paid (W4.3, invoicing) + paying bills (RV2-D1, AP
+          tracking-only). Both opt-in, off by default: a one-line enable prompt until on. */}
+      <section className="connections-cluster" aria-label={COPY.connections.clusterMoney}>
+        <p className="eyebrow conn-cluster-h">{COPY.connections.clusterMoney}</p>
+        <div className="connections-block">
+          <h3 className="conn-block-h">{COPY.invoicing.sectionTitle}</h3>
+          <Invoicing orgId={orgId} canWrite={canWrite} />
+        </div>
+        <div className="connections-block">
+          <h3 className="conn-block-h">{COPY.bills.sectionTitle}</h3>
+          <Bills orgId={orgId} canWrite={canWrite} />
+        </div>
       </section>
-      {/* Getting paid (W4.3) — invoicing + AR nudges, nested here (not a new top-
-          level tab). Opt-in, off by default: renders a one-line enable prompt
-          until the owner turns it on. */}
-      <section className="connections-block">
-        <h2 className="section-h">{COPY.invoicing.sectionTitle}</h2>
-        <Invoicing orgId={orgId} canWrite={canWrite} />
-      </section>
-      {/* Paying bills (RV2-D1) — AP tracking, nested here (not a new top-level
-          tab). TRACKING ONLY: records what you owe + records payments, never
-          moves money. Opt-in, off by default. */}
-      <section className="connections-block">
-        <h2 className="section-h">{COPY.bills.sectionTitle}</h2>
-        <Bills orgId={orgId} canWrite={canWrite} />
-      </section>
-      <section className="connections-block">
-        <h2 className="section-h">{COPY.connections.shareWithAccountant}</h2>
-        {onInvite ? (
-          <>
-            <p className="muted">{COPY.connections.inviteLead}</p>
-            <InviteCpa orgId={orgId} />
-          </>
-        ) : (
-          <p className="muted">{COPY.connections.accountantManagedByOwner}</p>
-        )}
+
+      {/* Sharing — invite the accountant to the books. */}
+      <section className="connections-cluster" aria-label={COPY.connections.clusterSharing}>
+        <p className="eyebrow conn-cluster-h">{COPY.connections.clusterSharing}</p>
+        <div className="connections-block">
+          <h3 className="conn-block-h">{COPY.connections.shareWithAccountant}</h3>
+          {onInvite ? (
+            <>
+              <p className="muted sm">{COPY.connections.inviteLead}</p>
+              <InviteCpa orgId={orgId} />
+            </>
+          ) : (
+            <p className="muted sm">{COPY.connections.accountantManagedByOwner}</p>
+          )}
+        </div>
       </section>
     </div>
   );

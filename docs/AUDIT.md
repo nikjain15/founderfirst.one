@@ -383,6 +383,7 @@ works). **Deploy blockers: none.**
 | WG.232 | RV2-A1 Filing worksheet (per-form, per-line ledger drill-down, tie-out, tax-year scope) | `worksheet.test.ts` (REG `RV2A1-WORKSHEET-TIEOUT` + `-PERIOD-SCOPE`) | 🟢 wave-gated; no defect (red-team P0 fixed in-PR) |
 | WG.233 | Internal admin console scaffold (staff-gated, fail-closed, parallel-run) | `admin/nav.test.ts` (15) | 🟨 wave-gated; **F-WG1 P1 a11y** (staff-only, non-blocking) |
 | WG.234 | Load/soak harness + observability + DR runbook | soak `config`/`observability`/`soak` Vitest (20) + `observability.test.ts` (3) | 🟢 wave-gated; live 10k–100k soak = open coverage boundary (F-WG3) |
+| IQ-1 | QBO connection hardening (tokens-at-rest encryption · 429/5xx retry+backoff · reactive 401→refresh→retry · disconnect revokes at Intuit · OAuth state TTL · unknown classification → holding, not silent 'expense') | pgTAP `iq1_qbo_token_encryption_test.sql` (14: enc/dec roundtrip, set_qbo_tokens nulls plaintext, dual-read legacy rows, `authenticated` can't reach decrypt/secrets/token-cols) + deno `qbo.test.ts` (+8: 429→backoff→success, bounded backoff, 401→refresh→retry, no-refresh-loop, revoke, classification→null) | 🟢 tests green (deno 11/11 local); pgTAP runs in CI (no local Docker) — verify before merge. Encryption reversible + dual-read (no live-connection break). |
 
 ### What this gate did NOT cover (standing gaps)
 - **Live 10k–100k sandbox soak** — CI ran the in-memory smoke model only (F-WG3).

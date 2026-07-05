@@ -15,7 +15,7 @@
 -- All rolls back.
 
 begin;
-select plan(24);
+select plan(29);
 
 -- ── fixtures: owner + a non-owner (CPA via engagement) + an outsider ─────────
 insert into auth.users (id, email, aud, role) values
@@ -145,6 +145,41 @@ select is(
 select is(
   has_table_privilege('authenticated', 'public.mfa_recovery_codes', 'select'),
   false, 'SEC1-ISO: mfa_recovery_codes has no direct authenticated grant at all');
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- FIX 2 — server-side aal2 gate on the org WRITE path (can_write_org_as).
+-- org ...05b1 has mfa_required = true (set above). A second org opts out.
+-- can_write_org_as reads the request JWT's aal claim via session_is_aal2().
+-- ════════════════════════════════════════════════════════════════════════════
+insert into organizations (id, type, name, created_by) values
+  ('00000000-0000-0000-0000-0000000005b2', 'business', 'Sec1CoNoMfa', '00000000-0000-0000-0000-0000000005c1');
+insert into memberships (user_id, org_id, role, status) values
+  ('00000000-0000-0000-0000-0000000005c1', '00000000-0000-0000-0000-0000000005b2', 'owner', 'active');
+
+-- aal1 session against an MFA-required org → write gate raises.
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-0000000005c1","role":"authenticated","aal":"aal1"}';
+select throws_ok($$
+  select can_write_org_as('00000000-0000-0000-0000-0000000005c1', '00000000-0000-0000-0000-0000000005b1')
+$$, '42501', null, 'FIX2: aal1 session is rejected on an MFA-required org write');
+
+-- aal1 session against a NON-required org → unaffected (opt-in preserved).
+select is(
+  can_write_org_as('00000000-0000-0000-0000-0000000005c1', '00000000-0000-0000-0000-0000000005b2'),
+  true, 'FIX2: aal1 session still writes to an org that did NOT enable MFA (opt-in preserved)');
+
+-- aal2 session against the MFA-required org → allowed.
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-0000000005c1","role":"authenticated","aal":"aal2"}';
+select is(
+  can_write_org_as('00000000-0000-0000-0000-0000000005c1', '00000000-0000-0000-0000-0000000005b1'),
+  true, 'FIX2: aal2 (MFA-verified) session writes to an MFA-required org');
+reset "request.jwt.claims";
+
+-- service_role / no request JWT (trusted backend) → not gated even when required.
+select is(session_is_aal2(), true,
+  'FIX2: a trusted backend call (no request JWT) is not aal-gated');
+select is(
+  can_write_org_as('00000000-0000-0000-0000-0000000005c1', '00000000-0000-0000-0000-0000000005b1'),
+  true, 'FIX2: the service_role write path is unaffected by the aal gate');
 
 select * from finish();
 rollback;

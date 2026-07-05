@@ -6,7 +6,7 @@
 -- rolls back. Run: `supabase test db`.
 
 begin;
-select plan(28);
+select plan(29);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -186,6 +186,19 @@ select ensure_open_period('00000000-0000-0000-0000-0000000000fa', '2026-03-15'::
 select close_accounting_period('00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-0000000000fa',
   (select id from accounting_periods where org_id = '00000000-0000-0000-0000-0000000000fa'
      and '2026-03-15' between period_start and period_end));
+
+-- FIX 1 (regression): closing a period must still write the 'period.close'
+-- ledger_audit row (dropped by the W5.4 rewrite, restored in 20260707120000).
+select ok(
+  exists(select 1 from ledger_audit
+     where org_id = '00000000-0000-0000-0000-0000000000fa'
+       and actor  = '00000000-0000-0000-0000-0000000000f1'
+       and action = 'period.close'
+       and target_type = 'period'
+       and target_id = (select id from accounting_periods where org_id = '00000000-0000-0000-0000-0000000000fa'
+                          and '2026-03-15' between period_start and period_end)
+       and detail ? 'period_start' and detail ? 'period_end'),
+  'FIX 1: close_accounting_period writes the period.close ledger_audit row (same shape as pre-W5.4)');
 
 select ok(
   exists(select 1 from journal_entries where org_id = '00000000-0000-0000-0000-0000000000fa'

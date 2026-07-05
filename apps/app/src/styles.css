@@ -1028,6 +1028,74 @@ button.ghost.sm, .ghost.sm {
 }
 .pq-archive[open] > summary { margin-bottom: var(--space-2); }
 
+/* ── Firm-level month-end close (card RV2-C1) ─────────────────────────────── */
+/* Mode toggle on the practice home (queue ⇄ month-end) — ink-active tabs. */
+.me-mode { display: inline-flex; gap: var(--space-2); margin-top: var(--space-3); flex-wrap: wrap; }
+.me-mode-tab {
+  min-height: var(--tap-min); padding: var(--space-1) var(--space-3);
+  background: transparent; border: none; cursor: pointer;
+  color: var(--ink-3); font-size: var(--fs-ui); font-weight: var(--fw-medium);
+  border-bottom: 2px solid transparent;
+}
+.me-mode-tab.is-active { color: var(--ink); border-bottom-color: var(--ink); }
+
+.me-close { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
+.me-intro { margin: 0; }
+
+.me-bar {
+  display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;
+  padding-bottom: var(--space-2); border-bottom: var(--bw-hair) solid var(--line);
+}
+.me-sel-count { color: var(--ink-3); font-size: var(--fs-micro); margin-left: auto; }
+.me-close-btn { flex: none; }
+
+.me-result {
+  margin: 0; padding: var(--space-2) var(--space-3); border-radius: var(--r-card);
+  background: var(--amber-bg); color: var(--amber-strong); font-size: var(--fs-ui);
+}
+.me-result.ok { background: var(--brand-soft); color: var(--ink); }
+
+.me-list { list-style: none; margin: 0; padding: 0; }
+.me-row {
+  display: flex; align-items: flex-start; gap: var(--space-3);
+  padding: var(--space-3) 0; border-bottom: var(--bw-hair) solid var(--line);
+  flex-wrap: wrap;
+}
+.me-check { flex: none; display: flex; align-items: center; min-height: var(--tap-min); }
+.me-check input { width: var(--space-3); height: var(--space-3); }
+.me-main { flex: 1 1 14rem; min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.me-name-line { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+.me-name { font-weight: var(--fw-semibold); color: var(--ink); }
+.me-chip {
+  flex: none; padding: 0 var(--space-2); border-radius: var(--r-pill);
+  font-size: var(--fs-micro); font-weight: var(--fw-semibold);
+}
+.me-chip.ready { color: var(--ink); background: var(--brand-soft); }
+.me-chip.exception { color: var(--amber-strong); background: var(--amber-bg); }
+.me-chip.overdue { color: var(--error); background: var(--amber-bg); }
+.me-chip.ro { color: var(--ink-3); background: var(--brand-soft); text-transform: uppercase; letter-spacing: var(--ls-chip); }
+.me-sub { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; font-size: var(--fs-micro); color: var(--ink-3); }
+.me-blocker { color: var(--amber-strong); }
+.me-doc { color: var(--ink-3); }
+.me-actions { flex: none; display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+/* Doc-chase dialog — the client-communication rail. */
+.me-chase-overlay {
+  position: fixed; inset: 0; z-index: var(--z-drawer); display: grid; place-items: center;
+  background: var(--scrim); padding: var(--space-4);
+}
+.me-chase {
+  width: min(100%, 30rem); background: var(--white); color: var(--ink);
+  border-radius: var(--r-card); padding: var(--space-4);
+  display: flex; flex-direction: column; gap: var(--space-3);
+  box-shadow: var(--shadow-float);
+}
+.me-field { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--fs-ui); color: var(--ink-2); }
+.me-field > span { font-size: var(--fs-micro); color: var(--ink-3); }
+.me-field select, .me-field textarea { font-size: 1rem; width: 100%; min-height: var(--tap-min); }
+.me-chase-body { margin: 0; font-size: var(--fs-ui); }
+.me-chase-actions { display: flex; gap: var(--space-2); justify-content: flex-end; flex-wrap: wrap; }
+
 /* ── CPA collaboration primitives (card W1.5) ─────────────────────────────── */
 /* Owner needs-a-look inbox on the Review tab. */
 .collab-inbox { margin: 0 0 1.25rem; }

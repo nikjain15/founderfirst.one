@@ -567,8 +567,16 @@ function paypalCsv(csv: ParsedPayoutCsv): PayoutReportParse {
   // Option A: the canonical payout id is the transfer-to-bank (withdrawal) row's
   // Transaction ID — the same money movement the API path keys on. No Transaction
   // ID column, or no withdrawal row → derivation yields null and the caller skips.
+  //
+  // RT-230: a "Withdrawal Reversal" / "Transfer to Bank Reversal" row ALSO matches
+  // the transfer type hints, but it is money coming BACK (positive Gross), not the
+  // payout. Anchor only on OUTBOUND transfers (negative Gross) so a reversal cannot
+  // sort ahead of the real withdrawal id (which diverged the anchor and broke the
+  // reconcile). Sign is the same taxonomy-independent discriminator the API path uses.
+  const isOutboundTransfer = (r: string[]) =>
+    isTransfer(r) && (cGross < 0 ? false : toMinor(r[cGross] ?? "0") < 0);
   const withdrawalTxnIds =
-    cTxnId >= 0 ? rows.filter(isTransfer).map((r) => r[cTxnId] ?? "") : [];
+    cTxnId >= 0 ? rows.filter(isOutboundTransfer).map((r) => r[cTxnId] ?? "") : [];
   const canonicalPayoutId = paypalCanonicalPayoutId(withdrawalTxnIds);
   return { rows: paypalRowsFrom(raw), reportedNetMinor, canonicalPayoutId };
 }

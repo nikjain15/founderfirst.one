@@ -276,7 +276,11 @@ export function paypalPayoutFromDetails(
       currencies.add(String(ga.currency_code));
       currency = String(ga.currency_code);
     }
-    if (isPayPalWithdrawal(code)) {
+    // Only an OUTBOUND transfer-to-bank (negative gross) is the payout. The T04xx
+    // family also holds withdrawal REVERSALS / returned transfers (positive gross);
+    // excluding them by sign keeps a reversal from anchoring the payout or inflating
+    // the reconcile target (RT-230). Mirrors apiSync.ts paypalPayoutToComponents.
+    if (isPayPalWithdrawal(code) && gross < 0) {
       sawWithdrawal = true;
       // a withdrawal moves money OUT (negative gross); its magnitude is the net
       withdrawalNetMinor += Math.abs(gross);

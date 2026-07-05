@@ -233,9 +233,17 @@ export function paypalPayoutToComponents(
     const info = t.transaction_info ?? {};
     const cc = info.transaction_amount?.currency_code;
     if (cc) currencies.add(cc.toString());
-    if (isPayPalWithdrawalEventCode(info.transaction_event_code ?? "")) {
+    // Only an OUTBOUND transfer-to-bank is the payout. The T04xx family also
+    // contains withdrawal REVERSALS / returned transfers (money coming BACK into
+    // PayPal, positive gross); those must NOT anchor the payout nor inflate the
+    // reconcile target (RT-230: a T04 reversal otherwise sorted ahead of the real
+    // withdrawal id → wrong anchor + non-reconcile). A genuine transfer-to-bank
+    // has negative gross; a reversal has positive. Sign is the taxonomy-independent
+    // discriminator both paths agree on.
+    const wGross = toMinor(info.transaction_amount?.value ?? "0");
+    if (isPayPalWithdrawalEventCode(info.transaction_event_code ?? "") && wGross < 0) {
       sawWithdrawal = true;
-      withdrawalNetMinor += Math.abs(toMinor(info.transaction_amount?.value ?? "0"));
+      withdrawalNetMinor += Math.abs(wGross);
       withdrawalTxnIds.push(info.transaction_id ?? "");
     }
   }

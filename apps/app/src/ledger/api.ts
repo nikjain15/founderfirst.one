@@ -553,6 +553,8 @@ export interface ExternalConnection {
   provider: ConnectionProvider;
   tenant_name: string | null;
   status: "pending" | "active" | "revoked" | "error";
+  /** Last failure reason from the provider (e.g. `invalid_grant`) when status='error'. */
+  last_error: string | null;
 }
 
 export function useConnections(orgId: string | undefined) {
@@ -563,7 +565,7 @@ export function useConnections(orgId: string | undefined) {
       const sb = getClient();
       const { data, error } = await sb
         .from("external_connections")
-        .select("id,provider,tenant_name,status")
+        .select("id,provider,tenant_name,status,last_error")
         .eq("org_id", orgId)
         .order("created_at", { ascending: false });
       if (error) throw error;

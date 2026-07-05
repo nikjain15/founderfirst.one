@@ -16,7 +16,7 @@
  * deduped commit_import_batch(4-arg) path (source 'qbo' → bank branch).
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { refreshToken, qboQuery, qboQueryAll, qboTrialBalance, mapQboAccountType, toMinor } from "../_shared/qbo.ts";
+import { refreshToken, qboQuery, qboQueryAll, qboTrialBalance, mapQboAccountType, toMinor, QBO_CONFIG_DEFAULTS, type QboConfig } from "../_shared/qbo.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -53,26 +53,52 @@ Deno.serve(async (req) => {
   if (!canWrite) return json({ error: "forbidden" }, 403);
 
   const { data: conn } = await svc.from("external_connections")
-    .select("id, realm_id, tenant_name, access_token, refresh_token, token_expires_at, status")
+    .select("id, realm_id, tenant_name, token_expires_at, status")
     .eq("id", connId).eq("org_id", orgId).eq("provider", "qbo").maybeSingle();
   if (!conn || conn.status !== "active") return json({ error: "no_active_connection" }, 404);
+  const connectionId = conn.id as string; // stable non-null ref for closures below
+
+  // IQ-1: tokens are encrypted at rest — decrypt server-side via the RPC.
+  const { data: secretsRow, error: secErr } = await svc
+    .rpc("ext_connection_secrets", { p_connection: conn.id });
+  const secrets = Array.isArray(secretsRow) ? secretsRow[0] : secretsRow;
+  if (secErr || !secrets?.access_token || !secrets?.refresh_token) {
+    return json({ error: "no_active_connection" }, 404);
+  }
+  let refresh = secrets.refresh_token as string;
+
+  // IQ-1: centralized retry/backoff/throttle thresholds (platform_config).
+  const { data: cfgRow } = await svc.rpc("get_qbo_config", {});
+  const cfg: QboConfig = { ...QBO_CONFIG_DEFAULTS, ...(cfgRow ?? {}) };
 
   // CONN-2: last intuit_tid seen this request (success or error) — persisted to
   // external_connections so it can be produced for Intuit support troubleshooting.
   let lastTid: string | null = null;
   const noteTid = (tid: string | null) => { if (tid) lastTid = tid; };
-  const persistTid = () => svc.from("external_connections").update({ last_intuit_tid: lastTid }).eq("id", conn.id);
+  const persistTid = () => svc.from("external_connections").update({ last_intuit_tid: lastTid }).eq("id", connectionId);
 
-  let access = conn.access_token as string;
+  let access = secrets.access_token as string;
+
+  // Refresh the access token, persist the (encrypted) new pair, return the fresh
+  // access token. Used both proactively (expiry) and reactively (401 mid-pull).
+  async function doRefresh(): Promise<string> {
+    const t = await refreshToken(refresh, noteTid);
+    access = t.access_token;
+    refresh = t.refresh_token;
+    await svc.rpc("set_qbo_tokens", {
+      p_connection: connectionId, p_access: t.access_token, p_refresh: t.refresh_token,
+      p_expires: new Date(Date.now() + (t.expires_in - 60) * 1000).toISOString(),
+    });
+    await svc.from("external_connections").update({ last_intuit_tid: lastTid, updated_at: new Date().toISOString() }).eq("id", connectionId);
+    return access;
+  }
+  // shared call options: reactive 401→refresh→retry + centralized backoff.
+  const callOpts = { onTid: noteTid, cfg, refresh: doRefresh };
+
+  // proactive time-based refresh (unchanged intent).
   if (!conn.token_expires_at || new Date(conn.token_expires_at).getTime() < Date.now() + 60_000) {
     try {
-      const t = await refreshToken(conn.refresh_token as string, noteTid);
-      access = t.access_token;
-      await svc.from("external_connections").update({
-        access_token: t.access_token, refresh_token: t.refresh_token,
-        token_expires_at: new Date(Date.now() + (t.expires_in - 60) * 1000).toISOString(),
-        last_intuit_tid: lastTid, updated_at: new Date().toISOString(),
-      }).eq("id", conn.id);
+      await doRefresh();
     } catch (e) {
       await svc.from("external_connections").update({ status: "error", last_error: (e as Error).message, last_intuit_tid: lastTid }).eq("id", conn.id);
       return json({ error: "token_refresh_failed", detail: (e as Error).message }, 502);
@@ -81,17 +107,40 @@ Deno.serve(async (req) => {
   const realm = conn.realm_id as string;
   const historical = body?.historical === true;
 
+  // IQ-1: an unknown QBO Classification must NOT be silently booked as 'expense'
+  // (silently-wrong books). Resolve the org's uncategorized/holding account ONCE
+  // and route unknown-classification accounts there for mapping review, recording
+  // which accounts need review so the connection surfaces it.
+  let uncategorizedId: string | null = null;
+  const accountsNeedingReview: string[] = [];
+  async function holdingAccount(): Promise<string | null> {
+    if (uncategorizedId) return uncategorizedId;
+    const { data } = await svc.rpc("resolve_uncategorized_account", { p_actor: uid, p_org: orgId });
+    uncategorizedId = (data as string) ?? null;
+    return uncategorizedId;
+  }
+  // Upsert one QBO account → our ledger id. Known classification maps to its type;
+  // an unknown one is routed to the holding account (flagged for review) instead
+  // of being mistyped as expense.
+  async function upsertQboAccount(a: QboAccount): Promise<string | undefined> {
+    const type = mapQboAccountType(a.Classification);
+    if (type === null) {
+      accountsNeedingReview.push(`${a.Name}${a.Classification ? ` (${a.Classification})` : ""}`);
+      return (await holdingAccount()) ?? undefined;
+    }
+    const { data: acc } = await svc.rpc("upsert_ledger_account", {
+      p_actor: uid, p_org: orgId, p_name: a.Name, p_type: type, p_code: a.AcctNum ?? null,
+    });
+    return (acc as { id?: string })?.id;
+  }
+
   // ── shared: pull + upsert the chart of accounts, return QBO id → ledger id ──
   async function pullChartOfAccounts(): Promise<{ map: Map<string, string>; count: number }> {
-    const acctResp = await qboQuery(realm, "select * from Account maxresults 1000", access, noteTid);
+    const acctResp = await qboQuery(realm, "select * from Account maxresults 1000", access, callOpts);
     const accounts: QboAccount[] = acctResp?.QueryResponse?.Account ?? [];
     const map = new Map<string, string>();
     for (const a of accounts) {
-      const { data: acc } = await svc.rpc("upsert_ledger_account", {
-        p_actor: uid, p_org: orgId, p_name: a.Name,
-        p_type: mapQboAccountType(a.Classification), p_code: a.AcctNum ?? null,
-      });
-      const id = (acc as { id?: string })?.id;
+      const id = await upsertQboAccount(a);
       if (id) map.set(a.Id, id);
     }
     return { map, count: accounts.length };
@@ -105,8 +154,8 @@ Deno.serve(async (req) => {
       const { map: qboIdToOurId, count: acctCount } = await pullChartOfAccounts();
 
       // Full history (all pages), not just the first 500.
-      const purchases: QboTxn[] = await qboQueryAll(realm, "Purchase", access, { onTid: noteTid });
-      const deposits: QboTxn[] = await qboQueryAll(realm, "Deposit", access, { onTid: noteTid });
+      const purchases: QboTxn[] = await qboQueryAll(realm, "Purchase", access, callOpts);
+      const deposits: QboTxn[] = await qboQueryAll(realm, "Deposit", access, callOpts);
 
       // Primary bank = the account most transactions clear through.
       const bankCount = new Map<string, number>();
@@ -160,7 +209,7 @@ Deno.serve(async (req) => {
       let providerTb: { name: string; debit_minor: number; credit_minor: number }[] = [];
       let providerTbAsOf: string | null = null;
       try {
-        const tb = await qboTrialBalance(realm, access, undefined, noteTid);
+        const tb = await qboTrialBalance(realm, access, undefined, callOpts);
         providerTb = tb.rows;
         providerTbAsOf = tb.asOf;
       } catch (_e) { /* TB report is best-effort; migration still proceeds without it */ }
@@ -177,6 +226,7 @@ Deno.serve(async (req) => {
         migration_id: (mig as { id: string })?.id, batch_ids: batchIds,
         accounts: acctCount, txn_count: txnCount, years,
         provider_tb_rows: providerTb.length, provider_tb_as_of: providerTbAsOf,
+        accounts_needing_review: accountsNeedingReview,
       }, 200);
     } catch (e) {
       await persistTid();
@@ -186,24 +236,20 @@ Deno.serve(async (req) => {
 
   try {
     // 1. chart of accounts → upsert; map QBO account Id → our ledger id
-    const acctResp = await qboQuery(realm, "select * from Account maxresults 1000", access, noteTid);
+    const acctResp = await qboQuery(realm, "select * from Account maxresults 1000", access, callOpts);
     const accounts: QboAccount[] = acctResp?.QueryResponse?.Account ?? [];
     const qboIdToOurId = new Map<string, string>();
     const bankCount = new Map<string, number>();
     let upserted = 0;
     for (const a of accounts) {
-      const { data: acc } = await svc.rpc("upsert_ledger_account", {
-        p_actor: user.id, p_org: orgId, p_name: a.Name,
-        p_type: mapQboAccountType(a.Classification), p_code: a.AcctNum ?? null,
-      });
-      const id = (acc as { id?: string })?.id;
+      const id = await upsertQboAccount(a);
       if (id) qboIdToOurId.set(a.Id, id);
       upserted++;
     }
 
     // 2. transactions: Purchases (out) + Deposits (in)
-    const purchases: QboTxn[] = (await qboQuery(realm, "select * from Purchase maxresults 500", access, noteTid))?.QueryResponse?.Purchase ?? [];
-    const deposits: QboTxn[] = (await qboQuery(realm, "select * from Deposit maxresults 500", access, noteTid))?.QueryResponse?.Deposit ?? [];
+    const purchases: QboTxn[] = (await qboQuery(realm, "select * from Purchase maxresults 500", access, callOpts))?.QueryResponse?.Purchase ?? [];
+    const deposits: QboTxn[] = (await qboQuery(realm, "select * from Deposit maxresults 500", access, callOpts))?.QueryResponse?.Deposit ?? [];
     for (const p of purchases) { const b = p.AccountRef?.value; if (b) bankCount.set(b, (bankCount.get(b) ?? 0) + 1); }
     for (const d of deposits) { const b = d.DepositToAccountRef?.value; if (b) bankCount.set(b, (bankCount.get(b) ?? 0) + 1); }
     const primaryBankQboId = [...bankCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
@@ -241,6 +287,7 @@ Deno.serve(async (req) => {
     return json({
       batch_id: batchId, accounts: upserted, rows: rows.length,
       ready: rows.filter((r) => r.status === "ready").length,
+      accounts_needing_review: accountsNeedingReview,
       note: "Accounts imported. Transactions on the primary bank account are staged for preview; review and commit in the Import tab.",
     }, 200);
   } catch (e) {

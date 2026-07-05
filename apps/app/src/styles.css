@@ -469,7 +469,7 @@ button.ghost.sm, .ghost.sm {
   min-height: var(--tap-min); padding: 0.35rem 0.7rem; font-size: var(--fs-ui);
 }
 .ghost.sm.danger { color: var(--error); border-color: var(--error); }
-.error.sm, .muted.sm { font-size: var(--fs-ui); }
+.error.sm, .muted.sm, .contact-support.sm { font-size: var(--fs-ui); }
 
 /* overview */
 .overview { display: flex; flex-direction: column; gap: 1rem; }
@@ -775,6 +775,24 @@ button.ghost.sm, .ghost.sm {
 .import-choice:disabled { opacity: 0.5; }
 .import-choice .ic-title { font-weight: var(--fw-semibold); }
 .import-choice .ic-sub { font-size: var(--fs-ui); color: var(--ink-3); }
+
+/* Broken-connection banner (IQ-2) — needs-attention, honest, not alarming. */
+.conn-broken {
+  display: flex; flex-direction: column; gap: 0.6rem;
+  padding: var(--pad-card); background: var(--amber-bg);
+  border: var(--bw-hair) solid var(--amber); border-radius: var(--r-card);
+  color: var(--amber-strong);
+}
+.conn-broken .section-h { color: var(--amber-strong); }
+.conn-broken-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.conn-broken-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem;
+  justify-content: space-between;
+}
+.conn-broken-text { flex: 1 1 16rem; min-width: 0; color: var(--ink-2); }
+.conn-broken-row button { flex: 0 0 auto; min-height: var(--tap-min, 44px); }
+.contact-support { margin: 0; }
+.contact-support a { color: var(--brand); }
 
 .file-drop {
   display: grid; place-items: center; gap: 0.4rem; position: relative;

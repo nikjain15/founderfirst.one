@@ -152,8 +152,8 @@ function Overview() {
           {filtered.length === 0 ? (
             <div className="ledger-empty"><p className="muted">{C.overview.empty}</p></div>
           ) : (
-            <div className="table-wrap">
-              <table className="console-table" aria-label={C.overview.tableAria}>
+            <div className="table-wrap" tabIndex={0} role="region" aria-label={C.overview.tableAria}>
+              <table className="console-table">
                 <thead>
                   <tr>
                     <th>{C.overview.colName}</th>

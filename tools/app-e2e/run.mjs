@@ -249,6 +249,43 @@ async function walkReportViewsA11y() {
 }
 // ── PENNY-UX-5 — END ──────────────────────────────────────────────────────────
 
+// ── F-WG1 — BEGIN (append-only block) ─────────────────────────────────────────
+/** F-WG1 (wave-gate) — the internal admin console (/admin, apps/app/src/admin/
+ *  AdminConsole.tsx) was the ONE `.table-wrap` in the app missing keyboard
+ *  focusability → serious axe `scrollable-region-focusable`. It slipped every gate
+ *  because the a11y walk never visited /admin (a separate top-level route, not a
+ *  tab click in the owner nav). This walk navigates to /admin and runs the same
+ *  serious/critical-gating axe scan there, closing the class of miss.
+ *
+ *  Auth note: /admin is gated by is_platform_staff() (the admins allow-list). If the
+ *  E2E account IS staff, the Overview `.table-wrap` renders and we additionally
+ *  assert it is keyboard-focusable (the exact F-WG1 regression net, mirroring the
+ *  GL check in walkReportViewsA11y). If the account is NOT staff, /admin renders the
+ *  "Staff only" wall — still a real authed screen we axe-scan — and we say so rather
+ *  than silently passing. Either way the route is now under the a11y gate. */
+async function walkAdminConsoleA11y() {
+  await page.setViewportSize(DESKTOP);
+  await page.goto(`http://127.0.0.1:${port}/admin`, { waitUntil: "networkidle", timeout: 60_000 }).catch(() => {});
+  await page.waitForTimeout(800);
+  const isStaff = await page.locator(".console-table").count().catch(() => 0);
+  if (isStaff) {
+    ok("/admin: Overview console renders (E2E account is platform staff)");
+    // F-WG1 regression net: the Overview scroll region must be keyboard-reachable.
+    const focusable = await page.locator(".table-wrap[tabindex='0']").count().catch(() => 0);
+    if (!focusable) fail("/admin · Overview: .table-wrap is not keyboard-focusable (no tabindex) — F-WG1 regressed");
+    else ok("/admin · Overview: scroll region is keyboard-focusable (F-WG1 net)");
+  } else {
+    ok("/admin: renders the Staff-only wall (E2E account is not platform staff) — route now under the a11y gate, but the Overview table (the F-WG1 surface) is only asserted when the account is staff");
+  }
+  await page.screenshot({ path: join(ARTIFACTS, "desktop-admin.png"), fullPage: true });
+  await a11yScan("/admin console");                 // same serious/critical gate as every screen
+  await sweepWidths("/admin console");             // 320 → 1920, every ladder width
+  // Return to the app base so any later assertions start from a clean owner shell.
+  await page.goto(base, { waitUntil: "networkidle", timeout: 60_000 }).catch(() => {});
+  await page.waitForTimeout(600);
+}
+// ── F-WG1 — END ───────────────────────────────────────────────────────────────
+
 // ── PENNY-UX-3 — BEGIN (append-only block; do not fold into the code above) ──
 /** PENNY-UX-3 — mobile tab-strip discoverability (docs/AUDIT.md PENNY-UX findings).
  *  `.ledger-tabs` already scrolls horizontally at narrow widths, but nothing
@@ -567,6 +604,11 @@ try {
       await page.waitForTimeout(150);
       await page.screenshot({ path: join(ARTIFACTS, `mobile-${s.key}.png`), fullPage: true });
     }
+
+    // F-WG1 — the internal admin console is a separate top-level route (/admin),
+    // not an owner-nav tab, so the SCREENS loop never reaches it. Walk it explicitly
+    // so its `.table-wrap` (and the rest of the console) is under the a11y gate.
+    await walkAdminConsoleA11y();
   }
   }
 

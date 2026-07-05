@@ -15,6 +15,7 @@
  * marshals — it makes NO authorization decision of its own.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { mfaSatisfied } from "../_shared/mfaGate.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -56,6 +57,12 @@ Deno.serve(async (req) => {
     const ids = Array.isArray(body?.client_org_ids) ? body.client_org_ids.map(String) : [];
     if (!firm) return json({ error: "bad_firm" }, 400);
     if (ids.length === 0) return json({ error: "no_clients" }, 400);
+    // SEC-1 (SEC-1-CPACLOSE): MFA-gate the CPA batch-close write on the firm
+    // user's OWN org policy. firm is the org_id of the type='firm' org the caller
+    // belongs to (the RPC re-verifies membership). If that firm org requires MFA
+    // and the caller's session is aal1 → reject BEFORE any per-client write, so no
+    // partial batch. Non-MFA firms are unaffected. Same helper as the other 10 fns.
+    if (!(await mfaSatisfied(svc, jwt, firm))) return json({ error: "mfa_required", code: "mfa_required" }, 403);
     const { data, error } = await svc.rpc("cpa_batch_close_periods", {
       p_actor: user.id,
       p_firm: firm,

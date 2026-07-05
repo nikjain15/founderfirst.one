@@ -152,6 +152,96 @@ Status values: `unclaimed` · `claimed:<tag>` · `pr:#NNN` · `red-teamed` · `m
 
 ---
 
+# Roadmap-v2 — the current phase (A → C → D → E → B)
+
+> Order: **A → C → D → E → B** (Nik, 4 Jul). Full candidate detail: docs/plans/roadmap-v2.md.
+> Card each phase before building; run the wave gate between phases.
+
+## Roadmap-v2 Wave 1 — SHIPPED + DEPLOYED (5 Jul 2026)
+The first slice of A/E/B + connector enablement is live on `main` (== prod), wave-gate GO:
+- **RV2-A1** · filing worksheet per form w/ ledger traceability — merged (pr:#232)
+- **RV2-E** · production-readiness slice (load/soak harness + observability + DR runbook) — merged (pr:#234)
+- **IA-3 (B) scaffold** · internal admin console at penny.../admin, additive parallel-run, `/admin` untouched — merged (pr:#233)
+- **Connectors** · Plaid/QBO/Xero env-wiring + connect-URL/link-token tests — merged (pr:#231)
+- **W4.1-C/D** · Square + PayPal API payout sync (sandbox, read-only) — merged (pr:#230)
+- **Wave-gate audit** · GO (0 P0, 1 non-blocking P1) — merged (pr:#235)
+> Follow-ups from the gate P1 + Nik decisions (4–5 Jul): alerting-sink wire + live soak schedule
+> (RV2-E follow-up), Supabase PITR = Nik dashboard toggle, Zoho Books + FreshBooks importers
+> (build after this wave — share connector-registry files). These are tracked as cards below /
+> Nik human steps, not silently dropped.
+
+## RV2-A2 · Structured per-suite tax export (A fast-follow)
+status: unclaimed
+blocked-by: — (RV2-A1 worksheet shipped, pr:#232; builds on the same filing/worksheet layer)
+workflow: CPA · year-end filing · open client → Filing → pick form/suite → Download import file →
+  re-keys NOTHING into Drake/Lacerte/ProConnect = 3 taps, one file
+goal: emit the return in the structured format tax software imports (tax-prep import files /
+  K-1 packages), per suite, so the CPA re-keys nothing — the second leg of the filing mission
+  after the worksheet. Every exported line stays traced back to ledger entries (the "show your
+  work" trust surface). True IRS e-file (MeF partner + CPA-of-record gate) stays a separate,
+  later, `decision-needed` bet — NOT in this card.
+centralization: serializers are per-suite config off the tax-mapping engine + CENTRAL-2 kernel,
+  not hardcoded line maps; form/line literals come from the seeded filing data, never inlined.
+coverage delta: new AUDIT ledger row (filing-export) ⬜ untested → stress pass (round-trip a
+  sample return through the export format; assert line totals tie to the worksheet and to the TB).
+
+## RV2-C1 · CPA practice-OS depth — firm-level month-end close (C)
+status: unclaimed
+blocked-by: — (Wave 1 CPA lens + IA-2 Practice home + exports all shipped)
+scope-decision: Nik 4 Jul — optimize for **both firms and single owners** (not either/or).
+workflow: CPA · month-end close across many clients · Practice home → batch-select clients →
+  run close checklist (roll-forward + doc-chase) → resolve exceptions → sign off; a clean client
+  is zero-touch. Must stay INSIDE the ≤5-asks/week + no-new-top-level-nav usability budget —
+  design workflow-inward, nest under the existing CPA Practice home, do NOT re-create QBO.
+goal: take the CPA lens from "workqueue" to "practice operating system": firm-level batch
+  operations (approve/close across clients), per-client month-end close checklist with
+  roll-forward, a client-communication rail (request docs / chase missing statements), a
+  workpaper/adjusting-entry review flow, and per-firm SLA/response tracking (the "responsive"
+  Signal #3). Extends the existing CPA lens — NO new schema spine.
+centralization: checklist steps, SLA thresholds, and doc-chase templates are seed/config +
+  live personas (Penny copy), not inline strings or magic numbers.
+coverage delta: new AUDIT ledger row (cpa-practice-os) ⬜ untested → stress pass (batch close
+  across N fixture clients; assert per-client period locks + roll-forward integrity, no cross-
+  tenant bleed).
+
+## RV2-D1 · AP / bill-pay — TRACKING ONLY (D)
+status: unclaimed
+blocked-by: — (vendors W2.5 + receipt capture W3.5 shipped)
+scope-decision: Nik 4 Jul — **tracking-only, NEVER moves money** (no money transmission, no
+  payments partner). Payroll stays out (→ Gusto). If any sub-task would move funds, it is
+  `decision-needed`, not built.
+workflow: owner · "what do I owe and when" · Bills → capture a bill (extends receipt capture) →
+  see AP aging → mark paid (records the payment, does NOT send it); nests under existing money
+  surfaces, no new top-level nav.
+goal: complete the cash picture's money-out half: bill capture (extends receipt capture), AP
+  aging, vendor records reused from the 1099 model (W2.5), scheduled/marked payments as
+  bookkeeping records only. Modular + opt-in, mirroring how invoicing (W4.3) shipped.
+centralization: aging buckets + reminder cadence are config, not magic numbers; vendor data
+  reuses the existing 1099 vendor model — one source, no duplicate vendor store.
+coverage delta: new AUDIT ledger row (ap-billpay) ⬜ untested → stress pass (bill lifecycle
+  capture→age→mark-paid; assert AP aging ties to the ledger and 1099 vendor totals; assert NO
+  code path initiates a fund transfer).
+
+## W5.4 · Multi-currency (D1–D7 answered — build unblocked)
+status: unclaimed
+blocked-by: — (D1–D7 answered by Nik 4 Jul; full plan in docs/plans/multi-currency-design.md §8)
+slot: cross-cutting (ledger + invoices + payouts) — sequence against A/C/D per orchestrator +
+  Nik; per-org opt-in flag means it ships dark until enabled, so it can run in parallel.
+workflow: owner/CPA · "my business isn't only in USD" · enable multi-currency (per-org opt-in) →
+  transactions carry their currency → close auto-revalues → reports read in base currency; a
+  single-currency org sees ZERO change.
+goal: implement the D1–D7 decisions — full currency catalog (D2), systematic rates (fx_rates
+  ECB daily snapshot primary, manual = override only, NEVER silent 1) (D3), auto-revalue at
+  close + auto-reverse (D4), infer + is_monetary override (D5), everything in v1 —
+  ledger + invoices + payouts (D6), per-org opt-in flag (D7).
+centralization: currency catalog + fx_rates are seeded/systematic data, never inline; the base
+  currency + opt-in are per-org config rows, not hardcoded USD.
+coverage delta: new AUDIT ledger row (multi-currency) ⬜ untested → stress pass (mixed-currency
+  entries revalue at close, reverse next period, reports tie in base currency; single-currency
+  org unaffected).
+
+---
+
 ## LOOP-1 · Build dashboard (/admin → Build tab)
 status: merged (pr:#173 — live on main)
 goal: Nik tracks the whole loop from ONE page, ≤15-min freshness, never hops between chats.

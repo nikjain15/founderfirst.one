@@ -447,6 +447,39 @@ actually share their books.
 Empty/placeholder tabs: **none found** — every tab renders real content or an
 intentional, actionable empty state.
 
+### PENNY-UX-9 — second (post-Wave-2) IA/design-conformance pass (Jul 2026)
+
+The scope-decision (Nik, 4 Jul) was to revisit the LIVE app from the owner + CPA
+lenses now that all four Wave-2/3 surfaces shipped (tax export, month-end close,
+AP/Bills, multi-currency, MFA) and bring the whole app to the `founderfirst.one/admin`
+standard: `.eyebrow` + `.page-title` on every authed page (never a bare billboard
+`<h1>`), all font/color/spacing/radius from `tokens.css`, real content in every tab,
+no width-ladder horizontal scroll.
+
+**Re-audit result — the IA is already conformant** (the PENNY-UX-0..8 passes plus the
+Wave-2 builders landed it): every authed header (`Ledger`, `PracticeHome`, `Settings`,
+`Security`, `AdminConsole`, `StaffHome`, `Onboarding`, `Login`) leads with `.eyebrow`
++ `<h1 className="page-title">`; **grep found zero inline hex** in `apps/app/src`
+(only token-referencing comments); **`check:css-vars` green** (1048 refs across 142
+files resolve); the new Wave-2 surfaces are **nested under existing jobs, no new
+top-level nav** — Invoicing / **Bills (AP)** / payout-split under **Connections**
+(`Ledger.tsx:296–320`), **Filing** under owner **Advanced** and as a CPA workflow tab
+(`nav.ts`), multi-currency + MFA under **Settings** (`MultiCurrencySetting` /
+`MfaRequiredSetting`). No empty or duplicative tabs. **No restructure needed** — so no
+new top-level nav was added (usability gate respected).
+
+**Coverage delta (what this pass added — guards, not code churn):**
+- **`check:authed-headings`** (`scripts/check-authed-headings.ts`, wired into
+  `centralization.yml`): fails the build on any authed `<h1>` lacking `.page-title`
+  (billboard-scale regression, LEARNINGS #14 silent-failure family). Comment-aware so
+  the "never a bare `<h1>`" note in `Login.tsx` doesn't false-positive.
+- **`designConformance.test.ts`** (app suite, REG): asserts (a) no bare authed `<h1>`
+  and (b) no inline hex color (`: #hex`) in `apps/app/src` — locks the `/admin` design
+  pattern per-page, complementing `nav.test.ts` which locks the per-lens tab SETS.
+- Together these convert "the app matches the /admin standard" from a manual review
+  into two standing CI gates. Responsive (width ladder) stays covered by
+  `responsive.yml`; this pass made **zero CSS/layout changes**, so no new scroll risk.
+
 ### Ranked findings (live-reproduced; `file:line` from a fresh `origin/main` worktree)
 
 **F1 · P0 · The "invite your accountant" accept link is dead — the whole owner→CPA

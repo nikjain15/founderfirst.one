@@ -611,6 +611,14 @@ export const COPY = {
     payoutIdLabel: "Payout reference",
     payoutIdHint: "The payout ID from your dashboard — this keeps a re-upload from posting twice.",
     payoutIdPlaceholder: "e.g. po_1a2b3c",
+    // PayPal keys the payout on the transfer-to-bank line in the report itself,
+    // so the reference is optional there (kept only as your own label).
+    payoutIdHintDerived:
+      "Optional label. Penny matches this PayPal payout on the transfer-to-bank line in your report, so a re-upload can't post twice.",
+    // shown when a PayPal report has no transfer-to-bank (withdrawal) row yet —
+    // the money is still in the PayPal balance, so there is no payout to record.
+    notWithdrawn:
+      "This report has no transfer-to-your-bank line yet, so the money is still in PayPal — there's no completed payout to record. Export the report again once the payout has landed in your bank.",
     payoutDateLabel: "Deposit date",
     bankAccountLabel: "Deposited into",
     // step 3 — preview the split

@@ -362,6 +362,16 @@ async function verifyConnectionsClusters() {
   // Owner-calm redesign — Connections defaults to a CHOOSER: the four clusters are
   // still the section groups, but each hosts a menu of one-line jobs; the wizard is
   // revealed only when its job is picked (one thing at a time, like the demo).
+  // Make sure we're at the menu (an earlier check may have left a flow open).
+  const backBtn = page.locator(".conn-back");
+  if (await backBtn.count().catch(() => 0)) { await backBtn.first().click().catch(() => {}); await page.waitForTimeout(200); }
+  // Capture the decluttered menu itself (desktop + mobile) as the review artifact.
+  await page.screenshot({ path: join(ARTIFACTS, "connections-chooser-desktop.png"), fullPage: true }).catch(() => {});
+  await page.setViewportSize(MOBILE);
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: join(ARTIFACTS, "connections-chooser-mobile.png"), fullPage: true }).catch(() => {});
+  await page.setViewportSize(DESKTOP);
+  await page.waitForTimeout(150);
   const clusters = await page.locator(".conn-chooser .connections-cluster").count().catch(() => 0);
   if (clusters === 4) ok("owner-calm: Connections chooser renders 4 grouped clusters");
   else fail(`owner-calm: expected 4 Connections clusters, found ${clusters}`);

@@ -704,6 +704,25 @@ button.ghost.sm, .ghost.sm {
 .s-acct, .s-memo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .worksheet-unmapped { margin-top: 1.25rem; }
 
+/* RV2-A2 · structured per-suite export */
+.filing-export {
+  margin-top: 1.5rem; padding-top: 1rem;
+  border-top: var(--bw-hair) solid var(--line);
+}
+.filing-export .sub { margin-top: 0.2rem; }
+.filing-export-controls {
+  display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin: 0.75rem 0 0.4rem;
+}
+.filing-export-suite { display: flex; flex-direction: column; gap: 0.2rem; }
+.filing-export-suite span {
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip); color: var(--ink-3);
+}
+.filing-export-suite select {
+  min-height: var(--tap-min); font-size: var(--fs-input);
+  padding: 0.35rem 0.5rem; border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); background: var(--white); color: var(--ink);
+}
+
 /* periods */
 .period-row {
   display: grid; grid-template-columns: 1fr auto auto; gap: 0.6rem; align-items: center;

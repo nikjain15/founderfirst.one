@@ -13,10 +13,13 @@ import { formatMoney } from "../ledger/money";
 import {
   useOrgTaxProfile, useTaxForms, useTaxFormLines, useTaxResolution,
 } from "./api";
-import { buildWorksheet, taxYearDateFilter, worksheetTiesOut, type WorksheetLine, type WorksheetSource } from "./worksheet";
+import { buildWorksheet, taxYearDateFilter, worksheetTiesOut, type Worksheet, type WorksheetLine, type WorksheetSource } from "./worksheet";
+import { SERIALIZERS } from "./serializers";
+import { downloadTaxExport, exportReady } from "./taxExport";
+import type { TaxFormLine } from "./types";
 import { COPY } from "../copy";
 
-export default function Filing({ orgId, entries }: { orgId: string; entries: JournalEntry[] }) {
+export default function Filing({ orgId, entries, orgName }: { orgId: string; entries: JournalEntry[]; orgName?: string }) {
   const profile = useOrgTaxProfile(orgId);
   const forms = useTaxForms(profile.data);
 
@@ -87,14 +90,22 @@ export default function Filing({ orgId, entries }: { orgId: string; entries: Jou
             </label>
           </div>
 
-          {worksheet && <WorksheetView worksheet={worksheet} />}
+          {worksheet && (
+            <WorksheetView
+              worksheet={worksheet}
+              formLines={lines.data ?? []}
+              orgName={orgName ?? activeForm.form_code}
+            />
+          )}
         </>
       )}
     </section>
   );
 }
 
-function WorksheetView({ worksheet }: { worksheet: ReturnType<typeof buildWorksheet> }) {
+function WorksheetView({
+  worksheet, formLines, orgName,
+}: { worksheet: Worksheet; formLines: TaxFormLine[]; orgName: string }) {
   const ties = useMemo(() => worksheetTiesOut(worksheet), [worksheet]);
   const hasAny = worksheet.lines.some((l) => l.amount_minor !== 0) || worksheet.unmapped.length > 0;
 
@@ -141,6 +152,53 @@ function WorksheetView({ worksheet }: { worksheet: ReturnType<typeof buildWorksh
           </div>
         </div>
       )}
+
+      <ExportPanel worksheet={worksheet} formLines={formLines} orgName={orgName} ties={ties} />
+    </div>
+  );
+}
+
+/** RV2-A2 — the "3 taps, one file" export: pick the suite format, download the import
+ *  file. Gated on the return being review-ready AND tying out — an unmapped or
+ *  non-tying return must NEVER be handed to tax software (the #1 filing trust risk). */
+function ExportPanel({
+  worksheet, formLines, orgName, ties,
+}: { worksheet: Worksheet; formLines: TaxFormLine[]; orgName: string; ties: boolean }) {
+  // Suite options come from the serializer registry (pluggable), never a hardcoded list.
+  const suites = useMemo(
+    () => Object.values(SERIALIZERS).map((s) => ({ id: s.id, label: s.label })),
+    [],
+  );
+  const [suiteId, setSuiteId] = useState(suites[0]?.id ?? "generic_csv");
+  const [done, setDone] = useState<string | null>(null);
+  const ready = exportReady(worksheet, ties);
+
+  return (
+    <div className="filing-export">
+      <h3 className="section-h">{COPY.filing.exportHeading}</h3>
+      <p className="sub sm">{COPY.filing.exportLead}</p>
+      <div className="filing-export-controls" role="group" aria-label={COPY.filing.exportHeading}>
+        <label className="filing-export-suite">
+          <span>{COPY.filing.exportSuiteLabel}</span>
+          <select value={suiteId} onChange={(e) => { setSuiteId(e.target.value); setDone(null); }}>
+            {suites.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+        </label>
+        <button
+          type="button"
+          className="btn"
+          disabled={!ready}
+          onClick={() => setDone(downloadTaxExport(worksheet, formLines, suiteId, orgName))}
+        >
+          {COPY.filing.exportButton}
+        </button>
+      </div>
+      {!ready && (
+        <p className="sub sm t-warn">
+          {!ties ? COPY.filing.exportDoesNotTie : COPY.filing.exportNotReady}
+        </p>
+      )}
+      {ready && done && <p className="sub sm t-good" role="status">{COPY.filing.exportDone(done)}</p>}
     </div>
   );
 }

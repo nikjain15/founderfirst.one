@@ -47,10 +47,19 @@ const csvCell = (v: string | number | null): string => {
 };
 const money2 = (minor: number): string => (minor / 100).toFixed(2);
 
-/** Debit/credit split of a signed natural-side amount for TB-shaped exports. */
-function debitCredit(line: MappedLine, amt: number): { debit: string; credit: string } {
-  // income/equity/liability are credit-normal; expense/asset/cogs debit-normal.
-  const creditNormal = line.section === "income" || line.section === "equity_rollforward";
+type AcctRow = MappedLine["accounts"][number];
+
+/** Debit/credit split of a signed natural-side amount for TB-shaped exports.
+ *  Normalcy comes from the ACCOUNT TYPE when known (income/liability/equity are
+ *  credit-normal; asset/expense debit-normal), because the form SECTION is ambiguous —
+ *  a balance_sheet section holds both assets (debit-normal) and liabilities
+ *  (credit-normal), and mis-splitting a liability silently reverses it on the import
+ *  (a filing error). Falls back to section only when the type is absent. */
+function debitCredit(line: MappedLine, amt: number, acct?: AcctRow): { debit: string; credit: string } {
+  const t = acct?.account_type;
+  const creditNormal = t
+    ? (t === "income" || t === "liability" || t === "equity")
+    : (line.section === "income" || line.section === "equity_rollforward");
   if (creditNormal) return amt >= 0 ? { debit: "", credit: money2(amt) } : { debit: money2(-amt), credit: "" };
   return amt >= 0 ? { debit: money2(amt), credit: "" } : { debit: "", credit: money2(-amt) };
 }
@@ -73,7 +82,7 @@ export const genericCsvSerializer: TaxExportSerializer = {
     ];
     const rows: string[] = [header.map(csvCell).join(",")];
     for (const { line, acct } of accountRows(ret)) {
-      const { debit, credit } = debitCredit(line, acct.amount_minor);
+      const { debit, credit } = debitCredit(line, acct.amount_minor, acct);
       rows.push([
         acct.account_code, acct.account_name, debit, credit,
         ret.form_code, line.line_code ?? "", line.label,
@@ -141,7 +150,7 @@ export const drakeSerializer: TaxExportSerializer = {
     const rows = [header.join(",")];
     const code = suiteCode(ctx, "drake");
     for (const { line, acct } of accountRows(ret)) {
-      const { debit, credit } = debitCredit(line, acct.amount_minor);
+      const { debit, credit } = debitCredit(line, acct.amount_minor, acct);
       rows.push([
         csvCell(acct.account_code ?? ""), csvCell(acct.account_name),
         debit, credit, csvCell(code(line.line_key, line.line_code)),

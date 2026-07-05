@@ -249,7 +249,7 @@ export default function Ledger({
                 onCategorize={() => goto("review")} />
             )}
             {surface === "reports" && <Reports entries={entries.data ?? []} org={org} />}
-            {surface === "filing" && <Filing orgId={org.id} entries={entries.data ?? []} />}
+            {surface === "filing" && <Filing orgId={org.id} entries={entries.data ?? []} orgName={org.name} />}
           </div>
         </div>
       )}

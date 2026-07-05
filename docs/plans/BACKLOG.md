@@ -223,7 +223,7 @@ coverage delta: new AUDIT ledger row (ap-billpay) ⬜ untested → stress pass (
   code path initiates a fund transfer).
 
 ## W5.4 · Multi-currency (D1–D7 answered — build unblocked)
-status: claimed:loop-orch-w54
+status: pr:#244 (GREEN — all 11 checks pass; awaiting Nik review/merge, safe mode)
 blocked-by: — (D1–D7 answered by Nik 4 Jul; full plan in docs/plans/multi-currency-design.md §8)
 slot: cross-cutting (ledger + invoices + payouts) — sequence against A/C/D per orchestrator +
   Nik; per-org opt-in flag means it ships dark until enabled, so it can run in parallel.

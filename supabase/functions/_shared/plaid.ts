@@ -2,12 +2,14 @@
  * Plaid API helpers (SANDBOX build — Roadmap §W2.3). Mirrors _shared/qbo.ts.
  *
  * Secrets come from the fn environment (never hardcoded, never the browser):
- *   PLAID_CLIENT_ID, PLAID_SECRET (the integrator sets this to the SANDBOX secret
- *   from ~/.config/founderfirst/secrets.env → PLAID_SECRET_SANDBOX at deploy),
+ *   PLAID_CLIENT_ID, plus the Plaid secret — selected by PLAID_ENV: production
+ *   reads PLAID_SECRET_PRODUCTION, sandbox/development read PLAID_SECRET_SANDBOX
+ *   (a bare PLAID_SECRET is honoured as a fallback ONLY in sandbox/development;
+ *   in production a missing PLAID_SECRET_PRODUCTION throws rather than falling back),
  *   PLAID_ENV (defaults 'sandbox').
  * Base URL is chosen by PLAID_ENV; this build targets sandbox. Production requires
- * Plaid's app review (a Nik step before >10 live users) — flip PLAID_ENV +
- * PLAID_SECRET to production then.
+ * Plaid's app review (a Nik step before >10 live users) — flip PLAID_ENV and set
+ * PLAID_SECRET_PRODUCTION then; no code change needed to switch envs.
  */
 const PLAID_ENV = () => Deno.env.get("PLAID_ENV") ?? "sandbox";
 const API_BASE = () => {
@@ -18,7 +20,27 @@ const API_BASE = () => {
   }
 };
 const CLIENT_ID = () => Deno.env.get("PLAID_CLIENT_ID") ?? "";
-const SECRET = () => Deno.env.get("PLAID_SECRET") ?? "";
+// Pick the secret by env so a single deploy holds both keys. Production uses the
+// production secret; sandbox/development use the sandbox secret. A bare
+// PLAID_SECRET remains a fallback for older single-secret deploys — but ONLY in
+// sandbox/development. In production the bare fallback is (per our deploy history)
+// the SANDBOX key, so calling production.plaid.com with it is a real incident:
+// we FAIL LOUD instead of silently authenticating with the wrong-env secret.
+export const plaidSecret = () => {
+  const env = PLAID_ENV();
+  if (env === "production") {
+    const prod = Deno.env.get("PLAID_SECRET_PRODUCTION");
+    if (!prod) {
+      throw new Error(
+        "PLAID_SECRET_PRODUCTION is not set but PLAID_ENV=production — refusing to " +
+          "fall back to a sandbox/legacy PLAID_SECRET against production.plaid.com",
+      );
+    }
+    return prod;
+  }
+  return Deno.env.get("PLAID_SECRET_SANDBOX") ?? Deno.env.get("PLAID_SECRET") ?? "";
+};
+const SECRET = () => plaidSecret();
 
 // Webhook target: Plaid POSTs item/transaction events here. Defaults to the
 // deployed plaid-webhook fn; override with PLAID_WEBHOOK_URL if fronted by a tunnel.
@@ -44,10 +66,13 @@ async function plaid<T = Record<string, unknown>>(path: string, body: Record<str
 // The JWT payload carries request_body_sha256; we recompute it over the RAW body
 // and compare, so a forged body (even with a stale-but-valid JWT) is rejected.
 // Returns true only if signature + body hash + freshness all check out.
-const b64urlToBytes = (s: string): Uint8Array => {
+// Return a Uint8Array over a concrete ArrayBuffer so it satisfies BufferSource
+// under deno v2.x's stricter lib types (a plain `new Uint8Array(n)` is typed
+// Uint8Array<ArrayBufferLike>, which crypto.subtle.verify rejects).
+const b64urlToBytes = (s: string) => {
   const pad = s.length % 4 === 0 ? "" : "=".repeat(4 - (s.length % 4));
   const b = atob(s.replace(/-/g, "+").replace(/_/g, "/") + pad);
-  const out = new Uint8Array(b.length);
+  const out = new Uint8Array(new ArrayBuffer(b.length));
   for (let i = 0; i < b.length; i++) out[i] = b.charCodeAt(i);
   return out;
 };
@@ -73,8 +98,10 @@ export async function verifyPlaidJwt(jwt: string, rawBody: string): Promise<bool
     { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"],
   );
   const sig = b64urlToBytes(parts[2]);
-  const signed = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
-  const okSig = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, pub, sig, signed);
+  const signed = new Uint8Array(new TextEncoder().encode(`${parts[0]}.${parts[1]}`));
+  const okSig = await crypto.subtle.verify(
+    { name: "ECDSA", hash: "SHA-256" }, pub, sig.buffer, signed.buffer,
+  );
   if (!okSig) return false;
 
   const payload = JSON.parse(new TextDecoder().decode(b64urlToBytes(parts[1]))) as

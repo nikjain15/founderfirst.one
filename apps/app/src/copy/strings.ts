@@ -272,6 +272,13 @@ export const COPY = {
 
   // ── Connections tab ────────────────────────────────────────────────────────
   connections: {
+    // Cluster labels (PENNY-UX-10) — the mega-scroll is grouped into four scannable
+    // clusters (get data in · sell channels · money in/out · sharing), each an
+    // .eyebrow over its cards, so the page reads like /admin, not one long column.
+    clusterGetData: "Get your data in",
+    clusterSellChannels: "Sales channels",
+    clusterMoney: "Money in & out",
+    clusterSharing: "Sharing",
     bringInData: "Bring in your data",
     importDisabled: "You have read-only access — importing is disabled.",
     shareWithAccountant: "Share with your accountant",
@@ -363,6 +370,9 @@ export const COPY = {
     allCaughtUpTitle: "All caught up 🎉",
     allCaughtUpBody:
       "Nothing is waiting to be categorized. New transactions land here as they import.",
+    // PENNY-UX-10 — compact one-line empty (replaces the full-height billboard on
+    // the Review stack; trimmed to VOICE, no emoji flourish).
+    allCaughtUpLine: "All caught up — nothing waiting to categorize.",
     found: (n: number) => ({
       before: "Penny found ",
       count: n,
@@ -990,6 +1000,9 @@ export const COPY = {
     inboxEmptyTitle: "Nothing to approve",
     inboxEmptyBody:
       "When your accountant suggests a change or adds a transaction, it lands here for your approval before it hits the books.",
+    // PENNY-UX-10 — compact one-line empty for the stacked Review surfaces (no
+    // full-height billboard when there's simply nothing waiting).
+    inboxEmptyLine: "Nothing from your accountant to approve.",
     tierMedium: "Needs your OK",
     kindReclass: "Category change",
     kindAddTxn: "New transaction",

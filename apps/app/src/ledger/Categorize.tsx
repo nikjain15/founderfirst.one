@@ -26,6 +26,7 @@ import {
 import { formatMoney } from "./money";
 import type { LedgerAccount } from "./types";
 import PennyDidThis from "./PennyDidThis";
+import { CompactEmpty } from "./CompactEmpty";
 import { COPY } from "../copy";
 import { CONFIG_DEFAULTS, useBehaviorConfig } from "../copy/config";
 
@@ -126,10 +127,9 @@ export default function Categorize({
       </p>
 
       {rows.length === 0 && (
-        <div className="ledger-empty">
-          <h3>{COPY.categorize.allCaughtUpTitle}</h3>
-          <p className="muted">{COPY.categorize.allCaughtUpBody}</p>
-        </div>
+        // PENNY-UX-10 — compact one-line empty (was a full-height billboard); this
+        // is the middle of the stacked Review surfaces, so keep it to one row.
+        <CompactEmpty text={COPY.categorize.allCaughtUpLine} />
       )}
 
       {/* MEDIUM — a quick batch-approve. */}

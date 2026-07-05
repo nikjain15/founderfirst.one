@@ -12,14 +12,81 @@ import {
   addImportRows, commitImportBatch, connectProvider, createImportBatch, discardImportBatch,
   importProvider, migrateProvider, plaidExchange, plaidLinkToken, plaidSync,
   useConnections, useProviderMigrations,
-  type ExternalProvider, type ProviderMigration, type StagedRow,
+  type ExternalConnection, type ExternalProvider, type ProviderMigration, type StagedRow,
 } from "../ledger/api";
+import { brokenConnections, isReconnectable } from "../ledger/connectionHealth";
 import MigrationFlow from "../migration/MigrationFlow";
 import { openPlaidLink } from "./plaidLink";
 import { parseAmountCell, parseCsv, parseDateCell, type DateFormat, type ParsedCsv } from "./csv";
 import { formatMoney } from "../ledger/money";
 import type { LedgerAccount } from "../ledger/types";
 import { COPY } from "../copy";
+import ContactSupport from "../components/ContactSupport";
+
+const providerLabel = (p: ExternalConnection["provider"]): string =>
+  p === "qbo" ? COPY.providers.qbo : p === "xero" ? COPY.providers.xero : COPY.providers.plaid;
+
+/**
+ * Broken-connection banner (IQ-2). When a connection's token has failed
+ * (status='error'/revoked) we tell the owner plainly and offer a one-click
+ * Reconnect that re-runs the OAuth connect flow. Providers we can't re-auth in
+ * place (bank feeds) get an honest fallback + the support link. Healthy
+ * connections render nothing — the banner is broken-only.
+ */
+function BrokenConnectionBanner({
+  broken, orgId,
+}: {
+  broken: ExternalConnection[]; orgId: string;
+}) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  if (broken.length === 0) return null;
+
+  async function reconnect(c: ExternalConnection) {
+    if (!isReconnectable(c)) return;
+    setBusy(c.id); setErr(null);
+    try {
+      const { authorize_url } = await connectProvider(c.provider, orgId);
+      window.open(authorize_url, "_blank", "noopener,noreferrer");
+    } catch (e) { setErr((e as Error).message); } finally { setBusy(null); }
+  }
+
+  return (
+    <div className="conn-broken" role="alert">
+      <h3 className="section-h">{COPY.importFlow.brokenHeading}</h3>
+      <ul className="conn-broken-list">
+        {broken.map((c) => {
+          const label = c.tenant_name ?? providerLabel(c.provider);
+          return (
+            <li key={c.id} className="conn-broken-row">
+              <span className="conn-broken-text">{COPY.importFlow.brokenLead(label)}</span>
+              {isReconnectable(c) ? (
+                <button disabled={busy === c.id} onClick={() => reconnect(c)}>
+                  {busy === c.id ? COPY.importFlow.reconnecting : COPY.importFlow.reconnect(label)}
+                </button>
+              ) : (
+                <span className="muted sm">{COPY.importFlow.reconnectManual(label)}</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {err && <p className="error sm">{err}</p>}
+      <ContactSupport compact />
+    </div>
+  );
+}
+
+/**
+ * Loads the org's connections and renders the broken-connection banner when any
+ * are in error/revoked. Healthy-only orgs render nothing.
+ */
+function BrokenConnectionsPanel({ orgId }: { orgId: string }) {
+  const conns = useConnections(orgId);
+  const broken = brokenConnections(conns.data);
+  return <BrokenConnectionBanner broken={broken} orgId={orgId} />;
+}
 
 type Mode = "choose" | "csv" | "opening";
 // Local date (en-CA → YYYY-MM-DD), not UTC — avoids a day-off near midnight/month-end.
@@ -39,6 +106,7 @@ export default function ImportFlow({
         <div className="panel-toolbar">
           <span className="muted">{COPY.importFlow.intro}</span>
         </div>
+        <BrokenConnectionsPanel orgId={orgId} />
         <div className="import-choices">
           <button className="import-choice" onClick={() => setMode("csv")}>
             <span className="ic-title">{COPY.importFlow.bankCsvTitle}</span>

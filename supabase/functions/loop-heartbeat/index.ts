@@ -26,6 +26,12 @@
 
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { slog } from "../_shared/observability.ts";
+
+// Reference adoption of the additive structured-observability helper (RV2-E).
+// Emits one JSON line per outcome so the loop write-path is observable + alertable
+// (see docs/plans/production-readiness-runbook.md). No behavior change.
+const FN = "loop-heartbeat";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin":  "*",
@@ -91,6 +97,7 @@ export async function handle(req: Request): Promise<Response> {
   const auth = req.headers.get("authorization") ?? "";
   const presented = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
   if (!expected || !safeEqual(presented, expected)) {
+    slog(FN, "auth.rejected", "warn");
     return json({ error: "unauthorized" }, 401);
   }
 
@@ -140,6 +147,7 @@ export async function handle(req: Request): Promise<Response> {
     });
   }
 
+  slog(FN, "beat.recorded", "info", { session_tag: sessionTag, role, status });
   return json({ ok: true, session_tag: sessionTag, last_beat: now });
 }
 

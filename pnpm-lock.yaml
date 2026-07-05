@@ -193,6 +193,18 @@ importers:
 
   packages/site: {}
 
+  packages/soak-harness:
+    devDependencies:
+      tsx:
+        specifier: ^4.7.0
+        version: 4.21.0
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@25.6.0)
+
 packages:
 
   '@astrojs/compiler@2.13.1':

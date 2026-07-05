@@ -29,6 +29,7 @@
  */
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { mfaSatisfied } from "../_shared/mfaGate.ts";
 import { sendEmail } from "../_shared/send.ts";
 import type { Brand } from "../_shared/email.ts";
 import { escapeHtml } from "../_shared/email.ts";
@@ -113,6 +114,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const op = String(body?.op ?? "");
   const orgId = String(body?.org_id ?? "");
+  if (orgId && !(await mfaSatisfied(svc, jwt, orgId))) return json({ error: "mfa_required", code: "mfa_required" }, 403);
   if (!UUID_RE.test(orgId)) return json({ error: "bad_org" }, 400);
 
   const rpc = async (fn: string, args: Record<string, unknown>) => {
@@ -173,6 +175,7 @@ Deno.serve(async (req) => {
         const r = await rpc("apply_invoice_payment", {
           p_invoice_id: invoiceId, p_amount_minor: amount,
           p_paid_date: body.paid_date ?? null, p_method: body.method ?? null,
+          p_fx_rate: typeof body.fx_rate === "number" ? body.fx_rate : null,
         });
         if (r.error) return fail(r.error);
         return json({ invoice: r.data });

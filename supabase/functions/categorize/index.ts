@@ -19,6 +19,7 @@
  * (can_write_org_as) — the same gate the Approve button checks in the UI.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { mfaSatisfied } from "../_shared/mfaGate.ts";
 import { resolveOnDeno } from "../_shared/inference/deno.ts";
 import { orgTenant } from "../_shared/inference/core.ts";
 import { getAppPersona } from "../_shared/appPersona.ts";
@@ -85,6 +86,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const op = String(body?.op ?? "");
   const orgId = String(body?.org_id ?? "");
+  if (orgId && !(await mfaSatisfied(svc, jwt, orgId))) return json({ error: "mfa_required", code: "mfa_required" }, 403);
   if (!orgId) return json({ error: "bad_request" }, 400);
 
   // Same gate as the Approve button: only a writer categorizes (or deletes a

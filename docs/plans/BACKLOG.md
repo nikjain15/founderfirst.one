@@ -223,7 +223,7 @@ coverage delta: new AUDIT ledger row (ap-billpay) ⬜ untested → stress pass (
   code path initiates a fund transfer).
 
 ## W5.4 · Multi-currency (D1–D7 answered — build unblocked)
-status: unclaimed
+status: pr:#244 (GREEN — all 11 checks pass; awaiting Nik review/merge, safe mode)
 blocked-by: — (D1–D7 answered by Nik 4 Jul; full plan in docs/plans/multi-currency-design.md §8)
 slot: cross-cutting (ledger + invoices + payouts) — sequence against A/C/D per orchestrator +
   Nik; per-org opt-in flag means it ships dark until enabled, so it can run in parallel.
@@ -239,6 +239,12 @@ centralization: currency catalog + fx_rates are seeded/systematic data, never in
 coverage delta: new AUDIT ledger row (multi-currency) ⬜ untested → stress pass (mixed-currency
   entries revalue at close, reverse next period, reports tie in base currency; single-currency
   org unaffected).
+scope note (this PR): ledger (rate resolution, base-balance invariant, period-close revaluation
+  + auto-reverse) and invoicing (foreign-currency invoices, realized FX on settlement) ship in
+  full per D6. E-commerce payouts (post_ecommerce_payout, W4.1/W4.1-B) are NOT yet FX-aware —
+  they still derive their currency from home_currency by construction, so an opted-in org is
+  unaffected, not broken — but a genuinely foreign-currency payout is a disclosed follow-up card,
+  not silently dropped (LOOP_PROMPT "no silent caps").
 
 # SEC — production auth hardening (surfaced by the Intuit app-review questionnaire, 5 Jul)
 > Today penny.founderfirst.one auth = passwordless email one-time-code (Supabase `signInWithOtp`)
@@ -246,7 +252,7 @@ coverage delta: new AUDIT ledger row (multi-currency) ⬜ untested → stress pa
 > these as gaps to build. Nik: add to backlog.
 
 ## SEC-1 · Multi-factor authentication (MFA) for owner + CPA login
-status: unclaimed
+status: pr:#245
 blocked-by: — (auth is Supabase; TOTP/factor enrolment is native)
 workflow: owner/CPA · "protect my books" · Settings → Security → enable MFA → enrol authenticator
   (TOTP) → next login prompts for the 6-digit code; recovery codes issued. ≤1 owner-ask, opt-in
@@ -261,7 +267,7 @@ coverage delta: new AUDIT ledger row (auth-mfa) ⬜ untested → stress pass (en
   wrong-code reject → recovery-code path → per-org required-policy enforced; no lockout bypass).
 
 ## SEC-2 · Bot protection / Captcha on authentication
-status: unclaimed
+status: pr:#246
 blocked-by: — (independent of SEC-1)
 workflow: anonymous · "sign in / request code" · the login + OTP-request form runs an invisible
   bot check before dispatching an email; a human sees nothing extra, bots/abuse are blocked.
@@ -276,7 +282,7 @@ coverage delta: new AUDIT ledger row (auth-botprotect) ⬜ untested → stress p
   required before OTP dispatch; rapid-fire OTP requests rate-limited; legit human flow unaffected).
 
 ## CONN-2 · Capture QBO intuit_tid for troubleshooting
-status: unclaimed
+status: pr:#247 CI-green (11/11 checks pass) — safe mode, awaiting Nik to merge (loop-orch-0705, migration 20260707090000_conn2_intuit_tid)
 blocked-by: — (small change to the QBO edge fns)
 context: Intuit recommends capturing the `intuit_tid` response header on every QBO API call so
   their support can trace issues. We don't today (qbo-callback/qbo-connect/qbo-import). Honest

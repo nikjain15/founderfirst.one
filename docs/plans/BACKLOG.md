@@ -424,13 +424,21 @@ context: SEC-2 shipped + is wired to signInWithOtp, but no TURNSTILE_SITE_KEY / 
   ON: Nik creates a Cloudflare Turnstile widget → set TURNSTILE_SITE_KEY (frontend env / pages.yml)
   + TURNSTILE_SECRET (supabase fn secret) → redeploy. Then the Intuit "Captcha?" answer is truly Yes.
 
-## SEC-1-CPACLOSE · Decide MFA-gating for the CPA batch-close path
-status: decision-needed (Nik)
-context: SEC-1 server-side MFA enforcement gates the 10 single-org write edge fns, but `cpa-close`
-  operates on firm_id + a list of client_org_ids (not one org), so it was intentionally NOT edge-gated
-  (the can_write_org_as DB guard still applies to RPCs routing through it). Decide: should the CPA
-  firm-user's session be required aal2 for batch close when their firm requires MFA? If yes → gate
-  cpa-close on the firm user's org MFA policy. Small follow-up once decided.
+## SEC-1-CPACLOSE · MFA-gate the CPA batch-close path (Nik: YES, 5 Jul)
+status: claimed:loop-insession-5jul (building)
+lane: supabase/functions (cpa-close) + supabase/migrations
+decision: **Nik 5 Jul — YES, gate it.** For consistency with the 10 other org-write paths.
+workflow: CPA (firm user) · batch month-end close · if the firm's org requires MFA and the
+  session is aal1 → blocked with a clear reconnect-with-MFA message; aal2 → proceeds. Non-MFA
+  firms unaffected.
+goal: extend SEC-1's server-side MFA enforcement to `cpa-close`. It operates on firm_id + a list
+  of client_org_ids, so gate on the CPA FIRM USER's own org MFA policy (org_requires_mfa on the
+  firm org + session_is_aal2 from the JWT) BEFORE any batch write — mirror the mfaGate.ts pattern
+  the other 10 fns use. The can_write_org_as DB guard already covers RPCs routing through it; this
+  closes the edge-fn entry path. Reuse _shared/mfaGate.ts (aalFromJwt + mfaSatisfied).
+centralization: reuse existing mfaGate + org_requires_mfa; no new thresholds.
+coverage delta: extend the auth-mfa AUDIT row — assert: MFA-required firm + aal1 CPA → cpa-close
+  rejected 403; aal2 → allowed; non-MFA firm → unaffected. deno/pgTAP.
 
 ## CONN-1 · QBO production hosting IP (static-egress proxy) — Nik + infra
 status: unclaimed (deferred — sandbox unaffected)
@@ -534,11 +542,25 @@ decision-needed: none (decisions locked 1 Jul w/ Nik)
 
 ## IA-2 · CPA Practice home + workflow tabs — MERGED WITH W1.4 (one card, see W1.4)
 
-## IA-3 · Internal admin console (penny.../admin mirror)
-status: **DEFERRED until after Wave 1 ships (Nik, 3 Jul)** — do not card the migration plan
-  yet; `founderfirst.one/admin` stays as-is. Revisit once the Wave-1 tax-filing chain is done,
-  then draft the plan for approval (parallel-run, additive, never break `/admin`, APP_PRINCIPLES §4).
-decision-needed: none until Wave 1 closes (then: Nik approves the migration plan)
+## IA-3 · Internal admin console (penny.../admin mirror) — BUILD (Nik: build now, 5 Jul)
+status: claimed:loop-insession-5jul (building — slice 1 of N)
+lane: apps/app (penny/admin console) — disjoint from cpa-close (functions) + e-file (research)
+decision: **Nik 5 Jul — BUILD NOW, additive parallel-run.** Never break founderfirst.one/admin.
+workflow: platform staff · "run the business from inside Penny" · penny.../admin mirrors the 4
+  admin tabs (Support · Audience · Analytics · Penny) + ⚙️ Settings, gated by is_platform_staff;
+  parallel-run 1-2 months alongside founderfirst.one/admin, cut over per APP_PRINCIPLES §4.
+goal: grow the IA-3 scaffold (pr:#233) into a working internal console. **SLICE 1 (this card):**
+  stand up the console shell + navigation at penny.../admin matching the /admin IA (4 tabs +
+  Settings, the authed-header/token standard PENNY-UX-9 locked), gated by is_platform_staff, and
+  wire the FIRST tab (Support inbox — highest-use) to the same Supabase data /admin reads.
+  ADDITIVE ONLY — founderfirst.one/admin untouched (a regression there = automatic fail). Later
+  slices bring Audience/Analytics/Penny tabs. Read apps/app/APP_PRINCIPLES.md §4 + the existing
+  /staff lens (is_platform_staff) + apps/admin routes (mirror their data hooks, don't re-invent).
+centralization: reuse the design-system authed header + tokens; copy from live personas/COPY;
+  read the SAME Supabase tables/RPCs /admin uses (one source of truth, no duplicate data path).
+coverage delta: new AUDIT ledger row (ia3-console) — assert: console renders only for
+  is_platform_staff; the Support tab lists the same tickets /admin shows; /admin unaffected (its
+  e2e still green); no bare <h1>, width-ladder clean.
 
 ## CENTRAL-1 · Centralize apps/app copy, Penny language, and behavior thresholds
 status: merged (pr:#176)

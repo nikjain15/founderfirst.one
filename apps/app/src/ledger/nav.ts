@@ -16,7 +16,7 @@ export type Nav = "owner" | "cpa";
 // Every leaf surface the workspace can show. Both navs route to a subset of these.
 export type Surface =
   | "overview" | "review" | "reports" | "connections"
-  | "journal" | "accounts" | "import" | "periods" | "rules" | "reconcile";
+  | "journal" | "accounts" | "import" | "periods" | "rules" | "reconcile" | "filing";
 
 export type SubTab = { id: Surface; label: string; writeOnly?: boolean };
 
@@ -47,6 +47,9 @@ export const OWNER_TABS: NavTab[] = [
       { id: "reconcile", label: COPY.tabs.reconcile },
       { id: "periods", label: COPY.tabs.periods },
       { id: "rules", label: COPY.tabs.rules },
+      // The return worksheet (RV2-A1) — an owner can SEE their return take shape,
+      // nested under Advanced (not a new top-level job) per APP_PRINCIPLES §2.
+      { id: "filing", label: COPY.tabs.filing },
     ],
   },
 ];
@@ -76,6 +79,9 @@ export const CPA_TABS: NavTab[] = [
     ],
   },
   { id: "reports", label: COPY.tabs.reports, surface: "reports" },
+  // Filing (RV2-A1) — "review the return before filing" is a core CPA job, so it is a
+  // top-level workflow tab in the CPA lens (owners reach the same surface via Advanced).
+  { id: "filing", label: COPY.tabs.filing, surface: "filing" },
 ];
 
 export const NAV_TABS: Record<Nav, NavTab[]> = { owner: OWNER_TABS, cpa: CPA_TABS };

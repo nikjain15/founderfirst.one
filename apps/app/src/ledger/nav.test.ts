@@ -38,7 +38,9 @@ describe("owner lens nav (IA-1 · APP_PRINCIPLES §2)", () => {
     const advanced = OWNER_TABS.find((t) => t.id === "advanced");
     // Reconcile (W1.1) and Rules (W1.6 learned-rules management) both nest here —
     // reached deliberately, never prompted (usability gate: no new top-level nav).
-    expect(advanced?.subs?.map((s) => s.id)).toEqual(["journal", "accounts", "reconcile", "periods", "rules"]);
+    // Filing (RV2-A1) also nests here — the owner can SEE their return worksheet
+    // without a new top-level job (usability gate). It is not a distinct primary tab.
+    expect(advanced?.subs?.map((s) => s.id)).toEqual(["journal", "accounts", "reconcile", "periods", "rules", "filing"]);
     // Those accountant surfaces must NOT also be primary tabs.
     const primaryIds = new Set(OWNER_TABS.filter((t) => t.surface).map((t) => t.surface));
     for (const s of ["journal", "accounts", "reconcile", "periods", "rules"] as Surface[]) {
@@ -89,9 +91,12 @@ describe("org switcher — '+ New organization' listbox a11y (IA-1 · APP_PRINCI
   });
 });
 
-describe("CPA lens nav is UNCHANGED (regression guard — APP_PRINCIPLES §3)", () => {
-  it("still presents Overview · Categorize · Books · Reports", () => {
-    expect(CPA_TABS.map((t) => t.id)).toEqual(["overview", "categorize", "books", "reports"]);
+describe("CPA lens nav (APP_PRINCIPLES §3)", () => {
+  it("presents Overview · Categorize · Books · Reports · Filing", () => {
+    // Filing (RV2-A1) is a top-level CPA workflow tab — "review the return before
+    // filing" is a core CPA job. The pre-existing tabs are unchanged in order.
+    expect(CPA_TABS.map((t) => t.id)).toEqual(["overview", "categorize", "books", "reports", "filing"]);
+    expect(CPA_TABS.find((t) => t.id === "filing")?.surface).toBe("filing");
   });
 
   it("still nests Journal · Accounts · Import · Reconcile · Periods under Books", () => {

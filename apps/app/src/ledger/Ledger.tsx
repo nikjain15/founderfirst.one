@@ -33,6 +33,7 @@ import PennyThread from "./PennyThread";
 import PennyDidThis from "./PennyDidThis";
 import { SuggestionInbox, EntryCollab } from "./CollabUI";
 import ReconcileView from "./ReconcileView";
+import Filing from "../tax/Filing";
 import InviteCpa from "../org/InviteCpa";
 import { Takeaway } from "./Takeaway";
 import {
@@ -248,6 +249,7 @@ export default function Ledger({
                 onCategorize={() => goto("review")} />
             )}
             {surface === "reports" && <Reports entries={entries.data ?? []} org={org} />}
+            {surface === "filing" && <Filing orgId={org.id} entries={entries.data ?? []} />}
           </div>
         </div>
       )}

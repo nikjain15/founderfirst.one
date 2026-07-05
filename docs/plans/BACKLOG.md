@@ -317,10 +317,11 @@ coverage delta: extend the connector AUDIT row — assert intuit_tid is captured
 > These cards make already-deployed features actually usable. Disjoint lanes → fan out.
 
 ## W5.4-FX · ECB daily FX-rate feed (activates multi-currency)
-status: built, opening PR (loop-insession-5jul) — migration 20260708000000_w5_4_fx_fx_rates_fetch.sql
-  + supabase/functions/fx-rates-fetch (+ _shared/ecbFx.ts pure parser); write-don't-deploy, safe mode,
-  NOT deployed. Note: there was a duplicate card (this file briefly had two "W5.4-FX" entries after a
-  concurrent carding pass) — consolidated into this one; the older duplicate is removed, not two PRs.
+status: pr:#259 (loop-insession-5jul) — migration 20260708000000_w5_4_fx_fx_rates_fetch.sql +
+  supabase/functions/fx-rates-fetch (+ _shared/ecbFx.ts pure parser); write-don't-deploy, safe mode,
+  NOT deployed; awaiting CI green + Nik review/merge. Note: there was a duplicate card (this file
+  briefly had two "W5.4-FX" entries after a concurrent carding pass) — consolidated into this one;
+  the older duplicate is removed, not two PRs.
 blocked-by: — (W5.4 fx_rates table + rate resolution shipped; only the automatic feed is missing)
 lane: supabase/functions + supabase/migrations (disjoint from app-UI/marketing lanes)
 workflow: owner/CPA (multi-currency orgs) · "my foreign transactions convert at real rates

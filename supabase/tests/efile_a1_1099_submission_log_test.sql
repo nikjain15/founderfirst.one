@@ -15,6 +15,11 @@
 -- All rolls back.
 
 begin;
+-- NOTE: throws_ok() only reads its 2nd arg as a SQLSTATE when it is exactly 5
+-- chars; a condition name (e.g. 'check_violation') is treated as an error-message
+-- match and would silently fail. The guards raise via condition names, so assert
+-- the equivalent codes: check_violation=23514, restrict_violation=23001,
+-- insufficient_privilege=42501.
 select plan(16);
 
 -- ── users: owner, full CPA, read_only CPA, outsider ──────────────────────────
@@ -65,7 +70,7 @@ select throws_ok($$
     '00000000-0000-0000-0000-00000000ef01', '00000000-0000-0000-0000-00000000efB1',
     2025, 'transmit', 'submitted', 'sub-1', null, null,
     '{}'::jsonb, '{}'::jsonb, 1)
-$$, 'check_violation', NULL,
+$$, '23514', NULL,
    'EFILE-A1-CONFIRM-GATE: a transmit with no confirmed_by raises');
 
 select lives_ok($$
@@ -84,7 +89,7 @@ select throws_ok($$
     '00000000-0000-0000-0000-00000000ef01', '00000000-0000-0000-0000-00000000efB1',
     2025, 'dry_run', 'accepted', null, null, null,
     '{}'::jsonb, '{}'::jsonb, 0)
-$$, 'check_violation', NULL,
+$$, '23514', NULL,
    'EFILE-A1-NO-FAKE-SUCCESS: a dry_run row cannot claim accepted status');
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -110,12 +115,12 @@ select is(
 select throws_ok($$
   update efile_submissions set status = 'accepted'
    where org_id = '00000000-0000-0000-0000-00000000efB1'
-$$, 'restrict_violation', NULL,
+$$, '23001', NULL,
    'EFILE-A1-IMMUTABLE: UPDATE raises (a status change must be a new row)');
 
 select throws_ok($$
   delete from efile_submissions where org_id = '00000000-0000-0000-0000-00000000efB1'
-$$, 'restrict_violation', NULL,
+$$, '23001', NULL,
    'EFILE-A1-IMMUTABLE: DELETE raises (tamper-evident log)');
 
 -- service_role has no UPDATE/DELETE grant on the table.
@@ -131,7 +136,7 @@ select throws_ok($$
   select efile_record_event(
     '00000000-0000-0000-0000-00000000ef09', '00000000-0000-0000-0000-00000000efB1',
     2025, 'dry_run', 'dry_run', null, null, null, '{}'::jsonb, '{}'::jsonb, 0)
-$$, 'insufficient_privilege', NULL,
+$$, '42501', NULL,
    'EFILE-A1-ISO: a forged foreign actor cannot record against another org');
 
 -- the write RPC is revoked from authenticated (service_role only, ISOTEST).

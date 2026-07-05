@@ -122,7 +122,7 @@ grant execute on function log_security_event(uuid, text, jsonb) to service_role;
 -- codes exactly once — the caller must show + discard them; only the hash persists.
 create or replace function generate_mfa_recovery_codes(p_actor uuid, p_count int default 10)
 returns text[]
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   v_codes text[] := '{}';
   v_code  text;
@@ -173,7 +173,7 @@ grant execute on function mfa_recovery_codes_remaining(uuid) to service_role;
 -- completing a challenge (that's the entire point of a recovery code).
 create or replace function consume_mfa_recovery_code(p_actor uuid, p_code text)
 returns boolean
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare v_hash text; v_id uuid;
 begin
   v_hash := encode(digest(upper(trim(p_code)), 'sha256'), 'hex');

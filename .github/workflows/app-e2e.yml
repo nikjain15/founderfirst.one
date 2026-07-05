@@ -64,6 +64,16 @@ jobs:
         run: pnpm --dir apps/app build --base=/
 
       - name: App E2E smoke + responsive + a11y
+        # Captcha-exempt auth (SEC-2): the harness mints a session for the E2E
+        # account via the service-role admin API (bypasses Turnstile) and injects
+        # it into the browser — no password sign-in. E2E_SERVICE_ROLE_KEY is a
+        # RUNTIME env for the node step ONLY — never a VITE_ build var, so it is
+        # never bundled into the client. URL + anon key are the same project vars.
+        env:
+          VITE_SUPABASE_URL:      ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          E2E_SERVICE_ROLE_KEY:   ${{ secrets.E2E_SERVICE_ROLE_KEY }}
+          E2E_APP_EMAIL:          ${{ secrets.E2E_APP_EMAIL }}
         run: node tools/app-e2e/run.mjs
 
       - name: Upload screenshots

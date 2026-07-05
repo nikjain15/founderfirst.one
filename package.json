@@ -33,6 +33,7 @@
     "test:responsive:only": "node tools/responsive-ci/run.mjs"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.45.0",
     "axe-core": "4.12.1",
     "playwright": "^1.45.0",
     "tsx": "^4.7.0",

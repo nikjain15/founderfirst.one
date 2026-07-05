@@ -1217,6 +1217,62 @@ export const COPY = {
     pennyLabel: "Penny",
   },
 
+  // ── Bills / AP — TRACKING ONLY (RV2-D1) — nested under Connections, opt-in,
+  //    off by default. Records what you owe + records payments; NEVER moves money.
+  //    Voice: warm, plain, no accounting jargon up top, no exclamation marks.
+  bills: {
+    sectionTitle: "Paying bills",
+    optInLead: "Keep track of what you owe and when it's due, and note when you've paid. This only keeps your books tidy — it never moves any money for you. Turn it on when you're ready — it stays off until you do.",
+    enableCta: "Turn on bill tracking",
+    loading: "Loading your bills…",
+    genericError: "Something went wrong. Try again.",
+    empty: "No bills yet. Add one to start tracking what you owe.",
+    newBill: "Add a bill",
+    // AP aging
+    noOutstanding: "Nothing owed right now.",
+    owedTitle: (amount: string) => `${amount} you owe`,
+    bucketLabel: (bucket: string) =>
+      bucket === "current" ? "Not yet due"
+      : bucket === "90+" ? "90+ days"
+      : `${bucket} days`,
+    // table
+    colNumber: "Bill",
+    colVendor: "Vendor",
+    colDue: "Due",
+    colTotal: "Total",
+    colBalance: "Balance",
+    colStatus: "Status",
+    colActions: "Actions",
+    statusLabel: (s: string) =>
+      s === "draft" ? "Draft"
+      : s === "open" ? "Owed"
+      : s === "partial" ? "Part paid"
+      : s === "paid" ? "Paid"
+      : s === "void" ? "Voided" : s,
+    enter: "Enter",           // move a draft into what-you-owe
+    recordPayment: "Record payment",
+    void: "Void",
+    // payment inline — note copy reinforces this only records, never sends money
+    paymentAmount: "Amount paid",
+    paymentNote: "This only records the payment in your books. It does not send any money.",
+    applyPayment: "Record",
+    cancel: "Cancel",
+    overpayment: (balance: string) => `That's more than the ${balance} balance. We'll record the full balance.`,
+    // form
+    vendorLabel: "Vendor",
+    vendorPlaceholder: "Choose a vendor",
+    noVendorHint: "Add a vendor in the 1099 area first, then pick them here.",
+    dueDate: "Due date",
+    lineDescription: "Description",
+    lineQty: "Qty",
+    linePrice: "Unit price",
+    addLine: "Add line",
+    removeLine: "Remove line",
+    totalPrefix: "Total:",
+    saveDraft: "Save draft",
+    tableAria: "Bills",
+    needVendorToEnter: "Pick a vendor before entering this bill.",
+  },
   // ── Invoicing + AR (W4.3) — nested under Connections, opt-in, off by default.
   //    Voice: warm, plain, no accounting jargon up top, no exclamation marks.
   invoicing: {

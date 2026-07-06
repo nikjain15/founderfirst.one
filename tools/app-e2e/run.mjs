@@ -359,23 +359,48 @@ async function verifyTabStripDiscoverability() {
  *  (the deterministic wiring contract is regression.connections-wiring.test.ts). */
 async function verifyConnectionsClusters() {
   await page.setViewportSize(DESKTOP);
-  const clusters = await page.locator(".connections .connections-cluster").count().catch(() => 0);
-  if (clusters === 4) ok("PENNY-UX-10: Connections renders 4 grouped clusters (declutter)");
-  else fail(`PENNY-UX-10: expected 4 Connections clusters, found ${clusters}`);
-  const labels = await page.locator(".connections .conn-cluster-h").count().catch(() => 0);
-  if (labels >= 4) ok("PENNY-UX-10: each cluster carries an eyebrow label");
-  else fail(`PENNY-UX-10: expected ≥4 cluster labels, found ${labels}`);
-  // Every connect/upload/toggle surface must still be present in the DOM.
-  const surfaces = [
-    [".catchup", "catch-up import"],
-    [".import-flow", "CSV import + connect"],
-    [".payout-upload", "payout split"],
-    [".invoicing", "invoicing"],
-    [".bills", "bill tracking"],
+  // Owner-calm redesign — Connections defaults to a CHOOSER: the four clusters are
+  // still the section groups, but each hosts a menu of one-line jobs; the wizard is
+  // revealed only when its job is picked (one thing at a time, like the demo).
+  // Make sure we're at the menu (an earlier check may have left a flow open).
+  const backBtn = page.locator(".conn-back");
+  if (await backBtn.count().catch(() => 0)) { await backBtn.first().click().catch(() => {}); await page.waitForTimeout(200); }
+  // Capture the decluttered menu itself (desktop + mobile) as the review artifact.
+  await page.screenshot({ path: join(ARTIFACTS, "connections-chooser-desktop.png"), fullPage: true }).catch(() => {});
+  await page.setViewportSize(MOBILE);
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: join(ARTIFACTS, "connections-chooser-mobile.png"), fullPage: true }).catch(() => {});
+  await page.setViewportSize(DESKTOP);
+  await page.waitForTimeout(150);
+  const clusters = await page.locator(".conn-chooser .connections-cluster").count().catch(() => 0);
+  if (clusters === 4) ok("owner-calm: Connections chooser renders 4 grouped clusters");
+  else fail(`owner-calm: expected 4 Connections clusters, found ${clusters}`);
+  const labels = await page.locator(".conn-chooser .conn-cluster-h").count().catch(() => 0);
+  if (labels >= 4) ok("owner-calm: each cluster carries an eyebrow label");
+  else fail(`owner-calm: expected ≥4 cluster labels, found ${labels}`);
+  // The default view must NOT expand any wizard — that's the whole point.
+  const eager = await page.locator(".conn-chooser .import-flow, .conn-chooser .catchup").count().catch(() => 0);
+  if (eager === 0) ok("owner-calm: no wizard is expanded until its job is chosen");
+  else fail(`owner-calm: ${eager} wizard(s) rendered eagerly — chooser should reveal on demand`);
+  // Pick each job → its surface opens in the flow → back returns to the menu. Proves
+  // every connect/upload/toggle surface survived the restructure and stays reachable
+  // (the deterministic wiring contract is regression.connections-wiring.test.ts).
+  const jobs = [
+    ["catchup",   ".catchup",       "catch-up import"],
+    ["import",    ".import-flow",   "CSV import + connect"],
+    ["payout",    ".payout-upload", "payout split"],
+    ["invoicing", ".invoicing",     "invoicing"],
+    ["bills",     ".bills",         "bill tracking"],
   ];
-  for (const [sel, name] of surfaces) {
-    if (await page.locator(`.connections ${sel}`).count().catch(() => 0)) ok(`PENNY-UX-10: ${name} surface present in Connections`);
-    else fail(`PENNY-UX-10: ${name} surface (${sel}) missing from Connections after the restructure`);
+  for (const [job, sel, name] of jobs) {
+    const item = page.locator(`.conn-menu-item[data-job="${job}"]`);
+    if (!(await item.count().catch(() => 0))) { fail(`owner-calm: ${name} job (${job}) missing from the chooser menu`); continue; }
+    await item.first().click().catch(() => {});
+    await page.waitForTimeout(250);
+    if (await page.locator(`.conn-flow ${sel}`).count().catch(() => 0)) ok(`owner-calm: ${name} opens from the chooser`);
+    else fail(`owner-calm: ${name} surface (${sel}) did not open from its chooser job`);
+    await page.locator(".conn-back").first().click().catch(() => {});
+    await page.waitForTimeout(200);
   }
 }
 // ── PENNY-UX-10 — END ──────────────────────────────────────────────────────────
@@ -386,6 +411,12 @@ async function verifyConnectionsClusters() {
  *  guided flow is wired without touching the ledger or spending AI tokens. */
 async function verifyCatchUpEntry() {
   await page.setViewportSize(DESKTOP);
+  // Owner-calm — catch-up now lives behind its chooser job; open it first.
+  const catchUpJob = page.locator('.conn-menu-item[data-job="catchup"]');
+  if (await catchUpJob.count().catch(() => 0)) {
+    await catchUpJob.first().click().catch(() => {});
+    await page.waitForTimeout(250);
+  }
   const startCta = page.getByRole("button", { name: "Get me caught up" });
   if (!(await startCta.count().catch(() => 0))) { fail("Connections: no catch-up entry (Get me caught up)"); return; }
   ok("Catch-up mode entry renders in Connections");
@@ -430,17 +461,23 @@ async function verifyReceiptCapture() {
   }
 }
 
-/** W3.1 — the Penny thread renders on Home and answers a grounded question. The
- *  thread is nested in Home (no new top-level tab). We assert it renders, then ask
- *  a grounded books question via a suggested prompt and confirm Penny replies with
- *  a turn. The authoritative tie-out + "no invented number" checks are the Vitest
- *  suite (thread.test.ts); here we prove the surface is wired and answers a turn. */
+/** W3.1 / owner-calm — Penny is now a GLOBAL DOCK, not a slab on Home: a launcher on
+ *  every owner tab opens a slide-over hosting the same grounded conversation. We assert
+ *  the launcher is present, open it, then ask a grounded question via a suggested prompt
+ *  and confirm Penny replies with a turn. The authoritative tie-out + "no invented
+ *  number" checks are the Vitest suite (thread.test.ts); here we prove the wiring. */
 async function verifyPennyThread() {
   await page.setViewportSize(DESKTOP);
-  const thread = page.locator(".penny-thread");
-  if (!(await thread.count().catch(() => 0))) { fail("Home: Penny thread not rendered"); return; }
-  ok("Penny thread renders on Home (nested, no new top-level tab)");
-  const suggest = page.locator(".penny-thread .thread-suggest button").first();
+  const launcher = page.locator(".penny-launcher");
+  if (!(await launcher.count().catch(() => 0))) { fail("Penny launcher not present on the owner workspace"); return; }
+  ok("Penny launcher present (global dock, reachable from every owner tab)");
+  await launcher.first().click().catch(() => {});
+  await page.waitForTimeout(250);
+  const thread = page.locator(".penny-dock .penny-thread");
+  if (!(await thread.count().catch(() => 0))) { fail("Penny dock did not open its thread"); return; }
+  ok("Penny dock opens the standing conversation");
+  await page.screenshot({ path: join(ARTIFACTS, "penny-dock-desktop.png"), fullPage: true }).catch(() => {});
+  const suggest = page.locator(".penny-dock .thread-suggest button").first();
   if (!(await suggest.count().catch(() => 0))) { fail("Home: no thread suggestion prompt"); return; }
   await suggest.click().catch(() => {});
   // A "you" turn appears immediately; Penny's answer follows (local or via the fn).
@@ -453,6 +490,9 @@ async function verifyPennyThread() {
   } catch {
     fail("Penny thread: no answer turn within timeout");
   }
+  // Close the dock so it doesn't overlay later checks / screenshots.
+  await page.locator(".penny-dock-close").first().click().catch(() => {});
+  await page.waitForTimeout(150);
 }
 
 /** Idempotently ensure the E2E org has BOOKS (≥1 account + ≥1 posted entry).

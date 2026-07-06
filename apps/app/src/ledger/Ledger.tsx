@@ -30,7 +30,7 @@ import Invoicing from "./Invoicing";
 import Bills from "./Bills";
 import PayoutUpload from "../ecommerce/PayoutUpload";
 import LearnedRules from "./LearnedRules";
-import PennyThread from "./PennyThread";
+import PennyDock from "./PennyDock";
 import PennyDidThis from "./PennyDidThis";
 import { SuggestionInbox, EntryCollab } from "./CollabUI";
 import ReconcileView from "./ReconcileView";
@@ -183,18 +183,15 @@ export default function Ledger({
               // dashboard; before any accounts exist it falls through to the shared
               // Overview's setup nudge. The CPA keeps the plain accounting Overview.
               nav === "owner" && (accounts.data?.length ?? 0) > 0 ? (
-                // Owner-with-books Home is the W3.4 pulse dashboard; the W3.1 Penny
-                // thread (grounded Q&A) nests beneath it on the same Home screen —
-                // it moved off Overview when the pulse took over this path.
-                <>
-                  <OwnerHome
-                    entries={entries.data ?? []} accounts={accounts.data ?? []}
-                    canWrite={canWrite} orgId={org.id}
-                    onReview={() => goto("review")}
-                    onRefresh={refresh}
-                  />
-                  <PennyThread orgId={org.id} entries={entries.data ?? []} canWrite={canWrite} />
-                </>
+                // Owner-with-books Home is the W3.4 pulse dashboard. Penny's grounded
+                // Q&A moved OFF Home into the global dock (owner-calm redesign) — she's
+                // reachable from every tab now, not a slab stapled to the bottom here.
+                <OwnerHome
+                  entries={entries.data ?? []} accounts={accounts.data ?? []}
+                  canWrite={canWrite} orgId={org.id}
+                  onReview={() => goto("review")}
+                  onRefresh={refresh}
+                />
               ) : (
                 <Overview
                   entries={entries.data ?? []} accounts={accounts.data ?? []}
@@ -254,6 +251,14 @@ export default function Ledger({
           </div>
         </div>
       )}
+
+      {/* Global Penny dock (owner-calm redesign) — one standing chat, reachable from
+          every owner tab, remembering this org's conversation. Owner-only; the CPA
+          navigates by ledger workflow, not a chat. Mounted once so it floats over
+          whichever tab is active and a question in flight survives a tab switch. */}
+      {nav === "owner" && !loading && !error && (
+        <PennyDock orgId={org.id} entries={entries.data ?? []} canWrite={canWrite} />
+      )}
     </section>
   );
 }
@@ -268,73 +273,104 @@ function Connections({
   onImported: () => void; onInvite?: () => void;
   onReconcile?: () => void; onReports?: () => void;
 }) {
+  // Owner-calm redesign — the old mega single-scroll (every wizard expanded at once)
+  // is now a CHOOSER: Connections defaults to a short menu of one-line jobs grouped
+  // under the four cluster labels; picking one opens ONLY that flow full-width, with
+  // a back link to the menu. One thing at a time, like the demo. Every connect /
+  // upload / toggle surface + its callback props are UNCHANGED — they just render on
+  // demand instead of all at once (regression.connections-wiring locks the wiring).
+  const [open, setOpen] = useState<string | null>(null);
+
+  const jobs: {
+    id: string; cluster: string; title: string; desc: string; render: () => JSX.Element;
+  }[] = [
+    {
+      id: "catchup", cluster: COPY.connections.clusterGetData,
+      title: COPY.catchUp.entryTitle, desc: COPY.connections.menu.catchUpDesc,
+      render: () => (
+        <CatchUpFlow orgId={orgId} canWrite={canWrite} accounts={accounts}
+          onDone={onReports ?? onImported} onReconcile={onReconcile} />
+      ),
+    },
+    {
+      id: "import", cluster: COPY.connections.clusterGetData,
+      title: COPY.connections.bringInData, desc: COPY.connections.menu.importDesc,
+      render: () => (
+        canWrite
+          ? <ImportFlow orgId={orgId} accounts={accounts} onDone={onImported} />
+          : <p className="muted">{COPY.connections.importDisabled}</p>
+      ),
+    },
+    {
+      id: "payout", cluster: COPY.connections.clusterSellChannels,
+      title: COPY.payouts.sectionTitle, desc: COPY.connections.menu.payoutDesc,
+      render: () => <PayoutUpload orgId={orgId} canWrite={canWrite} accounts={accounts} />,
+    },
+    {
+      id: "invoicing", cluster: COPY.connections.clusterMoney,
+      title: COPY.invoicing.sectionTitle, desc: COPY.connections.menu.invoicingDesc,
+      render: () => <Invoicing orgId={orgId} canWrite={canWrite} />,
+    },
+    {
+      id: "bills", cluster: COPY.connections.clusterMoney,
+      title: COPY.bills.sectionTitle, desc: COPY.connections.menu.billsDesc,
+      render: () => <Bills orgId={orgId} canWrite={canWrite} />,
+    },
+    {
+      id: "invite", cluster: COPY.connections.clusterSharing,
+      title: COPY.connections.shareWithAccountant, desc: COPY.connections.menu.inviteDesc,
+      render: () => (
+        onInvite ? (
+          <>
+            <p className="muted sm">{COPY.connections.inviteLead}</p>
+            <InviteCpa orgId={orgId} />
+          </>
+        ) : (
+          <p className="muted sm">{COPY.connections.accountantManagedByOwner}</p>
+        )
+      ),
+    },
+  ];
+
+  const active = jobs.find((j) => j.id === open);
+  if (active) {
+    return (
+      <div className="connections conn-flow">
+        <button type="button" className="conn-back" onClick={() => setOpen(null)}>
+          {COPY.connections.back}
+        </button>
+        <h2 className="section-h conn-flow-title">{active.title}</h2>
+        {active.render()}
+      </div>
+    );
+  }
+
+  // Chooser menu — grouped by the four clusters, one compact row per job.
+  const clusters = [
+    COPY.connections.clusterGetData, COPY.connections.clusterSellChannels,
+    COPY.connections.clusterMoney, COPY.connections.clusterSharing,
+  ];
   return (
-    <div className="connections">
-      {/* PENNY-UX-10 — the old mega single-scroll is now four scannable clusters
-          (get-data-in · sell-channels · money-in/out · sharing). Each cluster is an
-          .eyebrow over compact cards; every connect/upload/toggle handler is
-          UNCHANGED — this is layout only. Section titles shrank from billboard <h2>
-          to the .conn-block-h label so the page reads like /admin. */}
-
-      {/* Get your data in — catch-up (guided) + raw import. */}
-      <section className="connections-cluster" aria-label={COPY.connections.clusterGetData}>
-        <p className="eyebrow conn-cluster-h">{COPY.connections.clusterGetData}</p>
-        <div className="connections-block">
-          {/* Catch-up mode (W2.1) — the guided "get me caught up" job for a years-behind
-              owner. Orchestrates import → categorize → reconcile → per-year package. */}
-          <h3 className="conn-block-h">{COPY.catchUp.entryTitle}</h3>
-          <CatchUpFlow orgId={orgId} canWrite={canWrite} accounts={accounts}
-            onDone={onReports ?? onImported} onReconcile={onReconcile} />
-        </div>
-        <div className="connections-block">
-          <h3 className="conn-block-h">{COPY.connections.bringInData}</h3>
-          {canWrite ? (
-            <ImportFlow orgId={orgId} accounts={accounts} onDone={onImported} />
-          ) : (
-            <p className="muted">{COPY.connections.importDisabled}</p>
-          )}
-        </div>
-      </section>
-
-      {/* Sales channels — split a payout (W4.1 + W4.1-B): a Stripe / Shopify /
-          PayPal / Square / Amazon deposit is really sales − fees − refunds. */}
-      <section className="connections-cluster" aria-label={COPY.connections.clusterSellChannels}>
-        <p className="eyebrow conn-cluster-h">{COPY.connections.clusterSellChannels}</p>
-        <div className="connections-block">
-          <h3 className="conn-block-h">{COPY.payouts.sectionTitle}</h3>
-          <PayoutUpload orgId={orgId} canWrite={canWrite} accounts={accounts} />
-        </div>
-      </section>
-
-      {/* Money in & out — getting paid (W4.3, invoicing) + paying bills (RV2-D1, AP
-          tracking-only). Both opt-in, off by default: a one-line enable prompt until on. */}
-      <section className="connections-cluster" aria-label={COPY.connections.clusterMoney}>
-        <p className="eyebrow conn-cluster-h">{COPY.connections.clusterMoney}</p>
-        <div className="connections-block">
-          <h3 className="conn-block-h">{COPY.invoicing.sectionTitle}</h3>
-          <Invoicing orgId={orgId} canWrite={canWrite} />
-        </div>
-        <div className="connections-block">
-          <h3 className="conn-block-h">{COPY.bills.sectionTitle}</h3>
-          <Bills orgId={orgId} canWrite={canWrite} />
-        </div>
-      </section>
-
-      {/* Sharing — invite the accountant to the books. */}
-      <section className="connections-cluster" aria-label={COPY.connections.clusterSharing}>
-        <p className="eyebrow conn-cluster-h">{COPY.connections.clusterSharing}</p>
-        <div className="connections-block">
-          <h3 className="conn-block-h">{COPY.connections.shareWithAccountant}</h3>
-          {onInvite ? (
-            <>
-              <p className="muted sm">{COPY.connections.inviteLead}</p>
-              <InviteCpa orgId={orgId} />
-            </>
-          ) : (
-            <p className="muted sm">{COPY.connections.accountantManagedByOwner}</p>
-          )}
-        </div>
-      </section>
+    <div className="connections conn-chooser">
+      {clusters.map((cluster) => (
+        <section className="connections-cluster" key={cluster} aria-label={cluster}>
+          <p className="eyebrow conn-cluster-h">{cluster}</p>
+          <ul className="conn-menu">
+            {jobs.filter((j) => j.cluster === cluster).map((j) => (
+              <li key={j.id}>
+                <button type="button" className="conn-menu-item" data-job={j.id}
+                  onClick={() => setOpen(j.id)}>
+                  <span className="conn-menu-text">
+                    <span className="conn-menu-title">{j.title}</span>
+                    <span className="conn-menu-desc muted sm">{j.desc}</span>
+                  </span>
+                  <span className="conn-menu-chevron" aria-hidden="true">›</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
   );
 }
@@ -392,9 +428,8 @@ function Overview({
           body={COPY.overview.setupBody}
           action={canWrite ? { label: COPY.overview.goToConnections, onClick: onConnect } : undefined}
         />
-        {/* Penny is present from day one — she greets and can answer once books
-            exist (before then she declines gracefully). Owner-only, like below. */}
-        {nav === "owner" && <PennyThread orgId={orgId} entries={entries} canWrite={canWrite} />}
+        {/* Penny is present from day one via the global dock (owner-calm redesign) —
+            she greets and can answer once books exist. No slab on this screen. */}
       </>
     );
   }
@@ -444,14 +479,11 @@ function Overview({
         </ul>
       )}
 
-      {/* The Penny thread (W3.1) + "Penny did this" feed (W3.2) live on the owner's
-          Home — the conversational pulse. Owner-only: the CPA navigates by ledger
-          workflow, not a chat. The thread narrates the feed just beneath it. */}
+      {/* "Penny did this" feed (W3.2) stays on Home — a calm one-line record of what
+          she handled. Her Q&A conversation moved to the global dock (owner-calm
+          redesign). Owner-only: the CPA navigates by ledger workflow, not a chat. */}
       {nav === "owner" && (
-        <>
-          <PennyThread orgId={orgId} entries={entries} canWrite={canWrite} />
-          <PennyDidThis orgId={orgId} canWrite={canWrite} onChange={onChange} />
-        </>
+        <PennyDidThis orgId={orgId} canWrite={canWrite} onChange={onChange} />
       )}
     </div>
   );

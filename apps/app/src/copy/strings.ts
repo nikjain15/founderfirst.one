@@ -284,6 +284,18 @@ export const COPY = {
     shareWithAccountant: "Share with your accountant",
     inviteLead: "Invite your accountant to your books — you control full or read-only access.",
     accountantManagedByOwner: "Your accountant relationship is managed by the business owner.",
+    // Chooser (owner-calm redesign) — Connections defaults to a short menu of jobs;
+    // picking one opens ONLY that flow full-width, with a back link to the menu. One
+    // thing at a time, like the demo — no more wall of expanded wizards.
+    back: "← Connections",
+    menu: {
+      importDesc: "Upload a CSV, connect your bank, or pull from QuickBooks or Xero.",
+      catchUpDesc: "Behind on your books? Penny gets each year sorted.",
+      payoutDesc: "Turn a Stripe, Shopify, PayPal, Square or Amazon deposit into sales, fees and refunds.",
+      invoicingDesc: "Send invoices and get paid, with gentle reminders.",
+      billsDesc: "Track what you owe and when it's due.",
+      inviteDesc: "Give your accountant full or read-only access.",
+    },
     // ── Always-reachable in-app support (IQ-2) ────────────────────────────────
     // A calm, discoverable "we're here" line on Connections + error states.
     // The address is ALWAYS SITE.email — never hardcode it (centralization gate).
@@ -1293,6 +1305,10 @@ export const COPY = {
   thread: {
     title: "Ask Penny",
     lead: "Ask about your money — what you spent, brought in, or have on hand. Penny answers from your real books.",
+    // Global dock (owner-calm redesign) — Penny is no longer a slab on Home; she's a
+    // launcher present on every tab that opens this conversation, and she remembers it.
+    dockOpen: "Ask Penny",
+    dockClose: "Close Penny",
     // The idle greeting Penny opens with (structural; persona colors the answers).
     greeting: "Hi — I'm keeping an eye on your books. Ask me anything about your money, or see what I've handled below.",
     // Activity narration intro (links to the "Penny did this" feed just below).

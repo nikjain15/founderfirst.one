@@ -11,6 +11,7 @@ import Onboarding from "../onboarding/Onboarding";
 import PendingReview from "../org/PendingReview";
 import OwnerLens from "../lenses/OwnerLens";
 import CpaLens from "../lenses/CpaLens";
+import { TopbarSlotProvider } from "../components/TopbarSlot";
 import { SITE } from "@ff/site";
 import { COPY } from "../copy";
 
@@ -28,6 +29,7 @@ export default function Home() {
   }, [nav]);
 
   return (
+    <TopbarSlotProvider>
     <div className="shell">
       <Topbar />
       <main className="workspace">
@@ -66,5 +68,6 @@ export default function Home() {
             which books they're in. */}
       </main>
     </div>
+    </TopbarSlotProvider>
   );
 }

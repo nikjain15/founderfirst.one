@@ -141,6 +141,29 @@ a.ghost, a.ghost:visited { color: var(--ink-2); }
   .orgsw-trigger { max-width: none; width: 100%; justify-content: space-between; }
   .orgsw-menu { left: 0; right: 0; max-width: none; }
 }
+
+/* Primary lens tabs, portaled into the top bar (founderfirst.one/admin pattern:
+   tabs inline in the white bar; sub-tabs stay in the body). Empty until a lens
+   mounts. Inside the bar the strip drops its full-width underline. */
+.topbar-tabs { display: flex; min-width: 0; margin-left: var(--space-3); }
+.topbar-tabs:empty { display: none; }
+.topbar-tabs .ledger-tabs { border-bottom: 0; gap: clamp(12px, 1.8vw, 26px); }
+@media (max-width: 640px) {
+  /* Own full-width, scrollable row below the switcher on phones. */
+  .topbar-tabs { order: 4; flex-basis: 100%; margin-left: 0; }
+  /* The scroll edge-fade mask is white here (the bar), not the cream body. */
+  .topbar-tabs .ledger-tabs {
+    background-image:
+      linear-gradient(to right, var(--white), var(--white)),
+      linear-gradient(to right, var(--white), var(--white)),
+      linear-gradient(to right, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0)),
+      linear-gradient(to left, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0));
+    background-position: left center, right center, left center, right center;
+    background-repeat: no-repeat;
+    background-size: 20px 100%, 20px 100%, 12px 100%, 12px 100%;
+    background-attachment: local, local, scroll, scroll;
+  }
+}
 /* Brand wordmark — sans (Inter), like admin's brand; the P-mark carries the
    identity. It's a link home (logo → home), so kill the anchor blue/underline.
    PENNY-UX-6: it's an interactive target — ≥44px tall (RESPONSIVE.md rule 4);

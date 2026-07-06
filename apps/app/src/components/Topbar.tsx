@@ -8,6 +8,7 @@ import { useActiveOrg } from "../org/ActiveOrgProvider";
 import { useIsPlatformStaff } from "../staff/api";
 import AccountMenu from "./AccountMenu";
 import OrgSwitcher from "./OrgSwitcher";
+import { useTopbarSlot } from "./TopbarSlot";
 import CreateOrg from "../org/CreateOrg";
 import AddClient from "../org/AddClient";
 import { useClientCounts } from "../lenses/practiceQueue";
@@ -18,6 +19,7 @@ export default function Topbar() {
   const { session, signOut } = useAuth();
   const { orgs, activeOrg, roleInfo, setActiveOrgId } = useActiveOrg();
   const isStaff = useIsPlatformStaff();
+  const { setSlot } = useTopbarSlot();
   // When a CPA is on their practice, badge the switcher's client list with each
   // client's open-item count (APP_PRINCIPLES §3 — "counts on the switcher").
   const firmId = activeOrg?.type === "firm" ? activeOrg.id : undefined;
@@ -49,6 +51,10 @@ export default function Topbar() {
           onCreateOrg={() => { setAddingClient(false); setCreating(true); }}
           onAddClient={isFirm ? () => { setCreating(false); setAddingClient(true); } : undefined}
           counts={counts} />
+
+        {/* The active lens portals its PRIMARY tabs into here (founderfirst.one/admin
+            pattern — tabs inline in the top bar). Empty until a lens mounts. */}
+        <div className="topbar-tabs" ref={setSlot} />
 
         <span className="spacer" />
 

@@ -1076,6 +1076,8 @@ button.ghost.sm, .ghost.sm {
 
 /* The ranked queue list. */
 .pq-list { list-style: none; margin: var(--space-2) 0 0; padding: 0; }
+/* "Show all N / Show fewer" reveal for long CPA lists (owner-calm redesign). */
+.show-more { margin-top: var(--space-2); }
 .pq-row {
   display: flex; align-items: center; gap: var(--space-3);
   padding: var(--space-3) 0; border-bottom: var(--bw-hair) solid var(--line);

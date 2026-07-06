@@ -123,6 +123,10 @@ function Directory({
 
   return (
     <div className="staff-directory">
+      <p className="muted sm staff-lead">
+        Every organization on the platform. Open one to view its books read-only, behind
+        a time-boxed, audited break-glass window — never silent, always logged.
+      </p>
       <div className="panel-toolbar">
         <span className="muted">{orgs.length} organizations</span>
         <input

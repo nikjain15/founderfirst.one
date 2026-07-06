@@ -385,11 +385,12 @@ async function verifyConnectionsClusters() {
   // Pick each job → its surface opens in the flow → back returns to the menu. Proves
   // every connect/upload/toggle surface survived the restructure and stays reachable
   // (the deterministic wiring contract is regression.connections-wiring.test.ts).
+  // Invoicing was promoted to its own top-level tab (verified separately), so it's
+  // no longer a Connections job.
   const jobs = [
     ["catchup",   ".catchup",       "catch-up import"],
     ["import",    ".import-flow",   "CSV import + connect"],
     ["payout",    ".payout-upload", "payout split"],
-    ["invoicing", ".invoicing",     "invoicing"],
     ["bills",     ".bills",         "bill tracking"],
   ];
   for (const [job, sel, name] of jobs) {
@@ -402,6 +403,14 @@ async function verifyConnectionsClusters() {
     await page.locator(".conn-back").first().click().catch(() => {});
     await page.waitForTimeout(200);
   }
+  // Invoicing is its own top-level tab now — it opens the invoicing surface.
+  const invTab = page.getByRole("tab", { name: "Invoicing" });
+  if (await invTab.count().catch(() => 0)) {
+    await invTab.first().click().catch(() => {});
+    await page.waitForTimeout(300);
+    if (await page.locator(".invoicing").count().catch(() => 0)) ok("Invoicing opens from its own top-level tab");
+    else fail("Invoicing tab did not open the invoicing surface");
+  } else fail("Invoicing top-level tab missing");
 }
 // ── PENNY-UX-10 — END ──────────────────────────────────────────────────────────
 

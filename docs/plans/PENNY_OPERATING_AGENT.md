@@ -6,6 +6,16 @@
 > transparently, reversibly. This is a design/spec doc for alignment **before** building. Nothing
 > here ships until Nik signs off.
 
+## Decisions locked (Nik, 6 Jul)
+1. **Always ask first.** Every action that changes the books shows a preview and waits for one tap —
+   no exceptions at launch. Irreversible actions always ask. Specific actions may **graduate** to
+   automatic later, per-capability, once they've proven accurate (earn trust, then loosen).
+2. **Continuous narration.** Penny always says, in plain user language, what she's doing and what
+   she's thinking, so the user can follow and track her at every step (not just a final result).
+3. **Unified memory.** Penny remembers across *everywhere the user has interacted* — every tab, all
+   past conversations, actions/clicks, and support issues — and also carries the **CPA's perspective**
+   for that specific business. One shared context, not a per-screen silo.
+
 ## The shift
 Today Penny **answers** ("what did I spend?") grounded in the real ledger. Next she **acts**:
 "categorize all Amazon as supplies", "reconcile March", "chase the unpaid invoices", "close the
@@ -63,17 +73,45 @@ confirm, one action = one audited transaction.
 
 ### 4. How the user sees it (visibility & trust)
 Trust is earned by transparency, not silence:
-- **Preview before every write** (the confirm card shows exactly what will change).
-- **"Penny did this" feed** — the running log of autonomous actions, each with undo.
+- **Preview before every write** (the confirm card shows exactly what will change) — always ask (D1).
+- **Continuous narration (D2)** — Penny thinks out loud in plain language as she works: "Looking at
+  your March transactions… I found 42 from Amazon… here's what I'd do." A visible thinking/step
+  stream, not just a final answer, so the user can follow (and interrupt) at every step.
+- **"Penny did this" feed** — the running log of actions, each with undo.
 - **Activity / audit trail** — every action, who/what/when, traceable to the entries.
-- **"What Penny is doing now"** — a live status when a multi-step task runs.
-- **Autonomy dial** — the owner sets how much Penny may do without asking (already partly modeled by
-  the interruption budget); surface it plainly.
+- **"What Penny is doing now"** — live status while a multi-step task runs.
+- **Autonomy dial** — which capabilities have graduated to automatic vs. always-ask; surfaced plainly
+  and owner-controlled.
+
+## Unified memory / context (D3)
+Penny works from **one shared context per business**, not a per-screen chat. It draws on everywhere
+the user has interacted, and includes how the CPA sees the same books.
+
+**Sources to fold in (all already in the DB — this is retrieval + assembly, not new capture):**
+- Conversations — `penny_thread_messages` (server-side, shipped) across every tab/device.
+- What Penny has done — the "Penny did this" activity feed + `ledger_audit`.
+- Support history — the user's `support_tickets` / replies (what they've raised and how it resolved).
+- CPA perspective — engagement notes, flags, suggestions, and reclassifications the CPA made on this
+  business (W1.5 collaboration) so Penny knows what the accountant has said/done.
+- The books themselves — accounts, entries, categorization rules (LearnedRules), periods.
+- Navigation/actions — meaningful clicks/steps (what the user was doing when they asked).
+
+**Design:**
+- A **context service** assembles a per-(business) working memory on demand: recent conversation +
+  relevant activity + open support threads + CPA notes + the ledger facts a question needs. The LLM
+  is grounded on this; figures still come from the real ledger, never invented.
+- **Scope & privacy:** context is per-business and role-aware — an owner sees owner+shared context;
+  a CPA sees their engagement's context. RLS on every source table is the boundary (Penny never
+  reads across tenants). The CPA "perspective" surfaced to the owner is the CPA's *on-the-books*
+  actions/notes for that business, not the CPA's private data.
+- **Substrate shipped:** `penny_thread_messages` (cross-tab/device thread memory) is step one. The
+  unified context service (folding in activity, support, CPA notes) is a P0/P1 build item below.
 
 ## Build phases (each gated, each shippable)
 - **P0 — Tool framework**: capability registry (dry-run + execute + undo interface); the plan→preview→
-  confirm→execute→report loop in the thread; audit + feed wiring. Ship with **one** low-risk
-  capability (bulk categorize) end-to-end.
+  confirm→execute→report loop in the thread with **always-ask** (D1) + **live narration** (D2); audit
+  + feed wiring; the **unified context service v1** (conversation + activity + ledger). Ship with
+  **one** low-risk capability (bulk categorize) end-to-end.
 - **P1 — Breadth**: add capabilities tier by tier (receipts match, rules, AR reminders, anomaly/dupe
   finder), each with preview + undo.
 - **P2 — Learning**: correction→rule generalization, repetition→auto-rule, per-capability accuracy in
@@ -88,8 +126,10 @@ jargon, no exclamation marks) · no hardcoded thresholds (config-driven) · new 
 ledger row + a stress pass (docs/AUDIT.md).
 
 ## Open questions for Nik
-1. **Autonomy default** — should medium-risk writes ever auto-run for a trusted owner, or always
-   preview? (I lean always-preview until per-capability accuracy earns auto.)
-2. **Scheduled/standing instructions** in scope for v1, or after the interactive loop is solid?
+1. ~~Autonomy default~~ — **DECIDED (D1): always ask first; graduate per-capability later.**
+2. **Scheduled/standing instructions** ("every month-end, draft the close") in scope for v1, or after
+   the interactive loop is solid?
 3. **First capability to ship** in P0 — bulk categorize is my pick (highest daily value, low risk,
-   fully reversible). Agree?
+   fully reversible). Agree, or start elsewhere?
+4. **Unified context depth for v1** — is folding in support history + CPA notes wanted in P0, or start
+   with conversation + activity + ledger and add those next? (I lean start-narrow, expand fast.)

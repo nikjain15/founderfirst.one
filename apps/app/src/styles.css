@@ -1067,6 +1067,7 @@ button.ghost.sm, .ghost.sm {
 .staff-chip { background: var(--amber-bg); color: var(--amber-strong); }
 .staff-link { white-space: nowrap; }
 
+.staff-lead { margin: var(--space-2) 0 var(--space-3); max-width: 44rem; }
 .staff-directory .panel-toolbar { gap: 0.75rem; flex-wrap: wrap; }
 .staff-search { flex: 1 1 14rem; min-height: var(--tap-min); max-width: 22rem; }
 

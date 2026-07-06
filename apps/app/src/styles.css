@@ -448,6 +448,16 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
 }
 .ledger-tab:hover:not(:disabled) { background: transparent; color: var(--ink); }
 .ledger-tab.on { color: var(--ink); border-bottom-color: var(--ink); }
+/* Nav tabs show keyboard focus as the same ink underline as the active state —
+   the pill-shaped green DS focus ring read as an unwanted "green effect" around
+   the active tab (Nik). Focus stays clearly visible, just on-brand (no green). */
+.ledger-tab:focus-visible,
+.console-navlink:focus-visible {
+  outline: none;
+  box-shadow: none;
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
 
 /* Books sub-tabs — a lighter, smaller strip nested under the "Books" main tab so
    the two levels read as a hierarchy, not two identical rows. */

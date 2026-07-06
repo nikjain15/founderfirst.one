@@ -610,6 +610,15 @@ export const COPY = {
     bankCsvSub: "Upload a transactions export — map the columns and we'll post them.",
     openingTitle: "Opening balances",
     openingSub: "Start the books at a cutover date with each account's balance.",
+    // Chooser (owner-calm redesign) — Import is a short menu of ways to bring data in;
+    // pick one and only that flow opens (← Import back). No stacked connect sections.
+    back: "← Import",
+    menu: {
+      bankTitle: "Connect a bank",
+      bankDesc: "Link your bank so new transactions flow in automatically.",
+      softwareTitle: "Connect QuickBooks or Xero",
+      softwareDesc: "Pull your chart of accounts and history in to review.",
+    },
     csvHeader: "Bank statement CSV",
     csvSummary: (rows: number, filename: string) => `${rows} rows · ${filename}`,
     chooseCsv: "Choose a CSV file…",

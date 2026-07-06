@@ -88,7 +88,7 @@ function BrokenConnectionsPanel({ orgId }: { orgId: string }) {
   return <BrokenConnectionBanner broken={broken} orgId={orgId} />;
 }
 
-type Mode = "choose" | "csv" | "opening";
+type Mode = "choose" | "csv" | "opening" | "bank" | "software";
 // Local date (en-CA → YYYY-MM-DD), not UTC — avoids a day-off near midnight/month-end.
 const today = () => new Date().toLocaleDateString("en-CA");
 
@@ -99,31 +99,58 @@ export default function ImportFlow({
 }) {
   const [mode, setMode] = useState<Mode>("choose");
   const live = accounts.filter((a) => !a.is_archived);
+  const back = () => setMode("choose");
 
-  if (mode === "choose") {
+  if (mode === "csv") return <CsvImport orgId={orgId} accounts={live} onBack={back} onDone={onDone} />;
+  if (mode === "opening") return <OpeningBalances orgId={orgId} accounts={live} onBack={back} onDone={onDone} />;
+  // Bank + software connect were stacked-and-expanded (the mega-scroll the Connections
+  // chooser fixed). They're now menu jobs too: open one full-width with a ← Import back.
+  if (mode === "bank") {
     return (
-      <div className="import-flow">
-        <div className="panel-toolbar">
-          <span className="muted">{COPY.importFlow.intro}</span>
-        </div>
-        <BrokenConnectionsPanel orgId={orgId} />
-        <div className="import-choices">
-          <button className="import-choice" onClick={() => setMode("csv")}>
-            <span className="ic-title">{COPY.importFlow.bankCsvTitle}</span>
-            <span className="ic-sub">{COPY.importFlow.bankCsvSub}</span>
-          </button>
-          <button className="import-choice" onClick={() => setMode("opening")} disabled={live.length < 1}>
-            <span className="ic-title">{COPY.importFlow.openingTitle}</span>
-            <span className="ic-sub">{COPY.importFlow.openingSub}</span>
-          </button>
-        </div>
+      <div className="import-flow conn-flow">
+        <button type="button" className="conn-back" onClick={back}>{COPY.importFlow.back}</button>
         <ConnectBank orgId={orgId} onImported={onDone} />
+      </div>
+    );
+  }
+  if (mode === "software") {
+    return (
+      <div className="import-flow conn-flow">
+        <button type="button" className="conn-back" onClick={back}>{COPY.importFlow.back}</button>
         <ConnectSoftware orgId={orgId} onImported={onDone} />
       </div>
     );
   }
-  if (mode === "csv") return <CsvImport orgId={orgId} accounts={live} onBack={() => setMode("choose")} onDone={onDone} />;
-  return <OpeningBalances orgId={orgId} accounts={live} onBack={() => setMode("choose")} onDone={onDone} />;
+
+  // Chooser menu — one calm row per way to bring data in; pick one → only that flow.
+  const jobs = [
+    { id: "csv", title: COPY.importFlow.bankCsvTitle, desc: COPY.importFlow.bankCsvSub, disabled: false },
+    { id: "opening", title: COPY.importFlow.openingTitle, desc: COPY.importFlow.openingSub, disabled: live.length < 1 },
+    { id: "bank", title: COPY.importFlow.menu.bankTitle, desc: COPY.importFlow.menu.bankDesc, disabled: false },
+    { id: "software", title: COPY.importFlow.menu.softwareTitle, desc: COPY.importFlow.menu.softwareDesc, disabled: false },
+  ] as const;
+  return (
+    <div className="import-flow conn-chooser">
+      <div className="panel-toolbar">
+        <span className="muted">{COPY.importFlow.intro}</span>
+      </div>
+      <BrokenConnectionsPanel orgId={orgId} />
+      <ul className="conn-menu">
+        {jobs.map((j) => (
+          <li key={j.id}>
+            <button type="button" className="conn-menu-item" data-job={j.id}
+              disabled={j.disabled} onClick={() => setMode(j.id as Mode)}>
+              <span className="conn-menu-text">
+                <span className="conn-menu-title">{j.title}</span>
+                <span className="conn-menu-desc muted sm">{j.desc}</span>
+              </span>
+              <span className="conn-menu-chevron" aria-hidden="true">›</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 // ── Bank CSV ──────────────────────────────────────────────────────────────────

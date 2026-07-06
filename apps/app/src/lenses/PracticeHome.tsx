@@ -94,7 +94,7 @@ export default function PracticeHome({
             </div>
           ) : (
             <>
-              <h2 className="section-h">{COPY.practice.queueHeading}</h2>
+              <p className="eyebrow">{COPY.practice.queueHeading}</p>
               <ul className="pq-list" aria-label={COPY.practice.queueAria}>
                 {items.map((it) => (
                   <QueueRow key={`${it.kind}-${it.ref_id}`} item={it} onOpen={open} />
@@ -104,7 +104,7 @@ export default function PracticeHome({
           )}
 
           {/* ── Clients (with counts) — the switcher's list, in-page ───────── */}
-          <h2 className="section-h pq-clients-h">{COPY.practice.clientsHeading}</h2>
+          <p className="eyebrow pq-clients-h">{COPY.practice.clientsHeading}</p>
           <ul className="pq-clients">
             {active.map((c) => (
               <ClientCard key={c.client_org_id} client={c} onOpen={open} />

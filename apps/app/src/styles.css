@@ -826,18 +826,9 @@ button.ghost.sm, .ghost.sm {
 }
 
 /* ── history import ───────────────────────────────────────────── */
+/* Import is now a chooser (owner-calm redesign) — it reuses the `.conn-menu` row
+   styles; the old `.import-choice` tiles + stacked connect sections are retired. */
 .import-flow { display: flex; flex-direction: column; gap: 0.9rem; }
-.import-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.75rem; }
-.import-choice {
-  display: flex; flex-direction: column; gap: 0.25rem; text-align: left;
-  padding: var(--pad-card); background: var(--white);
-  border: var(--bw-hair) solid var(--line); border-radius: var(--r-card); box-shadow: var(--shadow-card);
-  color: var(--ink); min-height: var(--tap-min, 44px);
-}
-.import-choice:hover:not(:disabled) { border-color: var(--brand); background: var(--brand-soft); }
-.import-choice:disabled { opacity: 0.5; }
-.import-choice .ic-title { font-weight: var(--fw-semibold); }
-.import-choice .ic-sub { font-size: var(--fs-ui); color: var(--ink-3); }
 
 /* Broken-connection banner (IQ-2) — needs-attention, honest, not alarming. */
 .conn-broken {
@@ -960,7 +951,7 @@ button.ghost.sm, .ghost.sm {
    RESPONSIVE.md rule 2: no hardcoded px in horizontal layouts. */
 .rules-head, .rules-row {
   display: grid;
-  grid-template-columns: minmax(9rem, 1.6fr) minmax(8rem, 1.4fr) minmax(4rem, 0.6fr) 3rem auto;
+  grid-template-columns: minmax(9rem, 1.6fr) minmax(8rem, 1.4fr) minmax(4rem, 0.6fr) minmax(2.5rem, 3rem) auto;
   gap: 0.6rem; align-items: center;
 }
 .rules-head {

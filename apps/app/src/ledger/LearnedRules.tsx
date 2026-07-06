@@ -18,6 +18,7 @@
  */
 import { useState } from "react";
 import { deleteRule, useLearnedRules, useLearnedRulesRefresh, type LearnedRule } from "./api";
+import { CompactEmpty } from "./CompactEmpty";
 import { COPY } from "../copy";
 
 export default function LearnedRules({ orgId, canWrite }: { orgId: string; canWrite: boolean }) {
@@ -29,12 +30,7 @@ export default function LearnedRules({ orgId, canWrite }: { orgId: string; canWr
 
   const rules = q.data ?? [];
   if (rules.length === 0) {
-    return (
-      <div className="ledger-empty">
-        <h3>{COPY.rules.emptyTitle}</h3>
-        <p className="muted">{COPY.rules.emptyBody}</p>
-      </div>
-    );
+    return <CompactEmpty text={COPY.rules.emptyTitle} />;
   }
 
   return (

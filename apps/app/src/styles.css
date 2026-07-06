@@ -464,7 +464,10 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
 .ledger-subtabs { margin-top: 1rem; gap: clamp(14px, 2vw, 26px); border-bottom-color: var(--line-2); }
 /* PENNY-UX-6 (F6): the smaller type keeps the hierarchy; the tap target must not
    shrink with it — inherit .ledger-tab's min-height: var(--tap-min), no override. */
-.ledger-subtabs .ledger-tab { font-size: var(--fs-label); color: var(--ink-3); }
+/* Sub-tabs share the primary tab's font-size (--fs-ui) so the tab rows read as
+   one consistent scale; hierarchy comes from the lighter divider + ink-3 colour,
+   not a smaller font (Nik: sub-tabs looked like an old, off-scale size). */
+.ledger-subtabs .ledger-tab { font-size: var(--fs-ui); color: var(--ink-3); }
 .ledger-subtabs .ledger-tab.on { color: var(--ink); border-bottom-color: var(--ink); }
 .ledger-subpanel { margin-top: 1rem; }
 
@@ -1591,6 +1594,11 @@ button.ghost.sm, .ghost.sm {
   flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto;
   margin: var(--space-3) var(--space-4); padding: 0; background: transparent;
 }
+/* In the narrow dock, keep chat text compact (data-row size, tighter turn gap)
+   so the user sees their question AND Penny's answer together, not one turn
+   filling the panel (Nik). The standalone thread keeps the larger body size. */
+.penny-thread-compact .thread-turns { gap: var(--space-3); }
+.penny-thread-compact .thread-turn .turn-text { font-size: var(--fs-data-row); line-height: 1.45; }
 /* Pinned composer — suggestions + input stay at the foot, always reachable. */
 .penny-thread-compact .thread-suggest { flex: 0 0 auto; padding: var(--space-2) var(--space-4) var(--space-1); }
 .penny-thread-compact .thread-input {

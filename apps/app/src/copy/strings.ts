@@ -1506,6 +1506,15 @@ export const COPY = {
       analytics: "Analytics",
       penny: "Penny",
     },
+    // Per-page eyebrow (renders uppercase) — matches founderfirst.one/admin, where
+    // each page leads with a section eyebrow over its own heading (no global title).
+    pageEyebrow: {
+      overview: "Staff · Overview",
+      support: "Staff · Support",
+      audience: "Staff · Audience",
+      analytics: "Staff · Analytics",
+      penny: "Staff · Penny",
+    },
     // Overview — the one live-wired module this phase (reads staff_list_orgs).
     overview: {
       heading: "Organizations",

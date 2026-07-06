@@ -16,7 +16,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import type { JournalEntry } from "./types";
-import { askPennyThread, usePennyActivity, type ThreadFact } from "./api";
+import { askPennyThread, usePennyActivity, fetchPennyThread, appendPennyThread, type ThreadFact } from "./api";
 import { computeMetric, routeMessage } from "./thread";
 import { COPY } from "../copy";
 
@@ -63,6 +63,28 @@ export default function PennyThread({
     } catch { /* storage full / unavailable — history just won't persist */ }
   }, [turns, orgId]);
 
+  // Cross-device memory: load the server-remembered conversation once per org.
+  // localStorage seeded the instant view above; if the server has history it wins,
+  // so the same books' thread follows the user across tabs and devices.
+  const loadedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (loadedFor.current === orgId) return;
+    loadedFor.current = orgId;
+    let cancelled = false;
+    void fetchPennyThread(orgId).then((rows) => {
+      if (cancelled || rows.length === 0) return;
+      const restored: Turn[] = rows.map((r, i) => ({ id: i + 1, who: r.role, text: r.body }));
+      seq.current = restored.length + 1;
+      setTurns(restored);
+    }).catch(() => { /* offline / unauthed — keep the localStorage view */ });
+    return () => { cancelled = true; };
+  }, [orgId]);
+
+  // Best-effort mirror of a settled turn to the server thread (fallback = localStorage).
+  function remember(role: "you" | "penny", text: string) {
+    void appendPennyThread(orgId, role, text).catch(() => { /* keep local-only */ });
+  }
+
   function push(turn: Turn) {
     setTurns((t) => [...t, turn]);
     // Scroll the newest turn into view after paint.
@@ -74,6 +96,7 @@ export default function PennyThread({
     if (!q || busy) return;
     setInput("");
     push({ id: seq.current++, who: "you", text: q });
+    remember("you", q);
     setBusy(true);
 
     // Route + ground CLIENT-SIDE so the number is deterministic and ties to the
@@ -103,6 +126,7 @@ export default function PennyThread({
     // unsupported turns go to the fn for Penny's voice (grounded fact or decline).
     if (localReply != null) {
       push({ id: seq.current++, who: "penny", text: localReply });
+      remember("penny", localReply);
       setBusy(false);
       return;
     }
@@ -112,6 +136,7 @@ export default function PennyThread({
     try {
       const { text: reply } = await askPennyThread(orgId, q, fact);
       setTurns((t) => t.map((x) => (x.id === pendingId ? { ...x, text: reply, pending: false } : x)));
+      remember("penny", reply);
     } catch {
       setTurns((t) => t.map((x) => (x.id === pendingId ? { ...x, text: COPY.thread.error, pending: false } : x)));
     } finally {

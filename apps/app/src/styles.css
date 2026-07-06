@@ -1508,8 +1508,8 @@ button.ghost.sm, .ghost.sm {
 .penny-dock {
   position: fixed; z-index: 70;
   right: var(--space-4); bottom: var(--space-4);
-  width: min(24rem, calc(100vw - 2 * var(--space-4)));
-  max-height: min(34rem, calc(100vh - 2 * var(--space-4)));
+  width: min(26rem, calc(100vw - 2 * var(--space-4)));
+  max-height: min(38rem, calc(100vh - 2 * var(--space-4)));
   display: flex; flex-direction: column;
   background: var(--white);
   border: var(--bw-hair) solid var(--line); border-radius: var(--r-card);
@@ -1523,11 +1523,27 @@ button.ghost.sm, .ghost.sm {
 }
 .penny-dock-title { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: var(--fw-semibold); color: var(--ink); }
 .penny-dock-close { min-height: auto; padding: var(--space-1) var(--space-2); }
-.penny-dock-body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-3) var(--space-4); }
-/* The thread fills the dock body — no card chrome of its own inside the panel. */
-.penny-thread-compact { margin-top: 0; padding: 0; border: 0; background: transparent; }
-.penny-thread-compact .thread-turns { max-height: none; }
-.thread-lead-compact { margin: 0; }
+/* The body holds the thread as a fixed-height flex column — no scroll of its own;
+   only the message log scrolls, so the composer never slides under the content. */
+.penny-dock-body { flex: 1; min-height: 0; overflow: hidden; padding: 0; display: flex; }
+/* The thread fills the dock body — no card chrome of its own inside the panel.
+   3 rows: lead · scrolling log (flex) · pinned composer (suggest + input). */
+.penny-thread-compact {
+  flex: 1; min-height: 0; margin: 0; padding: 0; border: 0; background: transparent;
+  display: flex; flex-direction: column; gap: 0;
+}
+.penny-thread-compact .thread-lead-compact { margin: 0; padding: var(--space-3) var(--space-4) 0; }
+.penny-thread-compact > p.muted { margin: 0; padding: var(--space-1) var(--space-4) 0; }
+.penny-thread-compact .thread-turns {
+  flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto;
+  margin: var(--space-3) var(--space-4); padding: 0; background: transparent;
+}
+/* Pinned composer — suggestions + input stay at the foot, always reachable. */
+.penny-thread-compact .thread-suggest { flex: 0 0 auto; padding: var(--space-2) var(--space-4) var(--space-1); }
+.penny-thread-compact .thread-input {
+  flex: 0 0 auto; padding: var(--space-3) var(--space-4) var(--space-4);
+  border-top: var(--bw-hair) solid var(--line);
+}
 @media (max-width: 560px) {
   /* Full-width bottom sheet on phones. */
   .penny-dock {

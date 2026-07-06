@@ -11,9 +11,11 @@ insert into auth.users (id, email, aud, role) values
 insert into admins (email, is_super, role, added_by, added_at)
   values ('staff@aud.dev', false, 'viewer', 'seed', now());
 
-insert into admin_audit (actor_email, action, target_type, target_id, payload) values
-  ('someone@x.dev', 'admin.invited', 'admin', 'a-1', '{}'::jsonb),
-  ('someone@x.dev', 'ticket.replied', 'ticket', 't-9', '{}'::jsonb);
+-- Explicit, distinct created_at so newest-first ordering is deterministic
+-- (both rows would otherwise share the statement's now()).
+insert into admin_audit (actor_email, action, target_type, target_id, payload, created_at) values
+  ('someone@x.dev', 'admin.invited',  'admin',  'a-1', '{}'::jsonb, now() - interval '2 minutes'),
+  ('someone@x.dev', 'ticket.replied', 'ticket', 't-9', '{}'::jsonb, now() - interval '1 minute');
 
 -- staff sees the log, newest-first
 set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-00000000e1e1","email":"staff@aud.dev","role":"authenticated"}';

@@ -37,17 +37,15 @@ describe("admin console nav (IA-3 · mirrors the live admin IA)", () => {
     }
   });
 
-  it("lands on Overview; Overview + Support are the live-wired tabs (slice 1)", () => {
+  it("lands on Overview; all primary tabs are now live-wired to real staff reads", () => {
     expect(DEFAULT_CONSOLE_TAB).toBe("overview");
-    expect(isTabLive("overview")).toBe(true);
-    expect(isTabLive("support")).toBe(true);
     const live = CONSOLE_TABS.filter((t) => t.live).map((t) => t.id);
-    expect(live).toEqual(["overview", "support"]);
+    expect(live).toEqual(["overview", "support", "audience", "analytics", "penny"]);
   });
 
-  it("keeps the not-yet-mirrored admin-job tabs parallel-run placeholders (not fake-live)", () => {
-    for (const id of ["audience", "analytics", "penny"] as ConsoleTabId[]) {
-      expect(isTabLive(id)).toBe(false);
+  it("every primary tab reads real data (no parallel-run placeholders left)", () => {
+    for (const id of ["overview", "support", "audience", "analytics", "penny"] as ConsoleTabId[]) {
+      expect(isTabLive(id)).toBe(true);
     }
   });
 

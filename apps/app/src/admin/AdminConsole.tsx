@@ -25,10 +25,12 @@ import { COPY } from "../copy";
 import {
   useStaffOrgs, useStaffTickets,
   useStaffPendingOrgs, useSetOrgApproval, type PendingOrg,
+  useStaffWaitlist, useStaffPlatformStats, useStaffContent,
+  type WaitlistRow, type ContentRow,
   type StaffOrg, type StaffTicket, type TicketStatus,
 } from "../staff/api";
 import { CompactEmpty } from "../ledger/CompactEmpty";
-import { CONSOLE_TABS, DEFAULT_CONSOLE_TAB, consoleView, isTabLive, type ConsoleTabId } from "./nav";
+import { CONSOLE_TABS, DEFAULT_CONSOLE_TAB, consoleView, type ConsoleTabId } from "./nav";
 
 const C = COPY.console;
 
@@ -58,9 +60,11 @@ export default function AdminConsole({ isStaff }: { isStaff: boolean }) {
       <ConsoleBar email={session?.user.email} signOut={signOut} active={tab} onSelect={setTab} />
       <main className="workspace">
         <section className="lens admin-console">
-          {isTabLive(tab)
-            ? (tab === "support" ? <Support /> : <Overview />)
-            : <Placeholder tab={tab} />}
+          {tab === "support" ? <Support />
+            : tab === "audience" ? <Audience />
+            : tab === "analytics" ? <Analytics />
+            : tab === "penny" ? <PennyContent />
+            : <Overview />}
         </section>
       </main>
     </div>
@@ -349,21 +353,118 @@ function Support() {
   );
 }
 
-// ── Parallel-run placeholder — links to the still-authoritative live admin ─────
-function Placeholder({ tab }: { tab: ConsoleTabId }) {
-  const label = C.tabs[tab];
+// ── Audience — the web waitlist (read-only, staff_list_waitlist) ──────────────
+function Audience() {
+  const A = C.audience;
+  const q = useStaffWaitlist(true);
+  const rows = q.data ?? [];
   return (
-    <div role="tabpanel" aria-labelledby={`console-${tab}`}>
-      <ConsoleHead tab={tab} title={label} />
-      <div className="console-placeholder">
-        <span className="readonly-chip">{C.placeholder.badge}</span>
-        <p className="muted">{C.placeholder.body(label)}</p>
-        <p>
-          <a className="ghost" href={SITE.adminUrl} target="_blank" rel="noreferrer">
-            {C.placeholder.openLive}
-          </a>
-        </p>
-      </div>
+    <div role="tabpanel" aria-labelledby="console-audience">
+      <ConsoleHead tab="audience" title={A.heading} sub={A.sub} />
+      {q.isLoading ? <p className="muted">{A.loading}</p>
+        : q.isError ? <p className="error">{A.error}</p>
+        : rows.length === 0 ? <CompactEmpty text={A.empty} />
+        : (
+          <>
+            <div className="panel-toolbar"><span className="muted">{A.total(rows.length)}</span></div>
+            <div className="table-wrap" tabIndex={0} role="region" aria-label={A.tableAria}>
+              <table className="console-table">
+                <thead><tr>
+                  <th>{A.colEmail}</th><th>{A.colSource}</th><th>{A.colReferred}</th><th>{A.colWhen}</th>
+                </tr></thead>
+                <tbody>
+                  {rows.map((r: WaitlistRow, i) => (
+                    <tr key={r.email + i}>
+                      <td>{r.email}</td>
+                      <td>{r.source ?? "—"}</td>
+                      <td>{r.referred_by ?? "—"}</td>
+                      <td>{r.signed_up_at ? r.signed_up_at.slice(0, 10) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      <LiveAdminLink />
     </div>
+  );
+}
+
+// ── Analytics — platform at-a-glance counts (staff_platform_stats) ───────────
+function Analytics() {
+  const A = C.analyticsMod;
+  const q = useStaffPlatformStats(true);
+  const s = q.data;
+  const kpis: [string, number][] = s ? [
+    [A.orgs, s.orgs], [A.pending, s.pending_signups], [A.waitlist, s.waitlist],
+    [A.openTickets, s.open_tickets], [A.livePosts, s.live_posts], [A.livePages, s.live_pages],
+  ] : [];
+  return (
+    <div role="tabpanel" aria-labelledby="console-analytics">
+      <ConsoleHead tab="analytics" title={A.heading} sub={A.sub} />
+      {q.isLoading ? <p className="muted">{A.loading}</p>
+        : q.isError || !s ? <p className="error">{A.error}</p>
+        : (
+          <div className="kpis console-kpis">
+            {kpis.map(([label, val]) => (
+              <div className="kpi" key={label}>
+                <span className="kpi-label">{label}</span>
+                <span className="kpi-value">{val}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      <LiveAdminLink />
+    </div>
+  );
+}
+
+// ── Penny — the live content surfaces (staff_list_content) ────────────────────
+function PennyContent() {
+  const A = C.content;
+  const q = useStaffContent(true);
+  const rows = q.data ?? [];
+  return (
+    <div role="tabpanel" aria-labelledby="console-penny">
+      <ConsoleHead tab="penny" title={A.heading} sub={A.sub} />
+      {q.isLoading ? <p className="muted">{A.loading}</p>
+        : q.isError ? <p className="error">{A.error}</p>
+        : rows.length === 0 ? <CompactEmpty text={A.empty} />
+        : (
+          <>
+            <div className="panel-toolbar"><span className="muted">{A.total(rows.length)}</span></div>
+            <div className="table-wrap" tabIndex={0} role="region" aria-label={A.tableAria}>
+              <table className="console-table">
+                <thead><tr>
+                  <th>{A.colSlug}</th><th>{A.colSurface}</th><th>{A.colKind}</th><th>{A.colWhen}</th>
+                </tr></thead>
+                <tbody>
+                  {rows.map((r: ContentRow, i) => (
+                    <tr key={r.slug + i}>
+                      <td>{r.slug}</td>
+                      <td>{r.surface}</td>
+                      <td>{r.kind}</td>
+                      <td>{r.updated_at ? r.updated_at.slice(0, 10) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      <LiveAdminLink />
+    </div>
+  );
+}
+
+// founderfirst.one/admin stays authoritative during parallel-run — a calm link out.
+function LiveAdminLink() {
+  return (
+    <p className="console-live-link">
+      <a className="ghost sm" href={SITE.adminUrl} target="_blank" rel="noreferrer">
+        {C.placeholder.openLive}
+      </a>
+    </p>
   );
 }

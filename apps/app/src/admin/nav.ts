@@ -30,10 +30,10 @@ export interface ConsoleTab {
  */
 export const CONSOLE_TABS: ConsoleTab[] = [
   { id: "overview", live: true },
-  { id: "support", live: true }, // slice 1: wired to the live admin's list_tickets
-  { id: "audience", live: false },
-  { id: "analytics", live: false },
-  { id: "penny", live: false },
+  { id: "support", live: true },   // wired to the live admin's list_tickets
+  { id: "audience", live: true },  // waitlist via staff_list_waitlist
+  { id: "analytics", live: true }, // at-a-glance counts via staff_platform_stats
+  { id: "penny", live: true },     // live content surfaces via staff_list_content
 ];
 
 /** The tab landed on first. */

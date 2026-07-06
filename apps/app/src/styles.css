@@ -1645,6 +1645,9 @@ button.ghost.sm, .ghost.sm {
 
 .admin-console .console-overview { margin-top: var(--space-4); }
 .admin-console .console-overview .section-h { margin-top: 0; }
+/* Console modules — Audience / Analytics / Penny (real staff reads). */
+.console-kpis { margin-top: var(--space-4); }
+.console-live-link { margin-top: var(--space-4); }
 /* Approvals queue — the signup gate, atop Overview. */
 .console-approvals { margin-bottom: var(--space-5); }
 .console-approvals-head { display: flex; align-items: baseline; gap: var(--space-3); }

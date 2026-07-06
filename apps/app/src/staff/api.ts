@@ -150,6 +150,51 @@ export function useCloseBreakGlass() {
   });
 }
 
+// ── Console modules — read-only staff data (Audience / Analytics / Penny) ─────
+export interface WaitlistRow {
+  email: string; source: string | null; referred_by: string | null; signed_up_at: string | null;
+}
+export function useStaffWaitlist(enabled = true) {
+  return useQuery({
+    queryKey: ["staff-waitlist"],
+    enabled,
+    queryFn: async (): Promise<WaitlistRow[]> => {
+      const { data, error } = await getClient().rpc("staff_list_waitlist", { p_limit: 200 });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as WaitlistRow[];
+    },
+  });
+}
+
+export interface PlatformStats {
+  orgs: number; pending_signups: number; waitlist: number;
+  open_tickets: number; live_posts: number; live_pages: number;
+}
+export function useStaffPlatformStats(enabled = true) {
+  return useQuery({
+    queryKey: ["staff-platform-stats"],
+    enabled,
+    queryFn: async (): Promise<PlatformStats | null> => {
+      const { data, error } = await getClient().rpc("staff_platform_stats");
+      if (error) throw new Error(error.message);
+      return (data ?? null) as PlatformStats | null;
+    },
+  });
+}
+
+export interface ContentRow { slug: string; surface: string; kind: string; updated_at: string | null; }
+export function useStaffContent(enabled = true) {
+  return useQuery({
+    queryKey: ["staff-content"],
+    enabled,
+    queryFn: async (): Promise<ContentRow[]> => {
+      const { data, error } = await getClient().rpc("staff_list_content");
+      if (error) throw new Error(error.message);
+      return (data ?? []) as ContentRow[];
+    },
+  });
+}
+
 // ── Signup approval queue (staff) ─────────────────────────────────────────────
 export interface PendingOrg {
   id: string; name: string; type: string; created_at: string; owner_email: string | null;

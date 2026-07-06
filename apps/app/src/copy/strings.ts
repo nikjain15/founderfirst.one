@@ -1589,6 +1589,47 @@ export const COPY = {
       liveNote:
         "This reads the same inbox as the live admin. Replies still happen in the live admin until that module reaches parity here.",
     },
+    // Audience — the web waitlist (read-only, staff_list_waitlist).
+    audience: {
+      heading: "Waitlist",
+      sub: "People who signed up for early access on the marketing site.",
+      loading: "Loading the waitlist…",
+      error: "Couldn't load the waitlist.",
+      empty: "No signups yet.",
+      total: (n: number) => `${n} on the waitlist`,
+      colEmail: "Email",
+      colSource: "Source",
+      colReferred: "Referred by",
+      colWhen: "Signed up",
+      tableAria: "Waitlist signups",
+    },
+    // Analytics — platform at-a-glance counts (staff_platform_stats).
+    analyticsMod: {
+      heading: "At a glance",
+      sub: "Live platform counts, straight from the database.",
+      loading: "Loading counts…",
+      error: "Couldn't load platform stats.",
+      orgs: "Organizations",
+      pending: "Pending signups",
+      waitlist: "Waitlist",
+      openTickets: "Open tickets",
+      livePosts: "Live blog posts",
+      livePages: "Live site pages",
+    },
+    // Penny — the live content surfaces (staff_list_content).
+    content: {
+      heading: "Live content",
+      sub: "Published blog posts and site pages Penny serves.",
+      loading: "Loading content…",
+      error: "Couldn't load content.",
+      empty: "Nothing published yet.",
+      total: (n: number) => `${n} live`,
+      colSlug: "Slug",
+      colSurface: "Surface",
+      colKind: "Kind",
+      colWhen: "Updated",
+      tableAria: "Live content",
+    },
     // Parallel-run placeholder shown on tabs not yet mirrored in-product.
     placeholder: {
       badge: "Parallel-run",

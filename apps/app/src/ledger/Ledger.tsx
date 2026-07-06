@@ -430,16 +430,34 @@ function Overview({
 
   if (accounts.length === 0) {
     return (
-      <>
+      <div className="owner-home home-empty">
         {inviteNudge}
-        <Empty
-          title={COPY.overview.setupTitle}
-          body={COPY.overview.setupBody}
-          action={canWrite ? { label: COPY.overview.goToConnections, onClick: onConnect } : undefined}
-        />
+        {/* Setup card — one job, one primary action (not a bare centered CTA). */}
+        <section className="home-setup-card">
+          <h2 className="section-h">{COPY.overview.setupTitle}</h2>
+          <p className="home-setup-body">{COPY.overview.setupBody}</p>
+          {canWrite && (
+            <button onClick={onConnect}>{COPY.overview.goToConnections}</button>
+          )}
+        </section>
+        {/* A calm preview of the pulse Penny fills once books exist, so Home shows
+            what it's FOR instead of a single button. Decorative placeholders. */}
+        <div className="kpis home-kpis home-kpis-preview" aria-hidden="true">
+          <div className="kpi is-placeholder">
+            <span className="kpi-label">{COPY.ownerHome.cashLabel}</span>
+            <span className="kpi-value">{COPY.common.emDash}</span>
+            <span className="kpi-sub muted sm">{COPY.overview.previewSoon}</span>
+          </div>
+          <div className="kpi is-placeholder">
+            <span className="kpi-label">{COPY.ownerHome.needsYouLabel}</span>
+            <span className="kpi-value">{COPY.common.emDash}</span>
+            <span className="kpi-sub muted sm">{COPY.overview.previewSoon}</span>
+          </div>
+        </div>
+        <p className="muted sm home-preview-note">{COPY.overview.previewNote}</p>
         {/* Penny is present from day one via the global dock (owner-calm redesign) —
             she greets and can answer once books exist. No slab on this screen. */}
-      </>
+      </div>
     );
   }
   return (

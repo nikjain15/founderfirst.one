@@ -1569,6 +1569,22 @@ button.ghost.sm, .ghost.sm {
    the shared auto-fit .kpis track so it can't overflow on the width ladder. */
 .owner-home { display: flex; flex-direction: column; gap: var(--space-4); }
 .owner-home .home-kpis { margin-top: var(--space-1); }
+/* Empty Home — a structured "getting started" surface, not a bare centered CTA.
+   A setup card (one job, one action) over a calm preview of the pulse tiles. */
+.home-empty { max-width: 46rem; }
+.home-setup-card {
+  background: var(--white); border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); padding: var(--pad-card);
+  display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start;
+}
+.home-setup-card .section-h { margin: 0; }
+.home-setup-body { margin: 0; color: var(--ink-2); line-height: 1.6; max-width: 40rem; }
+/* Preview tiles read as "coming soon" — muted, no shadow, dashed to signal placeholder. */
+.home-kpis-preview .kpi.is-placeholder {
+  box-shadow: none; border-style: dashed; background: transparent;
+}
+.home-kpis-preview .kpi.is-placeholder .kpi-value { color: var(--ink-4); }
+.home-preview-note { margin: 0; max-width: 40rem; }
 .kpi-sub { margin-top: var(--space-1); }
 /* The needs-you tile is actionable → make it a real button but keep the tile look. */
 .kpi-btn {

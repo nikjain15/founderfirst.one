@@ -214,17 +214,25 @@ export default function Ledger({
               )
             )}
             {surface === "review" && canWrite && (
-              <>
+              // Each job in the review queue gets its own bounded card so the tab
+              // reads as distinct panels, not one continuous wall of prose.
+              <div className="review-stack">
                 {/* Owner's trust-tiered needs-a-look: the CPA's pending suggestions
                     land here for approval before anything posts (card W1.5). */}
                 {nav === "owner" && (
-                  <SuggestionInbox orgId={org.id} accounts={accounts.data ?? []} onChange={refresh} />
+                  <section className="review-card">
+                    <SuggestionInbox orgId={org.id} accounts={accounts.data ?? []} onChange={refresh} />
+                  </section>
                 )}
-                <Categorize orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []} onChange={refresh} />
+                <section className="review-card">
+                  <Categorize orgId={org.id} canWrite={canWrite} accounts={accounts.data ?? []} onChange={refresh} />
+                </section>
                 {/* Receipt capture + match (W3.5): snap/paste a receipt, Penny files
                     it with the right transaction; unmatched land in a queue here. */}
-                <Receipts orgId={org.id} canWrite={canWrite} entries={entries.data ?? []} onChange={refresh} />
-              </>
+                <section className="review-card">
+                  <Receipts orgId={org.id} canWrite={canWrite} entries={entries.data ?? []} onChange={refresh} />
+                </section>
+              </div>
             )}
             {surface === "rules" && (
               <LearnedRules orgId={org.id} canWrite={canWrite} />

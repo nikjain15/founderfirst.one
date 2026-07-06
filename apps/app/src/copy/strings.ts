@@ -1519,6 +1519,7 @@ export const COPY = {
       audience: "Audience",
       analytics: "Analytics",
       penny: "Penny",
+      audit: "Audit log",
     },
     // Per-page eyebrow (renders uppercase) — matches founderfirst.one/admin, where
     // each page leads with a section eyebrow over its own heading (no global title).
@@ -1528,6 +1529,7 @@ export const COPY = {
       audience: "Staff · Audience",
       analytics: "Staff · Analytics",
       penny: "Staff · Penny",
+      audit: "Staff · Audit",
     },
     // Approvals — the signup queue (new orgs pending staff approval before books go live).
     approvals: {
@@ -1633,6 +1635,20 @@ export const COPY = {
       colKind: "Kind",
       colWhen: "Updated",
       tableAria: "Live content",
+    },
+    // Audit log — the platform audit trail (staff_list_admin_audit), read-only.
+    audit: {
+      heading: "Audit log",
+      sub: "Recent platform actions across the admin surface — newest first.",
+      loading: "Loading the audit log…",
+      error: "Couldn't load the audit log.",
+      empty: "No audit events yet.",
+      total: (n: number) => `${n} ${n === 1 ? "event" : "events"}`,
+      colWhen: "When",
+      colActor: "Actor",
+      colAction: "Action",
+      colTarget: "Target",
+      tableAria: "Platform audit log",
     },
     // Parallel-run placeholder shown on tabs not yet mirrored in-product.
     placeholder: {

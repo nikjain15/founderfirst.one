@@ -592,7 +592,20 @@ button.ghost.sm, .ghost.sm {
   padding: 0.6rem 0.8rem; border-radius: var(--r-card);
   background: var(--amber-bg); color: var(--ink-2); font-size: var(--fs-ui);
 }
-.section-h { font-size: var(--fs-h3); margin: 0.5rem 0 0; }
+/* The one card/section heading used across every tab. Pin ALL type metrics (not
+   just size) so it renders identically whether it sits on an <h2> or <h3> — the
+   shared typography gives those different line-height/letter-spacing, which read
+   as inconsistent heading sizes tab-to-tab. */
+.section-h {
+  font-family: var(--font-display);
+  font-size: var(--fs-h3);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  font-weight: var(--fw-semibold);
+  margin: 0.5rem 0 0;
+}
+/* Empty-state titles use the same heading treatment (they were a bare <h3>). */
+.ledger-empty h3 { font-family: var(--font-display); font-size: var(--fs-h3); line-height: 1.25; letter-spacing: -0.01em; font-weight: var(--fw-semibold); }
 .activity { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .activity li {
   display: grid; grid-template-columns: 6rem 1fr auto auto; gap: 0.6rem;

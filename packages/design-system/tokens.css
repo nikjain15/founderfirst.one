@@ -23,8 +23,11 @@
   --ink-4:      #97a0aa;
   --line:       #e6e0d3;   /* warm border */
   --line-2:     #efebe0;
-  --paper:      #f4f1e9;   /* cream — the primary field */
+  --paper:      #f4f1e9;   /* cream — the primary field (marketing + component fills) */
   --white:      #ffffff;   /* white cards sit on the cream */
+  --app-canvas: #f6f7f9;   /* authed-app field — cleaner near-white. Scoped to apps/app
+                              (penny.founderfirst.one); marketing keeps the warm --paper.
+                              White cards still separate via border + subtle contrast. */
   --dark:       #28323f;   /* inverse sections = navy, not black */
 
   /* -- Semantic accents (meaning only) -------------------------------- */

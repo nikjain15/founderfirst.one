@@ -150,7 +150,11 @@ export default function PennyThread({
       {/* In the dock the panel header carries the title, so drop the in-thread head
           to a single lead line; standalone (legacy) keeps the full heading block. */}
       {compact ? (
-        <p className="muted sm thread-lead-compact">{COPY.thread.lead}</p>
+        // Only until the first question — once the chat is going the intro just
+        // eats space (Nik). It reappears on a fresh thread.
+        !turns.some((t) => t.who === "you") && (
+          <p className="muted sm thread-lead-compact">{COPY.thread.lead}</p>
+        )
       ) : (
         <div className="thread-head">
           <h2 className="section-h">

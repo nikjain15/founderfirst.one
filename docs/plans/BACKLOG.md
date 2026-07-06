@@ -19,6 +19,18 @@
 > corrected to match. Remaining real buildable work: **W5.4-FX** (ECB fx-rate fetcher — schema
 > shipped, no fetcher exists yet) is the top unclaimed, unblocked, non-decision-needed card.
 
+> ⚠️ **STATUS RECONCILIATION #3 (loop-orch, 6 Jul):** five cards were left at
+> `claimed:loop-insession-5jul (building)` after their sessions actually exited by opening a
+> green PR (PENNY-UX-10 #266, EFILE-A1 #265, SEC-1-CPACLOSE #261, IQ-1-CLEANUP #267, IA-3 #262 +
+> follow-on #273/#277) — the exit never looped back to flip the card status, so they read as
+> in-progress indefinitely. **PENNY-UX-9 is also now RESOLVED** — the cumulative post-Wave-2
+> IA/declutter/responsive PR run (pr:#270, #271, #272, #273, #275, #277) independently satisfies
+> its full acceptance list (verified line-by-line, see the card). All corrected below. **Result:
+> zero unclaimed, unblocked, non-decision-needed cards remain in this file as of 6 Jul** — the
+> only `unclaimed` entries left are SEC-2-KEYS and CONN-1, both explicit Nik/infra human steps.
+> Next loop iteration: re-verify via `gh pr list` before assuming "nothing buildable" — new cards
+> may land, or Nik may resolve a `decision-needed`/human-step item and unblock one.
+
 ## Wave 2 — COMPLETE + DEPLOYED (3 Jul 2026)
 W2.1/W2.2/W2.3 shipped earlier; **W2.4 (PR #202) + W2.5 (PR #201) merged to main, migrations
 `20260706020000`+`20260706030000` applied to prod (ledger in sync), edge fns `nec-tracking`
@@ -315,7 +327,10 @@ coverage delta: extend the connector AUDIT row — assert intuit_tid is captured
 # PENNY-UX-10 + E-FILE (Nik 5-Jul: declutter + make responsive; card e-file Phase A)
 
 ## PENNY-UX-10 · Owner app declutter + FULL responsive pass → /admin minimalist standard
-status: claimed:loop-insession-5jul (building)
+status: merged (pr:#266) — verified 6 Jul: session died mid-"building" without flipping this
+  status; `gh pr view 266` confirms merged. Follow-on decluttering continued past this card's
+  own scope under PENNY-UX-9 below (Connections chooser #270, ImportFlow chooser + calm-sweep
+  #271, CPA list capping #272, tabs-in-top-bar #275) — see that card's resolution note.
 lane: apps/app (owner lens views + styles) — disjoint from EFILE-A1 (functions)
 context: Nik 5-Jul reviewed the LIVE owner app: **cluttered, hard to read, NOT clean/minimalist
   like founderfirst.one/admin, AND not responsive across devices.** PENNY-UX-9 added CI design
@@ -357,7 +372,8 @@ coverage delta: extend the PENNY-UX AUDIT rows — assert: no bare authed <h1>, 
   Before/after screenshot walkthrough (desktop + 375px mobile) in the PR.
 
 ## EFILE-A1 · E-file Phase A spike — 1099-NEC transmittal via TaxBandits (sandbox)
-status: claimed:loop-insession-5jul (building)
+status: merged (pr:#265) — verified 6 Jul via `gh pr view 265` (stale "building" status left
+  behind when the session exited by PR without updating this file)
 lane: supabase/functions + migrations — disjoint from PENNY-UX-10 (app-UI)
 context: e-file research (5 Jul) — no small-SaaS income-return API exists; Phase A = 1099/94x via a
   partner API is the buyable, low-risk beachhead. Nik 5-Jul: do the Phase A spike. TaxBandits =
@@ -422,7 +438,8 @@ scope note: `set_manual_fx_rate` is admin-gated and callable today (admin sessio
   out of scope for this card.
 
 ## IQ-1-CLEANUP · Null legacy plaintext QBO tokens (post-verify) — UNBLOCKED
-status: claimed:loop-insession-5jul (building)
+status: merged (pr:#267) — verified 6 Jul via `gh pr view 267` (stale "building" status left
+  behind when the session exited by PR without updating this file)
 note: UNBLOCKED 5-Jul — the pgcrypto encrypt→decrypt roundtrip was PROVEN in PROD with the real
   Vault key (dec_qbo_token(pgp_sym_encrypt('x', qbo_token_key))='x' → true), so the encrypted path
   is verified on live crypto; safe to null legacy plaintext without waiting for a real QBO login.
@@ -496,7 +513,8 @@ context: SEC-2 shipped + is wired to signInWithOtp, but no TURNSTILE_SITE_KEY / 
   + TURNSTILE_SECRET (supabase fn secret) → redeploy. Then the Intuit "Captcha?" answer is truly Yes.
 
 ## SEC-1-CPACLOSE · MFA-gate the CPA batch-close path (Nik: YES, 5 Jul)
-status: claimed:loop-insession-5jul (building)
+status: merged (pr:#261) — verified 6 Jul via `gh pr view 261` (stale "building" status left
+  behind when the session exited by PR without updating this file)
 lane: supabase/functions (cpa-close) + supabase/migrations
 decision: **Nik 5 Jul — YES, gate it.** For consistency with the 10 other org-write paths.
 workflow: CPA (firm user) · batch month-end close · if the firm's org requires MFA and the
@@ -527,10 +545,28 @@ goal: when we go to PRODUCTION QBO, stand up a small static-IP egress proxy (or 
 centralization: the QBO API base + egress config = env/secrets, never inlined.
 
 ## PENNY-UX-9 · Owner + CPA IA restructure to the /admin design standard (POST-DEPLOY)
-status: unclaimed
-blocked-by: RV2-A2, RV2-C1, RV2-D1, W5.4 — do this AFTER all four Wave-2 features are merged +
-  deployed (the new tax-export / practice-OS / AP-bills / multi-currency surfaces must exist
-  before we restructure the IA around them). Nik ask, 4 Jul night.
+status: RESOLVED 6 Jul (loop-orch) — closed via the cumulative post-Wave-2 IA/declutter/
+  responsive PR chain, not a single dedicated build. Blocked-by (RV2-A2/C1/D1/W5.4) cleared
+  once those folded into integration pr:#243/#248. Verified against every acceptance bullet
+  below before closing (not just trusting PR titles):
+  - Zero unresolved CSS vars / zero bare authed `<h1>` / CSS-import guard: all 3 re-ran clean
+    in a fresh `origin/main` worktree this session (`pnpm check:css-vars`, `check:authed-headings`,
+    `check:css` — all OK).
+  - IA restructure to /admin's inline top-bar tabs: pr:#275 (owner+CPA app) + pr:#273 (penny
+    console). Read apps/app/src/ledger/nav.ts + lenses/{OwnerLens,CpaLens}.tsx directly — one
+    nav table per lens, no duplicate/dead tabs, no accounting vocabulary in the owner's 4
+    primary jobs.
+  - "Zero empty/duplicate tabs, real content everywhere": pr:#270 (Connections wall → chooser),
+    pr:#271 (ImportFlow wall → chooser + calm-sweep of billboard headings across Review/CPA
+    Overview/Practice Home/LearnedRules), pr:#272 (CPA long-list capping). Grepped for
+    placeholder/empty-state/TODO markers across apps/app/src — none found beyond the honestly-
+    disclosed IA-3 parallel-run placeholders (since ported to real data, see IA-3 above).
+  - Width-ladder / no-h-scroll: enforced continuously by the required `responsive` + `app-e2e`
+    CI checks (which every PR above passed) — no fixed-px layout widths found on inspection.
+  Net effect: PENNY-UX-9's goal is met on `main` today. Re-running it as a fresh dedicated card
+  would duplicate already-shipped, already-verified work and risk conflicting with the open
+  pr:#278 (same apps/app styling lane). If a *new* concrete gap surfaces, card it narrowly
+  rather than reopening this whole scope.
 scope-decision: Nik 4 Jul — revisit penny.founderfirst.one from the OWNER and CPA perspective;
   arrange/structure the tabs; match founderfirst.one/admin EXACTLY on font · alignment ·
   minimalist approach · tokens.
@@ -614,7 +650,13 @@ decision-needed: none (decisions locked 1 Jul w/ Nik)
 ## IA-2 · CPA Practice home + workflow tabs — MERGED WITH W1.4 (one card, see W1.4)
 
 ## IA-3 · Internal admin console (penny.../admin mirror) — BUILD (Nik: build now, 5 Jul)
-status: claimed:loop-insession-5jul (building — slice 1 of N)
+status: merged (pr:#262 slice 1 — Support tab; pr:#273 console design match to /admin's inline
+  top-bar tabs; pr:#277 ported Audience/Analytics/Penny from parallel-run placeholders to real
+  data via additive is_platform_staff-gated RPCs). All 4 tabs + Settings now live with real data;
+  founderfirst.one/admin untouched throughout (regression-locked). Verified 6 Jul via `gh pr view`
+  on each — the "slice 1 of N" status was never updated as later slices landed. A signup-approval
+  gate (pr:#274) shipped adjacent to this work (staff Approvals queue in the console) — a Nik-
+  directed feature, not itself an IA-3 subtask, noted here for traceability only.
 lane: apps/app (penny/admin console) — disjoint from cpa-close (functions) + e-file (research)
 decision: **Nik 5 Jul — BUILD NOW, additive parallel-run.** Never break founderfirst.one/admin.
 workflow: platform staff · "run the business from inside Penny" · penny.../admin mirrors the 4

@@ -62,7 +62,7 @@ export default function Receipts({
       <CaptureControl orgId={orgId} onDone={bump} />
 
       <div className="receipts-queue">
-        <h3 className="section-h sm">{R.unmatchedTitle}</h3>
+        <h3 className="section-h">{R.unmatchedTitle}</h3>
         <p className="muted sm">{R.unmatchedLead}</p>
         {unmatched.isLoading ? (
           <p className="muted">{COPY.common.loading}</p>

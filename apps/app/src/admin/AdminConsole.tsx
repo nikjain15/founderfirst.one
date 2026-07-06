@@ -25,8 +25,8 @@ import { COPY } from "../copy";
 import {
   useStaffOrgs, useStaffTickets,
   useStaffPendingOrgs, useSetOrgApproval, type PendingOrg,
-  useStaffWaitlist, useStaffPlatformStats, useStaffContent,
-  type WaitlistRow, type ContentRow,
+  useStaffWaitlist, useStaffPlatformStats, useStaffContent, useStaffAdminAudit,
+  type WaitlistRow, type ContentRow, type AuditRow,
   type StaffOrg, type StaffTicket, type TicketStatus,
 } from "../staff/api";
 import { CompactEmpty } from "../ledger/CompactEmpty";
@@ -64,6 +64,7 @@ export default function AdminConsole({ isStaff }: { isStaff: boolean }) {
             : tab === "audience" ? <Audience />
             : tab === "analytics" ? <Analytics />
             : tab === "penny" ? <PennyContent />
+            : tab === "audit" ? <AuditLog />
             : <Overview />}
         </section>
       </main>
@@ -446,6 +447,44 @@ function PennyContent() {
                       <td>{r.surface}</td>
                       <td>{r.kind}</td>
                       <td>{r.updated_at ? r.updated_at.slice(0, 10) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      <LiveAdminLink />
+    </div>
+  );
+}
+
+// ── Audit log — the platform audit trail (read-only, staff_list_admin_audit) ──
+function AuditLog() {
+  const A = C.audit;
+  const q = useStaffAdminAudit(true);
+  const rows = q.data ?? [];
+  return (
+    <div role="tabpanel" aria-labelledby="console-audit">
+      <ConsoleHead tab="audit" title={A.heading} sub={A.sub} />
+      {q.isLoading ? <p className="muted">{A.loading}</p>
+        : q.isError ? <p className="error">{A.error}</p>
+        : rows.length === 0 ? <CompactEmpty text={A.empty} />
+        : (
+          <>
+            <div className="panel-toolbar"><span className="muted">{A.total(rows.length)}</span></div>
+            <div className="table-wrap" tabIndex={0} role="region" aria-label={A.tableAria}>
+              <table className="console-table">
+                <thead><tr>
+                  <th>{A.colWhen}</th><th>{A.colActor}</th><th>{A.colAction}</th><th>{A.colTarget}</th>
+                </tr></thead>
+                <tbody>
+                  {rows.map((r: AuditRow) => (
+                    <tr key={r.id}>
+                      <td>{r.created_at ? r.created_at.slice(0, 16).replace("T", " ") : "—"}</td>
+                      <td>{r.actor_email ?? "—"}</td>
+                      <td>{r.action}</td>
+                      <td>{r.target_type ? `${r.target_type}${r.target_id ? ` · ${r.target_id}` : ""}` : "—"}</td>
                     </tr>
                   ))}
                 </tbody>

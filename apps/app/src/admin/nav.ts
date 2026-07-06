@@ -15,7 +15,7 @@
 
 /** Every console tab id. `overview` + `support` are live-wired; the rest mirror
  *  the live admin IA and are parallel-run placeholders in this phase. */
-export type ConsoleTabId = "overview" | "support" | "audience" | "analytics" | "penny";
+export type ConsoleTabId = "overview" | "support" | "audience" | "analytics" | "penny" | "audit";
 
 export interface ConsoleTab {
   id: ConsoleTabId;
@@ -34,6 +34,7 @@ export const CONSOLE_TABS: ConsoleTab[] = [
   { id: "audience", live: true },  // waitlist via staff_list_waitlist
   { id: "analytics", live: true }, // at-a-glance counts via staff_platform_stats
   { id: "penny", live: true },     // live content surfaces via staff_list_content
+  { id: "audit", live: true },     // platform audit log via staff_list_admin_audit
 ];
 
 /** The tab landed on first. */

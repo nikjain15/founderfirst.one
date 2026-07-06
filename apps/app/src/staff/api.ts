@@ -166,6 +166,22 @@ export function useStaffWaitlist(enabled = true) {
   });
 }
 
+export interface AuditRow {
+  id: string; actor_email: string | null; action: string;
+  target_type: string | null; target_id: string | null; created_at: string;
+}
+export function useStaffAdminAudit(enabled = true) {
+  return useQuery({
+    queryKey: ["staff-admin-audit"],
+    enabled,
+    queryFn: async (): Promise<AuditRow[]> => {
+      const { data, error } = await getClient().rpc("staff_list_admin_audit", { p_limit: 200 });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as AuditRow[];
+    },
+  });
+}
+
 export interface PlatformStats {
   orgs: number; pending_signups: number; waitlist: number;
   open_tickets: number; live_posts: number; live_pages: number;

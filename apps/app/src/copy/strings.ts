@@ -158,6 +158,7 @@ export const COPY = {
   // ── Settings page ──────────────────────────────────────────────────────────
   settings: {
     eyebrow: "Settings",
+    lead: "Manage who can see your books, how entries are reviewed, and how your account is protected.",
   },
 
   // ── Security (SEC-1: two-factor authentication) ───────────────────────────

@@ -22,8 +22,11 @@ set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-00000000e1e1",
 select ok(
   (select count(*) from staff_list_admin_audit(200)) >= 2,
   'staff sees audit rows');
+-- Newest-first: among our two rows (ignoring the admins-trigger row that the
+-- admin insert above also logs), the RPC's order must put the newer one first.
 select is(
-  (select action from staff_list_admin_audit(200) limit 1),
+  (select action from staff_list_admin_audit(200)
+     where action in ('ticket.replied', 'admin.invited') limit 1),
   'ticket.replied', 'audit is newest-first');
 reset "request.jwt.claims";
 

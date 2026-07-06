@@ -149,3 +149,36 @@ export function useCloseBreakGlass() {
     },
   });
 }
+
+// ── Signup approval queue (staff) ─────────────────────────────────────────────
+export interface PendingOrg {
+  id: string; name: string; type: string; created_at: string; owner_email: string | null;
+}
+
+export function useStaffPendingOrgs(enabled = true) {
+  return useQuery({
+    queryKey: ["staff-pending-orgs"],
+    enabled,
+    queryFn: async (): Promise<PendingOrg[]> => {
+      const { data, error } = await getClient().rpc("staff_list_pending_orgs");
+      if (error) throw new Error(error.message);
+      return (data ?? []) as PendingOrg[];
+    },
+  });
+}
+
+export function useSetOrgApproval() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { orgId: string; status: "approved" | "declined" }) => {
+      const { error } = await getClient().rpc("set_org_approval", {
+        p_org: v.orgId, p_status: v.status,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["staff-pending-orgs"] });
+      void qc.invalidateQueries({ queryKey: ["staff-orgs"] });
+    },
+  });
+}

@@ -371,6 +371,17 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
 /* ── ledger workspace ─────────────────────────────────────────── */
 .ledger { display: flex; flex-direction: column; gap: 1rem; align-self: stretch; }
 .ledger-head { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+
+/* Approval gate — the calm "we're reviewing your request" screen a pending signup
+   sees instead of the books (signup approval gate). */
+.pending-review .pending-card {
+  margin-top: var(--space-4); padding: var(--pad-card); max-width: 46rem;
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-card);
+  background: var(--white);
+  display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start;
+}
+.pending-review .pending-body { font-size: var(--fs-body); color: var(--ink); line-height: 1.6; }
+
 .readonly-chip {
   font-size: var(--fs-micro); font-weight: var(--fw-semibold);
   letter-spacing: var(--ls-chip); text-transform: uppercase;
@@ -1611,6 +1622,11 @@ button.ghost.sm, .ghost.sm {
 
 .admin-console .console-overview { margin-top: var(--space-4); }
 .admin-console .console-overview .section-h { margin-top: 0; }
+/* Approvals queue — the signup gate, atop Overview. */
+.console-approvals { margin-bottom: var(--space-5); }
+.console-approvals-head { display: flex; align-items: baseline; gap: var(--space-3); }
+.console-approvals-head .section-h { margin: 0; }
+.ap-actions { display: flex; gap: var(--space-2); justify-content: flex-end; white-space: nowrap; }
 .console-table { width: 100%; border-collapse: collapse; font-size: var(--fs-ui); }
 .console-table th, .console-table td {
   text-align: left; padding: var(--space-2) var(--space-3);

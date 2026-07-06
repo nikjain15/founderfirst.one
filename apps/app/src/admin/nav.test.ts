@@ -17,9 +17,9 @@ import { COPY } from "../copy";
 import { SITE } from "@ff/site";
 
 describe("admin console nav (IA-3 · mirrors the live admin IA)", () => {
-  it("presents Overview + the four admin jobs, in order", () => {
+  it("presents Overview + the admin jobs, in order", () => {
     expect(CONSOLE_TABS.map((t) => t.id)).toEqual([
-      "overview", "support", "audience", "analytics", "penny",
+      "overview", "support", "audience", "analytics", "penny", "audit",
     ]);
   });
 
@@ -40,7 +40,7 @@ describe("admin console nav (IA-3 · mirrors the live admin IA)", () => {
   it("lands on Overview; all primary tabs are now live-wired to real staff reads", () => {
     expect(DEFAULT_CONSOLE_TAB).toBe("overview");
     const live = CONSOLE_TABS.filter((t) => t.live).map((t) => t.id);
-    expect(live).toEqual(["overview", "support", "audience", "analytics", "penny"]);
+    expect(live).toEqual(["overview", "support", "audience", "analytics", "penny", "audit"]);
   });
 
   it("every primary tab reads real data (no parallel-run placeholders left)", () => {

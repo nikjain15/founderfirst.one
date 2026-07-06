@@ -9,6 +9,8 @@
  * the control (ARCHITECTURE.md §1, §6).
  */
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { useTopbarSlot } from "../components/TopbarSlot";
 import {
   approveEntry, logReportExport, newIdempotencyKey, postEntry, reverseEntry, setPeriod,
   upsertAccount, useAccounts, useEntries, useLedgerRefresh, usePeriods,
@@ -94,14 +96,14 @@ const entryTotal = (e: JournalEntry) =>
   (e.lines ?? []).filter((l) => l.side === "D").reduce((s, l) => s + l.amount_minor, 0);
 
 export default function Ledger({
-  org, canWrite, nav = "owner", defaultTabId, initialSurface, eyebrow, onInvite,
+  org, canWrite, nav = "owner", defaultTabId, initialSurface, onInvite,
 }: {
   org: { id: string; name: string };
   canWrite: boolean;
   nav?: Nav;                 // which navigation to present (owner jobs vs CPA workflow)
   defaultTabId?: string;     // which primary tab to land on (else the first visible one)
   initialSurface?: Surface;  // land directly on a leaf surface (e.g. the CPA practice queue routes here)
-  eyebrow?: string;
+  eyebrow?: string;          // accepted for API stability; the org name now lives in the top-bar switcher
   onInvite?: () => void;     // owner-only: open Settings to invite an accountant (top-bar ⚙️ menu)
 }) {
   // Visible primary tabs for this lens, with write-only tabs hidden for read-only.
@@ -111,6 +113,9 @@ export default function Ledger({
   // Remember the last sub-surface per parent tab (Advanced / Books), so returning
   // to it lands where you left. Defaults to the parent's first visible sub.
   const [sub, setSub] = useState<Surface | null>(null);
+  // The primary tab strip renders up in the shared top bar (founderfirst.one/admin
+  // pattern) via a portal into TopbarSlot; falls back to inline if no slot exists.
+  const { slot } = useTopbarSlot();
 
   const activeTab = tabs.find((t) => t.id === tabId) ?? tabs[0];
   const subs = visibleSubsOf(activeTab, canWrite);
@@ -151,18 +156,22 @@ export default function Ledger({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialSurface]);
 
+  const primaryTabs = (
+    <TabStrip items={tabs} active={tabId} onSelect={setTabId}
+      label={COPY.ledger.sectionsAria} idPrefix="ltab" />
+  );
+
   return (
     <section className="lens ledger">
-      <header className="ledger-head">
-        {eyebrow && <p className="eyebrow lens-eyebrow">{eyebrow}</p>}
-        <h1 className="page-title">{org.name}</h1>
-        {!canWrite && (
+      {/* Primary tabs render in the top bar (admin pattern). The org name lives in
+          the switcher up there, so the old billboard org-name heading is retired;
+          a read-only CPA still sees the read-only chip. */}
+      {slot ? createPortal(primaryTabs, slot) : primaryTabs}
+      {!canWrite && (
+        <p className="ledger-head">
           <span className="readonly-chip">{COPY.ledger.readonlyChip}</span>
-        )}
-      </header>
-
-      <TabStrip items={tabs} active={tabId} onSelect={setTabId}
-        label={COPY.ledger.sectionsAria} idPrefix="ltab" />
+        </p>
+      )}
 
       {error && <p className="error">{COPY.ledger.loadError}</p>}
       {loading && !error && <p className="muted">{COPY.common.loadingBooks}</p>}

@@ -49,20 +49,13 @@ export default function AdminConsole({ isStaff }: { isStaff: boolean }) {
     );
   }
 
+  // founderfirst.one/admin pattern: one top nav bar carries the brand + the primary
+  // tabs inline; each module owns its own eyebrow + heading below (no global title).
   return (
     <div className="shell">
-      <ConsoleBar email={session?.user.email} signOut={signOut} />
+      <ConsoleBar email={session?.user.email} signOut={signOut} active={tab} onSelect={setTab} />
       <main className="workspace">
         <section className="lens admin-console">
-          <header className="ledger-head">
-            <p className="eyebrow lens-eyebrow">{C.eyebrow}</p>
-            <h1 className="page-title">{C.title}</h1>
-            <p className="page-sub">{C.sub}</p>
-            <span className="readonly-chip staff-chip">{C.staffChip}</span>
-          </header>
-
-          <ConsoleTabs active={tab} onSelect={setTab} />
-
           {isTabLive(tab)
             ? (tab === "support" ? <Support /> : <Overview />)
             : <Placeholder tab={tab} />}
@@ -72,15 +65,23 @@ export default function AdminConsole({ isStaff }: { isStaff: boolean }) {
   );
 }
 
-function ConsoleBar({ email, signOut }: { email?: string; signOut: () => Promise<void> | void }) {
+function ConsoleBar({
+  email, signOut, active, onSelect,
+}: {
+  email?: string; signOut: () => Promise<void> | void;
+  active?: ConsoleTabId; onSelect?: (id: ConsoleTabId) => void;
+}) {
   return (
-    <header className="topbar">
+    <header className="topbar console-topbar">
       <div className="topbar-inner">
         <Link className="brand" to="/" title={COPY.nav.brandTitle(SITE.company)}>
           <span className="p-mark p-mark-sm" aria-hidden="true">P</span>
           {COPY.nav.penny}
         </Link>
         <span className="role-pill role-staff">{C.roleStaff}</span>
+        {active !== undefined && onSelect && (
+          <ConsoleTabs active={active} onSelect={onSelect} />
+        )}
         <span className="spacer" />
         <AccountMenu email={email}>
           <div className="acct-sep" />
@@ -95,15 +96,16 @@ function ConsoleBar({ email, signOut }: { email?: string; signOut: () => Promise
   );
 }
 
-/** Ink-active tab strip (arrow-key navigable) — same pattern as the ledger lens. */
+/** Primary tabs — inline in the nav bar (founderfirst.one/admin pattern), ink-active
+ *  underline, arrow-key navigable. Sub-tabs (when a module has them) render below. */
 function ConsoleTabs({ active, onSelect }: { active: ConsoleTabId; onSelect: (id: ConsoleTabId) => void }) {
   return (
-    <nav className="ledger-tabs" role="tablist" aria-label={C.tabsAria}>
+    <nav className="console-nav" role="tablist" aria-label={C.tabsAria}>
       {CONSOLE_TABS.map((t, i) => (
         <button
           key={t.id} role="tab" id={`console-${t.id}`}
           aria-selected={active === t.id} tabIndex={active === t.id ? 0 : -1}
-          className={`ledger-tab${active === t.id ? " on" : ""}`}
+          className={`console-navlink${active === t.id ? " active" : ""}`}
           onClick={() => onSelect(t.id)}
           onKeyDown={(e) => {
             if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) return;
@@ -124,6 +126,18 @@ function ConsoleTabs({ active, onSelect }: { active: ConsoleTabId; onSelect: (id
   );
 }
 
+/** Per-page header — eyebrow over a restrained serif title, matching the live admin
+ *  (e.g. "STAFF · SUPPORT" / "What needs you."). No global "Admin console" billboard. */
+function ConsoleHead({ tab, title, sub }: { tab: ConsoleTabId; title: string; sub?: string }) {
+  return (
+    <header className="console-head">
+      <p className="eyebrow">{C.pageEyebrow[tab]}</p>
+      <h1 className="page-title">{title}</h1>
+      {sub && <p className="page-sub">{sub}</p>}
+    </header>
+  );
+}
+
 // ── Overview — the one live-wired module (read-only over staff_list_orgs) ──────
 function Overview() {
   const orgs = useStaffOrgs(true);
@@ -137,7 +151,7 @@ function Overview() {
 
   return (
     <div className="console-overview" role="tabpanel" aria-labelledby="console-overview">
-      <h3 className="section-h">{C.overview.heading}</h3>
+      <ConsoleHead tab="overview" title={C.overview.heading} />
       <p className="muted sm">{C.overview.breakGlassNote}</p>
       <p><Link className="ghost sm" to="/staff">{C.overview.openConsole}</Link></p>
 
@@ -197,8 +211,7 @@ function Support() {
 
   return (
     <div className="console-support" role="tabpanel" aria-labelledby="console-support">
-      <h3 className="section-h">{S.heading}</h3>
-      <p className="muted sm">{S.sub}</p>
+      <ConsoleHead tab="support" title={S.heading} sub={S.sub} />
       <p className="muted sm">{S.liveNote}</p>
 
       <nav className="console-filters" role="group" aria-label={S.filtersAria}>
@@ -270,14 +283,17 @@ function Support() {
 function Placeholder({ tab }: { tab: ConsoleTabId }) {
   const label = C.tabs[tab];
   return (
-    <div className="console-placeholder" role="tabpanel" aria-labelledby={`console-${tab}`}>
-      <span className="readonly-chip">{C.placeholder.badge}</span>
-      <p className="muted">{C.placeholder.body(label)}</p>
-      <p>
-        <a className="ghost" href={SITE.adminUrl} target="_blank" rel="noreferrer">
-          {C.placeholder.openLive}
-        </a>
-      </p>
+    <div role="tabpanel" aria-labelledby={`console-${tab}`}>
+      <ConsoleHead tab={tab} title={label} />
+      <div className="console-placeholder">
+        <span className="readonly-chip">{C.placeholder.badge}</span>
+        <p className="muted">{C.placeholder.body(label)}</p>
+        <p>
+          <a className="ghost" href={SITE.adminUrl} target="_blank" rel="noreferrer">
+            {C.placeholder.openLive}
+          </a>
+        </p>
+      </div>
     </div>
   );
 }

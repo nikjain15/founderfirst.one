@@ -525,8 +525,26 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
 /* Settings tab — owner-only controls (invite accountant, review-before-post).
    The sections carry their own top border/margin for stacking; drop it on the
    first one so the panel starts clean. */
-.ledger-settings { max-width: 32rem; margin-top: 1.5rem; }
-.ledger-settings > :first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.settings-lead { margin: var(--space-2) 0 0; max-width: 40rem; }
+/* One card per setting — each control reads as its own panel (admin pattern),
+   not sections split by hairlines. */
+.ledger-settings { max-width: 40rem; margin-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
+.settings-card {
+  background: var(--white); border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); padding: var(--pad-card);
+}
+/* The card provides separation now, so drop each child's own top divider/rhythm. */
+.settings-card > :first-child { margin-top: 0; padding-top: 0; border-top: none; }
+/* Security — the active step (status / QR enrol / recovery codes) sits on a
+   bounded white card instead of floating on the canvas. */
+.security-card {
+  background: var(--white); border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); padding: var(--pad-card); margin-top: var(--space-3);
+}
+.security-card > .security-status:first-child,
+.security-card > .security-enroll:first-child,
+.security-card > .security-recovery:first-child,
+.security-card > .security-confirm:first-child { margin-top: 0; }
 
 /* First-time invite nudge on the Overview (replaces invite-on-every-page). */
 .invite-nudge {

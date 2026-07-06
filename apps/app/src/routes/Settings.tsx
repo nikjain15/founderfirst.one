@@ -31,11 +31,14 @@ export default function Settings() {
               <p className="eyebrow lens-eyebrow">{COPY.settings.eyebrow}</p>
               <h1 className="page-title">{activeOrg.name}</h1>
             </header>
+            <p className="muted settings-lead">{COPY.settings.lead}</p>
+            {/* One card per setting so each reads as its own panel (admin pattern),
+                not a stack of sections divided by faint hairlines. */}
             <div className="ledger-settings">
-              <InviteCpa orgId={activeOrg.id} />
-              <ApprovalSetting orgId={activeOrg.id} />
-              <MultiCurrencySetting orgId={activeOrg.id} />
-              <MfaRequiredSetting orgId={activeOrg.id} />
+              <div className="settings-card"><InviteCpa orgId={activeOrg.id} /></div>
+              <div className="settings-card"><ApprovalSetting orgId={activeOrg.id} /></div>
+              <div className="settings-card"><MultiCurrencySetting orgId={activeOrg.id} /></div>
+              <div className="settings-card"><MfaRequiredSetting orgId={activeOrg.id} /></div>
             </div>
           </section>
         )}

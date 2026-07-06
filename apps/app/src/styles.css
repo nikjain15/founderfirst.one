@@ -662,6 +662,17 @@ button.ghost.sm, .ghost.sm {
 /* Segmented report picker (4 views). Fluid-first: the pill never widens the
    page — when its buttons can't fit (narrow phones) it scrolls inside its own
    max-width instead of overflowing. Labels stay whole (no clipped text). */
+/* The whole Reports surface sits on one bounded white card (admin card-on-canvas
+   pattern) instead of floating bare on the app canvas — picker, date controls and
+   the statement body read as one panel. */
+.reports {
+  background: var(--white);
+  border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card);
+  padding: var(--pad-card);
+  max-width: 52rem;
+  display: flex; flex-direction: column; gap: var(--space-4);
+}
 .report-seg {
   display: flex; max-width: 100%; overflow-x: auto;
   border: var(--bw-hair) solid var(--line); border-radius: var(--r-pill);

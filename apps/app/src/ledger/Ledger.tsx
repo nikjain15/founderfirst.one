@@ -704,9 +704,6 @@ function Journal({
           </button>
         )}
       </div>
-      {canWrite && liveAccounts.length < 2 && (
-        <p className="muted sm">{COPY.journal.needTwoAccounts}</p>
-      )}
       {posting && canWrite && (
         <NewEntryForm
           orgId={orgId} accounts={liveAccounts}
@@ -716,7 +713,13 @@ function Journal({
       {err && <p className="error sm">{err}</p>}
 
       {entries.length === 0 ? (
-        <Empty title={COPY.journal.noEntriesTitle} body={COPY.journal.noEntriesBody} />
+        // One calm empty state, not three stacked messages: if the books have no
+        // accounts yet that's the real next step, so say that; otherwise invite
+        // the first entry.
+        <Empty
+          title={COPY.journal.noEntriesTitle}
+          body={canWrite && liveAccounts.length < 2 ? COPY.journal.needTwoAccounts : COPY.journal.noEntriesBody}
+        />
       ) : (
         <ul className="je-list">
           {entries.map((e) => {

@@ -17,12 +17,17 @@ import {
   type ClientCounts, type QueueItem,
 } from "./practiceQueue";
 import MonthEndClose from "./MonthEndClose";
+import { ShowMore } from "./ShowMore";
 import { COPY } from "../copy";
 
 /** The firm landing has two modes, toggled in-page (no new top-level nav):
  *  the ranked cross-client work queue (W1.4), and the firm-level month-end close
  *  (RV2-C1). Both operate over the SAME firm client set. */
 type Mode = "queue" | "close";
+
+// A firm can have many clients / queue items; show a calm first screen, reveal on demand.
+const QUEUE_CAP = 8;
+const CLIENTS_CAP = 12;
 
 /** open(clientOrgId, surface) — switch to a client's books on a specific tab. */
 export default function PracticeHome({
@@ -32,6 +37,8 @@ export default function PracticeHome({
   open: (clientOrgId: string, surface: QueueItem["surface"]) => void;
 }) {
   const [mode, setMode] = useState<Mode>("queue");
+  const [queueAll, setQueueAll] = useState(false);
+  const [clientsAll, setClientsAll] = useState(false);
   const queue = usePracticeQueue(firm.id);
   const counts = useClientCounts(firm.id);
 
@@ -42,6 +49,8 @@ export default function PracticeHome({
   const items = queue.data ?? [];
   const active = useMemo(() => clients.filter((c) => c.total > 0), [clients]);
   const clear = useMemo(() => clients.filter((c) => c.total === 0), [clients]);
+  const shownItems = queueAll ? items : items.slice(0, QUEUE_CAP);
+  const shownActive = clientsAll ? active : active.slice(0, CLIENTS_CAP);
 
   return (
     <section className="lens practice">
@@ -96,20 +105,26 @@ export default function PracticeHome({
             <>
               <p className="eyebrow">{COPY.practice.queueHeading}</p>
               <ul className="pq-list" aria-label={COPY.practice.queueAria}>
-                {items.map((it) => (
+                {shownItems.map((it) => (
                   <QueueRow key={`${it.kind}-${it.ref_id}`} item={it} onOpen={open} />
                 ))}
               </ul>
+              {items.length > QUEUE_CAP && (
+                <ShowMore total={items.length} expanded={queueAll} onToggle={() => setQueueAll((v) => !v)} />
+              )}
             </>
           )}
 
           {/* ── Clients (with counts) — the switcher's list, in-page ───────── */}
           <p className="eyebrow pq-clients-h">{COPY.practice.clientsHeading}</p>
           <ul className="pq-clients">
-            {active.map((c) => (
+            {shownActive.map((c) => (
               <ClientCard key={c.client_org_id} client={c} onOpen={open} />
             ))}
           </ul>
+          {active.length > CLIENTS_CAP && (
+            <ShowMore total={active.length} expanded={clientsAll} onToggle={() => setClientsAll((v) => !v)} />
+          )}
 
           {clear.length > 0 && (
             <details className="pq-archive">

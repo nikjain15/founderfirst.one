@@ -23,6 +23,9 @@ export const COPY = {
     loading: "Loading…",
     loadingWorkspaces: "Loading your workspaces…",
     loadingBooks: "Loading the books…",
+    // Long lists show a calm first screen, then reveal the rest on demand.
+    showAll: (n: number) => `Show all ${n}`,
+    showFewer: "Show fewer",
     tryAgain: "Try again",
     reload: "Reload",
     cancel: "Cancel",

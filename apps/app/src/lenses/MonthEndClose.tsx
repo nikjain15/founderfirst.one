@@ -16,10 +16,13 @@ import {
   type CloseReadiness, type BatchCloseResult,
 } from "./monthEndCloseApi";
 import type { QueueItem } from "./practiceQueue";
+import { ShowMore } from "./ShowMore";
 import { COPY } from "../copy";
 
 const C = COPY.monthEnd;
 const BLOCKER_KEYS = ["uncategorized", "unreconciled", "pending_review", "open_flags"] as const;
+// Show a calm first screen of clients; the batch bar still acts on ALL ready clients.
+const ME_CAP = 15;
 
 export default function MonthEndClose({
   firm, open,
@@ -32,6 +35,7 @@ export default function MonthEndClose({
   const refresh = useCloseRefresh(firm.id);
 
   const rows = readiness.data ?? [];
+  const [rowsAll, setRowsAll] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<BatchCloseResult[] | null>(null);
@@ -120,7 +124,7 @@ export default function MonthEndClose({
 
           {/* ── the per-client checklist ─────────────────────────────────── */}
           <ul className="me-list" aria-label={C.listAria}>
-            {rows.map((r) => (
+            {(rowsAll ? rows : rows.slice(0, ME_CAP)).map((r) => (
               <ClientRow
                 key={r.client_org_id}
                 row={r}
@@ -131,6 +135,9 @@ export default function MonthEndClose({
               />
             ))}
           </ul>
+          {rows.length > ME_CAP && (
+            <ShowMore total={rows.length} expanded={rowsAll} onToggle={() => setRowsAll((v) => !v)} />
+          )}
         </>
       )}
 

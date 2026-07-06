@@ -2,11 +2,10 @@
 
 body {
   margin: 0;
-  /* Authed app rides a cleaner near-white canvas (--app-canvas) instead of the
-     warm cream field — matches the clean founderfirst.one/admin surface. White
-     cards keep their border + shadow so contrast holds. Marketing is unaffected
-     (separate stylesheet + body). */
-  background: var(--app-canvas);
+  /* Warm cream field with white cards — identical to founderfirst.one/admin, so
+     the whole product (owner · CPA · admin console) reads as one surface (Nik's
+     call: consistency with admin). Marketing already uses --paper too. */
+  background: var(--paper);
   color: var(--ink-2);
   font-family: var(--font-sans);
   font-size: var(--fs-body);

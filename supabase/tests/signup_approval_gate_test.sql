@@ -49,9 +49,10 @@ select ok(
 
 -- ── approve/decline is STAFF-ONLY ─────────────────────────────────────────────
 set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-0000000a00ff","email":"outsider@approval.dev","role":"authenticated"}';
+-- throws_ok: 2nd arg = SQLSTATE (5 chars), 3rd = errmsg (NULL = don't check), 4th = desc.
 select throws_ok($$
   select set_org_approval((select id from organizations where name = 'PendingCo'), 'approved')
-$$, '42501',
+$$, '42501', NULL,
    'APPROVAL-STAFF-ONLY: a non-staff caller cannot approve');
 
 select is(

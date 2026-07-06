@@ -471,7 +471,8 @@ a.acct-item, a.acct-item:visited { color: var(--ink-2); }
       PENNY-UX-10: grouped into four scannable clusters (get-data-in · sell-channels
       · money-in/out · sharing) with the /admin eyebrow→cards rhythm, replacing the
       flat billboard-<h2> mega-scroll. Tokens only, fluid, no fixed px. ─────────── */
-.connections { display: flex; flex-direction: column; gap: var(--space-8); }
+.connections { display: flex; flex-direction: column; gap: var(--space-6); max-width: 52rem; }
+.conn-lead { margin: 0; max-width: 44rem; }
 .connections-cluster { display: flex; flex-direction: column; gap: var(--space-4); }
 /* Cluster label — the section eyebrow, with a hairline under it (admin's section
    rhythm) so each cluster reads as a group without a heavy heading. */

@@ -369,6 +369,8 @@ function Connections({
   ];
   return (
     <div className="connections conn-chooser">
+      {/* A short note on what this screen is for (Nik: add small explanatory notes). */}
+      <p className="muted sm conn-lead">{COPY.connections.lead}</p>
       {clusters.map((cluster) => (
         <section className="connections-cluster" key={cluster} aria-label={cluster}>
           <p className="eyebrow conn-cluster-h">{cluster}</p>

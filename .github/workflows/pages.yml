@@ -123,6 +123,14 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # GitHub Pages' CDN publish step intermittently 500s ("Deployment
+          # failed, try again later"). The action gives up after error_count
+          # consecutive transient errors (default 10). Raise the tolerance +
+          # timeout so a flaky window rides out instead of failing the run —
+          # this is the marketing-site deploy; the penny app deploys separately.
+          timeout: 600000
+          error_count: 30
 
   # penny.founderfirst.one — the root-hosted (base "/") build of apps/app on the
   # Cloudflare Pages project "penny". founderfirst.one/app/ ships the same code at

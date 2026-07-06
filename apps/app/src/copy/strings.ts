@@ -61,6 +61,16 @@ export const COPY = {
   },
 
   // ── Home / workspaces ──────────────────────────────────────────────────────
+  // Approval gate — a new signup's books are held until platform staff approve.
+  pending: {
+    eyebrow: "Under review",
+    title: "We're getting your books ready",
+    body: "Thanks for signing up for Penny. We take a quick look at every new account before it goes live — it keeps the platform trustworthy for everyone. We'll email you the moment you're approved, usually within a day.",
+    checkBack: "You can close this and come back later — nothing's lost.",
+    declinedTitle: "We couldn't approve this account",
+    declinedBody: (email: string) =>
+      `We weren't able to approve access for this business right now. If you think that's a mistake, email ${email} and we'll take another look.`,
+  },
   home: {
     welcome: "Welcome.",
     welcomeLead: "Create your first organization and Penny will start keeping your books.",
@@ -1514,6 +1524,22 @@ export const COPY = {
       audience: "Staff · Audience",
       analytics: "Staff · Analytics",
       penny: "Staff · Penny",
+    },
+    // Approvals — the signup queue (new orgs pending staff approval before books go live).
+    approvals: {
+      heading: "Pending signups",
+      sub: "New accounts waiting for approval before their books go live.",
+      empty: "No signups waiting — you're all clear.",
+      count: (n: number) => `${n} waiting`,
+      colBusiness: "Business",
+      colType: "Type",
+      colOwner: "Owner",
+      colWhen: "Requested",
+      approve: "Approve",
+      decline: "Decline",
+      working: "Working…",
+      error: "Couldn't load pending signups.",
+      declineConfirm: "Decline this signup? They'll be told we couldn't approve access.",
     },
     // Overview — the one live-wired module this phase (reads staff_list_orgs).
     overview: {

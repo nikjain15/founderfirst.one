@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
   // capped, and double-submit-deduped — see 20260630130000_org_create_atomic.sql.
   const { data: org, error: rpcErr } = await svc
     .rpc("create_org_atomic", { p_user: user.id, p_type: type, p_name: name })
-    .select("id,name,type")
+    .select("id,name,type,approval_status")
     .single();
 
   if (rpcErr || !org) {
@@ -85,5 +85,47 @@ Deno.serve(async (req) => {
     return json({ error: "create_failed", detail: msg }, 400);
   }
 
+  // A new org lands 'pending' (signup approval gate). Tell Nik so he can approve it:
+  // email to founder@ + a Discord ping. Best-effort — a notify failure never blocks
+  // the signup (the org is also visible in the console Approvals queue regardless).
+  if (org.approval_status === "pending") {
+    try {
+      await notifyPendingSignup({ name: org.name, type: org.type, ownerEmail: user.email ?? "unknown" });
+    } catch (e) {
+      console.error("pending-signup notify failed (non-fatal):", e);
+    }
+  }
+
   return json({ org }, 201);
 });
+
+/** Notify staff of a new signup awaiting approval. Both channels are best-effort. */
+async function notifyPendingSignup(s: { name: string; type: string; ownerEmail: string }) {
+  const line = `New ${s.type} signup pending approval: "${s.name}" — ${s.ownerEmail}. Approve or decline in penny.founderfirst.one/admin.`;
+
+  // 1 · Email to the founder inbox via Resend (raw send — no template needed).
+  const resendKey = Deno.env.get("RESEND_API_KEY");
+  const from = Deno.env.get("NOTIFY_FROM");
+  if (resendKey && from) {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${resendKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to: ["founder@founderfirst.one"],
+        subject: `New signup pending approval — ${s.name}`,
+        text: line,
+      }),
+    }).catch((e) => console.error("resend notify failed:", e));
+  }
+
+  // 2 · Discord ping via a webhook (set DISCORD_ADMIN_WEBHOOK to enable).
+  const discord = Deno.env.get("DISCORD_ADMIN_WEBHOOK");
+  if (discord) {
+    await fetch(discord, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: `🟡 ${line}` }),
+    }).catch((e) => console.error("discord notify failed:", e));
+  }
+}

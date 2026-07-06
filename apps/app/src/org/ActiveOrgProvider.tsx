@@ -20,8 +20,9 @@ export type OrgType = "business" | "firm";
 export type MemberRole = "owner" | "member" | "firm_admin" | "cpa";
 export type Access = "read_only" | "full";
 export type Lens = "owner" | "cpa";
+export type ApprovalStatus = "pending" | "approved" | "declined";
 
-export interface Org { id: string; name: string; type: OrgType; }
+export interface Org { id: string; name: string; type: OrgType; approval_status: ApprovalStatus; }
 export interface RoleInfo {
   lens: Lens;
   role: MemberRole;
@@ -81,7 +82,7 @@ export function ActiveOrgProvider({ children }: { children: ReactNode }) {
     queryFn: async () => {
       const sb = getClient();
       const [orgsRes, memRes, engRes] = await Promise.all([
-        sb.from("organizations").select("id,name,type").order("name"),
+        sb.from("organizations").select("id,name,type,approval_status").order("name"),
         sb.from("memberships").select("org_id,role").eq("user_id", userId),
         sb.from("engagements").select("client_org_id,access").eq("status", "active"),
       ]);

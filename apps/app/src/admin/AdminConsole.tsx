@@ -24,8 +24,10 @@ import { SITE } from "@ff/site";
 import { COPY } from "../copy";
 import {
   useStaffOrgs, useStaffTickets,
+  useStaffPendingOrgs, useSetOrgApproval, type PendingOrg,
   type StaffOrg, type StaffTicket, type TicketStatus,
 } from "../staff/api";
+import { CompactEmpty } from "../ledger/CompactEmpty";
 import { CONSOLE_TABS, DEFAULT_CONSOLE_TAB, consoleView, isTabLive, type ConsoleTabId } from "./nav";
 
 const C = COPY.console;
@@ -138,6 +140,73 @@ function ConsoleHead({ tab, title, sub }: { tab: ConsoleTabId; title: string; su
   );
 }
 
+// ── Approvals — the signup queue. New orgs land pending; staff approve/decline
+//    here (set_org_approval, audited). Sits atop Overview so it's the first thing
+//    staff see. Approving grants the owner write access; declining shows them an
+//    honest "couldn't approve" screen. ──────────────────────────────────────────
+function Approvals() {
+  const AP = C.approvals;
+  const pending = useStaffPendingOrgs(true);
+  const setApproval = useSetOrgApproval();
+  const rows = pending.data ?? [];
+  const busy = setApproval.isPending;
+
+  const act = (orgId: string, status: "approved" | "declined") => {
+    if (status === "declined" && !window.confirm(AP.declineConfirm)) return;
+    setApproval.mutate({ orgId, status });
+  };
+
+  return (
+    <section className="console-approvals" aria-label={AP.heading}>
+      <div className="console-approvals-head">
+        <h2 className="section-h">{AP.heading}</h2>
+        {rows.length > 0 && <span className="readonly-chip">{AP.count(rows.length)}</span>}
+      </div>
+      <p className="muted sm">{AP.sub}</p>
+
+      {pending.isError ? (
+        <p className="error">{AP.error}</p>
+      ) : rows.length === 0 ? (
+        <CompactEmpty text={AP.empty} />
+      ) : (
+        <div className="table-wrap" tabIndex={0} role="region" aria-label={AP.heading}>
+          <table className="console-table">
+            <thead>
+              <tr>
+                <th>{AP.colBusiness}</th>
+                <th>{AP.colType}</th>
+                <th>{AP.colOwner}</th>
+                <th>{AP.colWhen}</th>
+                <th aria-hidden="true" />
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((o: PendingOrg) => (
+                <tr key={o.id}>
+                  <td>{o.name}</td>
+                  <td>{o.type}</td>
+                  <td>{o.owner_email ?? "—"}</td>
+                  <td>{o.created_at.slice(0, 10)}</td>
+                  <td className="ap-actions">
+                    <button type="button" className="primary sm" disabled={busy}
+                      onClick={() => act(o.id, "approved")}>
+                      {busy ? AP.working : AP.approve}
+                    </button>
+                    <button type="button" className="ghost sm" disabled={busy}
+                      onClick={() => act(o.id, "declined")}>
+                      {AP.decline}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 // ── Overview — the one live-wired module (read-only over staff_list_orgs) ──────
 function Overview() {
   const orgs = useStaffOrgs(true);
@@ -151,6 +220,7 @@ function Overview() {
 
   return (
     <div className="console-overview" role="tabpanel" aria-labelledby="console-overview">
+      <Approvals />
       <ConsoleHead tab="overview" title={C.overview.heading} />
       <p className="muted sm">{C.overview.breakGlassNote}</p>
       <p><Link className="ghost sm" to="/staff">{C.overview.openConsole}</Link></p>

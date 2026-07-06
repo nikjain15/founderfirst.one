@@ -127,6 +127,7 @@ export default function Security() {
           </header>
           <p className="muted">{COPY.security.lead}</p>
 
+          <div className="security-card">
           {factors.isLoading ? (
             <p className="muted">{COPY.common.loading}</p>
           ) : view === "status" ? (
@@ -202,6 +203,7 @@ export default function Security() {
               </button>
             </div>
           )}
+          </div>
         </section>
       </main>
     </div>

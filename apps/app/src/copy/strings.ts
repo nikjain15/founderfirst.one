@@ -1475,6 +1475,23 @@ export const COPY = {
     saveDraft: "Save draft",
     // ── PENNY-UX-5 · keyboard-accessible scroll region (APPENDED — additive key) ──
     tableAria: "Invoices",
+    // ── INVOICE-1 · document viewer (APPENDED — additive keys) ──
+    view: "View",
+    viewerBack: "Back to invoices",
+    viewerLoading: "Loading invoice…",
+    viewerNotFound: "This invoice couldn't be found.",
+    docTitle: "INVOICE",
+    billTo: "Bill to",
+    issueDate: "Issue date",
+    colQty: "Qty",
+    colUnit: "Unit price",
+    colAmount: "Amount",
+    subtotal: "Subtotal",
+    total: "Total",
+    amountPaid: "Amount paid",
+    balanceDue: "Balance due",
+    print: "Print / Save as PDF",
+    notes: "Notes",
   },
 
   // ── PENNY-UX-4 · CPA "+ Add client" guided flow (APPENDED — additive section) ──

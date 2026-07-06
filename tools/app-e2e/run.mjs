@@ -956,6 +956,82 @@ try {
   }
   // ── end PENNY-UX-4 ─────────────────────────────────────────────────────────
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // INVOICE-1 (invoicing rework Slice 1) — the invoice document viewer. Before
+  // this card, an owner could create/send/pay invoices but never VIEW a
+  // finished one as a document (Nik 6 Jul: "you can't view them"). This proves
+  // the gap is closed: opt in → draft an invoice → open its viewer → the
+  // document renders the line item + a computed total, tying to the draft.
+  // Append-only block — self-contained; leaves the app back on its entry
+  // screen at `base` for anything appended after this one.
+  if (authed) {
+    const opened = await openScreen({ main: "connections" });
+    if (!opened) {
+      fail("INVOICE-1: could not reach the Connections tab");
+    } else {
+      const invItem = page.locator('.conn-menu-item[data-job="invoicing"]');
+      if (!(await invItem.count().catch(() => 0))) {
+        fail("INVOICE-1: invoicing job missing from the Connections chooser");
+      } else {
+        await invItem.first().click().catch(() => {});
+        await page.waitForTimeout(300);
+
+        // Opt in if this org hasn't enabled invoicing yet (off by default).
+        const enableBtn = page.locator(".invoicing-optin button.primary");
+        if (await enableBtn.count().catch(() => 0)) {
+          await enableBtn.first().click().catch(() => {});
+          await page.waitForTimeout(400);
+        }
+
+        // Draft one invoice via the existing form (namespaced customer name —
+        // safe to re-run; the invoice list just grows, nothing is asserted on count).
+        const newBtn = page.locator(".invoicing > button.primary");
+        if (await newBtn.count().catch(() => 0)) {
+          await newBtn.first().click().catch(() => {});
+          await page.waitForTimeout(200);
+          await page.getByLabel(/customer name/i).fill("E2E Invoice-1 Client").catch(() => {});
+          const lineDesc = page.locator(".invoice-form .il-desc").first();
+          await lineDesc.fill("Consulting").catch(() => {});
+          await page.locator(".invoice-form .il-price").first().fill("150.00").catch(() => {});
+          await page.locator(".invoice-form-actions button.primary").click().catch(() => {});
+          await page.waitForTimeout(500);
+        }
+
+        // Open the viewer on the most recent row and assert the document renders.
+        const viewBtns = page.locator(".invoices-table .inv-actions button", { hasText: /^View$/ });
+        if (!(await viewBtns.count().catch(() => 0))) {
+          fail("INVOICE-1: no invoice row with a View action — could not open the viewer");
+        } else {
+          await viewBtns.first().click().catch(() => {});
+          await page.waitForTimeout(300);
+          const doc = page.locator(".invoice-view");
+          if (await doc.count().catch(() => 0)) {
+            ok("INVOICE-1: the invoice document viewer opens from the list");
+            const hasLine = await doc.locator(".invoice-view-lines td", { hasText: "Consulting" }).count().catch(() => 0);
+            const hasTotal = await doc.locator(".invoice-view-total-grand").count().catch(() => 0);
+            if (hasLine) ok("INVOICE-1: the document lists the invoice's line item");
+            else fail("INVOICE-1: the document did not render the expected line item");
+            if (hasTotal) ok("INVOICE-1: the document shows a total");
+            else fail("INVOICE-1: the document is missing a total row");
+          } else {
+            fail("INVOICE-1: clicking View did not render the document (.invoice-view)");
+          }
+          await page.screenshot({ path: join(ARTIFACTS, "invoice1-viewer-desktop.png"), fullPage: true }).catch(() => {});
+          await page.setViewportSize(MOBILE);
+          await page.waitForTimeout(150);
+          await page.screenshot({ path: join(ARTIFACTS, "invoice1-viewer-mobile.png"), fullPage: true }).catch(() => {});
+          await page.setViewportSize(DESKTOP);
+          const backBtn = page.locator(".invoice-view-toolbar button", { hasText: /back/i });
+          if (await backBtn.count().catch(() => 0)) await backBtn.first().click().catch(() => {});
+        }
+      }
+    }
+    // Leave the app on its entry screen for any block appended after this one.
+    await page.goto(base, { waitUntil: "networkidle", timeout: 60_000 }).catch(() => {});
+    await page.waitForTimeout(800);
+  }
+  // ── end INVOICE-1 ──────────────────────────────────────────────────────────
+
   if (consoleErrors.length) console.log(`\nℹ️ ${consoleErrors.length} browser console error(s) logged above (not gating).`);
 } catch (e) {
   fail("e2e run threw: " + (e?.message || e));

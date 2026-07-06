@@ -8,7 +8,7 @@
 -- them directly with each actor passed in — no SET ROLE.
 
 begin;
-select plan(21);
+select plan(24);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -149,6 +149,23 @@ select void_invoice('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-
 select is(
   (select status from invoices where id = (select id from _inv3))::text,
   'void', 'void marks the invoice void and reverses its ledger entry');
+
+-- ── INVOICE-1 — get_invoice: header + ordered lines for the document viewer ──
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-00000000000a","email":"owner@test.dev","role":"authenticated"}';
+select is(
+  (select jsonb_array_length(lines) from get_invoice('00000000-0000-0000-0000-0000000000b1', (select id from _inv))),
+  2, 'get_invoice returns both line items for the owner');
+select is(
+  (select lines -> 0 ->> 'description' from get_invoice('00000000-0000-0000-0000-0000000000b1', (select id from _inv))),
+  'Design', 'get_invoice orders lines by position (Design before Hosting)');
+reset "request.jwt.claims";
+
+-- a non-member (stranger) gets zero rows back, not an error (RLS-safe read).
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-00000000000c","email":"stranger@test.dev","role":"authenticated"}';
+select is(
+  (select count(*)::int from get_invoice('00000000-0000-0000-0000-0000000000b1', (select id from _inv))),
+  0, 'get_invoice returns no rows to a non-member (can_access_org gate)');
+reset "request.jwt.claims";
 
 select * from finish();
 rollback;

@@ -1867,3 +1867,52 @@ button.ghost.sm, .ghost.sm {
 }
 .mfa-challenge-card form { display: flex; flex-direction: column; gap: 0.75rem; }
 .mfa-challenge-link { align-self: flex-start; }
+
+/* ── Invoice document viewer (INVOICE-1 — invoicing rework Slice 1) ─────────
+   A professional invoice document: header (from/doc-id), bill-to + dates,
+   line-item table, totals block. Print isolates `.invoice-view` via
+   `@media print` (see bottom) so "Print / Save as PDF" reads cleanly. */
+.invoice-view-wrap { display: flex; flex-direction: column; gap: var(--space-4); }
+.invoice-view-toolbar { display: flex; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
+.invoice-view {
+  background: var(--white); border: var(--bw-hair) solid var(--line); border-radius: var(--r-card);
+  padding: clamp(var(--space-5), 4vw, var(--space-8));
+  display: flex; flex-direction: column; gap: var(--space-5);
+}
+.invoice-view-head {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4);
+  flex-wrap: wrap; padding-bottom: var(--space-4); border-bottom: var(--bw-hair) solid var(--line);
+}
+.invoice-view-business { margin: 0; font-family: var(--font-display); font-size: var(--fs-h3); font-weight: var(--fw-semibold); color: var(--ink); }
+.invoice-view-doc-id { text-align: right; display: flex; flex-direction: column; gap: 0.2rem; align-items: flex-end; }
+.invoice-view-doctitle { margin: 0; font-size: var(--fs-label); font-weight: var(--fw-semibold); letter-spacing: var(--ls-eyebrow); color: var(--ink-3); text-transform: uppercase; }
+.invoice-view-number { margin: 0; font-size: var(--fs-ui); font-weight: var(--fw-medium); color: var(--ink); }
+.invoice-view-parties { display: flex; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.invoice-view-customer { margin: 0.2rem 0 0; font-weight: var(--fw-medium); color: var(--ink); }
+.invoice-view-dates { text-align: right; display: flex; flex-direction: column; gap: 0.15rem; }
+.invoice-view-lines th { text-align: left; font-size: var(--fs-label); color: var(--ink-3); text-transform: uppercase; letter-spacing: var(--ls-chip); }
+.invoice-view-lines td, .invoice-view-lines th { padding: var(--space-2) var(--space-3); }
+.invoice-view-totals { display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; align-self: flex-end; min-width: 14rem; }
+.invoice-view-total-row { display: flex; justify-content: space-between; gap: var(--space-6); width: 100%; color: var(--ink-3); }
+.invoice-view-total-grand { font-weight: var(--fw-bold); color: var(--ink); font-size: var(--fs-ui); padding-top: 0.3rem; border-top: var(--bw-hair) solid var(--line); }
+.invoice-view-memo { padding-top: var(--space-3); border-top: var(--bw-hair) solid var(--line-2); }
+.invoice-view-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; padding-top: var(--space-3); border-top: var(--bw-hair) solid var(--line-2); }
+
+/* Status pill — shared by the invoices table (InvoiceRow) and the document
+   viewer header. Was previously an unstyled bare <span>. */
+.inv-status {
+  display: inline-block; font-size: var(--fs-micro); font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-chip); text-transform: uppercase;
+  padding: 0.2rem 0.55rem; border-radius: var(--r-pill);
+  background: var(--brand-soft); color: var(--ink-2);
+}
+.inv-status-sent, .inv-status-partial { background: var(--amber-bg); color: var(--amber-strong); }
+.inv-status-paid { background: var(--income-bg); color: var(--income-strong); }
+.inv-status-void { background: var(--error-bg); color: var(--error); }
+
+@media print {
+  body * { visibility: hidden; }
+  .invoice-view, .invoice-view * { visibility: visible; }
+  .invoice-view { position: absolute; inset: 0; border: none; box-shadow: none; padding: 0; }
+  .invoice-view-noprint { display: none !important; }
+}

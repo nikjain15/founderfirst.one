@@ -19,6 +19,58 @@
 > corrected to match. Remaining real buildable work: **W5.4-FX** (ECB fx-rate fetcher — schema
 > shipped, no fetcher exists yet) is the top unclaimed, unblocked, non-decision-needed card.
 
+> ⚠️ **STATUS RECONCILIATION #4 (loop-orch, 6 Jul):** three new Nik-authored plan docs landed
+> today: docs/plans/INVOICING_REWORK.md (invoicing rework) and docs/plans/PENNY_OPERATING_AGENT.md
+> (Penny as an operating agent). The agent doc is explicitly **plan-only, awaiting Nik sign-off**
+> with open questions (scheduled instructions, first capability, context depth) — `decision-needed`,
+> not built. The invoicing doc says **"Everything else can proceed on this plan"** except one nav
+> question (Slice 4) — genuinely unblocked, buildable work Nik greenlit but hadn't been carded yet.
+> Carding **INVOICE-1** (Slice 1: the document + viewer) below and building it this iteration.
+> Slices 2–4 (professional builder, business profile/branding, nav placement) are follow-up cards,
+> not built here — Slice 4 stays `decision-needed` (Nik: Invoicing its own tab, or a "Money" tab
+> grouping Invoicing + Bills?).
+
+## INVOICE-1 · Invoice document + viewer (invoicing rework Slice 1)
+status: pr:#TBD (loop-insession-6jul — building)
+lane: apps/app (Invoicing.tsx + new InvoiceView.tsx) + supabase/migrations (read-only RPC) —
+  disjoint from any other in-flight card
+blocked-by: — (W4.3 invoicing backend is live; this is presentation-only, per
+  docs/plans/INVOICING_REWORK.md)
+context: Nik 6 Jul reviewed live invoicing: "it doesn't create templates like it's professional,
+  you can't view them." Full plan: docs/plans/INVOICING_REWORK.md (4 slices; this card = Slice 1,
+  the highest-value one — "you can't view them" is the literal gap).
+workflow: owner/CPA · "see what I'm sending before/after I send it" · Getting paid → invoice row →
+  View → a real invoice document (header, bill-to, line items, total) → Print/Save-as-PDF or
+  Send/Record-payment/Void from the same screen · 1 tap in, 1 tap back
+goal: a `get_invoice(p_org, p_invoice_id)` read RPC (header + ordered lines, `can_access_org`-gated,
+  mirrors the existing `invoice_ar_aging` template) + a new `InvoiceView` component that renders one
+  invoice as a document: From (org name) / Bill-To, issue + due dates, a line-item table
+  (Description · Qty · Unit price · Amount), a totals block (total; paid + balance-due when
+  partially paid), memo/notes. Each invoice row opens it. Print via the browser's native
+  print/Save-as-PDF against a `@media print` rule scoped to `.invoice-view` (plan's recommended v1
+  approach; a server-rendered PDF can follow later). Send/Record-payment/Void move onto the
+  document, reusing the exact same edge-fn calls the list already made — no new write path.
+centralization: all copy from `COPY.invoicing` (new keys only, no literals — `check:app-strings`
+  gate); all visuals from `tokens.css` (new `.invoice-view*` classes + a `.inv-status` badge that
+  was previously unstyled, shared with the existing list row); no new business-profile fields
+  invented (the plan confirms `org_invoicing_settings` has no legal-name/address/logo — Slice 3's
+  job, not this one) — the "From" block honestly uses only `organizations.name` for now.
+scope note: the edge fn already emails a `${APP_URL}/i/${inv.id}` "view and pay" link that 404s
+  today (no route exists) — that is a PUBLIC, likely-unauthenticated customer-facing surface, a
+  different trust boundary than the owner/CPA authed viewer this card builds. Deciding how a
+  customer without a Penny login views/pays an invoice (token-based link? magic-link auth?) is a
+  security-relevant product decision, not something to invent ad hoc — flagged as a follow-up
+  `decision-needed` card, not silently dropped, not built here.
+coverage delta: extends the W4.3 AUDIT/pgTAP coverage — `get_invoice` returns the right line count
+  + order for the owner and zero rows for a non-member (`can_access_org` gate, in
+  `w4_3_invoicing_test.sql`); new `formatQty` pure-math test in `invoiceMath.test.ts`; new app-e2e
+  block (INVOICE-1) opts in → drafts an invoice → opens the viewer → asserts the line item + total
+  render, screenshots desktop + mobile.
+decision-needed: none to build Slice 1. Follow-ups (separate cards, not this one): Slice 2
+  (professional builder redesign), Slice 3 (business profile/branding fields), Slice 4 (nav
+  placement — Nik's open question), and the public `/i/:id` customer view (needs an auth-model
+  decision first).
+
 ## Wave 2 — COMPLETE + DEPLOYED (3 Jul 2026)
 W2.1/W2.2/W2.3 shipped earlier; **W2.4 (PR #202) + W2.5 (PR #201) merged to main, migrations
 `20260706020000`+`20260706030000` applied to prod (ledger in sync), edge fns `nec-tracking`

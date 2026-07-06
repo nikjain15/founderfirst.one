@@ -19,6 +19,7 @@ import {
   setInvoicingSettings, upsertInvoice, sendInvoice, payInvoice, voidInvoice, runInvoiceNudges,
   type Invoice, type InvoiceLineInput,
 } from "./api";
+import InvoiceView from "./InvoiceView";
 import { formatMoney, parseMoneyToMinor } from "./money";
 import { COPY } from "../copy";
 
@@ -39,6 +40,7 @@ export default function Invoicing({ orgId, canWrite }: { orgId: string; canWrite
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const enabled = settings.data?.enabled ?? false;
   const nudgesOn = settings.data?.nudges_enabled ?? false;
 
@@ -63,6 +65,14 @@ export default function Invoicing({ orgId, canWrite }: { orgId: string; canWrite
         )}
         {err && <p className="error-text" role="alert">{err}</p>}
       </div>
+    );
+  }
+
+  // ── viewer: a document view of one invoice (INVOICE-1) ────────────────────
+  if (viewingId) {
+    return (
+      <InvoiceView orgId={orgId} invoiceId={viewingId} canWrite={canWrite}
+        onBack={() => setViewingId(null)} onChanged={refresh} />
     );
   }
 
@@ -119,7 +129,8 @@ export default function Invoicing({ orgId, canWrite }: { orgId: string; canWrite
               </thead>
               <tbody>
                 {(invoices.data ?? []).map((inv) => (
-                  <InvoiceRow key={inv.id} orgId={orgId} inv={inv} canWrite={canWrite} busy={busy} run={run} />
+                  <InvoiceRow key={inv.id} orgId={orgId} inv={inv} canWrite={canWrite} busy={busy} run={run}
+                    onView={() => setViewingId(inv.id)} />
                 ))}
               </tbody>
             </table>
@@ -148,10 +159,11 @@ function AgingStrip({ buckets }: { buckets: { bucket: string; balance_minor: num
 }
 
 function InvoiceRow({
-  orgId, inv, canWrite, busy, run,
+  orgId, inv, canWrite, busy, run, onView,
 }: {
   orgId: string; inv: Invoice; canWrite: boolean; busy: boolean;
   run: (fn: () => Promise<unknown>) => Promise<void>;
+  onView: () => void;
 }) {
   const [paying, setPaying] = useState(false);
   const [amt, setAmt] = useState("");
@@ -167,6 +179,7 @@ function InvoiceRow({
         <td className="num">{formatMoney(balance, inv.currency)}</td>
         <td><span className={`inv-status inv-status-${inv.status}`}>{I.statusLabel(inv.status)}</span></td>
         <td className="inv-actions">
+          <button className="ghost sm" onClick={onView}>{I.view}</button>
           {canWrite && inv.status === "draft" && (
             <button className="ghost sm" disabled={busy}
               onClick={() => run(() => sendInvoice(orgId, inv.id))}>{I.send}</button>

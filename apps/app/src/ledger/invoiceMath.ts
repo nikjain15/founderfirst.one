@@ -27,6 +27,12 @@ export function balanceMinor(totalMinor: number, amountPaidMinor: number): numbe
   return totalMinor - amountPaidMinor;
 }
 
+/** Qty for display: quantity_milli (qty × 1000, 3dp) back to a plain number
+ *  string (e.g. 1500 → "1.5"). Used by the document viewer (INVOICE-1). */
+export function formatQty(quantityMilli: number): string {
+  return (quantityMilli / 1000).toLocaleString(undefined, { maximumFractionDigits: 3 });
+}
+
 export type AgingBucket = "current" | "1-30" | "31-60" | "61-90" | "90+";
 
 /** The AR aging bucket for a due date, as-of a reference date. MUST match the SQL

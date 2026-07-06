@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  agingBucket, balanceMinor, invoiceTotalMinor, isDueForNudge, lineAmountMinor,
+  agingBucket, balanceMinor, formatQty, invoiceTotalMinor, isDueForNudge, lineAmountMinor,
 } from "./invoiceMath";
 
 describe("line + total math (integer minor units, no float drift)", () => {
@@ -29,6 +29,17 @@ describe("line + total math (integer minor units, no float drift)", () => {
   it("balance = total − paid", () => {
     expect(balanceMinor(11500, 4000)).toBe(7500);
     expect(balanceMinor(11500, 11500)).toBe(0);
+  });
+});
+
+describe("formatQty — quantity_milli back to a plain qty string (INVOICE-1 viewer)", () => {
+  it("formats whole quantities without decimals", () => {
+    expect(formatQty(1000)).toBe("1");
+    expect(formatQty(2000)).toBe("2");
+  });
+  it("formats fractional quantities to at most 3dp", () => {
+    expect(formatQty(1500)).toBe("1.5");
+    expect(formatQty(333)).toBe("0.333");
   });
 });
 

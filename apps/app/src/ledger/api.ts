@@ -1247,6 +1247,14 @@ export interface Invoice {
 }
 export interface InvoicingSettings { enabled: boolean; nudges_enabled: boolean; }
 export interface ArAgingBucket { bucket: string; invoice_count: number; balance_minor: number; }
+export interface InvoiceLine {
+  id: string;
+  description: string;
+  quantity_milli: number;
+  unit_price_minor: number;
+  amount_minor: number;
+}
+export interface InvoiceDetail extends Invoice { lines: InvoiceLine[]; }
 
 /** The org's invoicing opt-in flags (defaults off when no row exists). */
 export function useInvoicingSettings(orgId: string | undefined) {
@@ -1282,6 +1290,22 @@ export function useInvoices(orgId: string | undefined) {
   });
 }
 
+/** One invoice with its ordered line items, for the document viewer (INVOICE-1). */
+export function useInvoice(orgId: string | undefined, invoiceId: string | undefined) {
+  return useQuery({
+    queryKey: ["invoice", orgId, invoiceId],
+    enabled: Boolean(orgId && invoiceId),
+    queryFn: async (): Promise<InvoiceDetail | null> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .rpc("get_invoice", { p_org: orgId, p_invoice_id: invoiceId })
+        .maybeSingle();
+      if (error) throw error;
+      return data as InvoiceDetail | null;
+    },
+  });
+}
+
 /** AR aging buckets (0-30 / 31-60 / 61-90 / 90+) over open balances. */
 export function useArAging(orgId: string | undefined) {
   return useQuery({
@@ -1299,7 +1323,7 @@ export function useArAging(orgId: string | undefined) {
 export function useInvoicingRefresh(orgId: string | undefined) {
   const qc = useQueryClient();
   return () => {
-    for (const key of ["invoices", "ar-aging", "invoicing-settings", "ledger-entries"]) {
+    for (const key of ["invoices", "invoice", "ar-aging", "invoicing-settings", "ledger-entries"]) {
       void qc.invalidateQueries({ queryKey: [key, orgId] });
     }
   };

@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import Topbar from "../components/Topbar";
 import { useActiveOrg } from "../org/ActiveOrgProvider";
 import Onboarding from "../onboarding/Onboarding";
+import PendingReview from "../org/PendingReview";
 import OwnerLens from "../lenses/OwnerLens";
 import CpaLens from "../lenses/CpaLens";
 import { SITE } from "@ff/site";
@@ -42,14 +43,23 @@ export default function Home() {
           <Onboarding />
         )}
 
-        {activeOrg && roleInfo?.lens === "owner" && (
-          <OwnerLens org={activeOrg} roleInfo={roleInfo} />
-        )}
-        {activeOrg && roleInfo?.lens === "cpa" && (
-          <CpaLens org={activeOrg} roleInfo={roleInfo} />
-        )}
-        {activeOrg && !roleInfo && (
-          <p className="muted">{COPY.home.noMembership}</p>
+        {/* Approval gate — a new signup's books are held until staff approve it;
+            until then (or if declined) the owner sees the review screen, not the
+            lens. Server-side can_write_org enforces this regardless of the UI. */}
+        {activeOrg && activeOrg.approval_status !== "approved" ? (
+          <PendingReview org={activeOrg} />
+        ) : (
+          <>
+            {activeOrg && roleInfo?.lens === "owner" && (
+              <OwnerLens org={activeOrg} roleInfo={roleInfo} />
+            )}
+            {activeOrg && roleInfo?.lens === "cpa" && (
+              <CpaLens org={activeOrg} roleInfo={roleInfo} />
+            )}
+            {activeOrg && !roleInfo && (
+              <p className="muted">{COPY.home.noMembership}</p>
+            )}
+          </>
         )}
         {/* "+ New organization" is no longer stapled to the page body — it lives in
             the org switcher (APP_PRINCIPLES §5), the one place a user goes to change

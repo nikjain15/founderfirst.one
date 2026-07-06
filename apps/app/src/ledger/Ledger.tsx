@@ -463,7 +463,7 @@ function Overview({
           {COPY.overview.notBalancedBanner(formatMoney(Math.abs(tb.totalDebit - tb.totalCredit)))}
         </p>
       )}
-      <h2 className="section-h">{COPY.overview.latestActivity}</h2>
+      <p className="eyebrow">{COPY.overview.latestActivity}</p>
       {recent.length === 0 ? (
         <p className="muted">{COPY.overview.noEntries}</p>
       ) : (

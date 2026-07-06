@@ -143,7 +143,7 @@ export default function Categorize({
       {/* LOW — the true unknowns, one card each. */}
       {low.length > 0 && (
         <section className="ask-queue">
-          <h2 className="section-h">{COPY.autonomy.askTitle}</h2>
+          <p className="eyebrow">{COPY.autonomy.askTitle}</p>
           <p className="muted sm">{COPY.autonomy.askLead}</p>
           <ul className="cat-list">
             {low.map((e) => (

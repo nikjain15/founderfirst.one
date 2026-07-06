@@ -260,6 +260,27 @@ export const askPennyThread = (org_id: string, question: string, fact: ThreadFac
     "penny-thread", { op: "answer", org_id, question, fact },
   );
 
+// ── Penny thread MEMORY — server-side per-(org,user) history ───────────────────
+// So Penny "remembers" across tabs and devices, not just this browser. RLS-scoped
+// to the caller's own rows in orgs they belong to (penny_thread_memory migration).
+// localStorage stays as an instant/offline fallback in PennyThread.
+export interface ThreadMessage { id: string; role: "you" | "penny"; body: string; created_at: string }
+
+/** This user's remembered Penny conversation for an org, oldest→newest. */
+export async function fetchPennyThread(org_id: string): Promise<ThreadMessage[]> {
+  const sb = getClient();
+  const { data, error } = await sb.rpc("penny_thread_history", { p_org: org_id, p_limit: 200 });
+  if (error) throw error;
+  return (data ?? []) as ThreadMessage[];
+}
+
+/** Append one settled turn to the server thread (best-effort — the UI already has it). */
+export async function appendPennyThread(org_id: string, role: "you" | "penny", body: string): Promise<void> {
+  const sb = getClient();
+  const { error } = await sb.rpc("penny_thread_append", { p_org: org_id, p_role: role, p_body: body });
+  if (error) throw error;
+}
+
 // ── learned-rules management (W1.6) ───────────────────────────────────────────
 // Owner + full-access CPA see every rule Penny has learned and can delete a bad
 // one. Reads go direct under RLS (categorization_rules is client-readable via

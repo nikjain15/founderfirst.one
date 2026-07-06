@@ -1584,9 +1584,31 @@ button.ghost.sm, .ghost.sm {
 }
 
 /* ── Internal admin console (IA-3 · penny/admin) ────────────────────────────
-   Additive scaffold styles. Reuses the ledger/staff shell + ink-active
-   .ledger-tabs; only the Overview table and the parallel-run placeholder are
-   console-specific. Tokens only — no inline hex/px (CLAUDE.md). */
+   Matches founderfirst.one/admin: the primary tabs live INLINE in the top nav
+   bar (ink-active underline, like apps/admin .nav-links), and each module leads
+   with its own eyebrow + serif heading below — no global "Admin console"
+   billboard. Tokens only — no inline hex/px (CLAUDE.md). */
+.console-nav {
+  display: flex; gap: clamp(14px, 2.2vw, 30px); overflow-x: auto;
+  align-items: center; margin-left: var(--space-3);
+}
+.console-navlink {
+  min-height: var(--tap-min, 44px);
+  background: transparent; color: var(--ink-3);
+  border: none; border-bottom: 2px solid transparent; border-radius: 0;
+  padding: 0.4rem 0.15rem; white-space: nowrap;
+  font-size: var(--fs-ui); font-weight: var(--fw-medium);
+}
+.console-navlink:hover:not(:disabled) { background: transparent; color: var(--ink); }
+.console-navlink.active { color: var(--ink); border-bottom-color: var(--ink); }
+@media (max-width: 640px) {
+  /* When the top bar wraps, the tab strip takes its own full-width scrollable row. */
+  .console-nav { margin-left: 0; flex-basis: 100%; }
+}
+/* Per-page header — restrained, matches the live admin's eyebrow + serif title. */
+.console-head { margin: 0 0 var(--space-4); }
+.console-head .page-sub { margin-top: var(--space-1); }
+
 .admin-console .console-overview { margin-top: var(--space-4); }
 .admin-console .console-overview .section-h { margin-top: 0; }
 .console-table { width: 100%; border-collapse: collapse; font-size: var(--fs-ui); }

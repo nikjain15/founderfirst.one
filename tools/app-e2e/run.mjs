@@ -492,9 +492,12 @@ async function verifyPennyThread() {
   if (!(await thread.count().catch(() => 0))) { fail("Penny dock did not open its thread"); return; }
   ok("Penny dock opens the standing conversation");
   await page.screenshot({ path: join(ARTIFACTS, "penny-dock-desktop.png"), fullPage: true }).catch(() => {});
-  const suggest = page.locator(".penny-dock .thread-suggest button").first();
-  if (!(await suggest.count().catch(() => 0))) { fail("Home: no thread suggestion prompt"); return; }
-  await suggest.click().catch(() => {});
+  // Ask via the input box (starter chips only show on a fresh thread; server-side
+  // memory may have restored prior turns, so don't depend on a chip being present).
+  const input = page.locator(".penny-dock .thread-input input").first();
+  if (!(await input.count().catch(() => 0))) { fail("Home: Penny dock has no question input"); return; }
+  await input.fill("What did I spend this month?").catch(() => {});
+  await page.locator(".penny-dock .thread-input button[type=submit]").first().click().catch(() => {});
   // A "you" turn appears immediately; Penny's answer follows (local or via the fn).
   try {
     await page.waitForFunction(

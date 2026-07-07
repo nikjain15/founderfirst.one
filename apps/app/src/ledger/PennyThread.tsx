@@ -165,7 +165,9 @@ export default function PennyThread({
         </div>
       )}
 
-      <div className="thread-turns" role="log" aria-live="polite">
+      {/* tabIndex → the scrollable log is keyboard-reachable (axe:
+          scrollable-region-focusable); it scrolls once the conversation grows. */}
+      <div className="thread-turns" role="log" aria-live="polite" tabIndex={0}>
         {turns.map((t) => (
           <div key={t.id} className={`thread-turn t-${t.who}${t.pending ? " is-pending" : ""}`}>
             <span className="turn-who">{t.who === "you" ? COPY.thread.youLabel : COPY.thread.pennyLabel}</span>

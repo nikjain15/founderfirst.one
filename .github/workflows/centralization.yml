@@ -35,9 +35,9 @@ jobs:
       - name: Check app strings are centralized
         run: pnpm check:app-strings
 
-      # PENNY-UX-2 gate: every var(--x) used in apps/app/src must resolve to a
-      # definition in tokens.css or an app stylesheet — an unresolved var
-      # silently drops radius/background/size (LEARNINGS rule 14).
+      # PENNY-UX-2 gate: every var(--x) used in apps/{app,admin,web}/src must
+      # resolve to a definition in tokens.css or an app stylesheet — an
+      # unresolved var silently drops radius/background/size (LEARNINGS rule 14).
       - name: Check CSS vars resolve
         run: pnpm check:css-vars
 

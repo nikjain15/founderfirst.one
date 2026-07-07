@@ -440,16 +440,9 @@ function Overview({
     return (
       <div className="owner-home home-empty">
         {inviteNudge}
-        {/* Setup card — one job, one primary action (not a bare centered CTA). */}
-        <section className="home-setup-card">
-          <h2 className="section-h">{COPY.overview.setupTitle}</h2>
-          <p className="home-setup-body">{COPY.overview.setupBody}</p>
-          {canWrite && (
-            <button onClick={onConnect}>{COPY.overview.goToConnections}</button>
-          )}
-        </section>
-        {/* A calm preview of the pulse Penny fills once books exist, so Home shows
-            what it's FOR instead of a single button. Decorative placeholders. */}
+        {/* Home is a dashboard, not a setup page (Nik): lead with the pulse
+            skeleton + what it shows. The actual "set up your books" flow lives
+            in Connections — here it's just a slim pointer. */}
         <div className="kpis home-kpis home-kpis-preview" aria-hidden="true">
           <div className="kpi is-placeholder">
             <span className="kpi-label">{COPY.ownerHome.cashLabel}</span>
@@ -463,8 +456,12 @@ function Overview({
           </div>
         </div>
         <p className="muted sm home-preview-note">{COPY.overview.previewNote}</p>
-        {/* Penny is present from day one via the global dock (owner-calm redesign) —
-            she greets and can answer once books exist. No slab on this screen. */}
+        {canWrite && (
+          <div className="home-setup-banner">
+            <span className="muted sm">{COPY.overview.setupBanner}</span>
+            <button className="ghost sm" onClick={onConnect}>{COPY.overview.goToConnections}</button>
+          </div>
+        )}
       </div>
     );
   }

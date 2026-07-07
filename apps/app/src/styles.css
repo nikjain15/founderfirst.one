@@ -1800,6 +1800,52 @@ button.ghost.sm, .ghost.sm {
 .console-support .priority-pill.p1 { background: var(--error-bg); color: var(--error); }
 .console-support .priority-pill.p2 { background: var(--amber-bg); color: var(--amber-strong); }
 
+/* ── Invoice document viewer (Slice B) — a real, printable invoice document ──── */
+.invoice-doc-overlay {
+  position: fixed; inset: 0; z-index: 80; overflow-y: auto;
+  background: var(--scrim); padding: var(--space-5);
+  display: flex; justify-content: center; align-items: flex-start;
+}
+.invoice-doc-panel {
+  width: min(46rem, 100%); display: flex; flex-direction: column; gap: var(--space-2);
+}
+.invoice-doc-toolbar { display: flex; justify-content: flex-end; gap: var(--space-2); }
+.invoice-doc {
+  background: var(--white); border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); padding: var(--space-8);
+  display: flex; flex-direction: column; gap: var(--space-6);
+}
+.invoice-doc-head { display: flex; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.invoice-doc-from { display: flex; flex-direction: column; }
+.invoice-doc-biz { font-family: var(--font-display); font-size: var(--fs-h3); font-weight: var(--fw-semibold); color: var(--ink); }
+.invoice-doc-meta { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); }
+.invoice-doc-label { font-size: var(--fs-micro); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--ink-3); }
+.invoice-doc-number { font-size: var(--fs-h3); font-weight: var(--fw-semibold); color: var(--ink); }
+.invoice-doc-parties { display: flex; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.invoice-doc-billto, .invoice-doc-dates { display: flex; flex-direction: column; gap: 2px; }
+.invoice-doc-dates { align-items: flex-end; }
+.invoice-doc-collabel { text-transform: uppercase; letter-spacing: var(--ls-chip); }
+.invoice-doc-cust { font-weight: var(--fw-semibold); color: var(--ink); }
+.invoice-doc-lines { width: 100%; border-collapse: collapse; }
+.invoice-doc-lines th, .invoice-doc-lines td { padding: var(--space-2) 0; border-bottom: var(--bw-hair) solid var(--line-2); text-align: left; }
+.invoice-doc-lines th { font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip); color: var(--ink-3); }
+.invoice-doc-lines .num { text-align: right; font-variant-numeric: tabular-nums; }
+.invoice-doc-totals { display: flex; flex-direction: column; gap: var(--space-1); align-self: flex-end; min-width: 14rem; }
+.invoice-doc-total-row { display: flex; justify-content: space-between; gap: var(--space-4); }
+.invoice-doc-total-row .num { font-variant-numeric: tabular-nums; }
+.invoice-doc-balance { font-weight: var(--fw-bold); color: var(--ink); border-top: 2px solid var(--ink); padding-top: var(--space-1); margin-top: var(--space-1); }
+.invoice-doc-notes { display: flex; flex-direction: column; gap: var(--space-1); }
+.invoice-doc-notes p { margin: 0; color: var(--ink-2); }
+@media (max-width: 640px) { .invoice-doc { padding: var(--space-5); } }
+/* Print: show only the invoice document (Save as PDF from the browser dialog). */
+@media print {
+  body * { visibility: hidden; }
+  .invoice-doc-overlay, .invoice-doc-overlay * { visibility: visible; }
+  .invoice-doc-overlay { position: absolute; inset: 0; background: var(--white); padding: 0; }
+  .invoice-doc-toolbar { display: none; }
+  .invoice-doc { border: 0; }
+}
+
 /* ── Bills / AP — TRACKING ONLY (RV2-D1), nested under Connections. Tokens only;
       the money-OUT twin of invoicing. No inline hex / magic px. ─────────────── */
 .bills { display: flex; flex-direction: column; gap: var(--space-3); }

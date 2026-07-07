@@ -10,12 +10,13 @@ import { describe, expect, it } from "vitest";
 import { OWNER_TABS, CPA_TABS, visibleTabs, visibleSubs, tabForSurface, reachableSurface, type Surface } from "./nav";
 
 describe("owner lens nav (IA-1 · APP_PRINCIPLES §2)", () => {
-  it("presents exactly the four jobs + a de-emphasized Advanced, in order", () => {
+  it("presents the primary jobs + a de-emphasized Advanced, in order", () => {
+    // Invoicing (getting paid) is its own top-level owner job (Nik, 6 Jul).
     expect(OWNER_TABS.map((t) => t.id)).toEqual([
-      "home", "review", "reports", "connections", "advanced",
+      "home", "review", "reports", "invoicing", "connections", "advanced",
     ]);
     expect(OWNER_TABS.map((t) => t.label)).toEqual([
-      "Home", "Review", "Reports", "Connections", "Advanced",
+      "Home", "Review", "Reports", "Invoicing", "Connections", "Advanced",
     ]);
   });
 

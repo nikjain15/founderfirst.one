@@ -44,7 +44,7 @@ describe("PENNY-UX-10 · Connections handlers stay wired after the declutter", (
       "CatchUpFlow",   // catch-up guided import
       "ImportFlow",    // CSV upload + bank/software connect + opening balances
       "PayoutUpload",  // payout split (Stripe/Shopify/PayPal/Square/Amazon)
-      "Invoicing",     // getting paid (invoice) + bill-tracking-style toggle
+      // Invoicing moved to its own top-level owner tab (6 Jul) — no longer here.
       "Bills",         // paying bills / AP tracking toggle
       "InviteCpa",     // share with accountant
     ]) {
@@ -64,7 +64,7 @@ describe("PENNY-UX-10 · Connections handlers stay wired after the declutter", (
   });
 
   it("passes canWrite through so read-only viewers are still gated server-side + in UI", () => {
-    for (const surface of ["PayoutUpload", "Invoicing", "Bills"]) {
+    for (const surface of ["PayoutUpload", "Bills"]) {
       expect(body, `<${surface}> lost its canWrite prop`).toMatch(new RegExp(`<${surface}[^>]*canWrite=\\{canWrite\\}`, "s"));
     }
   });

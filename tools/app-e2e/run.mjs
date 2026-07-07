@@ -410,6 +410,12 @@ async function verifyConnectionsClusters() {
     await page.waitForTimeout(300);
     if (await page.locator(".invoicing").count().catch(() => 0)) ok("Invoicing opens from its own top-level tab");
     else fail("Invoicing tab did not open the invoicing surface");
+    // Restore Connections for the checks that follow (they assume the chooser).
+    const connTab = page.getByRole("tab", { name: "Connections" });
+    if (await connTab.count().catch(() => 0)) {
+      await connTab.first().click().catch(() => {});
+      await page.waitForTimeout(250);
+    }
   } else fail("Invoicing top-level tab missing");
 }
 // ── PENNY-UX-10 — END ──────────────────────────────────────────────────────────

@@ -323,7 +323,7 @@ coverage delta: extend the connector AUDIT row — assert intuit_tid is captured
 > re-fix it here). This card is items ② + ③.
 
 ## BUBBLE-1 · site-bubble reliability + retention hardening (P1)
-status: pr:#TBD (loop-orch, 7 Jul) — see this session's PR
+status: pr:#310 (loop-orch, 7 Jul) — GREEN pending CI, safe mode, awaiting Nik review/merge
 blocked-by: — (site-bubble/worker + one migration; independent of SEC-3's supabase/functions lane)
 context: audit's #2 + #3 "fix now" items (both site-bubble):
   (a) **reliability** — `handleChat`'s incidental email/phone-lead + chat-turn logging

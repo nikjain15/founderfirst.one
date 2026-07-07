@@ -107,6 +107,30 @@ the user has interacted, and includes how the CPA sees the same books.
 - **Substrate shipped:** `penny_thread_messages` (cross-tab/device thread memory) is step one. The
   unified context service (folding in activity, support, CPA notes) is a P0/P1 build item below.
 
+## Expanded scope (Nik, 6 Jul) — Claude-grade, account-scoped, multi-agent
+Nik's bar: Penny should feel like Claude built-in, but **scoped to this one business** and smarter,
+with a team of agents behind her and a check on everything she does.
+
+- **D4 — Multi-modal input.** Ask Penny accepts snapshots / images / PDFs / documents (receipts,
+  statements, bills, contracts). Penny extracts the right structured info (vendor, amount, date, line
+  items, terms) and turns it into an action (categorize, attach to a txn, draft a bill/invoice) — the
+  same plan→preview→confirm loop. Reuses the receipts OCR/parse path, generalized to any attachment.
+- **D5 — Claude-grade reasoning, account-grounded.** General reasoning/writing like Claude, but every
+  factual claim is grounded in THIS org's books (numbers to the cent, never invented) and augmented
+  with domain tools (the capability catalog). Not a generic chatbot — a specialist on *your* account.
+- **D6 — Multi-agent orchestration.** Penny can run **several sub-agents in parallel** to do multiple
+  things at once (e.g. categorize March while reconciling the bank while drafting three reminders),
+  then synthesize. A planner decomposes the request; workers execute; results merge into one report.
+- **D7 — Cross-agent verification (nothing ships unchecked).** Every Penny action is **independently
+  verified by a separate agent / session** before it's applied — an adversarial reviewer that re-does
+  the reasoning and must agree, majority-vote on anything risky. This is how autonomy stays safe: the
+  actor and the checker are different agents, so a single bad call can't post to the books.
+
+These raise the ambition of the same framework (capabilities + plan→preview→execute) — they are
+**not** a separate system. Sequencing: land P0/P1 (single-agent, text, always-ask) first, then layer
+D4 (multi-modal) → D7 (verification) → D6 (parallel orchestration). D7 pairs with D1 (always-ask):
+preview + an independent checker before the one-tap confirm.
+
 ## Build phases (each gated, each shippable)
 - **P0 — Tool framework**: capability registry (dry-run + execute + undo interface); the plan→preview→
   confirm→execute→report loop in the thread with **always-ask** (D1) + **live narration** (D2); audit
@@ -118,6 +142,10 @@ the user has interacted, and includes how the CPA sees the same books.
   the audit dashboard.
 - **P3 — Autonomy & visibility polish**: autonomy dial, "doing now" surface, scheduled/standing
   instructions ("every month-end, draft the close").
+- **P4 — Multi-modal + verification (D4, D7)**: attachment input → extraction → action; an independent
+  verifier agent that must agree before any write (adversarial re-check, majority-vote on risk).
+- **P5 — Multi-agent orchestration (D6)**: planner → parallel workers → merge, so Penny does several
+  jobs at once and reports back one result.
 
 ## Guardrails (carry from LEARNINGS + ARCHITECTURE)
 Grounding airtight · writes only through existing RLS/permission RPCs · destructive/irreversible =

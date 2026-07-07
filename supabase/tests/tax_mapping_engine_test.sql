@@ -17,12 +17,13 @@
 -- Runs in a transaction and rolls back.
 
 begin;
-select plan(36);
+select plan(40);
 
 -- ── fixtures: jurisdiction, a form@2025, lines, rules, org, accounts ─────────
 insert into auth.users (id, email, aud, role) values
   ('70000000-0000-0000-0000-000000000001', 'owner@tax.dev',  'authenticated', 'authenticated'),
-  ('70000000-0000-0000-0000-000000000002', 'cpa@tax.dev',    'authenticated', 'authenticated');
+  ('70000000-0000-0000-0000-000000000002', 'cpa@tax.dev',    'authenticated', 'authenticated'),
+  ('70000000-0000-0000-0000-000000000009', 'outsider@tax.dev', 'authenticated', 'authenticated');
 
 insert into public.entity_types (key, label, description, owner_draw_treatment)
   values ('sole_prop', 'Sole prop', 'x', 'equity_distribution')
@@ -67,6 +68,11 @@ insert into ledger_accounts (id, org_id, code, name, type, tags) values
   ('70000000-0000-0000-0000-0000000000c2', '70000000-0000-0000-0000-0000000000a0', '6100', 'Google Advertising', 'expense', '{}'),
   ('70000000-0000-0000-0000-0000000000c3', '70000000-0000-0000-0000-0000000000a0', '6200', 'Client meals', 'expense', '{meals}'),
   ('70000000-0000-0000-0000-0000000000c4', '70000000-0000-0000-0000-0000000000a0', '6900', 'Misc',         'expense', '{}');
+
+-- the SECDEF readers below (resolve_account_tax_lines / tax_unmapped_accounts /
+-- tax_m1_summary) are gated on can_access_org(p_org_id) (SEC-3) — auth as the
+-- owner (a member of Tax Co) so the positive-path assertions below still resolve.
+set local "request.jwt.claims" = '{"sub":"70000000-0000-0000-0000-000000000001","email":"owner@tax.dev","role":"authenticated"}';
 
 -- ── 1. schema present ────────────────────────────────────────────────────────
 select has_table('public', 'tax_jurisdictions',   'tax_jurisdictions exists');
@@ -250,6 +256,25 @@ select is(
   (select line_key from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','ZZ-CATEST','T2125',2025)
     where account_id = '70000000-0000-0000-0000-0000000000c1'),
   'gross_sales', 'the Canadian income fallback resolves through the same engine');
+
+-- ── 10. SEC-3: cross-tenant SECDEF read leak closed (weekly audit PR #301 P0) ──
+-- An outsider (no membership/engagement on Tax Co) must get ZERO rows from every
+-- DEFINER reader keyed by a caller-supplied p_org_id — not another org's tax data.
+set local "request.jwt.claims" = '{"sub":"70000000-0000-0000-0000-000000000009","email":"outsider@tax.dev","role":"authenticated"}';
+select is(
+  (select count(*)::int from resolve_account_tax_lines('70000000-0000-0000-0000-0000000000a0','ZZ-TEST','SCH_C',2025)),
+  0, 'SEC-3: an outsider gets ZERO rows from resolve_account_tax_lines for another org (was: full chart of accounts)');
+select is(
+  (select count(*)::int from tax_unmapped_accounts('70000000-0000-0000-0000-0000000000a0','ZZ-TEST','SCH_C',2025)),
+  0, 'SEC-3: an outsider gets ZERO rows from tax_unmapped_accounts for another org');
+select is(
+  (select count(*)::int from tax_m1_summary('70000000-0000-0000-0000-0000000000a0', 2025)),
+  0, 'SEC-3: an outsider gets ZERO rows from tax_m1_summary for another org (was: approved M-1 totals)');
+-- restore the owner context so nothing after this point is affected
+set local "request.jwt.claims" = '{"sub":"70000000-0000-0000-0000-000000000001","email":"owner@tax.dev","role":"authenticated"}';
+select is(
+  (select count(*)::int from tax_m1_summary('70000000-0000-0000-0000-0000000000a0', 2025)),
+  1, 'sanity: the OWNER still sees the approved M-1 summary row (the guard is not fail-closed for everyone)');
 
 select finish();
 rollback;

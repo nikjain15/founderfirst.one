@@ -1282,6 +1282,28 @@ export function useInvoices(orgId: string | undefined) {
   });
 }
 
+export interface InvoiceLine {
+  id: string; description: string; quantity_milli: number;
+  unit_price_minor: number; amount_minor: number; position: number;
+}
+/** The line items for one invoice (client-readable under RLS), ordered. */
+export function useInvoiceLines(orgId: string | undefined, invoiceId: string | undefined) {
+  return useQuery({
+    queryKey: ["invoice-lines", orgId, invoiceId],
+    enabled: Boolean(orgId && invoiceId),
+    queryFn: async (): Promise<InvoiceLine[]> => {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from("invoice_lines")
+        .select("id, description, quantity_milli, unit_price_minor, amount_minor, position")
+        .eq("org_id", orgId!).eq("invoice_id", invoiceId!)
+        .order("position", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as InvoiceLine[];
+    },
+  });
+}
+
 /** AR aging buckets (0-30 / 31-60 / 61-90 / 90+) over open balances. */
 export function useArAging(orgId: string | undefined) {
   return useQuery({

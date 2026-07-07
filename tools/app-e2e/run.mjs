@@ -976,16 +976,22 @@ try {
         await invItem.first().click().catch(() => {});
         await page.waitForTimeout(300);
 
-        // Opt in if this org hasn't enabled invoicing yet (off by default).
+        // Opt in if this org hasn't enabled invoicing yet (off by default). Wait for
+        // the opt-in gate to actually clear (settings refetch over a real network
+        // round-trip) rather than a fixed sleep — a static timeout here previously
+        // raced the refetch, leaving the opt-in view (which ALSO carries the
+        // ".invoicing" class) on screen when the next selector queried it.
         const enableBtn = page.locator(".invoicing-optin button.primary");
         if (await enableBtn.count().catch(() => 0)) {
           await enableBtn.first().click().catch(() => {});
-          await page.waitForTimeout(400);
+          await page.locator(".invoicing-optin").waitFor({ state: "detached", timeout: 10_000 }).catch(() => {});
         }
 
         // Draft one invoice via the existing form (namespaced customer name —
         // safe to re-run; the invoice list just grows, nothing is asserted on count).
-        const newBtn = page.locator(".invoicing > button.primary");
+        // :not(.invoicing-optin) disambiguates from the opt-in gate's own
+        // button.primary — both container divs carry the shared ".invoicing" class.
+        const newBtn = page.locator(".invoicing:not(.invoicing-optin) > button.primary");
         if (await newBtn.count().catch(() => 0)) {
           await newBtn.first().click().catch(() => {});
           await page.waitForTimeout(200);

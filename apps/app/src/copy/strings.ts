@@ -244,8 +244,9 @@ export const COPY = {
     setupBody:
       "Connect your bank or import a statement and Penny starts categorizing right away. Prefer to do it by hand? You can add accounts and post entries too.",
     goToConnections: "Go to Connections",
-    previewNote: "Once your books are set up, this is your home base — money on hand, what needs you, and how the month is going, all in one place.",
+    previewNote: "This is your home base — your money on hand, what needs you, how the month is going, and a summary of what Penny's been handling, all in one place.",
     previewSoon: "Appears once your books are set up",
+    setupBanner: "Connect your books to start — bring in your data from Connections.",
     kpiCashAssets: "Cash & assets",
     kpiNetIncome: "Net income (all time)",
     kpiNeedsReview: "Needs review",

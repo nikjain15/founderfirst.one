@@ -150,7 +150,7 @@ a.ghost, a.ghost:visited { color: var(--ink-2); }
    mounts. Inside the bar the strip drops its full-width underline. */
 .topbar-tabs { display: flex; min-width: 0; margin-left: var(--space-3); }
 .topbar-tabs:empty { display: none; }
-.topbar-tabs .ledger-tabs { border-bottom: 0; gap: clamp(12px, 1.8vw, 26px); }
+.topbar-tabs .ledger-tabs { border-bottom: 0; gap: clamp(10px, 1.2vw, 18px); }
 @media (max-width: 640px) {
   /* Own full-width, scrollable row below the switcher on phones. */
   .topbar-tabs { order: 4; flex-basis: 100%; margin-left: 0; }
@@ -183,7 +183,7 @@ a.ghost, a.ghost:visited { color: var(--ink-2); }
 .orgsw { position: relative; display: inline-flex; min-width: 0; }
 .orgsw-trigger {
   display: inline-flex; align-items: center; gap: 0.4rem;
-  min-height: var(--tap-min); max-width: 20rem; padding: 0.35rem 0.7rem;
+  min-height: var(--tap-min); max-width: 14rem; padding: 0.35rem 0.7rem;
   background: var(--paper); color: var(--ink);
   border: var(--bw-hair) solid var(--line); border-radius: var(--r-pill);
   cursor: pointer; font-size: var(--fs-ui);
@@ -1630,13 +1630,15 @@ button.ghost.sm, .ghost.sm {
 /* Empty Home — a structured "getting started" surface, not a bare centered CTA.
    A setup card (one job, one action) over a calm preview of the pulse tiles. */
 .home-empty { max-width: 46rem; }
-.home-setup-card {
+/* Slim setup pointer — Home is a dashboard; the actual setup flow lives in
+   Connections, so this is a one-line nudge, not a hero card. */
+.home-setup-banner {
+  display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
+  padding: var(--space-3) var(--pad-card); max-width: 46rem;
   background: var(--white); border: var(--bw-hair) solid var(--line);
-  border-radius: var(--r-card); padding: var(--pad-card);
-  display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start;
+  border-radius: var(--r-card);
 }
-.home-setup-card .section-h { margin: 0; }
-.home-setup-body { margin: 0; color: var(--ink-2); line-height: 1.6; max-width: 40rem; }
+.home-setup-banner .ghost { margin-left: auto; }
 /* Preview tiles read as "coming soon" — muted, no shadow, dashed to signal placeholder. */
 .home-kpis-preview .kpi.is-placeholder {
   box-shadow: none; border-style: dashed; background: transparent;

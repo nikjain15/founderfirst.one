@@ -15,7 +15,7 @@ export type Nav = "owner" | "cpa";
 
 // Every leaf surface the workspace can show. Both navs route to a subset of these.
 export type Surface =
-  | "overview" | "review" | "reports" | "connections"
+  | "overview" | "review" | "reports" | "connections" | "invoicing"
   | "journal" | "accounts" | "import" | "periods" | "rules" | "reconcile" | "filing";
 
 export type SubTab = { id: Surface; label: string; writeOnly?: boolean };
@@ -37,6 +37,9 @@ export const OWNER_TABS: NavTab[] = [
   { id: "home", label: COPY.tabs.home, surface: "overview" },
   { id: "review", label: COPY.tabs.review, writeOnly: true, surface: "review" },
   { id: "reports", label: COPY.tabs.reports, surface: "reports" },
+  // Invoicing is its own owner tab (Nik, 6 Jul) — getting paid is a primary job,
+  // not buried in Connections. The component is opt-in + gates its own writes.
+  { id: "invoicing", label: COPY.tabs.invoicing, surface: "invoicing" },
   { id: "connections", label: COPY.tabs.connections, surface: "connections" },
   {
     // Learned rules live under Advanced for the owner — reachable, never prompted

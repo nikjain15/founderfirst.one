@@ -264,6 +264,7 @@ export default function Ledger({
                 onCategorize={() => goto("review")} />
             )}
             {surface === "reports" && <Reports entries={entries.data ?? []} org={org} />}
+            {surface === "invoicing" && <Invoicing orgId={org.id} canWrite={canWrite} />}
             {surface === "filing" && <Filing orgId={org.id} entries={entries.data ?? []} orgName={org.name} />}
           </div>
         </div>
@@ -323,11 +324,8 @@ function Connections({
       title: COPY.payouts.sectionTitle, desc: COPY.connections.menu.payoutDesc,
       render: () => <PayoutUpload orgId={orgId} canWrite={canWrite} accounts={accounts} />,
     },
-    {
-      id: "invoicing", cluster: COPY.connections.clusterMoney,
-      title: COPY.invoicing.sectionTitle, desc: COPY.connections.menu.invoicingDesc,
-      render: () => <Invoicing orgId={orgId} canWrite={canWrite} />,
-    },
+    // Invoicing was promoted to its own top-level owner tab (Nik, 6 Jul); it no
+    // longer lives in the Connections chooser. Bills stays here for now.
     {
       id: "bills", cluster: COPY.connections.clusterMoney,
       title: COPY.bills.sectionTitle, desc: COPY.connections.menu.billsDesc,

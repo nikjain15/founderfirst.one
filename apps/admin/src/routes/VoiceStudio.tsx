@@ -168,7 +168,7 @@ export function VoiceStudio() {
         <button className="btn primary" disabled={!dirty || saveMut.isPending} onClick={() => saveMut.mutate()}>
           {saveMut.isPending ? "Saving…" : "Save voice settings"}
         </button>
-        {dirty && <span style={{ fontSize: "var(--fs-eyebrow)", color: "var(--warn)" }}>● Unsaved changes</span>}
+        {dirty && <span style={{ fontSize: "var(--fs-eyebrow)", color: "var(--amber)" }}>● Unsaved changes</span>}
         <span style={{ marginLeft: "auto", fontSize: "var(--fs-tiny)", color: "var(--ink-3)" }}>
           Engine: Kokoro (open) · default: Heart 60 / Nova 40, 0.88×
         </span>

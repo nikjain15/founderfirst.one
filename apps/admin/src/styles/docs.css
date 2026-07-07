@@ -292,9 +292,9 @@
   border-color: var(--ink-4);
 }
 .whatsnew-pick-chip.is-on {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent-ink);
+  background: var(--brand-tint);
+  border-color: var(--brand);
+  color: var(--brand-strong);
 }
 .whatsnew-digest-last {
   color: var(--ink-4);

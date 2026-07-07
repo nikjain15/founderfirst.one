@@ -312,7 +312,38 @@ centralization: log field name/config centralized; no inline literals.
 coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
   call (success + error path).
 
-# PENNY-UX-10 + E-FILE (Nik 5-Jul: declutter + make responsive; card e-file Phase A)
+# WEEKLY-AUDIT-P1 — more findings from the 6-Jul full-surface audit (PR #301, report-only)
+> Same batch as the WEEKLY-AUDIT-P1 items above (SEC-3 pr:#309, BUBBLE-1 pr:#310 — the audit's
+> top 3 "fix now" items). This card is the audit's design_system P1: "second systemic pattern"
+> called out in the exec summary — `check:css-vars` only scanned `apps/app/src`, so admin's
+> three undefined-var breaches (invisible UI states) sailed through the build.
+
+## ADMIN-CSS-1 · Fix 3 undefined CSS vars in apps/admin + widen the check:css-vars guard (P1)
+status: pr:#TBD (loop-orch, 7 Jul) — building
+blocked-by: — (apps/admin components + scripts/check-css-vars.ts; independent of SEC-3/BUBBLE-1's
+  supabase/site-bubble lanes)
+context: audit found `apps/admin/src/styles/docs.css:295-297` (`--accent-soft`/`--accent`/
+  `--accent-ink`), `routes/VoiceStudio.tsx:171` (`--warn`), and `routes/AIRamp.tsx:72`
+  (`--text-warning`) reference CSS custom properties defined NOWHERE in `tokens.css` or any admin
+  stylesheet — the exact PENNY-UX-2/F2 silent-failure class (LEARNINGS rule 14: an unresolved
+  `var(--x)` falls back to its initial value, so the What's-new active chip, the VoiceStudio
+  "Unsaved changes" flag, and the AIRamp safety-fail count all quietly lose their intended color).
+  `check:css-vars` (scripts/check-css-vars.ts) only ever scanned `apps/app/src`, so none of this
+  was caught — the guard itself had the single-surface-scope gap the audit flagged as systemic.
+goal: (a) fix the 3 unresolved vars to the closest existing tokens.css equivalents — `--accent-soft`
+  → `--brand-tint`, `--accent` → `--brand`, `--accent-ink` → `--brand-strong` (docs.css); `--warn` →
+  `--amber` (VoiceStudio.tsx); `--text-warning` → `--amber-strong` (AIRamp.tsx); (b) widen
+  `scripts/check-css-vars.ts` to scan `apps/admin/src` and `apps/web/src` (CSS + inline `var(--x)`
+  in .ts/.tsx, plus .astro for web) in addition to `apps/app/src`, checked per-app-root against
+  tokens.css + that root's own stylesheets — closing the guard-coverage gap so this class of bug
+  can't recur silently in any of the three surfaces again.
+centralization: no new values invented — every fix maps to an existing tokens.css definition; the
+  guard itself becomes the enforcement mechanism (no per-surface duplicate checker).
+coverage delta: extend the design-system AUDIT row — `check:css-vars` (already wired into
+  `.github/workflows/centralization.yml`, runs on every PR) now proves 0 unresolved vars across
+  apps/app + apps/admin + apps/web, not just apps/app; verified locally (3934 var() references,
+  264 files, all resolve) before and after the fix.
+
 
 ## PENNY-UX-10 · Owner app declutter + FULL responsive pass → /admin minimalist standard
 status: claimed:loop-insession-5jul (building)

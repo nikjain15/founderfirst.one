@@ -69,7 +69,7 @@ export function AIRamp() {
                   <td>{lvl(r.current_mode, r.current_sample_rate)}</td>
                   <td className="num">{r.zero_edit_pct == null ? <span className="muted">—</span> : `${num(r.zero_edit_pct)}%`}</td>
                   <td className="num">{r.decisions}</td>
-                  <td className="num">{r.safety_fail > 0 ? <span style={{ color: "var(--text-warning)" }}>{r.safety_fail}</span> : "0"}</td>
+                  <td className="num">{r.safety_fail > 0 ? <span style={{ color: "var(--amber-strong)" }}>{r.safety_fail}</span> : "0"}</td>
                   <td>
                     <div style={{ fontSize: "var(--fs-body)" }}>{changed ? lvl(r.recommended_mode, r.recommended_sample_rate) : <span className="muted">no change</span>}</div>
                     <div className="ai-eval-desc">{r.rationale}</div>

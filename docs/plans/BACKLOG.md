@@ -312,6 +312,50 @@ centralization: log field name/config centralized; no inline literals.
 coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
   call (success + error path).
 
+# WEEKLY-AUDIT-P1 — findings from the 6-Jul full-surface audit (PR #301, report-only by charter)
+> The scheduled weekly audit found 4 P0 + 14 P1 across the monorepo (`docs/AUDIT.md` 14-dim
+> rubric). No cards existed for the fixes yet, so the loop cards + builds them directly as they're
+> picked up. BACKLOG.md had zero unclaimed non-decision-needed cards left otherwise (reconciliation
+> note above) — these are the next real, buildable, non-decision items, ranked by the audit's own
+> "top 3 to fix now". **SEC-3** (item ①, the 4 P0 + 2 P1 cross-tenant `SECURITY DEFINER` read leaks
+> in the tax/fixed-asset RPCs) was already carded + fixed by a prior iteration — see pr:#309
+> (awaiting Nik review/merge as of this card; check `gh pr view 309` for current status, don't
+> re-fix it here). This card is items ② + ③.
+
+## BUBBLE-1 · site-bubble reliability + retention hardening (P1)
+status: pr:#TBD (loop-orch, 7 Jul) — see this session's PR
+blocked-by: — (site-bubble/worker + one migration; independent of SEC-3's supabase/functions lane)
+context: audit's #2 + #3 "fix now" items (both site-bubble):
+  (a) **reliability** — `handleChat`'s incidental email/phone-lead + chat-turn logging
+      (`worker.ts` — user-turn, penny-turn, volunteered email/phone) `await`ed `supa.logLead`/
+      `logChat` directly; `Supabase.post()` throws on any non-2xx, so a Supabase blip turned a
+      perfectly good model reply into an uncaught 500 for the visitor. The live-*prompt read*
+      path already degrades gracefully (baked-in fallback); only the incidental *write* path
+      was a hard dependency.
+  (b) **privacy** — `penny_site_chats_purge()` (90-day chat/lead retention, README-advertised)
+      was defined but never `cron.schedule`d — verified against every other purge/digest
+      migration, all of which schedule themselves. Visitor chat transcripts + captured email/
+      phone accumulated indefinitely (LEARNINGS #8: disclosed retention needs a real mechanism).
+goal: (a) a `safeLog()` helper (try/catch, log-and-continue via `console.error`, mirrors the
+  Discord memory path's best-effort discipline) wraps the 4 incidental log-write call sites in
+  `handleChat`; `handleWaitlist`'s `logLead` is untouched (there the write IS the point of the
+  request — a failure there should still surface). (b) a migration schedules
+  `penny-site-chats-purge` daily at 03:00 UTC, same idempotent `cron.schedule`/`unschedule` guard
+  every other cron job in this repo uses.
+centralization: no new config surface; reuses the existing purge fn + the Discord best-effort
+  logging pattern. No inline hex/px/strings (no UI touched).
+coverage delta: new `site-bubble/tests/safe-log.test.mjs` (3 assertions) proves a rejecting write
+  is swallowed (not thrown) and still logged for observability, and a successful write resolves
+  clean. The cron schedule itself isn't pgTAP-assertable in this repo (no existing test scans
+  `cron.job`, and pg_cron isn't guaranteed present pre-CI-reset) — proven by the same idempotent-
+  schedule pattern every shipped cron migration already uses, verified functionally once deployed
+  (`select * from cron.job where jobname = 'penny-site-chats-purge'`).
+  ⭐ Also fixes a standing gate gap found while building this: `site-bubble/tests/*.mjs` (38
+  assertions total, all pure-function) had **zero CI coverage** — no workflow ran `npm test`
+  there (the same "guard scoped to one surface" pattern the audit flagged for `check:css-vars`).
+  New `.github/workflows/site-bubble-tests.yml` runs the suite + `tsc --noEmit` on the worker on
+  every PR/push touching `site-bubble/**`.
+
 # PENNY-UX-10 + E-FILE (Nik 5-Jul: declutter + make responsive; card e-file Phase A)
 
 ## PENNY-UX-10 · Owner app declutter + FULL responsive pass → /admin minimalist standard

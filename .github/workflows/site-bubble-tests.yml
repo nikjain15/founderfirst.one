@@ -1,0 +1,44 @@
+name: site-bubble tests
+
+# `site-bubble/tests/*.mjs` (cta/extractors/json-shape/safe-log — pure-function
+# mirrors of the worker's logic) existed with zero CI coverage: no workflow ran
+# `npm test` here (weekly audit 2026-07-06 #301 systemic pattern — a CI guard
+# scoped to a single surface lets other surfaces' regressions through). Also
+# type-checks the worker so a `tsc` break (e.g. in worker.ts) fails the PR
+# instead of only being caught by a human running it locally.
+
+on:
+  pull_request:
+    paths:
+      - "site-bubble/**"
+      - ".github/workflows/site-bubble-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "site-bubble/**"
+      - ".github/workflows/site-bubble-tests.yml"
+  workflow_dispatch:
+
+jobs:
+  site-bubble-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # site-bubble is its own workspace (not in the root pnpm workspace) — see
+      # deploy-worker.yml.
+      - name: Install site-bubble deps
+        working-directory: site-bubble
+        run: npm install
+
+      - name: Run site-bubble unit tests
+        working-directory: site-bubble
+        run: npm test
+
+      - name: Type-check the worker
+        working-directory: site-bubble/worker
+        run: npx tsc --noEmit -p tsconfig.json

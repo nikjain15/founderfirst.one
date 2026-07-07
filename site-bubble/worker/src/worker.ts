@@ -266,6 +266,19 @@ async function getSiteContent(env: Env): Promise<string> {
   return SITE_CONTENT;
 }
 
+/* ── Best-effort logging ──────────────────────────────────────────────── */
+// Chat-log/lead writes are incidental to the reply, not the point of the
+// request — a Supabase blip on `post()` (Supabase.post throws on non-2xx)
+// must never turn into an uncaught 500 for a user who got a perfectly good
+// model reply. Log-and-continue, same discipline as the Discord memory path.
+async function safeLog(label: string, op: Promise<void>): Promise<void> {
+  try {
+    await op;
+  } catch (err) {
+    console.error(`${label} failed`, err instanceof Error ? err.message : err);
+  }
+}
+
 /* ── /chat handler ────────────────────────────────────────────────────── */
 
 async function handleChat(req: Request, env: Env, ctx: ExecutionContext, origin: string | null): Promise<Response> {
@@ -305,23 +318,32 @@ async function handleChat(req: Request, env: Env, ctx: ExecutionContext, origin:
   const email = extractEmail(body.message);
   const phone = extractPhone(body.message);
   if (email) {
-    await supa.logLead({ session_id: body.sessionId, kind: "email", value: email, source: "volunteered", ...meta });
+    await safeLog(
+      "logLead(email)",
+      supa.logLead({ session_id: body.sessionId, kind: "email", value: email, source: "volunteered", ...meta }),
+    );
   }
   if (phone) {
-    await supa.logLead({ session_id: body.sessionId, kind: "phone", value: phone, source: "volunteered", ...meta });
+    await safeLog(
+      "logLead(phone)",
+      supa.logLead({ session_id: body.sessionId, kind: "phone", value: phone, source: "volunteered", ...meta }),
+    );
   }
 
   // Log user turn.
-  await supa.logChat({
-    session_id: body.sessionId,
-    turn_index: body.turnIndex,
-    role: "user",
-    message: body.message,
-    on_waitlist: state.on_waitlist,
-    soft_decline: state.soft_decline_seen,
-    buying_signal: buying,
-    ...meta,
-  });
+  await safeLog(
+    "logChat(user)",
+    supa.logChat({
+      session_id: body.sessionId,
+      turn_index: body.turnIndex,
+      role: "user",
+      message: body.message,
+      on_waitlist: state.on_waitlist,
+      soft_decline: state.soft_decline_seen,
+      buying_signal: buying,
+      ...meta,
+    }),
+  );
 
   // Build the prompt.
   //   PROMPT_GUARDRAILS = locked runtime contract (output schema + input format).
@@ -410,18 +432,21 @@ ${JSON.stringify(state, null, 2)}
   const pennyMessage = parsed.bubbles.map((b) => b.headline).join("\n\n");
 
   // Log Penny turn.
-  await supa.logChat({
-    session_id: body.sessionId,
-    turn_index: body.turnIndex,
-    role: "penny",
-    message: pennyMessage,
-    cta_emitted: ctaEmitted,
-    tone: firstBubble?.tone ?? null,
-    on_waitlist: state.on_waitlist,
-    soft_decline: state.soft_decline_seen,
-    buying_signal: buying,
-    ...meta,
-  });
+  await safeLog(
+    "logChat(penny)",
+    supa.logChat({
+      session_id: body.sessionId,
+      turn_index: body.turnIndex,
+      role: "penny",
+      message: pennyMessage,
+      cta_emitted: ctaEmitted,
+      tone: firstBubble?.tone ?? null,
+      on_waitlist: state.on_waitlist,
+      soft_decline: state.soft_decline_seen,
+      buying_signal: buying,
+      ...meta,
+    }),
+  );
 
   const nextState: SessionState = {
     ...state,

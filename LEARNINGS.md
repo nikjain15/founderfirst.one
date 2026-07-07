@@ -435,6 +435,31 @@ replay — inherited by every stacked branch.
   `loop/wave<N>-integration` branch** (updated as base cards land), not pinned commits, to
   avoid gate-time rebase churn.
 
+## 25. A `SECURITY DEFINER` reader bypasses RLS — it must re-check tenant access itself.
+
+**What happened:** Four org-scoped read RPCs (`resolve_account_tax_lines`, `tax_unmapped_accounts`,
+`tax_m1_summary`, `fixed_asset_listing`) were written `security definer`, granted
+`to authenticated`, took a caller-supplied `p_org_id`, and filtered only `where org_id = p_org_id`
+— **no `can_access_org` check**. One even carried the comment *"Pure read — safe for authenticated
+(RLS on ledger_accounts already scopes it)"* — which is exactly the trap: `security definer`
+runs as the owner and **bypasses the underlying table's RLS**, so any authenticated user could pass
+another tenant's org id and read its chart of accounts, tax-adjustment totals, or fixed-asset
+register. This is the **second audit in a row** to find the pattern (the prior audit's F1 was
+`owner_asks_this_week`), so it is now a rule.
+
+**Rules:**
+- **Every `security definer` function that takes an org/tenant id MUST re-check membership itself**
+  — `if not can_access_org(p_org_id) then raise exception 'forbidden' using errcode='42501'; end if;`
+  (or, for a `language sql` reader, `... and can_access_org(p_org_id)` in the predicate). Do **not**
+  rely on the base table's RLS — DEFINER bypasses it.
+- **Prefer the isolation default:** if a reader doesn't need DEFINER, don't use it; if it does,
+  grant it to `service_role` only and route the caller through the thin write-API/edge-fn that
+  re-verifies the actor (the pattern `20260701000000_isolation_revoke_rpc_execute.sql` established
+  for every `p_actor`-first write RPC). "The caller won't pass someone else's UUID" is not a control
+  — org ids appear in URLs, invites, CPA-client links, and logs.
+- **Guard the guard:** `check:tenant` should flag any `security definer` + `to authenticated`
+  function whose body references an org-id param without a `can_access_org`/`can_write_org_as` call.
+
 ---
 
 *Add a numbered rule above when a mistake teaches a lesson worth not repeating.*
@@ -445,6 +470,38 @@ Dated findings from `/audit` runs, newest first. Each entry: the commit audited,
 a short summary, and one line per P0/P1 marked **fixed** or **deferred**. When an
 issue here keeps recurring, graduate it into a numbered rule above — that is how
 we stop repeating it. The command lives at `.claude/commands/audit.md`.
+
+### 2026-07-06 audit — ebf0da8 (weekly full-surface sweep)
+Full 14-dimension sweep across all surfaces (apps/admin · apps/web · apps/app · site-bubble ·
+supabase · tools/packages/docs) via 6 parallel surface auditors; every finding verified against the
+file before logging. Browser dimensions (responsive · a11y · performance) were **static-reasoned
+only — no browser in this scheduled headless run** (flagged; a11y/responsive still surfaced
+real code-level findings). **Overall 82/100. Totals: 4 P0 · 14 P1 · 33 P2.** Security scores 0 and
+drags the mean (severity discipline working as designed); every other dimension ≥ 58.
+**New systemic pattern → graduated to Rule 25:** `SECURITY DEFINER` readers that trust a
+client-supplied org id and lean on the base table's RLS (which DEFINER bypasses) — the F1 pattern
+recurring a 2nd audit running. **Second systemic pattern:** CI guards scoped to one surface —
+`check:css-vars` scans only `apps/app/src`, so admin's undefined-var breaches (F-A1) sail through.
+**Top 3 to fix now:** the 4 P0 cross-tenant DEFINER leaks · the Penny-widget chat-log write that
+500s every chat on a Supabase blip (F-B1) · the unscheduled 90-day chat-PII purge (F-B2). This run
+**reports only — no code fixed**; all P0/P1 below are **deferred**. Full report + per-dimension
+scores in the PR body.
+
+- **P0 · security · deferred** — `resolve_account_tax_lines` (`20260703060100_tax_mapping_rpcs.sql:120`, grant :187): DEFINER + `to authenticated`, no `can_access_org` → any authed user reads any org's chart of accounts + tax-line overrides. Fix: add the guard (Rule 25).
+- **P0 · security · deferred** — `tax_unmapped_accounts` (`…tax_mapping_rpcs.sql:196`, grant :203): same, inherits the leak via `resolve_account_tax_lines`.
+- **P0 · security · deferred** — `tax_m1_summary` (`…tax_mapping_rpcs.sql:370`, grant :377): same → any org's approved M-1 tax-adjustment totals.
+- **P0 · security · deferred** — `fixed_asset_listing` (`20260703070100_fixed_asset_rpcs.sql:545`, grant :562): same → any org's fixed-asset register, despite `fixed_assets` itself being RLS-protected (DEFINER bypasses it).
+- **P1 · security · deferred** — `macrs_tax_depreciation_for_year` + `book_depreciation_for_year` (`…fixed_asset_rpcs.sql:152,244`): DEFINER + `to authenticated`, key on `p_asset_id` with no org filter/guard → per-asset depreciation figures leak (narrower: opaque asset UUID, single value). Same remediation sweep.
+- **P1 · reliability · deferred** — `site-bubble/worker/src/worker.ts:307-324` (`handleChat`): `await supa.logLead/logChat` not wrapped; `Supabase.post` throws on non-2xx → a Supabase write outage becomes an uncaught 500 (no CORS) on **every** chat turn even though the model is reachable. Fix: try/catch log-and-continue (or `ctx.waitUntil`), mirroring the Discord memory path.
+- **P1 · privacy · deferred** — `penny_site_chats_purge()` (defined `20260620153619_remote_commit.sql:1025`) is **never `cron.schedule`d** (verified against all migrations) → advertised 90-day retention unenforced; visitor chat transcripts + captured email/phone accumulate indefinitely (LEARNINGS #8). Fix: schedule it like the other purge crons.
+- **P1 · accessibility · deferred** — 1099-NEC report table `apps/app/src/ledger/Ledger.tsx:1112`: bare `<table className="report-table">` inside `.report` (overflow-x:auto) with no `.table-wrap`/`tabIndex`/`role`/`aria-label` → `scrollable-region-focusable` (serious) axe violation on narrow widths. The graduated F5/GL fix wasn't applied to the NEC table (recurrence). Fix: wrap it like `Invoicing.tsx:111`.
+- **P1 · design_system · deferred** — 3 undefined CSS vars render invisible states in admin: `docs.css:295-297` (`--accent-soft`/`--accent`/`--accent-ink` on the active What's-new chip), `VoiceStudio.tsx:171` (`--warn`), `AIRamp.tsx:72` (`--text-warning`). None exist in tokens.css. Fix: map to `--brand-tint`/`--brand`/`--brand-strong` and `--amber(-strong)`. Slips CI because `check:css-vars` only scans `apps/app/src`.
+- **P1 · ia_ux · deferred** — admin Settings menu holds 8 items (`apps/admin/src/App.tsx:195-204`) vs the documented 5; Build (live loop) + Experiments (A/B) are daily-cadence surfaces misfiled into set-and-forget Settings. Placement review for Nik, not a code bug.
+- **P1 · copy_docs/VOICE · deferred** — `apps/web/src/components/SignupForm.tsx:55` renders `"You're in! Taking you to your welcome page…"` — a machine-forbidden exclamation mark in user-facing copy (VOICE.md). Fix: em-dash rephrase.
+- **P1 · copy_docs · deferred** — `.github/workflows/README.md:3` claims "8 workflows" but 15 `.yml` exist (7 undocumented: centralization, deno-tests, kernel-seed, preflight, regression, regulatory-watcher, soak-harness). docs/README.md promises this file covers every workflow (Rule 7). Fix: add the 7 rows, bump the count/date.
+- **P1 · observability · deferred** — compose-server plist logs to `/tmp/compose-server.{log,err}` (ephemeral, contradicts README's `~/Library/Logs/founderfirst/`); and the Mac-is-prod SPOF (LEARNINGS #13) has **no external heartbeat** — local auto-restart only, nothing alerts if the Mac sleeps/loses network. Fix: repoint the plist; add a cheap external `/health` + freshness poll.
+- **P1 · tests · deferred** — **zero test files across all of `tools/`** — the Signals scoring pipeline (`brain.mjs` relevance/intent, `validateDraft()`), `optimizer.mjs` anomaly scan, and `compose-server.mjs` are untested; bad scoring silently pollutes Leads. Fix: unit-test `validateDraft()` + the score/promote thresholds at minimum.
+- *Notable P2s:* widget palette drifted off-brand (near-black-on-grey vs navy-on-cream); `apps/web` canonical/base URLs hardcoded instead of `SITE.url` (×4); admin ~56 magic-px font-sizes + 37 inline-px radii; Bills-form inputs use `--fs-body` (15px floor → iOS zoom) not `--fs-input`; supabase wildcard CORS + unauthenticated `signup-confirmation` enumeration; `penny_site_chats`/`_leads` carry unused permissive anon grants (inert today — RLS has zero policies — but a latent footgun). *(audit_runs insert skipped — no service_role in this headless run.)*
 
 ### 3 Jul 2026 · Wave-3 wave-gate audit (owner-experience layer) — GATE 🟢 CLEAR
 14-dimension rubric + adversarial stress pass over the Wave-3 blast radius (W3.2 trust-tiered

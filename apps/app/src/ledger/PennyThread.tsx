@@ -165,7 +165,9 @@ export default function PennyThread({
         </div>
       )}
 
-      <div className="thread-turns" role="log" aria-live="polite">
+      {/* tabIndex → the scrollable log is keyboard-reachable (axe:
+          scrollable-region-focusable); it scrolls once the conversation grows. */}
+      <div className="thread-turns" role="log" aria-live="polite" tabIndex={0}>
         {turns.map((t) => (
           <div key={t.id} className={`thread-turn t-${t.who}${t.pending ? " is-pending" : ""}`}>
             <span className="turn-who">{t.who === "you" ? COPY.thread.youLabel : COPY.thread.pennyLabel}</span>
@@ -177,11 +179,15 @@ export default function PennyThread({
 
       {!canWrite && <p className="muted sm">{COPY.thread.readOnly}</p>}
 
-      <div className="thread-suggest">
-        {[COPY.thread.suggestSpend, COPY.thread.suggestIncome, COPY.thread.suggestCash].map((s) => (
-          <button key={s} type="button" className="ghost sm" disabled={busy} onClick={() => ask(s)}>{s}</button>
-        ))}
-      </div>
+      {/* Starter prompts only until the first question — after that they'd crowd
+          out the actual Q&A (Nik). They return on a fresh thread. */}
+      {!turns.some((t) => t.who === "you") && (
+        <div className="thread-suggest">
+          {[COPY.thread.suggestSpend, COPY.thread.suggestIncome, COPY.thread.suggestCash].map((s) => (
+            <button key={s} type="button" className="ghost sm" disabled={busy} onClick={() => ask(s)}>{s}</button>
+          ))}
+        </div>
+      )}
 
       <form
         className="thread-input"

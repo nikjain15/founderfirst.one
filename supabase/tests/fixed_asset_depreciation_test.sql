@@ -23,7 +23,7 @@
 -- Runs in a transaction and rolls back.
 
 begin;
-select plan(47);
+select plan(52);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -90,6 +90,11 @@ select register_fixed_asset(
   p_expense_account_id => '80000000-0000-0000-0000-0000000000c1',
   p_accumulated_account_id => '80000000-0000-0000-0000-0000000000c2'
 ) as id;
+
+-- the SECDEF readers below (macrs_tax_depreciation_for_year / book_depreciation_
+-- for_year / fixed_asset_listing / tax_m1_summary) are gated on can_access_org
+-- (SEC-3) — auth as the owner (a member of Depr Co) for the positive path.
+set local "request.jwt.claims" = '{"sub":"80000000-0000-0000-0000-000000000001","email":"owner@depr.dev","role":"authenticated"}';
 
 -- ── 3. MACRS golden numbers per year (DATA-driven) ───────────────────────────
 select is(macrs_tax_depreciation_for_year((select id from _asset), 2025), 200000::bigint, 'MACRS 5yr HY yr1 = $2,000 (20%)');
@@ -273,6 +278,28 @@ select is(
   (select count(*)::int from information_schema.role_routine_grants
     where routine_name = 'register_fixed_asset' and grantee in ('anon','authenticated')),
   0, 'register_fixed_asset is NOT execute-granted to anon/authenticated (forged-actor P0 closed)');
+-- ── SEC-3: cross-tenant SECDEF read leak closed (weekly audit PR #301 P0/P1) ──
+-- Other Co's owner (member of a9, NOT a0) must be refused reads on Depr Co's
+-- (a0) asset/org data — previously these DEFINER readers trusted the id alone.
+set local "request.jwt.claims" = '{"sub":"80000000-0000-0000-0000-000000000009","email":"other@depr.dev","role":"authenticated"}';
+select throws_ok($$
+  select macrs_tax_depreciation_for_year((select id from _asset), 2025)
+$$, '42501', NULL, 'SEC-3: a non-member is REFUSED macrs_tax_depreciation_for_year on another org''s asset');
+select throws_ok($$
+  select book_depreciation_for_year((select id from _asset), 2025)
+$$, '42501', NULL, 'SEC-3: a non-member is REFUSED book_depreciation_for_year on another org''s asset');
+select is(
+  (select count(*)::int from fixed_asset_listing('80000000-0000-0000-0000-0000000000a0', 2025)),
+  0, 'SEC-3: a non-member gets ZERO rows from fixed_asset_listing for another org (was: full asset register)');
+-- restore the owner context: the SAME reads succeed for a real member
+set local "request.jwt.claims" = '{"sub":"80000000-0000-0000-0000-000000000001","email":"owner@depr.dev","role":"authenticated"}';
+select is(
+  macrs_tax_depreciation_for_year((select id from _asset), 2025), 200000::bigint,
+  'sanity: the OWNER still reads MACRS depreciation on their own asset (the guard is not fail-closed for everyone)');
+select ok(
+  (select count(*)::int from fixed_asset_listing('80000000-0000-0000-0000-0000000000a0', 2025)) >= 1,
+  'sanity: the OWNER still sees their own org''s fixed-asset listing');
+
 -- cross-tenant register is refused (owner of Other Co cannot register into Depr Co)
 select throws_ok($$
   select register_fixed_asset('80000000-0000-0000-0000-000000000009','80000000-0000-0000-0000-0000000000a0',

@@ -511,6 +511,50 @@ centralization: reuse existing mfaGate + org_requires_mfa; no new thresholds.
 coverage delta: extend the auth-mfa AUDIT row — assert: MFA-required firm + aal1 CPA → cpa-close
   rejected 403; aal2 → allowed; non-MFA firm → unaffected. deno/pgTAP.
 
+## SEC-3 · Cross-tenant SECURITY DEFINER read leak — tax + fixed-asset RPCs (P0)
+status: pr:#TBD (loop-orch, 7 Jul) — carded and fixed same session; no dedicated
+  card existed before this (found by the weekly audit, PR #301, report-only).
+blocked-by: — (self-contained SQL fix in the affected functions' own files)
+context: PR #301 (Weekly audit, 6 Jul) found 4 P0 + 2 P1 `security definer` read RPCs
+  granted `to authenticated` that filtered ONLY on a caller-supplied `p_org_id` /
+  `p_asset_id` — no `can_access_org` membership check. DEFINER runs as the function
+  owner and BYPASSES the base table's RLS, so any authenticated user could pass
+  another tenant's id and read its data. This is the SAME shape as the Wave-3
+  audit's F1 finding (`owner_asks_this_week`) recurring a second time — graduated
+  into LEARNINGS Rule 25 by the audit. The audit was report-only by charter (no
+  code changes); this card is the follow-up fix, carded and built immediately
+  given the severity (live cross-tenant financial-data leak) rather than waiting
+  for a future loop iteration to card it.
+workflow: n/a (backend security fix, no user-facing workflow change — the RPCs
+  behave identically for an authorized caller; only a non-member's read is now
+  blocked/empty instead of leaking).
+goal: close all 6 leaks using the SAME pattern already used by the correctly-
+  guarded siblings in this codebase (`bill_ap_aging` / `ninetynine_nec_summary` /
+  `estimated_tax_basis`) — no new pattern invented:
+  - `resolve_account_tax_lines` (P0, leaked any org's chart of accounts + CPA tax-
+    line overrides) — added `and can_access_org(p_org_id)` to the base CTE.
+  - `tax_unmapped_accounts` (P0, inherited the leak) — fixed transitively + its
+    own guard for defense-in-depth.
+  - `tax_m1_summary` (P0, leaked any org's approved M-1 adjustment totals) —
+    `and can_access_org(p_org_id)` in the WHERE.
+  - `fixed_asset_listing` (P0, leaked any org's fixed-asset register + depreciation
+    despite `fixed_assets` itself being RLS-protected) — same WHERE-clause guard.
+  - `macrs_tax_depreciation_for_year` / `book_depreciation_for_year` (P1, keyed on
+    an opaque `p_asset_id` with no org filter/guard at all) — plpgsql RAISE
+    (errcode 42501) after resolving the asset's own `org_id`, matching the
+    write-RPC forbidden convention already used in the same files. Rebuilt on top
+    of each function's LATEST body (verified via grep for later `create or
+    replace` redefinitions — `macrs_tax_depreciation_for_year` was last redefined
+    by the 070200 red-team #4 fix, NOT its original 070100 body; diffed line-by-
+    line against both authoritative bodies to confirm the guard is the ONLY change).
+centralization: no new pattern — reuses the existing `can_access_org(target_org)`
+  helper (phase0_tenancy_backbone) every correctly-guarded sibling already calls.
+coverage delta: `tax_mapping_engine_test.sql` (+4 assertions, plan 36→40) and
+  `fixed_asset_depreciation_test.sql` (+5, plan 47→52) — an outsider gets ZERO
+  rows / a 42501 raise from every fixed function; a real member's read is
+  unaffected (explicit sanity assertions, not just the negative case).
+decision-needed: none (a security fix following an established in-repo pattern).
+
 ## CONN-1 · QBO production hosting IP (static-egress proxy) — Nik + infra
 status: unclaimed (deferred — sandbox unaffected)
 blocked-by: — (not blocking any build; production QBO is Intuit-review-gated anyway)

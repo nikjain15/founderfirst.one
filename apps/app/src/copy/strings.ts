@@ -1480,6 +1480,21 @@ export const COPY = {
       loadingLines: "Loading the invoice…",
       noLines: "No line items on this invoice.",
       noEmail: "No email on file",
+      terms: "Payment terms",
+    },
+    // business profile (Slice C) — the From/branding block on every invoice
+    profile: {
+      heading: "Your business details",
+      lead: "These appear at the top of every invoice you send.",
+      name: "Business name",
+      address: "Address",
+      email: "Billing email",
+      terms: "Default payment terms",
+      termsPlaceholder: "e.g. Payment due within 30 days",
+      save: "Save details",
+      saving: "Saving…",
+      saved: "Saved.",
+      edit: "Edit business details",
     },
     // payment inline
     paymentAmount: "Amount received",

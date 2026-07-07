@@ -1800,6 +1800,17 @@ button.ghost.sm, .ghost.sm {
 .console-support .priority-pill.p1 { background: var(--error-bg); color: var(--error); }
 .console-support .priority-pill.p2 { background: var(--amber-bg); color: var(--amber-strong); }
 
+/* ── Invoice business profile (Slice C) — inline editor for the From block ───── */
+.invoicing-profile-collapsed { display: flex; }
+.invoicing-profile {
+  background: var(--white); border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); padding: var(--pad-card);
+  display: flex; flex-direction: column; gap: var(--space-2); max-width: 34rem;
+}
+.invoicing-profile .section-h { margin: 0; }
+.invoicing-profile label { display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-label); color: var(--ink-3); }
+.invoicing-profile-actions { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-1); }
+
 /* ── Invoice document viewer (Slice B) — a real, printable invoice document ──── */
 .invoice-doc-overlay {
   position: fixed; inset: 0; z-index: 80; overflow-y: auto;

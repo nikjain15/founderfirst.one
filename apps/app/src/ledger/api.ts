@@ -1245,10 +1245,19 @@ export interface Invoice {
   sent_at: string | null;
   last_nudge_at: string | null;
 }
-export interface InvoicingSettings { enabled: boolean; nudges_enabled: boolean; }
+export interface InvoicingSettings {
+  enabled: boolean; nudges_enabled: boolean;
+  // Business profile (Slice C) — brands the invoice document's From block.
+  business_name: string | null; business_address: string | null;
+  business_email: string | null; payment_terms: string | null;
+}
 export interface ArAgingBucket { bucket: string; invoice_count: number; balance_minor: number; }
+export interface InvoicingProfileInput {
+  business_name?: string | null; business_address?: string | null;
+  business_email?: string | null; payment_terms?: string | null;
+}
 
-/** The org's invoicing opt-in flags (defaults off when no row exists). */
+/** The org's invoicing flags + business profile (defaults off/empty when no row). */
 export function useInvoicingSettings(orgId: string | undefined) {
   return useQuery({
     queryKey: ["invoicing-settings", orgId],
@@ -1256,12 +1265,30 @@ export function useInvoicingSettings(orgId: string | undefined) {
     queryFn: async (): Promise<InvoicingSettings> => {
       const sb = getClient();
       const { data, error } = await sb
-        .from("org_invoicing_settings").select("enabled, nudges_enabled")
+        .from("org_invoicing_settings")
+        .select("enabled, nudges_enabled, business_name, business_address, business_email, payment_terms")
         .eq("org_id", orgId!).maybeSingle();
       if (error) throw error;
-      return { enabled: Boolean(data?.enabled), nudges_enabled: Boolean(data?.nudges_enabled) };
+      return {
+        enabled: Boolean(data?.enabled), nudges_enabled: Boolean(data?.nudges_enabled),
+        business_name: data?.business_name ?? null, business_address: data?.business_address ?? null,
+        business_email: data?.business_email ?? null, payment_terms: data?.payment_terms ?? null,
+      };
     },
   });
+}
+
+/** Save the invoice business profile (owner-gated server-side). */
+export async function setInvoicingProfile(org_id: string, profile: InvoicingProfileInput): Promise<void> {
+  const sb = getClient();
+  const { error } = await sb.rpc("set_invoicing_profile", {
+    p_org: org_id,
+    p_business_name: profile.business_name ?? null,
+    p_business_address: profile.business_address ?? null,
+    p_business_email: profile.business_email ?? null,
+    p_payment_terms: profile.payment_terms ?? null,
+  });
+  if (error) throw error;
 }
 
 /** Every invoice for the org, newest first. */

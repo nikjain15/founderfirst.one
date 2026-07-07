@@ -17,8 +17,8 @@ import { useState } from "react";
 import {
   useInvoices, useArAging, useInvoicingSettings, useInvoicingRefresh, useOrgSettings, useCurrencies,
   useInvoiceLines,
-  setInvoicingSettings, upsertInvoice, sendInvoice, payInvoice, voidInvoice, runInvoiceNudges,
-  type Invoice, type InvoiceLineInput, type InvoiceLine,
+  setInvoicingSettings, setInvoicingProfile, upsertInvoice, sendInvoice, payInvoice, voidInvoice, runInvoiceNudges,
+  type Invoice, type InvoiceLineInput, type InvoiceLine, type InvoicingSettings,
 } from "./api";
 import { formatMoney, parseMoneyToMinor } from "./money";
 import { COPY } from "../copy";
@@ -76,6 +76,9 @@ export default function Invoicing({ orgId, canWrite, orgName }: { orgId: string;
       {/* AR aging — who owes what, at a glance */}
       <AgingStrip buckets={aging.data ?? []} />
 
+      {/* Business details — the From/branding block on every invoice */}
+      {canWrite && <ProfilePanel orgId={orgId} settings={settings.data ?? null} onSaved={refresh} />}
+
       {/* Reminders opt-in + manual send */}
       {canWrite && (
         <div className="invoicing-nudges">
@@ -131,7 +134,8 @@ export default function Invoicing({ orgId, canWrite, orgName }: { orgId: string;
         )}
 
       {viewing && (
-        <InvoiceView orgId={orgId} orgName={orgName} invoice={viewing} onClose={() => setViewing(null)} />
+        <InvoiceView orgId={orgId} orgName={orgName} profile={settings.data ?? null}
+          invoice={viewing} onClose={() => setViewing(null)} />
       )}
     </div>
   );
@@ -305,14 +309,73 @@ function InvoiceForm({
   );
 }
 
+// ── Business profile (Slice C) — the From/branding block, edited inline ───────
+function ProfilePanel({
+  orgId, settings, onSaved,
+}: {
+  orgId: string; settings: InvoicingSettings | null; onSaved: () => void;
+}) {
+  const P = COPY.invoicing.profile;
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(settings?.business_name ?? "");
+  const [address, setAddress] = useState(settings?.business_address ?? "");
+  const [email, setEmail] = useState(settings?.business_email ?? "");
+  const [terms, setTerms] = useState(settings?.payment_terms ?? "");
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  if (!open) {
+    return (
+      <div className="invoicing-profile-collapsed">
+        <button className="ghost sm" onClick={() => setOpen(true)}>{P.edit}</button>
+      </div>
+    );
+  }
+  return (
+    <div className="invoicing-profile">
+      <h3 className="section-h">{P.heading}</h3>
+      <p className="muted sm">{P.lead}</p>
+      <label>{P.name}
+        <input value={name} onChange={(e) => { setName(e.target.value); setSaved(false); }} />
+      </label>
+      <label>{P.address}
+        <input value={address} onChange={(e) => { setAddress(e.target.value); setSaved(false); }} />
+      </label>
+      <label>{P.email}
+        <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setSaved(false); }} />
+      </label>
+      <label>{P.terms}
+        <input value={terms} placeholder={P.termsPlaceholder}
+          onChange={(e) => { setTerms(e.target.value); setSaved(false); }} />
+      </label>
+      <div className="invoicing-profile-actions">
+        <button className="ghost" onClick={() => setOpen(false)}>{I.cancel}</button>
+        <button className="primary" disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await setInvoicingProfile(orgId, {
+                business_name: name.trim() || null, business_address: address.trim() || null,
+                business_email: email.trim() || null, payment_terms: terms.trim() || null,
+              });
+              setSaved(true); onSaved();
+            } finally { setBusy(false); }
+          }}>{busy ? P.saving : P.save}</button>
+        {saved && <span className="muted sm">{P.saved}</span>}
+      </div>
+    </div>
+  );
+}
+
 // ── Invoice document viewer (Slice B) — a real, printable invoice ─────────────
 // A professional document: business (From) · Bill-to · number/dates · line-item
 // table · totals · notes. Read-only; the row keeps send/pay/void. Print → the
 // browser dialog (Save as PDF). Lines are client-readable under RLS.
 function InvoiceView({
-  orgId, orgName, invoice, onClose,
+  orgId, orgName, profile, invoice, onClose,
 }: {
-  orgId: string; orgName?: string; invoice: Invoice; onClose: () => void;
+  orgId: string; orgName?: string; profile: InvoicingSettings | null;
+  invoice: Invoice; onClose: () => void;
 }) {
   const lines = useInvoiceLines(orgId, invoice.id);
   const cur = invoice.currency;
@@ -330,8 +393,9 @@ function InvoiceView({
         <article className="invoice-doc">
           <header className="invoice-doc-head">
             <div className="invoice-doc-from">
-              <span className="invoice-doc-biz">{orgName ?? V.from}</span>
-              <span className="invoice-doc-fromlabel muted sm">{V.from}</span>
+              <span className="invoice-doc-biz">{profile?.business_name || orgName || V.from}</span>
+              {profile?.business_address && <span className="muted sm">{profile.business_address}</span>}
+              {profile?.business_email && <span className="muted sm">{profile.business_email}</span>}
             </div>
             <div className="invoice-doc-meta">
               <span className="invoice-doc-label">{V.docLabel}</span>
@@ -391,6 +455,12 @@ function InvoiceView({
             <div className="invoice-doc-notes">
               <span className="invoice-doc-collabel muted sm">{V.notes}</span>
               <p>{invoice.memo}</p>
+            </div>
+          )}
+          {profile?.payment_terms && (
+            <div className="invoice-doc-notes">
+              <span className="invoice-doc-collabel muted sm">{V.terms}</span>
+              <p>{profile.payment_terms}</p>
             </div>
           )}
         </article>

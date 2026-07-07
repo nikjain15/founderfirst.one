@@ -16,18 +16,21 @@
 import { useState } from "react";
 import {
   useInvoices, useArAging, useInvoicingSettings, useInvoicingRefresh, useOrgSettings, useCurrencies,
+  useInvoiceLines,
   setInvoicingSettings, upsertInvoice, sendInvoice, payInvoice, voidInvoice, runInvoiceNudges,
-  type Invoice, type InvoiceLineInput,
+  type Invoice, type InvoiceLineInput, type InvoiceLine,
 } from "./api";
 import { formatMoney, parseMoneyToMinor } from "./money";
 import { COPY } from "../copy";
 
 const I = COPY.invoicing;
+const V = COPY.invoicing.viewer;
 
 type LineDraft = { description: string; qty: string; unitPrice: string };
 const emptyLine = (): LineDraft => ({ description: "", qty: "1", unitPrice: "" });
 
-export default function Invoicing({ orgId, canWrite }: { orgId: string; canWrite: boolean }) {
+export default function Invoicing({ orgId, canWrite, orgName }: { orgId: string; canWrite: boolean; orgName?: string }) {
+  const [viewing, setViewing] = useState<Invoice | null>(null);
   const settings = useInvoicingSettings(orgId);
   const orgSettings = useOrgSettings(orgId);
   const invoices = useInvoices(orgId);
@@ -119,12 +122,17 @@ export default function Invoicing({ orgId, canWrite }: { orgId: string; canWrite
               </thead>
               <tbody>
                 {(invoices.data ?? []).map((inv) => (
-                  <InvoiceRow key={inv.id} orgId={orgId} inv={inv} canWrite={canWrite} busy={busy} run={run} />
+                  <InvoiceRow key={inv.id} orgId={orgId} inv={inv} canWrite={canWrite} busy={busy} run={run}
+                    onView={() => setViewing(inv)} />
                 ))}
               </tbody>
             </table>
           </div>
         )}
+
+      {viewing && (
+        <InvoiceView orgId={orgId} orgName={orgName} invoice={viewing} onClose={() => setViewing(null)} />
+      )}
     </div>
   );
 }
@@ -148,10 +156,10 @@ function AgingStrip({ buckets }: { buckets: { bucket: string; balance_minor: num
 }
 
 function InvoiceRow({
-  orgId, inv, canWrite, busy, run,
+  orgId, inv, canWrite, busy, run, onView,
 }: {
   orgId: string; inv: Invoice; canWrite: boolean; busy: boolean;
-  run: (fn: () => Promise<unknown>) => Promise<void>;
+  run: (fn: () => Promise<unknown>) => Promise<void>; onView: () => void;
 }) {
   const [paying, setPaying] = useState(false);
   const [amt, setAmt] = useState("");
@@ -167,6 +175,7 @@ function InvoiceRow({
         <td className="num">{formatMoney(balance, inv.currency)}</td>
         <td><span className={`inv-status inv-status-${inv.status}`}>{I.statusLabel(inv.status)}</span></td>
         <td className="inv-actions">
+          <button className="ghost sm" onClick={onView}>{I.view}</button>
           {canWrite && inv.status === "draft" && (
             <button className="ghost sm" disabled={busy}
               onClick={() => run(() => sendInvoice(orgId, inv.id))}>{I.send}</button>
@@ -291,6 +300,100 @@ function InvoiceForm({
               lines: parsed,
             })}>{I.saveDraft}</button>
         </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Invoice document viewer (Slice B) — a real, printable invoice ─────────────
+// A professional document: business (From) · Bill-to · number/dates · line-item
+// table · totals · notes. Read-only; the row keeps send/pay/void. Print → the
+// browser dialog (Save as PDF). Lines are client-readable under RLS.
+function InvoiceView({
+  orgId, orgName, invoice, onClose,
+}: {
+  orgId: string; orgName?: string; invoice: Invoice; onClose: () => void;
+}) {
+  const lines = useInvoiceLines(orgId, invoice.id);
+  const cur = invoice.currency;
+  const balance = invoice.total_minor - invoice.amount_paid_minor;
+  const qty = (milli: number) => (milli / 1000).toString();
+
+  return (
+    <div className="invoice-doc-overlay" role="dialog" aria-modal="true" aria-label={`${V.docLabel} ${invoice.number}`}>
+      <div className="invoice-doc-panel">
+        <div className="invoice-doc-toolbar">
+          <button className="ghost sm" onClick={onClose}>{V.close}</button>
+          <button className="ghost sm" onClick={() => window.print()}>{V.print}</button>
+        </div>
+
+        <article className="invoice-doc">
+          <header className="invoice-doc-head">
+            <div className="invoice-doc-from">
+              <span className="invoice-doc-biz">{orgName ?? V.from}</span>
+              <span className="invoice-doc-fromlabel muted sm">{V.from}</span>
+            </div>
+            <div className="invoice-doc-meta">
+              <span className="invoice-doc-label">{V.docLabel}</span>
+              <span className="invoice-doc-number">{invoice.number}</span>
+              <span className={`inv-status inv-status-${invoice.status}`}>{I.statusLabel(invoice.status)}</span>
+            </div>
+          </header>
+
+          <div className="invoice-doc-parties">
+            <div className="invoice-doc-billto">
+              <span className="invoice-doc-collabel muted sm">{V.billTo}</span>
+              <span className="invoice-doc-cust">{invoice.customer_name}</span>
+              <span className="muted sm">{invoice.customer_email ?? V.noEmail}</span>
+            </div>
+            <div className="invoice-doc-dates">
+              <span><span className="muted sm">{V.issued} </span>{invoice.issue_date}</span>
+              <span><span className="muted sm">{V.due} </span>{invoice.due_date}</span>
+            </div>
+          </div>
+
+          {lines.isLoading ? (
+            <p className="muted">{V.loadingLines}</p>
+          ) : (lines.data ?? []).length === 0 ? (
+            <p className="muted">{V.noLines}</p>
+          ) : (
+            <table className="invoice-doc-lines">
+              <thead>
+                <tr>
+                  <th>{V.colDescription}</th>
+                  <th className="num">{V.colQty}</th>
+                  <th className="num">{V.colUnit}</th>
+                  <th className="num">{V.colAmount}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(lines.data ?? []).map((l: InvoiceLine) => (
+                  <tr key={l.id}>
+                    <td>{l.description}</td>
+                    <td className="num">{qty(l.quantity_milli)}</td>
+                    <td className="num">{formatMoney(l.unit_price_minor, cur)}</td>
+                    <td className="num">{formatMoney(l.amount_minor, cur)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          <div className="invoice-doc-totals">
+            <div className="invoice-doc-total-row"><span>{V.total}</span><span className="num">{formatMoney(invoice.total_minor, cur)}</span></div>
+            {invoice.amount_paid_minor > 0 && (
+              <div className="invoice-doc-total-row"><span>{V.paid}</span><span className="num">{formatMoney(invoice.amount_paid_minor, cur)}</span></div>
+            )}
+            <div className="invoice-doc-total-row invoice-doc-balance"><span>{V.balanceDue}</span><span className="num">{formatMoney(balance, cur)}</span></div>
+          </div>
+
+          {invoice.memo && (
+            <div className="invoice-doc-notes">
+              <span className="invoice-doc-collabel muted sm">{V.notes}</span>
+              <p>{invoice.memo}</p>
+            </div>
+          )}
+        </article>
       </div>
     </div>
   );

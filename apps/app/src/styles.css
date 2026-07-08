@@ -1859,6 +1859,41 @@ button.ghost.sm, .ghost.sm {
   .invoice-doc { border: 0; }
 }
 
+/* ── Invoice builder (Slice 2) — document-style editor: grouped Bill-To/dates,
+      a real line-item table with a live per-line amount, memo/terms, and a
+      Preview toggle that reuses .invoice-doc* (InvoiceDocumentBody). ────────── */
+.invoice-form { display: flex; flex-direction: column; gap: var(--space-4); margin: var(--space-3) 0; }
+.invoice-form-head { display: flex; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.invoice-form-billto, .invoice-form-dates {
+  display: flex; flex-direction: column; gap: var(--space-2); flex: 1 1 16rem; min-width: 14rem;
+}
+.invoice-form-dates { align-items: flex-end; }
+.invoice-form-dates label { width: 100%; max-width: 16rem; }
+.invoice-form-billto label, .invoice-form-dates label {
+  display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-label); color: var(--ink-3);
+}
+.invoice-form-lines-table { width: 100%; border-collapse: collapse; }
+.invoice-form-lines-table th {
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip);
+  color: var(--ink-3); text-align: left; padding: 0 var(--space-1) var(--space-1) 0;
+}
+.invoice-form-lines-table td { padding: var(--space-1) var(--space-1) var(--space-1) 0; vertical-align: middle; }
+.invoice-form-lines-table .num { text-align: right; }
+.invoice-form-lines-table input { width: 100%; }
+.invoice-form-lines-table .il-qty input, .invoice-form-lines-table .il-price input { text-align: right; }
+.invoice-form-line-amount { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--ink-2); }
+.invoice-form-memo { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--fs-label); color: var(--ink-3); }
+.invoice-form-memo textarea {
+  font-family: inherit; font-size: var(--fs-input); padding: 0.6rem 0.75rem;
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-card);
+  background: var(--paper); color: var(--ink); resize: vertical;
+}
+.invoice-form-foot { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.invoice-form-total { font-weight: var(--fw-semibold); color: var(--ink); }
+.invoice-form-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.invoice-form-preview { gap: var(--space-3); }
+.invoice-form-preview .invoice-doc { padding: var(--space-6); }
+
 /* ── Bills / AP — TRACKING ONLY (RV2-D1), nested under Connections. Tokens only;
       the money-OUT twin of invoicing. No inline hex / magic px. ─────────────── */
 .bills { display: flex; flex-direction: column; gap: var(--space-3); }

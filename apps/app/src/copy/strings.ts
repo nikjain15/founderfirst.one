@@ -1505,6 +1505,7 @@ export const COPY = {
     // form
     customerName: "Customer name",
     customerEmail: "Customer email",
+    issueDate: "Issue date",
     dueDate: "Due date",
     currency: "Currency", // shown only when multi-currency is on (W5.4)
     lineDescription: "Description",
@@ -1514,8 +1515,18 @@ export const COPY = {
     removeLine: "Remove line",
     totalPrefix: "Total:",
     saveDraft: "Save draft",
+    memo: "Notes / terms",
+    memoPlaceholder: "Add a note or payment terms for this invoice (optional)",
     // ── PENNY-UX-5 · keyboard-accessible scroll region (APPENDED — additive key) ──
     tableAria: "Invoices",
+    // ── Slice 2 · professional builder — live document preview (INVOICING_REWORK) ──
+    preview: "Preview",
+    backToEdit: "Back to edit",
+    draftNumber: "DRAFT",
+    previewCustomerPlaceholder: "Your customer",
+    previewToday: "Today",
+    previewNoDueDate: "No due date set",
+    linesTableAria: "Invoice line items",
   },
 
   // ── PENNY-UX-4 · CPA "+ Add client" guided flow (APPENDED — additive section) ──

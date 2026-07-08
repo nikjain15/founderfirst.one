@@ -21,6 +21,7 @@ import {
   type Invoice, type InvoiceLineInput, type InvoiceLine, type InvoicingSettings,
 } from "./api";
 import { formatMoney, parseMoneyToMinor } from "./money";
+import { invoiceTotalMinor, lineAmountMinor } from "./invoiceMath";
 import { COPY } from "../copy";
 
 const I = COPY.invoicing;
@@ -105,6 +106,7 @@ export default function Invoicing({ orgId, canWrite, orgName }: { orgId: string;
       )}
       {creating && (
         <InvoiceForm busy={busy} multiCurrency={multiCurrency} homeCurrency={homeCurrency}
+          orgName={orgName} profile={settings.data ?? null}
           onCancel={() => setCreating(false)}
           onSave={(input) => run(async () => { await upsertInvoice({ org_id: orgId, ...input }); setCreating(false); })} />
       )}
@@ -226,20 +228,30 @@ function InvoiceRow({
   );
 }
 
+// ── Professional builder (Slice 2) — a document-style editor: grouped
+// Bill-To + dates, a real line-item table (live per-line amount), memo/terms,
+// and a Preview toggle that renders the exact Slice-1/B document from the
+// current draft (no save required to see it).
 function InvoiceForm({
-  busy, multiCurrency, homeCurrency, onCancel, onSave,
+  busy, multiCurrency, homeCurrency, orgName, profile, onCancel, onSave,
 }: {
-  busy: boolean; multiCurrency: boolean; homeCurrency: string; onCancel: () => void;
+  busy: boolean; multiCurrency: boolean; homeCurrency: string;
+  orgName?: string; profile: InvoicingSettings | null;
+  onCancel: () => void;
   onSave: (input: {
     customer_name: string; customer_email?: string | null;
-    due_date?: string | null; currency?: string | null; lines: InvoiceLineInput[];
+    issue_date?: string | null; due_date?: string | null; currency?: string | null;
+    memo?: string | null; lines: InvoiceLineInput[];
   }) => void;
 }) {
   const [customer, setCustomer] = useState("");
   const [email, setEmail] = useState("");
+  const [issueDate, setIssueDate] = useState("");
   const [due, setDue] = useState("");
   const [currency, setCurrency] = useState(homeCurrency);
+  const [memo, setMemo] = useState("");
   const [lines, setLines] = useState<LineDraft[]>([emptyLine()]);
+  const [previewing, setPreviewing] = useState(false);
   const currencies = useCurrencies();
 
   const parsed: InvoiceLineInput[] = lines
@@ -249,60 +261,136 @@ function InvoiceForm({
       unit_price_minor: parseMoneyToMinor(l.unitPrice) ?? 0,
     }))
     .filter((l) => l.description && l.unit_price_minor > 0);
-  const total = parsed.reduce((s, l) => s + Math.round((l.quantity_milli! * l.unit_price_minor) / 1000), 0);
-  const valid = customer.trim() && parsed.length > 0;
+  const total = invoiceTotalMinor(parsed);
+  const valid = Boolean(customer.trim() && parsed.length > 0);
+
+  const save = () => onSave({
+    customer_name: customer.trim(),
+    customer_email: email.trim() || null,
+    issue_date: issueDate || null,
+    due_date: due || null,
+    currency: multiCurrency ? currency : null,
+    memo: memo.trim() || null,
+    lines: parsed,
+  });
+
+  if (previewing) {
+    return (
+      <div className="invoice-form invoice-form-preview">
+        <div className="invoice-doc-toolbar">
+          <button className="ghost sm" onClick={() => setPreviewing(false)}>{I.backToEdit}</button>
+        </div>
+        <InvoiceDocumentBody
+          orgName={orgName} profile={profile} number={I.draftNumber}
+          customerName={customer.trim() || I.previewCustomerPlaceholder}
+          customerEmail={email.trim() || null}
+          issueDate={issueDate || I.previewToday} dueDate={due || I.previewNoDueDate}
+          lines={parsed.map((l, i) => ({
+            id: String(i),
+            description: l.description,
+            qty: ((l.quantity_milli ?? 1000) / 1000).toString(),
+            unitPriceMinor: l.unit_price_minor,
+            amountMinor: lineAmountMinor(l.quantity_milli ?? 1000, l.unit_price_minor),
+          }))}
+          cur={currency} totalMinor={total} paidMinor={0} memo={memo.trim() || null}
+        />
+        <div className="invoice-form-foot">
+          <span className="invoice-form-actions">
+            <button className="ghost" onClick={onCancel}>{I.cancel}</button>
+            <button className="primary" disabled={!valid || busy} onClick={save}>{I.saveDraft}</button>
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="invoice-form">
       <div className="invoice-form-head">
-        <label>{I.customerName}
-          <input value={customer} onChange={(e) => setCustomer(e.target.value)} />
-        </label>
-        <label>{I.customerEmail}
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        </label>
-        <label>{I.dueDate}
-          <input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
-        </label>
-        {multiCurrency && (
-          <label>{I.currency}
-            <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
-              {(currencies.data ?? [{ code: homeCurrency, name: homeCurrency, minor_unit: 2 }]).map((c) => (
-                <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
-              ))}
-            </select>
+        <div className="invoice-form-billto">
+          <span className="invoice-doc-collabel muted sm">{V.billTo}</span>
+          <label>{I.customerName}
+            <input value={customer} onChange={(e) => setCustomer(e.target.value)} />
           </label>
-        )}
+          <label>{I.customerEmail}
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </label>
+        </div>
+        <div className="invoice-form-dates">
+          <label>{I.issueDate}
+            <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
+          </label>
+          <label>{I.dueDate}
+            <input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+          </label>
+          {multiCurrency && (
+            <label>{I.currency}
+              <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                {(currencies.data ?? [{ code: homeCurrency, name: homeCurrency, minor_unit: 2 }]).map((c) => (
+                  <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
       </div>
-      <div className="invoice-form-lines">
-        {lines.map((l, i) => (
-          <div className="invoice-line" key={i}>
-            <input className="il-desc" placeholder={I.lineDescription} value={l.description}
-              onChange={(e) => setLines((ls) => ls.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} />
-            <input className="il-qty" inputMode="decimal" placeholder={I.lineQty} value={l.qty}
-              onChange={(e) => setLines((ls) => ls.map((x, j) => j === i ? { ...x, qty: e.target.value } : x))} />
-            <input className="il-price" inputMode="decimal" placeholder={I.linePrice} value={l.unitPrice}
-              onChange={(e) => setLines((ls) => ls.map((x, j) => j === i ? { ...x, unitPrice: e.target.value } : x))} />
-            {lines.length > 1 && (
-              <button className="ghost sm" aria-label={I.removeLine}
-                onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}>×</button>
-            )}
-          </div>
-        ))}
-        <button className="ghost sm" onClick={() => setLines((ls) => [...ls, emptyLine()])}>{I.addLine}</button>
+
+      <div className="table-wrap" tabIndex={0} role="region" aria-label={I.linesTableAria}>
+        <table className="invoice-form-lines-table">
+          <thead>
+            <tr>
+              <th>{I.lineDescription}</th>
+              <th className="num">{I.lineQty}</th>
+              <th className="num">{I.linePrice}</th>
+              <th className="num">{V.colAmount}</th>
+              <th aria-label={I.removeLine} />
+            </tr>
+          </thead>
+          <tbody>
+            {lines.map((l, i) => {
+              const qtyMilli = Math.round((parseFloat(l.qty || "1") || 1) * 1000);
+              const priceMinor = parseMoneyToMinor(l.unitPrice) ?? 0;
+              const amount = lineAmountMinor(qtyMilli, priceMinor);
+              return (
+                <tr key={i}>
+                  <td>
+                    <input className="il-desc" placeholder={I.lineDescription} value={l.description}
+                      onChange={(e) => setLines((ls) => ls.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} />
+                  </td>
+                  <td className="num">
+                    <input className="il-qty" inputMode="decimal" value={l.qty}
+                      onChange={(e) => setLines((ls) => ls.map((x, j) => j === i ? { ...x, qty: e.target.value } : x))} />
+                  </td>
+                  <td className="num">
+                    <input className="il-price" inputMode="decimal" placeholder={I.linePrice} value={l.unitPrice}
+                      onChange={(e) => setLines((ls) => ls.map((x, j) => j === i ? { ...x, unitPrice: e.target.value } : x))} />
+                  </td>
+                  <td className="num invoice-form-line-amount">{formatMoney(amount, currency)}</td>
+                  <td>
+                    {lines.length > 1 && (
+                      <button className="ghost sm" aria-label={I.removeLine}
+                        onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}>×</button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
+      <button className="ghost sm" onClick={() => setLines((ls) => [...ls, emptyLine()])}>{I.addLine}</button>
+
+      <label className="invoice-form-memo">{I.memo}
+        <textarea value={memo} placeholder={I.memoPlaceholder} rows={2}
+          onChange={(e) => setMemo(e.target.value)} />
+      </label>
+
       <div className="invoice-form-foot">
         <span className="invoice-form-total">{I.totalPrefix} {formatMoney(total, currency)}</span>
         <span className="invoice-form-actions">
+          <button className="ghost sm" disabled={!valid} onClick={() => setPreviewing(true)}>{I.preview}</button>
           <button className="ghost" onClick={onCancel}>{I.cancel}</button>
-          <button className="primary" disabled={!valid || busy}
-            onClick={() => onSave({
-              customer_name: customer.trim(),
-              customer_email: email.trim() || null,
-              due_date: due || null,
-              currency: multiCurrency ? currency : null,
-              lines: parsed,
-            })}>{I.saveDraft}</button>
+          <button className="primary" disabled={!valid || busy} onClick={save}>{I.saveDraft}</button>
         </span>
       </div>
     </div>
@@ -378,9 +466,11 @@ function InvoiceView({
   invoice: Invoice; onClose: () => void;
 }) {
   const lines = useInvoiceLines(orgId, invoice.id);
-  const cur = invoice.currency;
-  const balance = invoice.total_minor - invoice.amount_paid_minor;
-  const qty = (milli: number) => (milli / 1000).toString();
+  const docLines = (lines.data ?? []).map((l: InvoiceLine) => ({
+    id: l.id, description: l.description,
+    qty: (l.quantity_milli / 1000).toString(),
+    unitPriceMinor: l.unit_price_minor, amountMinor: l.amount_minor,
+  }));
 
   return (
     <div className="invoice-doc-overlay" role="dialog" aria-modal="true" aria-label={`${V.docLabel} ${invoice.number}`}>
@@ -389,82 +479,108 @@ function InvoiceView({
           <button className="ghost sm" onClick={onClose}>{V.close}</button>
           <button className="ghost sm" onClick={() => window.print()}>{V.print}</button>
         </div>
-
-        <article className="invoice-doc">
-          <header className="invoice-doc-head">
-            <div className="invoice-doc-from">
-              <span className="invoice-doc-biz">{profile?.business_name || orgName || V.from}</span>
-              {profile?.business_address && <span className="muted sm">{profile.business_address}</span>}
-              {profile?.business_email && <span className="muted sm">{profile.business_email}</span>}
-            </div>
-            <div className="invoice-doc-meta">
-              <span className="invoice-doc-label">{V.docLabel}</span>
-              <span className="invoice-doc-number">{invoice.number}</span>
-              <span className={`inv-status inv-status-${invoice.status}`}>{I.statusLabel(invoice.status)}</span>
-            </div>
-          </header>
-
-          <div className="invoice-doc-parties">
-            <div className="invoice-doc-billto">
-              <span className="invoice-doc-collabel muted sm">{V.billTo}</span>
-              <span className="invoice-doc-cust">{invoice.customer_name}</span>
-              <span className="muted sm">{invoice.customer_email ?? V.noEmail}</span>
-            </div>
-            <div className="invoice-doc-dates">
-              <span><span className="muted sm">{V.issued} </span>{invoice.issue_date}</span>
-              <span><span className="muted sm">{V.due} </span>{invoice.due_date}</span>
-            </div>
-          </div>
-
-          {lines.isLoading ? (
-            <p className="muted">{V.loadingLines}</p>
-          ) : (lines.data ?? []).length === 0 ? (
-            <p className="muted">{V.noLines}</p>
-          ) : (
-            <table className="invoice-doc-lines">
-              <thead>
-                <tr>
-                  <th>{V.colDescription}</th>
-                  <th className="num">{V.colQty}</th>
-                  <th className="num">{V.colUnit}</th>
-                  <th className="num">{V.colAmount}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(lines.data ?? []).map((l: InvoiceLine) => (
-                  <tr key={l.id}>
-                    <td>{l.description}</td>
-                    <td className="num">{qty(l.quantity_milli)}</td>
-                    <td className="num">{formatMoney(l.unit_price_minor, cur)}</td>
-                    <td className="num">{formatMoney(l.amount_minor, cur)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
-          <div className="invoice-doc-totals">
-            <div className="invoice-doc-total-row"><span>{V.total}</span><span className="num">{formatMoney(invoice.total_minor, cur)}</span></div>
-            {invoice.amount_paid_minor > 0 && (
-              <div className="invoice-doc-total-row"><span>{V.paid}</span><span className="num">{formatMoney(invoice.amount_paid_minor, cur)}</span></div>
-            )}
-            <div className="invoice-doc-total-row invoice-doc-balance"><span>{V.balanceDue}</span><span className="num">{formatMoney(balance, cur)}</span></div>
-          </div>
-
-          {invoice.memo && (
-            <div className="invoice-doc-notes">
-              <span className="invoice-doc-collabel muted sm">{V.notes}</span>
-              <p>{invoice.memo}</p>
-            </div>
-          )}
-          {profile?.payment_terms && (
-            <div className="invoice-doc-notes">
-              <span className="invoice-doc-collabel muted sm">{V.terms}</span>
-              <p>{profile.payment_terms}</p>
-            </div>
-          )}
-        </article>
+        <InvoiceDocumentBody
+          orgName={orgName} profile={profile} number={invoice.number} status={invoice.status}
+          customerName={invoice.customer_name} customerEmail={invoice.customer_email}
+          issueDate={invoice.issue_date} dueDate={invoice.due_date}
+          lines={docLines} linesLoading={lines.isLoading} cur={invoice.currency}
+          totalMinor={invoice.total_minor} paidMinor={invoice.amount_paid_minor} memo={invoice.memo}
+        />
       </div>
     </div>
+  );
+}
+
+// ── Shared document body (Slice 2) — the same markup renders a SAVED invoice
+// (InvoiceView, fed from the fetched lines) and a LIVE unsaved draft (the
+// InvoiceForm preview toggle, fed from local state) — one visual source of
+// truth for what "the invoice" looks like, never two documents to keep in sync.
+type DocLine = { id: string; description: string; qty: string; unitPriceMinor: number; amountMinor: number };
+
+function InvoiceDocumentBody({
+  orgName, profile, number, status, customerName, customerEmail, issueDate, dueDate,
+  lines, linesLoading, cur, totalMinor, paidMinor, memo,
+}: {
+  orgName?: string; profile: InvoicingSettings | null; number: string; status?: Invoice["status"];
+  customerName: string; customerEmail?: string | null; issueDate: string; dueDate: string;
+  lines: DocLine[]; linesLoading?: boolean; cur: string; totalMinor: number; paidMinor: number;
+  memo?: string | null;
+}) {
+  const balance = totalMinor - paidMinor;
+  return (
+    <article className="invoice-doc">
+      <header className="invoice-doc-head">
+        <div className="invoice-doc-from">
+          <span className="invoice-doc-biz">{profile?.business_name || orgName || V.from}</span>
+          {profile?.business_address && <span className="muted sm">{profile.business_address}</span>}
+          {profile?.business_email && <span className="muted sm">{profile.business_email}</span>}
+        </div>
+        <div className="invoice-doc-meta">
+          <span className="invoice-doc-label">{V.docLabel}</span>
+          <span className="invoice-doc-number">{number}</span>
+          {status && <span className={`inv-status inv-status-${status}`}>{I.statusLabel(status)}</span>}
+        </div>
+      </header>
+
+      <div className="invoice-doc-parties">
+        <div className="invoice-doc-billto">
+          <span className="invoice-doc-collabel muted sm">{V.billTo}</span>
+          <span className="invoice-doc-cust">{customerName}</span>
+          <span className="muted sm">{customerEmail || V.noEmail}</span>
+        </div>
+        <div className="invoice-doc-dates">
+          <span><span className="muted sm">{V.issued} </span>{issueDate}</span>
+          <span><span className="muted sm">{V.due} </span>{dueDate}</span>
+        </div>
+      </div>
+
+      {linesLoading ? (
+        <p className="muted">{V.loadingLines}</p>
+      ) : lines.length === 0 ? (
+        <p className="muted">{V.noLines}</p>
+      ) : (
+        <table className="invoice-doc-lines">
+          <thead>
+            <tr>
+              <th>{V.colDescription}</th>
+              <th className="num">{V.colQty}</th>
+              <th className="num">{V.colUnit}</th>
+              <th className="num">{V.colAmount}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lines.map((l) => (
+              <tr key={l.id}>
+                <td>{l.description}</td>
+                <td className="num">{l.qty}</td>
+                <td className="num">{formatMoney(l.unitPriceMinor, cur)}</td>
+                <td className="num">{formatMoney(l.amountMinor, cur)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <div className="invoice-doc-totals">
+        <div className="invoice-doc-total-row"><span>{V.total}</span><span className="num">{formatMoney(totalMinor, cur)}</span></div>
+        {paidMinor > 0 && (
+          <div className="invoice-doc-total-row"><span>{V.paid}</span><span className="num">{formatMoney(paidMinor, cur)}</span></div>
+        )}
+        <div className="invoice-doc-total-row invoice-doc-balance"><span>{V.balanceDue}</span><span className="num">{formatMoney(balance, cur)}</span></div>
+      </div>
+
+      {memo && (
+        <div className="invoice-doc-notes">
+          <span className="invoice-doc-collabel muted sm">{V.notes}</span>
+          <p>{memo}</p>
+        </div>
+      )}
+      {profile?.payment_terms && (
+        <div className="invoice-doc-notes">
+          <span className="invoice-doc-collabel muted sm">{V.terms}</span>
+          <p>{profile.payment_terms}</p>
+        </div>
+      )}
+    </article>
   );
 }

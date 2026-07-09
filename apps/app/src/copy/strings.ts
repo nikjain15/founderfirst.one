@@ -563,6 +563,8 @@ export const COPY = {
     pkgApAging: "Accounts payable aging",
     // ── PENNY-UX-5 · keyboard-accessible scroll region (APPENDED — additive key) ──
     glTableAria: "General ledger detail",
+    // ── a11y audit (5 Jul weekly) · NEC table scroll region (APPENDED — additive key) ──
+    necTableAria: "1099-NEC contractor summary",
   },
 
   // ── Filing worksheet (RV2-A1) ──────────────────────────────────────────────

@@ -245,7 +245,9 @@ async function verifyReportDownload() {
  *  visited. This walk clicks every report view (P&L · Trial balance · Balance
  *  sheet · Cash flow · General ledger · 1099-NEC · Lender package), runs the same
  *  serious/critical-gating axe scan on each, and additionally asserts the GL
- *  scroll region is keyboard-focusable (tabindex) — the exact F5 regression.
+ *  and 1099-NEC scroll regions are keyboard-focusable (tabindex) — the exact F5
+ *  regression, which recurred on the NEC table (weekly audit, 5 Jul — the graduated
+ *  fix wasn't applied there) and is now netted the same way as GL.
  *  Labels mirror apps/app/src/copy/strings.ts COPY.reports.* (the copy catalog). */
 const REPORT_VIEWS_UX5 = [
   "P&L", "Trial balance", "Balance sheet", "Cash flow",
@@ -260,12 +262,12 @@ async function walkReportViewsA11y() {
     if (!(await btn.count().catch(() => 0))) { fail(`Reports: view switcher missing "${name}"`); continue; }
     await btn.first().click().catch(() => {});
     await page.waitForTimeout(400);
-    if (name === "General ledger") {
-      // F5 regression net: the GL scroll region must be reachable by keyboard.
+    if (name === "General ledger" || name === "1099-NEC") {
+      // F5 regression net: the GL/NEC scroll region must be reachable by keyboard.
       const focusable = await page.locator(".reports .table-wrap[tabindex='0']").count().catch(() => 0);
       const hasWrap = await page.locator(".reports .table-wrap").count().catch(() => 0);
-      if (hasWrap && !focusable) fail("Reports · General ledger: .table-wrap is not keyboard-focusable (no tabindex) — F5 regressed");
-      else ok("Reports · General ledger: scroll region is keyboard-focusable" + (hasWrap ? "" : " (empty state — no table)"));
+      if (hasWrap && !focusable) fail(`Reports · ${name}: .table-wrap is not keyboard-focusable (no tabindex) — F5 regressed`);
+      else ok(`Reports · ${name}: scroll region is keyboard-focusable` + (hasWrap ? "" : " (empty state — no table)"));
     }
     await a11yScan(`Reports · ${name}`);           // same serious/critical gate as every screen
   }

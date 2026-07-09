@@ -1104,37 +1104,39 @@ function NecReport({ nec }: { nec: ReturnType<typeof necSummary> }) {
   return (
     <div className="report">
       <p className="sub sm">{COPY.reports.necThresholdNote}</p>
-      <table className="report-table">
-        <thead>
-          <tr>
-            <th>{COPY.reports.necColVendor}</th>
-            <th>{COPY.reports.necColW9}</th>
-            <th>{COPY.reports.necColTin}</th>
-            <th className="num">{COPY.reports.necColReportable}</th>
-            <th className="num">{COPY.reports.necColExcluded}</th>
-            <th>{COPY.reports.necColMustFile}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {nec.rows.map((r) => (
-            <tr key={r.vendor_id} className={r.meets_threshold ? "t-must-file" : ""}>
-              <td>{r.vendor_name}</td>
-              <td>{r.w9_on_file ? COPY.reports.necW9OnFile : COPY.reports.necW9Missing}</td>
-              <td>{r.tax_id_last4 ? `${(r.tax_id_type ?? "").toUpperCase()} ••${r.tax_id_last4}` : "—"}</td>
-              <td className="num">{formatMoney(r.reportable_minor)}</td>
-              <td className="num">{formatMoney(r.excluded_minor)}</td>
-              <td>{r.meets_threshold ? COPY.reports.necMustFileYes : COPY.reports.necMustFileNo}</td>
+      <div className="table-wrap" tabIndex={0} role="region" aria-label={COPY.reports.necTableAria}>
+        <table className="report-table">
+          <thead>
+            <tr>
+              <th>{COPY.reports.necColVendor}</th>
+              <th>{COPY.reports.necColW9}</th>
+              <th>{COPY.reports.necColTin}</th>
+              <th className="num">{COPY.reports.necColReportable}</th>
+              <th className="num">{COPY.reports.necColExcluded}</th>
+              <th>{COPY.reports.necColMustFile}</th>
             </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan={3}>{COPY.reports.necTotalToFile} ({nec.vendorsToFile})</td>
-            <td className="num">{formatMoney(nec.totalReportable)}</td>
-            <td colSpan={2} />
-          </tr>
-        </tfoot>
-      </table>
+          </thead>
+          <tbody>
+            {nec.rows.map((r) => (
+              <tr key={r.vendor_id} className={r.meets_threshold ? "t-must-file" : ""}>
+                <td>{r.vendor_name}</td>
+                <td>{r.w9_on_file ? COPY.reports.necW9OnFile : COPY.reports.necW9Missing}</td>
+                <td>{r.tax_id_last4 ? `${(r.tax_id_type ?? "").toUpperCase()} ••${r.tax_id_last4}` : "—"}</td>
+                <td className="num">{formatMoney(r.reportable_minor)}</td>
+                <td className="num">{formatMoney(r.excluded_minor)}</td>
+                <td>{r.meets_threshold ? COPY.reports.necMustFileYes : COPY.reports.necMustFileNo}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={3}>{COPY.reports.necTotalToFile} ({nec.vendorsToFile})</td>
+              <td className="num">{formatMoney(nec.totalReportable)}</td>
+              <td colSpan={2} />
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   );
 }

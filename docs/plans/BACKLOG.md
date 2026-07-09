@@ -19,6 +19,46 @@
 > corrected to match. Remaining real buildable work: **W5.4-FX** (ECB fx-rate fetcher — schema
 > shipped, no fetcher exists yet) is the top unclaimed, unblocked, non-decision-needed card.
 
+# WEEKLY-AUDIT-P1 — findings from the 6-Jul full-surface audit (PR #301, report-only by charter)
+> The scheduled weekly audit found 4 P0 + 14 P1 across the monorepo (`docs/AUDIT.md` 14-dim
+> rubric). BACKLOG.md itself had drifted well behind `main` by the time this card was picked up
+> (last docs-only reconciliation was PR #264 on 5 Jul; dozens of merged PRs since — invoicing
+> rework, Penny agent/console work, owner-lens declutter — were never carded). Several of the
+> audit's P0/P1 items were already independently carded + fixed/in-flight by other loop iterations
+> as open PRs: **SEC-3** (pr:#309, the 4 P0 + 2 P1 cross-tenant `SECURITY DEFINER` leaks),
+> **BUBBLE-1** (pr:#310, site-bubble reliability + PII purge scheduling), **ADMIN-CSS-1**
+> (pr:#311, admin CSS-vars + guard widening) — do NOT re-build those, check `gh pr view <n>` for
+> current status. This card is the remaining **tests** P1 (`zero test files across all of tools/`).
+
+## SIGNALS-TEST-1 · Unit-test the signals-worker scoring/validation core (tests P1)
+status: pr:#TBD (loop-orch, 9 Jul) — GREEN pending CI, safe mode, awaiting Nik review/merge
+blocked-by: — (tools/signals-worker only; independent of SEC-3/BUBBLE-1/ADMIN-CSS-1's lanes)
+context: audit's `tests` dimension P1 — "zero test files across all of `tools/`... unit-test
+  `validateDraft()` + the score/promote thresholds at minimum." `tools/signals-worker` (the
+  Reddit/X/LinkedIn intake + scoring/drafting worker, SOLUTION.md) had no test runner wired and
+  no tests, despite carrying real decision logic: the poisoned-draft gate (`validateDraft`,
+  `DRAFT_REFUSAL_RE`), the daily optimizer's per-source `yield` composite that decides which
+  sources get auto-disabled, its anomaly scan (score-signature clusters / thin-text / refusal
+  drafts), and its near-miss threshold suggestions.
+goal: unit-test the DB-free, Ollama-free pure functions directly (no mocking needed — they're
+  already settings/data-in, value-out):
+  1. `brain.mjs` `validateDraft()` + `DRAFT_REFUSAL_RE` — empty/refusal/too-short/too-long/
+     no-post-reference rejections, and the happy path.
+  2. `optimizer.mjs` `perSourceStats()`, `anomalyScan()`, `thresholdSuggestions()` — exported
+     (previously module-private; no behavior change) so they're directly testable: the yield
+     composite formula, cluster/thin-text/refusal-draft anomaly flags, and near-miss suggestion
+     thresholds.
+  Added `tools/signals-worker/tests/*.test.mjs` (Node's built-in `node:test` + `node:assert/strict`
+  — the same runner `site-bubble/tests/*.test.mjs` already uses, no new dependency), a `test`
+  script in `package.json`, and `.github/workflows/signals-worker-tests.yml` (path-scoped, mirrors
+  `site-bubble-tests.yml`) so the suite actually runs in CI instead of just existing in the repo —
+  closing the audit's second systemic pattern (a CI guard scoped to one surface lets others drift).
+centralization: no config/copy surface touched; the three optimizer functions were only made
+  `export`ed, no threshold/behavior changed.
+coverage delta: new `tools/signals-worker/tests/validate-draft.test.mjs` (9 tests) +
+  `optimizer.test.mjs` (12 tests), 21 total, all green locally (`node --test`) and wired into
+  CI on every PR/push touching `tools/signals-worker/**`.
+
 ## Wave 2 — COMPLETE + DEPLOYED (3 Jul 2026)
 W2.1/W2.2/W2.3 shipped earlier; **W2.4 (PR #202) + W2.5 (PR #201) merged to main, migrations
 `20260706020000`+`20260706030000` applied to prod (ledger in sync), edge fns `nec-tracking`

@@ -38,7 +38,7 @@ const leadStageOf = (row) => {
   return l?.stage ?? null;
 };
 
-function perSourceStats(items, relThreshold) {
+export function perSourceStats(items, relThreshold) {
   const by = new Map();
   for (const it of items) {
     const sc = scoreOf(it);
@@ -111,7 +111,7 @@ function painThemes(items, topK = 8) {
 const THIN_TEXT_CHARS = 40;
 const CLUSTER_FLAG_N  = 8;
 
-function anomalyScan(items, drafts, settings) {
+export function anomalyScan(items, drafts, settings) {
   const out = [];
   const clusters = new Map();
   let thin = 0;
@@ -138,7 +138,7 @@ function anomalyScan(items, drafts, settings) {
 }
 
 // near-miss threshold suggestions (suggest only, never applied)
-function thresholdSuggestions(items, settings) {
+export function thresholdSuggestions(items, settings) {
   let relNearMiss = 0, intentNearMiss = 0, eligible = 0;
   for (const it of items) {
     const sc = scoreOf(it);

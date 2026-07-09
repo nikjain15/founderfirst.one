@@ -47,6 +47,11 @@ jobs:
       - name: Check authed headings
         run: pnpm check:authed-headings
 
+      # 6-Jul audit gate: apps/web must build canonical/absolute URLs from
+      # SITE.url (lib/site.ts), never a hardcoded "https://founderfirst.one" literal.
+      - name: Check apps/web URLs are centralized
+        run: pnpm check:site-url
+
       # The copy/config/persona layer's unit tests (catalog integrity, config
       # coercion + fallback, threshold banding).
       - name: App unit tests

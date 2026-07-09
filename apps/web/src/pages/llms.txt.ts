@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { extractFaqs } from "@ff/content";
 import { getHomepage } from "../lib/content";
 import { posts } from "../blog/posts";
+import { SITE } from "../lib/site";
 
 // AI-engine digest, generated from the content single source of truth so it
 // can never drift from the live copy. Served at /llms.txt.
@@ -20,13 +21,13 @@ export const GET: APIRoute = async () => {
     "## FAQ",
     ...faqs.flatMap((f) => [`### ${f.question}`, f.answer, ""]),
     "## Articles",
-    ...posts.map((p) => `- ${p.title}: https://founderfirst.one/blog/${p.slug}/ — ${p.description}`),
+    ...posts.map((p) => `- ${p.title}: ${SITE.url}/blog/${p.slug}/ — ${p.description}`),
     "",
     "## Links",
-    "- Home: https://founderfirst.one/",
-    "- Compare: https://founderfirst.one/compare/",
-    "- Rescue (bookkeeper shut down? Penny picks up your books): https://founderfirst.one/rescue/",
-    "- Blog: https://founderfirst.one/blog/",
+    `- Home: ${SITE.url}/`,
+    `- Compare: ${SITE.url}/compare/`,
+    `- Rescue (bookkeeper shut down? Penny picks up your books): ${SITE.url}/rescue/`,
+    `- Blog: ${SITE.url}/blog/`,
   ].join("\n");
 
   return new Response(body, { headers: { "Content-Type": "text/plain; charset=utf-8" } });

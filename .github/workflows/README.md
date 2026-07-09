@@ -1,6 +1,6 @@
 # GitHub Actions workflows
 
-> Last verified: 1-Jul-2026 · 8 workflows, derived from each yml. Owner: Nik
+> Last verified: 9-Jul-2026 · 15 workflows, derived from each yml. Owner: Nik
 
 All workflows also support manual `workflow_dispatch`. Note: there is no `penny.yml` —
 the Penny app deploy is the `deploy-penny` job inside `pages.yml`.
@@ -15,3 +15,10 @@ the Penny app deploy is the `deploy-penny` job inside `pages.yml`.
 | [migrations-unique.yml](migrations-unique.yml) | PR + push to `main` touching `supabase/migrations/**` | Asserts every migration file has a unique timestamp prefix; fails on duplicates. | — (test gate) |
 | [deploy-worker.yml](deploy-worker.yml) | push to `main` touching `site-bubble/**` | Builds the Preact widget, syncs assets, deploys the Penny site-bubble Worker via `wrangler deploy`. | Cloudflare Worker (from `site-bubble/worker`) |
 | [deploy-bridge.yml](deploy-bridge.yml) | push to `main` touching `scripts/discord-bridge/**` | Deploys the Discord concierge bridge via `flyctl deploy --remote-only`. | Fly.io |
+| [centralization.yml](centralization.yml) | PR; push to `main` (code paths only) | CENTRAL-1 gate: no hard-coded user-facing string literals in apps/app (`check:app-strings`), every `var(--x)` resolves in tokens.css/app stylesheets (`check:css-vars`), every authed `<h1>` carries `.page-title` (`check:authed-headings`), plus the app's Vitest unit suite. | — (test gate) |
+| [deno-tests.yml](deno-tests.yml) | PR/push touching `supabase/functions/**` | Runs the CI-safe, network-free Deno unit tests for Supabase edge functions (currently the shared email-send harness, `_shared/*.test.ts`). | — (test gate) |
+| [kernel-seed.yml](kernel-seed.yml) | PR/push touching seed loaders, kernel scripts, or `apps/**`/`site-bubble/**`/`supabase/functions/**` | CENTRAL-2 knowledge-kernel guards: seed/tax/depreciation loaders are fresh + idempotent + effective-dated, no hardcoded entity/industry/deadline lists, no law-looking literals in app code, and the regulatory-watcher detector replay test. | — (test gate) |
+| [preflight.yml](preflight.yml) | PR touching `supabase/**` or `apps/app/**` | Runs `scripts/loop-preflight.sh` — static pre-merge checks for the recurring pgTAP/migration authoring bugs (plan/assertion mismatch, non-hex UUID fixtures, bad SQLSTATEs, seed.sql `\i`, timestamp collisions); advisory warnings annotate the PR, only a genuine hard problem blocks. | — (test gate) |
+| [regression.yml](regression.yml) | nightly (07:00 UTC); `workflow_dispatch`; PR touching migrations/tests/seed/ledger report code | REG-1 nightly regression pack: pgTAP suite against a from-scratch local Supabase stack (replays every migration + seed) plus the apps/app Vitest report/status scenarios; uploads a red report artifact on failure. | — (test gate) |
+| [regulatory-watcher.yml](regulatory-watcher.yml) | weekly (Mon 13:00 UTC) + daily Jan–Apr; `workflow_dispatch` | LOOP-2: self-tests the detector, then probes tax-law/deadline sources for a confirmed change (`REG_WATCHER_SIGNALS`) and opens a draft `decision-needed` seed-diff PR if one is found; no detection = log only, never self-merges. | — (opens a PR only) |
+| [soak-harness.yml](soak-harness.yml) | PR/push touching `packages/soak-harness/**` | CI-safe smoke test for the RV2-E load/soak harness against its in-memory model (typecheck + Vitest); the live sandbox-only soak driver is operator-invoked separately, not run here. | — (test gate) |

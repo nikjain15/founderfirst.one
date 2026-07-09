@@ -19,6 +19,33 @@
 > corrected to match. Remaining real buildable work: **W5.4-FX** (ECB fx-rate fetcher — schema
 > shipped, no fetcher exists yet) is the top unclaimed, unblocked, non-decision-needed card.
 
+# WEEKLY-AUDIT-P1 — more findings from the 6-Jul full-surface audit (PR #301, report-only)
+> Same batch as the other WEEKLY-AUDIT-P1 cards (SEC-3, BUBBLE-1, ADMIN-CSS-1, SIGNALS-TEST-1, the
+> NEC-table a11y fix — check `gh pr list` for current status of each, do NOT re-build them). This
+> card is the two remaining **copy_docs** P1s: a live VOICE violation and a stale doc count.
+
+## VOICE-DOCS-1 · Fix VOICE exclamation-mark violation + workflows README undercount (P1 x2)
+status: pr:#TBD (loop-orch, 9 Jul) — building
+blocked-by: — (apps/web copy + a docs file; independent of every other WEEKLY-AUDIT-P1 lane)
+context: two small, unrelated copy_docs P1s from the same audit, bundled because both are
+  one-file, one-line-class fixes with zero product-behavior risk:
+  (a) `apps/web/src/components/SignupForm.tsx:55` rendered `"You're in! Taking you to your
+      welcome page…"` — VOICE.md rule: **"Exclamation marks. Never. Not one."** (em-dashes are
+      the prescribed pause, per the doc's own rhythm examples).
+  (b) `.github/workflows/README.md` claimed **"8 workflows"** but 15 `.yml` files exist under
+      `.github/workflows/` — 7 undocumented (`centralization`, `deno-tests`, `kernel-seed`,
+      `preflight`, `regression`, `regulatory-watcher`, `soak-harness`). `docs/README.md` promises
+      this file covers every workflow (LEARNINGS rule 7: self-description must match reality).
+goal: (a) rephrase the signup-success copy to the VOICE-compliant em-dash form:
+  `"You're in — taking you to your welcome page…"` (verified no other file/test references the
+  old string). (b) add one table row per undocumented workflow (trigger + what it does + deploy
+  target, matching the existing rows' format) and bump the "Last verified" date/count.
+centralization: no config/copy-catalog surface touched (apps/web copy isn't yet centralized —
+  out of scope for a 2-line fix); no visual/token changes.
+coverage delta: none needed — a literal string fix with no logic branch, and a documentation
+  table; the existing `pages.yml` build (which builds apps/web) proves the file still compiles.
+decision-needed: none
+
 ## Wave 2 — COMPLETE + DEPLOYED (3 Jul 2026)
 W2.1/W2.2/W2.3 shipped earlier; **W2.4 (PR #202) + W2.5 (PR #201) merged to main, migrations
 `20260706020000`+`20260706030000` applied to prod (ledger in sync), edge fns `nec-tracking`

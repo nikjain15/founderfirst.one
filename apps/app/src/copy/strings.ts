@@ -609,6 +609,15 @@ export const COPY = {
     exportNotReady: "Map every account first — an unmapped account would land on the wrong line. This export unlocks once the return is review-ready.",
     exportDoesNotTie: "This return does not reconcile to its transactions yet — the export is held until it ties out.",
     exportDone: (name: string) => `Downloaded ${name}. Import it into your tax software; the totals already tie to the ledger.`,
+    // ── W1.3-B follow-up · CPA mapping-edit UI (APPENDED — additive keys) ──
+    mapPickerLabel: "Assign to a line",
+    mapPickerPlaceholder: "Choose a line…",
+    mapSaveButton: "Save",
+    mapSaving: "Saving…",
+    mapSaved: "Mapped.",
+    mapError: "Could not save that mapping — try again.",
+    mapUnmapButton: "Remove mapping",
+    mapUnmapping: "Removing…",
   },
 
   // ── Periods ────────────────────────────────────────────────────────────────

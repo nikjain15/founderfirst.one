@@ -526,6 +526,39 @@ goal: when we go to PRODUCTION QBO, stand up a small static-IP egress proxy (or 
   IP-allowlists.
 centralization: the QBO API base + egress config = env/secrets, never inlined.
 
+# TAXMAP-1 · CPA mapping-edit UI (W1.3-B follow-up; self-carded, 9 Jul)
+> Loop-orch, 9 Jul: BACKLOG.md's own pending reconciliation (pr:#279, unmerged) already
+> confirmed zero unclaimed/unblocked/non-decision-needed cards remained as of 6 Jul. Per the
+> established pattern of the last 10 PRs (SEC-3, BUBBLE-1, ADMIN-CSS-1, etc.), picked up a
+> real, scoped, non-decision-needed gap straight from docs/AUDIT.md's standing-gaps table
+> instead of idling: "W1.3-B CPA mapping-edit UI deferred."
+
+## TAXMAP-1 · CPA per-account tax-mapping edit UI
+status: pr:#TBD (loop-insession-9jul) — see docs/AUDIT.md standing-gaps table (Program 1) for
+  the resolution note
+blocked-by: — (W1.3-B's engine + RPCs already shipped and are pgTAP-covered; this wires the
+  missing UI door)
+context: `set_account_tax_line`/`clear_account_tax_line` (CPA-gated, audit-logged,
+  line-integrity-checked) shipped with the tax-mapping engine but were never callable from the
+  app — Filing.tsx's "Not yet on the return" list was read-only, a dead end for the CPA who is
+  supposed to resolve it (research decision 3: owners view, CPAs edit).
+workflow: CPA · "map this account onto the return" · Filing → an unmapped account → pick a line
+  → Save (2 taps); an already-mapped override can be removed the same way. Owners never see the
+  editor (read-only, unchanged).
+goal: a `tax-mapping` edge fn (MFA-gated, actor-from-JWT, mirrors cpa-close/cpa-collab) fronting
+  the existing write RPCs, wired into a new inline editor on Filing.tsx's unmapped rows + an
+  "unmap" action on override lines. No schema/RPC changes — the engine was already complete.
+centralization: line options come from the seeded `tax_form_lines` (never a hardcoded list);
+  all copy from `COPY.filing.*`; tokens.css only (no new classes without var()-based values).
+coverage delta: extends the W1.3-B AUDIT row — new Deno tests (`tax-mapping/index.test.ts`,
+  7: MFA gate, JWT-actor (no body-actor bypass), required-field validation) + the existing
+  pgTAP (`tax_mapping_engine_test.sql` §5/§5b) already covers the RPC-level CPA-gate +
+  integrity check the new UI calls into. **Disclosed gap:** no live CPA-lens app-e2e
+  walkthrough — the harness (`tools/app-e2e/run.mjs`) has no CPA-login fixture to safely extend
+  blind in one pass; Vitest (497 green, unchanged) + `tsc --noEmit` + the 4 centralization/a11y
+  CI gate scripts (`check:css`, `check:css-vars`, `check:app-strings`, `check:authed-headings`)
+  all pass clean. A follow-up card can add the CPA-login e2e fixture once one exists for reuse.
+
 ## PENNY-UX-9 · Owner + CPA IA restructure to the /admin design standard (POST-DEPLOY)
 status: unclaimed
 blocked-by: RV2-A2, RV2-C1, RV2-D1, W5.4 — do this AFTER all four Wave-2 features are merged +

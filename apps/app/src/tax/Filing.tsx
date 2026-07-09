@@ -5,21 +5,32 @@
  *
  * All tax facts come from the seeded engine (forms/lines/mapping); the amounts come
  * from the org's journal entries. This component is projection + presentation only —
- * no law literals, no writes. Structured export / e-file are deferred later steps.
+ * no law literals, no writes (except the CPA mapping editor below, which calls the
+ * dedicated tax-mapping write path — never a direct table write). Structured export /
+ * e-file are deferred later steps.
  */
 import { useMemo, useState } from "react";
 import type { JournalEntry } from "../ledger/types";
 import { formatMoney } from "../ledger/money";
 import {
-  useOrgTaxProfile, useTaxForms, useTaxFormLines, useTaxResolution,
+  clearAccountTaxLine, setAccountTaxLine, useOrgTaxProfile, useTaxForms, useTaxFormLines,
+  useTaxMappingRefresh, useTaxResolution,
 } from "./api";
-import { buildWorksheet, taxYearDateFilter, worksheetTiesOut, type Worksheet, type WorksheetLine, type WorksheetSource } from "./worksheet";
+import { buildWorksheet, taxYearDateFilter, worksheetTiesOut, type Worksheet, type WorksheetLine, type WorksheetSource, type WorksheetUnmapped } from "./worksheet";
 import { SERIALIZERS } from "./serializers";
 import { downloadTaxExport, exportReady } from "./taxExport";
 import type { TaxFormLine } from "./types";
 import { COPY } from "../copy";
 
-export default function Filing({ orgId, entries, orgName }: { orgId: string; entries: JournalEntry[]; orgName?: string }) {
+/**
+ * canEdit: true only for a CPA with write access (nav==='cpa' && canWrite) — mirrors
+ * the server-side can_edit_tax_map_as gate (research decision 3: owners view, CPAs
+ * edit). This is a courtesy that hides the editor from owners; the RPC gate is the
+ * real control (ARCHITECTURE.md §1, §6 — "the disabled button is a courtesy").
+ */
+export default function Filing({
+  orgId, entries, orgName, canEdit = false,
+}: { orgId: string; entries: JournalEntry[]; orgName?: string; canEdit?: boolean }) {
   const profile = useOrgTaxProfile(orgId);
   const forms = useTaxForms(profile.data);
 
@@ -30,6 +41,9 @@ export default function Filing({ orgId, entries, orgName }: { orgId: string; ent
   );
   const lines = useTaxFormLines(activeForm?.id);
   const resolution = useTaxResolution(
+    orgId, profile.data?.jurisdiction_code, activeForm?.form_code, activeForm?.tax_year,
+  );
+  const refreshResolution = useTaxMappingRefresh(
     orgId, profile.data?.jurisdiction_code, activeForm?.form_code, activeForm?.tax_year,
   );
 
@@ -95,6 +109,10 @@ export default function Filing({ orgId, entries, orgName }: { orgId: string; ent
               worksheet={worksheet}
               formLines={lines.data ?? []}
               orgName={orgName ?? activeForm.form_code}
+              canEdit={canEdit}
+              orgId={orgId}
+              formCode={activeForm.form_code}
+              onMapped={refreshResolution}
             />
           )}
         </>
@@ -104,8 +122,11 @@ export default function Filing({ orgId, entries, orgName }: { orgId: string; ent
 }
 
 function WorksheetView({
-  worksheet, formLines, orgName,
-}: { worksheet: Worksheet; formLines: TaxFormLine[]; orgName: string }) {
+  worksheet, formLines, orgName, canEdit, orgId, formCode, onMapped,
+}: {
+  worksheet: Worksheet; formLines: TaxFormLine[]; orgName: string;
+  canEdit: boolean; orgId: string; formCode: string; onMapped: () => void;
+}) {
   const ties = useMemo(() => worksheetTiesOut(worksheet), [worksheet]);
   const hasAny = worksheet.lines.some((l) => l.amount_minor !== 0) || worksheet.unmapped.length > 0;
 
@@ -131,7 +152,12 @@ function WorksheetView({
             <span>{COPY.filing.colDescription}</span>
             <span className="num">{COPY.filing.colAmount}</span>
           </div>
-          {worksheet.lines.map((line) => <LineRow key={line.line_key} line={line} />)}
+          {worksheet.lines.map((line) => (
+            <LineRow
+              key={line.line_key} line={line}
+              canEdit={canEdit} orgId={orgId} formCode={formCode} onMapped={onMapped}
+            />
+          ))}
         </div>
       </div>
 
@@ -142,11 +168,10 @@ function WorksheetView({
           <div className="table-wrap" tabIndex={0} role="region" aria-label={COPY.filing.unmappedHeading}>
             <div className="worksheet-table">
               {worksheet.unmapped.map((u) => (
-                <div className="worksheet-row" key={u.account_id}>
-                  <span className="w-code">{u.account_code ?? COPY.common.emDash}</span>
-                  <span className="w-label">{u.account_name}</span>
-                  <span className="w-amt num">{formatMoney(u.amount_minor)}</span>
-                </div>
+                <UnmappedRow
+                  key={u.account_id} unmapped={u} formLines={formLines}
+                  canEdit={canEdit} orgId={orgId} formCode={formCode} onMapped={onMapped}
+                />
               ))}
             </div>
           </div>
@@ -154,6 +179,65 @@ function WorksheetView({
       )}
 
       <ExportPanel worksheet={worksheet} formLines={formLines} orgName={orgName} ties={ties} />
+    </div>
+  );
+}
+
+/** W1.3-B follow-up — the CPA mapping-edit UI (the standing "deferred" gap in
+ *  docs/AUDIT.md). set_account_tax_line existed since the engine shipped but was
+ *  never called from the app; this is the missing door. Owners never see this row's
+ *  picker (canEdit=false) — they see the same read-only unmapped list as before. */
+function UnmappedRow({
+  unmapped, formLines, canEdit, orgId, formCode, onMapped,
+}: {
+  unmapped: WorksheetUnmapped; formLines: TaxFormLine[]; canEdit: boolean;
+  orgId: string; formCode: string; onMapped: () => void;
+}) {
+  // Only lines that hold a direct account amount are valid mapping targets — a
+  // computed/subtotal/info line is a rollup, never something an account maps onto.
+  const assignable = useMemo(() => formLines.filter((l) => l.kind === "amount"), [formLines]);
+  const [lineKey, setLineKey] = useState("");
+  const [state, setState] = useState<"idle" | "saving" | "error">("idle");
+
+  const save = async () => {
+    if (!lineKey) return;
+    setState("saving");
+    try {
+      await setAccountTaxLine(orgId, unmapped.account_id, formCode, lineKey);
+      setState("idle");
+      setLineKey("");
+      onMapped();
+    } catch {
+      setState("error");
+    }
+  };
+
+  return (
+    <div className="worksheet-row worksheet-row-editable">
+      <span className="w-code">{unmapped.account_code ?? COPY.common.emDash}</span>
+      <span className="w-label">{unmapped.account_name}</span>
+      <span className="w-amt num">{formatMoney(unmapped.amount_minor)}</span>
+      {canEdit && (
+        <span className="worksheet-map-editor">
+          <select
+            aria-label={`${COPY.filing.mapPickerLabel} — ${unmapped.account_name}`}
+            value={lineKey}
+            onChange={(e) => { setLineKey(e.target.value); setState("idle"); }}
+            disabled={state === "saving"}
+          >
+            <option value="">{COPY.filing.mapPickerPlaceholder}</option>
+            {assignable.map((l) => (
+              <option key={l.line_key} value={l.line_key}>
+                {l.line_code ? `${l.line_code} · ` : ""}{l.label}
+              </option>
+            ))}
+          </select>
+          <button type="button" className="btn btn-sm" disabled={!lineKey || state === "saving"} onClick={save}>
+            {state === "saving" ? COPY.filing.mapSaving : COPY.filing.mapSaveButton}
+          </button>
+          {state === "error" && <span className="sub sm error">{COPY.filing.mapError}</span>}
+        </span>
+      )}
     </div>
   );
 }
@@ -203,12 +287,22 @@ function ExportPanel({
   );
 }
 
-function LineRow({ line }: { line: WorksheetLine }) {
+function LineRow({
+  line, canEdit, orgId, formCode, onMapped,
+}: { line: WorksheetLine; canEdit: boolean; orgId: string; formCode: string; onMapped: () => void }) {
   const [open, setOpen] = useState(false);
   const count = line.source_entries.length;
   const mappedBadge = line.resolved_by === "override"
     ? COPY.filing.mappedByOverride
     : line.resolved_by === "rule" ? COPY.filing.mappedByRule : null;
+  // A CPA override can be removed per account (falls back to the seed rule, or
+  // unmapped). Rule-based mappings aren't in org_account_tax_map — nothing to clear.
+  const overrideAccounts = useMemo(() => {
+    if (line.resolved_by !== "override") return [];
+    const seen = new Map<string, string>();
+    for (const s of line.source_entries) seen.set(s.account_id, s.account_name);
+    return [...seen.entries()];
+  }, [line.resolved_by, line.source_entries]);
 
   return (
     <div className="worksheet-line">
@@ -243,9 +337,43 @@ function LineRow({ line }: { line: WorksheetLine }) {
               </div>
             </div>
           )}
+          {canEdit && overrideAccounts.length > 0 && (
+            <div className="worksheet-unmap-actions">
+              {overrideAccounts.map(([accountId, accountName]) => (
+                <UnmapButton
+                  key={accountId} accountId={accountId} accountName={accountName}
+                  orgId={orgId} formCode={formCode} onMapped={onMapped}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+function UnmapButton({
+  accountId, accountName, orgId, formCode, onMapped,
+}: { accountId: string; accountName: string; orgId: string; formCode: string; onMapped: () => void }) {
+  const [state, setState] = useState<"idle" | "saving" | "error">("idle");
+  const unmap = async () => {
+    setState("saving");
+    try {
+      await clearAccountTaxLine(orgId, accountId, formCode);
+      setState("idle");
+      onMapped();
+    } catch {
+      setState("error");
+    }
+  };
+  return (
+    <span className="worksheet-unmap-row">
+      <button type="button" className="btn btn-sm btn-ghost" disabled={state === "saving"} onClick={unmap}>
+        {state === "saving" ? COPY.filing.mapUnmapping : `${COPY.filing.mapUnmapButton} · ${accountName}`}
+      </button>
+      {state === "error" && <span className="sub sm error">{COPY.filing.mapError}</span>}
+    </span>
   );
 }
 

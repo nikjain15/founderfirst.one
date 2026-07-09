@@ -849,6 +849,22 @@ button.ghost.sm, .ghost.sm {
 .s-acct, .s-memo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .worksheet-unmapped { margin-top: 1.25rem; }
 
+/* W1.3-B follow-up · CPA mapping-edit UI. The editor/unmap row spans the full
+   3-column .worksheet-row grid on its own line — never squeezed into a 4th
+   column, so it wraps cleanly at every RESPONSIVE.md width-ladder step. */
+.worksheet-map-editor {
+  grid-column: 1 / -1;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+  padding-top: 0.35rem;
+}
+.worksheet-map-editor select {
+  min-height: var(--tap-min); font-size: var(--fs-input); flex: 1 1 12rem; min-width: 0;
+  padding: 0.35rem 0.5rem; border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); background: var(--white); color: var(--ink);
+}
+.worksheet-unmap-actions { padding: 0.4rem 0 0.6rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.worksheet-unmap-row { display: inline-flex; align-items: center; gap: 0.4rem; }
+
 /* RV2-A2 · structured per-suite export */
 .filing-export {
   margin-top: 1.5rem; padding-top: 1rem;

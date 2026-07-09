@@ -1,0 +1,35 @@
+name: signals-worker-health
+
+# External health poll for the Mac-host services (LEARNINGS #13 — "a dev machine
+# running local Ollama is production infra, a single point of failure"). Today
+# launchd's KeepAlive only restarts a *crashed local* process — nothing fires if
+# the Mac sleeps or loses network, which is the actual failure mode. This is the
+# cheap external half: poll the public compose-server /health endpoint
+# (https://compose.founderfirst.one, fronted by the ff-compose Cloudflare Tunnel)
+# on a schedule; a failed run trips GitHub's built-in scheduled-workflow-failure
+# notification — no new vendor, no secrets (the endpoint is unauthenticated by
+# design, see tools/signals-worker/README.md).
+#
+# Scope note: this does not (yet) poll signals-worker's own last-scored-item
+# freshness — that needs a safe read path into Supabase, and every existing
+# scheduled workflow deliberately keeps SUPABASE_SERVICE_ROLE_KEY out of
+# unattended contexts (see the 6 Jul weekly-audit run, which skipped its own
+# audit_runs insert for the same reason). Wiring that safely (a narrow anon-
+# callable freshness RPC, or a short-lived token) is a follow-up, not silently
+# dropped.
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  compose-server-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: curl compose-server /health
+        run: |
+          curl --fail --silent --show-error \
+            --retry 3 --retry-delay 15 --retry-connrefused \
+            --max-time 15 \
+            https://compose.founderfirst.one/health

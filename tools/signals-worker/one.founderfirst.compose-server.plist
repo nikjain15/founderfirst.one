@@ -3,12 +3,15 @@
   launchd agent for the email AI-drafting service (compose-server.mjs).
   Mirrors one.founderfirst.signals-worker. Install on the Mac host:
 
+    mkdir -p ~/Library/Logs/founderfirst
     cp one.founderfirst.compose-server.plist ~/Library/LaunchAgents/
     launchctl load -w ~/Library/LaunchAgents/one.founderfirst.compose-server.plist
 
   Adjust the paths below if your checkout / node live elsewhere
   (`which node` for ProgramArguments[0]). The service reads COMPOSE_SECRET and
-  OLLAMA_* from ~/.config/founderfirst/secrets.env on its own.
+  OLLAMA_* from ~/.config/founderfirst/secrets.env on its own. Logs go to
+  ~/Library/Logs/founderfirst/ (same convention as signals-worker, not /tmp —
+  /tmp is cleared on reboot and this is a long-running service).
 -->
 <plist version="1.0">
 <dict>
@@ -26,8 +29,8 @@
   <key>KeepAlive</key>
   <true/>
   <key>StandardOutPath</key>
-  <string>/tmp/compose-server.log</string>
+  <string>/Users/nikjain/Library/Logs/founderfirst/compose-server.log</string>
   <key>StandardErrorPath</key>
-  <string>/tmp/compose-server.err</string>
+  <string>/Users/nikjain/Library/Logs/founderfirst/compose-server.err</string>
 </dict>
 </plist>

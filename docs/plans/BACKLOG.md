@@ -312,6 +312,35 @@ centralization: log field name/config centralized; no inline literals.
 coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
   call (success + error path).
 
+## SIGNALS-OBS-1 · signals-worker/compose-server observability (P1)
+status: pr:#316 (loop-orch, 9 Jul) — GREEN pending CI, safe mode, awaiting Nik review/merge
+blocked-by: — (tools/signals-worker + one new CI workflow; independent of every other open lane)
+context: two of the 6-Jul weekly full-surface audit's (pr:#301, report-only by charter) tools-
+  section P1 observability findings, not yet carded/fixed by any other open PR as of this pick:
+  (a) `one.founderfirst.compose-server.plist` logged to `/tmp/compose-server.{log,err}` —
+      ephemeral (cleared on reboot), contradicting the README's documented
+      `~/Library/Logs/founderfirst/` convention (the one signals-worker itself already uses via
+      `host-setup.sh`/`deploy.sh`).
+  (b) the LEARNINGS #13 SPOF ("a dev machine running local Ollama is production infra") has no
+      external alert — launchd `KeepAlive` only restarts a *crashed local* process; nothing fires
+      if the Mac sleeps or loses network, which is the actual observed failure mode.
+goal: (a) point the plist's `StandardOutPath`/`StandardErrorPath` at
+  `~/Library/Logs/founderfirst/compose-server.{log,err}` (matching the WorkingDirectory's existing
+  hardcoded-host-path convention in the same file) + a `mkdir -p` step in its setup comment.
+  (b) a new scheduled workflow (`signals-worker-health.yml`, every 30 min) curls the PUBLIC,
+  unauthenticated `compose-server` `/health` endpoint (`https://compose.founderfirst.one`, already
+  exposed via the `ff-compose` Cloudflare Tunnel per the README); a failing run trips GitHub's
+  built-in scheduled-workflow-failure notification. No new vendor, no secrets.
+centralization: no new config surface; reuses the existing `/health` route + log-path convention.
+scope note (disclosed, not silently dropped): this does NOT poll signals-worker's own
+  last-scored-item freshness (the audit's fuller ask) — that needs a safe read path into
+  Supabase, and no existing scheduled workflow puts `SUPABASE_SERVICE_ROLE_KEY` in an unattended
+  context (the same 6-Jul audit run skipped its own `audit_runs` insert for exactly that reason).
+  A narrow anon-callable freshness RPC (or a short-lived token) is a real follow-up, not this card.
+coverage delta: extends the `tools/observability` audit dimension — the workflow itself is the
+  proof (it fails loud if the endpoint is unreachable); no pgTAP/Vitest applies to a launchd plist
+  or a scheduled curl.
+
 # PENNY-UX-10 + E-FILE (Nik 5-Jul: declutter + make responsive; card e-file Phase A)
 
 ## PENNY-UX-10 · Owner app declutter + FULL responsive pass → /admin minimalist standard

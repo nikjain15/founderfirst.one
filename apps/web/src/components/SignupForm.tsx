@@ -52,7 +52,7 @@ export default function SignupForm({ source, ctaLabel }: { source: string; ctaLa
       const { track } = await import("../lib/analytics");
       track("signup", { source });
       setState("done");
-      setMsg("You're in! Taking you to your welcome page…");
+      setMsg("You're in — taking you to your welcome page…");
       // Redirect to the on-brand confirmed/welcome page. Carry the slug (for the
       // referral share UI) and any inbound referral param.
       const params = new URLSearchParams();

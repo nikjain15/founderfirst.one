@@ -185,8 +185,7 @@ The first slice of A/E/B + connector enablement is live on `main` (== prod), wav
 status: merged (pr:#239, folded into Wave-2 integration pr:#243) — Drake/UltraTax/generic
   CSV+PDF serializers live in apps/app/src/tax/{taxExport,serializers}.ts; K-1 package
   generation is NOT built (seed-only placeholder fields) — real gap, needs its own follow-up
-  card if wanted; no filing-export audit-log row exists yet either (report-export has one,
-  this doesn't) — also a follow-up, not re-opening this card
+  card if wanted; the filing-export audit-log gap is now closed, see RV2A2-AUDIT below
 blocked-by: — (RV2-A1 worksheet shipped, pr:#232; builds on the same filing/worksheet layer)
 workflow: CPA · year-end filing · open client → Filing → pick form/suite → Download import file →
   re-keys NOTHING into Drake/Lacerte/ProConnect = 3 taps, one file
@@ -199,6 +198,30 @@ centralization: serializers are per-suite config off the tax-mapping engine + CE
   not hardcoded line maps; form/line literals come from the seeded filing data, never inlined.
 coverage delta: new AUDIT ledger row (filing-export) ⬜ untested → stress pass (round-trip a
   sample return through the export format; assert line totals tie to the worksheet and to the TB).
+
+## RV2A2-AUDIT · Audit-log the structured tax export (RV2-A2 disclosed follow-up)
+status: pr:#319 (loop-insession-9jul — awaiting CI + Nik review; safe mode, not merged/deployed)
+blocked-by: — (RV2-A2 shipped; this only touches report-export + Filing's export button)
+lane: supabase/functions/report-export + apps/app/src/tax — no overlap with any other open loop PR
+context: self-carded from RV2-A2's own status note ("no filing-export audit-log row exists yet
+  either (report-export has one, this doesn't)") — every OTHER export (TB/P&L/BS/GL/CF/NEC/lender
+  package) logs to ledger_audit via report-export (W1.2); the tax export never gained the same call.
+workflow: CPA · year-end filing · Filing → pick suite → Download → the export is now recorded (who /
+  which suite / which form+year / when) exactly like every other report download — invisible to
+  the CPA, closes the audit-trail gap silently (no new tap, no new UI).
+goal: `report-export` gains a `tax_export` report kind + an `html` format (the `generic_pdf`
+  serializer emits a real print-ready `.html`, never a true `.pdf` — the audit records what actually
+  happened); Filing.tsx's export button fire-and-forgets a new `logTaxExport` call after the
+  download, mirroring `Ledger.tsx`'s existing `logReportExport` call exactly (download succeeds even
+  if the audit write fails). No schema change — `ledger_audit` has no CHECK constraint on
+  action/detail — so no migration.
+centralization: reuses the existing report-export audit seam (one audit path, not a parallel one);
+  no new literals — report/format kinds are a fixed enum already owned by this fn.
+coverage delta: new `supabase/functions/report-export/index.test.ts` (network-free, extracted
+  `parseExportBody`) — asserts: `tax_export`/`html` accepted, existing report/format kinds
+  unchanged (no regression), suite/form_code/tax_year land in `detail`, non-tax exports carry null
+  tax fields, and sanitization never coerces/trusts shape (truncation + type-drop cases). Wires the
+  new test into `.github/workflows/deno-tests.yml` (no npm deps, so no `deno install` needed).
 
 ## RV2-C1 · CPA practice-OS depth — firm-level month-end close (C)
 status: merged (pr:#240, folded into Wave-2 integration pr:#243)

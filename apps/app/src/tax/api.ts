@@ -10,6 +10,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { getClient } from "../lib/supabase";
+import { invoke } from "../ledger/api";
 import type { AccountResolution, TaxFormLine } from "./types";
 
 /** The org's tax profile (from org_accounting_settings, CENTRAL-2). Null when unset —
@@ -112,3 +113,27 @@ export function useTaxResolution(
     },
   });
 }
+
+// ── structured tax export audit (RV2-A2 follow-up) ───────────────────────────
+// The import file is built + downloaded client-side (taxExport.ts); this records
+// ONE audit row per export (who / which suite / which form+year / when) through
+// the SAME report-export fn every other export already logs to (W1.2) — a
+// `tax_export` report kind, not a second, parallel audit path. Fire-and-forget:
+// a logging failure must never block the download the user already got.
+export const logTaxExport = (input: {
+  org_id: string;
+  format: "csv" | "html";
+  suite: string;
+  form_code: string;
+  tax_year: number;
+  filename?: string;
+}) =>
+  invoke<{ ok: true }>("report-export", {
+    org_id: input.org_id,
+    report: "tax_export",
+    format: input.format,
+    suite: input.suite,
+    form_code: input.form_code,
+    tax_year: input.tax_year,
+    filename: input.filename,
+  });

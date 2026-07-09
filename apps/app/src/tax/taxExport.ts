@@ -110,12 +110,14 @@ export function exportReady(ws: Worksheet, tiesOut: boolean): boolean {
   return tiesOut && ws.reviewReady;
 }
 
-/** Serialize + trigger a browser download. Returns the filename (for the audit line).
- *  Thin DOM wrapper — the serializers + bridge above are unit-tested; this is the only
- *  part that isn't pure, and it mirrors ledger/export.ts downloadReport exactly. */
+/** Serialize + trigger a browser download. Returns the filename + the extension it
+ *  actually wrote (for the audit line — the caller must never guess/relabel a
+ *  format; e.g. `generic_pdf` emits real `.html`, not a true `.pdf`). Thin DOM
+ *  wrapper — the serializers + bridge above are unit-tested; this is the only part
+ *  that isn't pure, and it mirrors ledger/export.ts downloadReport exactly. */
 export function downloadTaxExport(
   ws: Worksheet, formLines: TaxFormLine[], suiteId: string, orgName: string,
-): string {
+): { filename: string; extension: string } {
   const { content, extension, mime } = serializeWorksheet(ws, formLines, suiteId, orgName);
   const filename = taxExportFilename(orgName, ws, suiteId, extension);
   const blob = new Blob([content], { type: `${mime};charset=utf-8` });
@@ -127,5 +129,5 @@ export function downloadTaxExport(
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 0);
-  return filename;
+  return { filename, extension };
 }

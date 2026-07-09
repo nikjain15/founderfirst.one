@@ -200,7 +200,7 @@ coverage delta: new AUDIT ledger row (filing-export) ⬜ untested → stress pas
   sample return through the export format; assert line totals tie to the worksheet and to the TB).
 
 ## RV2A2-AUDIT · Audit-log the structured tax export (RV2-A2 disclosed follow-up)
-status: pr:#TBD (loop-insession-9jul — building)
+status: pr:#319 (loop-insession-9jul — awaiting CI + Nik review; safe mode, not merged/deployed)
 blocked-by: — (RV2-A2 shipped; this only touches report-export + Filing's export button)
 lane: supabase/functions/report-export + apps/app/src/tax — no overlap with any other open loop PR
 context: self-carded from RV2-A2's own status note ("no filing-export audit-log row exists yet

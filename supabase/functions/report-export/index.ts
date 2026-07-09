@@ -27,6 +27,7 @@
  * implies) instead of a second, parallel audit path.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { parseExportBody } from "./validate.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -43,52 +44,6 @@ function json(body: unknown, status = 200): Response {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const REPORTS = new Set(["tb", "pnl", "bs", "gl", "cf", "nec", "pkg", "tax_export"]);
-const FORMATS = new Set(["csv", "pdf", "html"]);
-
-export interface ExportDetail {
-  report: string;
-  format: string;
-  scope: { start: string | null; end: string | null };
-  rows: number | null;
-  filename: string | null;
-  suite: string | null;
-  form_code: string | null;
-  tax_year: number | null;
-}
-
-/** Pure validation + sanitization of the request body — never trusts shape.
- *  Extracted so it's unit-testable without a live server (mirrors the
- *  loop-heartbeat/cpa-close pattern of testing the decision logic directly). */
-export function parseExportBody(
-  body: Record<string, unknown>,
-): { ok: true; orgId: string; detail: ExportDetail } | { ok: false; error: string } {
-  const orgId = String(body?.org_id ?? "");
-  const report = String(body?.report ?? "");
-  const format = String(body?.format ?? "");
-  if (!UUID_RE.test(orgId)) return { ok: false, error: "bad_org" };
-  if (!REPORTS.has(report)) return { ok: false, error: "bad_report" };
-  if (!FORMATS.has(format)) return { ok: false, error: "bad_format" };
-
-  const rawScope = (body?.scope ?? {}) as Record<string, unknown>;
-  const scope = {
-    start: typeof rawScope.start === "string" ? rawScope.start : null,
-    end: typeof rawScope.end === "string" ? rawScope.end : null,
-  };
-  const rows = Number.isInteger(body?.rows) ? (body.rows as number) : null;
-  const filename = typeof body?.filename === "string" ? body.filename.slice(0, 200) : null;
-  const suite = typeof body?.suite === "string" ? body.suite.slice(0, 50) : null;
-  const form_code = typeof body?.form_code === "string" ? body.form_code.slice(0, 50) : null;
-  const tax_year = Number.isInteger(body?.tax_year) ? (body.tax_year as number) : null;
-
-  return {
-    ok: true,
-    orgId,
-    detail: { report, format, scope, rows, filename, suite, form_code, tax_year },
-  };
-}
 
 export async function handle(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });

@@ -4,12 +4,14 @@
  * Network-free: exercises `parseExportBody`, the pure validation/sanitization
  * core the handler calls before ever touching Supabase, so the `tax_export`
  * report kind + the sanitization discipline (never trust shape) are proven
- * without a live server.
+ * without a live server. Imports ONLY `./validate.ts` (dependency-free) —
+ * NOT `./index.ts`, which pulls in supabase-js's npm type-reference chain and
+ * fails `deno check`/`deno test` in this repo's CI (no node_modules).
  *
  *   deno test --allow-env supabase/functions/report-export/index.test.ts
  */
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { parseExportBody } from "./index.ts";
+import { parseExportBody } from "./validate.ts";
 
 const ORG = "00000000-0000-0000-0000-000000000001";
 

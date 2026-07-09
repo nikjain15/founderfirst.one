@@ -1,0 +1,34 @@
+name: signals-worker tests
+
+# tools/signals-worker had zero test coverage (weekly audit 2026-07-06 #301,
+# tests P1 — "zero test files across all of tools/"). Unit-tests the pure
+# scoring/validation core (brain.mjs validateDraft/DRAFT_REFUSAL_RE, optimizer.mjs
+# perSourceStats/anomalyScan/thresholdSuggestions) — no Ollama/Supabase needed.
+# Same "guard scoped to one surface" gap the audit flagged for check:css-vars;
+# this closes it for signals-worker specifically.
+
+on:
+  pull_request:
+    paths:
+      - "tools/signals-worker/**"
+      - ".github/workflows/signals-worker-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "tools/signals-worker/**"
+      - ".github/workflows/signals-worker-tests.yml"
+  workflow_dispatch:
+
+jobs:
+  signals-worker-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run signals-worker unit tests
+        working-directory: tools/signals-worker
+        run: node --test

@@ -265,7 +265,15 @@ export default function Ledger({
             )}
             {surface === "reports" && <Reports entries={entries.data ?? []} org={org} />}
             {surface === "invoicing" && <Invoicing orgId={org.id} canWrite={canWrite} orgName={org.name} />}
-            {surface === "filing" && <Filing orgId={org.id} entries={entries.data ?? []} orgName={org.name} />}
+            {surface === "filing" && (
+              <Filing
+                orgId={org.id} entries={entries.data ?? []} orgName={org.name}
+                // Mapping edits are CPA-only (research decision 3: owners view, CPAs
+                // edit) — canWrite alone isn't enough, since an owner also canWrite
+                // their own books but must NOT see the mapping editor.
+                canEdit={nav === "cpa" && canWrite}
+              />
+            )}
           </div>
         </div>
       )}

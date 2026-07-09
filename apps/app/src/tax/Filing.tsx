@@ -11,7 +11,7 @@ import { useMemo, useState } from "react";
 import type { JournalEntry } from "../ledger/types";
 import { formatMoney } from "../ledger/money";
 import {
-  useOrgTaxProfile, useTaxForms, useTaxFormLines, useTaxResolution,
+  useOrgTaxProfile, useTaxForms, useTaxFormLines, useTaxResolution, logTaxExport,
 } from "./api";
 import { buildWorksheet, taxYearDateFilter, worksheetTiesOut, type Worksheet, type WorksheetLine, type WorksheetSource } from "./worksheet";
 import { SERIALIZERS } from "./serializers";
@@ -95,6 +95,9 @@ export default function Filing({ orgId, entries, orgName }: { orgId: string; ent
               worksheet={worksheet}
               formLines={lines.data ?? []}
               orgName={orgName ?? activeForm.form_code}
+              orgId={orgId}
+              formCode={activeForm.form_code}
+              taxYear={activeForm.tax_year}
             />
           )}
         </>
@@ -104,8 +107,11 @@ export default function Filing({ orgId, entries, orgName }: { orgId: string; ent
 }
 
 function WorksheetView({
-  worksheet, formLines, orgName,
-}: { worksheet: Worksheet; formLines: TaxFormLine[]; orgName: string }) {
+  worksheet, formLines, orgName, orgId, formCode, taxYear,
+}: {
+  worksheet: Worksheet; formLines: TaxFormLine[]; orgName: string;
+  orgId: string; formCode: string; taxYear: number;
+}) {
   const ties = useMemo(() => worksheetTiesOut(worksheet), [worksheet]);
   const hasAny = worksheet.lines.some((l) => l.amount_minor !== 0) || worksheet.unmapped.length > 0;
 
@@ -153,7 +159,10 @@ function WorksheetView({
         </div>
       )}
 
-      <ExportPanel worksheet={worksheet} formLines={formLines} orgName={orgName} ties={ties} />
+      <ExportPanel
+        worksheet={worksheet} formLines={formLines} orgName={orgName} ties={ties}
+        orgId={orgId} formCode={formCode} taxYear={taxYear}
+      />
     </div>
   );
 }
@@ -162,8 +171,11 @@ function WorksheetView({
  *  file. Gated on the return being review-ready AND tying out — an unmapped or
  *  non-tying return must NEVER be handed to tax software (the #1 filing trust risk). */
 function ExportPanel({
-  worksheet, formLines, orgName, ties,
-}: { worksheet: Worksheet; formLines: TaxFormLine[]; orgName: string; ties: boolean }) {
+  worksheet, formLines, orgName, ties, orgId, formCode, taxYear,
+}: {
+  worksheet: Worksheet; formLines: TaxFormLine[]; orgName: string; ties: boolean;
+  orgId: string; formCode: string; taxYear: number;
+}) {
   // Suite options come from the serializer registry (pluggable), never a hardcoded list.
   const suites = useMemo(
     () => Object.values(SERIALIZERS).map((s) => ({ id: s.id, label: s.label })),
@@ -172,6 +184,18 @@ function ExportPanel({
   const [suiteId, setSuiteId] = useState(suites[0]?.id ?? "generic_csv");
   const [done, setDone] = useState<string | null>(null);
   const ready = exportReady(worksheet, ties);
+
+  function onExport() {
+    // Build + download client-side first (the user gets their file even if the
+    // audit call later fails); then record the export. Fire-and-forget audit —
+    // mirrors ledger/Ledger.tsx's report-export logging exactly (W1.2 pattern).
+    const { filename, extension } = downloadTaxExport(worksheet, formLines, suiteId, orgName);
+    setDone(filename);
+    void logTaxExport({
+      org_id: orgId, format: extension === "html" ? "html" : "csv",
+      suite: suiteId, form_code: formCode, tax_year: taxYear, filename,
+    }).catch(() => { /* audit best-effort; download already delivered */ });
+  }
 
   return (
     <div className="filing-export">
@@ -188,7 +212,7 @@ function ExportPanel({
           type="button"
           className="btn"
           disabled={!ready}
-          onClick={() => setDone(downloadTaxExport(worksheet, formLines, suiteId, orgName))}
+          onClick={onExport}
         >
           {COPY.filing.exportButton}
         </button>

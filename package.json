@@ -12,6 +12,7 @@
     "check:app-strings": "tsx scripts/check-app-strings.ts",
     "check:authed-headings": "tsx scripts/check-authed-headings.ts",
     "check:tenant": "tsx scripts/check-tenant-predicate.ts",
+    "check:definer-guard": "tsx scripts/check-definer-tenant-guard.ts",
     "check:inference": "tsx packages/inference/test/parity.ts",
     "check:judge": "tsx packages/inference/test/judge.ts",
     "test:chat-latency": "tsx packages/inference/test/chat-latency.ts",
@@ -27,8 +28,9 @@
     "reg-watcher": "tsx scripts/regulatory-watcher/run.ts",
     "check:reg-watcher": "tsx scripts/regulatory-watcher/replay-test.ts",
     "vendor:inference": "tsx scripts/vendor-inference.ts",
-    "build": "tsx scripts/check-css-imports.ts && tsx scripts/check-tenant-predicate.ts && tsx scripts/check-inference-vendor.ts && tsx packages/inference/test/judge.ts && tsx scripts/build-all.ts",
+    "build": "tsx scripts/check-css-imports.ts && tsx scripts/check-tenant-predicate.ts && tsx scripts/check-definer-tenant-guard.ts && tsx scripts/check-inference-vendor.ts && tsx packages/inference/test/judge.ts && tsx scripts/build-all.ts",
     "vendor:demo": "tsx scripts/vendor-demo.ts",
+    "test:guards": "tsx --test scripts/tests/*.test.ts",
     "test:responsive": "pnpm build && node tools/responsive-ci/run.mjs",
     "test:responsive:only": "node tools/responsive-ci/run.mjs"
   },

@@ -13,11 +13,12 @@
 -- Everything rolls back.
 
 begin;
-select plan(8);
+select plan(9);
 
 -- ── fixtures: an owner + two business orgs (settings seeded by the AFTER trigger) ─
 insert into auth.users (id, email, aud, role) values
-  ('00000000-0000-0000-0000-0000000c4001', 'ownerHOME@test.dev', 'authenticated', 'authenticated');
+  ('00000000-0000-0000-0000-0000000c4001', 'ownerHOME@test.dev', 'authenticated', 'authenticated'),
+  ('00000000-0000-0000-0000-0000000c4009', 'outsiderHOME@test.dev', 'authenticated', 'authenticated');
 
 insert into organizations (id, type, name, created_by) values
   ('00000000-0000-0000-0000-0000000c40a1', 'business', 'Home Pulse Biz',  '00000000-0000-0000-0000-0000000c4001'),
@@ -46,6 +47,10 @@ values
 update org_accounting_settings
    set entity_type = 't_home_sole', jurisdiction_code = 'US-FED'
  where org_id = '00000000-0000-0000-0000-0000000c40a1';
+
+-- upcoming_filing_deadlines is DEFINER + can_access_org-gated (definer-tenant-
+-- guard) — auth as the owner (a member of both test orgs) for the positive path.
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-0000000c4001","email":"ownerHOME@test.dev","role":"authenticated"}';
 
 -- ── 1. the profiled org sees the deadline within a wide horizon (as_of before due) ─
 select is(
@@ -100,6 +105,15 @@ select is(
   (select count(*)::int from upcoming_filing_deadlines(
      '00000000-0000-0000-0000-0000000c40a2', date '2027-03-01', 365)),
   0, 'org without a tax profile yields no deadlines (Home shows "nothing coming up")');
+
+-- definer-tenant-guard: an outsider (no membership on either test org) gets
+-- ZERO deadlines for org #1, not the profiled org's filing calendar.
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-0000000c4009","email":"outsiderHOME@test.dev","role":"authenticated"}';
+select is(
+  (select count(*)::int from upcoming_filing_deadlines(
+     '00000000-0000-0000-0000-0000000c40a1', date '2027-03-01', 90)),
+  0, 'DEFINER-GUARD: a non-member gets ZERO deadlines for another org (was: the full filing calendar)');
+reset "request.jwt.claims";
 
 -- ── 7. Home reads this from the browser session → authenticated may EXECUTE ────
 select ok(

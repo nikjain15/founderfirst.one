@@ -120,7 +120,7 @@ export function WebSignups() {
       )}
 
       {!loading && !error && sorted.length > 0 && (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0} role="region" aria-label="Signups">
           <table className="data-table">
             <thead>
               <tr>{columns.map((c) => <th key={c}>{c.replace(/_/g, " ")}</th>)}</tr>

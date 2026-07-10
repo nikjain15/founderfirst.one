@@ -127,7 +127,7 @@ export function AICatalog() {
       )}
 
       {rows.length > 0 && (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0} role="region" aria-label="AI model catalog">
           <table className="data-table">
             <thead>
               <tr>

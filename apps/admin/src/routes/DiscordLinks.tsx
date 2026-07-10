@@ -144,7 +144,7 @@ export function DiscordLinks({ embedded = false }: DiscordLinksProps = {}) {
         {loading ? "Loading…" : `${confirmedCount} active · ${rows.length} total`}
       </p>
 
-      <div className="table-wrap">
+      <div className="table-wrap" tabIndex={0} role="region" aria-label="Discord links">
         <table className="data-table">
           <thead>
             <tr>

@@ -235,6 +235,28 @@ async function main() {
         console.log(`  (cover ${c.name} skipped — ${(err instanceof Error ? err.message : String(err)).slice(0, 100)})`);
       }
     }
+
+    // 7. Admin `.table-wrap` scroll regions are keyboard-focusable (ADMIN-A11Y-1
+    // — same axe `scrollable-region-focusable` fix already applied to apps/app
+    // Ledger.tsx tables). Assert on two independent routes so the pattern isn't
+    // a one-off on the page most recently touched.
+    for (const r of [
+      { url: `${base}/admin/admins`, sel: ".table-wrap" },
+      { url: `${base}/admin/audit`, sel: ".table-wrap" },
+    ]) {
+      try {
+        await page.goto(r.url, { waitUntil: "networkidle" });
+        const wrap = page.locator(r.sel).first();
+        await wrap.waitFor({ state: "visible", timeout: 15_000 });
+        const [tabIndex, role] = await Promise.all([
+          wrap.getAttribute("tabindex"),
+          wrap.getAttribute("role"),
+        ]);
+        check(`${r.url.replace(base, "")} table-wrap is keyboard-focusable (tabindex=0, role=region)`, tabIndex === "0" && role === "region", `tabindex=${tabIndex} role=${role}`);
+      } catch (err) {
+        check(`${r.url.replace(base, "")} table-wrap a11y check`, false, (err instanceof Error ? err.message : String(err)).slice(0, 150));
+      }
+    }
   } catch (e) {
     check("smoke run completed", false, (e instanceof Error ? e.message : String(e)).slice(0, 200));
     await page.screenshot({ path: join(ARTIFACTS, "failure.png"), fullPage: true }).catch(() => {});

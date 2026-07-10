@@ -129,7 +129,7 @@ export function Admins({ currentEmail }: Props) {
           {error.message}
         </div>
       ) : (
-      <div className="table-wrap">
+      <div className="table-wrap" tabIndex={0} role="region" aria-label="Admins">
         <table className="data-table">
           <thead>
             <tr>

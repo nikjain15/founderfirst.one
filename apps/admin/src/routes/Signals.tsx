@@ -268,7 +268,7 @@ function SourcesTab() {
       {isPending ? <div className="empty">Loading…</div> : polled.length === 0 ? (
         <div className="empty"><p className="empty-title">No automated sources yet.</p><p>Add one below to start pulling posts.</p></div>
       ) : (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0} role="region" aria-label="Automated signal sources">
           <table className="data-table">
             <thead>
               <tr>
@@ -406,7 +406,7 @@ function FeedTab() {
       ) : data.length === 0 ? (
         <div className="empty"><p className="empty-title">No posts yet.</p><p>Add a source or paste a post under Sources.</p></div>
       ) : (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0} role="region" aria-label="Captured posts">
           <table className="data-table">
             <thead>
               <tr>
@@ -529,7 +529,7 @@ function LeadsTab() {
       ) : data.length === 0 ? (
         <div className="empty"><p className="empty-title">No leads yet.</p><p>High-intent posts get promoted here automatically.</p></div>
       ) : (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0} role="region" aria-label="Leads">
           <table className="data-table">
             <thead>
               <tr>

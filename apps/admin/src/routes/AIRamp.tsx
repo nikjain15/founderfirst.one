@@ -47,7 +47,7 @@ export function AIRamp() {
           {changes.length > 0 ? `${changes.length} review level${changes.length === 1 ? "" : "s"} ready to adjust.` : "Review levels — all holding steady."}
         </h2>
       </div>
-      <div className="table-wrap">
+      <div className="table-wrap" tabIndex={0} role="region" aria-label="Autonomy review levels">
         <table className="data-table">
           <thead>
             <tr>

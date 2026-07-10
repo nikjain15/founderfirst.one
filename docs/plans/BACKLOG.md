@@ -312,6 +312,49 @@ centralization: log field name/config centralized; no inline literals.
 coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
   call (success + error path).
 
+# W4-AUDIT-CLOSEOUT — Program 5 (Wave-4 gate) P2 findings, closed out (9 Jul)
+> Self-carded while looking for the top unclaimed card: BACKLOG.md had none (every candidate
+> either resolved already or a Nik/infra human step — same conclusion PR #279 reached 6 Jul).
+> docs/AUDIT.md Program 5 (3 Jul) still listed F1/F2/F3 as open findings; verifying against
+> live code found F1 and F2 were already fixed (uncredited/untested), F3 was not, and closing
+> F3 surfaced a real, larger P1 (below).
+
+## W4-AUDIT-CLOSEOUT · Close Wave-4 gate P2s (F1-F3) + fix the Invoicing/AR missing-CSS gap
+status: pr:#TBD (loop-orch, 9 Jul) — building
+blocked-by: — (apps/app/src/ledger/{Invoicing,Bills,invoiceMath}.tsx/.ts + styles.css +
+  copy/strings.ts — one lane, no schema/edge-fn touch)
+context: docs/AUDIT.md Program 5 findings, re-verified against `origin/main`:
+  - **F1** (payment input had no client-side overpayment cap) — the clamp was already present
+    in both `Invoicing.tsx` and `Bills.tsx` as two independent inline copies, with no
+    regression test locking it (LOOP_PROMPT: "every finding → a permanent test").
+  - **F2** (CSV formula-injection neutralizer missed leading-whitespace-before-formula) —
+    already fixed AND already had a regression test (`export.test.ts`); AUDIT.md's ledger row
+    just hadn't been updated to reflect it.
+  - **F3** (two AR-aging bucket schemes — due-date live strips vs. transaction-date lender
+    package — shown to the same owner with no explanation) — NOT fixed. Took the "label each
+    explicitly" branch (the audit's other offered fix, unifying the schemes, is a bigger
+    behavior change not warranted for a P2).
+  - **New, larger finding surfaced while touching the AR aging strip for F3:** `Invoicing.tsx`
+    (the "Getting paid" / AR tab) has ZERO matching CSS for its own component tree — 24
+    selectors (`.invoicing*`, `.ar-aging*`, `.ar-bucket*`, `.invoices-table`, `.inv-status*`,
+    `.inv-actions`, `.inv-pay*`, `.invoice-form*`, `.invoice-line`, `.il-*`) render unstyled on
+    prod. The mirror-image `Bills.tsx` (AP) is fully styled — only the AR/Invoicing base layer
+    was missing (its business-profile panel and document-viewer sub-features WERE styled, so
+    this was easy to miss). LEARNINGS #14 family: a green build shipped broken UI.
+goal: extract a shared `clampPayment(entered, balance)` (invoiceMath.ts) used by both AR and AP
+  payment rows so the guard can't drift apart again; label the two aging schemes explicitly in
+  copy (lender package: "…aging (by transaction date)"; live strips: "Aged by due date"); port
+  the missing Invoicing/AR CSS verbatim from the already-correct Bills/AP block (same tokens,
+  renamed).
+centralization: all new copy from `copy/strings.ts` (`agedByDueDate`, updated `pkgArAging`/
+  `pkgApAging`); all new CSS uses existing tokens only, zero new hex/px (mirrors the Bills/AP
+  block's existing tokens verbatim).
+coverage delta: docs/AUDIT.md Program 5 F1/F2/F3 flip to FIXED with a permanent regression
+  (REG-W4-F1/F2/F3 in `invoiceMath.test.ts` + `export.test.ts`); the missing-CSS finding is
+  disclosed in the same AUDIT.md entry (fixed here; a full visual/width-ladder pass on the
+  newly-styled tab is a good follow-up — no browser available in this session to screenshot it).
+decision-needed: none
+
 # PENNY-UX-10 + E-FILE (Nik 5-Jul: declutter + make responsive; card e-file Phase A)
 
 ## PENNY-UX-10 · Owner app declutter + FULL responsive pass → /admin minimalist standard

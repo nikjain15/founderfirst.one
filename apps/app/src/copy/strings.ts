@@ -559,8 +559,12 @@ export const COPY = {
     pkgBody: "One export a lender or buyer can rely on: your P&L, balance sheet, cash flow, and AR/AP aging — with a prior-period comparison and a cover sheet — assembled into a single CSV or PDF.",
     pkgComparePrior: "Compare to the prior period",
     pkgIncludes: "Includes P&L · balance sheet · cash flow · AR/AP aging · cover sheet",
-    pkgArAging: "Accounts receivable aging",
-    pkgApAging: "Accounts payable aging",
+    // AUDIT Program 5 F3: this aging is bucketed by transaction (entry) date — a
+    // different basis from the live Invoicing/Bills strips (due-date buckets).
+    // Label both explicitly so the two are legible as intentionally different,
+    // not a data bug (see invoicing.agedByDueDate / bills.agedByDueDate).
+    pkgArAging: "Accounts receivable aging (by transaction date)",
+    pkgApAging: "Accounts payable aging (by transaction date)",
     // ── PENNY-UX-5 · keyboard-accessible scroll region (APPENDED — additive key) ──
     glTableAria: "General ledger detail",
   },
@@ -1382,6 +1386,9 @@ export const COPY = {
       bucket === "current" ? "Not yet due"
       : bucket === "90+" ? "90+ days"
       : `${bucket} days`,
+    // AUDIT Program 5 F3: names the basis so this reads as intentionally
+    // different from the lender package's transaction-date aging (pkgApAging).
+    agedByDueDate: "Aged by due date",
     // table
     colNumber: "Bill",
     colVendor: "Vendor",
@@ -1437,6 +1444,9 @@ export const COPY = {
       bucket === "current" ? "Not yet due"
       : bucket === "90+" ? "90+ days"
       : `${bucket} days`,
+    // AUDIT Program 5 F3: names the basis so this reads as intentionally
+    // different from the lender package's transaction-date aging (pkgArAging).
+    agedByDueDate: "Aged by due date",
     // reminders
     nudgesLabel: "Send gentle reminders on overdue invoices",
     sendRemindersNow: "Send reminders now",

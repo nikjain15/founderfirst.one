@@ -27,6 +27,16 @@ export function balanceMinor(totalMinor: number, amountPaidMinor: number): numbe
   return totalMinor - amountPaidMinor;
 }
 
+/** Clamp an entered payment amount to the remaining balance — the client-side
+ *  mirror of the server's overpayment guard (`apply_invoice_payment` /
+ *  `apply_bill_payment` reject an over-balance amount under `FOR UPDATE`).
+ *  Shared by the AR (Invoicing) and AP (Bills) payment rows so the two guards
+ *  can't drift apart (AUDIT Program 5 F1). An unparsed entry (`null`) falls
+ *  back to the full balance. */
+export function clampPayment(enteredMinor: number | null, balanceMinorAmt: number): number {
+  return Math.min(enteredMinor ?? balanceMinorAmt, balanceMinorAmt);
+}
+
 export type AgingBucket = "current" | "1-30" | "31-60" | "61-90" | "90+";
 
 /** The AR aging bucket for a due date, as-of a reference date. MUST match the SQL

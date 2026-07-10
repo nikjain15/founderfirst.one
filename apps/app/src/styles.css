@@ -1924,6 +1924,80 @@ button.ghost.sm, .ghost.sm {
 .bill-form-total { font-size: var(--fs-ui); font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; }
 .bill-form-actions { display: inline-flex; gap: var(--space-2); }
 
+/* AP aging basis caption — see the matching AR block below (AUDIT Program 5 F3) */
+.ap-aging-basis { font-size: var(--fs-micro); }
+
+/* ── Invoicing / AR (W4.3), nested under Connections. Tokens only; the
+      money-IN twin of Bills/AP above — same structure, mirrored 1:1. This block
+      was missing entirely (every .invoicing*/.inv-*/.ar-*/.il-* rule below), so
+      the tab rendered unstyled on prod; ported from the Bills/AP rules verbatim,
+      renamed. ─────────────────────────────────────────────────────────────── */
+.invoicing { display: flex; flex-direction: column; gap: var(--space-3); }
+.invoicing-optin { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
+.invoicing-nudges { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.invoicing-nudge-toggle { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--fs-ui); color: var(--ink-2); }
+
+/* AR aging strip — "who owes you" at a glance, split into buckets */
+.ar-aging { display: flex; flex-direction: column; gap: var(--space-2); }
+.ar-aging-title { font-size: var(--fs-ui); font-weight: var(--fw-medium); color: var(--ink-2); }
+.ar-aging-basis { font-size: var(--fs-micro); }
+.ar-aging-buckets { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.ar-bucket {
+  display: inline-flex; flex-direction: column; gap: 0.1rem;
+  padding: 0.4rem 0.65rem; border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); background: var(--white); min-width: 0;
+}
+.ar-bucket-label { font-size: var(--fs-micro); color: var(--ink-3); text-transform: uppercase; letter-spacing: var(--ls-chip); }
+.ar-bucket-amt { font-size: var(--fs-ui); font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; }
+
+/* Invoices table — inside .table-wrap for horizontal scroll (RESPONSIVE.md) */
+.invoices-table { width: 100%; border-collapse: collapse; font-size: var(--fs-ui); }
+.invoices-table th, .invoices-table td {
+  text-align: left; padding: var(--space-2) var(--space-3);
+  border-bottom: var(--bw-hair) solid var(--line-2); white-space: nowrap;
+}
+.invoices-table th {
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-chip);
+  color: var(--ink-3); font-weight: var(--fw-medium);
+}
+.invoices-table td.num, .invoices-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.inv-actions { display: inline-flex; gap: 0.35rem; flex-wrap: wrap; }
+.inv-status {
+  display: inline-block; padding: 0.1rem 0.5rem; border-radius: var(--r-pill);
+  font-size: var(--fs-micro); background: var(--line-2); color: var(--ink-2);
+}
+.inv-status-sent, .inv-status-partial { background: var(--amber-bg); color: var(--ink-2); }
+.inv-status-paid { background: var(--brand-soft); color: var(--ink-2); }
+.inv-status-void { color: var(--ink-3); }
+
+/* Inline "record payment" row */
+.inv-pay { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2); }
+.inv-pay label { display: flex; flex-direction: column; gap: 0.2rem; font-size: var(--fs-ui); color: var(--ink-3); }
+.inv-pay input { font-size: var(--fs-body); padding: 0.4rem 0.5rem; border: var(--bw-hair) solid var(--line); border-radius: var(--r-input, var(--r-card)); }
+.inv-pay-note { font-size: var(--fs-ui); margin: var(--space-1) 0 0; }
+
+/* New-invoice form */
+.invoice-form {
+  display: flex; flex-direction: column; gap: var(--space-3);
+  padding: var(--pad-card); border: var(--bw-hair) solid var(--line);
+  border-radius: var(--r-card); background: var(--white);
+}
+.invoice-form-head { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.invoice-form-head label { display: flex; flex-direction: column; gap: 0.2rem; font-size: var(--fs-ui); color: var(--ink-3); }
+.invoice-form-head select, .invoice-form-head input {
+  font-size: var(--fs-body); padding: 0.4rem 0.5rem;
+  border: var(--bw-hair) solid var(--line); border-radius: var(--r-input, var(--r-card));
+}
+.invoice-form-lines { display: flex; flex-direction: column; gap: var(--space-2); }
+.invoice-line { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.invoice-line input { font-size: var(--fs-body); padding: 0.4rem 0.5rem; border: var(--bw-hair) solid var(--line); border-radius: var(--r-input, var(--r-card)); }
+.invoice-line .il-desc { flex: 3 1 12rem; min-width: 0; }
+.invoice-line .il-qty { flex: 1 1 4rem; min-width: 0; }
+.invoice-line .il-price { flex: 1 1 6rem; min-width: 0; }
+.invoice-form-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.invoice-form-total { font-size: var(--fs-ui); font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; }
+.invoice-form-actions { display: inline-flex; gap: var(--space-2); }
+
 /* ── Security (SEC-1: two-factor authentication) ───────────────────────────── */
 .security { max-width: 32rem; }
 .security-status, .security-enroll, .security-recovery { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }

@@ -21,6 +21,7 @@ import {
   type Invoice, type InvoiceLineInput, type InvoiceLine, type InvoicingSettings,
 } from "./api";
 import { formatMoney, parseMoneyToMinor } from "./money";
+import { clampPayment } from "./invoiceMath";
 import { COPY } from "../copy";
 
 const I = COPY.invoicing;
@@ -147,6 +148,7 @@ function AgingStrip({ buckets }: { buckets: { bucket: string; balance_minor: num
   return (
     <div className="ar-aging">
       <span className="ar-aging-title">{I.owedTitle(formatMoney(total))}</span>
+      <span className="ar-aging-basis muted">{I.agedByDueDate}</span>
       <div className="ar-aging-buckets">
         {buckets.filter((b) => b.balance_minor > 0).map((b) => (
           <span key={b.bucket} className={`ar-bucket ar-bucket-${b.bucket.replace(/\W/g, "")}`}>
@@ -210,7 +212,7 @@ function InvoiceRow({
               <button className="primary sm" disabled={busy}
                 onClick={() => {
                   // Clamp to the balance so we never post an overpayment.
-                  const minor = Math.min(parseMoneyToMinor(amt) ?? balance, balance);
+                  const minor = clampPayment(parseMoneyToMinor(amt), balance);
                   run(() => payInvoice(orgId, inv.id, minor)).then(() => { setPaying(false); setAmt(""); });
                 }}>{I.applyPayment}</button>
               <button className="ghost sm" onClick={() => setPaying(false)}>{I.cancel}</button>

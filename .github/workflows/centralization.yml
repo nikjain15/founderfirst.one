@@ -41,6 +41,13 @@ jobs:
       - name: Check CSS vars resolve
         run: pnpm check:css-vars
 
+      # Weekly-audit P2 (PR #301): input/select/textarea must never size off
+      # --fs-body (floors at 15px) — RESPONSIVE.md rule 6 requires >= 16px on
+      # inputs to prevent iOS focus-zoom. Caught the Bills-form regression and
+      # its same-day recurrence in new Invoicing-form CSS.
+      - name: Check input font-size >= 16px
+        run: pnpm check:input-font-size
+
       # PENNY-UX-9 gate: every authed <h1> must carry .page-title (the restrained
       # authed heading scale). A bare <h1> inherits the public billboard scale
       # (up to 64px) and silently breaks the authed heading ladder (rule 14).

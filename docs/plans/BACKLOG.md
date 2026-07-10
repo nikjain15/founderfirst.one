@@ -1239,3 +1239,36 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## APP-P2-1 · Weekly-audit P2 — Bills-form inputs iOS-zoom font-size + recurrence guard
+status: pr:#TBD (loop-orch, 10 Jul) — carded and fixed same session; no dedicated
+  card existed before this (found by the weekly audit, PR #301, report-only, still
+  open). Cross-checked all 18 open loop PRs' file lists (`gh pr diff <n> --name-only`)
+  before picking this — none fix this specific finding; every other BACKLOG.md
+  candidate card was already merged into an open PR or an explicit Nik/infra human
+  step (SEC-2-KEYS, CONN-1, PENNY-UX-9 — same conclusion prior iterations reached,
+  see [[project-backlog-staleness]] / [[project-audit-driven-carding]]).
+blocked-by: — (self-contained apps/app CSS fix)
+context: PR #301's apps/app section (P2 · responsive) named `styles.css` Bills-form
+  inputs (`.bill-pay input`, `.bill-form-head select/input`, `.bill-line input`) as
+  sized off `--fs-body` (clamp floors at 15px) instead of `--fs-input` (floors at
+  16px) — RESPONSIVE.md rule 6 requires >=16px on inputs to prevent iOS focus-zoom.
+  Verified still present on `origin/main` at the time of picking. Separately verified
+  the identical copy-paste bug had ALREADY recurred the same day in PR #321's new
+  Invoicing-form CSS (`.inv-pay input`, `.invoice-form-head select/input`,
+  `.invoice-line input` all also use `--fs-body`) — that PR is out of this session's
+  reach (can't edit another open PR's branch), so it's flagged here as a known,
+  disclosed gap for PR #321's own follow-up/gate-time fix, not silently dropped.
+goal: fix the 3 Bills-form declarations (`--fs-body` → `--fs-input`) AND add a CI
+  guard so the class can't keep recurring silently (LEARNINGS rule 14 — an
+  under-floor input font-size doesn't crash anything, so nothing but a real device
+  test would ever catch it otherwise).
+centralization: no new token — reuses the existing `--fs-input` token every other
+  input in the app already uses; the guard is a static script (matches the
+  check-css-vars.ts pattern), not a magic-number threshold.
+coverage delta: new `scripts/check-input-font-size.ts` (`pnpm check:input-font-size`,
+  wired into `.github/workflows/centralization.yml` beside `check:css-vars`) — scans
+  apps/app/src + apps/admin/src for any `input`/`select`/`textarea` CSS rule sized
+  off `--fs-body` and fails the build; verified it both catches an injected
+  violation and passes clean post-fix.
+decision-needed: none

@@ -319,7 +319,7 @@
   display: inline-block;
 }
 .swatch-label {
-  font-size: 11px;
+  font-size: var(--fs-eyebrow);
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
@@ -412,7 +412,7 @@
   background: var(--white); cursor: pointer; min-height: var(--tap-min);
 }
 .ins-goal.on { border-color: var(--ink); border-width: 1.5px; }
-.ins-goal-tick { font-size: 15px; line-height: 1.2; }
+.ins-goal-tick { font-size: var(--fs-ui); line-height: 1.2; }
 .ins-goal-title { display: block; font-size: var(--fs-data-row); font-weight: var(--fw-semibold); color: var(--ink); }
 .ins-goal-sub { display: block; font-size: var(--fs-eyebrow); color: var(--ink-3); margin-top: 2px; }
 .ins-config-gen { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }

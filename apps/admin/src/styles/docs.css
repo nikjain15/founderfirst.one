@@ -145,7 +145,7 @@
 .whatsnew-title-input,
 .whatsnew-body-input {
   font-family: inherit;
-  font-size: 16px;            /* DS: ≥16px prevents iOS zoom */
+  font-size: var(--fs-input); /* DS: prevents iOS zoom */
   color: var(--ink);
   background: var(--white);
   border: 1px solid var(--line);

@@ -16,7 +16,7 @@
 }
 .email-card > summary {
   cursor: pointer;
-  font-size: 15px;
+  font-size: var(--fs-ui);
   list-style: revert;
 }
 .email-card > summary::-webkit-details-marker { color: var(--ink-3); }
@@ -64,7 +64,7 @@
   font-size: var(--fs-micro); font-weight: var(--fw-semibold);
   transform: translateY(2px);
 }
-.email-step-label { font-size: 15px; color: var(--ink); }
+.email-step-label { font-size: var(--fs-ui); color: var(--ink); }
 
 /* Advanced (brand) section sits below the editor, visually quieter. */
 .email-advanced { margin-top: 26px; }
@@ -115,7 +115,7 @@
   box-shadow: var(--shadow-float);
 }
 .email-group-label {
-  font-size: 11px; font-weight: var(--fw-semibold);
+  font-size: var(--fs-eyebrow); font-weight: var(--fw-semibold);
   text-transform: uppercase; letter-spacing: var(--ls-eyebrow); color: var(--ink-4);
   margin-bottom: 16px;
 }
@@ -139,7 +139,7 @@
 .token-input {
   background: var(--paper); border: 1px solid transparent; border-radius: var(--r-card);
   padding: 11px 14px; min-height: var(--tap-min, 44px); box-sizing: border-box;
-  font: inherit; font-size: 16px; color: var(--ink); line-height: 1.45;
+  font: inherit; font-size: var(--fs-input); color: var(--ink); line-height: 1.45;
   white-space: pre-wrap; word-break: break-word; cursor: text;
   transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
@@ -188,7 +188,7 @@
 /* New-email pill + custom tag on the picker */
 .email-new-pill { border-style: dashed !important; font-weight: var(--fw-semibold) !important; }
 .email-pill-tag {
-  margin-left: 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+  margin-left: 6px; font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--ink-4); font-weight: var(--fw-semibold);
 }
 
@@ -198,7 +198,7 @@
   margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-2, var(--line));
 }
 .email-launch-label {
-  font-size: 11px; text-transform: uppercase; letter-spacing: var(--ls-eyebrow); color: var(--ink-4);
+  font-size: var(--fs-eyebrow); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); color: var(--ink-4);
 }
 
 /* ---- Inbox-style preview ---- */
@@ -222,7 +222,7 @@
 }
 
 /* ---- Scheduled ---- */
-.email-form-title { font-size: 15px; font-weight: var(--fw-semibold); color: var(--ink); margin: 18px 0 10px; }
+.email-form-title { font-size: var(--fs-ui); font-weight: var(--fw-semibold); color: var(--ink); margin: 18px 0 10px; }
 .email-check { display: flex; align-items: center; gap: 8px; margin: 6px 0 4px; font-size: 14px; color: var(--ink-2); }
 .email-check input { inline-size: 18px; block-size: 18px; }
 
@@ -260,7 +260,7 @@
 .email-subject-cell { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
 
 .email-badge {
-  display: inline-block; font-size: 11px; font-weight: var(--fw-semibold);
+  display: inline-block; font-size: var(--fs-eyebrow); font-weight: var(--fw-semibold);
   text-transform: uppercase; letter-spacing: 0.04em;
   padding: 2px 8px; border-radius: var(--r-pill, 999px); margin-right: 6px;
   border: 1px solid var(--line); color: var(--ink-3);

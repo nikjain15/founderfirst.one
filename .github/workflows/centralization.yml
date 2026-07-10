@@ -41,6 +41,13 @@ jobs:
       - name: Check CSS vars resolve
         run: pnpm check:css-vars
 
+      # ADMIN-DS-PX-1 gate (weekly audit PR #301, design_system P2): a literal
+      # font-size that exactly equals a flat tokens.css value (--fs-tiny/
+      # eyebrow/micro/label/ui/input) must use the token — the mechanical,
+      # zero-ambiguity slice of the magic-px sweep (LEARNINGS rule 14 class).
+      - name: Check for magic font-sizes that duplicate a flat token
+        run: pnpm check:magic-fontsize
+
       # PENNY-UX-9 gate: every authed <h1> must carry .page-title (the restrained
       # authed heading scale). A bare <h1> inherits the public billboard scale
       # (up to 64px) and silently breaks the authed heading ladder (rule 14).

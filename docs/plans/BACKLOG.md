@@ -1247,7 +1247,7 @@ decision-needed: none to draft (Nik picks the direction from it)
 > non-decision-needed finding from that audit's P2 list.
 
 ## SIGNALS-OPS-1 · Commit the live signals-worker launchd plist (P2)
-status: pr:#TBD (loop-orch, 10 Jul) — carded and fixed same session
+status: pr:#330 (loop-orch, 10 Jul) — carded and fixed same session
 context: 6-Jul weekly audit (PR #301, tools/packages/docs findings) — "the live signals-worker
   launchd plist is uncommitted (only the retired-VM systemd unit is in git)." Verified: the Mac
   host has `~/Library/LaunchAgents/one.founderfirst.signals-worker.plist` loaded and running

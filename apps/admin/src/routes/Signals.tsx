@@ -570,6 +570,14 @@ function LeadsTab() {
 function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }) {
   const qc = useQueryClient();
   const { data, isPending } = useQuery({ queryKey: ["sig-lead", leadId], queryFn: () => getSigLead(leadId) });
+
+  // Close the detail drawer on Escape (mirrors Users.tsx / Audit.tsx).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const [draft, setDraft] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");

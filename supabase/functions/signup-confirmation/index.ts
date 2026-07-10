@@ -14,6 +14,15 @@
  *     'welcome' row): a disabled welcome email sends nothing.
  *   • A send failure rolls back the ledger row so a later retry can re-send, and
  *     it always returns graceful JSON — signup must never break on an email error.
+ *   • An email NOT on the waitlist gets the SAME response as one already sent
+ *     (SEC-4, weekly audit PR #301 P2) — otherwise an attacker could POST
+ *     arbitrary addresses and enumerate waitlist membership from the 404 vs 200
+ *     split. The real signup flow always calls this right after
+ *     `signup_to_waitlist` succeeds, so this branch is never hit legitimately.
+ *   • Requests are rate-limited per source IP, hourly, via
+ *     `check_signup_confirmation_rate_limit` (threshold in `platform_config`,
+ *     admin-tunable, no redeploy) — this only bounds probing volume; it never
+ *     changes which response an address gets.
  *
  * Secrets (all already set for the email stack): RESEND_API_KEY, NOTIFY_FROM,
  * SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Optional: SITE_URL (CTA target;
@@ -23,6 +32,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { sendEmail } from "../_shared/send.ts";
+import { clientIp, NOTHING_TO_SEND } from "./guard.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -49,21 +59,32 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
-  const body = await req.json().catch(() => ({}));
-  const email = String(body?.email ?? "").trim().toLowerCase();
-  const slug = body?.slug ? String(body.slug) : null;
-  if (!EMAIL_RE.test(email)) return json({ error: "bad_email" }, 400);
-
   const url = Deno.env.get("SUPABASE_URL")!;
   const service = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
     auth: { persistSession: false },
   });
 
+  // Rate-limit BEFORE parsing/validating the body — probing volume is bounded
+  // regardless of whether individual requests are well-formed.
+  const { data: allowed, error: rlErr } = await service.rpc("check_signup_confirmation_rate_limit", {
+    p_ip: clientIp(req),
+  });
+  if (rlErr) return json({ error: "rate_limit_check_failed", detail: rlErr.message }, 500);
+  if (allowed === false) return json({ error: "rate_limited" }, 429);
+
+  const body = await req.json().catch(() => ({}));
+  const email = String(body?.email ?? "").trim().toLowerCase();
+  const slug = body?.slug ? String(body.slug) : null;
+  if (!EMAIL_RE.test(email)) return json({ error: "bad_email" }, 400);
+
   // Anti-abuse: only ever email an address that actually joined the waitlist.
+  // A miss here gets the SAME response as "already sent" (see NOTHING_TO_SEND)
+  // — never a distinguishable 404 — so this endpoint can't be used to
+  // enumerate waitlist membership by probing arbitrary addresses.
   const { data: wl, error: wlErr } = await service
     .from("waitlist").select("email, slug").eq("email", email).maybeSingle();
   if (wlErr) return json({ error: "lookup_failed", detail: wlErr.message }, 500);
-  if (!wl) return json({ error: "not_on_waitlist" }, 404);
+  if (!wl) return json(NOTHING_TO_SEND);
 
   // Respect the Scheduled-tab toggle.
   const { data: sched } = await service
@@ -80,10 +101,10 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (claimErr) {
     // Unique violation = already sent. Any other error: don't block signup.
-    if ((claimErr as any).code === "23505") return json({ ok: true, skipped: "already_sent" });
+    if ((claimErr as any).code === "23505") return json(NOTHING_TO_SEND);
     return json({ ok: true, skipped: "ledger_error", detail: claimErr.message });
   }
-  if (!claimed) return json({ ok: true, skipped: "already_sent" });
+  if (!claimed) return json(NOTHING_TO_SEND);
 
   const site = (Deno.env.get("SITE_URL") ?? "https://founderfirst.one").replace(/\/$/, "");
   const confirmedSlug = slug ?? wl.slug ?? null;

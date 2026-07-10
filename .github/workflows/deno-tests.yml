@@ -6,8 +6,9 @@ name: Edge function tests (Deno)
 # (_shared/send.harness.test.ts) is proven in CI, not verified-in-code-only.
 #
 # Scope: the shared _shared/*.test.ts suite (email harness + any future shared
-# unit tests). Per-function tests that pull npm deps (e.g. penny-thread's
-# @types/node) need `deno install` first and are out of scope for this gate.
+# unit tests), plus per-function tests with no npm deps (e.g. signup-confirmation).
+# Per-function tests that DO pull npm deps (e.g. penny-thread's @types/node)
+# need `deno install` first and are out of scope for this gate.
 
 on:
   pull_request:
@@ -38,3 +39,10 @@ jobs:
         run: |
           deno check supabase/functions/_shared/send.harness.test.ts
           deno test --allow-env supabase/functions/_shared/
+
+      - name: signup-confirmation enumeration-guard tests (SEC-4)
+        # No npm deps (index.test.ts imports only the dependency-free guard.ts,
+        # never index.ts — see the file header for why), so no `deno install`.
+        run: |
+          deno check supabase/functions/signup-confirmation/index.test.ts
+          deno test --allow-env supabase/functions/signup-confirmation/index.test.ts

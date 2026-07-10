@@ -312,6 +312,44 @@ centralization: log field name/config centralized; no inline literals.
 coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
   call (success + error path).
 
+# SEC-4 — weekly audit (9 Jul) P2 cleanup, supabase section
+> Self-carded while looking for the top unclaimed card: BACKLOG.md had none (every remaining
+> candidate was either already covered by an open PR or a Nik/infra human step). The weekly
+> audit (PR #301, 6 Jul) supabase-section P2s not yet addressed by any of the 13 other open
+> loop PRs (checked each PR's file list — SEC-3/BUBBLE-1/ADMIN-CSS-1/etc. don't touch these
+> files): signup-confirmation email-enumeration + the inert penny_site_chats/leads grants.
+> The CORS-wildcard-on-edge-fns P2 in the same audit section was explicitly marked
+> "acceptable" by the auditor (bearer auth, not cookies) — not re-opening it here.
+
+## SEC-4 · signup-confirmation enumeration guard + revoke inert Penny-widget grants
+status: pr:#TBD (loop-orch, 9 Jul) — building
+blocked-by: — (supabase/functions/signup-confirmation + one migration; no other open PR touches
+  these files)
+context: weekly audit (PR #301) — supabase section:
+  - `signup-confirmation` (verify_jwt=false, public) answered 404 `not_on_waitlist` for an email
+    NOT on the waitlist vs 200 `ok` for one that is — POSTing arbitrary addresses let an attacker
+    learn waitlist membership one email at a time. Audit note: "Bounded by the idempotent
+    already_sent claim; consider rate-limiting."
+  - `penny_site_chats` / `penny_site_leads` carry full CRUD grants to BOTH `anon` and
+    `authenticated` with zero RLS policies (RLS enabled → today inert, PostgREST denies all) — a
+    latent footgun the moment anyone adds a policy. The only real writer, the site-bubble worker
+    (`site-bubble/worker/src/worker.ts`), authenticates as `service_role`; the grants are unused.
+goal: (1) collapse the not-on-waitlist response into the exact same shape as the already-sent
+  response (`NOTHING_TO_SEND`, extracted to a dependency-free `guard.ts` so it's unit-testable
+  without pulling supabase-js into `deno test` — same discipline as report-export/validate.ts);
+  (2) add an IP-hashed hourly rate limit (`check_signup_confirmation_rate_limit`, service_role-only
+  RPC) so probing volume is bounded regardless; (3) `revoke all` the inert anon/authenticated
+  grants on both Penny-widget tables (service_role untouched).
+centralization: the rate-limit threshold lives in `platform_config.behavior`
+  (`signup_confirmation_rate_limit_per_hour`, default 20) — admin-tunable via
+  `set_platform_behavior()`, no redeploy (CENTRAL-1 pattern, mirrors `get_fx_feed_config()`).
+coverage delta: new pgTAP `sec4_signup_confirmation_test.sql` — asserts anon/authenticated have
+  zero grants on both tables, the rate-limit RPCs are service_role-only, the limit/window/per-IP
+  logic (raw IPs are hashed, never stored), and the purge cron clears stale rows only; new Deno
+  `signup-confirmation/index.test.ts` — asserts the not-on-waitlist and already-sent responses are
+  byte-identical and that the rate-limit check runs BEFORE the waitlist lookup.
+decision-needed: none
+
 # PENNY-UX-10 + E-FILE (Nik 5-Jul: declutter + make responsive; card e-file Phase A)
 
 ## PENNY-UX-10 · Owner app declutter + FULL responsive pass → /admin minimalist standard

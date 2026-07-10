@@ -1,5 +1,7 @@
 # Learning Loop — "Act" stage spec
 
+> Status: active · 10 Jul 2026 · Owner: Nik
+
 > The learning loop is **Capture → Synthesize → Surface → Act**. Three stages are live;
 > this spec covers the fourth. Authored 28 Jun 2026.
 

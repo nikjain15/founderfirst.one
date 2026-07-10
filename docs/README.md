@@ -28,7 +28,7 @@ in the same PR that adds the doc — the map is only useful while it's complete.
 - **Admin** — [apps/admin/ADMIN_PRINCIPLES.md](../apps/admin/ADMIN_PRINCIPLES.md) · [apps/admin/RESPONSIVE.md](../apps/admin/RESPONSIVE.md) (the responsive standard, applies repo-wide) · [apps/admin/support-management/](../apps/admin/support-management/) (support KB + specs)
 - **Penny app** — [apps/app/APP_PRINCIPLES.md](../apps/app/APP_PRINCIPLES.md) (nav/IA per lens)
 - **Design system** — [packages/design-system/README.md](../packages/design-system/README.md) + [tokens.css](../packages/design-system/tokens.css)
-- **Signals** — [tools/signals-worker/SOLUTION.md](../tools/signals-worker/SOLUTION.md) (design) · [STRATEGY.md](../tools/signals-worker/STRATEGY.md) (what/why) · [README.md](../tools/signals-worker/README.md) (ops)
+- **Signals** — [tools/signals-worker/SOLUTION.md](../tools/signals-worker/SOLUTION.md) (design) · [STRATEGY.md](../tools/signals-worker/STRATEGY.md) (what/why) · [README.md](../tools/signals-worker/README.md) (ops) · [FOLLOWUP_AGENT_SPEC.md](../tools/signals-worker/FOLLOWUP_AGENT_SPEC.md) (follow-up-reply agent spec)
 - **Email** — [supabase/functions/_shared/EMAIL.md](../supabase/functions/_shared/EMAIL.md) · [EMAIL_REGISTRY.md](../supabase/functions/_shared/EMAIL_REGISTRY.md)
 - **Supabase** — [supabase/README.md](../supabase/README.md) (migrations conventions, live cron jobs, pgTAP tests) · [supabase/functions/README.md](../supabase/functions/README.md) (edge-function catalog: purpose + who calls each)
 - **CI/CD** — [.github/workflows/README.md](../.github/workflows/README.md) (every workflow: trigger, what it does, where it deploys)

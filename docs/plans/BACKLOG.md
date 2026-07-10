@@ -511,6 +511,89 @@ centralization: reuse existing mfaGate + org_requires_mfa; no new thresholds.
 coverage delta: extend the auth-mfa AUDIT row — assert: MFA-required firm + aal1 CPA → cpa-close
   rejected 403; aal2 → allowed; non-MFA firm → unaffected. deno/pgTAP.
 
+## DEFINER-GUARD-1 · CI gate for the SEC-3 cross-tenant DEFINER-reader pattern (P0)
+status: pr:#TBD (loop-orch, 10 Jul) — carded and fixed same session; no dedicated
+  card existed before this (self-carded per the established fallback — SEC-3
+  precedent, PR #309 — when BACKLOG.md's open cards are all merged/decision-
+  needed/human-steps, self-card an untouched finding from the latest weekly audit)
+blocked-by: — (self-contained: one migration + one CI guard script + its unit tests)
+context: PR #301 (6-Jul weekly audit) found 4 P0 + 2 P1 cross-tenant `security
+  definer` read-RPC leaks and flagged the shape as recurring for the SECOND time
+  (proposed graduating into a LEARNINGS rule). PR #309 (SEC-3) fixed the 4 known
+  P0s but added no machine gate — nothing stopped a fifth instance from shipping
+  undetected before the next scheduled audit. Building `check-definer-tenant-
+  guard.ts` and running it against `origin/main` (this session) found, beyond
+  the 4 already-known-but-still-unmerged: `upcoming_filing_deadlines` (leaked
+  another org's entity_type/jurisdiction + filing-deadline list) and
+  `ninetynine_nec_threshold_minor` (leaked another org's entity_type via a
+  different path) — two REAL, previously undiscovered instances of the exact
+  same pattern.
+workflow: n/a (backend security + CI-infra fix, no user-facing workflow change
+  — the two newly-fixed RPCs behave identically for an authorized caller; a
+  non-member now gets refused/empty instead of a leak).
+goal:
+  1. `scripts/check-definer-tenant-guard.ts` — parses every `security definer`
+     function across `supabase/migrations/*.sql` (keeping each function's
+     LATEST body/grant state, CREATE-OR-REPLACE-aware) and fails the build if
+     one is granted to `authenticated`, takes an org-scoping parameter
+     (`p_org_id`/`p_org`/`target_org`/`p_client_org_id[s]`), and never calls a
+     membership predicate (`can_access_org`/`has_membership`/`is_admin`/etc.).
+     A deliberate cross-tenant reader opts out with a documented
+     `-- definer-ok: <reason>` marker (mirrors `check-tenant-predicate.ts`'s
+     `-- tenant-ok:`). Wired into `pnpm build` + `.github/workflows/pages.yml`
+     (same placement as `check:tenant`) so it runs on every PR going forward.
+  2. Fixes `upcoming_filing_deadlines` + `ninetynine_nec_threshold_minor` with
+     the same `can_access_org(...)` pattern SEC-3 used — verified both are
+     purely client-facing (no service-role/edge-fn caller), so the guard is
+     safe to add unconditionally.
+  3. Re-applies SEC-3's 4 fixes verbatim (idempotent CREATE OR REPLACE) so
+     THIS branch's own CI is green under the new guard regardless of merge
+     order against PR #309 (whichever merges second is a harmless no-op).
+  4. `get_effective_behavior_config` is a documented, DELIBERATE exemption
+     (`-- definer-ok:`), not a fix: it's `anon`-callable by design (pre-auth
+     default read) and is called by 3 edge fns via a service-role client with
+     no per-user JWT, so a blanket guard would break those legitimate backend
+     reads. Real, low-severity (config-tuning, no financial/PII) gap — tracked
+     below as DEFINER-GUARD-2, not silently dropped.
+  5. `scripts/tests/check-definer-tenant-guard.test.ts` — 15 fixture/unit tests
+     (parser correctness, grant/revoke-ordering, CREATE-OR-REPLACE-wins,
+     opt-out marker, non-definer/no-org-param are never false-flagged, AND a
+     live regression-gate test that runs the guard against the real repo).
+centralization: guard membership-check names + org-param names are in the
+  script itself (same pattern as check-tenant-predicate.ts) — this is
+  infrastructure, not product config, so it's code-reviewed, not seed-driven.
+coverage delta: extends the qbo/tax/central2 AUDIT surface — the guard itself
+  IS the coverage delta (every future DEFINER reader is checked automatically,
+  not just at the next scheduled audit); pgTAP negative assertions added to
+  `w2_5_1099_contractor_tracking_test.sql` (non-member refused
+  `ninetynine_nec_threshold_minor`) and `w3_4_owner_home_deadlines_test.sql`
+  (non-member gets zero deadlines for another org).
+decision-needed: none (a security fix + CI gate following an established
+  in-repo pattern, same class as SEC-3).
+
+## DEFINER-GUARD-2 · `get_effective_behavior_config` caller-role-aware fix (P2, disclosed follow-up)
+status: unclaimed
+blocked-by: — (independent; needs care around the 3 service-role callers)
+context: DEFINER-GUARD-1 found `get_effective_behavior_config(p_org)` is
+  `security definer`, granted to `anon, authenticated`, and never checks
+  membership when `p_org` is non-null — a low-severity leak (org-tuned
+  autonomy thresholds: asks/week, confidence cutoffs, SLA days; no financial/
+  PII data). NOT auto-fixed by DEFINER-GUARD-1 because a blanket
+  `can_access_org` guard would ALSO block the 3 edge fns (receipts,
+  categorize, invoicing) that call it via a service-role client with no
+  per-user JWT (`auth.uid()` is null in that context) — those are legitimate
+  backend reads, not the attack surface.
+goal: a caller-role-aware fix, e.g. `and (p_org is null or auth.role() =
+  'service_role' or can_access_org(p_org))` — verify `auth.role()` correctly
+  reads `service_role` for the 3 edge fns' `svc.rpc(...)` calls (not just
+  assumed) before shipping, since this sandbox has no live Supabase instance
+  to prove it end-to-end. Add a pgTAP case proving: anon + p_org=null works
+  (unchanged), anon/authenticated + someone else's p_org is refused/empty
+  (the fix), and a simulated service-role call still resolves the org
+  override (the regression this card exists to avoid).
+decision-needed: none to build; flagging here so it isn't silently forgotten
+  (LOOP_PROMPT "no silent caps").
+
 ## CONN-1 · QBO production hosting IP (static-egress proxy) — Nik + infra
 status: unclaimed (deferred — sandbox unaffected)
 blocked-by: — (not blocking any build; production QBO is Intuit-review-gated anyway)

@@ -68,6 +68,17 @@ jobs:
       - name: Check tenant predicate
         run: pnpm check:tenant
 
+      # Guard: no SECURITY DEFINER read RPC granted to authenticated may take an
+      # org-scoping parameter without a can_access_org (or equivalent) membership
+      # check — DEFINER bypasses RLS, so an ungated reader leaks every tenant's
+      # data (the SEC-3 / weekly-audit-PR-#301 pattern). `pnpm build` runs this too.
+      - name: Check definer-tenant guard
+        run: pnpm check:definer-guard
+
+      # Guard: the check:* scripts' own pure logic (fixture-driven — no network).
+      - name: Test guard scripts
+        run: pnpm test:guards
+
       # Guard: prove resolve() (the AI quality & cost layer) builds the same
       # provider request each live call site built before the seam — answers
       # unchanged. Pure + deterministic; no network.

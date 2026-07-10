@@ -235,6 +235,27 @@ async function main() {
         console.log(`  (cover ${c.name} skipped — ${(err instanceof Error ? err.message : String(err)).slice(0, 100)})`);
       }
     }
+    // 7. Content home activity strip: a list_prompts/list_voice RPC failure must
+    // surface an error, not silently disappear (ADMIN-P2-3). Mocked end-to-end
+    // (no seed data needed) via PostgREST RPC route interception.
+    try {
+      await page.route("**/rest/v1/rpc/list_prompts", (route) =>
+        route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ message: "mocked prompts fetch failure" }) }));
+      await page.route("**/rest/v1/rpc/list_voice", (route) =>
+        route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) }));
+
+      await page.goto(`${base}/admin/content`, { waitUntil: "networkidle" });
+      // react-query's default retry:1 re-fires the failing request after a ~1s
+      // backoff before isError flips — wait for the banner, don't just poll it.
+      const errBanner = page.getByText("mocked prompts fetch failure", { exact: false });
+      await errBanner.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+      check("Content home activity strip surfaces a list_prompts/list_voice fetch error (not a silent disappearance)", (await errBanner.count()) > 0);
+
+      await page.unroute("**/rest/v1/rpc/list_prompts");
+      await page.unroute("**/rest/v1/rpc/list_voice");
+    } catch (e) {
+      check("Content home error-surface check", false, (e instanceof Error ? e.message : String(e)).slice(0, 200));
+    }
   } catch (e) {
     check("smoke run completed", false, (e instanceof Error ? e.message : String(e)).slice(0, 200));
     await page.screenshot({ path: join(ARTIFACTS, "failure.png"), fullPage: true }).catch(() => {});

@@ -84,8 +84,8 @@ function ActivityStrip({ onJumpTab }: { onJumpTab: (t: Tab) => void }) {
 
   // Reuse the ["prompts"] / ["voice"] caches so the strip refreshes the instant
   // ContentPrompt / ContentVoice publish a new version.
-  const { data: prompts = [], isPending: promptsPending } = useQuery({ queryKey: ["prompts"], queryFn: listPrompts });
-  const { data: voice = [], isPending: voicePending } = useQuery({ queryKey: ["voice"], queryFn: listVoice });
+  const { data: prompts = [], isPending: promptsPending, error: promptsError } = useQuery({ queryKey: ["prompts"], queryFn: listPrompts });
+  const { data: voice = [], isPending: voicePending, error: voiceError } = useQuery({ queryKey: ["voice"], queryFn: listVoice });
   const loading = promptsPending || voicePending;
 
   // Merge both feeds into one chronological list, newest first, capped at 5.
@@ -123,6 +123,17 @@ function ActivityStrip({ onJumpTab }: { onJumpTab: (t: Tab) => void }) {
     const latest = items[0].whenISO;
     window.localStorage.setItem(SEEN_KEY, latest);
     setLastSeenAt(latest);
+  }
+
+  // A fetch failure defaults prompts/voice to [] (react-query keeps `loading`
+  // false once errored), so without this check the strip just silently
+  // disappears — same failure class ADMIN-P2-1/ADMIN-P2-2 fixed elsewhere.
+  if (!loading && (promptsError || voiceError)) {
+    return (
+      <div className="login-status err" style={{ marginBottom: 16 }}>
+        {((promptsError ?? voiceError) as Error).message}
+      </div>
+    );
   }
 
   if (!items || items.length === 0) return null;

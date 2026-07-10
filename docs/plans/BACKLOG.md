@@ -554,6 +554,32 @@ coverage delta: extend the PENNY-UX AUDIT ledger rows (per-lens IA + design-conf
   zero unresolved CSS vars, zero bare <h1> on authed pages, no horizontal scroll on the width
   ladder, every tab has real content.
 
+# Weekly audit (PR #301, 6 Jul) follow-ups — self-carded (BACKLOG.md lags open PRs)
+> `docs/plans/BACKLOG.md` on `main` had fallen behind ~18 open PRs (see the loop-orch reconciliation
+> precedent on PRs #309/#321/#323). This card is self-carded straight from an untouched PR #301
+> finding per that same precedent, in the same PR that fixes it.
+
+## SIGNALS-SEC-1 · compose-server timing-safe secret compare
+status: pr:#TBD (loop-orch, 10 Jul) — carded and fixed same session
+blocked-by: — (single file, no other open PR touches tools/signals-worker/compose-server.mjs)
+context: weekly audit PR #301 (`tools/packages/docs` section, P2) — `compose-server.mjs:213`
+  compared the `x-compose-secret` bearer header with a plain `!==`, which short-circuits on the
+  first differing byte and leaks the secret's correct-prefix length through response timing.
+goal: constant-time compare. New pure helper `tools/signals-worker/timingSafeSecret.mjs`
+  (`secretMatches`) hashes both sides to a fixed-length SHA-256 digest before
+  `crypto.timingSafeEqual` (avoids the length-mismatch throw and the length-based timing leak a
+  raw `timingSafeEqual(Buffer.from(a), Buffer.from(b))` would still have); `compose-server.mjs`'s
+  auth check now calls it instead of `!==`. Guards non-string input (a duplicated header parses as
+  an array) and an unset expected secret (never auto-passes).
+centralization: n/a (single local secret compare, no cross-cutting config).
+coverage delta: new `tools/signals-worker/timingSafeSecret.test.mjs` (Node's built-in `node:test`,
+  no new dependency — avoids colliding with the in-flight SIGNALS-TEST-1 PR's test-framework
+  choice) — asserts exact match accepted; wrong/shorter/longer/empty candidate rejected without
+  throwing; unset expected secret never auto-passes; non-string input rejected. New scoped CI
+  workflow `.github/workflows/signals-worker-secret-compare.yml` runs `node --check` on
+  `compose-server.mjs` + the test file on any touch to these files. Manually smoke-tested the live
+  server: wrong/missing secret → 401, correct secret → passes auth (not 401).
+
 ---
 
 ## LOOP-1 · Build dashboard (/admin → Build tab)

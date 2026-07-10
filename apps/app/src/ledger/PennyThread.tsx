@@ -23,8 +23,10 @@ import { COPY } from "../copy";
 type Turn = { id: number; who: "you" | "penny"; text: string; pending?: boolean };
 
 // Persist the conversation per org so Penny "remembers" — she's a standing chat, not
-// a slab that resets on every visit (owner-calm redesign). Local for now (survives
-// navigation + reload on this device); server-side cross-device history is a follow-up.
+// a slab that resets on every visit (owner-calm redesign). localStorage seeds the
+// instant view; the effect below layers server-side cross-device history on top
+// (fetchPennyThread/appendPennyThread), so the same books' thread follows the user
+// across tabs and devices, not just this one.
 const STORE_PREFIX = "ff.penny.thread.";
 const STORE_MAX = 100;
 

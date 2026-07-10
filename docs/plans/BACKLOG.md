@@ -312,6 +312,27 @@ centralization: log field name/config centralized; no inline literals.
 coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
   call (success + error path).
 
+## DOCS-AUDIT-P2-1 · Fix four stale-doc findings from the 6-Jul weekly audit (P2 copy_docs)
+status: pr:#TBD (loop-orch, 10 Jul) — carded and fixed same session
+blocked-by: — (docs + one code comment; independent of every other open lane)
+context: the 6-Jul weekly full-surface audit (pr:#301, report-only by charter) logged four
+  `copy_docs`/doc-drift P2 findings under the `tools` and `apps/app` surfaces that no other open
+  PR's file list touches as of this pick (cross-checked via `gh pr diff <n> --name-only` against
+  all 18 open loop PRs, #309–#328): (a) `tools/signals-worker/FOLLOWUP_AGENT_SPEC.md` exists but
+  is unmapped in `docs/README.md`'s doc index (Rule: "a doc that doesn't fit a row gets one in the
+  same PR that adds it" — this one never got one); (b) `docs/plans/learning-loop-act-spec.md` is
+  missing the mandatory `> Status: ... · <date> · Owner: <name>` header docs/README.md's own rule
+  3 requires on every `docs/plans/` doc; (c) `docs/plans/ARCHITECTURE.md:615` still lists
+  `apps/marketing` as a live, "untouched" surface — it was retired (`apps/web` replaced it; even
+  `scripts/build-all.ts:13` already says so) — a doc describing a system that no longer exists
+  (docs/README.md rule 9); (d) `apps/app/src/ledger/PennyThread.tsx:25-27`'s comment says
+  server-side cross-device thread history "is a follow-up" — it shipped (pr:#287/#288,
+  `fetchPennyThread`/`appendPennyThread`, read 40 lines below the stale comment in the same file).
+goal: correct all four in place — no behavior change, doc/comment accuracy only.
+centralization: n/a (docs-only diff).
+coverage delta: none new (no runtime behavior changed); this is the doc-accuracy dimension of the
+  AUDIT ledger closing four named findings, verified by re-reading each file post-fix.
+
 # PENNY-UX-10 + E-FILE (Nik 5-Jul: declutter + make responsive; card e-file Phase A)
 
 ## PENNY-UX-10 · Owner app declutter + FULL responsive pass → /admin minimalist standard

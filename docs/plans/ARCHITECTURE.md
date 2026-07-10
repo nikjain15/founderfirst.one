@@ -612,7 +612,8 @@ API.**
 - New app lives under `apps/app` (the unified authed SPA), seeded from the existing
   `apps/demo/businessowner` and `apps/demo/cpa` screens.
 - `apps/admin` folds in as the admin lens (or stays a route group within the app).
-- Marketing (`apps/web` / `apps/marketing`) and the Penny bubble are untouched.
+- Marketing (`apps/web`) and the Penny bubble are untouched. `apps/marketing` and `apps/blog`
+  were retired — `apps/web` fully replaced them (see `scripts/build-all.ts`).
 - All work in a **dedicated worktree per task**, committed small and atomically (repo guardrail).
 
 ---

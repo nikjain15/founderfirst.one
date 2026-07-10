@@ -29,6 +29,7 @@
     "vendor:inference": "tsx scripts/vendor-inference.ts",
     "build": "tsx scripts/check-css-imports.ts && tsx scripts/check-tenant-predicate.ts && tsx scripts/check-inference-vendor.ts && tsx packages/inference/test/judge.ts && tsx scripts/build-all.ts",
     "vendor:demo": "tsx scripts/vendor-demo.ts",
+    "test:guards": "tsx --test scripts/tests/*.test.ts",
     "test:responsive": "pnpm build && node tools/responsive-ci/run.mjs",
     "test:responsive:only": "node tools/responsive-ci/run.mjs"
   },

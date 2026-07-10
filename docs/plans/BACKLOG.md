@@ -1239,3 +1239,43 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## ADMIN-P2-3 · Content-home activity strip silently swallows list_prompts/list_voice fetch errors (P2)
+status: pr:#TBD (loop-orch, 10 Jul) — carded and fixed same session; no dedicated card
+  existed before this. This iteration re-verified `docs/plans/BACKLOG.md`'s own
+  candidates (PENNY-UX-9 IA-restructure, SEC-2-KEYS, CONN-1) were all already
+  resolved or an explicit Nik/infra human step — same conclusion PR #279/#321/#323/
+  #325/#328/#329 reached on prior iterations (`docs/plans/BACKLOG.md` on `main` lags
+  the real repo state; ~18 open loop PRs await Nik's merge) — then fell back to the
+  established precedent of self-carding an untouched weekly-audit finding (PR #301,
+  report-only by charter, still open).
+blocked-by: — (self-contained apps/admin fix)
+context: PR #301's weekly audit (apps/admin § design_system/P2) named "a few config
+  `useQuery`s never read `.error`" across Experiments, DiscordLinks, Signals,
+  ContentHome. ADMIN-P2-1 (pr:#323, open) fixed DiscordLinks; ADMIN-P2-2 (pr:#325,
+  open) fixed Experiments and explicitly disclosed Signals + ContentHome as a
+  remaining follow-up gap. This card closes it for ContentHome.tsx (Signals stays
+  deferred — its two open in-flight PRs (#323 LeadDrawer Escape handler, #328
+  `.table-wrap` a11y attrs) already touch nearby lines in the same file; adding a
+  third concurrent PR there would just create avoidable merge-conflict churn for
+  Nik to resolve — better picked up alone once those land).
+  `ActivityStrip` (`apps/admin/src/routes/ContentHome.tsx:72-128`) runs `useQuery`
+  on `list_prompts`/`list_voice` (via RPC) and defaults `prompts`/`voice` to `[]` on
+  either `data` field, but never read `promptsError`/`voiceError` — react-query
+  clears `isPending` once a query errors, so on a Supabase blip the merged `items`
+  list computes as empty and the whole strip silently returns `null` instead of
+  showing anything went wrong (same failure class as the DiscordLinks/Experiments
+  conflations ADMIN-P2-1/ADMIN-P2-2 already fixed).
+goal: surface `promptsError`/`voiceError` as a visible message before falling
+  through to the "no activity" empty-return, mirroring the file's own reused
+  `.login-status.err` class (the same pattern ADMIN-P2-2 used for Experiments.tsx —
+  no new abstraction/token).
+centralization: reuses the existing `.login-status err` class (no new CSS/token).
+coverage delta: `tools/admin-e2e/run.mjs` — new mocked scenario (PostgREST RPC
+  route interception, no seed data needed): forces `rest/v1/rpc/list_prompts` to
+  500, `list_voice` to a valid empty 200, and asserts the error message renders on
+  `/admin/content` instead of the strip silently vanishing. Runs in the existing
+  authed admin-e2e CI job.
+workflow: internal admin · "Penny's brain activity feed failed to load" · Content
+  home → the activity strip shows the fetch error inline instead of just not
+  appearing (which reads as "no recent changes," not "something broke").

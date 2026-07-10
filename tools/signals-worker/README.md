@@ -77,6 +77,14 @@ reinstalls deps only if `package.json` changed, appends the sha to
 `~/signals-worker/DEPLOYED`, and restarts the service. Logs live in
 `~/Library/Logs/founderfirst/signals-worker.{log,err}`.
 
+**First-time install of the launchd agent** (the live host already has this
+loaded — only needed for a fresh Mac / rebuild):
+
+```bash
+cp one.founderfirst.signals-worker.plist ~/Library/LaunchAgents/
+launchctl load -w ~/Library/LaunchAgents/one.founderfirst.signals-worker.plist
+```
+
 ## Tuning
 
 All thresholds are env vars (`.env`): `REL_THRESHOLD`, `INTENT_THRESHOLD`,

@@ -88,7 +88,7 @@
 .ai-eval-floor td { background: var(--paper-2, var(--paper)); }
 .ai-eval-select,
 .ai-eval-input {
-  font-size: 16px; /* DS: ≥16px prevents iOS zoom on focus (RESPONSIVE rule 5) */
+  font-size: var(--fs-input); /* DS: prevents iOS zoom on focus (RESPONSIVE rule 5) */
   font-family: inherit;
   padding: 4px 8px;
   border: 1px solid var(--line);

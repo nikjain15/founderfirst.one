@@ -39,7 +39,7 @@
   margin-bottom: 6px;
 }
 
-.sig-note { color: var(--ink-2); font-size: 13px; margin: 12px 0 0; }
+.sig-note { color: var(--ink-2); font-size: var(--fs-label); margin: 12px 0 0; }
 .sig-note-err { color: var(--error); }
 
 /* Ghost button — secondary to the design-system .btn. */
@@ -58,7 +58,7 @@
   padding: 12px 14px;
   margin: 4px 0 16px;
 }
-.sig-post p { margin: 0; white-space: pre-wrap; color: var(--ink-2); font-size: 13px; line-height: 1.55; }
+.sig-post p { margin: 0; white-space: pre-wrap; color: var(--ink-2); font-size: var(--fs-label); line-height: 1.55; }
 .sig-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 
 /* ---- Notes & tracking (lead drawer) ---- */
@@ -81,7 +81,7 @@
 .sig-history { margin-top: 14px; }
 .sig-history > summary {
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--fs-label);
   color: var(--ink-2);
   list-style: none;
   min-height: var(--tap-min);
@@ -103,21 +103,21 @@
 /* ---- Analytics → Signals: trend bars + voice-of-market cards ---- */
 .sig-trend { display: flex; flex-direction: column; gap: 8px; }
 .sig-trend-row { display: grid; grid-template-columns: minmax(90px, 1fr) 2fr auto auto; align-items: center; gap: 10px; }
-.sig-trend-label { font-size: 13px; color: var(--ink-2); text-transform: capitalize; }
+.sig-trend-label { font-size: var(--fs-label); color: var(--ink-2); text-transform: capitalize; }
 .sig-trend-track { height: 8px; background: var(--paper); border-radius: 999px; overflow: hidden; }
 .sig-trend-track > span { display: block; height: 100%; background: var(--ink); border-radius: 999px; }
-.sig-trend-val { font-size: 13px; color: var(--ink); min-width: 28px; text-align: right; }
-.sig-trend-delta { font-size: 12px; color: var(--ink-3); min-width: 44px; text-align: right; }
+.sig-trend-val { font-size: var(--fs-label); color: var(--ink); min-width: 28px; text-align: right; }
+.sig-trend-delta { font-size: var(--fs-micro); color: var(--ink-3); min-width: 44px; text-align: right; }
 .sig-trend-delta.up { color: var(--income); }
 .sig-trend-delta.down { color: var(--error); }
 
 .sig-voice { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
 .sig-voice-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-card); padding: 12px 14px; }
-.sig-voice-text { margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
-.sig-voice-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-3); }
+.sig-voice-text { margin: 0 0 10px; font-size: var(--fs-label); line-height: 1.5; color: var(--ink-2); }
+.sig-voice-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: var(--fs-micro); color: var(--ink-3); }
 .sig-voice-meta a { white-space: nowrap; }
-.sig-history-meta { font-size: 12px; color: var(--ink-3); margin-bottom: 2px; }
-.sig-history-body { font-size: 13px; color: var(--ink-2); line-height: 1.5; white-space: pre-wrap; }
+.sig-history-meta { font-size: var(--fs-micro); color: var(--ink-3); margin-bottom: 2px; }
+.sig-history-body { font-size: var(--fs-label); color: var(--ink-2); line-height: 1.5; white-space: pre-wrap; }
 
 /* ---- Keywords + Capture ---- */
 .sig-chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -147,7 +147,7 @@
 .sig-advanced { margin: 4px 0 0; }
 .sig-advanced > summary {
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--fs-micro);
   color: var(--ink-3);
   list-style: none;
   padding: 4px 0;
@@ -161,7 +161,7 @@
 .sig-slider-head { display: flex; justify-content: space-between; align-items: baseline; }
 .sig-slider-val { font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; color: var(--ink); }
 .sig-slider input[type="range"] { width: 100%; margin: 6px 0 2px; min-height: var(--tap-min); }
-.sig-slider-hint { font-size: 12px; color: var(--ink-3); }
+.sig-slider-hint { font-size: var(--fs-micro); color: var(--ink-3); }
 
 /* ICP examples list */
 .sig-icp-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -171,7 +171,7 @@
   border-radius: var(--r-card);
   padding: 10px 12px;
 }
-.sig-icp-item p { margin: 0 0 8px; color: var(--ink-2); font-size: 13px; line-height: 1.5; }
+.sig-icp-item p { margin: 0 0 8px; color: var(--ink-2); font-size: var(--fs-label); line-height: 1.5; }
 .sig-icp-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 /* Daily optimizer report (Scoring tab) */

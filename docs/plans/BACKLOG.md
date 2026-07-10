@@ -1239,3 +1239,52 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## ADMIN-DS-PX-1 · Weekly-audit P2 — exact-match magic-fontsize sweep (mechanical slice)
+status: pr:#TBD (loop-orch, 10 Jul) — carded and fixed same session; no dedicated card
+  existed before this. Cross-checked all 26 open loop PRs' file lists (`gh pr diff <n>
+  --name-only`) against every named finding in the 6-Jul weekly audit (PR #301, still
+  open) before picking this — everything else fixable was already claimed by an open
+  PR; the remaining candidates were all Nik decision-needed (admin Settings menu
+  placement, `/compare` competitor names) or Nik/infra human steps (SEC-2-KEYS,
+  CONN-1) — same conclusion prior iterations reached (see
+  [[project-backlog-staleness]] / [[project-audit-driven-carding]]).
+blocked-by: — (self-contained CSS + a new static-analysis script)
+context: PR #301's design_system section named a "~56 font-size:NNpx that duplicate
+  --fs-* tokens" P2 across apps/admin/src/styles + apps/web, explicitly flagged as a
+  systemic pattern but NOT sized into a card — and every prior iteration that reached
+  this finding correctly deferred it whole-cloth as "a sprawling mechanical sweep,
+  card separately, don't attempt in one PR" (see [[project-backlog-staleness]]). This
+  card takes the smallest safe slice of that sweep: literal font-size values that
+  EXACTLY equal one of tokens.css's flat (non-clamp) tokens — --fs-tiny (10px),
+  --fs-eyebrow (11px), --fs-micro (12px), --fs-label (13px), --fs-ui (15px), and
+  --fs-input (effectively flat 16px on form controls, since --fs-input =
+  max(16px, --fs-data-row) and --fs-data-row never exceeds 14px). A literal at one of
+  these exact values is a byte-for-byte no-op swap — zero rendering change at any
+  viewport, so no visual regression risk despite no browser/screenshot verification
+  being available in this sandbox (LEARNINGS #9). Sizes with NO exact flat-token match
+  (14px/18px/22px/28px/0.88em/12.5px/etc.) and the ~37 inline `borderRadius` instances
+  are explicitly OUT of scope — they need a token-design judgment call (new token? round
+  to nearest existing?), not a mechanical fix, and are left as a disclosed follow-up.
+goal: (1) convert 24 literal font-size declarations across
+  apps/admin/src/styles/{ai-quality,analytics,base,content,docs,emails,inbox,signals,
+  ticket}.css + apps/web/src/pages/{compare.astro,blog/[slug].astro} to the matching
+  flat token; 16px conversions are scoped to input-like selectors only (input/select/
+  textarea or a `-input`-suffixed class) so non-input 16px (e.g. `.admin-nav .brand`,
+  `.section-title`) isn't force-mapped onto the input-specific token. (2) add
+  `scripts/check-magic-fontsize.ts` (`pnpm check:magic-fontsize`, wired into
+  `.github/workflows/centralization.yml` beside `check:css-vars`) so an exact-match
+  literal can't silently recur — mirrors the `check-input-font-size.ts` (PR #324)
+  rule-parsing pattern (selector `{` body `}` regex + an input-selector test).
+centralization: no new token invented — every substitution reuses an existing
+  tokens.css flat value; the guard is a static script (matches the check-css-vars.ts /
+  check-input-font-size.ts precedent), not a magic-number threshold.
+coverage delta: new `scripts/check-magic-fontsize.ts` — verified it both flags an
+  injected exact-match violation (`.zz-test { font-size: 13px; }` → reported +
+  exit 1) and passes clean post-fix (no `pnpm`/`node_modules` in this sandbox, so
+  verified via direct `npx tsx scripts/check-magic-fontsize.ts`, same limitation
+  documented on PR #311's test plan). Existing `check:css-vars` / `check:css-imports`
+  re-run clean (no unresolved var(), no broken @import chain).
+decision-needed: none (mechanical, exact-match only — no naming/rounding calls
+  made). Follow-up (not this card): the non-exact-match magic-px sizes + the
+  border-radius sweep, which DO need a token-design decision.

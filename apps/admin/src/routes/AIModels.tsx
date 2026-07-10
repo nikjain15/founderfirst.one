@@ -102,7 +102,7 @@ export function AIModels() {
           <p className="page-sub" style={{ marginTop: 0 }}>
             Feeds the cost KPIs — editing a price never changes an answer. Re-confirm against the provider price list when models change.
           </p>
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0} role="region" aria-label="Per-million-token model prices">
             <table className="data-table">
               <thead>
                 <tr>

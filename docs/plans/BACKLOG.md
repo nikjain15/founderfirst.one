@@ -1239,3 +1239,37 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## ADMIN-A11Y-1 · Admin `.table-wrap` scroll regions are keyboard-focusable (P2)
+status: pr:#TBD (loop-orch, 10 Jul) — carded and fixed same session; no dedicated
+  card existed before this (found by the weekly audit, PR #301, report-only; every
+  other BACKLOG.md card had already shipped as an open PR — see the STATUS
+  RECONCILIATION note at the top of this file).
+blocked-by: — (self-contained apps/admin frontend fix)
+context: PR #301 (Weekly audit, 6 Jul) design_system/accessibility findings flagged
+  admin's `.table-wrap` scroll regions as not keyboard-scrollable (no
+  tabindex/role) — the same `scrollable-region-focusable` axe shape already fixed
+  three times in apps/app (PENNY-UX-5 CoA/GL/Periods tables, then the NEC table
+  recurrence closed by PR #313). Nothing in apps/admin had ever received the fix;
+  all 14 `.table-wrap` instances across 12 admin route files (Build, AICatalog,
+  DiscordLinks, AIEvals, AIModels, Signals ×3, Audit, Experiments, AIQuality,
+  AIRamp, Users, Admins) were mouse-only for anyone tabbing through the page.
+workflow: platform staff (keyboard/screen-reader user) · "review a wide admin
+  table without a mouse" · Tab reaches the scrollable table region directly (no
+  longer skipped) and arrow keys scroll it; identical visual layout, zero
+  behavior change for mouse users.
+goal: add `tabIndex={0} role="region" aria-label="<table's own heading text>"` to
+  every `.table-wrap` div in apps/admin/src/routes/*.tsx, mirroring the exact
+  pattern apps/app already uses (see Ledger.tsx / Invoicing.tsx `tabIndex={0}
+  role="region" aria-label={COPY...}`) — no new pattern invented.
+centralization: no new source of truth introduced; each aria-label is a short
+  inline string naming that table (apps/admin has no shared copy/strings module
+  today, unlike apps/app's COPY — consistent with every other inline string
+  already in these route files).
+coverage delta: `tools/admin-e2e/run.mjs` step 7 — after the existing digest/
+  build-dashboard checks, navigates to `/admin/admins` and `/admin/audit`
+  (two independent routes so the assertion isn't a one-off on a single page) and
+  asserts each page's first `.table-wrap` has `tabindex="0"` and `role="region"`.
+  Runs in the existing authed admin-e2e CI job (`.github/workflows/e2e.yml`).
+decision-needed: none (a straight accessibility fix following an established
+  in-repo pattern; no product/pricing decision).

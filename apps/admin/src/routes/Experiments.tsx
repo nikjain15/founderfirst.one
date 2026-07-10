@@ -119,7 +119,7 @@ function ExperimentCard({ exp }: { exp: ExperimentRow }) {
       {promote.error && <div className="login-status err" style={{ marginTop: 10 }}>{(promote.error as Error).message}</div>}
       {exp.status === "promoted" && exp.winning_variant_key && <div className="login-status ok" style={{ marginTop: 10 }}>Published <code>{exp.winning_variant_key}</code> to the live site.</div>}
 
-      <div className="table-wrap" style={{ marginTop: 14 }}>
+      <div className="table-wrap" style={{ marginTop: 14 }} tabIndex={0} role="region" aria-label="Experiment variants">
         <table className="data-table">
           <thead><tr><th>Variant</th><th>Headline</th><th>Exposures</th><th>Conv.</th><th>Rate</th><th>Lift</th></tr></thead>
           <tbody>

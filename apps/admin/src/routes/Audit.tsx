@@ -98,7 +98,7 @@ export function Audit() {
       )}
 
       {!loading && !error && rows.length > 0 && (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0} role="region" aria-label="Audit events">
           <table className="data-table">
             <thead>
               <tr>

@@ -179,7 +179,7 @@ export function AIQuality() {
               <div className="eyebrow">By use case</div>
               <h2 className="section-title">Where the spend goes.</h2>
             </div>
-            <div className="table-wrap">
+            <div className="table-wrap" tabIndex={0} role="region" aria-label="Spend by use case">
               <table className="data-table">
                 <thead>
                   <tr>

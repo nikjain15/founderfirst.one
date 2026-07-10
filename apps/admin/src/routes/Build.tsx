@@ -129,7 +129,7 @@ export function Build() {
             {shipped.length === 0 ? (
               <p className="build-clear">Nothing finished in the last day.</p>
             ) : (
-              <div className="table-wrap">
+              <div className="table-wrap" tabIndex={0} role="region" aria-label="Shipped in the last 24 hours">
                 <table className="data-table">
                   <thead>
                     <tr><th>Card</th><th>Session</th><th>Finished</th><th>PR</th></tr>

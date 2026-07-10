@@ -124,7 +124,7 @@ export function AIEvals() {
       {evalsQ.isPending && activeUseCase && <div className="empty">Loading…</div>}
 
       {rows.length > 0 && (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0} role="region" aria-label="AI evaluations">
           <table className="data-table">
             <thead>
               <tr>

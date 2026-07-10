@@ -235,6 +235,28 @@ async function main() {
         console.log(`  (cover ${c.name} skipped — ${(err instanceof Error ? err.message : String(err)).slice(0, 100)})`);
       }
     }
+
+    // 7. Signals → Sources: a failed sig-sources fetch must surface the error,
+    // not render a silently-empty "No automated sources yet." (SIG-P2-ERR).
+    try {
+      await page.route("**/rest/v1/rpc/list_sig_sources", (route) =>
+        route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ message: "mocked sig-sources fetch failure" }) }));
+
+      await page.goto(`${base}/admin/audience#signals`, { waitUntil: "networkidle" });
+      const sourcesTab = page.getByRole("tab", { name: "Sources", exact: true });
+      await sourcesTab.waitFor({ state: "visible", timeout: 15_000 });
+      await sourcesTab.click();
+
+      // react-query's default retry:1 re-fires the failing request after a ~1s
+      // backoff before isError flips — wait for the banner, don't just poll it.
+      const errBanner = page.getByText("mocked sig-sources fetch failure", { exact: false });
+      await errBanner.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+      check("Signals Sources tab surfaces a sig-sources fetch error (not a silent empty table)", (await errBanner.count()) > 0);
+
+      await page.unroute("**/rest/v1/rpc/list_sig_sources");
+    } catch (e) {
+      check("Signals Sources error-surface check", false, (e instanceof Error ? e.message : String(e)).slice(0, 200));
+    }
   } catch (e) {
     check("smoke run completed", false, (e instanceof Error ? e.message : String(e)).slice(0, 200));
     await page.screenshot({ path: join(ARTIFACTS, "failure.png"), fullPage: true }).catch(() => {});

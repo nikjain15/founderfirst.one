@@ -73,6 +73,37 @@ OPS-1 (#199) live Lighthouse ≥90, Plaid production application (Nik human step
   then Nik slots it against roadmap-v2 A→C→D→E→B).
 - **All future work runs in a NEW 24/7 loop chat** via the launchd durable loop (this chat set it up).
 
+## SIG-P2-ERR · Signals.tsx config/lead queries surface fetch errors (P2)
+status: pr:#TBD (loop-orch, 10 Jul) — carded and fixed same session
+context: docs/plans/BACKLOG.md had no genuinely unclaimed, unblocked, non-decision-needed card
+  this iteration — every listed candidate (PENNY-UX-9 IA-restructure, SEC-2-KEYS, CONN-1) was
+  already resolved or an explicit Nik/infra human step, the same conclusion prior iterations
+  reached (PR #279/#321/#323/#325/#331). Cross-checked the 6-Jul weekly audit (PR #301,
+  report-only by charter, still open) against all currently-open loop PRs' file lists: the
+  audit's `apps/admin` design_system P2 — "a few config `useQuery`s never read `.error`
+  (silently-empty, no crash — Experiments, DiscordLinks, Signals, ContentHome)" — was fixed for
+  DiscordLinks (#323), Experiments (#325), and ContentHome (#331), but every open PR's file list
+  confirmed **none touch `apps/admin/src/routes/Signals.tsx`** for this finding (#328 touches
+  Signals.tsx but only adds `.table-wrap` a11y attrs, a different finding) — a clean, disjoint,
+  genuinely untouched instance of the same audit finding.
+what: `Signals.tsx` has four `useQuery` call sites whose fetch failure silently falls through to
+  a misleading UI instead of an error message — same failure class as the sibling fixes above:
+  `SourcesTab`'s `sig-sources` query (falls through to "No automated sources yet." on a real
+  fetch failure), `OptimizerPanel`'s `sig-optimizer` query (`if (!report) return null` — the
+  panel just vanishes), `ScoringTab`'s `sig-settings` query (the threshold-slider step silently
+  disappears), and `LeadDrawer`'s `sig-lead` query (stays stuck on "Loading…" forever instead of
+  surfacing the error).
+fix: destructure `error` from each of the four queries and render it via the file's own existing
+  `sig-note sig-note-err` pattern (already used by `FeedTab`/`LeadsTab`/`SourcesTab`'s local
+  `note` state) — no new class/token, no new abstraction.
+centralization: reuses the existing `.sig-note-err` class (`apps/admin/src/styles/signals.css`) —
+  zero new tokens/hex/px.
+coverage delta: new `tools/admin-e2e/run.mjs` scenario (mirrors #325's Experiments scenario) —
+  mocks `list_sig_sources` RPC to 500, navigates to Signals → Sources, asserts the error message
+  renders instead of the misleading empty state.
+workflow: internal admin · "a Signals config fetch failed" · Signals page (any of Sources /
+  Scoring / a lead drawer) → the fetch error renders inline instead of a lying empty/loading state.
+
 ## PENNY-UX-0 · Rigorous audit of penny.founderfirst.one (P0 — do FIRST)
 status: pr:#220 (audit complete — 1 P0 · 4 P1 · 7 P2; fixtures for cleanup listed in the ledger)
 goal: a complete findings ledger of everything wrong with the live authed app — the input that

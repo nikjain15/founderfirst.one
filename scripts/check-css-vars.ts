@@ -44,7 +44,7 @@ function listFiles(dir: string, exts: string[]): string[] {
 }
 
 /** Every `--name:` custom-property DEFINITION in a stylesheet. */
-function parseDefinitions(css: string): Set<string> {
+export function parseDefinitions(css: string): Set<string> {
   const defs = new Set<string>();
   // Matches: `--name:` at declaration position (start of line or after { or ;).
   const re = /(?:^|[{;\s])(--[a-zA-Z0-9-]+)\s*:/gm;
@@ -53,10 +53,10 @@ function parseDefinitions(css: string): Set<string> {
   return defs;
 }
 
-type Usage = { name: string; file: string; line: number; hasFallback: boolean };
+export type Usage = { name: string; file: string; line: number; hasFallback: boolean };
 
 /** Every `var(--name)` / `var(--name, fallback)` REFERENCE in a file. */
-function parseUsages(text: string, file: string): Usage[] {
+export function parseUsages(text: string, file: string): Usage[] {
   const usages: Usage[] = [];
   const re = /var\(\s*(--[a-zA-Z0-9-]+)\s*(,)?/g;
   const lineOf = (idx: number) => text.slice(0, idx).split("\n").length;
@@ -67,16 +67,21 @@ function parseUsages(text: string, file: string): Usage[] {
   return usages;
 }
 
-function main(): void {
-  // Definitions: the design-system source of truth + any app-level stylesheet.
-  const defs = parseDefinitions(readFileSync(TOKENS, "utf8"));
-  const appCss = listFiles(APP_SRC, [".css"]);
+/**
+ * Core check, factored out of main() so it can run against a fixture root in
+ * tests (scripts/tests/check-css-vars.test.ts) as well as the real repo.
+ */
+export function findUnresolvedCssVars(
+  tokensPath: string,
+  appSrcDir: string
+): { unresolved: Usage[]; checked: number; usageFileCount: number; defsCount: number } {
+  const defs = parseDefinitions(readFileSync(tokensPath, "utf8"));
+  const appCss = listFiles(appSrcDir, [".css"]);
   for (const file of appCss) {
     for (const d of parseDefinitions(readFileSync(file, "utf8"))) defs.add(d);
   }
 
-  // Usages: app CSS + inline `var(--x)` in components.
-  const usageFiles = [...appCss, ...listFiles(APP_SRC, [".ts", ".tsx"])];
+  const usageFiles = [...appCss, ...listFiles(appSrcDir, [".ts", ".tsx"])];
   const unresolved: Usage[] = [];
   let checked = 0;
   for (const file of usageFiles) {
@@ -86,6 +91,12 @@ function main(): void {
       if (!defs.has(u.name)) unresolved.push(u);
     }
   }
+
+  return { unresolved, checked, usageFileCount: usageFiles.length, defsCount: defs.size };
+}
+
+function main(): void {
+  const { unresolved, checked, usageFileCount, defsCount } = findUnresolvedCssVars(TOKENS, APP_SRC);
 
   if (unresolved.length > 0) {
     console.error("check:css-vars FAILED — unresolved CSS custom properties:\n");
@@ -104,9 +115,13 @@ function main(): void {
   }
 
   console.log(
-    `check:css-vars OK — ${checked} var() references across ${usageFiles.length} files` +
-      ` all resolve (${defs.size} known definitions).`
+    `check:css-vars OK — ${checked} var() references across ${usageFileCount} files` +
+      ` all resolve (${defsCount} known definitions).`
   );
 }
 
-main();
+// Only run the CLI check when this file is the entry module — importing it
+// for its exported functions (tests) must not walk the repo / exit(1).
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}

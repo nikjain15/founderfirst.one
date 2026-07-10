@@ -28,7 +28,7 @@ const SCAN_DIRS = ["apps", "packages", "site-bubble"];
 const SKIP_DIRS = new Set(["node_modules", "dist", ".vitepress", ".git"]);
 
 /** Every `@import "<path>"` / `@import url(<path>)` target in a CSS file. */
-function parseImports(css: string): string[] {
+export function parseImports(css: string): string[] {
   const targets: string[] = [];
   // Matches: @import "x.css";  @import url("x.css");  @import url(x.css);
   const re = /@import\s+(?:url\(\s*)?["']?([^"')\s]+)["']?\s*\)?/g;
@@ -38,7 +38,7 @@ function parseImports(css: string): string[] {
 }
 
 /** True if the import points at a local relative file we can resolve on disk. */
-function isRelativeCssImport(spec: string): boolean {
+export function isRelativeCssImport(spec: string): boolean {
   if (!spec.endsWith(".css")) return false;            // skip @import "tailwindcss" etc.
   if (spec.startsWith("http://") || spec.startsWith("https://")) return false;
   if (spec.startsWith("/")) return false;              // absolute URL, bundler/CDN owns it
@@ -59,12 +59,19 @@ function listCssFiles(dir: string): string[] {
   return out;
 }
 
-function main(): void {
+/**
+ * Core check, factored out of main() so it can run against a fixture root in
+ * tests (scripts/tests/check-css-imports.test.ts) as well as the real repo.
+ */
+export function findCssImportProblems(
+  root: string,
+  scanDirs: string[]
+): { problems: string[]; checked: number } {
   const problems: string[] = [];
   let checked = 0;
 
-  const cssFiles = SCAN_DIRS
-    .map((d) => resolve(ROOT, d))
+  const cssFiles = scanDirs
+    .map((d) => resolve(root, d))
     .filter(existsSync)
     .flatMap(listCssFiles);
 
@@ -72,17 +79,23 @@ function main(): void {
     const imports = parseImports(readFileSync(file, "utf8")).filter(isRelativeCssImport);
     for (const spec of imports) {
       const target = resolve(dirname(file), spec);
-      const from = relative(ROOT, file);
+      const from = relative(root, file);
       if (!existsSync(target)) {
-        problems.push(`MISSING  ${relative(ROOT, target)}  (@import'ed from ${from})`);
+        problems.push(`MISSING  ${relative(root, target)}  (@import'ed from ${from})`);
         continue;
       }
       checked++;
       if (statSync(target).size === 0) {
-        problems.push(`0 BYTES  ${relative(ROOT, target)}  (@import'ed from ${from})`);
+        problems.push(`0 BYTES  ${relative(root, target)}  (@import'ed from ${from})`);
       }
     }
   }
+
+  return { problems, checked };
+}
+
+function main(): void {
+  const { problems, checked } = findCssImportProblems(ROOT, SCAN_DIRS);
 
   if (problems.length > 0) {
     console.error(`\n✗ CSS import guard failed — ${problems.length} bad @import target(s):\n`);
@@ -95,4 +108,8 @@ function main(): void {
   console.info(`✓ CSS import guard passed — ${checked} @import target(s) present and non-empty.`);
 }
 
-main();
+// Only run the CLI check when this file is the entry module — importing it
+// for its exported functions (tests) must not walk the repo / exit(1).
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}

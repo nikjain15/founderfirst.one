@@ -312,6 +312,39 @@ centralization: log field name/config centralized; no inline literals.
 coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
   call (success + error path).
 
+## GUARD-TEST-1 · Unit tests for the check-css-imports / check-css-vars silent-failure guards (P2 tests)
+status: pr:#TBD (loop-orch, 10 Jul) — carded and fixed same session
+blocked-by: — (scripts/ + a doc-only Astro fix; independent of every other open lane)
+context: the 6-Jul weekly full-surface audit (pr:#301, report-only by charter) noted under `tools`
+  P2s that "no test for `build-all.ts` or the `check:*` guards" exists — cross-checked via `gh pr
+  diff <n> --name-only` against all 22 open loop PRs (#309-#331) at pick time; none touch
+  `scripts/check-css-imports.ts` or `scripts/check-css-vars.ts`. These two are the highest-value
+  subset: both were born from a real production incident recorded in their own doc comments
+  (`check-css-imports.ts` — PR #66 truncated two admin CSS partials to 0 bytes, silently shipping
+  unstyled UI to prod; `check-css-vars.ts` — the PENNY-UX-0 audit's F2, nine undefined `var(--x)`
+  refs silently degrading radius/color/size) — LEARNINGS rule 14's own examples. A bug in either
+  guard would silently reopen the exact hole it exists to close, and today nothing would catch
+  that. Also fixed in the same PR: `apps/web/src/components/PennyPodcast.astro:60`
+  `font-family: Georgia, serif` (the audit's design_system P2) → `var(--font-display)`, verified
+  still unfixed on `origin/main` and untouched by any open PR.
+goal: extract each guard's pure logic (`parseImports`/`isRelativeCssImport`/`findCssImportProblems`;
+  `parseDefinitions`/`parseUsages`/`findUnresolvedCssVars`) into exported functions with `main()`
+  gated behind an entry-module check (`import.meta.url === file://${process.argv[1]}`), so the CLI
+  behavior is byte-identical but the logic is importable in tests. Add `scripts/tests/*.test.ts`
+  (node:test, matching the tools/signals-worker precedent — no new framework) covering the pure
+  parsers plus a fixture-directory integration test per guard that reproduces its exact historical
+  incident (0-byte partial; undefined var with no fallback) and asserts the guard still catches it.
+  Wire `pnpm test:guards` into `.github/workflows/centralization.yml` alongside `check:css-vars`.
+  The remaining `check:*` guards (tenant-predicate, law-literals, kernel-hardcodes, app-strings,
+  authed-headings, the seed `--check` scripts) and `build-all.ts` itself stay untested — disclosed,
+  not silently dropped; a follow-up card if wanted, deliberately out of scope here (LOOP_PROMPT
+  "no silent caps" + the precedent of not attempting a full sweep in one PR).
+centralization: n/a (test/CI-only diff + one token substitution, no new source of truth needed).
+coverage delta: new `test:guards` command + CI step (16 tests: 4 pure-parser unit tests + 3
+  fixture-integration tests per guard, including the exact PR #66 / PENNY-UX-2 repro); closes the
+  `copy_docs`-adjacent `tools` P2 finding for these two scripts; the Georgia→token fix closes one
+  `apps/web` design_system P2 with no new test needed (grep-verifiable, single line).
+
 # PENNY-UX-10 + E-FILE (Nik 5-Jul: declutter + make responsive; card e-file Phase A)
 
 ## PENNY-UX-10 · Owner app declutter + FULL responsive pass → /admin minimalist standard

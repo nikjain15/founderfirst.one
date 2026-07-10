@@ -41,6 +41,13 @@ jobs:
       - name: Check CSS vars resolve
         run: pnpm check:css-vars
 
+      # GUARD-TEST-1: unit + fixture tests for check-css-imports.ts / check-css-vars.ts
+      # themselves — both guards exist to catch a silent-failure regression (PR #66,
+      # PENNY-UX-2); a bug in the guard would silently reopen the exact hole it exists
+      # to close, so the guards need their own coverage (LEARNINGS rule 14).
+      - name: Guard script unit tests
+        run: pnpm test:guards
+
       # PENNY-UX-9 gate: every authed <h1> must carry .page-title (the restrained
       # authed heading scale). A bare <h1> inherits the public billboard scale
       # (up to 64px) and silently breaks the authed heading ladder (rule 14).

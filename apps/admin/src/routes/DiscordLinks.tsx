@@ -8,6 +8,7 @@ import {
   type DiscordLinkRow,
 } from "../lib/supabase";
 import { IconAlert, IconCheck } from "../lib/icons";
+import { tableFetchState } from "../lib/tableFetchState";
 
 interface DiscordLinksProps { embedded?: boolean }
 
@@ -25,6 +26,7 @@ export function DiscordLinks({ embedded = false }: DiscordLinksProps = {}) {
 
   // Surface fetch failures through the same status banner the actions use.
   const fetchError = error ? (error as Error).message : null;
+  const bodyState = tableFetchState(loading, Boolean(fetchError), rows.length);
 
   function onSearch(e: FormEvent) {
     e.preventDefault();
@@ -141,7 +143,7 @@ export function DiscordLinks({ embedded = false }: DiscordLinksProps = {}) {
       )}
 
       <p className="page-sub" style={{ marginTop: 18, marginBottom: 8 }}>
-        {loading ? "Loading…" : `${confirmedCount} active · ${rows.length} total`}
+        {bodyState === "loading" ? "Loading…" : bodyState === "error" ? "Couldn't load." : `${confirmedCount} active · ${rows.length} total`}
       </p>
 
       <div className="table-wrap">
@@ -157,9 +159,11 @@ export function DiscordLinks({ embedded = false }: DiscordLinksProps = {}) {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {bodyState === "loading" ? (
               <tr><td colSpan={6}>Loading…</td></tr>
-            ) : rows.length === 0 ? (
+            ) : bodyState === "error" ? (
+              <tr><td colSpan={6}>Couldn't load — see the error above.</td></tr>
+            ) : bodyState === "empty" ? (
               <tr><td colSpan={6}>No Discord links yet.</td></tr>
             ) : rows.map((r) => (
               <tr key={r.id}>

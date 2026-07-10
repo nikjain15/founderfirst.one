@@ -1239,3 +1239,49 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## ADMIN-P2-1 · Weekly-audit admin P2 cleanup — drawer Escape, scrim token, error/empty conflation (P2)
+status: pr:#TBD (loop-orch, 10 Jul) — carded and fixed same session; no dedicated
+  card existed before this (found by the weekly audit, PR #301, report-only, still
+  open). This iteration re-verified every candidate BACKLOG.md card was already
+  merged or an explicit Nik/infra human step (PENNY-UX-9/SEC-2-KEYS/CONN-1 —
+  same conclusion PR #279/#321 reached) and cross-checked all 14 open loop PRs'
+  file lists before picking this — none touch apps/admin/src/routes/Signals.tsx,
+  DiscordLinks.tsx, or styles/tables.css (a clean, disjoint lane).
+blocked-by: — (self-contained apps/admin fix)
+context: PR #301's design_system + reliability sections named three still-open
+  P2s in apps/admin that no in-flight PR addresses (ADMIN-CSS-1/#311 only fixed
+  the 3 undefined CSS vars, not these):
+  1. Signals.tsx lead drawer (`LeadDrawer`, ~:622) has no Escape-to-close handler,
+     unlike the identical drawer pattern in Users.tsx/Audit.tsx.
+  2. `styles/tables.css:52` hardcodes `rgba(0,0,0,0.32)` for the drawer-overlay
+     scrim instead of the existing `--scrim` design token.
+  3. Several fetch-backed tables never read `.error`, so a failed fetch renders
+     a false "no data" empty row alongside (or instead of) an error message —
+     named explicitly for DiscordLinks.tsx ("shows error + contradictory empty
+     row": the fetchError banner appears above the table while the tbody still
+     renders "No Discord links yet.", since `rows` defaults to `[]` on error).
+goal: fix the three findings without expanding scope to the audit's separate,
+  much larger "magic-px sweep" P2 (~56 font-size + ~37 border-radius instances
+  across apps/admin/src/styles) — that is disclosed here as a genuine remaining
+  gap, not silently dropped, and left for its own future card given its size and
+  the lack of a browser in this sandbox to visually verify a sweep that large.
+  Similarly, the other three files named in the same audit bullet (Experiments,
+  Signals SourcesTab/ScoringTab/etc., ContentHome) have additional queries that
+  don't read `.error` — only DiscordLinks' instance is fixed here (it was the
+  only one both named AND described as producing an actively-misleading result,
+  not just a silent gap); the rest are a disclosed follow-up.
+centralization: reuses the existing `--scrim` token (packages/design-system/
+  tokens.css) rather than inventing a new one; the fetch-state branching is
+  extracted into one pure helper (`apps/admin/src/lib/tableFetchState.ts`) so
+  other admin tables can reuse it instead of re-deriving the same three-way
+  branch (and re-breaking it) per file.
+coverage delta: `tableFetchState.test.ts` (new, Vitest node env — matches the
+  existing `otpGate.test.ts`/`loopStatus.test.ts` convention of testing pure
+  logic, since apps/admin has no jsdom/@testing-library/react component-test
+  infra) — asserts loading takes priority over error/rowCount, error never
+  falls through to the empty branch, and empty is only reached on a real
+  zero-row success. The Escape-to-close handler mirrors the untested
+  Users.tsx/Audit.tsx pattern (no existing precedent tests it either, so this
+  doesn't introduce a coverage gap relative to the rest of the codebase).
+decision-needed: none

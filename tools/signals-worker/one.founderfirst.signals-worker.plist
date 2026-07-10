@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  launchd agent for the Signals pull-worker (index.mjs). Mirrored by
+  one.founderfirst.compose-server.plist. Install on the Mac host:
+
+    cp one.founderfirst.signals-worker.plist ~/Library/LaunchAgents/
+    launchctl load -w ~/Library/LaunchAgents/one.founderfirst.signals-worker.plist
+
+  Adjust the paths below if your checkout / node live elsewhere
+  (`which node` for ProgramArguments[0]; WorkingDirectory is
+  $SIGNALS_WORKER_HOME from deploy.sh, default ~/signals-worker). The worker
+  reads SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY, and OLLAMA_* from
+  $SIGNALS_WORKER_HOME/.env on its own.
+-->
+<plist version="1.0"><dict>
+  <key>Label</key><string>one.founderfirst.signals-worker</string>
+  <key>ProgramArguments</key>
+  <array><string>/usr/local/bin/node</string><string>--env-file=/Users/nikjain/signals-worker/.env</string><string>/Users/nikjain/signals-worker/index.mjs</string></array>
+  <key>WorkingDirectory</key><string>/Users/nikjain/signals-worker</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/Users/nikjain/Library/Logs/founderfirst/signals-worker.log</string>
+  <key>StandardErrorPath</key><string>/Users/nikjain/Library/Logs/founderfirst/signals-worker.err</string>
+</dict></plist>

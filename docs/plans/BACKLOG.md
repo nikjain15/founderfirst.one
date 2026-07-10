@@ -1239,3 +1239,30 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+# 6-Jul weekly audit fix — self-carded (loop-orch, 10 Jul)
+> BACKLOG.md had no unclaimed, decision-free card left (every card above is merged or a Nik/
+> infra human step) and 21 other loop iterations had already opened fix PRs for every other
+> named finding in the 6-Jul weekly audit (PR #301). This is the one remaining untouched,
+> non-decision-needed finding from that audit's P2 list.
+
+## SIGNALS-OPS-1 · Commit the live signals-worker launchd plist (P2)
+status: pr:#330 (loop-orch, 10 Jul) — carded and fixed same session
+context: 6-Jul weekly audit (PR #301, tools/packages/docs findings) — "the live signals-worker
+  launchd plist is uncommitted (only the retired-VM systemd unit is in git)." Verified: the Mac
+  host has `~/Library/LaunchAgents/one.founderfirst.signals-worker.plist` loaded and running
+  (confirmed by reading the live file), but the repo only tracked
+  `tools/signals-worker/signals-worker.service` (the VM/systemd reference unit, README-marked
+  "kept for reference") and `one.founderfirst.compose-server.plist` — whose own header comment
+  says "Mirrors one.founderfirst.signals-worker", i.e. a signals-worker plist was assumed to
+  exist in-repo already.
+goal: commit `tools/signals-worker/one.founderfirst.signals-worker.plist` (the real live config,
+  transcribed from the running host) and document its first-time-install step in
+  tools/signals-worker/README.md, mirroring the compose-server plist's documented install
+  commands. Closes the repo/prod drift LEARNINGS #20/#21 warn about (prod config that lives
+  outside git needs to be recorded).
+touches: tools/signals-worker/one.founderfirst.signals-worker.plist (new, tracked), README.md
+decision-needed: none — pure ops-artifact commit + doc cross-reference, no application code path
+coverage delta: none (ops/launchd config, not a testable code path); `deploy.sh` already assumes
+  this plist is installed (`launchctl kickstart`) — this card only makes the file it installs
+  from reviewable and reproducible in git.

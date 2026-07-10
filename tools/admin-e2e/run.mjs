@@ -235,6 +235,37 @@ async function main() {
         console.log(`  (cover ${c.name} skipped — ${(err instanceof Error ? err.message : String(err)).slice(0, 100)})`);
       }
     }
+    // 7. Experiments: a card whose arms/results fetch fails must surface the
+    // error, not render a silently-empty table (ADMIN-P2-2). Mocked end-to-end
+    // (no seed data needed) via PostgREST route interception.
+    try {
+      const mockExp = {
+        id: "00000000-0000-0000-0000-0000000000e2", key: "exp-hero-e2e-mock", name: "E2E mock experiment",
+        status: "running", section_type: "hero", primary_metric: "signup", policy_tier: "propose",
+        created_at: "2026-01-01T00:00:00Z", started_at: "2026-01-01T00:00:00Z", stopped_at: null,
+        winning_variant_key: null,
+      };
+      await page.route("**/rest/v1/experiments?*", (route) =>
+        route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([mockExp]) }));
+      await page.route("**/rest/v1/experiment_arms?*", (route) =>
+        route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ message: "mocked arms fetch failure" }) }));
+      await page.route("**/rest/v1/experiment_results?*", (route) =>
+        route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) }));
+
+      await page.goto(`${base}/admin/experiments`, { waitUntil: "networkidle" });
+      await page.getByText("E2E mock experiment", { exact: false }).waitFor({ timeout: 15_000 });
+      // react-query's default retry:1 re-fires the failing request after a ~1s
+      // backoff before isError flips — wait for the banner, don't just poll it.
+      const errBanner = page.getByText("mocked arms fetch failure", { exact: false });
+      await errBanner.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+      check("Experiments card surfaces an armsQ/resQ fetch error (not a silent empty table)", (await errBanner.count()) > 0);
+
+      await page.unroute("**/rest/v1/experiments?*");
+      await page.unroute("**/rest/v1/experiment_arms?*");
+      await page.unroute("**/rest/v1/experiment_results?*");
+    } catch (e) {
+      check("Experiments error-surface check", false, (e instanceof Error ? e.message : String(e)).slice(0, 200));
+    }
   } catch (e) {
     check("smoke run completed", false, (e instanceof Error ? e.message : String(e)).slice(0, 200));
     await page.screenshot({ path: join(ARTIFACTS, "failure.png"), fullPage: true }).catch(() => {});

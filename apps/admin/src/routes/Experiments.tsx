@@ -118,6 +118,11 @@ function ExperimentCard({ exp }: { exp: ExperimentRow }) {
       </div>
       {promote.error && <div className="login-status err" style={{ marginTop: 10 }}>{(promote.error as Error).message}</div>}
       {exp.status === "promoted" && exp.winning_variant_key && <div className="login-status ok" style={{ marginTop: 10 }}>Published <code>{exp.winning_variant_key}</code> to the live site.</div>}
+      {(armsQ.error || resQ.error) && (
+        <div className="login-status err" style={{ marginTop: 10 }}>
+          {((armsQ.error ?? resQ.error) as Error).message}
+        </div>
+      )}
 
       <div className="table-wrap" style={{ marginTop: 14 }}>
         <table className="data-table">

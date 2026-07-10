@@ -1239,3 +1239,38 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## ADMIN-P2-2 · Experiments card silently swallows arms/results fetch errors (P2)
+status: pr:#TBD (loop-orch, 10 Jul) — carded and fixed same session; no dedicated card
+  existed before this. Re-verified every remaining BACKLOG.md card
+  (PENNY-UX-10/EFILE-A1/IA-3/SEC-1-CPACLOSE/IQ-1-CLEANUP/W5.4-FX all show a stale
+  `claimed:loop-insession-5jul` status but are already MERGED per `gh pr list --search`)
+  and cross-checked all 16 open loop PRs' file lists (#309-324) before picking this —
+  none touch `apps/admin/src/routes/Experiments.tsx`. Same fallback precedent as
+  PR #309/#321/#323 (see LEARNINGS "audit-driven self-carding").
+blocked-by: — (self-contained apps/admin fix)
+context: PR #301's weekly audit (apps/admin § design_system/P2) named "a few config
+  `useQuery`s never read `.error`" across Experiments,
+  DiscordLinks, Signals, ContentHome. ADMIN-P2-1 (pr:#323, open) fixed DiscordLinks
+  and explicitly disclosed the other three files (Experiments, Signals
+  SourcesTab/ScoringTab, ContentHome) as a remaining follow-up gap — this card closes
+  that gap for Experiments.tsx specifically (the other two files stay a disclosed
+  follow-up, kept out of scope to stay tightly reviewable).
+  `ExperimentCard` (Experiments.tsx:71-96) runs `armsQ`/`resQ` (`useQuery` on
+  `experiment_arms`/`experiment_results`) and derives `arms`/`results` via `?? []`
+  but never reads `armsQ.error`/`resQ.error` — a fetch failure (Supabase blip) falls
+  through to a table that silently renders zero rows with no "start" button state and
+  no indication anything went wrong, identical in class to the DiscordLinks
+  conflation ADMIN-P2-1 fixed.
+goal: surface `armsQ.error`/`resQ.error` as a visible message, mirroring the file's
+  own existing `promote.error`/`create.error` banner pattern (no new abstraction —
+  `apps/admin` has no shared error-banner component beyond the inline
+  `.login-status.err` class already used 3x in this same file).
+centralization: reuses the existing `.login-status err` class (no new CSS/token).
+coverage delta: `tools/admin-e2e/run.mjs` — new mocked scenario (PostgREST route
+  interception, no seed data needed): injects one fake experiment row via
+  `**/rest/v1/experiments`, forces `**/rest/v1/experiment_arms` to 500, and asserts
+  the error message renders in the card instead of a silent empty table. Runs in the
+  existing authed admin-e2e CI job.
+workflow: internal admin · "an experiment's arm data failed to load" · Experiments
+  page → card shows the fetch error inline instead of a lying empty results table.

@@ -489,7 +489,8 @@ coverage delta: extend the connectors AUDIT row — assert a broken connection r
   Reconnect CTA, and the support link resolves to SITE.email.
 
 ## SEC1-A11Y · `/security` (SEC-1 two-factor settings) axe + responsive walk — closes standing gap
-status: pr:#TBD (loop-insession-9jul) — see docs/AUDIT.md Program 6 Security row
+status: pr:#320 (GREEN — admin-e2e/app-e2e/app-strings/responsive all pass; safe mode,
+  awaiting Nik to merge) — see docs/AUDIT.md Program 6 Security row
 blocked-by: — (SEC-1 shipped; this only extends the existing app-e2e harness)
 context: docs/AUDIT.md flagged the SEC-1 Security row `⬜ untested → stress pass` with "UI
   responsive/axe pass on the width ladder still pending" — `/security` is a separate top-level

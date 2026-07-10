@@ -488,6 +488,29 @@ centralization: all copy from live personas/COPY + SITE.email (never a hardcoded
 coverage delta: extend the connectors AUDIT row — assert a broken connection renders the banner +
   Reconnect CTA, and the support link resolves to SITE.email.
 
+## SEC1-A11Y · `/security` (SEC-1 two-factor settings) axe + responsive walk — closes standing gap
+status: pr:#TBD (loop-insession-9jul) — see docs/AUDIT.md Program 6 Security row
+blocked-by: — (SEC-1 shipped; this only extends the existing app-e2e harness)
+context: docs/AUDIT.md flagged the SEC-1 Security row `⬜ untested → stress pass` with "UI
+  responsive/axe pass on the width ladder still pending" — `/security` is a separate top-level
+  route reached from the account menu, so (like `/admin` before F-WG1) the `tools/app-e2e/run.mjs`
+  SCREENS loop never visited it; a serious a11y or width-ladder regression there had zero coverage.
+  Self-carded this iteration — BACKLOG.md had no other unclaimed, unblocked, non-decision-needed
+  card (PENNY-UX-9 already shipped via pr:#251, confirmed via `gh pr view`; the only other
+  `unclaimed` cards are SEC-2-KEYS and CONN-1, both explicit Nik/infra human steps).
+workflow: owner/CPA · "check my two-factor settings on my phone" · Security renders cleanly and
+  accessibly at every width, same as every other authed screen — no user-visible change, this is
+  a coverage-only card (test-authoring, not a UI fix).
+goal: add `walkSecurityA11y()` to `tools/app-e2e/run.mjs` (same read-only pattern as the existing
+  `walkAdminConsoleA11y`): navigate to `/security`, assert the default status view renders, run the
+  serious/critical-gating axe scan + full 320–1920 width-ladder sweep, screenshot for the CI
+  artifact. Does NOT start TOTP enrollment or otherwise mutate factor state (mirrors the "no
+  ledger-mutating clicks" discipline the rest of the harness follows).
+centralization: none — CI harness only, no product code/copy/tokens touched.
+coverage delta: flips the Security AUDIT row from `⬜ untested` to a live-gated surface; a future
+  a11y or overflow regression on `/security` now fails CI the same way one on Home/Reports would.
+decision-needed: none
+
 ## SEC-2-KEYS · Cloudflare Turnstile keys (Nik) — captcha is dark until set
 status: unclaimed (Nik human step)
 context: SEC-2 shipped + is wired to signInWithOtp, but no TURNSTILE_SITE_KEY / TURNSTILE_SECRET is

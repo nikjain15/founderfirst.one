@@ -312,6 +312,32 @@ async function walkAdminConsoleA11y() {
 }
 // ── F-WG1 — END ───────────────────────────────────────────────────────────────
 
+// ── SEC1-A11Y — BEGIN (append-only block; do not fold into the code above) ──
+/** SEC1-A11Y (standing gap, docs/AUDIT.md Program 6): the two-factor-auth settings
+ *  page (`/security`, SEC-1) is reached from the account menu, not a click inside any
+ *  of the SCREENS tabs, so — like `/admin` before F-WG1 — the a11y/responsive walk
+ *  never visited it. It shipped `⬜ untested → stress pass` with "UI responsive/axe
+ *  pass on the width ladder still pending" explicitly called out. This walk closes
+ *  that gap: navigate to /security, assert the default (no-factor-enrolled) status
+ *  view renders, then run the same axe + width-ladder gate every other screen gets.
+ *  Does NOT start enrollment or otherwise mutate factor state — same read-only
+ *  discipline as walkAdminConsoleA11y. */
+async function walkSecurityA11y() {
+  await page.setViewportSize(DESKTOP);
+  await page.goto(`http://127.0.0.1:${port}/security`, { waitUntil: "networkidle", timeout: 60_000 }).catch(() => {});
+  await page.waitForTimeout(800);
+  const rendered = await page.locator(".security-card").count().catch(() => 0);
+  if (!rendered) { fail("/security: .security-card did not render"); return; }
+  ok("/security: two-factor settings render");
+  await page.screenshot({ path: join(ARTIFACTS, "desktop-security.png"), fullPage: true });
+  await a11yScan("/security");                     // same serious/critical gate as every screen
+  await sweepWidths("/security");                 // 320 → 1920, every ladder width
+  // Return to the app base so any later assertions start from a clean owner shell.
+  await page.goto(base, { waitUntil: "networkidle", timeout: 60_000 }).catch(() => {});
+  await page.waitForTimeout(600);
+}
+// ── SEC1-A11Y — END ──────────────────────────────────────────────────────────
+
 // ── PENNY-UX-3 — BEGIN (append-only block; do not fold into the code above) ──
 /** PENNY-UX-3 — mobile tab-strip discoverability (docs/AUDIT.md PENNY-UX findings).
  *  `.ledger-tabs` already scrolls horizontally at narrow widths, but nothing
@@ -725,6 +751,11 @@ try {
     // not an owner-nav tab, so the SCREENS loop never reaches it. Walk it explicitly
     // so its `.table-wrap` (and the rest of the console) is under the a11y gate.
     await walkAdminConsoleA11y();
+
+    // SEC1-A11Y — /security is a separate top-level route (account-menu entry, not
+    // an owner-nav tab), so the SCREENS loop never reaches it either. Walk it
+    // explicitly, same reasoning as the /admin walk above.
+    await walkSecurityA11y();
   }
   }
 

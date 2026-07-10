@@ -274,7 +274,12 @@ function App({ workerUrl }) {
           });
         }}>×</button>
       </div>
-      <div class="penny-privacy">Conversations are saved to help Penny get better.</div>
+      <div class="penny-privacy">
+        Saved to help Penny get better — auto-deleted after 90 days.
+        <a class="penny-privacy-link" href="/privacy">Privacy Policy</a>
+        ·
+        <a class="penny-privacy-link" href="mailto:founder@founderfirst.one">Delete mine</a>
+      </div>
 
       <div class="penny-thread" ref=${threadRef}>
         ${bubbles.map((b, i) => html`

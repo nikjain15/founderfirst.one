@@ -511,6 +511,47 @@ centralization: reuse existing mfaGate + org_requires_mfa; no new thresholds.
 coverage delta: extend the auth-mfa AUDIT row — assert: MFA-required firm + aal1 CPA → cpa-close
   rejected 403; aal2 → allowed; non-MFA firm → unaffected. deno/pgTAP.
 
+## BUBBLE-2 · Site-bubble privacy disclosure — retention + erasure path (P2)
+status: pr:#TBD (loop-orch, 10 Jul) — carded and fixed same session; no dedicated
+  card existed before this (found by the weekly audit, PR #301, report-only).
+blocked-by: — (self-contained widget copy + CSS change, disjoint from every
+  other open PR's file list — verified via `gh pr diff <n> --name-only` across
+  all 21 open PRs before picking this)
+context: PR #301 (Weekly audit, 6 Jul) flagged (P2, privacy) that the widget's
+  in-chat disclosure — `site-bubble/bubble/src/index.js`'s `.penny-privacy` div
+  — said only "Conversations are saved to help Penny get better," with no
+  retention length or erasure path (LEARNINGS #8: disclose retention, offer
+  erasure). BUBBLE-1 (a sibling self-carded PR, still open) scheduled the
+  90-day `penny_site_chats_purge()` cron but did not touch this file. Verified
+  the finding still stood on fresh `origin/main` before building.
+workflow: n/a (marketing-site trust surface, not an authed product workflow) ·
+  visitor · "how long is my chat kept, and can I delete it" · opens Penny on
+  founderfirst.one → the disclosure line under the header states the 90-day
+  auto-delete + links the Privacy Policy + a one-tap "Delete mine" mailto.
+goal: disclose what LEARNINGS #8 requires, honestly matching the real 90-day
+  `penny_site_chats_purge()` policy (`supabase/migrations/20260620153619_remote_commit.sql:1025`):
+  updated the disclosure copy in `bubble/src/index.js` to state the retention
+  window and link both the full Privacy Policy (`/privacy`, which already
+  documents the erasure right) and a direct `mailto:founder@founderfirst.one`
+  erasure request — matching the existing hardcoded-email precedent already in
+  `worker/src/worker.ts:251` for this same package (no `@ff/site` import here;
+  this esbuild-bundled widget has no workspace-package linkage set up, so a
+  literal matches the codebase's own established convention for this file, not
+  a new one). Rebuilt `dist/penny-bubble.js` (`npm run build` in `bubble/`) and
+  regenerated the Worker's embedded copy (`npm run sync` in `worker/`) so the
+  deployed bundle isn't stale relative to source — the exact drift class this
+  same audit pass caught between `system-prompt.ts` and its `.md` source.
+centralization: no new source of truth invented; reuses the already-documented
+  privacy-policy erasure right and the file's own existing literal-email
+  convention. VOICE-compliant copy (no exclamation marks).
+coverage delta: new `site-bubble/tests/disclosure.test.mjs` — asserts the
+  disclosure states a retention length, offers an erasure contact, has no
+  exclamation marks, and that the built `worker/src/bubble-js.ts` bundle
+  actually carries the same copy as `bubble/src/index.js` (guards the
+  source-vs-bundle drift class found elsewhere in this same audit).
+decision-needed: none (a copy/disclosure fix matching an existing documented
+  policy — no new product decision).
+
 ## CONN-1 · QBO production hosting IP (static-egress proxy) — Nik + infra
 status: unclaimed (deferred — sandbox unaffected)
 blocked-by: — (not blocking any build; production QBO is Intuit-review-gated anyway)

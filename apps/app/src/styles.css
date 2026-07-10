@@ -1899,7 +1899,7 @@ button.ghost.sm, .ghost.sm {
 /* Inline "record payment" row */
 .bill-pay { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2); }
 .bill-pay label { display: flex; flex-direction: column; gap: 0.2rem; font-size: var(--fs-ui); color: var(--ink-3); }
-.bill-pay input { font-size: var(--fs-body); padding: 0.4rem 0.5rem; border: var(--bw-hair) solid var(--line); border-radius: var(--r-input, var(--r-card)); }
+.bill-pay input { font-size: var(--fs-input); padding: 0.4rem 0.5rem; border: var(--bw-hair) solid var(--line); border-radius: var(--r-input, var(--r-card)); }
 .bill-pay-note { font-size: var(--fs-ui); margin: var(--space-1) 0 0; }
 
 /* New-bill form */
@@ -1911,12 +1911,12 @@ button.ghost.sm, .ghost.sm {
 .bill-form-head { display: flex; flex-wrap: wrap; gap: var(--space-3); }
 .bill-form-head label { display: flex; flex-direction: column; gap: 0.2rem; font-size: var(--fs-ui); color: var(--ink-3); }
 .bill-form-head select, .bill-form-head input {
-  font-size: var(--fs-body); padding: 0.4rem 0.5rem;
+  font-size: var(--fs-input); padding: 0.4rem 0.5rem;
   border: var(--bw-hair) solid var(--line); border-radius: var(--r-input, var(--r-card));
 }
 .bill-form-lines { display: flex; flex-direction: column; gap: var(--space-2); }
 .bill-line { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.bill-line input { font-size: var(--fs-body); padding: 0.4rem 0.5rem; border: var(--bw-hair) solid var(--line); border-radius: var(--r-input, var(--r-card)); }
+.bill-line input { font-size: var(--fs-input); padding: 0.4rem 0.5rem; border: var(--bw-hair) solid var(--line); border-radius: var(--r-input, var(--r-card)); }
 .bill-line .bl-desc { flex: 3 1 12rem; min-width: 0; }
 .bill-line .bl-qty { flex: 1 1 4rem; min-width: 0; }
 .bill-line .bl-price { flex: 1 1 6rem; min-width: 0; }

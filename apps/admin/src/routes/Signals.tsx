@@ -223,7 +223,7 @@ const platLabel = (id: string) => AD_PLATFORMS.find((p) => p.id === id)?.label ?
 
 function SourcesTab() {
   const qc = useQueryClient();
-  const { data: sources = [], isPending } = useQuery({ queryKey: ["sig-sources"], queryFn: listSigSources });
+  const { data: sources = [], isPending, error: sourcesError } = useQuery({ queryKey: ["sig-sources"], queryFn: listSigSources });
   const { data: counts = {} } = useQuery({ queryKey: ["sig-source-counts"], queryFn: listSigSourceCounts });
   const [platform, setPlatform] = useState("reddit");
   const [query, setQuery] = useState("");
@@ -265,6 +265,7 @@ function SourcesTab() {
       <h2 className="sig-h2">Automated</h2>
       <p className="page-sub">We poll each search on its schedule and pull matching posts in. Change how often with “every”, or toggle a source off to pause it.</p>
 
+      {sourcesError && <p className="sig-note sig-note-err">{(sourcesError as Error).message}</p>}
       {isPending ? <div className="empty">Loading…</div> : polled.length === 0 ? (
         <div className="empty"><p className="empty-title">No automated sources yet.</p><p>Add one below to start pulling posts.</p></div>
       ) : (
@@ -569,7 +570,7 @@ function LeadsTab() {
 
 function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }) {
   const qc = useQueryClient();
-  const { data, isPending } = useQuery({ queryKey: ["sig-lead", leadId], queryFn: () => getSigLead(leadId) });
+  const { data, isPending, error: leadError } = useQuery({ queryKey: ["sig-lead", leadId], queryFn: () => getSigLead(leadId) });
   const [draft, setDraft] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
@@ -627,7 +628,9 @@ function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () => void }
           <button onClick={onClose} aria-label="Close"><IconClose size={16} /></button>
         </header>
 
-        {isPending || !lead ? (
+        {leadError ? (
+          <p className="sig-note sig-note-err">{(leadError as Error).message}</p>
+        ) : isPending || !lead ? (
           <div className="empty">Loading…</div>
         ) : (
           <>
@@ -750,9 +753,10 @@ function SliderRow({ label, hint, value, suffix, onCommit }:
 /* Daily optimizer report — what the self-improving loop learned + proposals. */
 function OptimizerPanel() {
   const qc = useQueryClient();
-  const { data: report } = useQuery({ queryKey: ["sig-optimizer"], queryFn: getOptimizerReport });
+  const { data: report, error: reportError } = useQuery({ queryKey: ["sig-optimizer"], queryFn: getOptimizerReport });
   const { data: sources = [] } = useQuery({ queryKey: ["sig-sources"], queryFn: listSigSources });
   const [note, setNote] = useState("");
+  if (reportError) return <p className="sig-note sig-note-err">{(reportError as Error).message}</p>;
   if (!report) return null;
 
   const srcByQuery = new Map((sources as SigSourceRow[]).map((s) => [s.query, s]));
@@ -819,7 +823,7 @@ function OptimizerPanel() {
 
 function ScoringTab() {
   const qc = useQueryClient();
-  const { data: cfg } = useQuery({ queryKey: ["sig-settings"], queryFn: listSigSettings });
+  const { data: cfg, error: cfgError } = useQuery({ queryKey: ["sig-settings"], queryFn: listSigSettings });
   const { data = [] } = useQuery({ queryKey: ["sig-keywords"], queryFn: listSigKeywords });
   const { data: examples = [] } = useQuery({ queryKey: ["sig-icp"], queryFn: listSigIcpExamples });
   const [term, setTerm] = useState("");
@@ -890,6 +894,7 @@ function ScoringTab() {
           <div className="sig-step-body">
             <h2 className="sig-h2">Set the bars that make a lead</h2>
             <p className="page-sub">Drag to make leads stricter (fewer, stronger) or looser (more, noisier). Saves instantly — applies to new posts within ~1 minute.</p>
+            {cfgError && <p className="sig-note sig-note-err">{(cfgError as Error).message}</p>}
             {cfg && (
               <>
                 <SliderRow label="How urgent must their need be?" hint="Only promote people whose buying signal is at least this strong. Higher = fewer, stronger leads." suffix="/100"

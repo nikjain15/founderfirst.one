@@ -774,8 +774,13 @@ is in scope (line 154). **Repro:** open a sent invoice's pay row, type more than
 outstanding balance, click Apply. **No data-integrity risk:** `apply_invoice_payment` rejects
 it server-side (`20260706070000_…sql:361-363`, `overpayment` `check_violation`, under
 `FOR UPDATE`) — so the books are safe; the user just gets a raw error toast instead of a
-guarded button. UX polish. **Fix:** cap/validate client-side and disable Apply when the amount
-exceeds `balance`. → regression stub REG-W4-F1 (asserts the client caps at balance).
+guarded button. UX polish. **Fixed:** the clamp was already present in both `Invoicing.tsx`
+and `Bills.tsx` (`Math.min(parseMoneyToMinor(amt) ?? balance, balance)`) by the time this
+closeout ran, but as two independently-drifting inline copies with no permanent test. Extracted
+into a single `clampPayment(entered, balance)` in `invoiceMath.ts` (shared by AR + AP) so the
+guard can't fork again. → **regression REG-W4-F1** live in `invoiceMath.test.ts` (over-balance
+clamps, at-balance passes through, unparsed input falls back to the balance, zero-balance never
+goes negative).
 
 **F2 · P2 · CSV formula-injection neutralizer misses leading-whitespace-before-formula.**
 `apps/app/src/ledger/export.ts:82-85`. `neutralize()` prefixes a tab to cells whose *first
@@ -783,9 +788,10 @@ char* is `= + - @ \t \r`, but a cell like `" =HYPERLINK(…)"` (leading space, t
 caught — the classic guard trims first, then checks. Account names / invoice memos are
 user-controlled. **Repro:** an account named `" =2+2"` exports un-neutralized; a spreadsheet
 that trims leading spaces on open then evaluates the formula. Low likelihood (leading-space +
-formula is unusual) + affects only a downloaded file the owner opens ⇒ P2. **Fix:** check
-`/^\s*[=+\-@]/` (or trim before the leading-char test), keeping the pure-number exemption.
-→ regression stub REG-W4-F2 (leading-space formula is neutralized).
+formula is unusual) + affects only a downloaded file the owner opens ⇒ P2. **Fixed** (already
+on `main` by the time this closeout ran): `FORMULA_RE = /^\s*[=+\-@]/` inspects the first
+non-whitespace char. → **regression REG-W4-F2** live in `export.test.ts` ("neutralizes a
+formula hidden behind %s (memo cell)" — leading space/tab/newline/multi-space cases).
 
 **F3 · P2 · Two divergent AR-aging bucket schemes surfaced to the same owner.**
 `apps/app/src/ledger/invoiceMath.ts:35-44` (invoice view: `current / 1-30 / 31-60 / 61-90 /
@@ -796,10 +802,30 @@ things (invoice-level due-date aging vs. GL-line entry-date aging) so it is **no
 one-source-of-truth violation — but an owner comparing the invoicing screen to the lender
 package sees two AR aging tables with different bucket counts and totals for overlapping
 receivables. **Repro:** enable invoicing, send an overdue invoice, open both the invoicing AR
-aging and the W4.4 package aging → different buckets/splits. Consistency/UX ⇒ P2. **Fix:**
-either unify the two schemes or label each explicitly (due-date vs. transaction-date aging) so
-the difference is intentional and legible. → regression stub REG-W4-F3 (documents/locks the two
-schemes' boundaries so a future edit can't silently diverge further).
+aging and the W4.4 package aging → different buckets/splits. Consistency/UX ⇒ P2. **Fixed:**
+took the "label each explicitly" branch of the two offered fixes (unifying the schemes would
+have been a bigger, riskier behavior change for a P2). The lender-package aging tables (both
+the CSV/PDF export title and the on-screen preview row) now read "…aging (by transaction
+date)" (`export.ts` + `copy/strings.ts` `pkgArAging`/`pkgApAging`); the live Invoicing/Bills
+aging strips now carry an explicit "Aged by due date" caption (`invoicing.agedByDueDate` /
+`bills.agedByDueDate`). → **regression REG-W4-F3** live in `invoiceMath.test.ts` (locks both
+schemes' bucket counts staying distinct and both surfaces' copy naming their own basis).
+
+**New finding surfaced while closing F3 (not in the original Program 5 pass) · P1 ·
+`Invoicing.tsx`'s entire component tree had zero CSS.** Every bespoke class the AR/Invoicing
+surface renders — `.invoicing`, `.invoicing-optin`, `.invoicing-nudges`, `.ar-aging*`,
+`.ar-bucket*`, `.invoices-table`, `.inv-status*`, `.inv-actions`, `.inv-pay*`,
+`.invoice-form*`, `.invoice-line`, `.il-desc/-qty/-price` (24 selectors) — had **no matching
+rule anywhere in `styles.css`**, so the tab rendered as unstyled run-together text on prod
+(LEARNINGS #14 family: a green build ships broken UI). The mirror-image `Bills.tsx` (AP) was
+fully styled; only `.invoicing-profile*` (business-profile panel, Slice C) and
+`.invoice-doc*` (the document viewer, Slice B/2) had CSS — the base list/pay/aging/form layer
+was the gap. **Fixed:** ported the Bills/AP block verbatim (same tokens, renamed
+`bill→invoice`/`ap→ar`) into `styles.css`; `check:css-vars` confirms all tokens resolve (1364
+refs / 152 files). **Standing gap, not fixed here (disclosed, not silently dropped):** this
+closeout did not do a full visual/width-ladder pass on the newly-styled Invoicing tab (no
+browser available in this session) — `app-e2e`'s width-ladder + axe sweep will exercise it on
+the next CI run, but a human/screenshot check of the live surface is a good follow-up.
 
 **Advisory (P2/robustness, no stub):** `invoiceMath.ts:63` `Math.max(cadenceDays, 1)` silently
 floors a 0/negative nudge cadence to 1 day rather than surfacing a misconfiguration — defensive
@@ -826,14 +852,15 @@ below got the pass (finder → verifier); those with findings carry the finding 
 | W4.1 | E-commerce payout splitting (provider-agnostic; Stripe/Shopify; post/reverse RPCs) | `w4_1_ecommerce_payouts_test.sql` (16) + `apps/app/src/ecommerce/payouts.test.ts` (12) | 🟢 stress-passed; no defect |
 | W4.1-C/D | Square + PayPal **API payout sync** (sandbox, read-only) — API JSON → same split as CSV; posts via `post_ecommerce_payout` | `apiSync.test.ts` + `apiSync.redteam.test.ts` + `commerceApi.{test,redteam.test}.ts` (Deno) + `regression.api-sync.test.ts` | 🟢 stress-passed; **RT-230 PayPal exactly-once (P0) RESOLVED** (see below); multi-currency skip + genuine reconcile intact |
 | W4.2 | Cash-flow statement (GAAP indirect, `cf` kind) | `apps/app/src/ledger/cashFlow.test.ts` (13) + `export.test.ts` CF tie-out | 🟢 stress-passed; no defect |
-| W4.3 | Invoicing + AR (invoices/lines/payments; aging; opt-in nudges) | `w4_3_invoicing_test.sql` (21) + `invoiceMath.test.ts` (10) | 🟢 stress-passed; **F1 / F3 (P2)** open |
+| W4.3 | Invoicing + AR (invoices/lines/payments; aging; opt-in nudges) | `w4_3_invoicing_test.sql` (21) + `invoiceMath.test.ts` (22) | 🟢 stress-passed; **F1 / F3 (P2) FIXED** (this closeout) |
 | W4.4 | Lender / due-diligence package (`pkg` kind; statements + aging + comparatives + cover) | `apps/app/src/ledger/package.test.ts` (9) | 🟢 stress-passed; no defect |
 | W4.5 | Rescue-migration landing page (`/rescue`) | (static Astro; covered by web build + voice CI) | 🟢 stress-passed; no defect |
-| — | CSV export hardening (cf/pkg CSV) | `export.test.ts` (17, incl. formula-injection) | 🟢 stress-passed; **F2 (P2)** open |
+| — | CSV export hardening (cf/pkg CSV) | `export.test.ts` (17, incl. formula-injection) | 🟢 stress-passed; **F2 (P2) FIXED** (already on `main`; this closeout added the missing regression name/status) |
 
-**Coverage delta:** +5 new ledger rows (W4.1–W4.5). 0 P0, 0 P1, 3 P2 — each with a permanent
-regression stub (REG-W4-F1…F3) to be authored into `regression_pack` at fix time (the coverage
-ratchet). Wave 4 invalidates the standing "Wave 4 not built" gap from Program 1.
+**Coverage delta:** +5 new ledger rows (W4.1–W4.5). 0 P0, 0 P1, 3 P2 — all now **FIXED** with a
+permanent regression test (REG-W4-F1…F3, `invoiceMath.test.ts`/`export.test.ts`) — the coverage
+ratchet closeout, plus the missing Invoicing/AR CSS surfaced and fixed alongside F3 (see above).
+Wave 4 invalidates the standing "Wave 4 not built" gap from Program 1.
 
 **RT-230 · PayPal API↔CSV exactly-once (P0) — RESOLVED (Option A, Nik 4 Jul).**
 An API-pulled PayPal payout and the SAME payout uploaded via CSV did **not** collapse:

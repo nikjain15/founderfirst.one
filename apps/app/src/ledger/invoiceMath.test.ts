@@ -7,8 +7,10 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  agingBucket, balanceMinor, invoiceTotalMinor, isDueForNudge, lineAmountMinor,
+  agingBucket, balanceMinor, clampPayment, invoiceTotalMinor, isDueForNudge, lineAmountMinor,
 } from "./invoiceMath";
+import { AGING_BUCKETS } from "./reports";
+import { COPY } from "../copy";
 
 describe("line + total math (integer minor units, no float drift)", () => {
   it("computes a line amount as qty(3dp) × unit / 1000, rounded to the cent", () => {
@@ -29,6 +31,54 @@ describe("line + total math (integer minor units, no float drift)", () => {
   it("balance = total − paid", () => {
     expect(balanceMinor(11500, 4000)).toBe(7500);
     expect(balanceMinor(11500, 11500)).toBe(0);
+  });
+});
+
+// AUDIT Program 5, F1: the pay-row input passed any typed amount straight to
+// the RPC with no client-side cap — the server rejected it (books were always
+// safe) but the owner just saw a raw error toast. Shared by Invoicing (AR) and
+// Bills (AP) so the two payment rows can't drift apart.
+describe("REG-W4-F1 — payment entry clamps to the outstanding balance", () => {
+  it("caps an over-balance entry at the balance", () => {
+    expect(clampPayment(15000, 10000)).toBe(10000);
+  });
+  it("passes an at-or-under-balance entry through unchanged", () => {
+    expect(clampPayment(6000, 10000)).toBe(6000);
+    expect(clampPayment(10000, 10000)).toBe(10000);
+  });
+  it("falls back to the full balance when the input doesn't parse", () => {
+    expect(clampPayment(null, 10000)).toBe(10000);
+  });
+  it("never returns a negative amount for a zero balance", () => {
+    expect(clampPayment(500, 0)).toBe(0);
+  });
+});
+
+// AUDIT Program 5, F3: the live Invoicing/Bills strips bucket by DUE date (5
+// buckets, this file's agingBucket) while the lender package buckets by
+// TRANSACTION date (4 buckets, reports.ts AGING_BUCKETS) — genuinely different
+// measures of the same receivable, not a one-source-of-truth violation. Left
+// unlabeled, an owner comparing the two screens sees mismatched totals with no
+// explanation. This locks both (a) the two schemes staying intentionally
+// distinct in shape, so a "helpful" merge doesn't silently drop the labeling
+// need, and (b) every surface naming its own basis in copy.
+describe("REG-W4-F3 — the two AR/AP aging schemes are labeled, not silently divergent", () => {
+  it("the due-date scheme (live strips) has 5 buckets", () => {
+    const dueDateBuckets: ReturnType<typeof agingBucket>[] =
+      ["current", "1-30", "31-60", "61-90", "90+"];
+    expect(new Set(dueDateBuckets).size).toBe(5);
+  });
+  it("the transaction-date scheme (lender package) has a different bucket count", () => {
+    expect(AGING_BUCKETS.length).toBe(4);
+    expect(AGING_BUCKETS.length).not.toBe(5);
+  });
+  it("the lender package labels its aging tables by transaction date", () => {
+    expect(COPY.reports.pkgArAging.toLowerCase()).toContain("transaction date");
+    expect(COPY.reports.pkgApAging.toLowerCase()).toContain("transaction date");
+  });
+  it("the live Invoicing/Bills strips label their aging by due date", () => {
+    expect(COPY.invoicing.agedByDueDate.toLowerCase()).toContain("due date");
+    expect(COPY.bills.agedByDueDate.toLowerCase()).toContain("due date");
   });
 });
 

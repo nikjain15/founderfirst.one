@@ -19,6 +19,30 @@
 > corrected to match. Remaining real buildable work: **W5.4-FX** (ECB fx-rate fetcher — schema
 > shipped, no fetcher exists yet) is the top unclaimed, unblocked, non-decision-needed card.
 
+## WEB-FONT-1 · apps/web "Penny P mark" badges use the dedicated --font-serif token (P2)
+status: pr:#TBD (loop-orch, 11 Jul) — building
+blocked-by: — (apps/web copy/CSS only, no other open PR touches these two files)
+context: 6-Jul weekly full-surface audit (PR #301, report-only) flagged
+  `apps/web/src/components/PennyPodcast.astro:60` — `font-family: Georgia, serif` inlined
+  instead of a token. Checked at pick time (11 Jul): still present on `main`, untouched by any
+  of the ~30 open loop PRs (including `ADMIN-DS-PX-1`/#335, whose magic-fontsize sweep only
+  touched `apps/admin` + two `apps/web` pages, not this component). Also found the identical
+  literal at `apps/web/src/pages/podcast/index.astro:72` (`.hero-art .mark`) — the same "Penny P"
+  badge pattern duplicated a second time. `packages/design-system/tokens.css:53` already defines
+  `--font-serif: Georgia, 'Times New Roman', serif; /* avatar mark only */` for exactly this use
+  (apps/app's own `.p-mark` component uses a plain `Georgia, serif` literal too, matching the
+  token's value — the token exists precisely to name that literal, not to change it).
+goal: swap both inline `font-family: Georgia, serif` literals for `var(--font-serif)`. Same
+  Georgia/Times-New-Roman/serif stack, so the rendered P-mark badge is visually unchanged — this
+  is a naming/centralization fix (LOOP_PROMPT centralization gate: no inline
+  hex/px/one-off font values, registry sources only), not a redesign.
+centralization: `--font-serif` already exists in tokens.css; this card only routes two literals
+  through it. No new token, no new config surface.
+coverage delta: none needed — a like-for-like CSS-value → token-reference swap with no logic
+  branch and no visual change; the existing `pages.yml` apps/web build proves both files still
+  compile, and `check:css-vars`/`check:css` (centralization.yml) prove `--font-serif` resolves.
+decision-needed: none
+
 ## Wave 2 — COMPLETE + DEPLOYED (3 Jul 2026)
 W2.1/W2.2/W2.3 shipped earlier; **W2.4 (PR #202) + W2.5 (PR #201) merged to main, migrations
 `20260706020000`+`20260706030000` applied to prod (ledger in sync), edge fns `nec-tracking`

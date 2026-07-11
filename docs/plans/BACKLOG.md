@@ -511,6 +511,38 @@ centralization: reuse existing mfaGate + org_requires_mfa; no new thresholds.
 coverage delta: extend the auth-mfa AUDIT row — assert: MFA-required firm + aal1 CPA → cpa-close
   rejected 403; aal2 → allowed; non-MFA firm → unaffected. deno/pgTAP.
 
+## DEFINER-GUARD-2 · `get_effective_behavior_config` caller-role-aware fix (P2, security)
+status: pr:#TBD (loop-insession-11jul)
+blocked-by: — (independent; the 3 service-role edge-fn callers verified against the shipped
+  `-- definer-ok:` pattern's own reasoning — auth.role() reads request.jwt.claims, unaffected by
+  SECURITY DEFINER's privilege-escalation boundary)
+context: an open, unmerged DEFINER-GUARD-1 PR (built off the 6-Jul weekly audit, PR #301) found
+  `get_effective_behavior_config(p_org)` is `security definer`, granted to `anon, authenticated`,
+  and never checked membership when `p_org` is non-null — any anon/authenticated caller could pass
+  another tenant's org id and read its tuned autonomy thresholds (asks/week, confidence cutoffs,
+  SLA days; config-tuning, no financial/PII). Left as a documented, disclosed follow-up there
+  (not auto-fixed) because a blanket `can_access_org` guard would ALSO block the 3 edge fns
+  (receipts, categorize, invoicing) that call it via a service-role client with no per-user JWT.
+  BACKLOG.md itself was stale (last touched ~5 Jul while `main` had advanced to #308+ with 25 open
+  PRs) — this card + fix was self-carded directly off that disclosed gap, not off a stale BACKLOG row.
+goal: a caller-role-aware fix — the org-override branch now requires the caller be either
+  `auth.role() = 'service_role'` OR pass `can_access_org(p_org)`; a non-member anon/authenticated
+  caller still gets a valid response (never an error), just without the org override folded in
+  (falls through to the platform default). `p_org = null` (the pre-auth default read) is untouched.
+spec: `supabase/migrations/20260711050000_definer_guard_2_behavior_config_role_fix.sql` (write-
+  don't-deploy); extended `supabase/tests/central1_persona_config_test.sql` (plan 9→12) with:
+  a member read still resolves the override (re-scoped the existing assertions to an authenticated
+  member JWT, since they'd previously exercised the override with NO auth context at all — that
+  case is now exactly the leak the fix closes), a non-member authenticated caller falls through to
+  the platform default, an anonymous (no-JWT) caller behaves the same way, and a simulated
+  service-role caller (`request.jwt.claims = '{"role":"service_role"}'`) still resolves the org
+  override (the regression this fix exists to avoid).
+centralization: n/a — pure security-guard fix on an existing DEFINER reader, no new config surface.
+coverage delta: extends the qbo/tax/central2 AUDIT surface's DEFINER-reader theme (LEARNINGS —
+  cross-tenant SECURITY DEFINER leaks) with a dedicated caller-role-aware regression case.
+decision-needed: none (a security fix following the established can_access_org-guard pattern,
+  same class as SEC-3 / DEFINER-GUARD-1).
+
 ## CONN-1 · QBO production hosting IP (static-egress proxy) — Nik + infra
 status: unclaimed (deferred — sandbox unaffected)
 blocked-by: — (not blocking any build; production QBO is Intuit-review-gated anyway)

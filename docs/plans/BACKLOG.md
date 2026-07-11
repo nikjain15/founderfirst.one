@@ -512,7 +512,7 @@ coverage delta: extend the auth-mfa AUDIT row — assert: MFA-required firm + aa
   rejected 403; aal2 → allowed; non-MFA firm → unaffected. deno/pgTAP.
 
 ## DEFINER-GUARD-2 · `get_effective_behavior_config` caller-role-aware fix (P2, security)
-status: pr:#TBD (loop-insession-11jul)
+status: pr:#336 (loop-insession-11jul)
 blocked-by: — (independent; the 3 service-role edge-fn callers verified against the shipped
   `-- definer-ok:` pattern's own reasoning — auth.role() reads request.jwt.claims, unaffected by
   SECURITY DEFINER's privilege-escalation boundary)

@@ -19,6 +19,38 @@
 > corrected to match. Remaining real buildable work: **W5.4-FX** (ECB fx-rate fetcher — schema
 > shipped, no fetcher exists yet) is the top unclaimed, unblocked, non-decision-needed card.
 
+## PII-1 · Personal-email leaks on public/semi-public surfaces (14-Jul weekly audit)
+status: pr:#TBD (loop-orch, 14 Jul) — carded and fixed same session
+context: the 14-Jul weekly audit (pr:#338, `LEARNINGS.md`) flagged this as its #1 "top 3 to fix
+  now" item — every other named P1/P2 finding in that audit was already claimed by an open,
+  unmerged PR (cross-checked `gh pr diff <n> --name-only` for all 32 open PRs #269-#337 against
+  the audit's file list: docs.css `--accent*`/VoiceStudio `--warn`/AIRamp `--text-warning` →
+  #311; stale bubble bundle → #327; llms.txt/terms/privacy/extension-privacy hardcoded origin →
+  #317; SignupForm.tsx exclamation → #315; 1099-NEC table wrap → #313); this PII item was the
+  only genuinely unclaimed finding worth self-carding (sig_digest_sends missing RLS is real but
+  non-exploitable defense-in-depth, left for a follow-up card rather than bundling into this
+  privacy-scoped fix).
+goal: three personal-email literals on public/semi-public surfaces, replaced with the canonical
+  contact or a neutral placeholder (never touching the `nik@founderfirst.one` /
+  `nikjain1588@gmail.com` literals in `supabase/migrations/*` that are genuine super-admin
+  identity data driving real RLS/auth logic — those are functional, not a leak):
+  1. `apps/demo/LICENSE.md:48` (public MIT license for the standalone demo) — `nik@` → the
+     canonical `founder@founderfirst.one` (matches `packages/site/src/index.ts`'s
+     `SITE.email` — "the ONLY public contact address").
+  2. `apps/web/PODCAST_PRINCIPLES.md:101` — a real personal Gmail used as a live example →
+     `<super-admin-email>` placeholder.
+  3. `supabase/functions/email-preview/index.ts:32` — `admin_welcome` preview-fixture sample
+     data (`addedBy`) → `you@founderfirst.one`, matching the neutral placeholder pattern already
+     used one line above it (`penny_brain`'s `author`).
+acceptance:
+  - [x] No `nik@founderfirst.one` / `nikjain1588@gmail.com` literal remains in the three flagged
+        files (verified via grep); the migrations' functional super-admin literals untouched
+  - [x] `deno check` passes on the edited edge function
+touches: apps/demo/LICENSE.md, apps/web/PODCAST_PRINCIPLES.md,
+  supabase/functions/email-preview/index.ts (docs + one sample-fixture string; no schema/logic
+  change, no test to update — no test referenced the old strings)
+decision-needed: none
+
 ## Wave 2 — COMPLETE + DEPLOYED (3 Jul 2026)
 W2.1/W2.2/W2.3 shipped earlier; **W2.4 (PR #202) + W2.5 (PR #201) merged to main, migrations
 `20260706020000`+`20260706030000` applied to prod (ledger in sync), edge fns `nec-tracking`

@@ -29,7 +29,7 @@ const SAMPLE_VARS: Record<string, Record<string, string | number>> = {
   changelog_nudge: { count: 3, updateword: "updates", thingword: "things" },
   penny_brain: { kindLabel: "Voice guide", version: 4, author: "you@founderfirst.one" },
   welcome: { firstName: "Jordan" },
-  admin_welcome: { firstName: "Jordan", addedBy: "nik@founderfirst.one" },
+  admin_welcome: { firstName: "Jordan", addedBy: "you@founderfirst.one" },
 };
 
 function sampleBody(key: string, brand: Brand): string | undefined {

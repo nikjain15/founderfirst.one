@@ -435,6 +435,32 @@ replay — inherited by every stacked branch.
   `loop/wave<N>-integration` branch** (updated as base cards land), not pinned commits, to
   avoid gate-time rebase churn.
 
+## 25. A `var(--x)` that isn't defined in tokens.css fails silently to inherited/transparent.
+
+**What happened:** The 14 Jul 2026 audit found the same shape on two surfaces —
+the What's-New email **recipient picker** styled its *selected* chip with
+`background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink)`
+(`apps/admin/src/styles/docs.css`), but none of those three vars exist in
+`tokens.css` and there were no fallbacks. CSS treats an undefined custom property
+with no fallback as an invalid value → the property reverts to inherited/initial
+(transparent bg, `currentColor` border, inherited text). The selected chip was
+**visually identical to unselected**, so an admin couldn't tell who they'd picked
+before hitting send. Same for `var(--warn)` / `var(--text-warning)` (warning flags
+vanished to ink) and app `var(--r-input)` (saved only by a `--r-card` fallback).
+Like Rule 14, this is a silent CSS failure a green build never catches.
+
+**Rules:**
+- **Reference only tokens that exist in `packages/design-system/tokens.css`.** If a
+  semantic token you want isn't there, add it to tokens.css (one source of truth,
+  Rule 13) — don't invent a `var(--x)` inline and hope.
+- **A fallback is not optional for a var you're unsure of:** `var(--x, <real-value>)`.
+  But a fallback that re-hardcodes the token's hex (`var(--brand-tint, #e9f5ee)`) is
+  dead-but-forbidden — if the token resolves, the hex is unreachable; if it doesn't,
+  you've just re-hardcoded. Fix the token, don't paper over it.
+- **Lint for it.** A CI check that greps every `var(--…)` in app/admin CSS + inline
+  styles and fails on any name absent from tokens.css (allowing declared fallbacks)
+  would catch this class before merge — the same way `check:css` guards Rule 14.
+
 ---
 
 *Add a numbered rule above when a mistake teaches a lesson worth not repeating.*
@@ -445,6 +471,29 @@ Dated findings from `/audit` runs, newest first. Each entry: the commit audited,
 a short summary, and one line per P0/P1 marked **fixed** or **deferred**. When an
 issue here keeps recurring, graduate it into a numbered rule above — that is how
 we stop repeating it. The command lives at `.claude/commands/audit.md`.
+
+### 2026-07-14 audit — 242bbc7
+Weekly full-surface sweep (6 parallel per-surface subagents; every finding opened + verified).
+**Headless run — no browser**, so `responsive`/`accessibility`/`performance` were reasoned
+statically (NOT width-ladder / axe / Lighthouse-measured) — noted in the report. **0 P0 ·
+9 P1 · 24 P2; overall 91/100.** The security/data heart is exceptionally clean — verified
+against the latest definition of every table/function: RLS on all 42 org-scoped tables,
+every DEFINER reader `can_access_org`-gated (Wave-3 F1 closed), every money RPC actor-verified
++ `FOR UPDATE`-locked (rules 15/16 closed), no dup migration timestamps (11), seed.sql pure (24).
+Top systemic pattern: **undefined `var(--x)` tokens with no fallback → silent invisible UI**
+(admin `--accent*`/`--warn`/`--text-warning`, app `--r-input`) — graduated to **Rule 25**.
+Second: hardcoded canonical origins creeping back into new output (llms.txt, 3 legal canonicals)
+despite `SITE.url` (rule 13). Full report in the PR body. All P1s **deferred** (this run reports
+only — no app-code changes):
+- **deferred** [privacy] `nik@founderfirst.one` on the public MIT `apps/demo/LICENSE.md:48` — use `founder@` (rule 13/contact).
+- **deferred** [privacy] real personal Gmail committed in `apps/web/PODCAST_PRINCIPLES.md:101` — replace with a placeholder (PII-in-repo).
+- **deferred** [observability] deployed bubble bundle `site-bubble/worker/src/bubble-js.ts` is stale (built 2026-04-26, predates PostHog) → prod widget analytics fire nothing; rebuild + re-sync + redeploy (rule 5).
+- **deferred** [design_system] admin selected-chip uses undefined `--accent`/`--accent-soft`/`--accent-ink`, no fallback → invisible selection in the What's-New email sender (`docs.css:295-297`; rule 14/25).
+- **deferred** [data_integrity] `llms.txt.ts:23,26-29` hardcodes `https://founderfirst.one` ×5 instead of `${SITE.url}` (rule 13).
+- **deferred** [data_integrity] legal-page canonicals hardcoded (`terms/privacy/extension-privacy.astro`) while the same files use `SITE.email` (rule 13).
+- **deferred** [copy_docs] exclamation mark in `SignupForm.tsx:55` — VOICE.md machine-enforced no-exclamations (rule 7).
+- **deferred** [responsive] 1099-NEC report table unwrapped (`apps/app/src/ledger/Ledger.tsx:~1107`) → overflow on narrow ladder (RESPONSIVE rule 4).
+- **deferred** [security] `sig_digest_sends` lacks `enable row level security` (not exploitable — revoked from anon/authenticated; add for parity/defense-in-depth).
 
 ### 3 Jul 2026 · Wave-3 wave-gate audit (owner-experience layer) — GATE 🟢 CLEAR
 14-dimension rubric + adversarial stress pass over the Wave-3 blast radius (W3.2 trust-tiered

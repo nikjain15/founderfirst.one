@@ -98,7 +98,7 @@ Surfaces: `/podcast` (index + hero, [podcast/index.astro](src/pages/podcast/inde
 2. **Render audio** (§2) → an `episode.mp3`.
 3. **Upload** to Supabase storage: `PUT /storage/v1/object/content-audio/<slug>/episode.mp3` (service role) → public URL.
 4. **Create a `content_pipeline` item** (service role): `source:'manual'`, `topic`, `draft_md` (show notes), `seo:{ slug, title, tag:'Podcast', read_mins, description, takeaways[] }`, and set `audio_url`, `audio_seconds`, `audio_bytes` directly.
-5. **Mint an admin JWT** for a **super/editor admin** (e.g. `nikjain1588@gmail.com`): service-role `generate_link` → `verify` (magiclink) → `access_token`. (Mutating blog RPCs gate on `is_admin_editor()` — a non-admin like `tester@` is rejected.)
+5. **Mint an admin JWT** for a **super/editor admin** (e.g. `<super-admin-email>` — see `admins`/`admin_roles`): service-role `generate_link` → `verify` (magiclink) → `access_token`. (Mutating blog RPCs gate on `is_admin_editor()` — a non-admin like `tester@` is rejected.)
 6. **`content-publish`** with `{item_id}` + the admin JWT → builds the post (audio block + `mdToBlocks`), sets it live, fires a rebuild.
 7. **Replace the previous episode** if needed: `PATCH blog_posts?slug=eq.<old>&is_live=eq.true {is_live:false}` (service role). `/podcast` lists live posts that have an audio block.
 8. **Deploy** any template/CSS changes: commit + push to `main` → `pages.yml` rebuilds GitHub Pages. Content-only changes deploy via the `content-publish` rebuild webhook.

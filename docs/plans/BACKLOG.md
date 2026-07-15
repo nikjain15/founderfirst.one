@@ -1239,3 +1239,38 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## VOICESTUDIO-ERR-1 · Voice Studio silently swallows the active-voice-profile fetch error (P2)
+status: pr:#TBD (loop-orch, 15 Jul) — carded and fixed same session; no dedicated card existed
+  before this. This iteration re-verified `docs/plans/BACKLOG.md`'s own remaining candidates
+  (W5.4-FX top-of-file note, PENNY-UX-9 blocked-by chain) were already resolved/superseded —
+  same conclusion PR #279/#321/#323/#325/#328/#329/#331/#341 reached on prior iterations
+  (`docs/plans/BACKLOG.md` on `main` lags the real repo state; 40+ open loop PRs await Nik's
+  merge) — then fell back to the established precedent of self-carding an untouched
+  weekly-audit finding (PR #338, "Weekly audit — 2026-07-14", report-only by charter, still open).
+blocked-by: — (self-contained apps/admin fix)
+context: PR #338's weekly audit (apps/admin § reliability/P2) named three content-editing
+  surfaces with a silent `useQuery` load-failure: `SiteContent.tsx`, `ContentHome.tsx`, and
+  `VoiceStudio.tsx`. ADMIN-P2-4 (pr:#341, open) fixed `SiteContent.tsx`; ADMIN-P2-3 (pr:#331,
+  open) fixed `ContentHome.tsx`. `VoiceStudio.tsx` (`apps/admin/src/routes/VoiceStudio.tsx:20`)
+  runs `useQuery` on `get_active_voice_profile` but never read `.error` — react-query clears
+  `isPending` once a query errors, so a Supabase blip fell through to
+  `if (!profile) return <div className="empty">No active voice profile.</div>` — indistinguishable
+  from a genuinely-unconfigured voice profile, inviting an admin to "set one up" over data that
+  merely failed to load (same failure class as ADMIN-P2-1/2/3/4).
+goal: destructure `error: profileError` from the query; render it via the file's own existing
+  `.alert.alert-error` + `IconAlert` pattern (already used for the save/preview mutation errors
+  lower in the same component) before falling through to the "No active voice profile" empty-state.
+centralization: reuses the existing `.alert.alert-error` class + `IconAlert` icon (no new
+  CSS/token/copy invented).
+coverage delta: `tools/admin-e2e/run.mjs` — new mocked scenario in the existing authed admin-e2e
+  CI job (PostgREST RPC route interception): forces `rest/v1/rpc/get_active_voice_profile` to
+  500, navigates to `/admin/content#voice`, asserts the mocked error message renders AND the
+  "No active voice profile." empty-state copy does NOT (the exact misdirection this fixes).
+workflow: internal admin · "Penny's spoken-voice settings failed to load" · Content → Voice tab
+  shows the fetch error inline instead of the misleading "no profile" empty state.
+acceptance:
+  - [ ] `get_active_voice_profile` fetch failure renders a visible `.alert.alert-error` message
+  - [ ] The misleading "No active voice profile." copy no longer renders on a fetch error
+  - [ ] `tsc --noEmit` clean; new e2e scenario passes in CI
+decision-needed: none

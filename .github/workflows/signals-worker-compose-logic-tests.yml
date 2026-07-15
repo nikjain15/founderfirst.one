@@ -1,0 +1,37 @@
+name: signals-worker compose-server logic tests
+
+# Weekly audit (2026-07-14, PR #338, tools/ section) — "tools/ has zero tests
+# ... compose-server.mjs carries real logic uncovered." SIGNALS-SEC-1 (#326)
+# already covers the timing-safe secret compare; this covers the request
+# validation + response-shaping logic (cleanStr, buildComposeSystem, the
+# /compose /voice-check /insights guards and clamping) via
+# tools/signals-worker/tests/compose-server.test.mjs.
+
+on:
+  pull_request:
+    paths:
+      - "tools/signals-worker/compose-server.mjs"
+      - "tools/signals-worker/tests/compose-server.test.mjs"
+      - ".github/workflows/signals-worker-compose-logic-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "tools/signals-worker/compose-server.mjs"
+      - "tools/signals-worker/tests/compose-server.test.mjs"
+  workflow_dispatch:
+
+jobs:
+  compose-server-logic-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: compose-server.mjs syntax check
+        run: node --check tools/signals-worker/compose-server.mjs
+
+      - name: Run compose-server logic tests
+        run: node --test tools/signals-worker/tests/compose-server.test.mjs

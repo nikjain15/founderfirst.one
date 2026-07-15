@@ -1239,3 +1239,37 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+---
+
+# WEEKLY-AUDIT-P1 — findings from the 14-Jul audit (#338), self-carded
+
+> `docs/plans/BACKLOG.md` on `main` lags the loop's real state by many iterations (see
+> LEARNINGS + memory — every open loop PR is real shipped-as-open-PR work awaiting Nik's
+> merge). Per the established self-carding precedent (#309/#311/#321/#327/#339), each loop
+> iteration that finds no unclaimed non-decision card in the file above re-reads the latest
+> weekly audit, cross-checks its named findings against every open PR's file list, and cards
+> + builds whichever finding is still genuinely unclaimed.
+
+## SIG-DIGEST-RLS · Enable RLS on sig_digest_sends (P1-hygiene)
+status: pr:#340 (loop-orch, 12 Jul) — carded and fixed same session
+context: the 14-Jul audit (#338, supabase section) found `sig_digest_sends`
+  (`20260623150000_signals_digest_sends.sql`) is the one table (of 120) missing
+  `enable row level security` — grants already lock it to `service_role` (revoke all from
+  anon/authenticated), so it is NOT exploitable, but every sibling `sig_*` table
+  (`sig_keywords`/`sig_sources`/`sig_settings`) has RLS on for defense-in-depth/parity.
+  Cross-checked all 30 other currently-open loop PRs' file lists against every other named
+  P1 in #338 — the other 8 (admin unresolved `--accent*`/`--warn`/`--text-warning` tokens,
+  stale bubble bundle, `llms.txt` + legal-page hardcoded canonical origin, `SignupForm`
+  exclamation mark, unwrapped 1099-NEC table, both personal-email leaks) are already claimed
+  by #311/#327/#317/#315/#313/#339 respectively. This RLS gap was the one genuinely
+  unclaimed, non-decision-needed P1.
+goal: `alter table sig_digest_sends enable row level security;` (new migration,
+  write-don't-deploy) — no policy needed, mirroring the sibling `sig_*` tables
+  (RLS-enabled + policy-less = deny-all-by-default for every role except the owner and
+  `service_role`, which bypasses RLS in Supabase). New pgTAP test proves RLS is on and that
+  `service_role` keeps full read/write (the cron/digest write path is unaffected).
+centralization: n/a (single catalog flag on an existing table, no new config surface).
+coverage delta: new `supabase/tests/sig_digest_sends_rls_test.sql` — asserts
+  `pg_class.relrowsecurity` is true, anon/authenticated stay locked out, service_role keeps
+  select+insert.

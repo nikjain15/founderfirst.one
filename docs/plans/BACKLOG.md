@@ -312,6 +312,32 @@ centralization: log field name/config centralized; no inline literals.
 coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
   call (success + error path).
 
+## BUBBLE-A11Y-1 · Penny site-bubble dialog — Escape-to-close + Tab focus trap (P2)
+status: pr:#TBD (loop-orch, 15 Jul) — carded and fixed same session
+blocked-by: — (site-bubble/bubble/src only; independent of every other open lane)
+context: the 14-Jul weekly audit (pr:#338) flagged `bubble/src/index.js:241` (`role="dialog"`
+  panel at `:262`): only the `×` click closed the widget — no Escape-to-close, no focus trap — so
+  a keyboard-only visitor had no way to dismiss it and Tab could wander into the host page behind
+  a widget with no backdrop of its own. Cross-checked against all ~40 open loop PRs' file lists
+  (`gh pr diff <n> --name-only`); only pr:#327 (BUBBLE-2) touches this file, and only for the
+  privacy-disclosure text/links (a different section) — this finding was genuinely unclaimed.
+goal: Escape closes the panel via the same `closePanel()` path the × button already uses (same
+  analytics emit); Tab/Shift+Tab cycles focus among the panel's own focusable elements only (read
+  via `panelRef.current.getRootNode().activeElement` — the shadow-root-correct way to read focus
+  inside a Shadow DOM host, not `document.activeElement`). Rebuilt + re-synced the worker's baked
+  bundle (`npm run build` in bubble/ + `npm run sync` in worker/ — NOT `npm run deploy`, which
+  also runs `wrangler deploy`; safe mode never deploys) so `worker/src/bubble-js.ts` doesn't
+  re-create the exact stale-bundle P1 shape this same audit flagged elsewhere. Incidentally
+  re-synced `worker/src/system-prompt.ts` too (a pre-existing, unrelated drift from
+  `penny-site-system.md` already on `main` — the sync script always regenerates both files
+  together; left in since reverting it would just re-introduce that drift).
+centralization: n/a (behavioral a11y fix, no new config/tokens/copy).
+coverage delta: new `site-bubble/tests/dialog-a11y.test.mjs` (4 assertions) — Escape calls
+  `closePanel()`; Tab handling branches on Shift+Tab vs Tab; `getRootNode().activeElement` used
+  (not `document.activeElement`); the built `worker/src/bubble-js.ts` bundle isn't stale relative
+  to source (substring-based, survives minification, mirrors the disclosure.test.mjs drift guard
+  pattern from pr:#327).
+
 # PENNY-UX-10 + E-FILE (Nik 5-Jul: declutter + make responsive; card e-file Phase A)
 
 ## PENNY-UX-10 · Owner app declutter + FULL responsive pass → /admin minimalist standard

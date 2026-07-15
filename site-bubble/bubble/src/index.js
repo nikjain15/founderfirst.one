@@ -134,6 +134,7 @@ function App({ workerUrl }) {
   const [ctaConfirmed, setCtaConfirmed] = useState(false);
   const threadRef = useRef(null);
   const inputRef = useRef(null);
+  const panelRef = useRef(null);
 
   useEffect(() => { saveHistory(bubbles); }, [bubbles]);
   useEffect(() => { saveState(state); }, [state]);
@@ -245,6 +246,40 @@ function App({ workerUrl }) {
     }
   }
 
+  function closePanel() {
+    setOpen(false);
+    emitPennyEvent("penny_closed", {
+      messages_sent: state.turn_count,
+      had_cta: !!pendingCta,
+    });
+  }
+
+  // Dialog-level keyboard handling: Escape closes it, and Tab is trapped
+  // among the panel's own focusable elements so keyboard focus can't wander
+  // into the host page behind a widget that has no backdrop of its own.
+  function onPanelKeyDown(e) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closePanel();
+      return;
+    }
+    if (e.key !== "Tab" || !panelRef.current) return;
+    const focusable = Array.from(
+      panelRef.current.querySelectorAll('button, [href], input, textarea, [tabindex]:not([tabindex="-1"])')
+    ).filter((el) => !el.disabled);
+    if (focusable.length === 0) return;
+    const active = panelRef.current.getRootNode().activeElement;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
   if (!open) {
     return html`
       <button
@@ -259,20 +294,14 @@ function App({ workerUrl }) {
   }
 
   return html`
-    <div class="penny-panel" role="dialog" aria-label="Chat with Penny">
+    <div class="penny-panel" role="dialog" aria-label="Chat with Penny" ref=${panelRef} onKeyDown=${onPanelKeyDown}>
       <div class="penny-header">
         <${Pmark} />
         <div class="penny-meta">
           <div class="penny-name">Penny</div>
           <div class="penny-status">online</div>
         </div>
-        <button class="penny-close" aria-label="Close" onClick=${() => {
-          setOpen(false);
-          emitPennyEvent("penny_closed", {
-            messages_sent: state.turn_count,
-            had_cta: !!pendingCta,
-          });
-        }}>×</button>
+        <button class="penny-close" aria-label="Close" onClick=${closePanel}>×</button>
       </div>
       <div class="penny-privacy">Conversations are saved to help Penny get better.</div>
 

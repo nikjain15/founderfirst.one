@@ -235,6 +235,30 @@ async function main() {
         console.log(`  (cover ${c.name} skipped — ${(err instanceof Error ? err.message : String(err)).slice(0, 100)})`);
       }
     }
+    // 7. Unknown URL lands on a real page instead of an empty <main> (ADMIN-P2-4).
+    await page.goto(`${base}/admin/this-route-does-not-exist`, { waitUntil: "networkidle" });
+    await page.getByRole("link", { name: "Analytics", exact: true }).waitFor({ state: "visible", timeout: 15_000 });
+    check("unknown admin route redirects to a real page (not a blank <main>)", true, page.url());
+
+    // 8. Site content: a list_content_pages RPC failure must surface an error,
+    // not be mistaken for "no content pages yet" (ADMIN-P2-4). Mocked end-to-end
+    // (no seed data needed) via PostgREST RPC route interception.
+    try {
+      await page.route("**/rest/v1/rpc/list_content_pages", (route) =>
+        route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ message: "mocked list_content_pages failure" }) }));
+
+      await page.goto(`${base}/admin/site-content`, { waitUntil: "networkidle" });
+      const errBanner = page.getByText("mocked list_content_pages failure", { exact: false });
+      await errBanner.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+      check("Site content surfaces a list_content_pages fetch error (not the empty state)", (await errBanner.count()) > 0);
+
+      const emptyState = await page.getByText("No content pages yet", { exact: false }).count();
+      check("Site content does NOT show the empty state on a fetch error", emptyState === 0);
+
+      await page.unroute("**/rest/v1/rpc/list_content_pages");
+    } catch (e) {
+      check("Site content error-surface check", false, (e instanceof Error ? e.message : String(e)).slice(0, 200));
+    }
   } catch (e) {
     check("smoke run completed", false, (e instanceof Error ? e.message : String(e)).slice(0, 200));
     await page.screenshot({ path: join(ARTIFACTS, "failure.png"), fullPage: true }).catch(() => {});

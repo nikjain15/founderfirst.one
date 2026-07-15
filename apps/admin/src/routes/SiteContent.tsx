@@ -24,7 +24,7 @@ export function SiteContent() {
   const qc = useQueryClient();
   const [slug, setSlug] = useState<string | null>(null);
 
-  const { data: pages = [], isPending } = useQuery({
+  const { data: pages = [], isPending, error: pagesError } = useQuery({
     queryKey: ["content-pages"],
     queryFn: listContentPages,
   });
@@ -57,6 +57,11 @@ export function SiteContent() {
 
       {isPending ? (
         <div className="empty">Loading…</div>
+      ) : pagesError ? (
+        <div className="alert alert-error" style={{ marginTop: 16 }}>
+          <IconAlert size={16} />
+          <span>{(pagesError as Error).message}</span>
+        </div>
       ) : pages.length === 0 ? (
         <div className="alert" style={{ marginTop: 16 }}>
           <IconAlert size={16} />
@@ -79,7 +84,7 @@ export function SiteContent() {
           </button>
         </div>
       )}
-      {pages.length === 0 && (
+      {!pagesError && pages.length === 0 && (
         <button className="btn" style={{ marginTop: 16 }} onClick={addPage} disabled={newPage.isPending}>
           {newPage.isPending ? "Creating…" : "+ New page"}
         </button>

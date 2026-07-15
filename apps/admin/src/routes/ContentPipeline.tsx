@@ -253,7 +253,7 @@ export function ContentPipeline() {
                 )}
 
                 {isRendering && (
-                  <div style={{ margin: "12px 0", border: "1px solid var(--brand)", background: "var(--brand-tint, #e9f5ee)", borderRadius: 10, padding: "12px 14px" }}>
+                  <div style={{ margin: "12px 0", border: "1px solid var(--brand)", background: "var(--brand-tint)", borderRadius: 10, padding: "12px 14px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--fs-data-row)", fontWeight: "var(--fw-semibold)" }}>
                       <span className="spin" style={{ width: 14, height: 14, border: "2px solid var(--brand)", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block", animation: "ffspin 0.8s linear infinite" }} />
                       Rendering audio in Penny's voice…

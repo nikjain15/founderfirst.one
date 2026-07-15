@@ -213,6 +213,24 @@ async function main() {
     await page.screenshot({ path: join(ARTIFACTS, "build.png"), fullPage: true });
     console.log(`Screenshot → ${join(ARTIFACTS, "build.png")}`);
 
+    // 5c. Voice Studio: a failed get_active_voice_profile fetch must surface the
+    // error, not the misleading "No active voice profile." empty-state (same
+    // silent-load-failure class already fixed on DiscordLinks/Experiments/
+    // ContentHome/SiteContent — VOICESTUDIO-ERR-1). Mocked end-to-end (no seed
+    // data needed) via PostgREST RPC route interception.
+    try {
+      await page.route("**/rest/v1/rpc/get_active_voice_profile", (route) =>
+        route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ message: "mocked voice-profile fetch failure" }) }));
+      await page.goto(`${base}/admin/content#voice`, { waitUntil: "networkidle" });
+      const voiceErrBanner = page.locator(".alert.alert-error", { hasText: "mocked voice-profile fetch failure" });
+      await voiceErrBanner.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+      check("Voice Studio surfaces a get_active_voice_profile fetch error (not a silent empty state)", (await voiceErrBanner.count()) > 0);
+      const misleadingEmpty = await page.getByText("No active voice profile.").count();
+      check("Voice Studio does not show the misleading empty state on a fetch error", misleadingEmpty === 0);
+    } finally {
+      await page.unroute("**/rest/v1/rpc/get_active_voice_profile");
+    }
+
     // 6. Capture the behind-auth digest covers (best-effort — never fails the
     // gate). Banner clip matches the public covers (1200×630). Written to both
     // the CI artifact and the public folder (for local authed runs).

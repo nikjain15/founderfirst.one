@@ -17,7 +17,7 @@ import { IconCheck, IconAlert } from "../lib/icons";
  */
 export function VoiceStudio() {
   const qc = useQueryClient();
-  const { data: profile, isPending } = useQuery({
+  const { data: profile, isPending, error: profileError } = useQuery({
     queryKey: ["voiceProfile"],
     queryFn: getActiveVoiceProfile,
   });
@@ -60,6 +60,9 @@ export function VoiceStudio() {
   });
 
   if (isPending) return <div className="empty">Loading voice settings…</div>;
+  if (profileError) return (
+    <div className="alert alert-error"><IconAlert size={16} /> <span>{(profileError as Error).message}</span></div>
+  );
   if (!profile) return <div className="empty">No active voice profile.</div>;
 
   const dirty = profile && (

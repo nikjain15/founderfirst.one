@@ -1252,7 +1252,7 @@ decision-needed: none to draft (Nik picks the direction from it)
 > + builds whichever finding is still genuinely unclaimed.
 
 ## SIG-DIGEST-RLS · Enable RLS on sig_digest_sends (P1-hygiene)
-status: pr:#TBD (loop-orch, 12 Jul) — carded and fixed same session
+status: pr:#340 (loop-orch, 12 Jul) — carded and fixed same session
 context: the 14-Jul audit (#338, supabase section) found `sig_digest_sends`
   (`20260623150000_signals_digest_sends.sql`) is the one table (of 120) missing
   `enable row level security` — grants already lock it to `service_role` (revoke all from

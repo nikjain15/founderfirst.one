@@ -100,13 +100,13 @@ const ogImage = page.seo.ogImage ?? `${site}/hero.jpg`;
       }
 
       /* Signup + Try Penny on dark sections (waitlist, Try Penny) */
-      .dark .signup { border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,0.06); }
+      .dark .signup { border-color: var(--on-dark-28); background: var(--on-dark-6); }
       .dark .signup input { color: var(--white); }
-      .dark .signup input::placeholder { color: rgba(255,255,255,0.55); }
+      .dark .signup input::placeholder { color: var(--on-dark-55); }
       .dark .signup-done { color: var(--brand-soft); }
-      .dark .tp-sub { color: rgba(255,255,255,0.7); }
-      .dark .tp-toggle { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.18); }
-      .dark .tp-pill { color: rgba(255,255,255,0.7); }
+      .dark .tp-sub { color: var(--on-dark-70); }
+      .dark .tp-toggle { background: var(--on-dark-8); border-color: var(--on-dark-18); }
+      .dark .tp-pill { color: var(--on-dark-70); }
       .dark .tp-pill.on { background: var(--white); color: var(--ink); }
 
       /* Try Penny island (global — Astro scoped styles don't reach island DOM) */
@@ -139,7 +139,7 @@ const ogImage = page.seo.ogImage ?? `${site}/hero.jpg`;
       .tp-launch { display: inline-flex; align-items: center; gap: var(--space-2); background: var(--brand); color: var(--white); padding: 0 var(--space-6); min-height: var(--tap-min); border: 0; border-radius: var(--r-pill); font-weight: var(--fw-medium); font-size: var(--fs-data-row); cursor: pointer; }
       .tp-launch:hover { background: var(--brand-hover); }
       .tp-cta-note { font-size: var(--fs-eyebrow); color: var(--ink-4); }
-      .dark .tp-cta-note { color: rgba(255,255,255,0.55); }
+      .dark .tp-cta-note { color: var(--on-dark-55); }
 
       /* Try Penny dev mocks — phone (owner) + browser (CPA). Real demo embeds in prod. */
       .tp-mock { height: 100%; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); background: var(--paper); }

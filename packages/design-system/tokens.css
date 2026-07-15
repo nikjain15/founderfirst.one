@@ -149,6 +149,23 @@
   /* Dimming scrim behind a centered modal / dialog. */
   --scrim: rgba(10, 10, 10, 0.4);
 
+  /* White-on-dark overlay family — borders/fills/text sitting on a dark
+     (.dark section, navy hero) background. Named by their exact alpha so a
+     swap never changes the rendered opacity. Weekly-audit 14-Jul P2: these
+     were previously inline `rgba(255,255,255,x)` literals scattered across
+     apps/web (Base.astro, Section.astro, PennyPodcast.astro, blog/[slug]) —
+     centralize here instead of re-inlining (LEARNINGS rule 13). */
+  --on-dark-6:  rgba(255, 255, 255, 0.06);
+  --on-dark-8:  rgba(255, 255, 255, 0.08);
+  --on-dark-16: rgba(255, 255, 255, 0.16);
+  --on-dark-18: rgba(255, 255, 255, 0.18);
+  --on-dark-28: rgba(255, 255, 255, 0.28);
+  --on-dark-30: rgba(255, 255, 255, 0.3);
+  --on-dark-55: rgba(255, 255, 255, 0.55);
+  --on-dark-60: rgba(255, 255, 255, 0.6);
+  --on-dark-70: rgba(255, 255, 255, 0.7);
+  --on-dark-78: rgba(255, 255, 255, 0.78);
+
   /* -- Structure: borders, layering, focus ---------------------------- */
   --bw-hair:   1px;     /* default hairline border */
   --bw:        1.5px;   /* emphasised / interactive border */

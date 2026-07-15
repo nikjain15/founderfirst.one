@@ -56,15 +56,15 @@ const bars = [26, 44, 62, 40, 78, 54, 92, 48, 70, 34, 84, 58, 100, 52, 74, 42, 8
 <style>
   .pa { width: min(100%, 380px); border-radius: var(--r-card-emph); background: linear-gradient(160deg, var(--brand), var(--brand-strong)); color: var(--white); padding: clamp(22px, 3vw, 30px); box-shadow: var(--shadow-float); display: grid; gap: clamp(18px, 3vw, 26px); }
   .pa-head { display: flex; align-items: center; gap: 12px; }
-  .pa-mark { width: 46px; height: 46px; border-radius: 50%; background: rgba(255, 255, 255, 0.16); display: grid; place-items: center; flex: none; }
+  .pa-mark { width: 46px; height: 46px; border-radius: 50%; background: var(--on-dark-16); display: grid; place-items: center; flex: none; }
   .pa-mark span { font-family: Georgia, serif; font-style: italic; font-weight: var(--fw-bold); font-size: 24px; padding-bottom: 2px; }
   .pa-show { display: grid; gap: 2px; }
   .pa-show .s1 { font-size: var(--fs-eyebrow); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; opacity: 0.82; }
   .pa-show .s2 { font-family: var(--font-display); font-size: 17px; line-height: 1.1; }
   .pa-wave { display: flex; align-items: center; gap: 3px; height: 66px; }
-  .pa-bar { flex: 1; min-width: 2px; padding: 0; border: 0; background: rgba(255, 255, 255, 0.3); border-radius: 999px; cursor: pointer; transition: background 0.12s ease; }
+  .pa-bar { flex: 1; min-width: 2px; padding: 0; border: 0; background: var(--on-dark-30); border-radius: 999px; cursor: pointer; transition: background 0.12s ease; }
   .pa-bar.on { background: var(--white); }
-  .pa-bar:hover { background: rgba(255, 255, 255, 0.6); }
+  .pa-bar:hover { background: var(--on-dark-60); }
   .pa-foot { display: flex; align-items: center; gap: 12px; }
   .pa-play { width: 44px; height: 44px; border-radius: 50%; background: var(--white); color: var(--brand); border: 0; display: grid; place-items: center; font-size: 14px; flex: none; cursor: pointer; transition: transform 0.12s ease; }
   .pa-play:hover { transform: scale(1.06); }

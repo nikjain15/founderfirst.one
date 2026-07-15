@@ -9,6 +9,7 @@
     "build:web": "pnpm --filter @ff/web build",
     "check:css": "tsx scripts/check-css-imports.ts",
     "check:css-vars": "tsx scripts/check-css-vars.ts",
+    "check:white-alpha": "tsx scripts/check-white-alpha.ts",
     "check:app-strings": "tsx scripts/check-app-strings.ts",
     "check:authed-headings": "tsx scripts/check-authed-headings.ts",
     "check:tenant": "tsx scripts/check-tenant-predicate.ts",

@@ -1707,6 +1707,70 @@ export const COPY = {
     backToPenny: "Back to Penny",
     roleStaff: "Platform staff",
   },
+
+  // ── Platform-staff break-glass console (ARCHITECTURE.md §4.2/§11, /staff) ───
+  // Read-only cross-tenant directory + time-boxed audited access to a tenant's
+  // books. A third lens, distinct from the IA-3 `console` module above.
+  staff: {
+    title: "Platform console",
+    chip: "Staff · break-glass audited",
+    directory: {
+      lead:
+        "Every organization on the platform. Open one to view its books read-only, behind a time-boxed, audited break-glass window — never silent, always logged.",
+      loading: "Loading organizations…",
+      error: "Couldn't load the directory.",
+      count: (n: number) => `${n} ${n === 1 ? "organization" : "organizations"}`,
+      searchPlaceholder: "Search organizations…",
+      searchAria: "Search organizations",
+      empty: "No organizations",
+      emptyBody: "Nothing matches.",
+      orgMeta: (type: string, entries: number) => `${type} · ${entries} ${entries === 1 ? "entry" : "entries"}`,
+      breakGlassOpen: "break-glass open",
+      open: "Open →",
+    },
+    detail: {
+      back: "← All organizations",
+    },
+    banner: {
+      active: "Break-glass active",
+      expires: (mins: number) => ` · expires in ~${mins} min · this access is logged`,
+      closing: "Closing…",
+      closeNow: "Close now",
+    },
+    openForm: {
+      heading: "View this organization's books",
+      body: (orgName: string) =>
+        `Access to a tenant's books is break-glass: time-boxed and recorded to the audit log. Give a reason and open a window to view ${orgName}'s books read-only.`,
+      reasonLabel: "Reason",
+      reasonPlaceholder: "e.g. investigating support ticket #1234",
+      windowLabel: "Window",
+      window15: "15 min",
+      window60: "60 min",
+      window240: "4 hours",
+      opening: "Opening…",
+      submit: "Open break-glass",
+    },
+    books: {
+      loading: "Loading the books…",
+      error: "Couldn't load the books.",
+      summary: (netIncome: string, entryCount: number) => ({
+        before: "Net income ",
+        netIncome,
+        mid: " across ",
+        count: entryCount,
+        after: ` ${entryCount === 1 ? "entry" : "entries"}. Read-only — close break-glass when you're done.`,
+      }),
+      unbalanced: "These books don't currently balance — debits ≠ credits.",
+      unbalancedBanner: (debit: string, credit: string) =>
+        `Books don't tie — debits ${debit} ≠ credits ${credit}.`,
+      kpiAccounts: "Accounts",
+      kpiEntries: "Entries",
+      kpiCash: "Cash & assets",
+      kpiNetIncome: "Net income",
+      activityHeading: "Latest activity",
+      activityEmpty: "No entries yet.",
+    },
+  },
 } as const;
 
 export type Copy = typeof COPY;

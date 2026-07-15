@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import AccountMenu from "../components/AccountMenu";
 import { SITE } from "@ff/site";
+import { COPY } from "../copy";
 import {
   useStaffOrgs, useStaffBreakGlass, useStaffAccounts, useStaffEntries,
   useOpenBreakGlass, useCloseBreakGlass, useStaffRefresh,
@@ -33,9 +34,9 @@ export default function StaffHome({ isStaff }: { isStaff: boolean }) {
         <StaffBar email={session?.user.email} signOut={signOut} />
         <main className="workspace">
           <div className="ledger-empty">
-            <h3>Staff only</h3>
-            <p className="muted">This console is for FounderFirst platform staff.</p>
-            <Link className="ghost" to="/">← Back to Penny</Link>
+            <h3>{COPY.console.denied.title}</h3>
+            <p className="muted">{COPY.console.denied.body}</p>
+            <Link className="ghost" to="/">{COPY.console.denied.back}</Link>
           </div>
         </main>
       </div>
@@ -52,8 +53,8 @@ export default function StaffHome({ isStaff }: { isStaff: boolean }) {
         <section className="lens staff">
           <header className="ledger-head">
             <p className="eyebrow lens-eyebrow">{SITE.company}</p>
-            <h1 className="page-title">Platform console</h1>
-            <span className="readonly-chip staff-chip">Staff · break-glass audited</span>
+            <h1 className="page-title">{COPY.staff.title}</h1>
+            <span className="readonly-chip staff-chip">{COPY.staff.chip}</span>
           </header>
 
           {selected ? (
@@ -81,18 +82,18 @@ function StaffBar({ email, signOut }: { email?: string; signOut: () => Promise<v
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <Link className="brand" to="/" title={`Penny by ${SITE.company}`}>
+        <Link className="brand" to="/" title={COPY.nav.brandTitle(SITE.company)}>
           <span className="p-mark p-mark-sm" aria-hidden="true">P</span>
-          Penny
+          {COPY.nav.penny}
         </Link>
-        <span className="role-pill role-staff">Platform staff</span>
+        <span className="role-pill role-staff">{COPY.console.roleStaff}</span>
         <span className="spacer" />
         <AccountMenu email={email}>
           <div className="acct-sep" />
-          <Link className="acct-item" role="menuitem" to="/">Back to Penny</Link>
+          <Link className="acct-item" role="menuitem" to="/">{COPY.console.backToPenny}</Link>
           <div className="acct-sep" />
           <button className="acct-item acct-signout" role="menuitem" onClick={() => void signOut()}>
-            Sign out
+            {COPY.nav.signOut}
           </button>
         </AccountMenu>
       </div>
@@ -114,8 +115,8 @@ function Directory({
     return m;
   }, [windows]);
 
-  if (loading) return <p className="muted">Loading organizations…</p>;
-  if (error) return <p className="error">Couldn't load the directory.</p>;
+  if (loading) return <p className="muted">{COPY.staff.directory.loading}</p>;
+  if (error) return <p className="error">{COPY.staff.directory.error}</p>;
 
   const filtered = q.trim()
     ? orgs.filter((o) => o.name.toLowerCase().includes(q.trim().toLowerCase()))
@@ -124,18 +125,17 @@ function Directory({
   return (
     <div className="staff-directory">
       <p className="muted sm staff-lead">
-        Every organization on the platform. Open one to view its books read-only, behind
-        a time-boxed, audited break-glass window — never silent, always logged.
+        {COPY.staff.directory.lead}
       </p>
       <div className="panel-toolbar">
-        <span className="muted">{orgs.length} organizations</span>
+        <span className="muted">{COPY.staff.directory.count(orgs.length)}</span>
         <input
           className="staff-search" value={q} onChange={(e) => setQ(e.target.value)}
-          placeholder="Search organizations…" aria-label="Search organizations"
+          placeholder={COPY.staff.directory.searchPlaceholder} aria-label={COPY.staff.directory.searchAria}
         />
       </div>
       {filtered.length === 0 ? (
-        <div className="ledger-empty"><h3>No organizations</h3><p className="muted">Nothing matches.</p></div>
+        <div className="ledger-empty"><h3>{COPY.staff.directory.empty}</h3><p className="muted">{COPY.staff.directory.emptyBody}</p></div>
       ) : (
         <ul className="staff-org-list">
           {filtered.map((o) => {
@@ -144,10 +144,10 @@ function Directory({
               <li key={o.id} className="staff-org-row">
                 <button className="staff-org-main" onClick={() => onOpen(o)}>
                   <span className="so-name">{o.name}</span>
-                  <span className="so-meta">{o.type} · {o.entry_count} entries</span>
+                  <span className="so-meta">{COPY.staff.directory.orgMeta(o.type, o.entry_count)}</span>
                 </button>
-                {w && <span className="status-pill s-posted">break-glass open</span>}
-                <button className="ghost sm" onClick={() => onOpen(o)}>Open →</button>
+                {w && <span className="status-pill s-posted">{COPY.staff.directory.breakGlassOpen}</span>}
+                <button className="ghost sm" onClick={() => onOpen(o)}>{COPY.staff.directory.open}</button>
               </li>
             );
           })}
@@ -169,7 +169,7 @@ function OrgDetail({
   return (
     <div className="staff-detail">
       <div className="panel-toolbar">
-        <button className="ghost sm" onClick={onBack}>← All organizations</button>
+        <button className="ghost sm" onClick={onBack}>{COPY.staff.detail.back}</button>
         <span className="muted">{org.name} · {org.type}</span>
       </div>
 
@@ -198,15 +198,15 @@ function ActiveWindowBanner({ win }: { win: BreakGlassWindow }) {
   return (
     <div className="break-glass-banner">
       <div className="bg-text">
-        <strong>Break-glass active</strong> — {win.reason}
-        <span className="muted"> · expires in ~{minsLeft} min · this access is logged</span>
+        <strong>{COPY.staff.banner.active}</strong> — {win.reason}
+        <span className="muted">{COPY.staff.banner.expires(minsLeft)}</span>
       </div>
       <button
         className="ghost sm danger"
         disabled={close.isPending}
         onClick={async () => { await close.mutateAsync(win.id); refresh(); }}
       >
-        {close.isPending ? "Closing…" : "Close now"}
+        {close.isPending ? COPY.staff.banner.closing : COPY.staff.banner.closeNow}
       </button>
     </div>
   );
@@ -220,10 +220,9 @@ function OpenForm({ org }: { org: StaffOrg }) {
 
   return (
     <div className="break-glass-open">
-      <h3 className="section-h">View this organization's books</h3>
+      <h3 className="section-h">{COPY.staff.openForm.heading}</h3>
       <p className="muted sm">
-        Access to a tenant's books is break-glass: time-boxed and recorded to the audit log.
-        Give a reason and open a window to view {org.name}'s books read-only.
+        {COPY.staff.openForm.body(org.name)}
       </p>
       <form
         className="ledger-form"
@@ -236,25 +235,25 @@ function OpenForm({ org }: { org: StaffOrg }) {
       >
         <div className="form-row">
           <label className="grow">
-            <span>Reason</span>
+            <span>{COPY.staff.openForm.reasonLabel}</span>
             <input
               value={reason} onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. investigating support ticket #1234" required
+              placeholder={COPY.staff.openForm.reasonPlaceholder} required
             />
           </label>
           <label>
-            <span>Window</span>
+            <span>{COPY.staff.openForm.windowLabel}</span>
             <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))}>
-              <option value={15}>15 min</option>
-              <option value={60}>60 min</option>
-              <option value={240}>4 hours</option>
+              <option value={15}>{COPY.staff.openForm.window15}</option>
+              <option value={60}>{COPY.staff.openForm.window60}</option>
+              <option value={240}>{COPY.staff.openForm.window240}</option>
             </select>
           </label>
         </div>
         {open.isError && <p className="error sm">{(open.error as Error).message}</p>}
         <div className="form-actions">
           <button type="submit" disabled={open.isPending || !reason.trim()}>
-            {open.isPending ? "Opening…" : "Open break-glass"}
+            {open.isPending ? COPY.staff.openForm.opening : COPY.staff.openForm.submit}
           </button>
         </div>
       </form>
@@ -272,31 +271,32 @@ function ReadOnlyBooks({
   const tb = useMemo(() => trialBalance(entries), [entries]);
   const recent = entries.slice(0, 8);
 
-  if (loading) return <p className="muted">Loading the books…</p>;
-  if (error) return <p className="error">Couldn't load the books.</p>;
+  if (loading) return <p className="muted">{COPY.staff.books.loading}</p>;
+  if (error) return <p className="error">{COPY.staff.books.error}</p>;
+
+  const summary = COPY.staff.books.summary(formatMoney(pnl.netIncome), entries.length);
 
   return (
     <div className="staff-books">
       {tb.balanced ? (
         <Takeaway tone="neutral">
-          Net income <strong>{formatMoney(pnl.netIncome)}</strong> across <strong>{entries.length}</strong>{" "}
-          {entries.length === 1 ? "entry" : "entries"}. Read-only — close break-glass when you're done.
+          {summary.before}<strong>{summary.netIncome}</strong>{summary.mid}<strong>{summary.count}</strong>{summary.after}
         </Takeaway>
       ) : (
-        <Takeaway tone="watch">These books don't currently balance — debits ≠ credits.</Takeaway>
+        <Takeaway tone="watch">{COPY.staff.books.unbalanced}</Takeaway>
       )}
       <div className="kpis">
-        <Kpi label="Accounts" value={String(accountCount)} />
-        <Kpi label="Entries" value={String(entries.length)} />
-        <Kpi label="Cash & assets" value={formatMoneyShort(bs.totalAssets)} />
-        <Kpi label="Net income" value={formatMoneyShort(pnl.netIncome)} tone={pnl.netIncome >= 0 ? "good" : "bad"} />
+        <Kpi label={COPY.staff.books.kpiAccounts} value={String(accountCount)} />
+        <Kpi label={COPY.staff.books.kpiEntries} value={String(entries.length)} />
+        <Kpi label={COPY.staff.books.kpiCash} value={formatMoneyShort(bs.totalAssets)} />
+        <Kpi label={COPY.staff.books.kpiNetIncome} value={formatMoneyShort(pnl.netIncome)} tone={pnl.netIncome >= 0 ? "good" : "bad"} />
       </div>
       {!tb.balanced && (
-        <p className="warn-banner">Books don't tie — debits {formatMoney(tb.totalDebit)} ≠ credits {formatMoney(tb.totalCredit)}.</p>
+        <p className="warn-banner">{COPY.staff.books.unbalancedBanner(formatMoney(tb.totalDebit), formatMoney(tb.totalCredit))}</p>
       )}
-      <h3 className="section-h">Latest activity</h3>
+      <h3 className="section-h">{COPY.staff.books.activityHeading}</h3>
       {recent.length === 0 ? (
-        <p className="muted">No entries yet.</p>
+        <p className="muted">{COPY.staff.books.activityEmpty}</p>
       ) : (
         <ul className="activity">
           {recent.map((e) => (

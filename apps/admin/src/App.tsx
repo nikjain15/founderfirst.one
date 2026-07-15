@@ -260,6 +260,8 @@ export function App() {
               path="/admins"
               element={<RequireAuth signedIn={signedIn}><Admins currentEmail={session?.user.email ?? ""} /></RequireAuth>}
             />
+            {/* Unknown URL — land somewhere real instead of an empty <main> (ADMIN-P2-4). */}
+            <Route path="*" element={<Navigate to="/support" replace />} />
           </Routes>
         </Suspense>
         </RouteErrorBoundary>

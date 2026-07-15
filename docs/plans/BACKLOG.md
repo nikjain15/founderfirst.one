@@ -1239,3 +1239,52 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## ADMIN-P2-4 · Catch-all route + Site-content silent load-failure + dead inline-hex token (P2)
+status: pr:#TBD (loop-orch, 15 Jul) — carded and fixed same session; no dedicated card existed
+  before this. This iteration re-verified `docs/plans/BACKLOG.md`'s own candidates
+  (SEC-2-KEYS, CONN-1, PENNY-UX-9) were all either an explicit Nik/infra human step or blocked
+  on other cards, and cross-referenced `gh pr list --state open` (30 open loop PRs, none merged
+  yet) against every `claimed:loop-insession-5jul` card — all six had already shipped a GREEN PR
+  days ago (same conclusion PR #279/#309/#321/#323/#325/#328/#329/#331 reached on prior
+  iterations — `docs/plans/BACKLOG.md` on `main` lags the real repo state). Fell back to the
+  established precedent of self-carding untouched findings from the latest weekly audit
+  (PR #338, "Weekly audit — 2026-07-14", report-only by charter, still open).
+blocked-by: — (three small, file-disjoint apps/admin fixes)
+context: PR #338 found 0 P0 / 9 P1 / 24 P2. Every P1 already has an open, unmerged loop PR
+  covering it (#327 bubble stale bundle, #311 admin --accent*/--warn/--text-warning tokens,
+  #317 llms.txt + legal-page canonical, #315 SignupForm exclamation, #313 1099-NEC table-wrap,
+  #340 sig_digest_sends RLS, #339 personal-email/Gmail cleanup) — confirmed via `gh pr view
+  <n> --json files` on each, not just the branch name. Of the 24 P2s, these three had no open
+  PR touching their files:
+  1. `apps/admin/src/App.tsx` — `<Routes>` has no `path="*"`; an unknown URL under `/admin/`
+     rendered an empty `<main>` instead of landing anywhere real.
+  2. `apps/admin/src/routes/SiteContent.tsx` — `useQuery({queryKey:["content-pages"],...})`
+     never read `.error`; `pages` defaults to `[]` on a fetch failure, so a Supabase blip
+     rendered the *same* "No content pages yet — once the migration is applied…" empty-state
+     copy as a genuinely-empty table, telling the admin the wrong thing (same failure class
+     ADMIN-P2-1/2/3, pr:#323/#325/#331, already fixed on DiscordLinks/Experiments/ContentHome —
+     this is the fourth, still-open instance the 14-Jul audit re-found).
+  3. `apps/admin/src/routes/ContentPipeline.tsx:256` — `var(--brand-tint, #e9f5ee)` — the
+     fallback hex is an exact duplicate of the token's own value in tokens.css (verified:
+     `--brand-tint: #e9f5ee`), so it's dead-but-forbidden inline hex (centralization gate).
+goal: fix all three. (1) add a catch-all `<Route path="*" element={<Navigate to="/support"
+  replace />} />` after the last route (mirrors the existing `/` → `/support` redirect).
+  (2) destructure `error: pagesError` from the `content-pages` query; render it via the file's
+  own `.alert.alert-error` class (already used lower in the same file for save/publish errors)
+  before falling through to the empty-state branch; gate the empty-state's own trailing
+  "+ New page" button on `!pagesError` too (it rendered under `pages.length === 0` regardless
+  of cause). (3) drop the redundant hex fallback — `var(--brand-tint)` alone (the token always
+  resolves).
+centralization: no new tokens/copy invented; reuses the file's own existing `.alert.alert-error`
+  class and the already-defined `--brand-tint` token.
+coverage delta: `tools/admin-e2e/run.mjs` — two new mocked scenarios in the existing authed
+  admin-e2e CI job: (a) navigate to an unknown `/admin/*` URL, assert it lands on the real authed
+  nav, not a blank page; (b) PostgREST RPC route interception forces `rest/v1/rpc/
+  list_content_pages` to 500, navigates to `/admin/site-content`, asserts the mocked error
+  message renders AND the "No content pages yet" empty-state copy does NOT (the exact
+  misdirection this fixes). `pnpm check:css-vars` / `check:css` re-verified clean (no
+  regression from the fallback removal).
+workflow: internal admin · "an admin fetch failed, or I mistyped a URL" · Site content shows
+  the real fetch error instead of implying "run the content migration"; any `/admin/*` typo
+  lands on a working page instead of a blank one.

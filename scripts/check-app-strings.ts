@@ -19,9 +19,7 @@
  *     and other technical attributes.
  *   - Single-token attribute strings with no space (e.g. aria-label="Account")
  *     are still flagged; short technical tokens are rare and easily catalogued.
- *   - Anything in src/copy/** (the catalog itself), test files, and src/staff/**
- *     (the internal platform-staff console — not an owner/CPA surface; tracked
- *     separately, see the PR body).
+ *   - Anything in src/copy/** (the catalog itself) and test files.
  *
  * Run: `pnpm check:app-strings` (or `tsx scripts/check-app-strings.ts`).
  */
@@ -34,7 +32,7 @@ const ROOT = resolve(__dirname, "..");
 const APP_SRC = resolve(ROOT, "apps/app/src");
 
 // Paths (relative to apps/app/src) that are exempt from the gate.
-const EXCLUDE_PREFIXES = ["copy/", "staff/"];
+const EXCLUDE_PREFIXES = ["copy/"];
 const EXCLUDE_SUFFIXES = [".test.ts", ".test.tsx", ".d.ts"];
 
 // Human-facing attributes whose string literals are copy.

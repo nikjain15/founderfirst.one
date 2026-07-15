@@ -421,6 +421,31 @@ scope note: `set_manual_fx_rate` is admin-gated and callable today (admin sessio
   admin-console FORM yet — disclosed, not silently dropped; building one is new admin-console surface,
   out of scope for this card.
 
+## PENNY-STAFF-COPY-1 · Centralize the platform-staff console's copy (14-Jul weekly audit)
+status: pr:#TBD (loop-orch, 15 Jul) — carded and fixed same session
+context: the 14-Jul weekly audit (PR #338, apps/app surface) flagged
+  `apps/app/src/staff/StaffHome.tsx` as bypassing the CENTRAL-1 copy centralization gate —
+  `scripts/check-app-strings.ts` deliberately exempted `src/staff/**` ("tracked separately")
+  while every other apps/app component routes user-facing text through `copy/strings.ts`
+  (COPY). Cross-checked against all 37 other open loop PRs at pick time — none touch
+  `staff/StaffHome.tsx` or the gate script, so this was clear to self-card and fix in one PR.
+lane: apps/app (StaffHome.tsx + copy/strings.ts) + scripts (gate script) — no file overlap
+  with any other open PR.
+goal: move every user-facing string in StaffHome.tsx (the break-glass platform-staff
+  console) into a new `COPY.staff` section of `apps/app/src/copy/strings.ts`, reusing the
+  existing `COPY.console.denied` / `COPY.console.roleStaff` / `COPY.console.backToPenny` /
+  `COPY.nav.penny` / `COPY.nav.brandTitle` / `COPY.nav.signOut` keys where the copy is
+  literally identical to the IA-3 admin-console module (no duplicate literals). Then DROP
+  the `staff/` exemption from `scripts/check-app-strings.ts` (EXCLUDE_PREFIXES) so the gate
+  covers the file going forward — closing the audit gap for good, not just today.
+centralization: zero user-facing string literals remain in `apps/app/src/staff/**`; the
+  gate (`pnpm check:app-strings`) now scans it like every other component.
+coverage delta: extends `apps/app/src/copy/gate.test.ts` with a permanent regression test
+  that reads the real `StaffHome.tsx` off disk and asserts `scanSource()` returns zero
+  violations — locks the fix so the exemption (or a new literal) can't silently return.
+  Full apps/app vitest suite (497 tests) + `pnpm check:app-strings` verified green locally
+  before opening the PR.
+
 ## IQ-1-CLEANUP · Null legacy plaintext QBO tokens (post-verify) — UNBLOCKED
 status: claimed:loop-insession-5jul (building)
 note: UNBLOCKED 5-Jul — the pgcrypto encrypt→decrypt roundtrip was PROVEN in PROD with the real

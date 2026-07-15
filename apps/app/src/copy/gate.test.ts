@@ -8,9 +8,13 @@
  * slip copy past it (multi-line JSX text, single-quoted attributes) MUST be
  * caught, and real code (TS generics, JSX expressions, className) MUST NOT be.
  */
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { scanSource } from "../../../../scripts/check-app-strings";
 
+const HERE = dirname(fileURLToPath(import.meta.url));
 const whys = (src: string) => scanSource(src).map((v) => v.why);
 const texts = (src: string) => scanSource(src).map((v) => v.text);
 
@@ -50,5 +54,10 @@ describe("check-app-strings gate soundness (CENTRAL-1)", () => {
   it("does NOT flag JSX expressions or technical attributes", () => {
     expect(scanSource('<span className="confidence">{pct}%</span>')).toEqual([]);
     expect(scanSource("<div>{n > 0 ? a : b}</div>")).toEqual([]);
+  });
+
+  it("covers src/staff/** — the platform break-glass console has NO exemption (PENNY-STAFF-COPY-1)", () => {
+    const staffHome = readFileSync(resolve(HERE, "../staff/StaffHome.tsx"), "utf8");
+    expect(scanSource(staffHome)).toEqual([]);
   });
 });

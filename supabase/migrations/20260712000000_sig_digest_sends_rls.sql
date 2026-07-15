@@ -1,0 +1,21 @@
+-- =============================================================================
+-- FounderFirst — RLS hygiene: enable RLS on sig_digest_sends
+-- =============================================================================
+--
+-- 14-Jul weekly audit (docs/AUDIT.md, supabase section): sig_digest_sends was
+-- created (20260623150000_signals_digest_sends.sql) with `revoke all ... from
+-- anon, authenticated` + `grant all ... to service_role` but never had
+-- `enable row level security` run on it — the one table out of 120 missing it.
+-- Not exploitable today (PostgREST/anon/authenticated already have zero grants,
+-- so there is no path to read/write it without RLS), but every other org-scoped
+-- and service-only table in the schema has RLS on for defense-in-depth and
+-- parity (e.g. sig_keywords/sig_sources/sig_settings — see
+-- 20260622100000_signals.sql, 20260622160000_signals_scoring_config.sql). This
+-- closes that one gap. No policy is added, matching the sibling sig_* tables:
+-- RLS-enabled + policy-less is deny-all-by-default for every role except the
+-- table owner and service_role (which bypasses RLS in Supabase).
+--
+-- Safe to re-run.
+-- =============================================================================
+
+alter table sig_digest_sends enable row level security;

@@ -7,7 +7,7 @@ import {
   KOKORO_VOICES,
   type VoiceSynthSettings,
 } from "../lib/supabase";
-import { IconCheck, IconAlert } from "../lib/icons";
+import { IconCheck, IconAlert, IconPlay } from "../lib/icons";
 
 /**
  * Voice Studio — Penny's SPOKEN voice (the podcast/audio voice), fully tunable
@@ -163,7 +163,13 @@ export function VoiceStudio() {
 
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
         <button className="btn" disabled={previewMut.isPending} onClick={() => previewMut.mutate()}>
-          {previewMut.isPending ? "Rendering…" : "▶ Preview"}
+          {previewMut.isPending ? (
+            "Rendering…"
+          ) : (
+            <>
+              <IconPlay size={12} /> Preview
+            </>
+          )}
         </button>
         <button className="btn primary" disabled={!dirty || saveMut.isPending} onClick={() => saveMut.mutate()}>
           {saveMut.isPending ? "Saving…" : "Save voice settings"}

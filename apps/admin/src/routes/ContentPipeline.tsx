@@ -11,7 +11,7 @@ import {
   type ContentPipelineRow,
   type ContentStatus,
 } from "../lib/supabase";
-import { IconAlert, IconCheck } from "../lib/icons";
+import { IconAlert, IconCheck, IconVolume } from "../lib/icons";
 import { ContentSubnav } from "./ContentSubnav";
 
 /**
@@ -203,7 +203,11 @@ export function ContentPipeline() {
                           <div style={{ fontSize: "var(--fs-eyebrow)", color: "var(--ink-3)", marginTop: 3, display: "flex", gap: 6, flexWrap: "wrap" }}>
                             <span>{i.source}</span>
                             <span>· {new Date(i.updated_at).toLocaleDateString()}</span>
-                            {i.has_audio && <span>· 🔊 audio</span>}
+                            {i.has_audio && (
+                              <span>
+                                · <IconVolume size={12} /> audio
+                              </span>
+                            )}
                             {i.published_ref && <span>· published</span>}
                           </div>
                         </button>

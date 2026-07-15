@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { getTicket, replyToTicket, getFeedbackForTicket, setTicketTopic, logAudit, type TicketFeedback } from "../lib/supabase";
-import { IconArrowLeft, IconSend, IconAlert, channelIcon } from "../lib/icons";
+import { IconArrowLeft, IconSend, IconAlert, IconThumbsUp, IconThumbsDown, channelIcon } from "../lib/icons";
 import { slaForTicket, slaLabel } from "../lib/sla";
 import { TOPICS } from "../lib/topics";
 
@@ -134,7 +134,13 @@ export function TicketDetail() {
 
       {feedback && (
         <div className={`feedback-strip ${feedback.rating}`}>
-          <span className="feedback-rating">{feedback.rating === "up" ? "👍" : "👎"}</span>
+          <span className="feedback-rating">
+            {feedback.rating === "up" ? (
+              <IconThumbsUp size={14} aria-label="thumbs up" />
+            ) : (
+              <IconThumbsDown size={14} aria-label="thumbs down" />
+            )}
+          </span>
           <div>
             <div className="feedback-strip-label">
               User rated this {feedback.rating === "up" ? "helpful" : "not helpful"} · {new Date(feedback.created_at).toLocaleDateString()}

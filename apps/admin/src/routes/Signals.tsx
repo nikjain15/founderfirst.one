@@ -38,7 +38,7 @@ import {
   type SigIcpExampleRow,
   type SigSourceRow,
 } from "../lib/supabase";
-import { IconCheck, IconClose, IconExternalLink, IconSettings } from "../lib/icons";
+import { IconCheck, IconClose, IconExternalLink, IconSettings, IconLightbulb } from "../lib/icons";
 
 // The four views aren't peers — they're a pipeline. We render them AS the
 // pipeline (Sources → Feed → ⚙ Scoring → Leads) so the nav itself teaches the
@@ -784,7 +784,9 @@ function OptimizerPanel() {
       </p>
 
       {report.threshold_suggestions.length > 0 && report.threshold_suggestions.map((t, i) => (
-        <p key={i} className="sig-note">💡 {t}</p>
+        <p key={i} className="sig-note">
+          <IconLightbulb size={14} /> {t}
+        </p>
       ))}
 
       {report.pain_themes.length > 0 && (

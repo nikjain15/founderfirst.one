@@ -22,6 +22,7 @@ import {
   relativeAge,
   type LoopRun,
 } from "../lib/loopStatus";
+import type { ReactNode } from "react";
 import { IconAlert, IconExternalLink } from "../lib/icons";
 
 const POLL_MS = 60_000;
@@ -113,7 +114,15 @@ export function Build() {
             </div>
             <div className="build-status-grid">
               <StatusTile label="Running" count={part.nowRunning.length} tone="live" />
-              <StatusTile label="⚠ Dead" count={part.dead.length} tone="dead" />
+              <StatusTile
+                label={
+                  <>
+                    <IconAlert size={12} /> Dead
+                  </>
+                }
+                count={part.dead.length}
+                tone="dead"
+              />
               <StatusTile label="PR open" count={part.waitingOnNik.filter((r) => r.status === "pr-open").length} tone="warn" />
               <StatusTile label="Blocked" count={part.waitingOnNik.filter((r) => r.status === "blocked").length} tone="warn" />
               <StatusTile label="Done" count={part.done.length} tone="done" />
@@ -204,7 +213,13 @@ function RunningCard({ run, live }: { run: LoopRun; live: boolean }) {
       <div className="build-card-head">
         <span className="build-card-card">{run.card ?? run.session_tag}</span>
         <span className={`build-pill ${live ? "live" : "dead"}`}>
-          {live ? "● live" : "⚠ dead"}
+          {live ? (
+            "● live"
+          ) : (
+            <>
+              <IconAlert size={12} /> dead
+            </>
+          )}
         </span>
       </div>
       <p className="build-card-detail">{run.phase ?? "…"}</p>
@@ -217,7 +232,7 @@ function RunningCard({ run, live }: { run: LoopRun; live: boolean }) {
   );
 }
 
-function StatusTile({ label, count, tone }: { label: string; count: number; tone: string }) {
+function StatusTile({ label, count, tone }: { label: ReactNode; count: number; tone: string }) {
   return (
     <div className={`build-tile build-tile-${tone}`}>
       <span className="build-tile-num num">{count}</span>

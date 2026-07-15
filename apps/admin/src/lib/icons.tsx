@@ -147,6 +147,50 @@ export function IconClose(p: IconProps = {}) {
   );
 }
 
+export function IconThumbsUp(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
+      <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+    </svg>
+  );
+}
+
+export function IconThumbsDown(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z" />
+      <path d="M17 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3" />
+    </svg>
+  );
+}
+
+export function IconLightbulb(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <path d="M9 18h6M10 22h4" />
+      <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.05V17h6v-.25c0-.85.4-1.55 1-2.05A7 7 0 0 0 12 2z" />
+    </svg>
+  );
+}
+
+export function IconVolume(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <path d="M11 5 6 9H2v6h4l5 4V5z" />
+      <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+    </svg>
+  );
+}
+
+export function IconPlay(p: IconProps = {}) {
+  return (
+    <svg {...base(p)}>
+      <path d="M5 3l14 9-14 9V3z" />
+    </svg>
+  );
+}
+
 export function channelIcon(channel: string, size = 14) {
   if (channel === "discord") return <IconDiscord size={size} />;
   return <IconGlobe size={size} />;

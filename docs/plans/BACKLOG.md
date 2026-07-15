@@ -554,6 +554,37 @@ coverage delta: extend the PENNY-UX AUDIT ledger rows (per-lens IA + design-conf
   zero unresolved CSS vars, zero bare <h1> on authed pages, no horizontal scroll on the width
   ladder, every tab has real content.
 
+# Weekly audit (PR #338, 14 Jul) follow-up — self-carded (BACKLOG.md lags open PRs)
+> `docs/plans/BACKLOG.md` on `main` had fallen behind ~45 open PRs (see the loop-orch reconciliation
+> precedent on PRs #309/#321/#323/#339/#349). This card is self-carded straight from an untouched
+> PR #338 finding per that same precedent, in the same PR that fixes it.
+
+## COMPOSE-SERVER-TEST-1 · Unit-test compose-server.mjs's request logic
+status: pr:#TBD (loop-orch, 15 Jul) — carded and fixed same session
+blocked-by: — (no other open PR touches tools/signals-worker/compose-server.mjs's request/shaping
+  logic; SIGNALS-SEC-1/#326 only covers the secret-compare timing fix on the same file)
+context: weekly audit PR #338 (`tools/ · apps/demo · cross-cutting` section, P2) — "tools/ has zero
+  tests ... signals-worker/brain.mjs (scoring), optimizer.mjs, compose-server.mjs carry real logic
+  uncovered." SIGNALS-TEST-1/#314 covers brain.mjs+optimizer.mjs; SIGNALS-SEC-1/#326 covers only
+  compose-server.mjs's auth-timing fix — its actual request-validation + response-shaping logic
+  (cleanStr clamping, buildComposeSystem assembly, the /compose /voice-check /insights guards and
+  clamping) was still untested anywhere across the ~45 open loop PRs (verified via a full
+  `gh pr list --state open` file-list cross-reference).
+goal: cover the pure logic compose-server.mjs's three routes rely on. The file has top-level side
+  effects on import (env load, `process.exit(1)` with no secret, `server.listen()`), so — the same
+  choice PR #342 made for site-bubble's discord.ts/compose.ts — the new test mirrors the source
+  functions rather than importing the live file.
+centralization: n/a (test-only change, no behavior/config touched).
+coverage delta: new `tools/signals-worker/tests/compose-server.test.mjs` (Node's built-in
+  `node:test`, matching SIGNALS-TEST-1/SIGNALS-SEC-1's framework choice) — 23 assertions: cleanStr
+  trim/truncate/non-string-safety, buildComposeSystem's voice-preface/persona-fallback/contract
+  assembly, /compose's brief<3-chars guard + weak_draft (empty subject/heading) check, /voice-check's
+  text<10-chars guard + score-clamp/rewrites-cap(12)/deviations-cap(12) shaping, /insights'
+  confidence-enum-default + findings-cap(8) + drop-empty-finding shaping. New scoped CI workflow
+  `.github/workflows/signals-worker-compose-logic-tests.yml` (mirrors #326's per-file-scoped
+  pattern, since the general `signals-worker-tests.yml` from #314 isn't on `main` yet) runs
+  `node --check` + the test file on any touch to compose-server.mjs or the test.
+
 ---
 
 ## LOOP-1 · Build dashboard (/admin → Build tab)

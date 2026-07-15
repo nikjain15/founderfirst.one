@@ -421,26 +421,29 @@ function InvoiceView({
           ) : (lines.data ?? []).length === 0 ? (
             <p className="muted">{V.noLines}</p>
           ) : (
-            <table className="invoice-doc-lines">
-              <thead>
-                <tr>
-                  <th>{V.colDescription}</th>
-                  <th className="num">{V.colQty}</th>
-                  <th className="num">{V.colUnit}</th>
-                  <th className="num">{V.colAmount}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(lines.data ?? []).map((l: InvoiceLine) => (
-                  <tr key={l.id}>
-                    <td>{l.description}</td>
-                    <td className="num">{qty(l.quantity_milli)}</td>
-                    <td className="num">{formatMoney(l.unit_price_minor, cur)}</td>
-                    <td className="num">{formatMoney(l.amount_minor, cur)}</td>
+            // audit0714 — scrollable region must be keyboard-reachable (axe: scrollable-region-focusable)
+            <div className="table-wrap" tabIndex={0} role="region" aria-label={V.linesTableAria}>
+              <table className="invoice-doc-lines">
+                <thead>
+                  <tr>
+                    <th>{V.colDescription}</th>
+                    <th className="num">{V.colQty}</th>
+                    <th className="num">{V.colUnit}</th>
+                    <th className="num">{V.colAmount}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(lines.data ?? []).map((l: InvoiceLine) => (
+                    <tr key={l.id}>
+                      <td>{l.description}</td>
+                      <td className="num">{qty(l.quantity_milli)}</td>
+                      <td className="num">{formatMoney(l.unit_price_minor, cur)}</td>
+                      <td className="num">{formatMoney(l.amount_minor, cur)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
 
           <div className="invoice-doc-totals">

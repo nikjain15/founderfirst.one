@@ -410,6 +410,24 @@ async function verifyConnectionsClusters() {
     await page.waitForTimeout(300);
     if (await page.locator(".invoicing").count().catch(() => 0)) ok("Invoicing opens from its own top-level tab");
     else fail("Invoicing tab did not open the invoicing surface");
+    // audit0714 — the doc-viewer's line-items table must be keyboard-focusable, the same
+    // F5 shape as GL/NEC (weekly audit, 14 Jul: apps/app/src/ledger/Invoicing.tsx:424 had a
+    // bare <table> outside any .table-wrap).
+    const viewBtn = page.locator(".invoicing button", { hasText: "View" });
+    if (await viewBtn.count().catch(() => 0)) {
+      await viewBtn.first().click().catch(() => {});
+      await page.waitForTimeout(300);
+      const hasTable = await page.locator(".invoice-doc-lines").count().catch(() => 0);
+      const hasWrap = await page.locator(".invoice-doc .table-wrap").count().catch(() => 0);
+      const focusable = await page.locator(".invoice-doc .table-wrap[tabindex='0']").count().catch(() => 0);
+      if (hasTable && !hasWrap) fail("Invoicing · document viewer: .invoice-doc-lines is not inside a .table-wrap — F5-shaped regression");
+      else if (hasWrap && !focusable) fail("Invoicing · document viewer: .table-wrap is not keyboard-focusable (no tabindex)");
+      else ok("Invoicing · document viewer: line-items table is wrapped + keyboard-focusable" + (hasTable ? "" : " (no line items — empty state)"));
+      await page.locator(".invoice-doc-toolbar button", { hasText: "Close" }).first().click().catch(() => {});
+      await page.waitForTimeout(200);
+    } else {
+      ok("Invoicing · document viewer: no invoice to view — skipped (empty fixture org)");
+    }
     // Restore Connections for the checks that follow (they assume the chooser).
     const connTab = page.getByRole("tab", { name: "Connections" });
     if (await connTab.count().catch(() => 0)) {

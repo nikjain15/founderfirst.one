@@ -1239,3 +1239,46 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## INVOICING-DOCLINES-TABLEWRAP-1 · Invoice document line-items table not wrapped in .table-wrap (P2)
+status: pr:#TBD (loop-orch, 15 Jul) — carded and fixed same session; no dedicated card existed
+  before this. This iteration re-verified `docs/plans/BACKLOG.md`'s own remaining candidates were
+  already resolved/superseded (same conclusion PR #279/#321/#323/#325/#328/#329/#331/#341/#349
+  reached on prior iterations — `docs/plans/BACKLOG.md` on `main` lags the real repo state; 44
+  open loop PRs await Nik's merge) — then fell back to the established precedent of self-carding
+  an untouched weekly-audit finding (PR #338, "Weekly audit — 2026-07-14", report-only by
+  charter, still open). Cross-referenced every open PR's `gh pr diff --name-only` file list
+  against #338's named findings; the printable-invoice line-items table was the one apps/app
+  finding with no PR touching `Invoicing.tsx`'s doc-viewer table (confirmed `invoice-doc-lines`
+  still bare on `origin/main`, and still bare in the unrelated open `#312`/`#321` Invoicing.tsx
+  diffs too).
+blocked-by: — (self-contained apps/app fix)
+context: PR #338's weekly audit (apps/app § responsive, static/source-reasoned) named
+  `apps/app/src/ledger/Invoicing.tsx:424` — a `<table className="invoice-doc-lines">` rendered
+  bare inside the printable invoice document viewer (`InvoiceView`), unlike the invoices *list*
+  table two components up (`Invoicing.tsx:117`) which already uses `.table-wrap` per
+  PENNY-UX-5/RESPONSIVE.md rule 4. Same shape as the 1099-NEC finding fixed by pr:#313 — an
+  unwrapped table overflows horizontally on the width ladder and (when it is the only reachable
+  scroll region) fails the `scrollable-region-focusable` axe rule.
+goal: wrap the doc-viewer's line-items `<table>` in `<div className="table-wrap" tabIndex={0}
+  role="region" aria-label={V.linesTableAria}>`, mirroring the exact pattern already used for the
+  invoices list table in the same file and the NEC report table (pr:#313). Add the new
+  `viewer.linesTableAria` copy key ("Invoice line items") next to the table's other `viewer.*`
+  strings — no new CSS (`.table-wrap { overflow-x: auto; }` already exists and is generic).
+centralization: reuses the existing `.table-wrap` class + copy-catalog pattern; no new
+  token/CSS/magic string invented.
+coverage delta: `tools/app-e2e/run.mjs` — extends the existing PENNY-UX-10 owner-calm Invoicing
+  walk: after confirming the Invoicing tab opens, clicks the first invoice's "View" button (if
+  any invoice exists for the fixture org) and asserts the doc viewer's `.invoice-doc-lines` table
+  sits inside a keyboard-focusable `.table-wrap` — the same F5-shaped regression net as the
+  existing GL/NEC checks, including their identical empty-state tolerance (no invoice fixture yet
+  → logs a skip, not a failure, same as the NEC "empty state — no table" branch).
+workflow: owner/CPA · "email or print an invoice with several line items" · Invoicing → View → the
+  printable document's line-items table scrolls horizontally on a narrow screen instead of
+  overflowing the page.
+acceptance:
+  - [ ] `invoice-doc-lines` renders inside a `.table-wrap[tabindex="0"][role="region"]`
+  - [ ] `tsc --noEmit` clean; `check:app-strings` clean (no new string literal)
+  - [ ] app-e2e Invoicing walk passes (wrapped+focusable when an invoice exists; honest skip
+        otherwise)
+decision-needed: none

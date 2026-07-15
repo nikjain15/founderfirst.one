@@ -1482,6 +1482,8 @@ export const COPY = {
       noLines: "No line items on this invoice.",
       noEmail: "No email on file",
       terms: "Payment terms",
+      // ── audit0714 · keyboard-accessible scroll region (APPENDED — additive key) ──
+      linesTableAria: "Invoice line items",
     },
     // business profile (Slice C) — the From/branding block on every invoice
     profile: {

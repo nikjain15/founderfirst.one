@@ -51,3 +51,10 @@ jobs:
       # coercion + fallback, threshold banding).
       - name: App unit tests
         run: pnpm --filter @ff/app test
+
+      # 14-Jul weekly-audit P2: apps/web scattered inline rgba(255,255,255,x)
+      # white-on-dark overlay literals across 4 files instead of a shared
+      # token — centralized into --on-dark-* (tokens.css). Guard against the
+      # literal reappearing.
+      - name: Check white-on-dark overlay literals are centralized
+        run: pnpm check:white-alpha

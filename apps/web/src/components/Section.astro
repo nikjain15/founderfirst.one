@@ -279,7 +279,7 @@ const expHeadline: Record<string, string> | undefined = experiment
   .eyebrow { font-size: var(--fs-eyebrow); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--ink-4); font-weight: var(--fw-semibold); }
   .eyebrow.brand { color: var(--brand); }
   .dark { background: var(--dark); color: var(--white); }
-  .dark .muted-light, .dark p { color: rgba(255,255,255,0.7); }
+  .dark .muted-light, .dark p { color: var(--on-dark-70); }
   .dark .feat-t, .dark h2 { color: var(--white); }
   .dark .eyebrow.brand { color: var(--brand-soft); }
 
@@ -294,7 +294,7 @@ const expHeadline: Record<string, string> | undefined = experiment
   .float-card { position: absolute; background: var(--white); border-radius: var(--r-card); padding: var(--space-4); box-shadow: var(--shadow-float); }
   .float-card.today { top: var(--space-6); left: var(--space-6); min-width: 240px; }
   .float-card.profit { bottom: var(--space-6); right: var(--space-6); background: var(--dark); color: var(--white); }
-  .float-card.profit .eyebrow.inv { color: rgba(255,255,255,0.6); }
+  .float-card.profit .eyebrow.inv { color: var(--on-dark-60); }
   .txn { display: flex; justify-content: space-between; align-items: center; padding-block: var(--space-2); border-top: 1px solid var(--line-2); }
   .txn:first-of-type { border-top: 0; }
   .txn span { display: block; font-size: var(--fs-tiny); color: var(--ink-4); }
@@ -403,5 +403,5 @@ const expHeadline: Record<string, string> | undefined = experiment
   /* About — company story (dark band) */
   .about { max-width: 720px; }
   .about-body { margin-top: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
-  .about-body p { font-size: var(--fs-body); line-height: 1.65; color: rgba(255,255,255,0.78); }
+  .about-body p { font-size: var(--fs-body); line-height: 1.65; color: var(--on-dark-78); }
 </style>

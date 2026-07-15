@@ -1239,3 +1239,25 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## WEB-WHITE-ALPHA-1 · Centralize white-on-dark overlay literals (P2, self-carded)
+status: pr:#TBD (loop-orch, 15 Jul) — carded and fixed same session
+goal: 14-Jul weekly audit (PR #338, design_system dimension) found ~13 inline `rgba(255,255,255,x)`
+  literals across apps/web (Base.astro, Section.astro, PennyPodcast.astro, blog/[slug].astro) doing
+  the same job — a translucent white border/fill/text on a `.dark` section or navy hero — with no
+  shared token (LEARNINGS rule 13). Cross-checked against all ~35 open loop PRs' file lists first:
+  no open PR touches Base.astro or Section.astro; the two PRs that touch PennyPodcast.astro (#337)
+  and blog/[slug].astro (#335) fix an unrelated font-family/font-size literal, not this rgba family.
+spec: add a `--on-dark-*` token family to packages/design-system/tokens.css (named by exact alpha —
+  `--on-dark-6` … `--on-dark-78` — so no rendered value changes), swap all 13 literal call sites to
+  the matching token, and add `scripts/check-white-alpha.ts` (+ `pnpm check:white-alpha`, wired into
+  `.github/workflows/centralization.yml`) so a re-inlined `rgba(255,255,255,x)` in apps/web fails CI —
+  same silent-drift-guard shape as `check:css-vars`/`check:site-url`.
+acceptance:
+  - [x] Zero `rgba(255, 255, 255, ...)` literals remain in apps/web/src
+  - [x] Every replacement is byte-for-byte the same alpha (pure token substitution, no visual diff)
+  - [x] CI guard added and green on this PR (fails if the pattern recurs)
+touches: packages/design-system/tokens.css · apps/web/src/{layouts/Base.astro,components/Section.astro,
+  components/PennyPodcast.astro,pages/blog/[slug].astro} · scripts/check-white-alpha.ts · package.json ·
+  .github/workflows/centralization.yml
+decision-needed: none

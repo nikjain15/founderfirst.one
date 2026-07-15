@@ -19,6 +19,27 @@
 > corrected to match. Remaining real buildable work: **W5.4-FX** (ECB fx-rate fetcher — schema
 > shipped, no fetcher exists yet) is the top unclaimed, unblocked, non-decision-needed card.
 
+## VOICESTUDIO-A11Y-1 · Voice Studio range sliders lack a tied label (P2, self-carded)
+status: pr:#TBD (loop-orch, 15 Jul) — carded and fixed same session
+context: every card in this file was already merged or an open PR/Nik-human-step (per
+  [[project-backlog-staleness]]); cross-checked the 14-Jul weekly audit PR (#338) against all
+  ~37 open loop PRs' `gh pr diff <n> --name-only` and found this P2 (`apps/admin` design_system
+  dimension) untouched by any of them — #311/#344 both touch `VoiceStudio.tsx` but for unrelated
+  lines (the `--warn` token swap and the ▶ Preview emoji→icon swap respectively), confirmed by
+  reading their actual diff hunks, not just file-list overlap.
+goal: `apps/admin/src/routes/VoiceStudio.tsx`'s four `<input type="range">` controls (blend
+  ratio, pace, pause, warmth) had a `<label>` with no `htmlFor`/`id` tie and no `aria-label` — a
+  screen reader announces them as unnamed sliders. Added `id`/`htmlFor` pairs
+  (`voice-blend-ratio`/`voice-pace`/`voice-pause`/`voice-warmth`) so each slider has a real
+  accessible name; zero visual change.
+coverage delta: no component-test infra exists in `apps/admin` (vitest.config.ts is node-env,
+  `*.test.ts` only — no jsdom/@testing-library/react) so this follows the established pattern
+  for admin a11y fixes (`ADMIN-A11Y-1`/#328) of asserting live in the authed E2E job instead:
+  `tools/admin-e2e/run.mjs` step 5c visits `/admin/content#voice` and asserts each of
+  `voice-pace`/`voice-pause`/`voice-warmth` has a `label[for=...]` in the DOM (`voice-blend-ratio`
+  only renders once a blend voice is picked, so it's excluded rather than forcing that state).
+decision-needed: none — a pure a11y label fix, no behavior change.
+
 ## Wave 2 — COMPLETE + DEPLOYED (3 Jul 2026)
 W2.1/W2.2/W2.3 shipped earlier; **W2.4 (PR #202) + W2.5 (PR #201) merged to main, migrations
 `20260706020000`+`20260706030000` applied to prod (ledger in sync), edge fns `nec-tracking`

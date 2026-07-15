@@ -213,6 +213,20 @@ async function main() {
     await page.screenshot({ path: join(ARTIFACTS, "build.png"), fullPage: true });
     console.log(`Screenshot → ${join(ARTIFACTS, "build.png")}`);
 
+    // 5c. Voice Studio (Content → Voice tab) range sliders are screen-reader
+    // labeled. Weekly audit (PR #338) flagged pace/pause/warmth as unlabeled
+    // <input type="range"> with no id/htmlFor tie to their <label>. Blend ratio
+    // only renders when a blend voice is picked (not the default seeded state),
+    // so it's excluded here rather than clicking a select to force it into view.
+    await page.goto(`${base}/admin/content#voice`, { waitUntil: "networkidle" });
+    await page.getByRole("heading", { name: /^penny\.$/i }).waitFor({ timeout: 15_000 });
+    for (const id of ["voice-pace", "voice-pause", "voice-warmth"]) {
+      const input = page.locator(`#${id}`);
+      await input.waitFor({ state: "attached", timeout: 10_000 });
+      const tiedLabel = await page.locator(`label[for="${id}"]`).count();
+      check(`Voice Studio #${id} slider has a tied <label for>`, tiedLabel > 0);
+    }
+
     // 6. Capture the behind-auth digest covers (best-effort — never fails the
     // gate). Banner clip matches the public covers (1200×630). Written to both
     // the CI artifact and the public folder (for local authed runs).

@@ -113,8 +113,8 @@ export function VoiceStudio() {
           </div>
           {s.voice_b && (
             <div style={field}>
-              <label style={label}>Blend ratio — {blendPct}% primary / {100 - blendPct}% blend</label>
-              <input type="range" min={0} max={100} value={blendPct}
+              <label style={label} htmlFor="voice-blend-ratio">Blend ratio — {blendPct}% primary / {100 - blendPct}% blend</label>
+              <input id="voice-blend-ratio" type="range" min={0} max={100} value={blendPct}
                 onChange={(e) => setS({ ...s, blend: Number(e.target.value) / 100 })} />
             </div>
           )}
@@ -123,14 +123,14 @@ export function VoiceStudio() {
         {/* Pace + delivery */}
         <div>
           <div style={field}>
-            <label style={label}>Pace (speed) — {(s.speed ?? 0.88).toFixed(2)}×</label>
-            <input type="range" min={70} max={130} value={Math.round((s.speed ?? 0.88) * 100)}
+            <label style={label} htmlFor="voice-pace">Pace (speed) — {(s.speed ?? 0.88).toFixed(2)}×</label>
+            <input id="voice-pace" type="range" min={70} max={130} value={Math.round((s.speed ?? 0.88) * 100)}
               onChange={(e) => setS({ ...s, speed: Number(e.target.value) / 100 })} />
             <div style={{ fontSize: "var(--fs-tiny)", color: "var(--ink-3)" }}>Lower = slower, calmer, more deliberate.</div>
           </div>
           <div style={field}>
-            <label style={label}>Pause between sentences — {s.gap_ms ?? 260} ms</label>
-            <input type="range" min={0} max={800} step={20} value={s.gap_ms ?? 260}
+            <label style={label} htmlFor="voice-pause">Pause between sentences — {s.gap_ms ?? 260} ms</label>
+            <input id="voice-pause" type="range" min={0} max={800} step={20} value={s.gap_ms ?? 260}
               onChange={(e) => setS({ ...s, gap_ms: Number(e.target.value) })} />
           </div>
           <div style={field}>
@@ -145,8 +145,8 @@ export function VoiceStudio() {
         {/* Quality + warmth */}
         <div>
           <div style={field}>
-            <label style={label}>Warmth (low-shelf) — {(s.warmth ?? 0) > 0 ? "+" : ""}{s.warmth ?? 0} dB</label>
-            <input type="range" min={-6} max={6} step={1} value={s.warmth ?? 0}
+            <label style={label} htmlFor="voice-warmth">Warmth (low-shelf) — {(s.warmth ?? 0) > 0 ? "+" : ""}{s.warmth ?? 0} dB</label>
+            <input id="voice-warmth" type="range" min={-6} max={6} step={1} value={s.warmth ?? 0}
               onChange={(e) => setS({ ...s, warmth: Number(e.target.value) })} />
             <div style={{ fontSize: "var(--fs-tiny)", color: "var(--ink-3)" }}>Adds low-end warmth to the voice. 0 = off.</div>
           </div>

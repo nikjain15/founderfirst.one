@@ -26,6 +26,15 @@ import { COPY } from "../copy";
 
 const R = COPY.receipts;
 
+function PaperclipIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+    </svg>
+  );
+}
+
 // A photo file → base64 (strip the data-url prefix the edge fn doesn't want).
 function fileToBase64(file: File): Promise<{ b64: string; mime: string }> {
   return new Promise((resolve, reject) => {
@@ -282,7 +291,7 @@ export function ReceiptBadge({
 
   return (
     <span className="receipt-badge">
-      <span className="receipt-chip" title={R.hasReceipt}>📎 {R.hasReceipt}</span>
+      <span className="receipt-chip" title={R.hasReceipt}><PaperclipIcon /> {R.hasReceipt}</span>
       {receipt.storage_path && (
         <button className="ghost sm" onClick={() => void view()}>{R.viewReceipt}</button>
       )}

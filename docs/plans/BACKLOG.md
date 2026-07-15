@@ -1239,3 +1239,45 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## APP-P2-2 · Undefined --r-input CSS var + Receipts emoji-as-icon (P2)
+status: pr:#TBD (loop-orch, 15 Jul) — carded and fixed same session; no dedicated card existed
+  before this. Re-confirmed the standing wall: `origin/main` HEAD still `242bbc7` (#307/#308
+  last merged 7 Jul), no merge landed since, and every remaining `status: unclaimed` line in
+  BACKLOG.md is a Nik/infra human step (SEC-2-KEYS, CONN-1) or already-shipped stale doc
+  (PENNY-UX-9, pr:#251). Fell back to the established precedent (see #279/#309/#321/#323/#328/
+  #329/#331/#335/#337/#339/#340/#341/#342) of self-carding an untouched finding from the latest
+  weekly audit (PR #338, "Weekly audit — 2026-07-14", report-only by charter, still open).
+blocked-by: — (two small, file-disjoint apps/app fixes; verified no open PR touches either file
+  at these lines — `apps/app/src/styles.css` bill-pay/bill-form/bill-line radius rules or
+  `apps/app/src/ledger/Receipts.tsx`)
+context: of PR #338's 24 P2s, cross-referencing `gh pr diff <n> --name-only` for all ~35 open
+  loop PRs left these two genuinely unclaimed (the admin `--accent*`/`--warn`/`--r-input`-shaped
+  Rule-25 findings were otherwise already claimed: admin's `--accent*`/`--warn`/`--text-warning`
+  by #311, the catch-all-route/silent-load/dead-hex admin P2 trio by #341):
+  1. `apps/app/src/styles.css:1902,1915,1919` — `border-radius: var(--r-input, var(--r-card))`.
+     `--r-input` is defined NOWHERE in `packages/design-system/tokens.css` or any apps/app CSS
+     (verified: 0 matches for a `--r-input:` definition) — only the explicit `--r-card` fallback
+     saves it from the Rule-25 silent-failure shape the audit just named.
+  2. `apps/app/src/ledger/Receipts.tsx:285` — `<span className="receipt-chip">📎 {R.hasReceipt}</span>`
+     uses a bare emoji as a UI icon, same shape flagged in admin (Analytics/TicketDetail/Signals/
+     ContentPipeline/VoiceStudio), inconsistent with the app's inline-SVG icon pattern
+     (`components/AccountMenu.tsx`'s `GearIcon`/`ChevronIcon`) and unlabeled for AT.
+goal: (1) since every other call site in the app resolves the `--r-input` fallback to
+  `--r-card` anyway (grep confirms no sibling rule uses a different radius for form inputs),
+  drop the dead alias rather than inventing a new single-use token — replace all three
+  `var(--r-input, var(--r-card))` with `var(--r-card)` directly (zero visual change, removes
+  the undefined reference). (2) replace the bare 📎 with a small inline `PaperclipIcon` SVG
+  (`width/height 12`, `viewBox 0 0 24 24`, `stroke="currentColor"`, `aria-hidden="true"`, mirrors
+  the existing `AccountMenu.tsx` icon-component pattern — apps/app has no shared icons.tsx
+  module, so a local component matches the established convention rather than inventing one).
+centralization: no new token invented (aliasing to an existing one, or removing the alias, per
+  Rule-25's own "reference only defined tokens" fix); no new icon library — reuses the app's
+  existing inline-SVG-per-file pattern.
+coverage delta: `pnpm check:css-vars` re-run clean (1286 var() refs, all resolve, `--r-input` no
+  longer referenced); full app Vitest suite (497 tests) green, including
+  `designConformance.test.ts`; `tsc --noEmit` clean. No new scenario needed — this closes a
+  static CSS/markup finding with no behavioral branch to regression-test beyond the existing
+  gates.
+workflow: n/a (pure design-system hygiene — no user-facing behavior change; the paperclip glyph
+  renders identically in size/position, just as a crisp vector instead of a platform emoji font).

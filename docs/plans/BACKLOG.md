@@ -1239,3 +1239,44 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## ADMIN-DS-ICON-1 · Emoji-as-icon → lib/icons.tsx components (design-system, P2)
+status: pr:#TBD (loop-orch, 15 Jul) — carded and fixed same session; no dedicated card existed
+  before this. `docs/plans/BACKLOG.md` on `main` still lags real repo state (30+ open loop PRs,
+  none merged since #308 on 7 Jul) — re-confirmed the three `status: unclaimed` lines
+  (SEC-2-KEYS, CONN-1, PENNY-UX-9) are all a Nik/infra human step or already shipped, then fell
+  back to the established precedent of self-carding an untouched finding from the latest weekly
+  audit (PR #338, "Weekly audit — 2026-07-14", report-only by charter, still open).
+blocked-by: — (six small, file-disjoint apps/admin visual fixes, one shared file touched:
+  lib/icons.tsx, additive-only)
+context: PR #338's design_system P2 "Emoji glyphs as UI icons" — `Analytics.tsx:120,143` &
+  `TicketDetail.tsx:137` (👍/👎), `Signals.tsx:787` (💡), `ContentPipeline.tsx:206` (🔊),
+  `Build.tsx:116,207` (⚠), `VoiceStudio.tsx:166` (▶). Cross-referenced all ~35 open loop PRs'
+  `gh pr view --json files` — none touch `Analytics.tsx` or `TicketDetail.tsx` at all, and while
+  `Signals.tsx`/`Build.tsx`/`ContentPipeline.tsx`/`VoiceStudio.tsx` are each touched by other
+  open PRs (#323/#328/#333 on Signals, #328 on Build, #341 on ContentPipeline, #311 on
+  VoiceStudio), none of those diffs touch the emoji lines (confirmed via `gh pr diff <n> | grep`
+  for the actual glyphs — zero hits). DS rule = icons via `lib/icons.tsx`; bare emoji also reads
+  poorly to AT (no accessible name on a purely-decorative glyph acting as the only signal).
+goal: add five new monoline SVG icons to `apps/admin/src/lib/icons.tsx` (`IconThumbsUp`,
+  `IconThumbsDown`, `IconLightbulb`, `IconVolume`, `IconPlay` — matching the existing 24×24
+  currentColor-stroke style; `IconAlert` already existed and covers the ⚠ instances) and swap
+  every cited emoji glyph for the matching icon component. Thumbs-up/down in the two feedback-row
+  contexts (no adjacent text stating up/down) get an explicit `aria-label`; the rest are
+  decorative (adjacent text already conveys meaning, so default `aria-hidden`) per the existing
+  `icons.tsx` `base()` convention. `Build.tsx`'s `StatusTile` `label` prop widened from `string`
+  to `ReactNode` to carry an icon+text pair. Left the typographic `●` bullet ("● live" / "●
+  Unsaved changes") untouched — not a pictographic emoji, same carve-out the audit gave `↑ ↓`.
+centralization: no new tokens/copy invented; reuses the existing `lib/icons.tsx` module and its
+  `base()` prop/sizing convention (mirrors how `IconAlert`/`IconCheck`/`IconExternalLink` are
+  already used inline next to text elsewhere in these same files).
+coverage delta: `tsc --noEmit`, `vitest run` (17/17 existing admin tests green — no dedicated
+  emoji-lint test exists, and the audit didn't ask for a CI guard the way the magic-fontsize
+  sweep did, so none was added here), `check:css-vars` / `check:css` clean, `vite build` clean.
+  No visual-regression harness for apps/admin exists to screenshot-diff against; verified by
+  reading the rendered JSX and grepping the six target lines post-fix (zero emoji glyphs remain
+  outside one now-orphaned code *comment* in `Build.tsx:13`, which was never a UI-rendered
+  string and is out of this finding's scope).
+workflow: internal admin · "every glyph a screen reader announces or a design review flags is a
+  real icon, not a platform emoji font fallback" · no persona-facing behavior change, pure
+  visual/a11y parity with the rest of the admin design system.

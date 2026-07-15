@@ -7,7 +7,7 @@ import {
   type FeedbackRow,
 } from "../lib/supabase";
 import { DualBarChart, HBarBreakdown, zipOpensResolves } from "../lib/charts";
-import { IconAlert } from "../lib/icons";
+import { IconAlert, IconThumbsUp, IconThumbsDown } from "../lib/icons";
 import { Takeaway } from "../lib/Takeaway";
 
 export function AnalyticsSupport() {
@@ -117,7 +117,7 @@ export function AnalyticsSupport() {
                         {data.csat_7d.score_pct}%
                       </div>
                       <div className="num" style={{ color: "var(--ink-3)", fontSize: "var(--fs-data-row)" }}>
-                        {data.csat_7d.up} 👍 · {data.csat_7d.down} 👎 · {data.csat_7d.count} total
+                        {data.csat_7d.up} <IconThumbsUp size={14} /> · {data.csat_7d.down} <IconThumbsDown size={14} /> · {data.csat_7d.count} total
                       </div>
                     </div>
                     <div className="hbar-track">
@@ -140,7 +140,13 @@ export function AnalyticsSupport() {
                   <ul className="feedback-list">
                     {feedback.slice(0, 8).map((f) => (
                       <li key={f.id} className={`feedback-row ${f.rating}`}>
-                        <span className="feedback-rating">{f.rating === "up" ? "👍" : "👎"}</span>
+                        <span className="feedback-rating">
+                          {f.rating === "up" ? (
+                            <IconThumbsUp size={14} aria-label="thumbs up" />
+                          ) : (
+                            <IconThumbsDown size={14} aria-label="thumbs down" />
+                          )}
+                        </span>
                         <div className="feedback-body">
                           <div className="feedback-meta">
                             <span>{f.source === "bot_resolved" ? "Penny" : "You"}</span>

@@ -1239,3 +1239,41 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## APP-TOKEN-RINPUT-1 · Undefined `--r-input` CSS token (P2)
+status: pr:#TBD (loop-orch, 15 Jul) — carded and fixed same session; no dedicated card existed
+  before this. This iteration re-verified `docs/plans/BACKLOG.md`'s own remaining candidates were
+  already resolved/superseded/human-steps (same conclusion many prior iterations reached — see
+  the `project-backlog-staleness` operating note; ~45 open loop PRs await Nik's merge) — then
+  fell back to the established precedent of self-carding an untouched weekly-audit finding
+  (PR #338, "Weekly audit — 2026-07-14", report-only by charter, still open). Cross-referenced
+  every open PR's `gh pr diff --name-only` file list (batched fetch across #309-#350) against
+  #338's named findings; every P1 and every clean/testable P2 was already claimed by an open PR
+  EXCEPT this one — confirmed `apps/app/src/styles.css:1902,1915,1919` still reference
+  `var(--r-input, var(--r-card))` with `--r-input` absent from `packages/design-system/tokens.css`
+  on `origin/main`, and no open PR's file list touches `tokens.css` for this token (#348 adds an
+  unrelated `--on-dark-*` family only).
+blocked-by: — (self-contained design-system + apps/app fix)
+context: PR #338's weekly audit (design_system dimension, P2) named
+  `apps/app/src/styles.css:1902,1915,1919` — `border-radius: var(--r-input, var(--r-card))` where
+  `--r-input` "exists nowhere; only the `--r-card` fallback saves it" (LEARNINGS rule 13/25 shape
+  — a `var(--x)` never added to tokens.css). Not silently broken today (the explicit fallback
+  degrades deliberately, per `scripts/check-css-vars.ts`'s own exemption for fallback usages) but
+  a real drift: no other double-`var()` fallback exists anywhere else in `styles.css`, and the
+  intent (a distinct input-radius token) was never actually captured as data.
+goal: add `--r-input: 12px;` to `packages/design-system/tokens.css` (same value as `--r-card`,
+  right after it — byte-for-byte identical rendering, no visual change) and simplify the three
+  `apps/app/src/styles.css` call sites from `var(--r-input, var(--r-card))` to `var(--r-input)`
+  now that it resolves for real.
+centralization: resolves the token in its one source of truth (tokens.css) instead of leaving a
+  bill-pay-only fallback; no new value invented (matches `--r-card`).
+coverage delta: `scripts/check-css-vars.ts` (already wired into the `centralization.yml` CI gate)
+  now finds zero unresolved-without-fallback vars including this one properly defined; re-ran it
+  locally — `check:css-vars OK — 1286 var() references … all resolve (113 known definitions)`.
+acceptance:
+  - [ ] `--r-input` defined in tokens.css; the 3 `styles.css` call sites use it directly (no
+        nested fallback)
+  - [ ] `check:css-vars` / `check:css` / `check:app-strings` clean; `tsc --noEmit` clean;
+        `vitest run` (apps/app) all 497 tests still pass
+  - [ ] No rendered-output change (bill-pay/bill-line inputs keep the same 12px radius)
+decision-needed: none

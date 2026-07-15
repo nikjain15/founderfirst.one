@@ -7,8 +7,8 @@ A floating Penny chat widget for **founderfirst.one**. Backed by Claude (live LL
 | Piece | Path | What it does |
 |---|---|---|
 | Bubble UI | `bubble/` | Self-mounting Preact + htm widget. Bundled to a single ~15KB gzipped JS file. Lives in a Shadow DOM so host-page styles can't reach it. |
-| Worker | `worker/` | Cloudflare Worker. Three endpoints: `GET /bubble.js`, `POST /chat`, `POST /waitlist`. |
-| System prompt | `worker/penny-site-system.md` | The base prompt the model sees on every turn. |
+| Worker | `worker/` | Cloudflare Worker. Endpoints: `GET /health`, `GET /bubble.js`, `POST /chat`, `POST /waitlist`, `GET /connect-discord`, `POST /discord/dm`, `POST /discord/confirm`, `POST /discord/disconnect`, `POST /discord/erase`, `POST /discord/attach-channel`, `POST /compose`, `POST /insights`. |
+| System prompt | `worker/penny-site-system.md` | Baked-in fallback prompt (`worker/src/system-prompt.ts`, generated from this file) used only when the live Supabase-hosted prompt is unreachable. |
 | Site content | `worker/src/site-content.ts` | The bundled ground truth Penny is allowed to speak from. |
 | Schema | `supabase/schema.sql` | Two tables (`penny_site_chats`, `penny_site_leads`) + RLS + 90-day retention helper. |
 | Tests | `tests/` | `node --test` — regex extractors, CTA decision tree, JSON parse shapes. |

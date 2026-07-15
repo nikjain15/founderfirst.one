@@ -1239,3 +1239,50 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## AUDIT0714-P2-2 · /confirmed noindex + stale site-bubble README + Discord/compose auth-gate tests (P2)
+status: pr:#TBD (loop-orch, 15 Jul) — carded and fixed same session; no dedicated card existed
+  before this. Re-confirmed the standing steady-state wall first (`origin/main` HEAD still
+  `242bbc7`, open PRs `#269-#341`, no weekly-audit PR newer than `#338`) — see
+  docs/plans/BACKLOG.md's own PENNY-UX-9/SEC-2-KEYS/CONN-1 lines (the only three `unclaimed`
+  cards left, all a Nik/infra human step or already-shipped stale doc, not buildable). Fell
+  back to the established precedent (ADMIN-P2-4/#341, DOCS-AUDIT-P2-1/#329, PII-1/#339) of
+  self-carding untouched findings from the latest weekly audit (PR #338, "Weekly audit —
+  2026-07-14", report-only by charter, still open).
+blocked-by: — (three small, file-disjoint fixes; none overlap any of the 33 other open loop PRs)
+context: cross-referenced every remaining P2 in PR #338 against `gh pr view <n> --json files`
+  for all open PRs (`#309-#341`) before picking these three — most were already claimed (e.g.
+  the `--r-input` undefined-token P2 in `apps/app/src/styles.css:1902/1915/1919` is NOT built
+  here: PR #324 already touches those exact three lines for a different fix (`--fs-body` →
+  `--fs-input`) and building the border-radius half here too would hand the integrator a
+  guaranteed line-level conflict — left as a genuine disclosed follow-up instead). These three
+  had no open PR touching their files:
+  1. `apps/web/src/pages/confirmed.astro` — the post-signup "you're in" page had no
+     `seo.noindex`, unlike its sibling `extension-privacy.astro` (already `noindex: true`,
+     live on `main`) — a low-value indexable page it shouldn't be.
+  2. `site-bubble/README.md` — the endpoint table said "Three endpoints" (`/bubble.js`,
+     `/chat`, `/waitlist`) but `worker/src/worker.ts:551-598`'s router serves 12 (`/health`,
+     `/connect-discord`, five `/discord/*` routes, `/compose`, `/insights` too); separately
+     the table called `worker/penny-site-system.md` "the base prompt the model sees on every
+     turn" — false, `worker/src/worker.ts:46` reads the LIVE Supabase-hosted prompt first and
+     only falls back to `system-prompt.ts` (generated from the `.md`) if that's unreachable.
+  3. `site-bubble/tests/` had zero coverage for the Discord-bridge Bearer-token gate
+     (`discord.ts:74` `authOk`) or the `x-compose-secret` gate shared by `compose.ts:75` /
+     `insights.ts:123` (`handleEmailCompose`/`handleInsights`) — a regression here (e.g. an
+     accidentally-loosened compare) would ship silently; every other Worker code path
+     (extractors/cta/JSON-shape) already has `node --test` coverage, these two didn't.
+goal: fix all three. (1) add `noindex: true` to `confirmed.astro`'s `seo` block (same field,
+  same pattern as `extension-privacy.astro`). (2) correct the README's endpoint table to the
+  real 12-route list and reword the system-prompt row to "baked-in fallback" (not "the" prompt).
+  (3) add `site-bubble/tests/auth.test.mjs` — mirrors (matching the file's own established
+  "Mirror of site-bubble/worker/src/X.ts" convention, see `cta.test.mjs`) `authOk`'s
+  constant-time Bearer-token compare and the compose-secret 503-not-configured /
+  401-unauthorized / pass gate, asserting: no secret configured → reject; missing/wrong/
+  case-mismatched/same-length-near-miss header → reject; exact match → accept.
+centralization: no new tokens/copy/config — doc accuracy + test coverage only, one existing
+  schema field (`seo.noindex`) reused exactly as its sibling page already uses it.
+coverage delta: 11 new `node --test` cases in `site-bubble/tests/auth.test.mjs` (ran locally,
+  45/45 pass including the 34 pre-existing); README/doc-only changes carry no test surface.
+workflow: n/a — doc-accuracy + SEO-hygiene + test-coverage card, not a user-facing feature;
+  no persona-facing behavior changes.
+decision-needed: none

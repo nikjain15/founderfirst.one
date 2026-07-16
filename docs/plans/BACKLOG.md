@@ -1239,3 +1239,34 @@ spec: docs/plans/ doc, DRAFT header: 3-5 candidate directions (grounded in Signa
   Do NOT commit to scope or build anything.
 acceptance: one concise docs PR; options not decisions.
 decision-needed: none to draft (Nik picks the direction from it)
+
+## BUBBLE-CHAT-TEST-1 · /chat request-validation + corsHeaders test coverage (self-carded, 16 Jul)
+status: pr:#TBD (loop-orch, 16 Jul) — carded and fixed same session
+context: the 14-Jul weekly audit (PR #338, `docs/AUDIT.md`) flagged "no test coverage for Worker
+  auth or `/chat`" (site-bubble P2). PR #342 (AUDIT0714-P2-2, open) closed the auth half
+  (`authOk` + the `x-compose-secret` gate); cross-checked all 48 open loop PRs'
+  `gh pr diff <n> --name-only` — none touch `site-bubble/worker/src/worker.ts`'s `/chat` handler
+  or add a test for it, so the `/chat` half was still a genuine, unclaimed gap.
+goal: close the remaining half — unit-test `handleChat`'s request-validation gate (malformed JSON
+  → `invalid_json`; missing `sessionId`/empty/non-string `message` → `missing_fields`; message
+  over 2000 chars → `message_too_long`) and `corsHeaders`' origin allow-list, since both run on
+  every `/chat` request before any Supabase/Anthropic call and were previously untested. Full
+  end-to-end coverage of `handleChat` (the Anthropic call, the inference-layer judge gate) would
+  require mocking Cloudflare bindings + the model API — out of scope for this card; the
+  validation/CORS boundary is the well-defined, testable slice.
+spec: `site-bubble/tests/chat-validation.test.mjs`, following the same "mirror the source inline,
+  drift-detecting by design" convention already used by `cta.test.mjs` / `extractors.test.mjs` /
+  `json-shape.test.mjs` (no TS build step in `node --test`, so the pure logic is re-implemented
+  verbatim in the test file — if `worker.ts` drifts, the test fails).
+acceptance:
+  - [x] `corsHeaders`: allow-listed origin echoed back; unlisted origin falls back to the first
+        allowed origin (never reflects an arbitrary `Origin`); `null` origin (server-to-server)
+        falls back; response always carries `Vary: Origin`
+  - [x] `/chat` validation: malformed JSON, missing `sessionId`, empty message, non-string
+        message, and >2000-char message all rejected with the correct `{status, error}`; exactly
+        2000 chars and a well-formed body both pass
+  - [x] `cd site-bubble && npm test` green (46/46 — 11 new, 35 pre-existing unchanged)
+decision-needed: none
+touches: site-bubble/tests/chat-validation.test.mjs only (new file, no production code change) —
+  disjoint from every other open site-bubble PR (#310, #327, #342, #347 touch worker.ts/README/
+  bubble source, not this test file)

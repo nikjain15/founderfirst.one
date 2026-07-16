@@ -312,6 +312,31 @@ centralization: log field name/config centralized; no inline literals.
 coverage delta: extend the connector AUDIT row — assert intuit_tid is captured + logged on a QBO
   call (success + error path).
 
+## SIGNALS-EXT-URL-1 · Centralize the signals-extension intake-endpoint literal (P2 data_integrity)
+status: pr:#TBD (loop-orch) — carded and fixed same session
+blocked-by: — (two-file browser extension, no other open lane touches it)
+context: the 14-Jul weekly audit (pr:#338, report-only by charter) found `tools/signals-extension/
+  background.js:14` and `options.js:2` each inline the identical `DEFAULT_ENDPOINT` literal
+  (`…supabase.co/functions/v1/listening-intake`) — not a secret (the intake secret lives in
+  `chrome.storage`), just duplicated. Cross-checked all currently-open loop PRs' file lists
+  (`gh pr list --state open` + `gh pr diff <n> --name-only`) — every other 14-Jul finding is
+  already claimed by an in-flight PR (tokens→#311, bubble bundle→#327 already rebuilt as a side
+  effect of its own sync-assets run, canonical URLs→#317, SignupForm exclamation→#315, NEC
+  table→#313, sig_digest_sends RLS→#340, personal emails→#339, ARCHITECTURE.md apps/marketing→
+  #329, tools/ test coverage→#314+#352); this was the one genuinely unclaimed, non-decision-needed
+  gap.
+goal: one source of truth for the default intake endpoint. No manifest module conversion (neither
+  entry point is an ES module) — added `tools/signals-extension/config.js` as a plain classic
+  script defining `DEFAULT_ENDPOINT`; `background.js` pulls it in via `importScripts("config.js")`
+  (valid for a non-module MV3 service worker); `options.html` loads `config.js` before `options.js`
+  so the global is defined before use. No behavior change — same default value, same runtime
+  semantics, one place to edit it next time.
+centralization: literal now lives in exactly one file (config.js); both consumers reference it,
+  none re-declare it.
+coverage delta: no test harness exists for this extension (no package.json/bundler); verified via
+  `node --check` on all three touched files (syntax) + a manual re-read confirming the literal
+  string appears exactly once (`grep -rn` across tools/signals-extension/).
+
 # PENNY-UX-10 + E-FILE (Nik 5-Jul: declutter + make responsive; card e-file Phase A)
 
 ## PENNY-UX-10 · Owner app declutter + FULL responsive pass → /admin minimalist standard

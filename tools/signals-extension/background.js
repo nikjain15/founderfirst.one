@@ -10,8 +10,7 @@
  * page).
  */
 
-const DEFAULT_ENDPOINT =
-  "https://ejqsfzggyfsjzrcevlnq.supabase.co/functions/v1/listening-intake";
+importScripts("config.js"); // DEFAULT_ENDPOINT — shared with options.js, see config.js
 
 const MENU_ID = "signals-capture";
 

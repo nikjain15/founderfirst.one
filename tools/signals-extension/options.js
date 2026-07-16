@@ -1,5 +1,5 @@
-const DEFAULT_ENDPOINT =
-  "https://ejqsfzggyfsjzrcevlnq.supabase.co/functions/v1/listening-intake";
+// DEFAULT_ENDPOINT comes from config.js (loaded first in options.html) —
+// shared with background.js, see config.js.
 
 const $ = (id) => document.getElementById(id);
 

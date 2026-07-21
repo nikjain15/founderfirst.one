@@ -435,6 +435,36 @@ replay — inherited by every stacked branch.
   `loop/wave<N>-integration` branch** (updated as base cards land), not pinned commits, to
   avoid gate-time rebase churn.
 
+## 25. A SECURITY DEFINER function bypasses RLS — it must guard tenant access itself.
+
+**What happened:** The 20 Jul weekly audit found seven `SECURITY DEFINER` *reader* RPCs
+(`resolve_account_tax_lines`, `tax_unmapped_accounts`, `tax_m1_summary`,
+`fixed_asset_listing`, `get_effective_behavior_config`, `upcoming_filing_deadlines`,
+`ninetynine_nec_threshold_minor`) that take a caller-supplied `p_org`/`p_org_id`, filter
+`where org_id = p_org_id`, and are `grant execute … to authenticated` (one to `anon`) — with
+**no `can_access_org` check**. Because a DEFINER function runs as the table owner (who has
+BYPASSRLS), the RLS policies on `ledger_accounts` etc. do **not** scope it. Any authenticated
+user could `POST /rest/v1/rpc/<fn>` with a victim `org_id` and read that tenant's chart of
+accounts, tax-line mappings, fixed-asset register, and M-1 totals. One function's own comment
+("Pure read — safe for authenticated, RLS already scopes it") is the exact misconception. This
+is the **read-side of the same class** the isolation migration (`20260701000000`) fixed for
+writes — but that sweep only revoked `p_actor`-first functions, so the `p_org`-first readers
+slipped through. Program-4 F1 (`owner_asks_this_week`) was one instance, fixed in isolation; the
+rest were not.
+
+**Rules:**
+- **Every `SECURITY DEFINER` function must enforce tenant access in its own body** — the first
+  statement of any org-scoped reader/writer is `if not can_access_org(p_org) then raise
+  exception 'forbidden' using errcode='insufficient_privilege'; end if;` (see the correct pattern
+  in `list_uncategorized_entries`, `20260629200000_phase4_uncategorized.sql:146`). RLS is **not**
+  a substitute — DEFINER bypasses it.
+- **Never trust a comment that claims "RLS scopes this"** on a DEFINER function. If it's DEFINER
+  and takes an org id, it needs an explicit guard, full stop.
+- **When you fix an access-control class, grep the whole shape, not one signature.** The isolation
+  sweep keyed on `p_actor`; the leak lived in `p_org`-first readers. Extend the revoke/guard sweep
+  to *every* org-scoped DEFINER function granted to `authenticated`/`anon` so the class can't
+  regress (LEARNINGS #15's "grep for the shape" applied to authz, not just locking).
+
 ---
 
 *Add a numbered rule above when a mistake teaches a lesson worth not repeating.*
@@ -445,6 +475,47 @@ Dated findings from `/audit` runs, newest first. Each entry: the commit audited,
 a short summary, and one line per P0/P1 marked **fixed** or **deferred**. When an
 issue here keeps recurring, graduate it into a numbered rule above — that is how
 we stop repeating it. The command lives at `.claude/commands/audit.md`.
+
+### 2026-07-20 audit — 242bbc7 (full-surface weekly)
+Fan-out across all six surfaces (apps/app · apps/admin · apps/web+content · supabase · site-bubble+worker ·
+tools), every finding verified by opening the file. Overall **92/100**. **1 P0, 4 P1, 30 P2.** Top-3 to fix
+now: (1) the cross-tenant SECURITY DEFINER reader leak; (2) the What's-new digest chip whose selected-state
+CSS vars are undefined; (3) an exclamation mark shipped in live marketing copy (machine-enforced VOICE breach).
+**New systemic pattern → graduated to Rule 25:** DEFINER functions bypass RLS and must guard tenant access
+themselves — the audit found the *read-side* of the write-path isolation fix (`20260701000000`), which only
+swept `p_actor`-first functions and missed the `p_org`-first readers. Real-browser dimensions (responsive,
+a11y, performance) were **static-only** this run — headless, no browser — and are noted as not measured.
+`audit_runs` insert **skipped** (no DB credentials in the scheduled run). Trust cluster is otherwise strong:
+RLS enablement complete, webhooks self-verify, forged-actor writes closed, TOCTOU `FOR UPDATE` followed, no
+duplicate migration timestamps, no `service_role` key in any browser bundle.
+
+- **P0 · security · deferred** — 7 `SECURITY DEFINER` readers (`resolve_account_tax_lines`, `tax_unmapped_accounts`,
+  `tax_m1_summary`, `fixed_asset_listing` = financial data; `get_effective_behavior_config` [granted `anon`],
+  `upcoming_filing_deadlines`, `ninetynine_nec_threshold_minor` = org config) take a caller-supplied `p_org` and
+  are granted to `authenticated`/`anon` with **no `can_access_org` guard** → any authed user reads another org's
+  books. `supabase/migrations/20260703060100_tax_mapping_rpcs.sql:105,187` et al. Fix: add the guard + extend the
+  isolation sweep to `p_org`-first fns (Rule 25). *Source-only — confirm live grants before/after.*
+- **P1 · design_system · deferred** — `apps/admin/src/styles/docs.css:295-297` `.whatsnew-pick-chip.is-on` uses
+  `--accent-soft`/`--accent`/`--accent-ink`, all undefined in tokens.css → the selected recipient chip renders
+  with no bg/border/color, indistinguishable from unselected. Fix: use `--brand-tint`/`--brand`/`--brand-ink`.
+- **P1 · security · deferred** — `penny_site_chats_purge()` (`20260620153619_remote_commit.sql:1025`) is DEFINER
+  with no `SET search_path` (LEARNINGS #11); low practical risk (schema-qualified, no args) but the lone hygiene
+  outlier. Fix: `set search_path = public`.
+- **P1 · copy_docs · deferred** — `apps/web/src/components/SignupForm.tsx:55` ships `"You're in! …"` — an
+  exclamation mark in live marketing copy (VOICE.md: "Exclamation marks. Never."). Fix: em-dash.
+- **P2 ×30 · deferred** — design-system token drift (undefined `--warn`/`--text-warning` in VoiceStudio/AIRamp;
+  56× magic-px font-sizes in admin CSS; 13× inline `rgba` white overlays + one-off px in apps/web; bubble
+  `--p-ink-3` stale pre-WCAG value; rgba-vs-`--scrim`); SEO gaps (sitemap.xml + llms.txt build from the static
+  seed, so admin-published blog posts never reach the sitemap; blog `og:type=website` not `article`; `/confirmed`
+  not noindexed); one-source-of-truth drift (hardcoded `FounderFirst`/URL literals instead of `SITE` in llms.txt,
+  seo.ts, blog slug, canonicals); reliability (OwnerHome shows "nothing coming up" on a *failed* deadlines fetch;
+  worker `handleChat` pre-model Supabase logging unwrapped → a Supabase blip 500s the whole chat); observability
+  (Discord memory writes swallow errors with no log); test gaps (invoicing money-write RPCs, admin `sla.ts`);
+  self-description drift (AdminConsole "placeholder" comments now all live-wired — LEARNINGS #7; compose-server
+  README "LIVE" vs the Workers-AI route; Settings menu 8 rows vs the docs' 5); a11y (`TicketDetail` bare `<h1>`);
+  and a `/compare`-page competitor-naming call needing Nik's explicit VOICE carve-out. Full report in the PR body.
+- **Data-integrity note (deferred):** `admins` vs `platform_staff` remain two privileged-user stores; the
+  consolidation is documented-intentional (`20260627150000:8-11`) but still outstanding (LEARNINGS #6).
 
 ### 3 Jul 2026 · Wave-3 wave-gate audit (owner-experience layer) — GATE 🟢 CLEAR
 14-dimension rubric + adversarial stress pass over the Wave-3 blast radius (W3.2 trust-tiered

@@ -72,6 +72,20 @@ The mission is simple: give business owners the back-office support that used to
 
 ---
 
+## Docs
+
+Product and engineering deep-dives, grounded in this repository's code:
+
+- **[docs/PRD.md](docs/PRD.md)** — personas, jobs-to-be-done, success metrics, tradeoffs, and the Now/Next/Later roadmap.
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — system overview with component and sequence diagrams, grounded in real code paths.
+- **[docs/EVALS.md](docs/EVALS.md)** — the eval strategy (unit → deterministic gates → SQL reconciliation → LLM-judge panel → A/B), built on the real `packages/inference` harness.
+- **[docs/TECHNICAL_NOTES.md](docs/TECHNICAL_NOTES.md)** — a 12-point rubric scorecard with file-level evidence, plus model, orchestration, guardrail, and cost details.
+- **[docs/FDE_JOURNEY.md](docs/FDE_JOURNEY.md)** — how Penny deploys into a live financial environment: integration, security, cutover, observability, de-risking.
+
+A small self-contained gate eval harness lives in **[evals/](evals/README.md)** (`pnpm eval:gates`).
+
+---
+
 ## Finding your way around
 
 **[docs/README.md](docs/README.md) is the map** — where every kind of document lives,

@@ -1,3 +1,12 @@
+<p align="center">
+  <a href="https://founderfirst.one"><img src="assets/penny.png" alt="FounderFirst — Penny" width="300"></a>
+</p>
+
+<p align="center"><b>FounderFirst — meet Penny, your autonomous bookkeeper.</b><br>
+  <a href="https://founderfirst.one">Early access ↗</a></p>
+
+---
+
 # FounderFirst
 
 **Operating software for business owners.**

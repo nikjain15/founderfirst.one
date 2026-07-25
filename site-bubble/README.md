@@ -11,11 +11,11 @@ A floating Penny chat widget for **founderfirst.one**. Backed by Claude (live LL
 | System prompt | `worker/penny-site-system.md` | The base prompt the model sees on every turn. |
 | Site content | `worker/src/site-content.ts` | The bundled ground truth Penny is allowed to speak from. |
 | Schema | `supabase/schema.sql` | Two tables (`penny_site_chats`, `penny_site_leads`) + RLS + 90-day retention helper. |
-| Tests | `tests/` | `node --test` — regex extractors, CTA decision tree, JSON parse shapes. |
+| Tests | `tests/` | `node --test` - regex extractors, CTA decision tree, JSON parse shapes. |
 
 ## Architecture in one paragraph
 
-The Worker serves `bubble.js` from the same origin so the site only needs one `<script defer>` line. When a visitor types, the bubble POSTs to `/chat`; the Worker logs the user turn to Supabase, runs email/phone regex (logs to `penny_site_leads` if found), injects `<site_content>` and `<session_state>` into the system prompt, calls Claude Haiku 4.5, applies the CTA decision tree as a runtime safety net over whatever the model chose, logs Penny's turn, and returns `{ reply, sessionState }`. Sessions live in `sessionStorage` (fresh per tab — matches Penny demo settled decision 23). RLS denies all access for anon/authenticated; only the service-role key the Worker holds can read or write.
+The Worker serves `bubble.js` from the same origin so the site only needs one `<script defer>` line. When a visitor types, the bubble POSTs to `/chat`; the Worker logs the user turn to Supabase, runs email/phone regex (logs to `penny_site_leads` if found), injects `<site_content>` and `<session_state>` into the system prompt, calls Claude Haiku 4.5, applies the CTA decision tree as a runtime safety net over whatever the model chose, logs Penny's turn, and returns `{ reply, sessionState }`. Sessions live in `sessionStorage` (fresh per tab - matches Penny demo settled decision 23). RLS denies all access for anon/authenticated; only the service-role key the Worker holds can read or write.
 
 ## Deploy
 
@@ -25,7 +25,7 @@ Run [`supabase/schema.sql`](supabase/schema.sql) in the SQL editor. Re-run-safe.
 
 Get from the project settings:
 - `SUPABASE_URL` (e.g. `https://abcd.supabase.co`)
-- `SUPABASE_SERVICE_KEY` (service-role key — **never** expose client-side)
+- `SUPABASE_SERVICE_KEY` (service-role key - **never** expose client-side)
 
 ### 2. Worker
 
@@ -43,7 +43,7 @@ wrangler secret put ANTHROPIC_API_KEY
 wrangler secret put SUPABASE_URL
 wrangler secret put SUPABASE_SERVICE_KEY
 
-# Build the bubble first — wrangler bundles it into the worker.
+# Build the bubble first - wrangler bundles it into the worker.
 cd ../bubble && npm install && npm run build
 
 # Deploy
@@ -60,7 +60,7 @@ Add **one** line to the shared layout / each HTML page:
 <script defer src="https://bubble.founderfirst.one/bubble.js"></script>
 ```
 
-The Worker domain is auto-detected from the script's own `src` — you don't need to configure it twice. To override (e.g. preview deploys), pass `data-worker`:
+The Worker domain is auto-detected from the script's own `src` - you don't need to configure it twice. To override (e.g. preview deploys), pass `data-worker`:
 
 ```html
 <script defer src=".../bubble.js" data-worker="https://bubble-staging.founderfirst.one"></script>
@@ -71,7 +71,7 @@ The Worker domain is auto-detected from the script's own `src` — you don't nee
 - `script-src` … add `https://bubble.founderfirst.one`
 - `connect-src` … add `https://bubble.founderfirst.one`
 
-The site uses no shared `_layouts/` partial today, so the script tag must be added to each HTML page (`index.html`, `penny/cpa/index.html`, `penny/businessowner/index.html`, etc.). Future pages need the line added too — consider migrating to a Jekyll `_layouts/default.html` to centralize this.
+The site uses no shared `_layouts/` partial today, so the script tag must be added to each HTML page (`index.html`, `penny/cpa/index.html`, `penny/businessowner/index.html`, etc.). Future pages need the line added too - consider migrating to a Jekyll `_layouts/default.html` to centralize this.
 
 ## Tests
 
@@ -83,8 +83,8 @@ npm test
 Covers:
 - Email + phone extraction across +1, dashes, parens, dots, plus-addressing.
 - Buying-signal and soft-decline regex.
-- CTA decision tree — every branch.
-- Model-JSON parser — fenced, bare, malformed, edge cases (10 samples).
+- CTA decision tree - every branch.
+- Model-JSON parser - fenced, bare, malformed, edge cases (10 samples).
 
 ## Updating Penny's knowledge
 
@@ -101,4 +101,4 @@ The KV cache TTL is 15 minutes, so existing visitors stop seeing stale content w
 - Visitor authentication (anonymous sessions only).
 - Admin dashboard for reading logs (query Supabase directly).
 - Multi-language (English only).
-- Live site crawl (we use a bundled snapshot — tighter control over what Penny "knows").
+- Live site crawl (we use a bundled snapshot - tighter control over what Penny "knows").

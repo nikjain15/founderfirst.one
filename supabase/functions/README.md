@@ -1,16 +1,16 @@
-# Edge functions — catalog
+# Edge functions - catalog
 
 > Last verified: 1-Jul-2026 · 43 functions, one line each, derived from each function's header comment and code. Owner: Nik
 
 Who calls each function is tagged as: **user-facing** (apps/app or apps/web with a user JWT),
 **admin-gated** (requires the `is_admin()` RPC / admins allowlist), **public** (anon-callable by design),
-**cron** (invoked on a schedule — the live pg_cron job list is in [../README.md](../README.md)),
+**cron** (invoked on a schedule - the live pg_cron job list is in [../README.md](../README.md)),
 **OAuth callback**, **webhook** (external service or DB trigger posts to it, gated by signature or
 shared secret), or **proxy** (holds a third-party API key server-side).
 `verify_jwt` per function is set in [../config.toml](../config.toml).
 
 Email architecture and the full email catalog live in [_shared/EMAIL.md](_shared/EMAIL.md) and
-[_shared/EMAIL_REGISTRY.md](_shared/EMAIL_REGISTRY.md) — this file doesn't duplicate them.
+[_shared/EMAIL_REGISTRY.md](_shared/EMAIL_REGISTRY.md) - this file doesn't duplicate them.
 
 ## Books write-path (user-facing, JWT + `can_write_org_as` RPC authorization)
 
@@ -45,12 +45,12 @@ Email architecture and the full email catalog live in [_shared/EMAIL.md](_shared
 
 | Function | What it does | Called by |
 |---|---|---|
-| `email-dispatch` | The single timing driver for every recurring email: sends due `email_schedules` rows — custom rows directly, built-in rows by invoking their specialised function (`listening-digest`, `changelog-digest`). | cron, hourly (`0 * * * *`), shared-secret gated |
+| `email-dispatch` | The single timing driver for every recurring email: sends due `email_schedules` rows - custom rows directly, built-in rows by invoking their specialised function (`listening-digest`, `changelog-digest`). | cron, hourly (`0 * * * *`), shared-secret gated |
 | `signup-confirmation` | Waitlist welcome email; re-checks the address is on the waitlist, idempotent via the `welcome_sends` ledger. | public (anon-callable from the signup island) |
 | `admin-welcome` | Sends a one-time welcome email when someone is added to the admins allowlist. | admin-gated (Settings → Admins UI) |
 | `changelog-digest` | Weekly sectioned "What's new" digest with a review-then-send gate (remind / preview / send modes). | invoked by `email-dispatch` (built-in schedule row, remind mode) + admin-gated (preview/send) |
 | `email-compose` | Drafts email copy via the local Ollama compose-server (over Cloudflare Tunnel). | admin-gated proxy |
-| `email-preview` | Renders a draft email template for the admin editor — sends nothing. | admin-gated |
+| `email-preview` | Renders a draft email template for the admin editor - sends nothing. | admin-gated |
 | `email-test` | Sends one test copy of any email (built-in or custom) to a chosen address. | admin-gated |
 | `resend-webhook` | Ingests Resend delivery events (delivered/opened/clicked/bounced/complained) into `email_events`. | webhook (Svix HMAC signature verified) |
 | `notify-content-change` | Emails all admins (except the author) when a Voice or Prompt version publishes. | webhook (DB trigger via pg_net, shared-secret gated) |
@@ -60,12 +60,12 @@ Email architecture and the full email catalog live in [_shared/EMAIL.md](_shared
 | Function | What it does |
 |---|---|
 | `content-draft` | Step 5: turns a pipeline idea into a brand-voice blog draft + two-host audio script, grounded in the live Penny voice guide; includes the AI editorial judge gate. |
-| `content-audio` | Step 6: renders the audio script into a branded MP3 — Kokoro on Fly (primary), Chatterbox (alt), ElevenLabs (fallback). |
+| `content-audio` | Step 6: renders the audio script into a branded MP3 - Kokoro on Fly (primary), Chatterbox (alt), ElevenLabs (fallback). |
 | `content-publish` | Step 8: publishes an approved item as a live blog post and schedules the promo email. |
 | `content-voice-preview` | Renders a short voice sample with unsaved Voice Studio slider positions for real-time preview. |
 | `voice-check` | Critiques draft copy against the live voice guide (Ollama on the Signals host, via compose-server); returns on-voice score, deviations, rewrites. |
 
-## Signals (social listening — design in [tools/signals-worker/SOLUTION.md](../../tools/signals-worker/SOLUTION.md))
+## Signals (social listening - design in [tools/signals-worker/SOLUTION.md](../../tools/signals-worker/SOLUTION.md))
 
 | Function | What it does | Called by |
 |---|---|---|

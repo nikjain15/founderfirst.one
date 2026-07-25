@@ -1,4 +1,4 @@
-# CSAT — Integration with the Worker brain and the Discord bridge
+# CSAT - Integration with the Worker brain and the Discord bridge
 
 All of this is **live**: the Supabase side (migrations), the admin surfaces in
 `/admin/analytics` + `/admin/support/:ticketId`, and the bridge's Discord-side
@@ -8,7 +8,7 @@ what's left for non-Discord channels.
 
 ---
 
-## Architecture (Discord — what's live now)
+## Architecture (Discord - what's live now)
 
 ```
 Penny answers in Discord ──► bridge sends answer
@@ -57,7 +57,7 @@ Discord message id of the prompt. The reaction handler dispatches on the
 
 ## The RPC
 
-Anyone (anon key OK — same trust model as `create_ticket`) can call:
+Anyone (anon key OK - same trust model as `create_ticket`) can call:
 
 ```http
 POST  https://ejqsfzggyfsjzrcevlnq.supabase.co/rest/v1/rpc/submit_feedback
@@ -88,13 +88,13 @@ Rules enforced by the RPC:
 
 ## Why the bridge owns Discord CSAT (not Dify)
 
-Dify doesn't see Discord reactions — only the bridge does. The bridge
+Dify doesn't see Discord reactions - only the bridge does. The bridge
 already owns the Discord I/O surface (sending messages, polling Supabase,
 delivering admin replies), so adding reaction handling is one event handler
 and one HTTP call. Routing through Dify for this would mean an extra hop
 that buys nothing.
 
-For the **web widget** (when we build it), Dify *can* own CSAT natively —
+For the **web widget** (when we build it), Dify *can* own CSAT natively -
 emit the prompt as a message, add up/down buttons, and route the click to
 an HTTP node that POSTs `submit_feedback` with `source: "bot_resolved"` and
 `channel: "web"`. The RPC accepts that shape today.
@@ -104,19 +104,19 @@ an HTTP node that POSTs `submit_feedback` with `source: "bot_resolved"` and
 ## Gating (current behavior)
 
 - **Bot CSAT**: prompt fires after *every* Penny reply. Some are escalation
-  messages where "did that help?" is a slightly weird question — those
+  messages where "did that help?" is a slightly weird question - those
   prompts just sit ignored. Acceptable noise for v1. We can refine by
   having Dify emit a sentinel that the bridge strips and uses to gate
   prompting.
 - **Admin CSAT**: prompt fires only when the admin marked the ticket
-  *resolved*. In-progress replies stay quiet — user is mid-conversation.
+  *resolved*. In-progress replies stay quiet - user is mid-conversation.
 
 ---
 
 ## Failure modes (designed)
 
 - Bridge can't reach Supabase → reaction is logged but never recorded.
-  Idempotent retry not implemented — feedback is "best effort" and we
+  Idempotent retry not implemented - feedback is "best effort" and we
   don't want a flaky network to break the bridge.
 - Bridge restarts → `csat_prompt_map` resets (in-memory only). Reactions
   on old prompts are dropped silently. This is fine: the prompt is

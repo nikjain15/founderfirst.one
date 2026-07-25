@@ -1,4 +1,4 @@
-# FounderFirst / Penny — Forward-Deployed Engineering Journey
+# FounderFirst / Penny - Forward-Deployed Engineering Journey
 
 > How Penny deploys into a real business's live financial environment: integration,
 > security, rollout and cutover, observability, and de-risking. Grounded in the
@@ -7,7 +7,7 @@
 Deploying an autonomous bookkeeper is a forward-deployed problem: the customer's
 money is already moving, their books already exist somewhere, and there is no
 acceptable window of "the books are wrong for a while." The architecture is built for
-that reality — a canonical append-only ledger, provenance on every entry, reversible
+that reality - a canonical append-only ledger, provenance on every entry, reversible
 imports, and an accuracy-over-autonomy ramp.
 
 ## 1. Integration points
@@ -21,7 +21,7 @@ already lives, through connectors behind one provider interface
 - **Existing accounting** via QuickBooks Online and Xero (`qbo-connect/callback/import`,
   `xero-connect/callback/import`, `commerce-sync`): pull the chart of accounts and
   historical transactions.
-- **Revenue / payouts** via Stripe, Shopify, PayPal, Square — payout splitting and
+- **Revenue / payouts** via Stripe, Shopify, PayPal, Square - payout splitting and
   report import, deduped exactly-once on a shared `ext:<provider>:payout:<id>` key.
 - **Receipts** by photo or text (`receipts`), landing in a private RLS-scoped bucket.
 

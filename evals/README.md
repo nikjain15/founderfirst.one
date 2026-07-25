@@ -1,8 +1,8 @@
-# `/evals` — deterministic gate eval harness
+# `/evals` - deterministic gate eval harness
 
 A small, self-contained runner that scores Penny's **deterministic floor gates**
 against a labeled dataset. It imports the real gate functions from
-`packages/inference/src/judge.ts` — it does not reimplement them — so a green run
+`packages/inference/src/judge.ts` - it does not reimplement them - so a green run
 reflects the exact code that grades production answers.
 
 It touches **no network, no database, and no production paths**. It is additive
@@ -28,14 +28,14 @@ CI once the golden set is trusted.
 
 ## Files
 
-- `dataset.jsonl` — one labeled case per line: `{ id, gate, answer|answerJson, context?, expectPass }`.
-- `run.ts` — the runner; imports the real gates and prints the scorecard.
+- `dataset.jsonl` - one labeled case per line: `{ id, gate, answer|answerJson, context?, expectPass }`.
+- `run.ts` - the runner; imports the real gates and prints the scorecard.
 
 ## Extending the golden set
 
 Add lines to `dataset.jsonl`. Good candidates: real correction cases from the review
 queue (de-identified), injection-canary variants for `safety`, and PII edge cases for
-`privacy`. Keep every example de-identified — never commit real customer data. As the
+`privacy`. Keep every example de-identified - never commit real customer data. As the
 categorization outcome data accumulates, this harness is the natural home for a
 precision/recall/F1 report on the categorization classifier itself, alongside the
 gates.

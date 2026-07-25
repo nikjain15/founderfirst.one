@@ -1,4 +1,4 @@
-# [stress:auth] AUTHTEST — fixture manifest
+# [stress:auth] AUTHTEST - fixture manifest
 
 Prod ref `ejqsfzggyfsjzrcevlnq`. All fixtures namespaced `@authtest.founderfirst.test` /
 `[AUTHTEST]`. **Nothing deleted** during testing. Cleanup is un-run (`cleanup.sql`).
@@ -7,7 +7,7 @@ Prod ref `ejqsfzggyfsjzrcevlnq`. All fixtures namespaced `@authtest.founderfirst
 | email | user id | purpose |
 |---|---|---|
 | owner-a@authtest.founderfirst.test | 5ee9c1c1-94d3-45c8-889b-f91d973bf94e | tenant A (real JWT, owns Org A) |
-| owner-b@authtest.founderfirst.test | ad192e4e-ff38-4ea7-86ef-fced9ec10e64 | tenant B (real JWT, owns Org B) — cross-tenant target |
+| owner-b@authtest.founderfirst.test | ad192e4e-ff38-4ea7-86ef-fced9ec10e64 | tenant B (real JWT, owns Org B) - cross-tenant target |
 | reuse@authtest.founderfirst.test | 36b99c01-9316-4342-bc90-3f8b87acbcd8 | one-time-link replay test |
 | bind1@authtest.founderfirst.test | ba87d61c-c945-452b-b035-3f3e2f18d5a6 | email-binding test |
 | ratelimit@authtest.founderfirst.test | 2b01e6e6-fa27-4349-a4a1-8c25ee1fe198 | OTP rate-limit probe |

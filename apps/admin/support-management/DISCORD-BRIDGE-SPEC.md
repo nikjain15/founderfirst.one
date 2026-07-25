@@ -1,4 +1,4 @@
-# Discord Bridge — handoff spec (the dumb relay)
+# Discord Bridge - handoff spec (the dumb relay)
 
 After SCHEMA-014 + the `/discord/*` endpoints on the Cloudflare Worker land,
 the brain moves out of Dify and into the Worker. The Python bridge on
@@ -12,7 +12,7 @@ So the bridge becomes ~50 lines of glue:
 - Forwards events to the Worker over HTTPS with a shared secret.
 - Posts whatever the Worker replies back to Discord.
 - Has zero opinions about voice, prompts, or context. If you find yourself
-  adding a `system_prompt = …` or a `tickets_table` query here, stop —
+  adding a `system_prompt = …` or a `tickets_table` query here, stop -
   that belongs in the Worker.
 
 ---
@@ -97,7 +97,7 @@ async def ensure_user_channel(user, email):
         name=f"p-{safe}-{user.id % 10000}",
         category=parent,
         overwrites=overwrites,
-        topic=f"Penny ↔ {email} — private. Disconnect with /disconnect.",
+        topic=f"Penny ↔ {email} - private. Disconnect with /disconnect.",
     )
 
     httpx.post(f"{WORKER_BASE_URL}/discord/attach-channel",
@@ -105,7 +105,7 @@ async def ensure_user_channel(user, email):
         json={"discord_user_id": str(user.id), "discord_channel_id": str(channel.id)},
         timeout=10,
     )
-    await channel.send(f"Hey <@{user.id}> — this is your private line. Only you and the team can see it.")
+    await channel.send(f"Hey <@{user.id}> - this is your private line. Only you and the team can see it.")
     return channel
 ```
 
@@ -128,12 +128,12 @@ async def disconnect(interaction):
         timeout=10,
     )
     await interaction.response.send_message(
-        "Done — I've forgotten your FounderFirst account. Send me a message anytime to reconnect.",
+        "Done - I've forgotten your FounderFirst account. Send me a message anytime to reconnect.",
         ephemeral=True,
     )
 ```
 
-### 4. CSAT reactions (existing — unchanged)
+### 4. CSAT reactions (existing - unchanged)
 
 The Discord-side CSAT prompt + reaction handling in `CSAT-INTEGRATION.md`
 keeps working as-is. It posts to `submit_feedback` directly. We did not
@@ -162,7 +162,7 @@ parallel run.
 1. Apply `SCHEMA-014` in Supabase SQL editor.
 2. `wrangler secret put DISCORD_BRIDGE_SECRET` (generate fresh).
 3. Deploy the updated Worker. Test `/connect-discord` and `/discord/dm`
-   with curl using the bridge secret — confirm the unlinked path returns
+   with curl using the bridge secret - confirm the unlinked path returns
    a `needs_link` reply.
 4. Build the new bridge from the snippets above. Deploy it next to the
    existing one, **pointed at a test channel only**.
@@ -178,7 +178,7 @@ parallel run.
 
 | Symptom | Likely cause |
 |---|---|
-| Bot replies with "Hi — happy to help. So I can pull up…" on every message | Link row was never confirmed, OR was revoked. Check `admin_list_discord_links` in admin UI. |
+| Bot replies with "Hi - happy to help. So I can pull up…" on every message | Link row was never confirmed, OR was revoked. Check `admin_list_discord_links` in admin UI. |
 | Worker returns 401 on every bridge call | `DISCORD_BRIDGE_SECRET` mismatch. Re-set on both sides. |
 | Per-user channel is visible to the whole server | `view_channel=False` on `@everyone` was dropped from `overwrites`. |
-| Bot answers user A using user B's data | This shouldn't happen — Worker scopes context to the verified `discord_user_id`. If it does, the bridge is sending the wrong author id; check `msg.author.id` is being passed straight, not parsed from message text. |
+| Bot answers user A using user B's data | This shouldn't happen - Worker scopes context to the verified `discord_user_id`. If it does, the bridge is sending the wrong author id; check `msg.author.id` is being passed straight, not parsed from message text. |

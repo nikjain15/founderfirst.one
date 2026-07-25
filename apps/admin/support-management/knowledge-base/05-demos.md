@@ -1,6 +1,6 @@
 # The Penny demos
 
-Penny is live as an interactive demo you can click through right now — no signup. Two views are available, both running on real Claude responses (not canned screens), so what you see is the actual product voice and intelligence.
+Penny is live as an interactive demo you can click through right now - no signup. Two views are available, both running on real Claude responses (not canned screens), so what you see is the actual product voice and intelligence.
 
 ## Business owner view
 
@@ -10,8 +10,8 @@ What's in it:
 - Onboarding
 - The Penny conversation thread
 - One-tap approval cards for new transactions
-- Capture flows — photo, voice, upload, or "just tell me"
-- My Books — the live view of your numbers
+- Capture flows - photo, voice, upload, or "just tell me"
+- My Books - the live view of your numbers
 - The invoice designer
 
 ## CPA view
@@ -22,7 +22,7 @@ What's in it:
 - The client work queue
 - Live P&L
 - Cash flow view
-- Learned rules — the categorization logic Penny has picked up for each client
+- Learned rules - the categorization logic Penny has picked up for each client
 - A chat surface to ask Penny questions about a client's books
 
 ## Why both demos?

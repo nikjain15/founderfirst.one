@@ -1,4 +1,4 @@
-# FounderFirst / Penny — Technical Notes & Scorecard
+# FounderFirst / Penny - Technical Notes & Scorecard
 
 > An engineer's-eye assessment of the AI system, scored against a 12-point rubric
 > with file-level evidence and honest gaps. Scores are 0-5.
@@ -9,7 +9,7 @@
 |---|---|---|---|---|
 | 1 | **Model choice** (LLM vs ML vs hybrid) | 4 | Hybrid by design: deterministic rule matcher + vendor priors run before any model in `supabase/functions/categorize`; models are the fallback. Right-sized per task via `DEFAULT_ROUTING` (`packages/inference/src/core.ts`): Haiku (fast), Sonnet (reasoning), Llama 70B (writing). | No trained categorization classifier yet; the ML tier is rules + priors, not a learned model. |
 | 2 | **How the AI works** (context, temperature, grounding) | 5 | `resolve()` sets provider-native system/temperature/JSON-schema; grounding is structural: `penny-thread` re-computes figures from the ledger and discards any mismatched model number; `categorize` constrains the model to the org's own accounts. | Judge-level SQL reconciliation not wired to call sites (grounding is enforced in the data path, not yet as a gate). |
-| 3 | **Tools / MCP** (schemas, validation, errors) | 4 | Typed Edge Function contracts (`categorize` propose/approve/delete_rule; `reconcile` op-switch); Anthropic structured outputs via `output_config.json_schema`; provider errors typed as `InferenceError` with kinds; refusal detection. | No formal MCP/tool-calling loop; the model proposes, code executes — a deliberate choice, but not a tool-use agent. |
+| 3 | **Tools / MCP** (schemas, validation, errors) | 4 | Typed Edge Function contracts (`categorize` propose/approve/delete_rule; `reconcile` op-switch); Anthropic structured outputs via `output_config.json_schema`; provider errors typed as `InferenceError` with kinds; refusal detection. | No formal MCP/tool-calling loop; the model proposes, code executes - a deliberate choice, but not a tool-use agent. |
 | 4 | **Agents & skills** | 3 | Scheduled autonomous routines: `regulatory-watcher` (law change -> reviewed seed-diff PR, never self-merge); trust-tiered autonomy auto-posts high-confidence categorizations to a "Penny did this" feed. | Not a multi-step planning agent; bounded, single-purpose routines by design (appropriate for money-critical work). |
 | 5 | **Orchestration & routing** (multi-model, cost) | 5 | One `resolve()` routes across `anthropic` / `workers-ai` / `openrouter` (`core.ts`); config-driven routing from DB (`buildInferenceConfig`); per-token cost (`computeCostUsd`); spend caps trigger a backup model, not a failure; cost recorded per `ai_decisions` row. | Admin cost dashboard + live model controls are Phase 3-4 (schema exists). |
 | 6 | **RAG & context** (retrieval, failure modes) | 3 | Retrieval is deterministic ledger queries, not vector RAG: server SELECTs the exact report math and the org's own accounts; empty-books path defers instead of reporting a hollow `$0`. Source-exists gate checks citations against context. | No embedding/vector retrieval; the "corpus" is the structured ledger, which fits the domain but is narrower than general RAG. |
@@ -43,14 +43,14 @@ evals, and knowledge-as-data with CI drift guards.
 
 ## Guardrails summary
 
-- **Deterministic floor beneath every judge** — regex safety, PII/Luhn privacy,
+- **Deterministic floor beneath every judge** - regex safety, PII/Luhn privacy,
   valid-format, source-exists, math. Non-LLM, every answer.
-- **Fail closed (D3)** — judge timeout/error -> `failed_closed` -> human handoff.
-- **Tenant isolation is a data invariant (D15)** — not an AI eval.
-- **Input is data, never instructions** — fenced delimiting + injection canary.
-- **The model has no authority** — proposals a human approves; write RPCs are
+- **Fail closed (D3)** - judge timeout/error -> `failed_closed` -> human handoff.
+- **Tenant isolation is a data invariant (D15)** - not an AI eval.
+- **Input is data, never instructions** - fenced delimiting + injection canary.
+- **The model has no authority** - proposals a human approves; write RPCs are
   service-role-only and audit-logged.
-- **Knowledge as data** — tax/law/connectors are seed data; `check-law-literals`
+- **Knowledge as data** - tax/law/connectors are seed data; `check-law-literals`
   fails CI on a hardcoded law literal.
 
 ## Cost posture

@@ -6,13 +6,13 @@ It does **not** prove real-world *deliverability* (DNS, SPF/DKIM/DMARC, Resend
 domain verification, inbox placement). This is the one-time-per-change manual
 step that does.
 
-> **Gating — read first.** This procedure is **manual only**. It is deliberately
+> **Gating - read first.** This procedure is **manual only**. It is deliberately
 > not wired into any CI workflow and hits a real Resend account. Never point it
 > at a real user's inbox. Use a mailbox you control (e.g. `founder@` or a
 > Resend-verified test address). It is a Nik step because it needs the live
 > `RESEND_API_KEY`.
 
-## Option A — through the deployed `email-test` edge function (recommended)
+## Option A - through the deployed `email-test` edge function (recommended)
 
 `email-test` already routes through the exact production `sendEmail()` path
 (`trigger='test'`, so it's logged in `email_log`). This is the highest-fidelity
@@ -38,13 +38,13 @@ and the live Resend key.
    - `email_log` has a new `status='sent'` row with that `resend_id`;
    - open it → an `email_events` open row links back via `resend_id`.
 
-## Option B — a throwaway local `sendEmail()` call (no deploy)
+## Option B - a throwaway local `sendEmail()` call (no deploy)
 
 Use only if you need to test an un-deployed change to the send path. Run against
 your own inbox, with a real key, from a scratch file (never commit it):
 
 ```ts
-// scratch/livesend.ts — DO NOT COMMIT. Run: deno run --allow-net --allow-env scratch/livesend.ts
+// scratch/livesend.ts - DO NOT COMMIT. Run: deno run --allow-net --allow-env scratch/livesend.ts
 import { sendEmail } from "../supabase/functions/_shared/send.ts";
 // Minimal real Supabase client OR a stub that no-ops the email_log insert.
 const res = await sendEmail({
@@ -58,7 +58,7 @@ console.log(res); // expect { ok:true, sent:1, resendIds:[<id>] }
 ```
 
 Requires `RESEND_API_KEY` (and `NOTIFY_FROM`) in the env. `--allow-net` is what
-lets it reach Resend — that flag is exactly what CI omits, which is why the
+lets it reach Resend - that flag is exactly what CI omits, which is why the
 harness can never accidentally send.
 
 ## Pass criteria
@@ -67,5 +67,5 @@ harness can never accidentally send.
 - `email_log` row `status='sent'` with a `resend_id`.
 - Open/click tracked in `email_events`.
 
-If any of these fail, the code-level harness will still be green — that gap is
+If any of these fail, the code-level harness will still be green - that gap is
 precisely why this manual step exists.

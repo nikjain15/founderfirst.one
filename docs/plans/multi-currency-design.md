@@ -1,6 +1,6 @@
-> Status: APPROVED — D1–D7 answered by Nik 2026-07-04 (§8) · Owner: Nik
+> Status: APPROVED - D1–D7 answered by Nik 2026-07-04 (§8) · Owner: Nik
 
-# Multi-currency — design plan (W5.4)
+# Multi-currency - design plan (W5.4)
 
 Plan only. No code, no migration. This doc surfaces the model and the decisions
 Nik must make before any multi-currency build begins.
@@ -8,7 +8,7 @@ Nik must make before any multi-currency build begins.
 The pilot is deliberately **single-currency** today, gated by an explicit trigger
 (cited below). This plan describes what it takes to lift that gate safely, keeping
 the ledger's core promise intact: **books balance, closed periods stay locked,
-corrections are reversing entries, money is integer minor units — never float**
+corrections are reversing entries, money is integer minor units - never float**
 (ARCHITECTURE.md §6.1, LEARNINGS #16/#18).
 
 ---
@@ -20,7 +20,7 @@ transactions denominated in **other currencies** (a USD-books business that
 invoices a UK customer in GBP, holds a EUR bank account, or pays a foreign
 vendor). Every foreign-currency amount is carried at its **transaction amount**
 *and* its **base-currency equivalent**, so all reports (P&L, balance sheet, trial
-balance, AR aging, exports) present in one base currency and tie to the cent —
+balance, AR aging, exports) present in one base currency and tie to the cent -
 while FX-only movements post to dedicated **realized / unrealized FX gain-loss**
 accounts.
 
@@ -32,10 +32,10 @@ accounts.
 - **Changing an org's base currency after it has posted entries.** Base currency
   is immutable once books exist (a later, separate migration job if ever needed).
 - **Crypto / >2-minor-digit currencies** beyond ISO-4217's own `minor_unit`
-  (JPY = 0 dp, USD = 2 dp, BHD = 3 dp) — see Decision D2 on minor-unit precision.
+  (JPY = 0 dp, USD = 2 dp, BHD = 3 dp) - see Decision D2 on minor-unit precision.
 - **Real-time / intraday rate feeds.** Daily granularity is the target (Decision D3).
 - **Automatic hedging, forward contracts, or derivative accounting.**
-- **Retroactive multi-currency for existing single-currency orgs' history** — the
+- **Retroactive multi-currency for existing single-currency orgs' history** - the
   gate lift is additive; historical entries stay as posted.
 
 ---
@@ -46,7 +46,7 @@ The schema was built *currency-aware from day one* (ARCHITECTURE.md §12.4:
 "store `currency` from day one; assume one currency per org for the pilot"), then
 a hard gate was added on top. The pieces:
 
-**a) The gate — one trigger blocks every non-home line.**
+**a) The gate - one trigger blocks every non-home line.**
 `supabase/migrations/20260630070000_single_currency_guard.sql` adds
 `assert_line_home_currency()` (lines 13–27) and the `journal_lines_home_currency`
 trigger (lines 29–32): any `journal_lines` row whose `currency` differs from the
@@ -62,16 +62,16 @@ gate; lifting it is the crux of the build.**
 - `ledger_accounts.currency char(3) not null default 'USD'` (line 43)
 - `journal_lines.amount_minor bigint` (line 92) + `currency char(3)` (line 93)
 
-There is **no `base_amount_minor` and no `fx_rate` column** on `journal_lines` —
+There is **no `base_amount_minor` and no `fx_rate` column** on `journal_lines` -
 today `amount_minor` *is* the base amount because line currency == home currency.
 That identity is exactly what multi-currency breaks.
 
-**c) The balance trigger is already per-currency — a strength.**
+**c) The balance trigger is already per-currency - a strength.**
 Same file, `assert_entry_balanced()` (lines 105–124): it groups lines by
 `currency` and requires Σdebits = Σcredits **within each currency**. This is
 correct for multi-currency *transaction* balance, **but** an entry with lines in
 two currencies that each balance in their own currency will **not** balance in the
-base currency after conversion — that residual is precisely the FX line (see §5).
+base currency after conversion - that residual is precisely the FX line (see §5).
 So the per-currency trigger stays; a **new base-currency balance check** is added
 alongside it.
 
@@ -79,17 +79,17 @@ alongside it.
 `supabase/migrations/20260629125000_phase2_ledger_writepath.sql`: `post_journal_entry`
 reads `home_currency` (line 214), defaults each line's currency to home
 (`coalesce(l->>'currency', v_home_ccy)`, line 267), inserts `journal_lines` with
-`amount_minor, currency` only (line 265) — **no rate, no base amount**. The
+`amount_minor, currency` only (line 265) - **no rate, no base amount**. The
 "balanced (belt)" early check (lines 241–242) explicitly notes it's the
 single-currency common case. The reconcile/reversal copy in
 `20260702000000_reconcile_period_journal_locks.sql` (lines 132–133) copies
-`currency` verbatim — fine, but also carries no base amount.
+`currency` verbatim - fine, but also carries no base amount.
 
 **e) Reports sum `amount_minor` across all lines with no currency partitioning.**
 `apps/app/src/ledger/reports.ts` `accountBalances()` (lines ~40–48) does
 `cur.debit += l.amount_minor` / `cur.credit += l.amount_minor` for every line
 regardless of `l.currency`. Today that's safe (all lines are home currency); with
-mixed currencies it would **add GBP cents to USD cents** — a silent
+mixed currencies it would **add GBP cents to USD cents** - a silent
 wrong-number bug of exactly the LEARNINGS #16/#18 class ("balanced but wrong").
 Every report builder in this file, plus AR aging (line ~525) and cash flow, has
 the same shape.
@@ -97,7 +97,7 @@ the same shape.
 **f) Formatting is single-currency-defaulted.**
 `apps/app/src/ledger/money.ts`: `formatMoney(minor, currency = "USD")` and
 `formatMoneyShort` default to USD (lines 6, 19). `decimalToMinor` assumes **2
-minor digits** (line 40 rejects >2 fractional digits) — correct for USD/GBP/EUR,
+minor digits** (line 40 rejects >2 fractional digits) - correct for USD/GBP/EUR,
 wrong for JPY (0) and BHD/KWD (3). See Decision D2.
 
 **g) Invoicing carries currency but no rate.**
@@ -108,7 +108,7 @@ gate, a non-home invoice is impossible; lifting it means AR is now a
 **foreign-currency monetary balance** that must be revalued at period end (§5,
 unrealized FX). `apply_invoice_payment` (line 336+) posts Dr Cash / Cr AR at the
 payment `amount_minor` with **no notion of a rate difference** between invoice
-date and payment date — that difference is realized FX (§5).
+date and payment date - that difference is realized FX (§5).
 
 **h) Payouts carry currency but no rate.**
 `supabase/migrations/20260706060000_*.sql`: `record_payout` derives `v_ccy` from
@@ -126,7 +126,7 @@ catalog (Decision D2).
 **Good precedents to reuse.** Idempotent well-known accounts already exist:
 `resolve_opening_balance_equity` (`20260629160000_*.sql` line 98) and
 `resolve_uncategorized_account` (`20260629200000_*.sql` line 21). The FX gain/loss
-accounts should be resolved the **same way** — one function per org, idempotent,
+accounts should be resolved the **same way** - one function per org, idempotent,
 service-role-only grants.
 
 ---
@@ -141,32 +141,32 @@ Two amounts on every line, one rate that produced them:
   present in. **New:** `base_amount_minor bigint` on each line.
 - **Rate & provenance. New:** `fx_rate numeric` (base per 1 transaction unit) +
   `fx_rate_source text` + `fx_rate_date date` on each line (or a reference to a
-  snapshot row — Decision D3). When line currency == base, `fx_rate = 1`,
-  `base_amount_minor = amount_minor` — preserving today's identity for all
+  snapshot row - Decision D3). When line currency == base, `fx_rate = 1`,
+  `base_amount_minor = amount_minor` - preserving today's identity for all
   existing rows (back-fill trivially).
 
 **Two balance invariants (both enforced):**
-1. **Per-transaction-currency balance** — the existing `assert_entry_balanced()`
+1. **Per-transaction-currency balance** - the existing `assert_entry_balanced()`
    trigger, unchanged. Each currency's debits = credits.
-2. **Base-currency balance — NEW.** Σ `base_amount_minor` (D) = Σ (C) across the
+2. **Base-currency balance - NEW.** Σ `base_amount_minor` (D) = Σ (C) across the
    *whole entry*. A two-currency entry balances per-currency but its base
    equivalents won't net to zero unless an **FX line** absorbs the residual (§5).
    This is where the FX gain/loss account enters the entry.
 
 **Rounding discipline.** `base_amount_minor` is computed with **integer math**
 (`round(amount_minor * fx_rate)` at the minor-unit grain), never float on dollars
-— consistent with `money.ts` `decimalToMinor` and ARCHITECTURE §6.1. The rounding
+- consistent with `money.ts` `decimalToMinor` and ARCHITECTURE §6.1. The rounding
 residual across a multi-line entry is folded into the FX line so base balance is
-**exact to the cent** (LEARNINGS #16 — tie the specific invariant, not just "it
+**exact to the cent** (LEARNINGS #16 - tie the specific invariant, not just "it
 balances").
 
 ---
 
-## 4. FX-rate source — options & tradeoffs
+## 4. FX-rate source - options & tradeoffs
 
 The constraint from LEARNINGS #13: **don't put a runtime dependency on a personal
 Mac or a paid per-call API.** Prefer existing-stack / free-tier, and treat rates
-as **data (seed/snapshot)** the way the tax kernel treats law — effective-dated,
+as **data (seed/snapshot)** the way the tax kernel treats law - effective-dated,
 auditable, reproducible.
 
 | Option | How | Pros | Cons | Fit |
@@ -181,9 +181,9 @@ this order: explicit rate on the call → `fx_rates` snapshot for the line's dat
 error asking for a manual rate (never silently default to 1 for a foreign line).
 
 **Free daily source options for B (Decision D3):** ECB's daily reference rates
-(EUR-base, public, no key — re-base arithmetically to the org's home currency) is
+(EUR-base, public, no key - re-base arithmetically to the org's home currency) is
 the strongest free candidate; a keyed free-tier provider (e.g. a rates API's free
-plan) is the fallback. **This choice is Nik's** — it has cost/ToS implications.
+plan) is the fallback. **This choice is Nik's** - it has cost/ToS implications.
 Whatever is chosen, the snapshot is stored so the *system* owns the rate history,
 not the vendor.
 
@@ -194,13 +194,13 @@ not the vendor.
 Two well-known accounts, resolved idempotently per org (mirroring
 `resolve_opening_balance_equity`):
 
-- **Realized FX gain/loss** (income/expense) — recognized when a foreign monetary
+- **Realized FX gain/loss** (income/expense) - recognized when a foreign monetary
   balance is **settled** and the settlement rate differs from the booking rate.
-- **Unrealized FX gain/loss** (income/expense) — recognized at **period close**
+- **Unrealized FX gain/loss** (income/expense) - recognized at **period close**
   when open foreign monetary balances (foreign AR/AP, foreign cash) are
   **revalued** to the period-end rate.
 
-**Realized — timing & posting.** When `apply_invoice_payment` settles a
+**Realized - timing & posting.** When `apply_invoice_payment` settles a
 foreign-currency invoice: AR was booked at the invoice-date rate; cash arrives at
 the payment-date rate. The base-currency difference is the realized gain/loss.
 Posting (all base amounts): Dr Cash (payment-date base) / Cr AR (invoice-date
@@ -208,12 +208,12 @@ base) / **Dr or Cr Realized FX** for the residual so the entry's base balance is
 exact. The transaction-currency lines still balance in the foreign currency
 (§3 invariant 1); the FX line lives **only in the base leg**.
 
-**Unrealized — timing & posting.** At period close, a revaluation run walks every
+**Unrealized - timing & posting.** At period close, a revaluation run walks every
 open foreign monetary balance, computes the base value at the period-end rate vs.
 its carried base value, and posts an **adjusting entry** Dr/Cr the monetary
 account / Cr/Dr Unrealized FX. Common practice **reverses** the unrealized
 adjustment at the start of the next period (so realized recognition isn't
-double-counted) — this fits our discipline perfectly: **the reversal is a
+double-counted) - this fits our discipline perfectly: **the reversal is a
 first-class reversing entry** (LEARNINGS #15/#16), never an edit. Decision D4
 covers whether we auto-reverse or carry.
 
@@ -222,12 +222,12 @@ existing rule: immutable lines, corrections are reversing entries, period-close
 locks respected (a revaluation posts *into* the closing period as part of close,
 guarded by the close-vs-post lock, LEARNINGS #15), idempotency keys on the
 revaluation run so a retry can't double-post (and note #15: distinct keys don't
-protect a race — the revaluation run takes the same `FOR UPDATE` discipline).
+protect a race - the revaluation run takes the same `FOR UPDATE` discipline).
 
 **Which balances are monetary?** Only monetary items revalue (cash, AR, AP, loans);
 non-monetary (fixed assets, prepaid, equity, most revenue/expense already
 recognized) are **not** revalued. The revaluation run must classify by account
-type + a monetary flag — Decision D5.
+type + a monetary flag - Decision D5.
 
 ---
 
@@ -235,7 +235,7 @@ type + a monetary flag — Decision D5.
 
 - **Reports present in base currency only** (P&L, balance sheet, trial balance,
   cash flow, AR aging, exports). `reports.ts` sums switch from `amount_minor` to
-  **`base_amount_minor`** — one-line-per-builder change that fixes the §2e
+  **`base_amount_minor`** - one-line-per-builder change that fixes the §2e
   add-across-currencies bug. Trial balance ties in base because every entry's base
   leg balances (§3 invariant 2).
 - **Transaction detail shows both:** the foreign amount ("£100.00") and its base
@@ -251,7 +251,7 @@ type + a monetary flag — Decision D5.
 
 ---
 
-## 7. Migration shape — additive & backward-compatible
+## 7. Migration shape - additive & backward-compatible
 
 All changes are **additive**; single-currency orgs are unaffected until they opt
 in. Reserved timestamp range assigned at build time (LEARNINGS #24).
@@ -265,20 +265,20 @@ in. Reserved timestamp range assigned at build time (LEARNINGS #24).
    `(quote_currency, as_of, source)`. RLS/grants like other global reference data.
 3. **Optional `currencies` catalog** (Decision D2): ISO-4217 code → `minor_unit`,
    name; seeded pure-SQL (no `\i`, LEARNINGS #24).
-4. **`resolve_realized_fx_account` / `resolve_unrealized_fx_account`** — idempotent
+4. **`resolve_realized_fx_account` / `resolve_unrealized_fx_account`** - idempotent
    per-org, service-role-only (clone `resolve_opening_balance_equity`).
 5. **New base-balance deferred trigger** alongside `assert_entry_balanced` (do
-   **not** modify the existing per-currency trigger — LEARNINGS #6, one concept).
+   **not** modify the existing per-currency trigger - LEARNINGS #6, one concept).
 6. **Rewrite the write-path** (`post_journal_entry` and the reconcile/reversal
    copy) to accept/resolve `fx_rate`, compute `base_amount_minor` with integer
    math, and fold the rounding residual + cross-currency FX into the base leg.
    Keep the `FOR UPDATE` locks (LEARNINGS #15).
 7. **Drop the gate** `journal_lines_home_currency` **last**, only when 1–6 land and
-   reports partition by base (LEARNINGS #17 — the fix must be complete on `main`
+   reports partition by base (LEARNINGS #17 - the fix must be complete on `main`
    before the gate comes down, or a redeploy re-exposes wrong sums).
 8. **Period-close revaluation** run (its own function + idempotency + lock).
 9. **App reports/money/UI** changes ship in the same PR as the doc flip
-   (LEARNINGS #7 — update what the system says about itself).
+   (LEARNINGS #7 - update what the system says about itself).
 
 Deploy order (LEARNINGS #23): migrations via Management API → edge fns →
 verify the base-balance trigger + a mixed-currency post from the response body →
@@ -286,36 +286,36 @@ verify the base-balance trigger + a mixed-currency post from the response body �
 
 ---
 
-## 8. Decisions — ANSWERED by Nik, 4 Jul 2026
+## 8. Decisions - ANSWERED by Nik, 4 Jul 2026
 
-- **D1 — Scope of "multi". ✅ CONFIRMED.** One immutable base currency per org,
+- **D1 - Scope of "multi". ✅ CONFIRMED.** One immutable base currency per org,
   foreign *transactions* only. No multi-base consolidation, no base-currency
   change after books exist.
-- **D2 — Currency precision & catalog. ✅ FULL CATALOG.** Support ≠2-minor-digit
+- **D2 - Currency precision & catalog. ✅ FULL CATALOG.** Support ≠2-minor-digit
   currencies (JPY 0, BHD/KWD 3): add the seeded `currencies` catalog with
   `minor_unit` and generalize `money.ts` `decimalToMinor` off the hard-2-dp
   assumption in the same build.
-- **D3 — Rate source. ✅ SYSTEMATIC (system-driven from day one).** Nik: *"I want
+- **D3 - Rate source. ✅ SYSTEMATIC (system-driven from day one).** Nik: *"I want
   this to be systematic."* The `fx_rates` daily snapshot table (ECB daily
-  reference rates — public, keyless, re-based arithmetically to each org's home
+  reference rates - public, keyless, re-based arithmetically to each org's home
   currency) ships **in v1 as the primary source**; rates auto-fill from the
   snapshot. A manually entered rate is the **override** (e.g. to match the bank's
   actual settlement rate), never the default path. Resolution order stands:
   explicit rate on the call → `fx_rates` snapshot for the line's date → error
   asking for a rate (never silently 1 for a foreign line). Live-per-call (C)
   stays rejected.
-- **D4 — Unrealized revaluation policy. ✅ AUTO AT CLOSE + AUTO-REVERSE.**
+- **D4 - Unrealized revaluation policy. ✅ AUTO AT CLOSE + AUTO-REVERSE.**
   Revaluation is part of the close action; the adjustment auto-reverses at the
   start of the next period. Both are first-class reversing entries.
-- **D5 — Monetary classification. ✅ INFER + FLAG OVERRIDE.** Default from account
+- **D5 - Monetary classification. ✅ INFER + FLAG OVERRIDE.** Default from account
   type (cash/AR/AP/loans = monetary; fixed assets/prepaid/equity = non-monetary)
   with an `is_monetary` override flag for edge-case accounts.
-- **D6 — Invoicing/payouts in scope for v1? ✅ EVERYTHING IN V1.** Ledger +
+- **D6 - Invoicing/payouts in scope for v1? ✅ EVERYTHING IN V1.** Ledger +
   foreign-currency invoices (realized FX on settlement) + foreign-currency
   payouts all ship in the first multi-currency release. Card the build
-  accordingly — this is the largest of the scoping options, so the wave-gate
+  accordingly - this is the largest of the scoping options, so the wave-gate
   stress pass must cover all three surfaces (§9).
-- **D7 — Rollout. ✅ PER-ORG OPT-IN FLAG.** `multi_currency_enabled` per org; the
+- **D7 - Rollout. ✅ PER-ORG OPT-IN FLAG.** `multi_currency_enabled` per org; the
   single-currency guard stays active for every org until its flag is flipped.
   Dogfood on a test org first, then enable per customer.
 

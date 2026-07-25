@@ -1,4 +1,4 @@
-# FounderFirst — engineering learnings (read before non-trivial work)
+# FounderFirst - engineering learnings (read before non-trivial work)
 
 Hard-won rules from real incidents in this repo. Each one cost us time or a
 near-miss. Follow them; don't relearn them.
@@ -16,10 +16,10 @@ regenerated, or clobbered. A deletion "came back". 60+ stale worktrees piled up.
   **own git worktree** (the harness `isolation: worktree` option), merged back
   via a reviewed diff. Don't run two sessions editing the same files.
 - **Commit atomically and immediately.** A staged change you leave sitting is
-  the #1 thing that gets lost. `git commit` includes *everything* staged — stage
+  the #1 thing that gets lost. `git commit` includes *everything* staged - stage
   only the files for that commit.
 - Prune dead worktrees (`git worktree prune` + `remove`). Removing a worktree
-  folder does NOT delete its branch — unmerged work stays reachable by branch.
+  folder does NOT delete its branch - unmerged work stays reachable by branch.
 
 ## 2. Migrations are the only source of truth for the database schema.
 
@@ -41,7 +41,7 @@ folder. A naive `db push` would have deployed their unfinished work to prod.
 **Rules:**
 - Before `db push`, run `supabase migration list` and check what's pending.
 - If a pending migration isn't yours, set it aside (move out of the folder),
-  push, then restore — or coordinate. Never blind-push.
+  push, then restore - or coordinate. Never blind-push.
 
 ## 4. Production + destructive work: back up, show, verify, then act.
 
@@ -49,10 +49,10 @@ folder. A naive `db push` would have deployed their unfinished work to prod.
 that *another session* had written.
 
 **Rules:**
-- **Back up first** (`supabase db dump --data-only`) — a deletion with a backup
+- **Back up first** (`supabase db dump --data-only`) - a deletion with a backup
   is reversible; without one it's not.
 - **Show before you delete.** Print exact row counts / the exact rows.
-- **Verify a script's claims against real data** — especially one you didn't
+- **Verify a script's claims against real data** - especially one you didn't
   write. Don't trust "deletes only the 9 bot rows" until you've counted them.
 - Prefer **soft-delete (archive)** over hard-delete for anything that's a record;
   keep a separate true-erasure path for genuine deletion requests.
@@ -65,7 +65,7 @@ that *another session* had written.
 - Live services (the Discord bot) cut over with a fast swap + a documented
   rollback (repoint `Dockerfile`, redeploy). Worker/DB are untouched by a bridge
   deploy, so bridge rollback is clean.
-- Typecheck/build **after any fan-out edit** — parallel agents editing different
+- Typecheck/build **after any fan-out edit** - parallel agents editing different
   files introduced a stale-variable bug that `tsc` caught before commit.
 
 ## 6. One concept, one source of truth (in code and data).
@@ -81,7 +81,7 @@ Consolidate to one, and route every reader/writer through it.
 ## 7. When you change what a system does, update what it says about itself.
 
 **What happened:** Penny gained persistent memory but still told users "I won't
-remember after this chat" — because her prompt never told her otherwise. Later,
+remember after this chat" - because her prompt never told her otherwise. Later,
 admin analytics still described measuring deflection "once Dify logs every
 conversation" long after Dify was dropped.
 
@@ -89,17 +89,17 @@ conversation" long after Dify was dropped.
 (prompts, docs, UI copy) matches the new behavior. Stale tool names in copy
 (e.g. "Dify") are a tell that a surface drifted from reality.
 
-## 8. Retention has a privacy cost — disclose it, and offer erasure.
+## 8. Retention has a privacy cost - disclose it, and offer erasure.
 
 **Rule:** retaining personal data (e.g. Discord chats after `/disconnect`) is a
 product decision with legal weight. Keep records via archive, but (a) keep a real
 erasure path, and (b) disclose retention in the privacy policy. Don't assert
-GDPR/CCPA compliance in code comments — flag for legal review.
+GDPR/CCPA compliance in code comments - flag for legal review.
 
 ## 9. On UI feedback, verify what's actually live before re-tweaking.
 
 **What happened:** A user repeatedly said "still same" after Templates-editor
-restyles. Several of those were *already deployed* — the change was live but too
+restyles. Several of those were *already deployed* - the change was live but too
 subtle to read, or the browser/CDN was serving a stale bundle. Time was burned
 re-editing things that were already shipped.
 
@@ -109,7 +109,7 @@ re-editing things that were already shipped.
   assuming it didn't land. Confirm live ≠ confirm intended.
 - The admin is auth-walled, so you can't screenshot it yourself. **Verify CSS
   against the *real* stylesheet** in a static harness served locally
-  (`python -m http.server`, screenshot via preview tools) — not against an
+  (`python -m http.server`, screenshot via preview tools) - not against an
   idealized hand-built mockup. A mockup approximates; only the real components +
   real rendered email reflect what the user sees.
 - Subtle elevation (4%-opacity shadows) reads as "no change" on a near-white
@@ -121,20 +121,20 @@ re-editing things that were already shipped.
 **What happened:** `cloudflared tunnel login` (browser cert-callback) failed
 twice when launched from the detached Bash tool ("Failed to write the
 certificate"), but worked instantly when the **user** ran it in their own
-Terminal. Edge connectivity was fine — only the localhost callback needs a real
+Terminal. Edge connectivity was fine - only the localhost callback needs a real
 interactive session.
 
 **Rule:** for any tool that needs a human browser-auth step (OAuth/SSO,
 `cloudflared tunnel login`, device-code flows), hand the **single** interactive
 command to the user and **script everything before and after it** (create,
 route, config, launchd, verify). Don't loop retrying the login from automation.
-Also: `timeout` is not installed on macOS — don't rely on it in host scripts.
+Also: `timeout` is not installed on macOS - don't rely on it in host scripts.
 
-## 11. Generate types from the LIVE schema — they catch drift `tsc` can't.
+## 11. Generate types from the LIVE schema - they catch drift `tsc` can't.
 
 **What happened:** Two migrations were given the same timestamp
 (`20260623150000`). Supabase tracks migrations by version, so it saw the version
-as already applied and **silently skipped the second file** — `audit_runs` was
+as already applied and **silently skipped the second file** - `audit_runs` was
 never created in prod, and the admin Quality dashboard read a table that didn't
 exist. Nothing local revealed it; `tsc` was green against 47 hand-written row
 interfaces. Running `supabase gen types` against the live DB and typing the
@@ -152,53 +152,53 @@ client surfaced it instantly (the table was missing from the generated schema).
 ## 12. A scary-looking metric isn't a bug until you verify it against the data.
 
 **What happened:** `support_tickets` showed ~1M sequential scans and got flagged
-as a "missing index." But the table already had the right indexes — the scans
+as a "missing index." But the table already had the right indexes - the scans
 were Postgres correctly choosing a seq scan on an **empty (0-row) table**. Adding
 an index would have done nothing.
 
 **Rule:** before "fixing" a perf signal, confirm the cause against reality (row
-counts, existing indexes, the query plan) — this applies to your own diagnoses,
+counts, existing indexes, the query plan) - this applies to your own diagnoses,
 not just scripts you didn't write (rule 4). Empty/tiny tables seq-scan by design
 and switch to index scans once they grow.
 
-## 13. A dev machine running local Ollama is production infra — a single point of failure.
+## 13. A dev machine running local Ollama is production infra - a single point of failure.
 
 **What happened:** "Draft with AI" and the signals scorer depended on Ollama on a
-developer's Mac (via a Cloudflare Tunnel) — they only worked while that laptop
+developer's Mac (via a Cloudflare Tunnel) - they only worked while that laptop
 was awake, and the master secret vault lived only there.
 
 **Rules:**
 - Don't put a runtime the product depends on on a personal machine. Move LLM
-  calls to a managed free tier — **Cloudflare Workers AI** (free daily
+  calls to a managed free tier - **Cloudflare Workers AI** (free daily
   allocation) replaced the Mac compose-server with no per-call cost.
 - Workers AI gotchas: models get **deprecated** (pin a current one, e.g.
   `@cf/meta/llama-3.3-70b-instruct-fp8-fast`); `env.AI.run` returns a string for
   some models and an object for others; models emit **raw control chars** inside
-  JSON strings — use `response_format: { type: "json_object" }` *and* a
+  JSON strings - use `response_format: { type: "json_object" }` *and* a
   control-char repair pass before `JSON.parse`.
 - When you can't take a local DB backup (no Docker/`pg_dump`/`psql` in the
-  shell), say so — don't pretend one exists. Only proceed with a drop when the
+  shell), say so - don't pretend one exists. Only proceed with a drop when the
   data is provably redundant and the live source is intact.
 - **One source of truth for config, not per-file constants.** Site-wide strings
   (canonical URL, public contact email, company/product names, social links)
   live in `apps/web/src/lib/site.ts` (`SITE`); design values live in
-  `packages/design-system/tokens.css`. Never hardcode them in a page/component —
+  `packages/design-system/tokens.css`. Never hardcode them in a page/component -
   import the constant or token so a change happens once and applies everywhere.
   The public contact email is **always `founder@founderfirst.one`** (never a
   personal address). Company = **FounderFirst**, product = **Penny**; keep them
   distinct in copy.
 
-## 14. A green build can still ship broken UI — guard the silent failure modes.
+## 14. A green build can still ship broken UI - guard the silent failure modes.
 
 **What happened:** PR #66 accidentally truncated `apps/admin/src/styles/content.css`
 and `signals.css` to **0 bytes**. `styles.css` still `@import`ed them, so the
-bundler **silently skipped the empty files** — the build stayed green and
+bundler **silently skipped the empty files** - the build stayed green and
 deployed, but every admin sub-tab (Analytics, Audience, Signals, Penny) rendered
 as unstyled run-together text on prod. It went unnoticed until a user reported it.
 
 **Rules:**
 - **An `@import` of an empty or missing CSS partial is silently skipped, not an
-  error.** Same for many bundler inputs — absence degrades quietly instead of
+  error.** Same for many bundler inputs - absence degrades quietly instead of
   failing loud. Don't assume "build passed" means "output is correct."
 - **Guard the silent failure modes in CI, not just type/lint errors.** A guard
   exists: `pnpm check:css` ([scripts/check-css-imports.ts](scripts/check-css-imports.ts))
@@ -218,7 +218,7 @@ as unstyled run-together text on prod. It went unnoticed until a user reported i
 ## 15. Read-then-write RPCs need a row lock, or concurrency corrupts silently.
 
 **What happened:** The feature stress sweep found the *same* bug shape in four
-SECURITY DEFINER functions — `reverse_journal_entry`, `recategorize_entry`,
+SECURITY DEFINER functions - `reverse_journal_entry`, `recategorize_entry`,
 `approve_journal_entry`, and the close-vs-post path. Each did a lock-free
 `SELECT … INTO v_row` then mutated based on what it read. Two concurrent calls with
 distinct idempotency keys (two tabs, a network retry, two CPAs) both read the stale
@@ -230,7 +230,7 @@ live on prod.
   **`SELECT … FOR UPDATE`** (or `FOR SHARE` when you only need to block a specific
   conflicting writer, as `ensure_open_period` does against `close`). The check and
   the mutation must be in the same lock scope.
-- Idempotency keys do **not** prevent this — distinct keys are exactly the concurrent
+- Idempotency keys do **not** prevent this - distinct keys are exactly the concurrent
   case that slips through. Idempotency dedupes *retries of the same logical call*, not
   *two different calls racing the same row*.
 - Add **defense-in-depth at the storage layer** where the invariant allows it (e.g.
@@ -238,27 +238,27 @@ live on prod.
   original impossible regardless of the function). A lock protects the hot path; a
   constraint protects against the lock ever being wrong.
 - When you fix one instance of a recurring shape, **grep for the shape** and fix all
-  of them in the same wave — the reverse fix shipped while `approve` still had the bug.
+  of them in the same wave - the reverse fix shipped while `approve` still had the bug.
 
 ## 16. "The trial balance still ties" does not mean the data is correct.
 
 **What happened:** Every ledger P0 in the stress sweep (double-reversal,
 double-categorize, close-vs-post) left `Σdebits = Σcredits` intact to the cent while
-the underlying entries were wrong — an entry reversed twice nets its account to the
+the underlying entries were wrong - an entry reversed twice nets its account to the
 *negative* of the original, but each reversal is itself balanced, so the org-level
 tie-out check sees nothing. The corruption was invisible to the one check we trusted.
 
 **Rule:** a balanced trial balance is necessary but **not sufficient** evidence of
-correctness. Verify the specific invariant the operation is supposed to preserve —
+correctness. Verify the specific invariant the operation is supposed to preserve -
 entry count delta (no double-post), one-reversal-per-original, category actually
-changed once — not just that the books still balance. Silent-but-balanced is the most
+changed once - not just that the books still balance. Silent-but-balanced is the most
 dangerous failure mode because it passes the obvious test.
 
 ## 17. A fix deployed to prod but not merged to `main` is a loaded gun.
 
 **What happened:** The period-lock (#131) and double-reversal (#139) fixes were
 deployed straight to prod during stress testing (Nik authorized the hotfix) but their
-migrations were never merged — timestamp collisions left them out of `main`. For two
+migrations were never merged - timestamp collisions left them out of `main`. For two
 days, `main` did not contain two live P0 fixes. A routine `supabase db push` from
 `main` would have silently **re-deployed the vulnerable function bodies** over the
 fixed ones. Worse, a later combined deploy of `approve_journal_entry` from a different
@@ -271,7 +271,7 @@ lineage **clobbered** #131's period-closed guard on prod.
 - When you must deploy ahead of merge, **capture the exact live body back into a repo
   migration immediately** (`pg_get_functiondef`), and reconcile before the next
   `db push`. Prod and `main` drifting apart is the default outcome of overlapping
-  sessions, not an exception — assume it and check (`pg_get_functiondef` vs. the repo).
+  sessions, not an exception - assume it and check (`pg_get_functiondef` vs. the repo).
 - **Before deploying a function, snapshot the current prod body.** When sessions
   overlap, the body you're about to overwrite may itself contain another session's
   unmerged fix (this is exactly how the F2 guard got clobbered).
@@ -280,7 +280,7 @@ lineage **clobbered** #131's period-closed guard on prod.
 
 **What happened:** `useEntries` fetched ledger rows with no pagination; prod PostgREST
 caps a response at `max_rows=1000`. Orgs with >1000 entries silently lost their oldest
-rows — the P&L / balance sheet still *tied* (rule 16 again) but showed the wrong
+rows - the P&L / balance sheet still *tied* (rule 16 again) but showed the wrong
 numbers. The GDPR export had the identical bug (truncated at 1000).
 
 **Rule:** a `select` whose result is summed, reported, or exported must page through
@@ -288,13 +288,13 @@ numbers. The GDPR export had the identical bug (truncated at 1000).
 report/export-feeding selects when you touch that layer; the truncation is invisible
 until an org crosses the limit.
 
-## 19. Don't spawn a session per unit of work — orchestrate one run over many.
+## 19. Don't spawn a session per unit of work - orchestrate one run over many.
 
 **What happened:** The stress program ran as ~15 separate long-lived sessions, one per
 feature. It worked, but the *coordination* cost fell on the human: 15 PRs to track,
 overlapping fixes to dedupe by hand (#132 and #139 fixed the same reverse P0 twice),
 prod↔main drift to reconcile after the fact, and status scattered across chats until it
-felt "lost." The failure wasn't the testing — it was that no single artifact owned the
+felt "lost." The failure wasn't the testing - it was that no single artifact owned the
 whole run.
 
 **Rules:**
@@ -303,32 +303,32 @@ whole run.
   merges, and owns one status artifact. See the operating model in
   [docs/STRESS_TEST_TRACKER.md](docs/STRESS_TEST_TRACKER.md) → "Operating model".
 - **One source of truth for run status** (a committed board + AUDIT.md ledger), updated
-  as work lands — not reconstructed from memory afterward.
+  as work lands - not reconstructed from memory afterward.
 - **Every autonomous session has a hard timeout, a single task, and exits by opening a
-  PR or a blocked-report** — never by committing to `main`, never by running open-ended
+  PR or a blocked-report** - never by committing to `main`, never by running open-ended
   (the 9×/night hardening cron leaked sessions → SIGBUS; see memory).
 
-## 20. Some prod state lives outside git — when you change it, record it.
+## 20. Some prod state lives outside git - when you change it, record it.
 
 **What happened:** Every PR showed a red/neutral "Supabase Preview" check. It wasn't a
-workflow in the repo — the **Supabase GitHub App** posted it because database
+workflow in the repo - the **Supabase GitHub App** posted it because database
 **Branching was enabled** on the project. On PRs touching `supabase/` it tried to spin
 up an ephemeral preview branch, hit the plan's low concurrent-branch limit during the
 multi-PR stress sweep, and came back `cancelled` → a red ✗. We never use preview
-branches (migrations are manual — Rule 3), so it was pure noise that trained everyone to
+branches (migrations are manual - Rule 3), so it was pure noise that trained everyone to
 ignore a red X. Fixed by disabling branching via the Management API
-(`DELETE /v1/projects/{ref}/branches`) on **2 Jul 2026** — prod stayed `ACTIVE_HEALTHY`,
+(`DELETE /v1/projects/{ref}/branches`) on **2 Jul 2026** - prod stayed `ACTIVE_HEALTHY`,
 data untouched, branch list now empty.
 
 **Rules:**
 - **Config that gates or annotates PRs isn't always in `.github/`.** Dashboard
   integrations (Supabase GitHub App, Cloudflare, Vercel) post their own checks. If a
   check is failing and you can't find its workflow, inspect the check-run's `app` slug
-  and `details_url` — that names the external owner.
-- **A CI signal you can't act on is worse than no signal** — it normalises ignoring red.
+  and `details_url` - that names the external owner.
+- **A CI signal you can't act on is worse than no signal** - it normalises ignoring red.
   Remove or fix it, don't tolerate it.
 - **A prod-config change made outside git leaves no diff.** Record it (here or in ops
-  notes) with what changed, why, and how to reverse it — otherwise the next person can't
+  notes) with what changed, why, and how to reverse it - otherwise the next person can't
   tell intentional config from drift. **Current state: Supabase Branching is
   intentionally OFF** (re-enable only via Dashboard → Settings → Integrations → GitHub →
   Branching, if the manual-migration workflow ever changes).
@@ -337,7 +337,7 @@ data untouched, branch list now empty.
 check fired on every PR. `penny-proxy` was an **orphaned Cloudflare Worker** left over
 from the ~2-months-prior app (its Workers Build was git-connected to this repo with
 Root directory `/` + Deploy `npx wrangler deploy` + watch paths `*`, but the repo root
-has no wrangler config — the only worker here is `penny-site-bubble` in
+has no wrangler config - the only worker here is `penny-site-bubble` in
 `site-bubble/worker/`, deployed by `deploy-worker.yml`). So it failed on every push.
 Verified dead in the dashboard (no custom domains/routes, 0 req/sec, last real deploy
 2 months ago) and **deleted the Worker**. **Current state: `penny-proxy` Worker no
@@ -346,12 +346,12 @@ longer exists**; the only Cloudflare Worker for this repo is `penny-site-bubble`
 Cloudflare build check ever reappears, check Workers & Pages → the service → Settings →
 Build for a stray git connection.
 
-## 21. Work in a worktree off fresh `origin/main` — the repo root is a stale branch.
+## 21. Work in a worktree off fresh `origin/main` - the repo root is a stale branch.
 
 **What happened:** The repo root is permanently checked out on the stale `deploy-finish`
 branch, which predates Waves 1–2. During Wave 3 a builder "verified against origin/main"
 but actually grepped the **repo root**, found no `strings.ts` / `platform_config`, and
-declared its card **blocked — dependencies missing**. They weren't missing; they were on
+declared its card **blocked - dependencies missing**. They weren't missing; they were on
 `main`, deployed to prod. The builder had read the wrong tree. A whole build cycle was
 wasted. Separately, several turns reasoned off a **stale local `origin/main` ref** (a PR
 showed `MERGED` while the local ref still pointed at the pre-merge commit) until a
@@ -359,45 +359,45 @@ showed `MERGED` while the local ref still pointed at the pre-merge commit) until
 
 **Rules:**
 - **Every builder/fixer creates a git worktree off freshly-fetched `origin/main` and does
-  ALL reading, grepping, and building INSIDE that worktree** — never in the repo root
-  (it's a stale branch). The loop preflight (`scripts/loop-preflight.sh`) hard-fails if
+  ALL reading, grepping, and building INSIDE that worktree** - never in the repo root
+  (it's a stale branch). The CI preflight (`scripts/loop-preflight.sh`) hard-fails if
   known-recent files are absent, which means you're on a stale base.
 - **`git fetch` before you reason about `main`.** Local refs go stale constantly; when
-  git state and GitHub disagree, GitHub wins — verify via `gh api` / `gh pr view`.
+  git state and GitHub disagree, GitHub wins - verify via `gh api` / `gh pr view`.
 - **A "missing dependency / this card is blocked" conclusion is far more often a stale
   base than a real gap.** Re-verify against a fresh worktree before ever reporting blocked
-  or inventing the "missing" thing (which would recreate an owned surface — Rule 6).
+  or inventing the "missing" thing (which would recreate an owned surface - Rule 6).
 
-## 22. A PR is "green" only when CI says so — a static "safe" verdict is not CI-green.
+## 22. A PR is "green" only when CI says so - a static "safe" verdict is not CI-green.
 
 **What happened:** REG-1 (#175) was reported "safe" by an adversarial reviewer that
-**could not run pgTAP** (no Docker in the sandbox — it reasoned from source only). It was
+**could not run pgTAP** (no Docker in the sandbox - it reasoned from source only). It was
 folded into the wave as clean. In fact its `regression_pack_test.sql` errored before its
-first assertion (an invalid-hex UUID fixture) and had been **failing all along** — masked
+first assertion (an invalid-hex UUID fixture) and had been **failing all along** - masked
 by a `tee`-without-`pipefail` step in the CI workflow that returned the pipe's exit code
 (~0) and swallowed the red. The fix that added `pipefail` is what finally surfaced it.
 
 **Rules:**
 - **Confirm `gh pr checks <n>` shows every check passing before calling a PR clean or
   merging it.** A subagent's "safe / should pass in CI" + local `tsc`/`vitest` is
-  necessary but NOT sufficient — pgTAP and the E2E jobs only truly execute in CI.
+  necessary but NOT sufficient - pgTAP and the E2E jobs only truly execute in CI.
 - **Hunt false-greens.** Any CI step piping through `tee`/a subshell without
   `set -o pipefail` reports the pipe's exit code and hides failures. Add `pipefail`
-  wherever the loop adds CI steps.
+  wherever CI steps are added.
 - **No local Docker ⇒ recurring pgTAP-authoring bugs** (plan(N)≠assertion count, non-hex
   UUID fixtures, `is(numeric,bigint)` type mismatch, `throws_ok` given a condition name
   instead of a 5-char SQLSTATE). `scripts/loop-preflight.sh` catches these statically
   before pushing; a **Docker-capable runner** so builders run pgTAP locally is the real
   fix and the standing infra ask.
 
-## 23. Deploy each edge function to match its own auth — verify from the response body, not the status.
+## 23. Deploy each edge function to match its own auth - verify from the response body, not the status.
 
 **What happened:** During the Wave-2 deploy, all 7 edge functions were deployed with a
 blanket `--no-verify-jwt`. That is only correct for the **public** `plaid-webhook`; it
 left 6 **authed** functions publicly reachable at the gateway (their in-code
 `getUser`/`can_write_org_as` still protected them, but the gateway layer was off). Caught
 by a live smoke test and corrected by redeploying the 6 without the flag. Separately, a
-smoke test read a **401** from `plaid-webhook` and nearly "fixed" a non-bug — the 401 body
+smoke test read a **401** from `plaid-webhook` and nearly "fixed" a non-bug - the 401 body
 was `{"error":"unverified_webhook"}`, i.e. the gateway was correctly open and the function
 correctly rejected an unsigned request. The status code alone was misleading.
 
@@ -411,27 +411,27 @@ correctly rejected an unsigned request. The status code alone was misleading.
   authed fn returns 401 unauth, public fn returns its own error not a gateway one.
 - **Prod migrations apply via the Management API** (`POST /v1/projects/{ref}/database/query`
   with `--data @file`, UA header) then insert the version into
-  `supabase_migrations.schema_migrations` — the CLI `db push` needs a DB password not in
+  `supabase_migrations.schema_migrations` - the CLI `db push` needs a DB password not in
   secrets. `supabase functions deploy <fn> --project-ref <ref>` uses the access token
-  (no DB password). Expect transient Supabase API 502s — retry with ~60s backoff.
+  (no DB password). Expect transient Supabase API 502s - retry with ~60s backoff.
 
 ## 24. When builders run in parallel, coordinate the shared files up front.
 
 **What happened:** Parallel Wave-1 builders each picked migration timestamps independently
-and two collided (`20260703060000` in both W1.5 and W1.3-B) — invisible per-branch, a hard
+and two collided (`20260703060000` in both W1.5 and W1.3-B) - invisible per-branch, a hard
 `unique-timestamps` failure once both hit `main`. Separately, CENTRAL-2's `seed.sql` used a
 psql `\i` include; Supabase applies `seed.sql` over the pgx **batch protocol**, which
 rejects backslash meta-commands (`syntax error at or near "\"`), aborting the whole stack
-replay — inherited by every stacked branch.
+replay - inherited by every stacked branch.
 
 **Rules:**
-- **Assign disjoint migration-timestamp ranges to concurrent builders up front** (one
+- **Assign disjoint migration-timestamp ranges to concurrent contributors up front** (one
   card = one reserved range), and re-check `ls supabase/migrations | uniq -d` at the gate.
-- **`supabase/seed.sql` must contain pure SQL only — no psql meta-commands (`\i`, `\set`).**
+- **`supabase/seed.sql` must contain pure SQL only - no psql meta-commands (`\i`, `\set`).**
   Seed loaders inline their generated SQL into delimited sections so cards append, not
   `\i`-include. The preflight flags `\`-leading lines.
 - **Shared catalogs (strings, seed.sql, nav, `config.toml`) get labelled additive blocks,
-  merged by union at the gate** — never a rewrite. Dependents build off a **rolling
+  merged by union at the gate** - never a rewrite. Dependents build off a **rolling
   `loop/wave<N>-integration` branch** (updated as base cards land), not pinned commits, to
   avoid gate-time rebase churn.
 
@@ -443,13 +443,13 @@ replay — inherited by every stacked branch.
 
 Dated findings from `/audit` runs, newest first. Each entry: the commit audited,
 a short summary, and one line per P0/P1 marked **fixed** or **deferred**. When an
-issue here keeps recurring, graduate it into a numbered rule above — that is how
+issue here keeps recurring, graduate it into a numbered rule above - that is how
 we stop repeating it. The command lives at `.claude/commands/audit.md`.
 
-### 3 Jul 2026 · Wave-3 wave-gate audit (owner-experience layer) — GATE 🟢 CLEAR
+### 3 Jul 2026 · Wave-3 wave-gate audit (owner-experience layer) - GATE 🟢 CLEAR
 14-dimension rubric + adversarial stress pass over the Wave-3 blast radius (W3.2 trust-tiered
 autonomy · W3.1 Penny thread · W3.3 onboarding · W3.4 owner Home · W3.5 receipts) + a W2.4/W2.5
-sanity-check, all shipped+deployed. **0 P0.** Trust cluster materially clean — the recurring
+sanity-check, all shipped+deployed. **0 P0.** Trust cluster materially clean - the recurring
 failure modes (LEARNINGS #15 TOCTOU locks, #16 balanced≠correct, #18 pagination, forged-`p_actor`,
 service_role-only grants) are all correctly handled; the W3.2 spine (advisory-lock atomic budget,
 `FOR UPDATE` undo, reversal-path undo, one-reversal-per-original) is the wave's strongest surface.
@@ -464,15 +464,15 @@ report + per-dimension table + coverage-delta rows: **[AUDIT.md](docs/AUDIT.md) 
 retro rules proposed there (DEFINER-reader tenant guard · counter-honesty test · undo keys are FKs).
 Gate verdict: **Wave 4 clear to start** (P0s = 0; recommend F1+F2 fixed-or-Nik-accepted first).
 
-### 2 Jul 2026 · Autonomous build loop — Waves 1 & 2 shipped to prod
+### 2 Jul 2026 · build process - Waves 1 & 2 shipped to prod
 One orchestrating session fanned out builders → red-team → CI-verify → wave-audit → deploy
 (Rule 19 in practice). **Wave 1** (12 cards, integration #185) and **Wave 2** (3 cards,
 integration #189) merged + deployed to prod (16+4 migrations applied via the Management
 API, edge fns deployed, verified live). **18 real defects caught + fixed pre-merge, 6 P0**
-— forgeable bank-rec tie-out, 2 kernel effective-dating (seed never loaded; re-seed
+- forgeable bank-rec tie-out, 2 kernel effective-dating (seed never loaded; re-seed
 re-opened closed law), Plaid missing `account_id` column (would crash every sync),
 plaid-webhook forgery (added ES256 verify, fail-closed in prod), catch-up client-confidence
-trust bypass — plus a cross-source dedup race and a raft of pgTAP/CI-truth fixes. Both waves
+trust bypass - plus a cross-source dedup race and a raft of pgTAP/CI-truth fixes. Both waves
 passed the 14-dimension audit (0 P0). **Operating lessons graduated into rules 21–24**
 (stale-tree/worktree discipline · CI-truth vs static "safe" · per-function auth on deploy ·
 parallel-builder file coordination). Added `scripts/loop-preflight.sh` to catch the

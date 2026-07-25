@@ -2,12 +2,12 @@
 
 `industry_scenarios.json` is a realistic, multi-sector double-entry regression suite
 used to prove the ledger ties **to the cent** across the kinds of books real small
-businesses keep — the "beat QuickBooks on correctness" bar.
+businesses keep - the "beat QuickBooks on correctness" bar.
 
 ## What's in it
 
 - **10 sector books** (restaurant, SaaS, e-commerce/retail, construction, professional
-  services, nonprofit, real-estate rental, freelancer, agency, healthcare clinic) —
+  services, nonprofit, real-estate rental, freelancer, agency, healthcare clinic) -
   110 journal entries total, each a complete period of activity.
 - Collectively exercises: accumulated depreciation (contra-asset), deferred/unearned
   revenue recognition, sales-tax payable, AR/AP aging with partial payments, customer

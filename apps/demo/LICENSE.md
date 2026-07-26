@@ -45,4 +45,4 @@ engineering (validator, retry loop, tiering), not the copy.
 
 ## Questions
 
-Reach out at nik@founderfirst.one.
+Reach out at founder@founderfirst.one.

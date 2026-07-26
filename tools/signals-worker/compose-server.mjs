@@ -30,6 +30,7 @@
 import http from "node:http";
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
+import { secretMatches } from "./timingSafeSecret.mjs";
 
 // ---- Env: process.env first, then a dotenv-style secrets file --------------
 function loadEnvFile() {
@@ -210,7 +211,7 @@ const ROUTES = new Set(["/compose", "/voice-check", "/insights"]);
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/health") return send(res, 200, { ok: true, model: MODEL });
   if (req.method !== "POST" || !ROUTES.has(req.url)) return send(res, 404, { error: "not_found" });
-  if (req.headers["x-compose-secret"] !== SECRET) return send(res, 401, { error: "unauthorized" });
+  if (!secretMatches(req.headers["x-compose-secret"], SECRET)) return send(res, 401, { error: "unauthorized" });
 
   try {
     const body = JSON.parse((await readBody(req)) || "{}");

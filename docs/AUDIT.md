@@ -204,7 +204,7 @@ making explicit. Keep it stack-specific and checkable.*
 
 Every audit we run is recorded here: **what was tested, what broke, where the fix
 landed, and, most importantly, what it did NOT cover.** Newest program first.
-Live PR/deploy status is in [docs/STRESS_TEST_TRACKER.md](docs/STRESS_TEST_TRACKER.md);
+Live PR/deploy status is in [docs/STRESS_TEST_TRACKER.md](STRESS_TEST_TRACKER.md);
 full per-feature reports are in `docs/stress/<feature>/`. This ledger is the durable
 record; the tracker is the working board.
 

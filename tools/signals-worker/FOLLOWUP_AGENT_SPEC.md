@@ -1,6 +1,6 @@
-# Follow-up Agent - v1 Spec
+# Follow-up Agent, v1 Spec
 
-> Status: **planned - not built** (no migration, worker logic, or admin UI exists yet) · spec authored Jun 2026 · Owner: Nik
+> Status: **planned, not built** (no migration, worker logic, or admin UI exists yet) · spec authored Jun 2026 · Owner: Nik
 
 *Plain-language plan. The first "new-user" agent. Built on top of the existing signals pipeline (see [SOLUTION.md](SOLUTION.md)). Keep it small; expand later.*
 
@@ -9,7 +9,7 @@
 ## 1. Why this exists (the problem in one line)
 
 We find prospects and send one message. If they don't reply, the lead silently dies.
-**In sales, most conversions come from the follow-up - and right now nobody follows up.**
+**In sales, most conversions come from the follow-up, and right now nobody follows up.**
 
 The Follow-up Agent fixes exactly that one leak, and nothing else. That focus is the point.
 
@@ -20,7 +20,7 @@ The Follow-up Agent fixes exactly that one leak, and nothing else. That focus is
 Once a day, the agent looks for prospects we reached out to but who went quiet. For each one,
 it writes a short, friendly, personalized follow-up using the context we already stored about
 them (their original post, their pain, their name). It drops the draft into the existing Leads
-drawer marked "needs review." **It never sends anything on its own** - you approve every message,
+drawer marked "needs review." **It never sends anything on its own:** you approve every message,
 exactly like today. Everything reuses what we already have: the same worker, the same draft
 function, the same drawer, the same audit log.
 
@@ -41,7 +41,7 @@ This agent is the first one to actively *push* people forward instead of waiting
 
 ---
 
-## 4. Scope - what we build now vs. later
+## 4. Scope, what we build now vs. later
 
 ### Build now (v1)
 1. **Schema:** add 4 new stages + 4 small columns to the existing `sig_leads` table.
@@ -60,7 +60,7 @@ These all plug into the *same record* later. We earn them by proving v1 works.
 
 ---
 
-## 5. Schema changes (the whole change - small)
+## 5. Schema changes (the whole change, small)
 
 ### New stages on `sig_leads.stage`
 Existing: `new, reviewing, drafted, sent, replied, won, dead`
@@ -82,10 +82,10 @@ That is the entire schema change.
 
 ---
 
-## 6. The daily sweep - exact logic
+## 6. The daily sweep, exact logic
 
 Runs once per day inside the signals worker. The recipe (per-lead or central default)
-decides timing and max count - see §10.
+decides timing and max count, see §10.
 
 ```
 candidates = leads WHERE stage = 'sent'
@@ -122,7 +122,7 @@ You tap approve/edit/send. Nothing leaves without you.
 - **Min 3 days** between the original send and the first follow-up; 4 days between follow-ups.
 - **Skips replied/won/dead leads** automatically (only touches `sent`).
 - **Full audit trail** via `sig_lead_events` (already standard in this system).
-- Built in an **isolated worktree, small atomic commits**, PR for review - per repo rules.
+- Built in an **isolated worktree, small atomic commits**, PR for review, per repo rules.
 
 ---
 
@@ -138,14 +138,14 @@ whether to expand (more follow-up steps, then auto-send, then the next agent).
 
 1. Migration: stages + 7 columns (+ keep `won` alias) + central policy row in `sig_settings`.
 2. Worker: `followupSweep()` function (recipe-aware) + wire into the daily cycle.
-3. Admin - central: a "Follow-up Policy" card in the Scoring/Settings tab (§10).
-4. Admin - per-lead: a "Follow-up" section in the Lead drawer (§10).
+3. Admin, central: a "Follow-up Policy" card in the Scoring/Settings tab (§10).
+4. Admin, per-lead: a "Follow-up" section in the Lead drawer (§10).
 5. Verify: dry-run the sweep against real `sent` leads, eyeball the drafts + that caps hold.
 6. Ship behind your approval; watch the reply-rate metric for a week.
 
 ---
 
-## 10. Customization - central + per-lead (the anti-spam design)
+## 10. Customization, central + per-lead (the anti-spam design)
 
 The whole goal here: **never create too many follow-ups.** Two dials (central default,
 per-lead override) plus a budget-aware agent that *structurally cannot* flood.
@@ -164,18 +164,18 @@ small fixed rhythm with a hard lifetime cap.
 
 Recipes are defined once (in `sig_settings`, easy to tune later, no code change).
 
-### Layer 1 - Central policy (set once; one row in `sig_settings`, key `followup_policy`)
+### Layer 1, Central policy (set once; one row in `sig_settings`, key `followup_policy`)
 Shown as a "Follow-up Policy" card in the Scoring/Settings tab:
 
 | Control | What it does |
 |---|---|
 | **Master switch** | Turn the whole agent on/off instantly |
 | **Default recipe** | Rhythm new leads get (e.g. Standard) |
-| **Daily cap** (N) | *Anti-flood seatbelt* - draft at most N/day; if more qualify, take the top N by intent, rest wait |
+| **Daily cap** (N) | *Anti-flood seatbelt*, draft at most N/day; if more qualify, take the top N by intent, rest wait |
 | **Quality gate** (min intent) | Leads below this score get ZERO follow-ups |
 | **Quiet rule** | Never touch replied/won/dead (always on) |
 
-### Layer 2 - Per-lead override (a "Follow-up" section in the Lead drawer)
+### Layer 2, Per-lead override (a "Follow-up" section in the Lead drawer)
 
 | Control | What it does |
 |---|---|
@@ -183,12 +183,12 @@ Shown as a "Follow-up Policy" card in the Scoring/Settings tab:
 | **Pause toggle** | Freeze follow-ups without killing the lead (`followup_paused`) |
 | **Snooze until [date]** | Don't bug them before this date (`snooze_until`) |
 | **Skip next** | Drop just the upcoming follow-up |
-| **Readout** | "Next follow-up: Jun 28 · 1 of 2 sent" - always see what's coming |
+| **Readout** | "Next follow-up: Jun 28 · 1 of 2 sent", always see what's coming |
 
 ### The creative brake: the "new-angle" gate
 Before drafting, the agent asks itself: *"Do I actually have something fresh/valuable to
 say?"* If not, it **skips and waits** instead of sending filler. Empty "just following up"
-messages are what make outreach feel like spam - so we gate on having a real reason.
+messages are what make outreach feel like spam, so we gate on having a real reason.
 
 ### Why it structurally cannot flood (five independent brakes)
 1. **Quality gate** → weak leads get none.
@@ -206,17 +206,17 @@ always follows brand voice. Nothing about the message is hidden in code.
 
 ### Two editable layers (no code changes to tune either)
 
-1. **Brand voice - already exists.** `penny_voice` table, edited at `/admin/content#voice`,
+1. **Brand voice, already exists.** `penny_voice` table, edited at `/admin/content#voice`,
    versioned + live, shared by Penny and all outreach. The worker already prepends it to every
    draft (`get_live_voice()`). Follow-ups inherit it automatically → one source of truth, no drift.
 
-2. **Follow-up content guide - NEW, editable.** Today the follow-up-specific rules would be
+2. **Follow-up content guide, NEW, editable.** Today the follow-up-specific rules would be
    hardcoded in `brain.mjs`. Instead we move them into an editable settings field
    (`sig_settings` key `followup_content`), shown in the Follow-up Policy card. Plain English:
    - The guide text, e.g. *"Warm, peer-to-peer, never salesy. Lead with one genuinely useful
      tip about THEIR problem. Reference what we said before. One soft, low-pressure next step.
      If there's nothing helpful to add, send nothing."*
-   - **"Never say" list** - banned phrases: *"just checking in", "circling back", "quick
+   - **"Never say" list:** banned phrases: *"just checking in", "circling back", "quick
      follow-up", "did you see my message", "we help businesses like yours"*. The draft must
      avoid these (kills the spammy patterns at the root).
    - **Length cap** (e.g. < 60 words).
@@ -227,16 +227,16 @@ context + prior-message history. Both layers are user-editable; none are hardcod
 
 ### Preview before live (the "so I know what we have" feature)
 A **"Preview sample nudge"** button in the Follow-up Policy card. Runs the real draft pipeline
-against a sample (or a chosen real stalled lead) and shows the actual message - **no send, no
+against a sample (or a chosen real stalled lead) and shows the actual message, **no send, no
 save.** Edit guide → preview again → see it change. Tune tone until happy, then enable the agent.
 
 ### Build impact (still small)
 - Move follow-up rules out of `brain.mjs` into the `followup_content` settings field.
 - Reuse `penny_voice` as-is.
 - Add to the Policy card: a guide text area, a banned-phrases field, and a Preview button
-  (Preview calls a draft RPC in dry-run mode - no DB write).
+  (Preview calls a draft RPC in dry-run mode, no DB write).
 
 ---
 
 *Next agent after this proves out: a "Warm-greeter" that personalizes Penny's first message for
-people who arrive from our outreach - the next door down the hallway.*
+people who arrive from our outreach, the next door down the hallway.*

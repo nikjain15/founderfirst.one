@@ -2,12 +2,12 @@
 
 How we keep `/admin` clean as features accrete. The admin gets overloaded not
 from the *number* of features but from having **no rule for where a new one
-goes** - so each grabs a tab or a Settings row. These principles make placement
+goes**, so each grabs a tab or a Settings row. These principles make placement
 a decision, not a default. Read this before adding any admin surface.
 
 > **Scope note.** These principles also govern the **planned internal console at
 > `penny.founderfirst.one/admin`**, which will mirror and, over time, absorb this
-> `founderfirst.one/admin` (parallel-run, additive, one Supabase source of truth - no
+> `founderfirst.one/admin` (parallel-run, additive, one Supabase source of truth, no
 > big-bang cutover). Same jobs, same tabs, same rules on both surfaces during the migration.
 > See [apps/app/APP_PRINCIPLES.md](../app/APP_PRINCIPLES.md) §4.
 
@@ -20,7 +20,7 @@ usage") is one job regardless of vendor.
 **Test:** if two tabs serve the same question, they're one tab with two sections.
 
 ### 2. Primary nav is fixed at 4–5. Adding a tab requires removing one.
-The top-level nav is a **hard budget**, not a growing list - that's what makes
+The top-level nav is a **hard budget**, not a growing list, that's what makes
 it memorable. Today: Support · Audience · Analytics · Penny. A new feature
 slots *into* one of these; it almost never earns a new tab.
 
@@ -28,7 +28,7 @@ slots *into* one of these; it almost never earns a new tab.
 No tabs-inside-tabs-inside-tabs. A 4th level means the thing is misfiled or
 overbuilt. Keep the hierarchy shallow so muscle memory works.
 
-### 4. One concept, one home - everything else links to it.
+### 4. One concept, one home, everything else links to it.
 (Mirrors LEARNINGS rule #6.) Each concept has exactly one canonical place;
 other surfaces *link* to it, never re-render it. Example: the **Signals
 pipeline ops** live in Audience; the **Signals numbers** live in Analytics;
@@ -42,11 +42,11 @@ means it's misfiled.
 
 ### 6. Every data screen leads with "so what / now what."
 A wall of charts makes the human do the synthesis. Each data screen opens with a
-`<Takeaway>` ([src/lib/Takeaway.tsx](src/lib/Takeaway.tsx)) - a computed headline
+`<Takeaway>` ([src/lib/Takeaway.tsx](src/lib/Takeaway.tsx)), a computed headline
 plus, where there's an obvious next step, an action link. Bias toward a
 recommended action over raw numbers.
 
-### 7. Inherit the pattern - new features look like old features.
+### 7. Inherit the pattern, new features look like old features.
 Same tab component, same hash-deep-linking, same KPI-strip → Takeaway → chart →
 breakdown rhythm, same version-history + set-live flow for anything editable.
 A new feature should be learnable for free because it behaves like everything

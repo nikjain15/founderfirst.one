@@ -1,6 +1,6 @@
 # Contributing to the Penny demo
 
-This folder is the public, shareable, browser-based demo of Penny - an AI
+This folder is the public, shareable, browser-based demo of Penny, an AI
 bookkeeper for US small business owners. It exists to give prospective
 users a five-minute walkthrough and to gather feedback that shapes the MVP.
 
@@ -18,13 +18,13 @@ One screen per session. For each screen there is a **brief** in
 The brief is a scoped, self-sufficient spec; the stub is a placeholder
 that will be filled in.
 
-The shared concerns - voice, tokens, validator, AI client - live at the
+The shared concerns, voice, tokens, validator, AI client, live at the
 root and should rarely change. When they do change, it's a deliberate
 versioned decision, not drift.
 
 ## What you must not do
 
-Read `CLAUDE.md` § "Settled decisions - do not re-open". In short:
+Read `CLAUDE.md` § "Settled decisions, do not re-open". In short:
 
 - No hard-coded Penny copy in `screens/`. Every Penny utterance comes
   from Claude via `renderPenny()`.
@@ -53,7 +53,7 @@ npm test
 ```
 
 Vitest runs `tests/*.test.js`. The validator is the highest-leverage thing
-to test - bad validator output means bad Penny voice at the user.
+to test, bad validator output means bad Penny voice at the user.
 
 ## Style
 

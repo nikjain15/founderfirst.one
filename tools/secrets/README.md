@@ -1,9 +1,9 @@
-# Secrets - how FounderFirst keeps API keys safe
+# Secrets, how FounderFirst keeps API keys safe
 
 **One master vault, deployed outward. Never in git.**
 
 ## The vault
-`~/.config/founderfirst/secrets.env` - perms `600`, lives **outside** any repo, so
+`~/.config/founderfirst/secrets.env`, perms `600`, lives **outside** any repo, so
 it cannot be committed. This is the single source of truth for every API key.
 
 Read it with the helper (never `cat` it into a shared screen):
@@ -26,7 +26,7 @@ To add or rotate a key, edit the vault file directly.
 
 ## Rules
 1. Real secrets only ever live in: the vault, the VM `.env`, or Supabase/GitHub
-   secret stores. **Never** in tracked files - `.gitignore` blocks `*.env`,
+   secret stores. **Never** in tracked files, `.gitignore` blocks `*.env`,
    `secrets.env`, `*.key`, `*.pem` (templates `*.env.example` stay allowed).
-2. A key pasted into chat/email is considered exposed - rotate it once things work.
+2. A key pasted into chat/email is considered exposed, rotate it once things work.
 3. Deploy a key by copying from the vault to its runtime home; don't retype it.

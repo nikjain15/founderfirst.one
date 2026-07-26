@@ -1,9 +1,9 @@
-# @ff/inference - the AI quality & cost layer
+# @ff/inference, the AI quality & cost layer
 
 One `resolve(task, ctx)` every Penny AI request passes through. The "front desk"
 that routes to a model, calls the provider, times + prices the call, records one
 `ai_decisions` row, and returns the raw answer **unchanged**. Built on the
-existing Cloudflare + Supabase stack - no new services.
+existing Cloudflare + Supabase stack, no new services.
 
 Plan + decisions: [`docs/plans/ai-quality-cost-layer-plan.html`](../../docs/plans/ai-quality-cost-layer-plan.html).
 Phase 0 = the seam only (answers unchanged); judging, the dashboard, the review
@@ -40,9 +40,9 @@ test/parity.ts       proves resolve() builds the same request each call site
   Namespaced: `org:founderfirst` (internal tools), `anon:<sessionId>` (site
   chat), `org:<uuid>` (real tenants later).
 - **The routing table refuses a `@cf/*` (Workers-AI) model off the Workers
-  runtime** - Supabase Edge (Deno) / Node can't reach the AI binding.
+  runtime**, Supabase Edge (Deno) / Node can't reach the AI binding.
 - **Logging is async + crash-safe** (D18): the record write is fire-and-forget on
-  `waitUntil` and log-drops if Supabase is down - the answer always ships.
+  `waitUntil` and log-drops if Supabase is down, the answer always ships.
 - **Config-driven** (D10): routing + prices are data (`DEFAULT_CONFIG`), the
   future home for admin-managed config (Phase 4). Phase 0 callers pass `pinModel`
   so behavior is provably unchanged.

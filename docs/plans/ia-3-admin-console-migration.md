@@ -1,6 +1,6 @@
 # IA-3 · Internal admin console migration plan (`penny.founderfirst.one/admin`)
 
-Status: DRAFT - awaiting Nik sign-off · 2026-07-03 · Owner: Nik
+Status: DRAFT, awaiting Nik sign-off · 2026-07-03 · Owner: Nik
 
 > **Plan-only.** No migrations, no feature code ship from this card. IA-3 is
 > `blocked:plan sign-off` in [BACKLOG.md](BACKLOG.md); it unblocks only when Nik approves
@@ -11,7 +11,7 @@ Status: DRAFT - awaiting Nik sign-off · 2026-07-03 · Owner: Nik
 
 ## 0. The parallel-run principle (read first)
 
-The fold-in is **additive and parallel-run - no big-bang cutover.**
+The fold-in is **additive and parallel-run, no big-bang cutover.**
 
 - Build the internal console **inside `apps/app`** at `penny.founderfirst.one/admin`, module by
   module, **alongside** the live `founderfirst.one/admin` ([apps/admin](../../apps/admin)).
@@ -19,7 +19,7 @@ The fold-in is **additive and parallel-run - no big-bang cutover.**
   authoritative surface until, per module, the mirror is proven at parity and Nik green-lights the
   retirement of that module.
 - **One Supabase source of truth.** Both surfaces read/write the *same* tables, RPCs and edge
-  functions (LEARNINGS #6 - one concept, one store, or it drifts). The mirror is a **new front-end
+  functions (LEARNINGS #6, one concept, one store, or it drifts). The mirror is a **new front-end
   over the existing back-end**, not a new back-end.
 - Keep **both live for the whole parallel-run window (proposed 6–8 weeks)**; retire the old surface
   only after the whole console reaches parity and soaks.
@@ -32,23 +32,23 @@ parallel-run*; *Phase 5 platform-staff lens*).
 ## 1. Goal & non-goals
 
 ### Goal
-Give platform staff a single internal console **inside the product they operate** - same login, same
-design system, same org-switcher shell - that mirrors every operational surface of
+Give platform staff a single internal console **inside the product they operate:** same login, same
+design system, same org-switcher shell, that mirrors every operational surface of
 `founderfirst.one/admin` and folds in the existing `/staff` break-glass module, so we run *one* app
 instead of two deploy targets.
 
 ### Non-goals (explicit)
-- **Not** a rewrite of any back-end. RPCs, edge functions, Supabase tables, crons - untouched.
+- **Not** a rewrite of any back-end. RPCs, edge functions, Supabase tables, crons, untouched.
 - **Not** a redesign of admin IA. Preserve [ADMIN_PRINCIPLES.md](../../apps/admin/ADMIN_PRINCIPLES.md)
   (jobs-not-tools · 4–5 fixed tabs · max-3-depth · one-home). Move, don't reinvent.
 - **Not** a customer surface. The console is internal-only, gated identically to today.
-- **Not** a data migration - there is no data to move; both surfaces hit the same DB.
+- **Not** a data migration, there is no data to move; both surfaces hit the same DB.
 - **Not** a cutover in this card. Retirement of `founderfirst.one/admin` is a *later, separate*
   Nik-gated decision (§4 criteria), after soak.
 
 ---
 
-## 2. Inventory - every `/admin` surface → target home in `penny/admin`
+## 2. Inventory, every `/admin` surface → target home in `penny/admin`
 
 Source of truth: [apps/admin/src/App.tsx](../../apps/admin/src/App.tsx) routes (verified against
 `origin/main`). Target = the mirrored console tab in `apps/app`. The console keeps the **same 4
@@ -83,14 +83,14 @@ primary tabs + ⚙️ Settings** IA as today.
 | `/staff` break-glass console | [apps/app/src/staff/StaffHome.tsx](../../apps/app/src/staff/StaffHome.tsx) | A **module inside** the console (Support-adjacent, e.g. "Break-glass" under Settings or a top-level "Books access"). Cross-tenant, time-boxed, read-only, audited. |
 
 ### Flag: do NOT move / handle specially
-- **`Login.tsx` / the auth shell** - the console reuses `apps/app`'s existing Supabase session; there
+- **`Login.tsx` / the auth shell:** the console reuses `apps/app`'s existing Supabase session; there
   is **no second login**. Staff already sign into `penny.founderfirst.one`.
-- **`devAuth` / `CONTENT_MOCK` bypasses** - dev-only in apps/admin; do **not** port the mock-content
+- **`devAuth` / `CONTENT_MOCK` bypasses:** dev-only in apps/admin; do **not** port the mock-content
   bypass into the product bundle. The console renders from real RPCs or shows empty states.
-- **Mac-host-dependent features** - "Draft with AI" (email-compose) historically routed to a Mac
+- **Mac-host-dependent features:** "Draft with AI" (email-compose) historically routed to a Mac
   Ollama tunnel; per LEARNINGS #13 it moved to Workers AI. **Verify the current path before mirroring**
   so we don't reintroduce a laptop dependency (Decision D5).
-- **Back-compat redirects** (`/users`→`/audience#web`, etc.) - recreate as convenience redirects on
+- **Back-compat redirects** (`/users`→`/audience#web`, etc.), recreate as convenience redirects on
   the *new* surface only if staff have muscle-memory URLs; low priority.
 
 ---
@@ -101,7 +101,7 @@ Each phase is **independently shippable, independently reversible, and behind a 
 console nav that only lists modules that are live). `founderfirst.one/admin` stays fully functional
 throughout every phase.
 
-### Phase 0 - Console shell + gating (no feature parity yet)
+### Phase 0, Console shell + gating (no feature parity yet)
 - New route tree in `apps/app` at `/admin` (staff-only). Reuse the authed header/nav pattern
   (`packages/design-system`), the org-switcher shell, and the **existing** `is_platform_staff()`
   gate. Account menu shows "Internal admin" only when the email is on the `admins` allow-list.
@@ -110,31 +110,31 @@ throughout every phase.
 - **Shippable** on its own: staff get the shell + break-glass at `penny/admin`; `/staff` stays as a
   redirect. **Reversible**: remove the nav entry; no back-end change.
 
-### Phases 1–4 - Mirror one primary tab per phase (additive)
+### Phases 1–4, Mirror one primary tab per phase (additive)
 Order by **read-mostly-first** (lowest blast radius) → write-heavy last:
 
-- **Phase 1 - Analytics** (read-only dashboards; safest to mirror first).
-- **Phase 2 - Support** (ticket read + reply; verify reply write-path parity carefully).
-- **Phase 3 - Audience** (waitlist/Discord/Signals; Signals has write actions → scrutinize).
-- **Phase 4 - Penny** (Prompt/Voice/Discord/Outreach/Site-copy/Blog - these edit **live runtime
+- **Phase 1, Analytics** (read-only dashboards; safest to mirror first).
+- **Phase 2, Support** (ticket read + reply; verify reply write-path parity carefully).
+- **Phase 3, Audience** (waitlist/Discord/Signals; Signals has write actions → scrutinize).
+- **Phase 4, Penny** (Prompt/Voice/Discord/Outreach/Site-copy/Blog, these edit **live runtime
   language**; highest risk, mirror last with the most verification).
 
 Each: mirror the tab against the same RPCs, verify parity (§5), ship it live on `penny/admin`. The
 old tab keeps working. **Reversible** per tab: drop the nav entry.
 
-### Phase 5 - Mirror ⚙️ Settings modules
+### Phase 5, Mirror ⚙️ Settings modules
 Emails · Quality · AI quality · Build · Experiments · Admins · Audit log · How-it-works. **Emails and
-Admins are write-heavy** (they send mail / grant access) - mirror those with an editor-gate check
+Admins are write-heavy** (they send mail / grant access), mirror those with an editor-gate check
 and end-to-end send/grant verification.
 
-### Phase 6 - Parallel-run soak (proposed 6–8 weeks total window)
+### Phase 6, Parallel-run soak (proposed 6–8 weeks total window)
 Both surfaces live. Staff use `penny/admin` day-to-day; `founderfirst.one/admin` is the fallback.
 Collect: any parity gap, any error, any "I had to go back to the old one".
 
-### Phase 7 - Retirement of `founderfirst.one/admin` (SEPARATE Nik gate)
+### Phase 7, Retirement of `founderfirst.one/admin` (SEPARATE Nik gate)
 Only after every module is at parity and the soak is clean. Cutover = the old surface becomes a
 banner + redirect to `penny/admin`, then (later still) the `apps/admin` app is retired from the
-build. **This card does not authorize retirement** - it defines the criteria (below).
+build. **This card does not authorize retirement:** it defines the criteria (below).
 
 **Retirement criteria (all must hold):**
 1. 100% of `/admin` routes mirrored and each verified at parity (§5).
@@ -145,15 +145,15 @@ build. **This card does not authorize retirement** - it defines the criteria (be
 
 ---
 
-## 4. Data / auth model - reuse, don't reinvent
+## 4. Data / auth model, reuse, don't reinvent
 
 **Everything already exists.** The console is a new UI over the current controls.
 
-- **Gate (who sees the console):** `is_platform_staff()` - the same `admins` allow-list that gates
+- **Gate (who sees the console):** `is_platform_staff()`, the same `admins` allow-list that gates
   `founderfirst.one/admin` today (APP_PRINCIPLES §4; ARCHITECTURE §4.2). One list, both surfaces
   (LEARNINGS #6). The UI gate is a courtesy; **the database is the control**.
 - **Editor vs. viewer:** mutating admin RPCs are already re-gated to `is_admin_editor()` (editor or
-  super) - see `20260630065000_admin_rpc_editor_gate.sql`. The mirror calls the **same** RPCs, so
+  super), see `20260630065000_admin_rpc_editor_gate.sql`. The mirror calls the **same** RPCs, so
   the viewer/editor/super tiers carry over for free. Do not add a parallel gate.
 - **Break-glass (staff → tenant books):** unchanged pipeline -
   `open_break_glass` (requires `is_admin_editor()`, `20260701130000`) → `break_glass_grants`
@@ -176,7 +176,7 @@ No new tables. No new grants beyond (optionally) the `actor_surface` metadata fi
 | Risk | Mitigation |
 |---|---|
 | **Breaking `founderfirst.one/admin`** (the cardinal rule) | It is a *separate app/deploy*; the mirror is purely additive in `apps/app`. No shared front-end code is edited. CI keeps `apps/admin` building. Nothing in this plan touches `apps/admin/src`. |
-| **Back-end drift between surfaces** | Both call the *same* RPCs/functions. Forbid duplicating any query logic - if a helper is needed, extract to a shared package, don't fork. (LEARNINGS #6.) |
+| **Back-end drift between surfaces** | Both call the *same* RPCs/functions. Forbid duplicating any query logic, if a helper is needed, extract to a shared package, don't fork. (LEARNINGS #6.) |
 | **Silent parity gaps** (a mirrored tab looks right but a write no-ops) | Per-tab verification below. Verify the *deployed artifact*, not source (LEARNINGS #9, #14). |
 | **Reintroducing a Mac/laptop dependency** (Draft-with-AI) | Confirm the live compose path is Workers AI before mirroring (LEARNINGS #13, Decision D5). |
 | **Privilege leak** (a viewer gaining an editor action in the mirror) | Mirror calls the same `is_admin_editor()`-gated RPCs; add a pgTAP assertion that each mirrored write RPC still refuses a viewer. |
@@ -190,7 +190,7 @@ No new tables. No new grants beyond (optionally) the `actor_surface` metadata fi
    diff the DB result (same row written, same audit event). Break-glass: open→read→close, confirm the
    `admin_audit` trail.
 3. **Deployed-artifact check:** fetch the live `penny/admin` bundle, confirm the module renders and
-   the RPC round-trips (LEARNINGS #5, #9, #14). `apps/app` deploys from `main` == prod - verify from
+   the RPC round-trips (LEARNINGS #5, #9, #14). `apps/app` deploys from `main` == prod, verify from
    the system.
 4. **Regression:** run existing admin/app e2e; add a `penny/admin` smoke that walks every live tab
    on the responsive width ladder ([RESPONSIVE.md](../../apps/admin/RESPONSIVE.md)).
@@ -204,7 +204,7 @@ No new tables. No new grants beyond (optionally) the `actor_surface` metadata fi
 Per [AUDIT.md](../AUDIT.md) § Coverage: a new surface = a new ledger row, starting ⬜ untested, that
 leaves ⬜ only via a formal adversarial stress pass.
 
-- **New row `IA-3` - Internal admin console (`penny/admin`) mirror + break-glass fold-in.**
+- **New row `IA-3`, Internal admin console (`penny/admin`) mirror + break-glass fold-in.**
   Tests: `apps/app` e2e console walk (auth gate + per-tab parity) + pgTAP asserting mirrored write
   RPCs refuse a viewer + break-glass open/close audit trail. **Status: ⬜ untested (red-team per PR;
   stress pass scheduled).**
@@ -218,13 +218,13 @@ leaves ⬜ only via a formal adversarial stress pass.
 
 | # | Decision | Recommendation |
 |---|---|---|
-| **D1** | **Approve the plan** (unblocks IA-3 from `blocked:plan sign-off`). | - |
+| **D1** | **Approve the plan** (unblocks IA-3 from `blocked:plan sign-off`). |  |
 | **D2** | **Parallel-run window length.** Proposed **6–8 weeks** across all phases before any retirement decision. | Accept 6–8 wks |
-| **D3** | Add an `actor_surface` marker (`penny_admin` vs `ff_admin`) to admin-audit metadata during parallel-run to prove parity? | Yes - cheap, aids parity proof |
-| **D4** | **Phase order** - read-mostly first (Analytics → Support → Audience → Penny → Settings). Agree, or prioritize a specific tab? | Accept as proposed |
-| **D5** | **Draft-with-AI path** - confirm it now runs on Workers AI (not the Mac Ollama tunnel) before mirroring Emails; if still Mac-bound, is fixing that in-scope for IA-3 or a separate card? | Confirm first; likely separate card |
-| **D6** | **Where break-glass lives in the console IA** - top-level "Books access" tab, or a Settings module? (It's the only cross-tenant capability.) | Recommend a distinct, visible top-level module (it's high-consequence) |
-| **D7** | **Retirement authority** - confirm Phase 7 (retiring `founderfirst.one/admin`) is a *separate* future sign-off, not implied by approving this plan. | Yes - separate gate |
+| **D3** | Add an `actor_surface` marker (`penny_admin` vs `ff_admin`) to admin-audit metadata during parallel-run to prove parity? | Yes, cheap, aids parity proof |
+| **D4** | **Phase order:** read-mostly first (Analytics → Support → Audience → Penny → Settings). Agree, or prioritize a specific tab? | Accept as proposed |
+| **D5** | **Draft-with-AI path:** confirm it now runs on Workers AI (not the Mac Ollama tunnel) before mirroring Emails; if still Mac-bound, is fixing that in-scope for IA-3 or a separate card? | Confirm first; likely separate card |
+| **D6** | **Where break-glass lives in the console IA:** top-level "Books access" tab, or a Settings module? (It's the only cross-tenant capability.) | Recommend a distinct, visible top-level module (it's high-consequence) |
+| **D7** | **Retirement authority:** confirm Phase 7 (retiring `founderfirst.one/admin`) is a *separate* future sign-off, not implied by approving this plan. | Yes, separate gate |
 | **D8** | Recreate the old `/users`,`/signals`,`/discord` convenience redirects on the new surface, or drop them? | Low priority; drop unless staff rely on them |
 
 ---

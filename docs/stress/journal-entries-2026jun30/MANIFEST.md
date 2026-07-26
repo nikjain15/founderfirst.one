@@ -1,4 +1,4 @@
-# [JETEST] Journal-entry stress-test - fixture manifest
+# [JETEST] Journal-entry stress-test, fixture manifest
 Prod ref: ejqsfzggyfsjzrcevlnq  |  created 2026-06-30T22:32:28Z
 
 ## Fixtures created (all namespaced [JETEST] / @jetest.founderfirst.test)
@@ -13,7 +13,7 @@ Prod ref: ejqsfzggyfsjzrcevlnq  |  created 2026-06-30T22:32:28Z
 ## Cleanup
 See cleanup.sql (un-run). Deletes ONLY rows for org 6b2ff6c0-aba4-43d3-901a-6c3c165dc9a1 + user 8837e4d0-7068-4d91-aa6a-b6ee3684f0a6. Nothing else touched.
 
-## Row-count diff (this session's footprint - orgs 6b2ff6c0-aba4-43d3-901a-6c3c165dc9a1 + 37246e1e-086d-46dd-9651-fca329dc3348, user 8837e4d0-7068-4d91-aa6a-b6ee3684f0a6)
+## Row-count diff (this session's footprint, orgs 6b2ff6c0-aba4-43d3-901a-6c3c165dc9a1 + 37246e1e-086d-46dd-9651-fca329dc3348, user 8837e4d0-7068-4d91-aa6a-b6ee3684f0a6)
 | table                  | added |
 |------------------------|-------|
 | organizations          | 2     |
@@ -27,10 +27,10 @@ See cleanup.sql (un-run). Deletes ONLY rows for org 6b2ff6c0-aba4-43d3-901a-6c3c
 | journal_lines          | 5376  |
 | ledger_audit           | 30    |
 
-(Global counts also moved a lot during the window - parallel [CATTEST]/[JETEST] sessions,
+(Global counts also moved a lot during the window, parallel [CATTEST]/[JETEST] sessions,
 not this one; e.g. [CATTEST] Olive Co alone holds 36k entries. Scope above is by org_id.)
 
 ## Pre-existing prod state observed (NOT created by this session)
-12 originals across 5 orgs already had >1 reversal - ALL in throw-away stress
+12 originals across 5 orgs already had >1 reversal, ALL in throw-away stress
 namespaces ([JETEST]/[CATTEST]). No real pilot org affected. These are the same
 double-reverse P0 firing under other sessions' concurrent load.

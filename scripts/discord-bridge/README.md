@@ -1,7 +1,7 @@
-# Discord bridge - deploy + publish
+# Discord bridge, deploy + publish
 
 The bridge is a thin relay between Discord's gateway WebSocket and the
-Cloudflare Worker. No opinions about voice or context - all of that lives in
+Cloudflare Worker. No opinions about voice or context, all of that lives in
 the Worker (`site-bubble/worker`). See
 `../../apps/admin/support-management/DISCORD-BRIDGE-SPEC.md` for the why; this
 README is just the how.
@@ -16,7 +16,7 @@ Single implementation: `bridge.ts` (discord.js / TypeScript), built by
 - A Discord **category** id where per-user private channels live
   (e.g. `── Penny private ──`).
 - The bridge secret set on the Worker with
-  `wrangler secret put DISCORD_BRIDGE_SECRET` - the same value goes on the app.
+  `wrangler secret put DISCORD_BRIDGE_SECRET`, the same value goes on the app.
 
 ## Secrets (set once on the Fly app)
 
@@ -40,7 +40,7 @@ npm run typecheck    # must pass
 flyctl deploy        # remote build; the running machine is replaced
 ```
 
-Watch `flyctl logs -a founderfirst-discord-bridge` - you should see
+Watch `flyctl logs -a founderfirst-discord-bridge`, you should see
 `logged in as <bot-name>; syncing slash commands` within a few seconds.
 
 ## Smoke test
@@ -62,7 +62,7 @@ link flow.
 
 | Symptom | Where to look |
 |---|---|
-| Bot doesn't come online | `flyctl logs` - token or guild id wrong? |
+| Bot doesn't come online | `flyctl logs`, token or guild id wrong? |
 | Every reply is "Hi, happy to help…" | Link row never confirmed. Check the admin Discord tab. |
 | Worker returns 401 in the logs | `BRIDGE_SECRET` mismatch between the app and the Worker. Re-set on both. |
 | Per-user channel visible to everyone | Bot lacks `Manage Channels` on the parent category, or the `view_channel=false` overwrite was dropped. |

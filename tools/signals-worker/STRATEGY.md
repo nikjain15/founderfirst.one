@@ -1,6 +1,6 @@
-# Social Listening & Outreach - Strategy
+# Social Listening & Outreach, Strategy
 
-> Pure strategy (the "what" and "why"). **Status: decided and built - Phase 1 is
+> Pure strategy (the "what" and "why"). **Status: decided and built, Phase 1 is
 > LIVE** (manual intake via extension + Quick-Add; scoring, leads, outreach drafts
 > all in production). Phase 2 (automated API collection) is still planned, not built.
 > Architecture: [SOLUTION.md](SOLUTION.md). build steps at the end are the
@@ -21,9 +21,9 @@ track it, score it, summarize it daily, and reach out about each person's
 
 A single loop, fed by two intake pipes:
 
-1. **Automated collection** - a usage-based data provider pulls public-platform
+1. **Automated collection:** a usage-based data provider pulls public-platform
    posts matching our keywords (Reddit, Hacker News, X, public LinkedIn).
-2. **Manual capture** - a **browser extension** lets a logged-in human grab posts
+2. **Manual capture:** a **browser extension** lets a logged-in human grab posts
    from closed communities (Facebook private groups, LinkedIn Groups, Discord,
    Slack, Skool, WhatsApp) that no provider can reach.
 
@@ -39,17 +39,17 @@ problem-specific, brand-voice outreach message that a human reviews and sends.**
 | Topic | Decision |
 |---|---|
 | Platforms | **Reddit, Hacker News, X, public LinkedIn** (automated); **FB private groups, LinkedIn Groups, Discord/Slack/Skool/WhatsApp** (manual). |
-| Collection | **Usage-based, pay-per-request data provider** - no direct per-platform APIs/scrapers maintained by us. |
+| Collection | **Usage-based, pay-per-request data provider:** no direct per-platform APIs/scrapers maintained by us. |
 | The "brain" | **Self-hosted Ollama** (LLM) + open-source embeddings. Small managed spend allowed as fallback. |
 | Manual capture | **Browser extension.** |
 | Outreach | **Draft + human approve. Never auto-send.** |
 | Cadence / users | **Near-real-time, small team.** |
 | CRM | **FounderFirst admin is the system of record.** |
-| Stack | **Same as founderfirst.one/admin** - Supabase + React admin (see prompt). |
+| Stack | **Same as founderfirst.one/admin:** Supabase + React admin (see prompt). |
 
 ---
 
-## 4. Platforms - access reality
+## 4. Platforms, access reality
 
 Visibility decides everything: publicly viewable → provider can pull it;
 members-only → only a logged-in human (the extension) can.
@@ -79,7 +79,7 @@ our own brain/CRM sit on top.
 
 | Gap | Fallback | Why |
 |---|---|---|
-| Need **full post text** for scoring (snippet too short) | **Bright Data** (Web Scraper API) | No monthly fee, pay-as-you-go (~$1.50/1K records); returns full content. Fetch full body for *promoted* leads only - cost stays tiny. |
+| Need **full post text** for scoring (snippet too short) | **Bright Data** (Web Scraper API) | No monthly fee, pay-as-you-go (~$1.50/1K records); returns full content. Fetch full body for *promoted* leads only, cost stays tiny. |
 | **LinkedIn coverage** from API Direct proves weak | **Octolens** | Strong LinkedIn; accept its monthly fee only if needed. |
 
 Everything sits behind one normalizer, so any provider is swappable with no
@@ -89,14 +89,14 @@ lock-in.
 
 ## 6. The scoring "brain" (conceptual)
 
-Every item - provider-fed or manually captured - runs the same self-hosted funnel:
+Every item, provider-fed or manually captured, runs the same self-hosted funnel:
 
-1. **Keyword prefilter** - drop obvious noise (and keep provider cost down).
-2. **Relevance** - semantic similarity vs. reference examples of our ICP's pain,
+1. **Keyword prefilter:** drop obvious noise (and keep provider cost down).
+2. **Relevance:** semantic similarity vs. reference examples of our ICP's pain,
    to catch posts that express the problem without our exact words.
-3. **Intent judgment** - the LLM rates how strongly the person needs a bookkeeping
+3. **Intent judgment:** the LLM rates how strongly the person needs a bookkeeping
    solution *now*, tags the specific pain, flags any competitor named.
-4. **Promotion** - items clearing both thresholds become **leads**; the rest are
+4. **Promotion:** items clearing both thresholds become **leads**; the rest are
    archived. Thresholds tunable for precision vs. volume.
 
 ---
@@ -106,9 +106,9 @@ Every item - provider-fed or manually captured - runs the same self-hosted funne
 Drafted per lead around *their* stated problem, always human-reviewed before
 sending, and **channel-aware**:
 
-- **Public channels** (Reddit, HN, public X/LinkedIn) - a direct but problem-led
+- **Public channels** (Reddit, HN, public X/LinkedIn), a direct but problem-led
   reply/message is fine.
-- **Closed communities** - **helpful reply first, no pitch.** Answer the actual
+- **Closed communities:** **helpful reply first, no pitch.** Answer the actual
   question, build credibility, escalate to a solution mention only if receptive.
   Cold-pitching here gets you banned.
 
@@ -128,15 +128,15 @@ FB private groups, LinkedIn Groups, Discord, Slack, Skool, and WhatsApp Web.
 
 ## 9. Compliance & guardrails
 
-- **No auto-send** - always human-approved.
-- **Respect closed-community rules** - most forbid solicitation; default to
+- **No auto-send:** always human-approved.
+- **Respect closed-community rules:** most forbid solicitation; default to
   helpful-reply mode.
 - **Only capture what we can legitimately see** as a member; never republish
   others' private content.
-- **Data minimization / GDPR** - store the minimum (post text, public handle, URL,
+- **Data minimization / GDPR:** store the minimum (post text, public handle, URL,
   timestamp); support deleting a lead + its source data; no PII unless publicly
   volunteered.
-- **Provider terms** - use data within ToS; keep keys server-side.
+- **Provider terms:** use data within ToS; keep keys server-side.
 
 ---
 
@@ -150,25 +150,25 @@ do their own books or are frustrated with their tool/bookkeeper.
 bookkeeping," "categorize / reconcile transactions," "year-end tax scramble," "DIY
 accounting spreadsheet," "1099 mess."
 
-**Competitors:** QuickBooks, Xero, Wave, FreshBooks, Pilot, Puzzle, Digits - and
+**Competitors:** QuickBooks, Xero, Wave, FreshBooks, Pilot, Puzzle, Digits, and
 **Bench** (shut down late 2024; stranded customers = high-intent segment).
 
-**Communities - automated:** r/smallbusiness, r/Bookkeeping, r/Accounting,
+**Communities, automated:** r/smallbusiness, r/Bookkeeping, r/Accounting,
 r/Entrepreneur, r/freelance, r/startups, r/tax, r/QuickBooks, r/SaaS; Hacker News;
 public LinkedIn & X keyword streams.
-**Communities - manual:** FB small-business / bookkeeper groups, LinkedIn Groups,
+**Communities, manual:** FB small-business / bookkeeper groups, LinkedIn Groups,
 founder Discord/Slack/Skool servers. *(Specific list TBD.)*
 
 ---
 
 ## 11. Phasing
 
-- **Phase 1 - the full loop.** API Direct collection (Reddit + HN + X + public
+- **Phase 1, the full loop.** API Direct collection (Reddit + HN + X + public
   LinkedIn) + browser-extension capture → Ollama scoring → admin CRM →
   human-approved outreach. Prove end-to-end.
-- **Phase 2 - tune & fill gaps.** Add Bright Data for full-text on promoted leads
+- **Phase 2, tune & fill gaps.** Add Bright Data for full-text on promoted leads
   if needed; add Octolens if LinkedIn is weak; tune thresholds; expand keywords.
-- **Phase 3 - intelligence.** Trend/competitor alerts (e.g. "spike in QuickBooks
+- **Phase 3, intelligence.** Trend/competitor alerts (e.g. "spike in QuickBooks
   complaints"), cross-post lead de-duplication.
 
 ---
@@ -178,7 +178,7 @@ founder Discord/Slack/Skool servers. *(Specific list TBD.)*
 1. **Specific communities** to seed (subreddits, FB groups, Discord/Slack/Skool).
 2. **API Direct checks:** is the snippet enough text for scoring (else Bright
    Data), and is LinkedIn coverage good enough (else Octolens)?
-3. **Ollama model(s)** for scoring vs. drafting, plus the embedding model - chosen
+3. **Ollama model(s)** for scoring vs. drafting, plus the embedding model, chosen
    on quality vs. local hardware.
 
 ---

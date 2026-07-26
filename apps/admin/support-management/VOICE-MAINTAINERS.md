@@ -1,4 +1,4 @@
-# Voice guide - maintainer notes
+# Voice guide, maintainer notes
 
 Internal-only. Not seen by users, not shipped into any bot's system prompt.
 The canonical user-facing voice lives in [`/VOICE.md`](../../VOICE.md) at the
@@ -31,7 +31,7 @@ every surface inherits the same canon.
 1. Open `/admin/content#voice`.
 2. Click **Edit**, change the markdown, hit **Save as new version**.
 3. Click **Set this version live**.
-4. Every surface picks it up within ~60 seconds - no redeploy.
+4. Every surface picks it up within ~60 seconds, no redeploy.
 
 The repo file `VOICE.md` is a historical seed: it's what new admin instances
 load when there's no published version yet. After v1 is saved, file edits to
@@ -60,12 +60,12 @@ accidental violations of the old rule before publishing.
 
 ## Source documents this canon consolidates
 
-Historical - kept here so we don't lose the provenance:
+Historical, kept here so we don't lose the provenance:
 
-- `founderfirst-internal-backup-2026-04-29/FounderFirst OS/website-planning/website-tone-guide.md` - marketing-site tone.
-- `FounderFirst_Building Demo/demo/public/prompts/penny-system.md` - Penny's product system prompt.
-- `FounderFirst_Building Demo/demo/guardrails/banned-phrases.js` - machine-enforced banned phrases.
-- `FounderFirst_Building Products/site-bubble/worker/penny-site-system.md` - the Penny chatbot on founderfirst.one.
+- `founderfirst-internal-backup-2026-04-29/FounderFirst OS/website-planning/website-tone-guide.md`, marketing-site tone.
+- `FounderFirst_Building Demo/demo/public/prompts/penny-system.md`, Penny's product system prompt.
+- `FounderFirst_Building Demo/demo/guardrails/banned-phrases.js`, machine-enforced banned phrases.
+- `FounderFirst_Building Products/site-bubble/worker/penny-site-system.md`, the Penny chatbot on founderfirst.one.
 
 If any of these source docs change in a way that affects voice, the change
-should be reflected in `VOICE.md` (and re-published) - not left to drift.
+should be reflected in `VOICE.md` (and re-published), not left to drift.

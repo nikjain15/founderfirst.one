@@ -4,11 +4,11 @@ FounderFirst is operating software for business owners. The promise is simple: y
 
 ## Who it's for
 
-Business owners and solo founders - not accountants. The tools that already exist for small-business finance were built for bookkeepers and CPAs. FounderFirst is built for the person actually running the business.
+Business owners and solo founders, not accountants. The tools that already exist for small-business finance were built for bookkeepers and CPAs. FounderFirst is built for the person actually running the business.
 
 ## What we build
 
-Back-office tools that founders wish existed. We start with the loudest pain we heard from 100+ founders we talked to: the books. Money moves across Stripe, the bank, the credit card - and the financial picture a founder needs to make real decisions ends up spread across five different places.
+Back-office tools that founders wish existed. We start with the loudest pain we heard from 100+ founders we talked to: the books. Money moves across Stripe, the bank, the credit card, and the financial picture a founder needs to make real decisions ends up spread across five different places.
 
 Our first product, **Penny**, fixes that. More products will follow once Penny is solid.
 

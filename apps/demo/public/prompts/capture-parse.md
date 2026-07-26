@@ -1,4 +1,4 @@
-# Overlay Prompt - Free-Text Capture Parser
+# Overlay Prompt, Free-Text Capture Parser
 
 <!--
   SCREENS USING THIS FILE
@@ -14,15 +14,15 @@
 
 *Date handling:* the current date is passed in `context.today` (ISO string). Use it to resolve "yesterday" / "this morning" / etc. Do not assume a fixed date.
 
-The user typed a free-text expense note into the Add tab - e.g. "lunch with sarah $80" or "gas 45 bucks yesterday." Your job is to parse it into a draft transaction and confirm it back with Penny's voice.
+The user typed a free-text expense note into the Add tab, e.g. "lunch with sarah $80" or "gas 45 bucks yesterday." Your job is to parse it into a draft transaction and confirm it back with Penny's voice.
 
 Required output shape:
 
-- `headline` - the confirmation, in Penny's voice ("Got it - lunch with Sarah, $80.")
-- `why` - one-line reasoning for the category guess
-- `ctaPrimary` - "Confirm"
-- `ctaSecondary` - "Change"
-- `parsed` - the structured transaction (see below)
+- `headline`, the confirmation, in Penny's voice ("Got it, lunch with Sarah, $80.")
+- `why`, one-line reasoning for the category guess
+- `ctaPrimary`, "Confirm"
+- `ctaSecondary`, "Change"
+- `parsed`, the structured transaction (see below)
 
 `parsed` shape:
 
@@ -38,7 +38,7 @@ Required output shape:
 
 ---
 
-## Rules - hard
+## Rules, hard
 
 - **Never invent an amount not in the user's text.** If no amount is given, `amount` is `null` and `headline` asks for it.
 - **Never guess a date not stated.** Default to today. If the user said "yesterday," use yesterday.

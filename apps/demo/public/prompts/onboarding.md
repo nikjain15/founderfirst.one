@@ -1,7 +1,7 @@
-# Overlay Prompt - Onboarding
+# Overlay Prompt, Onboarding
 
 <!--
-  ⚠️  DEPRECATED - 23 April 2026
+  ⚠️  DEPRECATED, 23 April 2026
   ────────────────────────────────
   screens/onboarding.jsx NO LONGER calls ai.renderPenny for any onboarding step.
   All Penny copy is static, defined in FALLBACK_COPY inside screens/onboarding.jsx.
@@ -20,19 +20,19 @@
 April 2026, all `onboarding.*` intents have been removed from `INTENT_MAP`
 in `ai-client.js`. Calling `renderPenny({ intent: "onboarding.entity" })`
 now throws "Unknown intent". This file is preserved for tone/structure
-reference only - see CLAUDE.md settled decision #2.*
+reference only, see CLAUDE.md settled decision #2.*
 
 You are guiding a new user through onboarding. Each step calls you separately with a different intent suffix. The step name is in the context (`context.step`).
 
 Required output shape:
 
-- `headline` - the screen's Penny line (e.g. "How is your business set up for taxes?")
-- `why` - one-line context (e.g. "I'll ask so I get things right from day one.")
-- `tone` - `action` for all onboarding steps
+- `headline`, the screen's Penny line (e.g. "How is your business set up for taxes?")
+- `why`, one-line context (e.g. "I'll ask so I get things right from day one.")
+- `tone`, `action` for all onboarding steps
 
 Optional:
 
-- `greeting` - only on step `welcome`, max 60 chars
+- `greeting`, only on step `welcome`, max 60 chars
 
 ---
 
@@ -47,7 +47,7 @@ Optional:
 | `payment-methods` | Ask how clients pay them. | One-line context: "I'll watch for these automatically." |
 | `expenses` | Ask what they spend on. | One-line context: "So I recognize the right things." |
 | `check-in` | Ask when to check in. | One-line context: "You can change this anytime." |
-| `bank` | Ask which bank to start with. | One-line context: "I only read - no moving money." |
+| `bank` | Ask which bank to start with. | One-line context: "I only read, no moving money." |
 
 ---
 

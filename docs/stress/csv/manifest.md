@@ -1,4 +1,4 @@
-# [stress:csv] CSVTEST - fixture manifest
+# [stress:csv] CSVTEST, fixture manifest
 
 All test data is namespaced `[CSVTEST]` / `@csvtest.founderfirst.test` and was
 created black-box through the live write-path (Auth admin API → `orgs` →
@@ -14,8 +14,8 @@ schema/migration/edge-fn/grant/config change was made during testing.
 | Account (asset) | `8e7af2bf-bbfd-4080-a83e-dedbe41c6964` · `[CSVTEST] Checking` (1000) | bank side |
 | Account (expense) | `1cf1e7f7-ec9b-4169-967c-d649d1693bab` · `[CSVTEST] Office Expense` (6000) | contra |
 | Batch A | `5232662a-70e2-4588-9f9b-7d60caf26520` · `good.csv` | committed, 3 rows |
-| Batch B | `c18384fd-2614-4ad8-baea-c3d0c341f772` · `baddate.csv` | **draft, 0 rows (orphan - finding F2)** |
-| Batch C | `a3027818-1c40-4619-9d6c-502d5cd4b1fd` · `good.csv` | committed, 3 rows (re-import dup - F4) |
+| Batch B | `c18384fd-2614-4ad8-baea-c3d0c341f772` · `baddate.csv` | **draft, 0 rows (orphan, finding F2)** |
+| Batch C | `a3027818-1c40-4619-9d6c-502d5cd4b1fd` · `good.csv` | committed, 3 rows (re-import dup, F4) |
 | Batch D | `postfix.csv` | committed, 1 posted + 1 error (post-fix proof) |
 
 Footprint: 1 org · 1 user · 1 membership · 2 accounts · 4 batches · 8 import_rows ·
@@ -26,7 +26,7 @@ Org trial balance ties to the cent after every commit: **Dr = Cr = 679334** (7 e
 No cross-tenant leak, no imbalance, no double-post *within* a batch, no orphaned reversal.
 
 ## Before / after global row counts
-Global counts are **noisy** - multiple sibling stress sessions mutated prod
+Global counts are **noisy:** multiple sibling stress sessions mutated prod
 concurrently during this window, so the global delta is NOT attributable to CSVTEST.
 The org-scoped numbers above are the meaningful measure.
 

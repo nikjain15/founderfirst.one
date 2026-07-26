@@ -1,4 +1,4 @@
-# FounderFirst Platform - System Architecture
+# FounderFirst Platform, System Architecture
 
 > Status: **Draft for review** · 27 Jun 2026 · Owner: Nik
 > Scope: the unified, multi-tenant platform behind the Business Owner, CPA, and Admin views
@@ -11,17 +11,17 @@
 
 | Decision | Choice |
 |---|---|
-| Product stage | **Real multi-tenant SaaS** - real accounts, real persisted financial data |
-| Ledger model | **Hybrid** - own a lightweight double-entry ledger; ingest bank feeds; AI layer on top; QBO/Xero interop |
-| Tenancy | **Peer / many-to-many** - a business has owner(s) + one-or-more CPAs; a CPA serves many businesses |
-| Onboarding | **Both self-serve + invite** - either an owner or a CPA can originate; each can invite the other |
+| Product stage | **Real multi-tenant SaaS:** real accounts, real persisted financial data |
+| Ledger model | **Hybrid:** own a lightweight double-entry ledger; ingest bank feeds; AI layer on top; QBO/Xero interop |
+| Tenancy | **Peer / many-to-many:** a business has owner(s) + one-or-more CPAs; a CPA serves many businesses |
+| Onboarding | **Both self-serve + invite:** either an owner or a CPA can originate; each can invite the other |
 | Day-1 integrations | **Bank feeds (Plaid) + QuickBooks/Xero sync + manual entry** all supported |
-| Near-term goal | **Real pilot users on a scalable foundation** - invest in correct schema/auth/infra now |
+| Near-term goal | **Real pilot users on a scalable foundation:** invest in correct schema/auth/infra now |
 | Monetization | **Billing built but free during pilot.** Hypothesis: *businesses* pay; schema supports *either* a business or a firm as the billing entity (polymorphic subscription) |
 | Market / residency | **Global-capable, US first.** Plaid + QBO/Xero are US-native; design a region/integration abstraction so EU/India slot in later |
-| CPA permissions | **Per-engagement scope** - owner grants a CPA `read_only` or `full` posting rights at accept time; enforced now, not deferred |
-| Historical data | **Full history import at launch** - via API (QBO/Xero pull) **and** manual upload (CSV / bank-statement / trial-balance). Opening balances are the fallback, not the only option. Users run their books on it from day one |
-| Launch bar | **A complete, lovable v1 from day one - no MVP compromise.** Not a proof-of-concept, not a "pilot" of a partial product. A business owner *and* their CPA can run real books end-to-end and prefer it to what they use today. Phases below are the build *order*, not a staircase of half-products. |
+| CPA permissions | **Per-engagement scope:** owner grants a CPA `read_only` or `full` posting rights at accept time; enforced now, not deferred |
+| Historical data | **Full history import at launch:** via API (QBO/Xero pull) **and** manual upload (CSV / bank-statement / trial-balance). Opening balances are the fallback, not the only option. Users run their books on it from day one |
+| Launch bar | **A complete, lovable v1 from day one, no MVP compromise.** Not a proof-of-concept, not a "pilot" of a partial product. A business owner *and* their CPA can run real books end-to-end and prefer it to what they use today. Phases below are the build *order*, not a staircase of half-products. |
 
 ### The single dominant consequence
 
@@ -32,10 +32,10 @@ fixture-driven, client-token demo era ends for the *app* surface.
 
 ---
 
-## 1. Core mental model - one platform, three lenses
+## 1. Core mental model, one platform, three lenses
 
 There is **one application, one data model, one API, one permission engine.** "Business Owner,"
-"CPA," and "Admin" are not three apps - they are **role-scoped projections of the same platform.**
+"CPA," and "Admin" are not three apps, they are **role-scoped projections of the same platform.**
 
 ```
                     ┌───────────────────────────────────────┐
@@ -54,26 +54,26 @@ They get a **membership row with a role**, and the permission layer filters real
 2. Role and tenant come from the **verified session**, never from the client.
 3. Money tables are **append-only**; corrections are reversing entries, never edits.
 4. Cross-tenant access is **explicit, scoped, and revocable** (the engagement record).
-5. The database itself (RLS) refuses unauthorized reads - app code is the second line, not the first.
+5. The database itself (RLS) refuses unauthorized reads, app code is the second line, not the first.
 
 ---
 
-## 1b. The launch bar - a complete, lovable v1 (no MVP compromise)
+## 1b. The launch bar, a complete, lovable v1 (no MVP compromise)
 
 This is not a phased pilot of a partial product. **v1 is a product a business owner and their CPA
 both run real books on, end-to-end, and prefer to their current tool.** Two people have to love
-it - and a CPA is a hard, opinionated user. "Done" means all of the following are true on day one:
+it, and a CPA is a hard, opinionated user. "Done" means all of the following are true on day one:
 
 **The business owner loves it because:**
 - They connect a bank in minutes; transactions flow in and arrive **already categorized** (Penny
-  proposes, they tap to confirm) - not a blank ledger to fill.
+  proposes, they tap to confirm), not a blank ledger to fill.
 - Snapping a receipt photo from their phone files it against the right transaction.
-- "How's my business?" is answered in plain language - cash position, P&L, what needs attention -
+- "How's my business?" is answered in plain language, cash position, P&L, what needs attention -
   without them knowing what a debit is.
 - Their existing books (QBO/Xero/CSV) come in cleanly so there's no cold-start.
 
 **The CPA loves it because:**
-- A real **double-entry ledger** they can trust - balanced, immutable, auditable - not a toy.
+- A real **double-entry ledger** they can trust, balanced, immutable, auditable, not a toy.
 - A **client workqueue** across all their businesses: what needs review, what's uncategorized,
   what's unreconciled, ranked.
 - **Bank reconciliation** that actually ties to statements, and **period close/lock**.
@@ -82,16 +82,16 @@ it - and a CPA is a hard, opinionated user. "Done" means all of the following ar
 - Per-client access they control (read-only vs full), nothing leaks across clients.
 
 **Both feel it's trustworthy:** correct to the cent, fast, isolated, recoverable. Trust is the
-product in bookkeeping - a single wrong balance loses a CPA forever.
+product in bookkeeping, a single wrong balance loses a CPA forever.
 
-These translate into concrete launch-scope features (§11). Nothing here is "phase 2 polish" - the
+These translate into concrete launch-scope features (§11). Nothing here is "phase 2 polish", the
 delight items above are part of the definition of done, not a backlog.
 
 ---
 
 ## 1c. Navigation IA per lens (the layout of the three projections)
 
-The *layout* of each lens - its tabs, sub-tabs, and the staff/admin console - is specified in
+The *layout* of each lens, its tabs, sub-tabs, and the staff/admin console, is specified in
 **[apps/app/APP_PRINCIPLES.md](../../apps/app/APP_PRINCIPLES.md)** (read it before touching nav).
 The load-bearing summary:
 
@@ -132,9 +132,9 @@ money-mutating operations.** Concretely:
 
 | Option | Verdict |
 |---|---|
-| Pure Supabase, client talks straight to DB | Fine for CRUD, **unsafe for a ledger** - balanced-entry and idempotency invariants can't live in client code, and integration secrets can't either. |
+| Pure Supabase, client talks straight to DB | Fine for CRUD, **unsafe for a ledger:** balanced-entry and idempotency invariants can't live in client code, and integration secrets can't either. |
 | **Supabase + thin API for writes** ✅ | RLS gives defense-in-depth isolation for *reads*; the API enforces money invariants and holds secrets for *writes*. Pragmatic for a small team, no premature infra. |
-| Full custom backend, Supabase as dumb DB | Throws away RLS and Auth - more code, more risk, slower. Revisit only at real scale. |
+| Full custom backend, Supabase as dumb DB | Throws away RLS and Auth, more code, more risk, slower. Revisit only at real scale. |
 
 Net: **keep Supabase, add a typed write-path.** Marketing stays static (GitHub Pages). The app
 SPA can still be statically hosted because all auth and data live behind the API.
@@ -160,13 +160,13 @@ SPA can still be statically hosted because all auth and data live behind the API
 ```
 
 The current `apps/demo/businessowner` and `apps/demo/cpa` screens are the **UI starting point**
-for the owner and CPA lenses - we keep the designed screens and swap fixtures for the authed API.
+for the owner and CPA lenses, we keep the designed screens and swap fixtures for the authed API.
 `apps/admin` becomes the admin lens. The three Claude proxies (`penny-api`, bubble worker,
 compose-server) converge over time onto **one authenticated AI gateway**.
 
 ---
 
-## 4. Identity, tenancy & RBAC - the heart
+## 4. Identity, tenancy & RBAC, the heart
 
 Because a person can be an *owner* in one business and a *CPA* in another, **role cannot live on
 the user.** Role lives on the **relationship**.
@@ -174,7 +174,7 @@ the user.** Role lives on the **relationship**.
 This same M:N relationship gives us **one account → many businesses for free**: a single login can
 hold an `owner` membership in any number of business orgs (a founder with three companies, a
 CPA who also runs their own side business, etc.). The account is the *person*; each business is a
-separate `organization`. There is no "personal account that is also a business" - a user always
+separate `organization`. There is no "personal account that is also a business", a user always
 *owns businesses*, never *is* one. The app surfaces this through an **org-switcher** (active-org
 context, §5.3); all data, RLS, and the ledger are scoped per `org_id`, so the books of one
 business are fully isolated from another even under the same owner.
@@ -264,10 +264,10 @@ Platform-admin access to tenant data is **break-glass and audited**, never silen
 
 **Internal admin console (planned).** The staff surface grows beyond break-glass into a full
 internal console at `penny.founderfirst.one/admin` that **mirrors and, over time, absorbs
-`founderfirst.one/admin`** ([apps/admin](../../apps/admin)) - Support · Audience · Analytics · Penny
+`founderfirst.one/admin`** ([apps/admin](../../apps/admin)), Support · Audience · Analytics · Penny
 + Settings, with break-glass books access as one module. Migration is **additive and parallel-run**
 (never break the existing `/admin`, one Supabase source of truth, no big-bang cutover). Planned now,
-built after sign-off - see [apps/app/APP_PRINCIPLES.md](../../apps/app/APP_PRINCIPLES.md) §4, §8.
+built after sign-off, see [apps/app/APP_PRINCIPLES.md](../../apps/app/APP_PRINCIPLES.md) §4, §8.
 
 ### 4.3 The authorization predicate (used everywhere)
 
@@ -337,7 +337,7 @@ $$;
 
 The write-path API calls `can_write_org(org_id)` before posting any journal entry; a
 `read_only` CPA can open the books but every mutation is refused. (We may also add a
-narrow business-`member` role cap later - for the pilot, business members write, CPAs are
+narrow business-`member` role cap later, for the pilot, business members write, CPAs are
 gated by engagement `access`.)
 
 ### 4.4 RLS pattern for every tenant table
@@ -371,7 +371,7 @@ policy **recurses infinitely** (a well-known Supabase trap). Rules we lock now:
 - **`engagements`**: visible to members of either the firm side or the client side (via the
   `security definer` helpers, never a direct self-join in the policy).
 - **`client_assignments`**: readable by firm members; writable only by `firm_admin` of that firm.
-- **All backbone-table writes go through the API** (service role), same as the ledger - the SPA
+- **All backbone-table writes go through the API** (service role), same as the ledger, the SPA
   never inserts a membership/engagement directly. This sidesteps most policy-recursion risk
   entirely, since client-side we only ever `select`.
 - Phase 0 ships a **pgTAP / SQL test suite** that asserts isolation: user A cannot read user B's
@@ -401,18 +401,18 @@ E. Owner adds another business → create business org (owner) under the SAME ac
 
 One `invites` table backs flows A–D (token, target org, intended role/engagement, expiry,
 accepted_at). Accepting an invite is the **only** way to gain a membership or activate an
-engagement - no implicit access. Revocation flips `status` and RLS instantly cuts access
+engagement, no implicit access. Revocation flips `status` and RLS instantly cuts access
 (important for trust and for GDPR erasure obligations already flagged in project memory).
 
 ### 5.3 Multiple businesses per account + active-org context
 
-- **"Create a business" is always available** from the account menu - first business at signup,
+- **"Create a business" is always available** from the account menu, first business at signup,
   additional ones any time (flow E). Each call is just `POST /orgs {type:'business'}` +
   an `owner` membership for the caller.
 - The app holds an **active-org** in session (`?org=` / stored selection). An **org-switcher** in
   the header lets an owner flip between their businesses; the CPA lens lists client orgs the same
   way. The active org scopes every query and every `org_id` write.
-- Books never bleed across an owner's businesses - separate `org_id`, separate RLS scope, separate
+- Books never bleed across an owner's businesses, separate `org_id`, separate RLS scope, separate
   ledger. Cross-business roll-ups (e.g. "all my companies") are an explicit future aggregate view,
   not the default.
 
@@ -422,13 +422,13 @@ engagement - no implicit access. Revocation flips `status` and RLS instantly cut
   to remove/suspend the final owner; ownership must be *transferred* first. Same for `firm_admin`
   on a firm.
 - **Ownership transfer:** an explicit flow (current owner promotes another member to owner, or
-  invites a new owner who accepts) - never an implicit side effect of leaving.
+  invites a new owner who accepts), never an implicit side effect of leaving.
 - **Leaving / removal** flips membership `status`; RLS cuts access immediately. History the user
   authored stays attributed (append-only ledger), but they lose access.
 
 ---
 
-## 6. Data architecture - hybrid ledger + integrations
+## 6. Data architecture, hybrid ledger + integrations
 
 ```
 ┌── Ingest (raw, provenance-preserving) ──┐   ┌── Own ledger (canonical books) ──────┐
@@ -446,7 +446,7 @@ engagement - no implicit access. Revocation flips `status` and RLS instantly cut
   **never floating point.** All arithmetic is integer; presentation formats at the edge.
 - `journal_entries` + `journal_lines` are **append-only and immutable.** A correction is a new
   reversing entry that references the original. Never UPDATE/DELETE a posted entry.
-- Each entry must be **balanced** (Σ debits = Σ credits, per currency) - enforced in the API
+- Each entry must be **balanced** (Σ debits = Σ credits, per currency), enforced in the API
   posting function AND double-checked by a deferred DB constraint/trigger.
 - **Raw bank transactions ≠ ledger entries.** Ingest raw, then *post* via a categorization step
   (Penny suggests → human approves). Keep `source` + `source_ref` provenance on every entry
@@ -469,17 +469,17 @@ engagement - no implicit access. Revocation flips `status` and RLS instantly cut
 - `reconciliations (org_id, bank_account_id, statement_date, statement_balance, status)` plus a
   link table matching ledger entries to bank statement lines.
 - Reconciling = matching raw `bank_txns` ↔ posted ledger entries until the cleared balance equals
-  the statement balance. This is core CPA work and a primary trust signal - not an afterthought.
+  the statement balance. This is core CPA work and a primary trust signal, not an afterthought.
 
 ### 6.4 Historical data import (launch feature, not deferred)
 
 Pilots run real books from day one, so import is in scope at launch via **three paths**, all
 landing in the same canonical ledger with provenance:
 
-- **API pull** - QBO/Xero connector imports chart of accounts + historical transactions.
-- **Manual upload** - CSV / bank-statement / trial-balance files, mapped to accounts in a
+- **API pull:** QBO/Xero connector imports chart of accounts + historical transactions.
+- **Manual upload:** CSV / bank-statement / trial-balance files, mapped to accounts in a
   guided importer (Penny assists with column mapping + categorization).
-- **Opening balances** - for businesses without exportable history: a dated trial-balance entry
+- **Opening balances:** for businesses without exportable history: a dated trial-balance entry
   per account at a chosen **cutover date**, so the balance sheet is correct from go-live.
 
 Imports run as a **batch** (`import_batches`) that is previewable and reversible *before* commit;
@@ -519,7 +519,7 @@ create table subscriptions (
 );
 ```
 
-- During the pilot, every org gets a `pilot_free` subscription - **no payment integration wired**,
+- During the pilot, every org gets a `pilot_free` subscription, **no payment integration wired**,
   but the entitlement check (`is org X entitled?`) exists from day one so flipping to paid is a
   config change, not a refactor.
 - Stripe (or similar) slots in behind `provider`/`provider_ref` when we charge. Per-seat vs
@@ -527,18 +527,18 @@ create table subscriptions (
 
 ---
 
-## 7. Penny (AI layer) - unified & server-authoritative
+## 7. Penny (AI layer), unified & server-authoritative
 
 Keep the existing `context.viewer_role` seam, but make it **server-authoritative**:
 
 - Caller identity, active org, and role come from the **verified JWT**, not the browser.
 - **Penny reads context using the caller's own scoped token (RLS-enforced), never the service
-  role.** The AI can only ever see what that user is already permitted to see - the model is not
+  role.** The AI can only ever see what that user is already permitted to see, the model is not
   a privilege-escalation path.
 - Penny pulls only **RLS-permitted** data into context.
 - Prompt overlay (founder tone vs. CPA tone) is selected from Supabase, as the bubble already does.
 - Penny writes back **proposals** (categorizations, draft emails, suggested entries) that a human
-  approves - it never silently mutates the ledger.
+  approves, it never silently mutates the ledger.
 
 Over time the three Claude proxies (`penny-api`, bubble worker, compose-server) converge onto one
 authenticated AI gateway. The public marketing bubble stays anonymous and separate.
@@ -576,30 +576,30 @@ API.**
 
 ## 9. Security & compliance (financial data)
 
-- **RLS on every tenant table** - default-deny, helper-predicate policies (§4).
-- **Money mutations only via service-role API** - never client-side writes to ledger tables.
-- **Append-only ledger** - immutability is an auditability and trust property, not just hygiene.
-- **Secrets server-side** - Plaid/QBO/Xero/Anthropic tokens in Edge Function secrets / Vault.
-- **Audit log** - extend the existing audit infra to cover engagement grant/revoke, ledger posts,
+- **RLS on every tenant table:** default-deny, helper-predicate policies (§4).
+- **Money mutations only via service-role API:** never client-side writes to ledger tables.
+- **Append-only ledger:** immutability is an auditability and trust property, not just hygiene.
+- **Secrets server-side:** Plaid/QBO/Xero/Anthropic tokens in Edge Function secrets / Vault.
+- **Audit log:** extend the existing audit infra to cover engagement grant/revoke, ledger posts,
   break-glass platform-admin access.
-- **Data export & erasure** - engagement revocation + per-org export/delete path (GDPR; already a
+- **Data export & erasure:** engagement revocation + per-org export/delete path (GDPR; already a
   tracked obligation for Penny/Discord data).
-- **Roadmap to SOC2** - controls designed in from Phase 0, formalized in Phase 5.
-- **Data residency** - start in a **US** region (fits Plaid/QBO/Xero). Keep an org-level region
+- **Roadmap to SOC2:** controls designed in from Phase 0, formalized in Phase 5.
+- **Data residency:** start in a **US** region (fits Plaid/QBO/Xero). Keep an org-level region
   concept so EU/India data can later live in-region; don't hardcode a single global bucket.
-- **Sensitive secrets** (Plaid/QBO tokens, bank identifiers) - stored encrypted (Supabase Vault),
+- **Sensitive secrets** (Plaid/QBO tokens, bank identifiers), stored encrypted (Supabase Vault),
   never in app tables in plaintext, never client-side.
 
 ---
 
 ## 9b. Environments & operations
 
-- **Three Supabase projects: dev / staging / prod.** Today there is only prod - that is a
+- **Three Supabase projects: dev / staging / prod.** Today there is only prod, that is a
   LEARNINGS.md-class risk. Migrations and destructive changes are rehearsed on staging (seeded
   with synthetic tenants) before prod. **No schema change touches prod un-rehearsed.**
-- **Point-in-time recovery (PITR)** enabled on prod - financial data must be restorable.
+- **Point-in-time recovery (PITR)** enabled on prod, financial data must be restorable.
 - **Migrations** stay the single source of truth in `supabase/migrations/`; `supabase db push`
-  deploys ALL pending - check `migration list` first (repo guardrail).
+  deploys ALL pending, check `migration list` first (repo guardrail).
 - **Audit log is append-only** and covers: engagement grant/revoke, access-level changes,
   assignment changes, period close, every ledger post, and break-glass platform-admin access.
 
@@ -607,7 +607,7 @@ API.**
 
 ## 10. Repo & migration topology
 
-- Migrations live in `supabase/migrations/` - **the only schema source of truth** (repo guardrail).
+- Migrations live in `supabase/migrations/`, **the only schema source of truth** (repo guardrail).
   Phase 0 is one reviewed migration: orgs / memberships / engagements / platform_staff / invites + RLS.
 - New app lives under `apps/app` (the unified authed SPA), seeded from the existing
   `apps/demo/businessowner` and `apps/demo/cpa` screens.
@@ -620,44 +620,44 @@ API.**
 ## 11. Phased roadmap
 
 **There is one launch, and it ships the complete v1 (§1b).** The phases below are the *build
-order* - the sequence in which we construct the one product - not a series of public half-releases.
+order*, the sequence in which we construct the one product, not a series of public half-releases.
 We dogfood and put it in front of design partners continuously, but the **public launch gate is
 the full Definition of Done**, not the end of any single phase.
 
 | Phase | Build deliverable | Internal exit criteria |
 |---|---|---|
-| **0 - Foundations** | orgs/memberships/engagements/assignments/invites + RLS + `can_write_org` + platform-staff separation + pgTAP isolation tests + staging env | Tenant isolation provably enforced & tested; invite/accept/revoke/assign work; rehearsed on staging |
-| **1 - Auth shell** | unified app: login, org-switcher (owner businesses + CPA clients), role/scope-routed shell; subscription entitlement stub | Owner + CPA log in, see correctly scoped workspaces; read_only vs full enforced |
-| **2 - Ledger core** | chart of accounts, periods, balanced immutable journal entries, documents, manual entry + reversing corrections | Books balance; closed periods locked; money in integer minor units |
-| **3 - History import** | QBO/Xero API pull + CSV/statement/trial-balance manual upload + opening balances; previewable reversible batches | A real business imports existing books and the balance sheet is correct at cutover |
-| **4 - Bank feed + Penny + reconciliation** | Plaid link, raw txns, Penny categorize (propose→approve) + learned rules, bank reconciliation, receipt capture, plain-language "how's my business" | Live txns arrive pre-categorized; an account reconciles to a statement; rules stop repeat fixes |
-| **5 - CPA workqueue + ongoing sync + hardening** | client workqueue (review/uncategorized/unreconciled ranked), QBO/Xero round-trip sync, exports, audit coverage, export/erasure, PITR, SOC2-track controls | Both personas' Definition of Done (§1b) met; payment-flippable |
+| **0, Foundations** | orgs/memberships/engagements/assignments/invites + RLS + `can_write_org` + platform-staff separation + pgTAP isolation tests + staging env | Tenant isolation provably enforced & tested; invite/accept/revoke/assign work; rehearsed on staging |
+| **1, Auth shell** | unified app: login, org-switcher (owner businesses + CPA clients), role/scope-routed shell; subscription entitlement stub | Owner + CPA log in, see correctly scoped workspaces; read_only vs full enforced |
+| **2, Ledger core** | chart of accounts, periods, balanced immutable journal entries, documents, manual entry + reversing corrections | Books balance; closed periods locked; money in integer minor units |
+| **3, History import** | QBO/Xero API pull + CSV/statement/trial-balance manual upload + opening balances; previewable reversible batches | A real business imports existing books and the balance sheet is correct at cutover |
+| **4, Bank feed + Penny + reconciliation** | Plaid link, raw txns, Penny categorize (propose→approve) + learned rules, bank reconciliation, receipt capture, plain-language "how's my business" | Live txns arrive pre-categorized; an account reconciles to a statement; rules stop repeat fixes |
+| **5, CPA workqueue + ongoing sync + hardening** | client workqueue (review/uncategorized/unreconciled ranked), QBO/Xero round-trip sync, exports, audit coverage, export/erasure, PITR, SOC2-track controls | Both personas' Definition of Done (§1b) met; payment-flippable |
 
 > **⟶ LAUNCH GATE (after Phase 5):** every §1b "loves it" item is true for *both* a real owner and
-> a real CPA on real data. Then - and only then - public launch. Billing flips from free
+> a real CPA on real data. Then, and only then, public launch. Billing flips from free
 > `pilot_free` to paid with a config change (Stripe behind `provider`), no schema work.
 
 **Why still sequenced this way if it all ships together?** Each phase de-risks the next and is
 independently dogfoodable, so we find ledger/isolation bugs early on synthetic data before real
-money rides on them - without ever shipping a knowingly-partial product to a paying user.
+money rides on them, without ever shipping a knowingly-partial product to a paying user.
 
 ---
 
 ## 12. Open risks / decisions still to settle
 
-1. **Edge Functions vs. dedicated TS service** for the write-path - start with Edge Functions,
+1. **Edge Functions vs. dedicated TS service** for the write-path, start with Edge Functions,
    set a tripwire (latency/complexity) for graduating to Hono on Cloudflare.
-2. **QBO vs. Xero first** - both planned; sequence by which the first design-partner CPAs use.
-3. **Plaid coverage / cost** in the US pilot - validate before Phase 4 commitment; the integration
+2. **QBO vs. Xero first:** both planned; sequence by which the first design-partner CPAs use.
+3. **Plaid coverage / cost** in the US pilot, validate before Phase 4 commitment; the integration
    abstraction lets a different aggregator slot in for EU/India later.
-4. **Multi-currency** - store `currency` from day one; assume one currency per org for the pilot,
+4. **Multi-currency:** store `currency` from day one; assume one currency per org for the pilot,
    design accounts to allow multi later (FX gain/loss accounts come with it).
-5. **App hosting** - static SPA on Pages vs. a platform with edge auth; decide at Phase 1.
-6. **Mobile receipt capture** - the businessowner demo is mobile-first; default is a PWA (camera
+5. **App hosting:** static SPA on Pages vs. a platform with edge auth; decide at Phase 1.
+6. **Mobile receipt capture:** the businessowner demo is mobile-first; default is a PWA (camera
    upload to Storage) unless a native app is required. Confirm at Phase 2/4.
-7. **CPA write approval** - for `full` engagements, do owners still want a review queue on
+7. **CPA write approval:** for `full` engagements, do owners still want a review queue on
    CPA-posted entries, or is `full` truly unsupervised? (Currently: full = unsupervised.)
-8. **Penny model cost controls** - per-org rate limits + model pinning before opening the AI
+8. **Penny model cost controls:** per-org rate limits + model pinning before opening the AI
    propose loop to real volume (Phase 4).
 
 ---

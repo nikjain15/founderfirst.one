@@ -1,4 +1,4 @@
-# FounderFirst / Penny - Architecture
+# FounderFirst / Penny, Architecture
 
 > System overview grounded in the actual code paths in this repository. For the
 > internal design record with decision history see
@@ -10,17 +10,17 @@
 FounderFirst is a pnpm monorepo. The backend is **Supabase** (Postgres with
 row-level security, Deno Edge Functions, Storage, Vault); the apps are thin
 projections over it. The owner app, the CPA view, and the internal admin are all
-role-scoped projections of **one platform and one set of books** - the lens is
+role-scoped projections of **one platform and one set of books:** the lens is
 selected server-side from the verified JWT, never from the browser.
 
 | Layer | What it is | Stack (verified) |
 |---|---|---|
 | `apps/web` | Marketing site (the live founderfirst.one) | Astro 4 + React islands, GitHub Pages |
-| `apps/app` | Authed product SPA - owner, CPA, and admin lenses | Vite 5 + React 18 + react-router + TanStack Query |
+| `apps/app` | Authed product SPA, owner, CPA, and admin lenses | Vite 5 + React 18 + react-router + TanStack Query |
 | `apps/admin` | Internal console (content, voice, signals, email) | Vite + React 18 SPA |
 | `apps/demo` | Interactive Penny demo (`/penny/demo/`) | Vite + React 18, standalone |
 | `site-bubble/worker` | Public marketing chat bubble | Cloudflare Worker + Workers AI |
-| `supabase/functions` | ~74 Deno Edge Functions - the write path and Penny's brains | Deno + `@supabase/supabase-js` |
+| `supabase/functions` | ~74 Deno Edge Functions, the write path and Penny's brains | Deno + `@supabase/supabase-js` |
 | `packages/inference` | The AI quality & cost layer (`resolve()` + judge) | Runtime-agnostic TypeScript |
 | `packages/design-system` | Design tokens + components | CSS custom properties |
 | `scripts/` | Seed loaders, CI guards, the regulatory watcher | tsx |
@@ -97,7 +97,7 @@ flowchart TB
 ```
 
 Two properties are worth calling out. First, **every AI request in the system funnels
-through one `resolve()`** (`packages/inference/src/core.ts`) - there is a single
+through one `resolve()`** (`packages/inference/src/core.ts`), there is a single
 place where routing, cost, and logging happen, and a single provider HTTP path that
 the judge reuses. Second, **the knowledge kernel feeds categorization and tax as
 data**, so a new sector, deadline, or connector is a seed-file edit with a CI drift
@@ -160,7 +160,7 @@ Key code facts (`supabase/functions/categorize/index.ts`,
 grounding discipline. The client computes a fast optimistic answer, but the server
 is authoritative on every request:
 
-1. **Re-route** the question with shared routing logic - if the server deems it out
+1. **Re-route** the question with shared routing logic, if the server deems it out
    of scope, it declines regardless of what the client sent.
 2. **Re-compute the fact** from the org's own ledger via a paginated service-role
    SELECT running the exact report math. The server figure wins over any client

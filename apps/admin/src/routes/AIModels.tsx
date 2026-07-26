@@ -16,10 +16,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAIModelConfig,
   getAIModels,
+  getAISUQS,
   setAIModelConfig,
   setAIPrice,
   type AIModelConfigRow,
   type AIModelPrice,
+  type AISUQSRow,
 } from "../lib/supabase";
 import { Takeaway } from "../lib/Takeaway";
 import { IconAlert } from "../lib/icons";
@@ -36,6 +38,7 @@ export function AIModels() {
   const qc = useQueryClient();
   const cfgQ = useQuery({ queryKey: ["aiModelConfig"], queryFn: getAIModelConfig });
   const pricesQ = useQuery({ queryKey: ["aiModels"], queryFn: getAIModels });
+  const suqsQ = useQuery({ queryKey: ["aiSuqs"], queryFn: () => getAISUQS(30) });
 
   const saveMut = useMutation({
     mutationFn: (a: Parameters<typeof setAIModelConfig>[0]) => setAIModelConfig(a),
@@ -92,6 +95,8 @@ export function AIModels() {
           onSave={(patch) => saveMut.mutate({ useCase: r.use_case, ...patch })}
         />
       ))}
+
+      <SUQSSection rows={suqsQ.data ?? []} pending={suqsQ.isPending} error={suqsQ.error as Error | null} />
 
       {prices.length > 0 && (
         <section className="analytics-section">
@@ -271,6 +276,80 @@ function UseCaseModelCard({
           Test before saving
         </button>
       </div>
+    </section>
+  );
+}
+
+// SUQS — measured Speed (p95 latency), cost/answer, and gate-block rate against
+// the numeric SLO targets (managed quality envelope, D9/D12). A dimension over its
+// target renders in the error color so a breach is obvious at a glance.
+function SUQSSection({ rows, pending, error }: { rows: AISUQSRow[]; pending: boolean; error: Error | null }) {
+  const fmtMs = (n: number): string => (n >= 1000 ? `${(n / 1000).toFixed(1)}s` : `${Math.round(n)}ms`);
+  const cell = (measured: number, slo: number, fmt: (n: number) => string, hasData: boolean) => {
+    const over = hasData && measured > slo;
+    return (
+      <td className="num" style={over ? { color: "var(--error)", fontWeight: 600 } : undefined}>
+        {hasData ? fmt(measured) : "—"} <span className="muted" style={{ fontSize: "var(--fs-eyebrow)" }}>/ {fmt(slo)}</span>
+      </td>
+    );
+  };
+
+  return (
+    <section className="analytics-section">
+      <div className="section-head">
+        <div className="eyebrow">SUQS · service level objectives</div>
+        <h2 className="section-title">Speed, cost & quality vs target (30d).</h2>
+      </div>
+      <p className="page-sub" style={{ marginTop: 0 }}>
+        Measured p95 answer latency, cost per answer, and gate-block rate against the numeric SLO for each use case. A value over its target is flagged — that's the managed quality envelope, not just a measurement.
+      </p>
+      {error && (
+        <div className="empty" style={{ color: "var(--error)", borderColor: "var(--error-bg)" }}>
+          <IconAlert size={18} />
+          <p className="empty-title" style={{ marginTop: 10 }}>Couldn't load SUQS metrics.</p>
+          {error.message}
+          <p style={{ marginTop: 10, fontSize: "var(--fs-eyebrow)" }}>
+            If this says a function is missing, the <code>ai_suqs_slo</code> migration hasn't been applied yet.
+          </p>
+        </div>
+      )}
+      {pending && <div className="empty">Loading…</div>}
+      {!pending && !error && (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Use case</th>
+                <th className="num">Answers</th>
+                <th className="num">p95 latency / SLO</th>
+                <th className="num">Cost/answer / SLO</th>
+                <th className="num">Block rate / SLO</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const answers = num(r.answers);
+                const has = answers > 0;
+                return (
+                  <tr key={r.use_case}>
+                    <td>
+                      {r.label}
+                      {r.breached && has && <span className="ai-model-pill" style={{ marginLeft: 8, color: "var(--error)" }}>breached</span>}
+                    </td>
+                    <td className="num">{answers}</td>
+                    {cell(num(r.p95_latency_ms), num(r.slo_p95_latency_ms), fmtMs, has)}
+                    {cell(num(r.cost_per_answer_usd), num(r.slo_cost_per_answer_usd), fmtUsd, has)}
+                    {cell(num(r.block_rate_pct), num(r.slo_block_rate_pct), (n) => `${n.toFixed(1)}%`, has)}
+                  </tr>
+                );
+              })}
+              {rows.length === 0 && (
+                <tr><td colSpan={5} className="muted">No SLO targets configured yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }

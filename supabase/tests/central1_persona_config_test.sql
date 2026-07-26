@@ -8,7 +8,7 @@
 -- Everything rolls back.
 
 begin;
-select plan(9);
+select plan(12);
 
 -- ── fixtures: one admin, one non-admin, one org ─────────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -75,11 +75,16 @@ select throws_ok(
 );
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- Behavior config: platform default + per-org override
+-- Behavior config: platform default + per-org override. DEFINER-GUARD-2:
+-- get_effective_behavior_config is `security definer` and reads a caller-
+-- supplied p_org — the org-override branch must be caller-role-aware (a
+-- member, or the 3 service-role edge-fn backends) so a non-member can't read
+-- another org's tuned thresholds; p_org=null and the platform default are
+-- unaffected.
 -- ═══════════════════════════════════════════════════════════════════════════
 reset "request.jwt.claims";
 
--- 7) the platform default carries the seeded confidence_high cutoff.
+-- 7) the platform default carries the seeded confidence_high cutoff (anon, p_org=null — unchanged).
 select is(
   (get_effective_behavior_config(null) ->> 'confidence_high')::numeric,
   0.75::numeric,
@@ -90,19 +95,48 @@ select is(
 insert into org_behavior_overrides (org_id, behavior)
 values ('00000000-0000-0000-0000-0000000ce0b1', jsonb_build_object('confidence_high', 0.95));
 
--- 8) the effective config for that org reflects the override (behavior changed).
+-- 8) a member (the org owner) reads the override — folded over the platform default.
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-0000000ce001","email":"super@test.dev","role":"authenticated"}';
 select is(
   (get_effective_behavior_config('00000000-0000-0000-0000-0000000ce0b1') ->> 'confidence_high')::numeric,
   0.95::numeric,
-  'org override folds over the platform default — changing a row changes behavior'
+  'org override folds over the platform default for a member — changing a row changes behavior'
 );
 
--- 9) unrelated keys still come from the platform default (sparse override).
+-- 9) unrelated keys still come from the platform default (sparse override), still as the member.
 select is(
   (get_effective_behavior_config('00000000-0000-0000-0000-0000000ce0b1') ->> 'auto_propose_limit')::int,
   8,
   'keys not overridden fall through to the platform default'
 );
+
+-- 10) DEFINER-GUARD-2: a non-member authenticated caller cannot read another
+-- org's tuned override — refused, not an error; falls through to the platform default.
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-0000000ce002","email":"nobody@test.dev","role":"authenticated"}';
+select is(
+  (get_effective_behavior_config('00000000-0000-0000-0000-0000000ce0b1') ->> 'confidence_high')::numeric,
+  0.75::numeric,
+  'DEFINER-GUARD-2: a non-member cannot read another org''s tuned override — falls through to platform default'
+);
+
+-- 11) DEFINER-GUARD-2: an anonymous (no JWT) caller behaves the same way — refused, not an error.
+reset "request.jwt.claims";
+select is(
+  (get_effective_behavior_config('00000000-0000-0000-0000-0000000ce0b1') ->> 'confidence_high')::numeric,
+  0.75::numeric,
+  'DEFINER-GUARD-2: an anonymous caller cannot read the org override — falls through to platform default'
+);
+
+-- 12) DEFINER-GUARD-2: a service-role caller (the receipts/categorize/invoicing
+-- edge fns' backend read, no per-user JWT) still resolves the org override —
+-- the regression this caller-role-aware fix exists to avoid.
+set local "request.jwt.claims" = '{"role":"service_role"}';
+select is(
+  (get_effective_behavior_config('00000000-0000-0000-0000-0000000ce0b1') ->> 'confidence_high')::numeric,
+  0.95::numeric,
+  'DEFINER-GUARD-2: a service-role caller still resolves the org override (edge-fn backend reads unaffected)'
+);
+reset "request.jwt.claims";
 
 select * from finish();
 rollback;

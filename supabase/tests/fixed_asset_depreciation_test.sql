@@ -132,10 +132,13 @@ select is(
 select is(
   (select origin_kind from tax_adjustments where id = (select id from _adj)),
   'depreciation_book_tax', 'M-1 draft is tagged origin_kind=depreciation_book_tax');
+-- tax_m1_summary now gates on can_access_org(); run as the org owner (a member).
+set local "request.jwt.claims" = '{"sub":"80000000-0000-0000-0000-000000000001","role":"authenticated"}';
 -- a proposal does NOT count in the summary yet
 select is(
   (select coalesce(sum(total_minor),0)::bigint from tax_m1_summary('80000000-0000-0000-0000-0000000000a0', 2025)),
   0::bigint, 'a proposed adjustment is NOT in the M-1 summary');
+set local "request.jwt.claims" = '';
 -- redraft is idempotent (no dup)
 select ok(
   (select draft_depreciation_m1('80000000-0000-0000-0000-000000000001','80000000-0000-0000-0000-0000000000a0',(select id from _asset),2025)) is not null

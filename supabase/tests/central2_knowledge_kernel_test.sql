@@ -83,10 +83,14 @@ insert into auth.users (id, email, aud, role)
 insert into organizations (id, type, name, created_by)
   values ('00000000-0000-0000-0000-0000000ce2b1', 'business', 'Kernel Co', '00000000-0000-0000-0000-0000000ce201');
 -- the seed trigger creates the settings row; set the tax profile on it.
+insert into memberships (org_id, user_id, role, status)
+  values ('00000000-0000-0000-0000-0000000ce2b1', '00000000-0000-0000-0000-0000000ce201', 'owner', 'active');
 update org_accounting_settings
    set entity_type = 's_corp', jurisdiction_code = 'US-FED'
  where org_id = '00000000-0000-0000-0000-0000000ce2b1';
 
+-- upcoming_filing_deadlines() now gates on can_access_org(); run as the org owner (a member).
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-0000000ce201","role":"authenticated"}';
 -- S-corp 2025 annual return is due Mar 15 2026. As of Feb 1 2026 with a 60-day
 -- horizon, the consumer surfaces it — sourced from filing_obligations, not code.
 select ok(

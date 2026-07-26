@@ -387,6 +387,28 @@ export async function getAIModels(): Promise<AIModelPrice[]> {
   return (data as AIModelPrice[]) ?? [];
 }
 
+// SUQS SLOs — measured Speed (p95 latency), cost/answer, and gate-block rate
+// against the per-use-case numeric targets in ai_suqs_slo (managed quality
+// envelope, not just measurement — audit Dims 9/12).
+export interface AISUQSRow {
+  use_case: string;
+  label: string;
+  answers: number | string;
+  p95_latency_ms: number | string | null;
+  slo_p95_latency_ms: number | string;
+  cost_per_answer_usd: number | string | null;
+  slo_cost_per_answer_usd: number | string;
+  block_rate_pct: number | string | null;
+  slo_block_rate_pct: number | string;
+  breached: boolean;
+}
+
+export async function getAISUQS(days = 30): Promise<AISUQSRow[]> {
+  const { data, error } = await getClient().rpc("admin_ai_suqs", { p_days: days });
+  if (error) throw new Error(`getAISUQS: ${error.message}`);
+  return (data as AISUQSRow[]) ?? [];
+}
+
 export async function setAIModelConfig(args: {
   useCase: string;
   mainProvider: string;

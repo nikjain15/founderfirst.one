@@ -118,6 +118,24 @@ touching them (autonomous-correct rate), held against a hard accuracy floor.
 Metrics are captured as data today: every AI call writes an `ai_decisions` row with
 `cost_usd`, `latency_ms`, `usage`, `gate_status`, and per-eval results.
 
+### 5.1 SUQS SLOs (numeric targets)
+
+Measurement becomes a *managed* envelope only once the numbers have targets. The
+per-use-case SUQS SLOs below are stored as editable data in `ai_suqs_slo` and the
+admin **AI · Models** view reports measured-vs-target over a 30-day window
+(`admin_ai_suqs`), flagging any breached dimension.
+
+| Use case | Speed — p95 answer latency | Cost per answer (incl. judge) | Quality — gate-block rate |
+|---|---|---|---|
+| Penny chat (interactive) | ≤ 3.0 s | ≤ $0.010 | ≤ 2% |
+| Insights (batch) | ≤ 20 s | ≤ $0.150 | ≤ 5% |
+| Email drafting (batch) | ≤ 8.0 s | ≤ $0.020 | ≤ 2% |
+| Content draft (batch) | ≤ 20 s | ≤ $0.150 | ≤ 5% |
+
+**Utility SLO (target, tracked on the AI Review surface, not recomputed by
+`admin_ai_suqs`):** zero-edit approval rate ≥ 85% per tenant cohort before a
+financial use case may advance its autonomy ramp.
+
 ## 6. Tradeoffs and principles
 
 - **Accuracy over autonomy.** The system starts at 100% human review and advances

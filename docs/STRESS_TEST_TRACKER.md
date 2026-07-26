@@ -68,12 +68,12 @@ approval. That is the point.
   many agents, not many sessions.
 - **Scheduled / overnight:** one `/schedule` routine per role (builder 22:00, red-team
   02:00, integrator 08:30, retro Sun), full prompt packs and cadence in
-  [FULL_BOOKKEEPING_ROADMAP.md](plans/FULL_BOOKKEEPING_ROADMAP.md) §4. Each routine has a
+  the product roadmap §4. Each routine has a
   **hard timeout, a single task, and exits by opening a PR or a blocked-report:** never
   commits to `main`, never runs open-ended (the 9×/night cron that leaked sessions →
   SIGBUS is why; LEARNINGS #19).
 - **Fuel:** every feature/audit target is a spec card in
-  [FULL_BOOKKEEPING_ROADMAP.md](plans/FULL_BOOKKEEPING_ROADMAP.md) §4.3 (or a row in the
+  the product roadmap §4.3 (or a row in the
   Tracker below for bug-hunt audits). A card with `decision-needed` is skipped by builders
   and surfaced to the human.
 

@@ -12,7 +12,7 @@ in the same PR that adds the doc, the map is only useful while it's complete.
 |---|---|---|
 | **Repo canon** (cross-cutting, always true) | repo root, **frozen at three files** | [README.md](../README.md) · [LEARNINGS.md](../LEARNINGS.md) · [VOICE.md](../VOICE.md) |
 | **Spec of a shipped surface** | next to the code it governs | [apps/web/BLOG_PRINCIPLES.md](../apps/web/BLOG_PRINCIPLES.md) · [apps/admin/ADMIN_PRINCIPLES.md](../apps/admin/ADMIN_PRINCIPLES.md) · [packages/design-system/README.md](../packages/design-system/README.md) · [tools/signals-worker/SOLUTION.md](../tools/signals-worker/SOLUTION.md) |
-| **Plan / roadmap / research** (forward-looking) | [docs/plans/](plans/) | [ARCHITECTURE.md](plans/ARCHITECTURE.md) · [FULL_BOOKKEEPING_ROADMAP.md](plans/FULL_BOOKKEEPING_ROADMAP.md) · [learning-loop-act-spec.md](plans/learning-loop-act-spec.md) |
+| **Plan / roadmap / research** (forward-looking) | [docs/plans/](plans/) | [ARCHITECTURE.md](plans/ARCHITECTURE.md) · [learning-loop-act-spec.md](plans/learning-loop-act-spec.md) |
 | **Stress-test campaign artifacts** | [docs/stress/](stress/)`<campaign>/` + a row in [STRESS_TEST_TRACKER.md](STRESS_TEST_TRACKER.md) | [stress/auth/FINDINGS.md](stress/auth/FINDINGS.md) |
 | **Operational rubric / tracker** | [docs/](.) top level | [AUDIT.md](AUDIT.md) (rubric for `/audit`) · [STRESS_TEST_TRACKER.md](STRESS_TEST_TRACKER.md) |
 | **Superseded or finished** | [docs/archive/](archive/) with a `YYYY-MM-` prefix | [archive/2026-06-admin-hardening-SUMMARY.md](archive/2026-06-admin-hardening-SUMMARY.md) |

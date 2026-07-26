@@ -2,11 +2,11 @@
 
 > Status: DRAFT, awaiting Nik direction · 2026-07-03 · Owner: Nik
 
-*Companion to [FULL_BOOKKEEPING_ROADMAP.md](FULL_BOOKKEEPING_ROADMAP.md) (the original mission,
+*Companion to the product roadmap (the original mission,
 Signals demand, and Wave 1–4 plan). This doc does NOT commit scope, it lays out **candidate
 directions** for Nik to pick from. Nothing here is designed in depth; each candidate is sized
 just enough to compare. When Nik picks, the winners become spec cards in
-[BACKLOG.md](BACKLOG.md) per §4.3 of the roadmap, and the losers stay parked here.*
+the backlog per §4.3 of the roadmap, and the losers stay parked here.*
 
 ---
 

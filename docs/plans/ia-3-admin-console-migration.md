@@ -3,7 +3,7 @@
 Status: DRAFT, awaiting Nik sign-off · 2026-07-03 · Owner: Nik
 
 > **Plan-only.** No migrations, no feature code ship from this card. IA-3 is
-> `blocked:plan sign-off` in [BACKLOG.md](BACKLOG.md); it unblocks only when Nik approves
+> `blocked:plan sign-off` in the backlog; it unblocks only when Nik approves
 > this document. Companion specs: [apps/app/APP_PRINCIPLES.md](../../apps/app/APP_PRINCIPLES.md)
 > §4 & §8, [ARCHITECTURE.md](ARCHITECTURE.md) §4.2, [apps/admin/ADMIN_PRINCIPLES.md](../../apps/admin/ADMIN_PRINCIPLES.md).
 

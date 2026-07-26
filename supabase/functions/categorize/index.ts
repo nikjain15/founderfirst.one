@@ -23,6 +23,16 @@ import { mfaSatisfied } from "../_shared/mfaGate.ts";
 import { resolveAndJudgeOnDeno } from "../_shared/inference/deno.ts";
 import { orgTenant } from "../_shared/inference/core.ts";
 import { getAppPersona } from "../_shared/appPersona.ts";
+// Conduit integration: the ambiguous-transaction investigation is a bounded,
+// read-only agent loop (drafts a proposal, never writes the ledger). The
+// deterministic grounding gate below (byId.has + the enum contract) is unchanged;
+// only HOW the candidate account is proposed moved from a single-shot call to the
+// agent. Set CONDUIT_AGENT_DISABLE=1 to fall back to the legacy single-shot call.
+import { makeSupabaseDataAccess } from "../_shared/conduit-ff/dataAccess.ts";
+import { buildRetriever } from "../_shared/conduit-ff/retrieval.ts";
+import { makeEmbeddedConduitClient } from "../_shared/conduit-ff/client.ts";
+import { investigateCategorization } from "../_shared/conduit-ff/investigator.ts";
+import type { EmbeddedResolve } from "../_shared/conduit/client/types.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -181,7 +191,7 @@ Deno.serve(async (req) => {
 
   // ── propose ─────────────────────────────────────────────────────────────────
   if (op === "propose") {
-    const r = await computeProposal(svc, orgId, entryId, fromAccountId as string);
+    const r = await computeProposal(svc, orgId, entryId, fromAccountId as string, user.id);
     if (r.error) return json({ error: r.error }, r.status ?? 400);
     return json({ from_account_id: fromAccountId, proposal: r.proposal, note: r.note });
   }
@@ -195,7 +205,7 @@ Deno.serve(async (req) => {
   //     card) or the week's ≤5-ask budget is spent (defers to the digest).
   if (op === "triage") {
     const cfg = await effectiveConfig(svc, orgId);
-    const r = await computeProposal(svc, orgId, entryId, fromAccountId as string);
+    const r = await computeProposal(svc, orgId, entryId, fromAccountId as string, user.id);
     if (r.error) return json({ error: r.error }, r.status ?? 400);
     const p = r.proposal;
 
@@ -235,7 +245,7 @@ type Proposal = {
 type ProposalResult = { proposal: Proposal | null; note?: string; error?: string; status?: number };
 
 // deno-lint-ignore no-explicit-any
-async function computeProposal(svc: any, orgId: string, entryId: string, fromAccountId: string): Promise<ProposalResult> {
+async function computeProposal(svc: any, orgId: string, entryId: string, fromAccountId: string, actorId: string): Promise<ProposalResult> {
   const { data: entry, error: eErr } = await svc.from("journal_entries")
     .select("id, memo, entry_date, org_id, status, lines:journal_lines(account_id, amount_minor, side)")
     .eq("id", entryId).eq("org_id", orgId).maybeSingle();
@@ -277,6 +287,28 @@ async function computeProposal(svc: any, orgId: string, entryId: string, fromAcc
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) return { proposal: null, note: "no_anthropic_key" };
 
+  // 3a) AGENT PATH (default): a bounded, read-only investigation drafts the
+  // candidate account through @conduit/agent, grounded in the org's real data via
+  // @conduit/rag, every turn routed through @conduit/client (FF resolve injected).
+  // The DRAFT is still passed through the deterministic byId grounding gate below
+  // (proposalFor returns null for any id not in the org's chart), so no financial
+  // correctness gate is weakened. CONDUIT_AGENT_DISABLE=1 reverts to legacy 3b.
+  if (Deno.env.get("CONDUIT_AGENT_DISABLE") !== "1") {
+    try {
+      const draft = await proposeViaAgent(
+        svc, orgId, actorId, entryId, description,
+        uncatLine.side === "D" ? "out" : "in",
+        accounts.map((a) => ({ id: a.id, code: a.code, name: a.name, type: a.type })),
+        apiKey,
+      );
+      if (!draft || !byId.has(draft.account_id)) return { proposal: null, note: "ungrounded_or_empty" };
+      return { proposal: proposalFor(draft.account_id, "penny", draft.confidence, draft.rationale) };
+    } catch (e) {
+      return { proposal: null, note: "agent_failed: " + (e as Error).message };
+    }
+  }
+
+  // 3b) LEGACY single-shot path (fallback behind CONDUIT_AGENT_DISABLE=1).
   const roster = accounts.map((a) => `${a.id} | ${a.code ?? "—"} | ${a.name} | ${a.type}`).join("\n");
   const schema = {
     type: "object", additionalProperties: false,
@@ -334,6 +366,49 @@ async function computeProposal(svc: any, orgId: string, entryId: string, fromAcc
   } catch (e) {
     return { proposal: null, note: "inference_failed: " + (e as Error).message };
   }
+}
+
+// ── Conduit agent investigation (drafts a candidate account; never writes) ───
+// Builds the read-only accessor (tenant-scoped + membership-checked), a RAG
+// retriever over the org's real corpus (accounts + priors + tax rules), and an
+// embedded @conduit/client that injects FF's own resolve. Returns a DRAFT which
+// the caller re-checks against the org's chart (byId) — the deterministic gate.
+type AgentAccount = { id: string; code: string | null; name: string; type: string };
+async function proposeViaAgent(
+  // deno-lint-ignore no-explicit-any
+  svc: any, orgId: string, actorId: string, entryId: string, description: string,
+  direction: "in" | "out", accounts: AgentAccount[], apiKey: string,
+): Promise<{ account_id: string; confidence: number; rationale: string } | null> {
+  const data = await makeSupabaseDataAccess({ svc, orgId, actorId });
+  const [priors, taxRules] = await Promise.all([data.priorCategorizations(description), data.taxRuleCorpus()]);
+  const retriever = buildRetriever({ accounts, priors, taxRules });
+
+  const pinModel = { provider: "anthropic" as const, model: Deno.env.get("ANTHROPIC_MODEL") ?? "claude-haiku-4-5-20251001" };
+  const env = { ANTHROPIC_API_KEY: apiKey, SUPABASE_URL, SUPABASE_SERVICE_KEY: SERVICE_ROLE_KEY };
+  // Inject FF's resolve. Sampling contract: temperature is sent ONLY to models
+  // that accept it (Haiku 4.5 and older); Opus/Sonnet/Fable would 400 on it.
+  const resolve: EmbeddedResolve = async (task) => {
+    const acceptsSampling = /haiku/i.test(task.pinModel?.model ?? pinModel.model);
+    const r = await resolveAndJudgeOnDeno(
+      {
+        useCase: task.useCase, tenantId: task.tenantId, system: task.system,
+        messages: task.messages, maxTokens: task.maxTokens,
+        ...(acceptsSampling ? { temperature: 0 } : {}),
+        timeoutMs: 30_000, anthropic: { maxRetries: 1 },
+        pinModel: { provider: "anthropic" as const, model: task.pinModel?.model ?? pinModel.model },
+        record: { storeInput: false, ref: entryId },
+      },
+      env,
+    );
+    return { text: r.text, model: r.model, providerModel: r.providerModel, costUsd: r.costUsd, latencyMs: r.latencyMs, decisionId: r.decisionId };
+  };
+  const client = makeEmbeddedConduitClient({ resolve, tenantId: orgTenant(orgId), retriever, defaultMaxTokens: 500 });
+
+  const res = await investigateCategorization({
+    client, retriever, data, entryId, description, direction, accounts,
+    useCase: USE_CASE_CATEGORIZE, pinModel, maxSteps: 6,
+  });
+  return res.proposal;
 }
 
 // Repeat-vendor / kernel vendor-prior (CENTRAL-2). A learned rule IS the vendor

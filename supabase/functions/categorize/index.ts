@@ -20,7 +20,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { mfaSatisfied } from "../_shared/mfaGate.ts";
-import { resolveOnDeno } from "../_shared/inference/deno.ts";
+import { resolveAndJudgeOnDeno } from "../_shared/inference/deno.ts";
 import { orgTenant } from "../_shared/inference/core.ts";
 import { getAppPersona } from "../_shared/appPersona.ts";
 
@@ -291,7 +291,28 @@ async function computeProposal(svc: any, orgId: string, entryId: string, fromAcc
   const userMsg = [`Transaction: "${description}" — ${direction}.`, "", "Chart of accounts (id | code | name | type):", roster].join("\n");
 
   try {
-    const result = await resolveOnDeno(
+    // Grade every proposal (audit Dims 1/4/6): route through the judge so the
+    // ai_decisions row carries a gate_status instead of the model's pick being
+    // ungated. The financial floor for `penny_categorize` runs the deterministic
+    // + SQL-reconciliation gates on Deno (safety is deferred — no Workers-AI judge
+    // for an Anthropic generator, D20). The reconciler is the "source correct"
+    // rung: the chosen account MUST be one of the org's own live accounts we sent
+    // (grounding against real records, not the enum contract alone). context
+    // carries those ids so source_exists is meaningful too. Judging runs on
+    // EdgeRuntime.waitUntil AFTER this returns — zero added latency to the answer.
+    const allowedIds = new Set(accounts.map((a) => a.id));
+    const reconcile = async (args: { answer: string; answerJson?: unknown }): Promise<{ pass: boolean; detail?: string }> => {
+      let picked: any = args.answerJson;
+      if (!picked || typeof picked !== "object") {
+        try { picked = JSON.parse(args.answer || "{}"); } catch { return { pass: false, detail: "proposal not parseable JSON" }; }
+      }
+      const id = String(picked?.account_id ?? "");
+      if (!id) return { pass: true, detail: "no account chosen (declined)" };
+      return allowedIds.has(id)
+        ? { pass: true, detail: "chosen account is a live account for this org" }
+        : { pass: false, detail: `chosen account ${id.slice(0, 12)} is not in the org's chart` };
+    };
+    const result = await resolveAndJudgeOnDeno(
       {
         useCase: USE_CASE_CATEGORIZE, tenantId: orgTenant(orgId), system,
         messages: [{ role: "user", content: userMsg }],
@@ -301,6 +322,7 @@ async function computeProposal(svc: any, orgId: string, entryId: string, fromAcc
         record: { storeInput: true, ref: entryId },
       },
       { ANTHROPIC_API_KEY: apiKey, SUPABASE_URL, SUPABASE_SERVICE_KEY: SERVICE_ROLE_KEY },
+      { reconcile, context: { sourceIds: accounts.map((a) => a.id) } },
     );
     const parsed = JSON.parse(result.text || "{}") as { account_id?: string; confidence?: number; rationale?: string };
     if (!parsed.account_id || !byId.has(parsed.account_id)) {

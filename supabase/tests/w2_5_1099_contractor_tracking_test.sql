@@ -17,7 +17,7 @@
 -- All rolls back.
 
 begin;
-select plan(21);
+select plan(22);
 
 -- ── users: owner, full CPA, read_only CPA, outsider ──────────────────────────
 insert into auth.users (id, email, aud, role) values
@@ -70,10 +70,21 @@ end$$;
 -- ════════════════════════════════════════════════════════════════════════════
 -- THRESHOLD comes from the kernel (LAW), effective-dated
 -- ════════════════════════════════════════════════════════════════════════════
+-- ninetynine_nec_threshold_minor is DEFINER + can_access_org-gated (definer-
+-- tenant-guard) — auth as the org owner (a member of NecCo) for the positive path.
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-0000000009c1","email":"owner@nec.dev","role":"authenticated"}';
 select is(ninetynine_nec_threshold_minor('00000000-0000-0000-0000-0000000009B1', 2025), 60000::bigint,
   'W2.5-THRESHOLD-LAW: 2025 threshold = $600 read from filing_obligations');
 select is(ninetynine_nec_threshold_minor('00000000-0000-0000-0000-0000000009B1', 2026), 200000::bigint,
   'W2.5-LAW-VERSION: 2026 (OBBBA) threshold = $2,000 — same lookup, effective-dated seed row');
+
+-- definer-tenant-guard: an outsider (FarFirm, no engagement with NecCo) is
+-- REFUSED, not leaked another org's entity_type via the threshold lookup.
+set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-0000000009c9","email":"outsider@nec.dev","role":"authenticated"}';
+select throws_ok($$
+  select ninetynine_nec_threshold_minor('00000000-0000-0000-0000-0000000009B1', 2025)
+$$, '42501', NULL, 'DEFINER-GUARD: a non-member is REFUSED ninetynine_nec_threshold_minor for another org');
+reset "request.jwt.claims";
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- VENDOR upsert — full CPA can; read_only cannot; outsider cannot

@@ -77,6 +77,9 @@ select has_table('public', 'org_account_tax_map', 'org_account_tax_map exists');
 select has_table('public', 'tax_adjustments',     'tax_adjustments exists');
 select has_column('public', 'ledger_accounts', 'tags', 'ledger_accounts.tags additive column exists');
 
+-- SEC-3: the tax read RPCs now gate on can_access_org(); run as the org owner (a member).
+set local "request.jwt.claims" = '{"sub":"70000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
 -- ── 2. resolution precedence (§B.2) ──────────────────────────────────────────
 -- meals account resolves via TAG rule (priority 20)
 select is(

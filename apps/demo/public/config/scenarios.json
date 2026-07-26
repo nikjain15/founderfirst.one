@@ -4624,7 +4624,7 @@
           },
           {
             "date": "Apr 8",
-            "vendor": "Fidelity — Solo 401(k)",
+            "vendor": "Vanguard — Solo 401(k)",
             "category": "Solo 401(k) contribution",
             "amount": 400,
             "type": "expense"
@@ -6030,7 +6030,7 @@
           },
           {
             "date": "Apr 8",
-            "vendor": "Fidelity — SEP-IRA contribution",
+            "vendor": "Vanguard — SEP-IRA contribution",
             "category": "SEP-IRA contribution",
             "amount": 200,
             "type": "expense"

@@ -204,7 +204,7 @@ making explicit. Keep it stack-specific and checkable.*
 
 Every audit we run is recorded here: **what was tested, what broke, where the fix
 landed, and, most importantly, what it did NOT cover.** Newest program first.
-Live PR/deploy status is in [docs/STRESS_TEST_TRACKER.md](docs/STRESS_TEST_TRACKER.md);
+Live PR/deploy status is in [docs/STRESS_TEST_TRACKER.md](STRESS_TEST_TRACKER.md);
 full per-feature reports are in `docs/stress/<feature>/`. This ledger is the durable
 record; the tracker is the working board.
 
@@ -1058,8 +1058,8 @@ be authored into `regression_pack` at fix time (the coverage ratchet).
 
 ## Program 2, Wave 1 (full-bookkeeping loop, 2 Jul 2026)
 
-The build process's first wave: the top-half of the product ([FULL_BOOKKEEPING_ROADMAP.md](plans/FULL_BOOKKEEPING_ROADMAP.md)
-Wave 1 + the CENTRAL/LOOP/REG infra cards in [plans/BACKLOG.md](plans/BACKLOG.md)), composed onto
+The build process's first wave: the top-half of the product (the product roadmap
+Wave 1 + the CENTRAL/LOOP/REG infra cards in the backlog), composed onto
 `loop/wave1-integration` (draft PR #185). 12 new surfaces shipped. Each landed with a happy-path /
 acceptance test **and a per-PR adversarial red-team pass** (all 13 Wave-1 defects were red-teamed and
 fixed before merge), but **not yet a dedicated post-merge stress pass:** so every row below is
@@ -1166,7 +1166,7 @@ Carry these into the next audit cycle; they are the backlog for coverage, not de
 | **CSV F4:** re-importing the same file double-posts (no dedup) | real user footgun | **RESOLVED:** policy = skip dupes; same-source content-key (CSV re-upload) + **cross-source** content-hash dedup (`20260704040000`, W2 gate fix) so the same real txn from CSV+Plaid posts once |
 | **Load / volume:** behavior at 10k–100k entries, concurrent orgs | only correctness tested, not scale | **harness landed (RV2-E, row 16):** `packages/soak-harness/` proves no double-post + tie-out under concurrency (CI smoke); still to do: run the live sandbox soak at 10k–100k volume + a perf audit with seeded large orgs |
 | ~~**The whole top-half of the product**~~, reconciliation UI, tax-line mapping, CPA workqueue, exports, depreciation | **BUILT in Wave 1** (Program 2 above); no longer "not built yet" | now ⬜ ledger rows, per-PR red-teamed, **stress-pass pending:** scheduled in [STRESS_TEST_TRACKER.md](STRESS_TEST_TRACKER.md) |
-| **Wave 2 not built:** catch-up mode (W2.1), QBO one-click migration (W2.2), Plaid bank feeds (W2.3), Penny in-app thread + trust-tiered cards (W3.x) | genuinely not built yet → nothing to stress-test | see [FULL_BOOKKEEPING_ROADMAP.md](plans/FULL_BOOKKEEPING_ROADMAP.md) Waves 2–4 |
+| **Wave 2 not built:** catch-up mode (W2.1), QBO one-click migration (W2.2), Plaid bank feeds (W2.3), Penny in-app thread + trust-tiered cards (W3.x) | genuinely not built yet → nothing to stress-test | see the product roadmap Waves 2–4 |
 | **W1.3-B CPA mapping-edit UI deferred** | the tax-mapping *engine* shipped (W1.3-B); the CPA per-account mapping-edit *UI* was deferred | build + stress the edit UI when carded |
 | **Disposal JE (W1.3-C):** fixed-asset disposal journal-entry path, if still open | disposal-convention book-vs-default mismatch flagged (P2 above); the disposal JE itself is thin | close under the W1.3-C stress pass |
 

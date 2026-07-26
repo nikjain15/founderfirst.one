@@ -482,7 +482,7 @@ building.
 
 ### 30 Jun – 2 Jul 2026 · Feature stress-test sweep (baseline: `main` post-#122)
 15 features adversarially stress-tested on live prod. Full ledger with per-feature
-findings + coverage gaps: **[AUDIT.md](AUDIT.md) → Audit ledger**. Summary: **8 P0,
+findings + coverage gaps: **[AUDIT.md](docs/AUDIT.md) → Audit ledger**. Summary: **8 P0,
 ~19 P1** confirmed and fixed; 12/15 closed on `main`, #131 + #139 captured by #156,
 #143 partial.
 

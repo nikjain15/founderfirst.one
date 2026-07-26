@@ -1,13 +1,13 @@
-# FounderFirst TTS server (Chatterbox, Fly GPU, scale-to-zero) - LEGACY
+# FounderFirst TTS server (Chatterbox, Fly GPU, scale-to-zero), LEGACY
 
 > ⚠️ **Not the live engine.** Content audio now renders on **Kokoro (Fly CPU,
-> app `founderfirst-kokoro`)** - see [tools/kokoro-server/README.md](../kokoro-server/README.md).
+> app `founderfirst-kokoro`)**, see [tools/kokoro-server/README.md](../kokoro-server/README.md).
 > `content-audio` defaults to `engine: "kokoro"`; this Chatterbox GPU server is the
 > earlier build, kept as an alternative engine. ElevenLabs remains the paid fallback
-> (and is the podcast engine - see apps/web/PODCAST_PRINCIPLES.md).
+> (and is the podcast engine, see apps/web/PODCAST_PRINCIPLES.md).
 
 Brand-voice synthesis for the content pipeline. Runs Chatterbox (MIT) on a Fly GPU
-machine that scales to zero - it boots on the first request and stops when idle,
+machine that scales to zero, it boots on the first request and stops when idle,
 so you only pay GPU while rendering.
 
 Called by the `content-audio` Supabase edge function, which POSTs the audio
@@ -24,7 +24,7 @@ script + the brand voice reference clip and gets back one finished MP3.
   ```
   If `TTS_SERVER_SECRET` is set, send it as the `x-tts-secret` header.
 
-## Deploy (manual - needs a Fly GPU + the brand voice clip)
+## Deploy (manual, needs a Fly GPU + the brand voice clip)
 
 ```bash
 cd tools/tts-server

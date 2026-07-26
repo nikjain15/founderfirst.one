@@ -1,4 +1,4 @@
-# AI quality & cost layer - guardrails (living)
+# AI quality & cost layer, guardrails (living)
 
 The load-bearing rules for the layer every Penny AI request passes through
 (`@ff/inference` → `resolve()`). This is the operational companion to the plan
@@ -13,14 +13,14 @@ bookkeeping. Rules for later phases are stated now so the build follows policy.
 
 ## Panel composition (the approved Phase-2 default)
 
-The checker panel is **generator-family-aware** - gate-eval judges are always a
+The checker panel is **generator-family-aware:** gate-eval judges are always a
 different model family than the generator (D20). Roster (`DEFAULT_ROSTER`,
 `packages/inference/src/judge.ts`), all reachable on today's stack (Anthropic API
 + Workers-AI via the gateway, no new infra):
 
 - **Fast-classifier (inline triage):** `@cf/meta/llama-3.1-8b-instruct-fast` (Meta).
 - **Panel (escalation):** `@cf/meta/llama-3.3-70b-instruct-fp8-fast` (Meta) +
-  `@cf/mistralai/mistral-small-3.1-24b-instruct` (Mistral) - two distinct
+  `@cf/mistralai/mistral-small-3.1-24b-instruct` (Mistral), two distinct
   non-Anthropic families for grading the Anthropic generators (chat=Haiku,
   insights=Sonnet).
 - **Strong judge (financial floor / Meta-generator filler):** `claude-sonnet-4-6`.
@@ -28,15 +28,15 @@ different model family than the generator (D20). Roster (`DEFAULT_ROSTER`,
 `resolvePanel(generator, roster, needStrong)` picks ≥2 distinct families ≠ the
 generator's; the strong judge fills the 2nd slot when the generator IS one of the
 panel families (e.g. the Meta email generator leaves only Mistral). **Live chat
-runs the DETERMINISTIC floor inline** (`llmDisabled` - safety prefilter + privacy
+runs the DETERMINISTIC floor inline** (`llmDisabled`, safety prefilter + privacy
 + valid-format, instant, reliably block hard-unsafe/PII within the <500ms budget)
 and runs the **full multi-model LLM panel ASYNC** (`finalizeChatDecision`, phase
 "all"), which sets `gate_status` so blocked/escalated answers reach the review
 queue. Real Workers-AI judge latency (~0.5–2s) can't fit an inline live-chat
-budget, so an inline LLM judge would fail-closed on every turn - verified in prod
+budget, so an inline LLM judge would fail-closed on every turn, verified in prod
 (28 Jun). A deterministic gate fail still fails closed to a human handoff. **On
 Supabase Edge (Deno) the LLM panel is likewise deferred** (no Workers-AI binding,
-same-family Anthropic judge barred) - insights gets deterministic gates now, LLM
+same-family Anthropic judge barred), insights gets deterministic gates now, LLM
 grounding later.
 
 The deterministic floor runs for **every** gate that declares a `check_ref` -
@@ -89,7 +89,7 @@ enabled. Unit-tested by `pnpm check:judge`; both run nothing against the network
   delimiting + instruction hierarchy); injection canaries live in the eval suite
   (D20).
 
-## Data rules - retention, archive & erasure (D19, D24; LEARNINGS rule 8)
+## Data rules, retention, archive & erasure (D19, D24; LEARNINGS rule 8)
 
 The `ai_decisions` table is a new store of personal data. It is governed as:
 
@@ -97,7 +97,7 @@ The `ai_decisions` table is a new store of personal data. It is governed as:
   Raw `input` / `output` are readable for that window (review, debugging, the
   dashboard). PII can be minimized per call (`record.storeInput = false` → input
   stored null) and **must** be for financial use cases (D11).
-- **Then archive, de-identified - not silent purge** (D24). After `retain_until`,
+- **Then archive, de-identified, not silent purge** (D24). After `retain_until`,
   a job strips personal details and sets `deidentified = true` / `archived_at`.
   De-identified data trains our own cheaper models; **personal details are
   stripped BEFORE any data enters a training set**, so a trained model is never
@@ -108,7 +108,7 @@ The `ai_decisions` table is a new store of personal data. It is governed as:
   the open Discord erasure obligation ([[project_discord_data_retention]]).
 - **Disclose retention; do not assert compliance in code.** The privacy policy
   must disclose this retention + offer erasure. Do **not** assert GDPR/CCPA
-  compliance in comments or copy - flag for legal sign-off **before real
+  compliance in comments or copy, flag for legal sign-off **before real
   bookkeeping data flows** (open item §11 of the plan).
 - Gateway body-logging is **minimized** for financial use cases (Supabase is the
   sole audit record); gateway/exact-match cache is keyed by tenant or off for

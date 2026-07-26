@@ -40,7 +40,7 @@ brand mark without written permission.
 ## Prompt files
 
 The prompt files under `public/prompts/` are released under the MIT license.
-You can adapt them for your own AI product - the interesting part is the
+You can adapt them for your own AI product, the interesting part is the
 engineering (validator, retry loop, tiering), not the copy.
 
 ## Questions

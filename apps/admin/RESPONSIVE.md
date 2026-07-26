@@ -1,6 +1,6 @@
 # Responsive standard
 
-Every page, tab, and component in the FounderFirst monorepo must render correctly at **any** viewport width from 320px to 1920px+ - not just at three preset breakpoints.
+Every page, tab, and component in the FounderFirst monorepo must render correctly at **any** viewport width from 320px to 1920px+, not just at three preset breakpoints.
 
 ## The 6 rules
 
@@ -13,10 +13,10 @@ Every page, tab, and component in the FounderFirst monorepo must render correctl
 
 ## Breakpoints (when you need them)
 
-- `≤ 480px` - small phones
-- `≤ 640px` - phones
-- `≤ 860px` - admin nav collapse point (content stops fitting)
-- `≤ 1024px` - tablets
+- `≤ 480px`, small phones
+- `≤ 640px`, phones
+- `≤ 860px`, admin nav collapse point (content stops fitting)
+- `≤ 1024px`, tablets
 
 Match the existing syntax in the file you're editing (`max-width` in admin, `min-width` mobile-first in marketing).
 
@@ -40,10 +40,10 @@ document.documentElement.scrollWidth > innerWidth // must be false
 
 ## Where the rules already live in CSS
 
-- Admin nav collapse: `apps/admin/src/styles.css` - `@media (max-width: 860px)` near `.admin-nav`
+- Admin nav collapse: `apps/admin/src/styles.css`, `@media (max-width: 860px)` near `.admin-nav`
 - Funnel stacking: `@media (max-width: 640px)` near `.funnel-row`
 - Ticket row stacking: `@media (max-width: 480px)` near `.ticket-row`
-- Tabs scroll: base styles on `.tabs` (no media query needed - fluid)
+- Tabs scroll: base styles on `.tabs` (no media query needed, fluid)
 - Table scroll fade: base styles on `.table-wrap`
 
 Copy these patterns for new tabs/pages.

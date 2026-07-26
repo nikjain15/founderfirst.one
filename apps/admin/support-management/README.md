@@ -1,4 +1,4 @@
-# Support management - what's live, what's where
+# Support management, what's live, what's where
 
 > Status: **live system** · Last verified: 2026-07-01
 
@@ -8,15 +8,15 @@ The support stack: Discord gateway → thin bridge relay (Fly.io,
 
 ## Docs in this folder
 
-- **[DISCORD-BRIDGE-SPEC.md](DISCORD-BRIDGE-SPEC.md)** - the authoritative spec for
+- **[DISCORD-BRIDGE-SPEC.md](DISCORD-BRIDGE-SPEC.md):** the authoritative spec for
   the bridge relay. Current.
-- **[CSAT-INTEGRATION.md](CSAT-INTEGRATION.md)** - CSAT prompts/reactions + admin
+- **[CSAT-INTEGRATION.md](CSAT-INTEGRATION.md):** CSAT prompts/reactions + admin
   analytics wiring. Current.
-- **[TOPICS-VOCABULARY.md](TOPICS-VOCABULARY.md)** - ticket topic taxonomy
+- **[TOPICS-VOCABULARY.md](TOPICS-VOCABULARY.md):** ticket topic taxonomy
   (mirrored in `apps/admin/src/lib/topics.ts`). Current.
-- **[VOICE-MAINTAINERS.md](VOICE-MAINTAINERS.md)** - how the voice canon is
+- **[VOICE-MAINTAINERS.md](VOICE-MAINTAINERS.md):** how the voice canon is
   maintained. Current.
-- **[knowledge-base/](knowledge-base/)** - **Phase-2 seed content, not live.** The
+- **[knowledge-base/](knowledge-base/):** **Phase-2 seed content, not live.** The
   admin KB sub-tab is flagged off; when it ships, these seed the DB (or get deleted
   in favor of admin-authored articles).
 

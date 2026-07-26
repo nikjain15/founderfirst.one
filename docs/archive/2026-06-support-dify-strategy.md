@@ -1,4 +1,4 @@
-# Support Management - Strategy
+# Support Management, Strategy
 
 **Purpose.** Give FounderFirst users one place to ask anything, get an answer, and reach a human when they need to. Same voice as Penny: warm, direct, plain English.
 
@@ -8,7 +8,7 @@
 
 - A chat widget on `founderfirst.one` and a Discord bot. Same brain behind both.
 - Answers grounded in FounderFirst docs. No made-up facts.
-- Hard questions become tickets - prioritized, visible, mine to handle.
+- Hard questions become tickets, prioritized, visible, mine to handle.
 - I work them from `founderfirst.one/admin/support` and reply once. The reply lands back in the channel the user came from.
 
 ---
@@ -18,7 +18,7 @@
 | Layer | Choice |
 |---|---|
 | AI brain | Dify (self-hosted, Python) |
-| Model | Claude - Sonnet for answers, Haiku for classify |
+| Model | Claude, Sonnet for answers, Haiku for classify |
 | Channels | Web widget + Discord bot |
 | Database + Auth | Supabase (existing free tier) |
 | Admin UI | React app in `apps/admin/`, deployed under `founderfirst.one/admin/` via existing GitHub Pages pipeline |
@@ -54,7 +54,7 @@ Web widget, RAG over docs, visual workflow builder, native Claude, full observab
 
 ---
 
-## Design + tone - non-negotiables
+## Design + tone, non-negotiables
 
 This is a FounderFirst surface, so it follows existing rules.
 
@@ -92,16 +92,16 @@ Browser code uses the Supabase **anon key** only. Service-role key never leaves 
 
 ## Explicitly deferred
 
-Email channel, SLA timers, multi-agent routing, CSAT surveys, mobile app, analytics dashboard. We add these only when real volume demands them - same principle as everything else FounderFirst ships.
+Email channel, SLA timers, multi-agent routing, CSAT surveys, mobile app, analytics dashboard. We add these only when real volume demands them, same principle as everything else FounderFirst ships.
 
 ---
 
 ## Files in this folder (planned)
 
-- `STRATEGY.md` - this doc.
-- `SYSTEM-PROMPT.md` - the version-controlled Dify system prompt (FF voice + guardrails).
-- `WORKFLOW.md` - Dify workflow graph documented (nodes, branches, models per step).
-- `SCHEMA.sql` - Supabase tables + RLS policies.
-- `DISCORD-BRIDGE.md` - bridge service spec and deployment notes.
+- `STRATEGY.md`, this doc.
+- `SYSTEM-PROMPT.md`, the version-controlled Dify system prompt (FF voice + guardrails).
+- `WORKFLOW.md`, Dify workflow graph documented (nodes, branches, models per step).
+- `SCHEMA.sql`, Supabase tables + RLS policies.
+- `DISCORD-BRIDGE.md`, bridge service spec and deployment notes.
 
 The admin React app lives one level up at `apps/admin/`. This subfolder is documentation + the operational artifacts that define how the bot behaves.

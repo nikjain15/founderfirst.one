@@ -1,15 +1,15 @@
-# FounderFirst - BRD · PRD · Hardened Architecture (build-ready)
+# FounderFirst, BRD · PRD · Hardened Architecture (build-ready)
 
-> Status: **shipped - Phases 0–5 built and live** (penny.founderfirst.one) · authored 27 Jun 2026, status updated 1 Jul 2026 · Owner: Nik
+> Status: **shipped, Phases 0–5 built and live** (penny.founderfirst.one) · authored 27 Jun 2026, status updated 1 Jul 2026 · Owner: Nik
 > Companion to [ARCHITECTURE.md](ARCHITECTURE.md) (source of truth for locked decisions).
 > ⚠️ Part C re-derives the data model/API from ARCHITECTURE §2–10 for traceability -
 > any change to the core model must be kept in sync in BOTH docs.
-> This document does **not** re-litigate §0/§1b of ARCHITECTURE.md - it builds on them and
-> hardens them into a complete, build-ready spec set: **Part A - BRD**, **Part B - PRD**,
-> **Part C - Hardened Architecture**, **Part D - Traceability & gap analysis**.
+> This document does **not** re-litigate §0/§1b of ARCHITECTURE.md, it builds on them and
+> hardens them into a complete, build-ready spec set: **Part A, BRD**, **Part B, PRD**,
+> **Part C, Hardened Architecture**, **Part D, Traceability & gap analysis**.
 
 **Context that shaped this doc (from discovery):**
-- ICP: **balanced two-sided** - owner and CPA originate roughly equally; neither persona is
+- ICP: **balanced two-sided:** owner and CPA originate roughly equally; neither persona is
   privileged in scope or copy. Two co-equal funnels.
 - Pilots: **a few design partners committed.** Success metrics target real activation/retention,
   not vanity acquisition. Integration order follows what those partners use today (see §A6).
@@ -20,7 +20,7 @@
 ---
 ---
 
-# PART A - Business Requirements Document (BRD)
+# PART A, Business Requirements Document (BRD)
 
 ## A1. Problem statement
 
@@ -28,12 +28,12 @@ Small businesses and the accountants who serve them run their books on tools tha
 trade. **QuickBooks/Xero** are correct and CPA-trusted but hostile to a non-accountant owner -
 they assume you know what a debit is, dump you into a blank ledger, and make categorization a
 chore. **Bench/Pilot** are friendly to owners (a human does the books) but opaque, slow, expensive,
-and they put a service desk between the owner and their own numbers - and the CPA is often locked
+and they put a service desk between the owner and their own numbers, and the CPA is often locked
 out or working from exports.
 
 Nobody has built **one system both sides love**: an owner who never learned accounting gets
 plain-language answers and tap-to-confirm categorization, *and* a CPA gets a real double-entry
-ledger, reconciliation, period close, and a cross-client workqueue they trust to the cent - on the
+ledger, reconciliation, period close, and a cross-client workqueue they trust to the cent, on the
 **same data**, in real time, with no export/re-import dance between them.
 
 The wedge is **AI that does the bookkeeping labor (Penny) on top of a real ledger**, with
@@ -42,10 +42,10 @@ controls, both reading and writing the same isolated, auditable books.
 
 ## A2. Target users & personas
 
-### Persona 1 - Maya, the Business Owner ("owner lens")
+### Persona 1, Maya, the Business Owner ("owner lens")
 - Runs a 2–20 person services/e-commerce business, US, <$2M revenue, <~500 txns/month.
 - **Not** an accountant. Wants to know "can I make payroll, am I profitable, what needs my
-  attention" - not to learn accounting.
+  attention", not to learn accounting.
 - Today: bank app + spreadsheet + a shoebox of receipts + a CPA she pays at tax time and dreads
   the back-and-forth with.
 - **Jobs-to-be-done:** (1) *When money moves, categorize it correctly without thinking like an
@@ -55,7 +55,7 @@ controls, both reading and writing the same isolated, auditable books.
 - **Delight test:** connects a bank in minutes; transactions arrive *already categorized*; "how's
   my business?" answered in English.
 
-### Persona 2 - David, the CPA / bookkeeper ("CPA lens")
+### Persona 2, David, the CPA / bookkeeper ("CPA lens")
 - Solo or small firm (1–10 people), 10–60 small-business clients.
 - Hard, opinionated, trust-first user. **One wrong balance loses him forever.**
 - Today: logs into N separate QBO/Xero files, juggles client passwords, chases owners for
@@ -64,11 +64,11 @@ controls, both reading and writing the same isolated, auditable books.
   (2) *Trust the books are balanced, immutable, auditable* → real double-entry ledger. (3) *Tie
   every account to the bank statement* → reconciliation. (4) *Lock the period when it's done* →
   close. (5) *Don't make me fix the same miscategorization twice* → Penny learns rules. (6) *Never
-  trap me - let me round-trip to QBO/Xero.* (7) *Control exactly what I can touch per client.*
+  trap me, let me round-trip to QBO/Xero.* (7) *Control exactly what I can touch per client.*
 - **Delight test:** a single ranked workqueue across clients; reconciliation that ties; close that
   locks; his corrections become rules.
 
-### Persona 3 - Platform Staff / Admin ("admin lens" - internal)
+### Persona 3, Platform Staff / Admin ("admin lens", internal)
 - FounderFirst staff (today's `apps/admin`). **Not a tenant role.** Operates support, audience,
   analytics, Penny content, quality, billing oversight.
 - Access to tenant financial data is **break-glass and audited** (§C9), never silent.
@@ -124,7 +124,7 @@ product").
   proves stronger (ARCHITECTURE.md §6b).
 - **Free during pilot** (`plan='pilot_free'`); entitlement check exists day one; Stripe slots in
   behind `provider`/`provider_ref`. Pricing shapes kept open: per-business flat, per-business by
-  txn volume, or per-seat - all expressible without schema change.
+  txn volume, or per-seat, all expressible without schema change.
 - **CPA as channel:** a CPA who loves the workqueue brings 10–60 clients. The balanced two-sided
   ICP means we court both, but the *cheapest* acquisition path is likely CPA-led fan-out; the BGM
   (below) treats both funnels as co-equal but instruments which one converts cheaper.
@@ -139,11 +139,11 @@ product").
 | **Pilot** | High-touch, startup-favored | Expensive, service-desk-mediated, not real-time, owner doesn't own the loop | Real-time shared ledger, owner+CPA co-pilot, lower cost via AI |
 | **Spreadsheets / shoebox** | Free, familiar | Not double-entry, no reconciliation, error-prone, no CPA trust | Real ledger with a spreadsheet-easy front door |
 
-**Positioning one-liner:** *"The books your accountant trusts and you actually understand - one
+**Positioning one-liner:** *"The books your accountant trusts and you actually understand, one
 shared, AI-run ledger, two lenses."*
 
 **Integration sequencing (confirmed-with-partners action):** default **QBO first** on US market
-share. *Before Phase 3 commits*, confirm against the committed design partners - if the signed
+share. *Before Phase 3 commits*, confirm against the committed design partners, if the signed
 CPAs are predominantly Xero shops, flip the order; the adapter interface (§C7) makes this a
 sequencing choice, not a rebuild.
 
@@ -165,13 +165,13 @@ sequencing choice, not a rebuild.
 ---
 ---
 
-# PART B - Product Requirements Document (PRD)
+# PART B, Product Requirements Document (PRD)
 
 Features are grouped by the §1b Definition of Done. Each feature carries **user stories +
 acceptance criteria**. Role visibility is specified per feature in §B1. Flows in §B12, edge cases
 in §B13, NFRs in §B10, out-of-scope in §B14.
 
-## B1. The three lenses - what each role sees and can do
+## B1. The three lenses, what each role sees and can do
 
 One app, one data model; the role on the **active-org membership** (or engagement) decides the
 projection. Source of truth: ARCHITECTURE.md §4.
@@ -236,7 +236,7 @@ projection. Source of truth: ARCHITECTURE.md §4.
 relationship combinations (member-of-own, engaged+assigned, engaged+unassigned, firm_admin) -
 isolation is *tested*, not assumed (ARCHITECTURE.md §4.5).
 
-## B3. History import (J1 - launch scope, not deferred)
+## B3. History import (J1, launch scope, not deferred)
 
 Three paths, all landing in the same canonical ledger with provenance; previewable & reversible
 before commit.
@@ -256,7 +256,7 @@ before commit.
 **Acceptance gate for B3 (mirrors ARCHITECTURE.md Phase 3 exit):** a real business imports existing
 books and the **balance sheet is correct at the cutover date to the cent.**
 
-## B4. Ledger core (J5, J8 - the CPA's trust foundation)
+## B4. Ledger core (J5, J8, the CPA's trust foundation)
 
 - **US15 (chart of accounts):** standard COA seeded per org (configurable); accounts typed
   (asset/liability/equity/income/expense). AC: account create/rename/archive; never hard-delete an
@@ -292,21 +292,21 @@ money math.
 **Acceptance gate for B5 (mirrors Phase 4 exit):** live txns arrive pre-categorized; an account
 reconciles to a real statement; a learned rule stops a repeat fix.
 
-## B6. Receipt capture (J3 - owner delight, PWA)
+## B6. Receipt capture (J3, owner delight, PWA)
 
 - **US23:** *As an owner, I snap a receipt on my phone and it files against the right transaction.*
   AC: **PWA** camera upload to Supabase Storage; `documents` row with `org_id` + link to a
   `journal_entry` (or unmatched queue); Penny suggests the matching txn; works on mobile web, no app
   store. **(Resolves ARCHITECTURE.md §12.6 → PWA.)**
 
-## B7. Owner cockpit - "How's my business?" (J4)
+## B7. Owner cockpit, "How's my business?" (J4)
 
 - **US24:** *As an owner, I open the app and see cash position, P&L, and "what needs attention" in
   plain language.* AC: derived from the ledger on the fly (P&L / balance sheet / cash flow, §C6.5);
   plain-language summary (Penny) with a "so-what" takeaway; no accounting jargon required;
   "what needs attention" = uncategorized count + unmatched receipts + unreconciled items.
 
-## B8. CPA workqueue (J6 - the CPA's home)
+## B8. CPA workqueue (J6, the CPA's home)
 
 - **US25:** *As a CPA, I see one ranked queue across all my clients: what needs review,
   uncategorized, unreconciled.* AC: aggregates across all engaged+assigned clients; ranked by
@@ -316,7 +316,7 @@ reconciles to a real statement; a learned rule stops a repeat fix.
 - **US26 (per-client scope):** AC: a regular CPA sees only assigned clients; firm_admin sees all;
   nothing leaks across clients (§C4).
 
-## B9. Integrations, sync & export (J10 - never trapped)
+## B9. Integrations, sync & export (J10, never trapped)
 
 - **US27 (bank feed):** Plaid link → raw `bank_txns` ingested, deduped on provider txn id.
 - **US28 (QBO/Xero round-trip):** import (US11) + export back; field-level conflict policy
@@ -324,32 +324,32 @@ reconciles to a real statement; a learned rule stops a repeat fix.
 - **US29 (export):** *As a CPA, I export clean books (CSV/standard format) anytime.* AC: full ledger
   + reports exportable; no lock-in.
 
-## B10. Non-functional requirements (J12 - trust is the product)
+## B10. Non-functional requirements (J12, trust is the product)
 
 | Dimension | Requirement |
 |---|---|
 | **Correctness** | Money = integer minor units + currency, never float. Every entry balanced (API + deferred DB constraint). Append-only; reversing-only corrections. **Zero imbalance incidents is a launch gate.** |
 | **Isolation** | RLS default-deny on every tenant table; `security definer` helper predicates; no client writes to backbone/ledger; pgTAP isolation suite. **Zero cross-tenant exposure is a launch gate.** |
-| **Performance** | Owner cockpit + workqueue load < 2s p95 at pilot volume; ledger post < 500ms p95; reports computed on the fly, promoted to materialized views only if needed (don't pre-optimize empty tables - LEARNINGS #12). |
+| **Performance** | Owner cockpit + workqueue load < 2s p95 at pilot volume; ledger post < 500ms p95; reports computed on the fly, promoted to materialized views only if needed (don't pre-optimize empty tables, LEARNINGS #12). |
 | **Security** | Secrets server-side only (Plaid/QBO/Anthropic tokens in Vault/Edge secrets); break-glass admin access audited; append-only audit log. |
 | **Accessibility** | WCAG 2.1 AA: keyboard nav, focus states, contrast via design-system tokens, screen-reader labels on financial figures. |
 | **Responsive** | Full width-ladder compliance per [apps/admin/RESPONSIVE.md](apps/admin/RESPONSIVE.md): 320→1920; no horizontal scroll at any width; tap targets ≥44px; inputs ≥16px (iOS no-zoom); fluid-first. Owner lens is **mobile-first** (receipt capture). |
-| **Design system** | No inline hex / magic px / one-off font sizes - `packages/design-system/tokens.css` only (CLAUDE.md guardrail). |
+| **Design system** | No inline hex / magic px / one-off font sizes, `packages/design-system/tokens.css` only (CLAUDE.md guardrail). |
 | **Recoverability** | PITR on prod; dev/staging/prod separation; no un-rehearsed schema change touches prod (ARCHITECTURE.md §9b). |
-| **Observability** | Verify every deploy from the system itself (`wrangler tail`/`supabase` re-query - LEARNINGS #5); typecheck after every fan-out edit. |
+| **Observability** | Verify every deploy from the system itself (`wrangler tail`/`supabase` re-query, LEARNINGS #5); typecheck after every fan-out edit. |
 
 ## B11. Lean path for a solo builder (scope is fixed; pace is the lever)
 
 The §1b scope does not shrink, but the **build order minimizes rework risk** and lets Claude
 fan-out safely:
-1. **Phase 0 is non-negotiable and first** - isolation + envs + pgTAP. Every later phase rides on it;
+1. **Phase 0 is non-negotiable and first:** isolation + envs + pgTAP. Every later phase rides on it;
    a leak found in Phase 5 is catastrophic, in Phase 0 it's a test failure.
 2. **Generate `database.types.ts` from the live schema** after every migration (LEARNINGS #11) -
    it's the cheapest drift catch a solo dev has.
 3. **Reuse, don't rebuild UI:** seed owner/CPA lenses from `apps/demo/businessowner` + `apps/demo/cpa`
    (ARCHITECTURE.md §3); fold `apps/admin` in as the admin lens.
-4. **Penny gateway converges last** (Phase 4) - the three existing proxies keep working until then.
-5. **Each phase is dogfoodable on synthetic tenants** before the next - find ledger/isolation bugs
+4. **Penny gateway converges last** (Phase 4), the three existing proxies keep working until then.
+5. **Each phase is dogfoodable on synthetic tenants** before the next, find ledger/isolation bugs
    on fake money.
 
 ## B12. Key user flows
@@ -416,7 +416,7 @@ FLOW 9 - CPA workqueue triage
 - Multi-currency *transacting* (currency stored; FX gain/loss accounts designed-for, not built).
 - Tax filing / tax-prep workflows.
 - Stripe billing live (built behind `provider`, off during pilot).
-- Cross-business roll-up dashboards ("all my companies") - explicit future aggregate, not default.
+- Cross-business roll-up dashboards ("all my companies"), explicit future aggregate, not default.
 - Real-time bidirectional QBO/Xero sync (v1 = import + export with field-level conflict policy).
 - SOC2 certification (controls designed in; certification is post-pilot).
 - Non-US data residency (region concept exists; only US bucket live).
@@ -424,12 +424,12 @@ FLOW 9 - CPA workqueue triage
 ---
 ---
 
-# PART C - Hardened technical architecture
+# PART C, Hardened technical architecture
 
 Builds on ARCHITECTURE.md §2–§10. This part **completes** the data model beyond the backbone, gives
 the full RLS set with the recursion-safe pattern, the API contract, the integration adapters, the
 Penny gateway, and ops. SQL is illustrative-precise, not final migration text (migrations are the
-only schema source of truth - LEARNINGS #2; Phase 0 writes the real ones, reviewed, in a worktree).
+only schema source of truth, LEARNINGS #2; Phase 0 writes the real ones, reviewed, in a worktree).
 
 ## C1. Module map
 
@@ -450,7 +450,7 @@ app.founderfirst.one (authed SPA)  ── owner lens · cpa lens · /admin lens
 ## C2. Complete data model
 
 Backbone (`organizations`, `memberships`, `engagements`, `client_assignments`, `platform_staff`,
-`invites`, `subscriptions`) is defined in ARCHITECTURE.md §4 & §6b - **not repeated here**. Below is
+`invites`, `subscriptions`) is defined in ARCHITECTURE.md §4 & §6b, **not repeated here**. Below is
 the full set *beyond* the backbone. Every tenant table carries `org_id` and is RLS-protected
 (`can_access_org` read / `can_write_org` write).
 
@@ -640,11 +640,11 @@ create table audit_log (
 > **`org_id` denormalized onto `journal_lines` and `reconciliation_items`** so RLS predicates are a
 > single-column check, never a join back through the parent (cheaper policies, no recursion risk).
 
-## C3. The authorization predicate (from ARCHITECTURE.md §4.3 - reused everywhere)
+## C3. The authorization predicate (from ARCHITECTURE.md §4.3, reused everywhere)
 
 `has_membership(org)`, `has_engagement_access(org)`, `can_access_org(org)` (read), `can_write_org(org)`
 (write) are defined in ARCHITECTURE.md §4.3 as `security definer` SQL helpers. **All policies below
-call these helpers** - they never inline a membership/engagement subquery (that's the recursion
+call these helpers**, they never inline a membership/engagement subquery (that's the recursion
 footgun, §C5). The write-path API additionally calls `can_write_org(org_id)` before any mutation,
 and checks `org_accounting_settings.cpa_posts_require_approval` to decide `posted` vs
 `pending_review`.
@@ -671,7 +671,7 @@ Applied to: `ledger_accounts`, `accounting_periods`, `journal_entries`, `journal
 `categorization_rules`, `import_batches`, `integration_connections`, `org_accounting_settings`,
 `audit_log` (audit is **select-only** even for the API; inserts via a dedicated definer fn).
 
-**Backbone tables - the recursion-safe rules (ARCHITECTURE.md §4.5):**
+**Backbone tables, the recursion-safe rules (ARCHITECTURE.md §4.5):**
 
 ```sql
 -- memberships: a user sees their OWN memberships; admins see their org's (via definer helper) - NO self-join
@@ -694,7 +694,7 @@ create policy client_assignments_no_client_write on client_assignments for all u
 > themselves, so a policy that *calls* `has_membership()` never triggers `memberships`' own policy.
 > The only direct predicates (`user_id = auth.uid()`, scalar subselect on `engagements`) touch a
 > single row by PK and don't re-enter the same table's policy. **All backbone writes go through the
-> API**, so client-side we only ever `select` - eliminating the remaining recursion surface.
+> API**, so client-side we only ever `select`, eliminating the remaining recursion surface.
 
 **Storage:** receipt/invoice objects are pathed `org/<org_id>/...`; a Storage RLS policy gates
 `select`/`insert` on `can_access_org`/`can_write_org` of the path's `org_id`.
@@ -726,13 +726,13 @@ single entry; balance violation → rejected. **Isolation and correctness are te
    owner approval flips to `posted` (`approved_by` set). Reports count only `posted`.
 
 **Reports (§6.5):** P&L / balance sheet / cash flow derived on the fly from `posted` entries;
-promote to materialized views only when a real query plan shows the need (LEARNINGS #12 - don't
+promote to materialized views only when a real query plan shows the need (LEARNINGS #12, don't
 optimize empty tables).
 
 ## C7. Integration adapters
 
 All adapters sit **behind one interface**; the canonical ledger never imports a provider type.
-Tokens live in **Supabase Vault**, referenced by `integration_connections.vault_secret_ref` - never
+Tokens live in **Supabase Vault**, referenced by `integration_connections.vault_secret_ref`, never
 in app tables, never client-side.
 
 ```
@@ -759,29 +759,29 @@ interface LedgerSource {
 - **Server-authoritative:** caller identity, active org, role come from the **verified JWT**, never
   the browser.
 - **Scoped-token context, not service role:** Penny reads context using the caller's **own scoped
-  token** (RLS-enforced) - the model can only ever see what the user already can. **Penny is not a
+  token** (RLS-enforced), the model can only ever see what the user already can. **Penny is not a
   privilege-escalation path.**
 - **Propose-only:** Penny writes proposals (categorizations, draft entries, plain-language summaries)
   a human approves. It **never silently mutates the ledger**.
 - **Learned rules are deterministic:** confirmed categorizations become `categorization_rules` rows
-  applied without a model call - cheaper and auditable.
+  applied without a model call, cheaper and auditable.
 - **Cost controls (resolves §12.8):** per-org rate limits + model pinning before opening the propose
   loop to real volume (Phase 4). Pin a current model; handle Workers-AI-style gotchas if any model
-  runs there (string-vs-object returns, control-char JSON repair - LEARNINGS #13). For Penny's core
+  runs there (string-vs-object returns, control-char JSON repair, LEARNINGS #13). For Penny's core
   reasoning, default to the latest Claude (e.g. Opus/Sonnet 4.x) server-side.
 - **Convergence:** the three existing proxies (`penny-api`, bubble worker, compose-server) converge
   onto this one authenticated gateway over time; the public marketing bubble stays anonymous and
-  separate. **Retire the Mac compose-server / local-Ollama dependency** (LEARNINGS #13 - dev machine
+  separate. **Retire the Mac compose-server / local-Ollama dependency** (LEARNINGS #13, dev machine
   is not prod infra).
 
-## C9. Environments & ops (from ARCHITECTURE.md §9b - hardened)
+## C9. Environments & ops (from ARCHITECTURE.md §9b, hardened)
 
 - **Three Supabase projects: dev / staging / prod.** Stand up staging+dev **in Phase 0**, before any
-  tenant data exists (today there's only prod - a LEARNINGS-class risk, R4).
+  tenant data exists (today there's only prod, a LEARNINGS-class risk, R4).
 - **PITR on prod.** Financial data must be restorable. (Local backups may be impossible in this
-  shell - LEARNINGS #13 - so PITR + staging rehearsal is the safety net, not `pg_dump`.)
+  shell, LEARNINGS #13, so PITR + staging rehearsal is the safety net, not `pg_dump`.)
 - **Migrations:** `supabase/migrations/` is the only schema source of truth (LEARNINGS #2). Never
-  reuse a timestamp (LEARNINGS #11 - duplicates silently skip). `db push` deploys **all** pending -
+  reuse a timestamp (LEARNINGS #11, duplicates silently skip). `db push` deploys **all** pending -
   `migration list` first, never blind-push (LEARNINGS #3). Out-of-order pending → `--include-all`.
 - **`database.types.ts` generated from the live schema** after every migration; hand-written row
   types drift silently (LEARNINGS #11).
@@ -800,35 +800,35 @@ convenient.
 
 | Method & path | Purpose | Authz check | Idempotent | Notes |
 |---|---|---|---|---|
-| `POST /orgs` | create business or firm | authed user | - | + owner/firm_admin membership + `pilot_free` sub |
-| `POST /invites` | issue invite (membership or engagement) | `has_membership(target)` owner/firm_admin | - | token, intended role/engagement+access, expiry |
+| `POST /orgs` | create business or firm | authed user |  | + owner/firm_admin membership + `pilot_free` sub |
+| `POST /invites` | issue invite (membership or engagement) | `has_membership(target)` owner/firm_admin |  | token, intended role/engagement+access, expiry |
 | `POST /invites/:token/accept` | accept → membership / activate engagement | valid token + authed | yes (token) | only path to access |
-| `POST /engagements/:id/revoke` | revoke access | owner of client OR firm_admin | - | sets `revoked`, RLS cuts immediately |
-| `POST /engagements/:id/assign` | assign CPA to client | `firm_admin` of firm | - | `client_assignments` row |
-| `DELETE /engagements/:id/assign/:userId` | unassign CPA | `firm_admin` | - | access cut immediately |
-| `POST /orgs/:id/ownership/transfer` | transfer ownership | current owner | - | last-owner protection enforced |
-| `GET /ledger/accounts` | chart of accounts | `can_access_org` (RLS) | - | direct Supabase read OK |
-| `POST /ledger/accounts` | create/edit account | `can_write_org` | - | no hard-delete with postings |
+| `POST /engagements/:id/revoke` | revoke access | owner of client OR firm_admin |  | sets `revoked`, RLS cuts immediately |
+| `POST /engagements/:id/assign` | assign CPA to client | `firm_admin` of firm |  | `client_assignments` row |
+| `DELETE /engagements/:id/assign/:userId` | unassign CPA | `firm_admin` |  | access cut immediately |
+| `POST /orgs/:id/ownership/transfer` | transfer ownership | current owner |  | last-owner protection enforced |
+| `GET /ledger/accounts` | chart of accounts | `can_access_org` (RLS) |  | direct Supabase read OK |
+| `POST /ledger/accounts` | create/edit account | `can_write_org` |  | no hard-delete with postings |
 | `POST /ledger/entries` | post balanced journal entry | `can_write_org` | **yes** | balance + period-open + idempotency; gate→`pending_review` |
 | `POST /ledger/entries/:id/reverse` | reversing correction | `can_write_org` | **yes** | sets `reverses_id` |
 | `POST /ledger/entries/:id/approve` | owner approves pending CPA post | owner of org | yes | only when approval gate on |
-| `POST /periods/:id/close` | close & lock period | `can_write_org` (CPA full) | - | future posts into it refused |
+| `POST /periods/:id/close` | close & lock period | `can_write_org` (CPA full) |  | future posts into it refused |
 | `POST /bank-txns/:id/categorize` | post a raw bank txn to ledger | `can_write_org` | yes | applies rule or Penny proposal |
-| `POST /reconciliations` | start reconciliation | `can_write_org` | - | statement date + balance |
+| `POST /reconciliations` | start reconciliation | `can_write_org` |  | statement date + balance |
 | `POST /reconciliations/:id/match` | match txn ↔ entry | `can_write_org` | yes | cleared = statement → reconciled |
-| `POST /imports` | start import batch (preview) | `can_write_org` | - | qbo/xero/csv/statement/opening |
+| `POST /imports` | start import batch (preview) | `can_write_org` |  | qbo/xero/csv/statement/opening |
 | `POST /imports/:id/commit` | commit batch (immutable) | `can_write_org` | yes | provenance stamped |
-| `POST /imports/:id/discard` | discard preview batch | `can_write_org` | - | only while `preview` |
-| `POST /documents` | upload receipt metadata | `can_write_org` | - | file → Storage; link to entry or unmatched |
-| `POST /rules` / `PATCH /rules/:id` | create/edit categorization rule | `can_write_org` | - | also auto-created from confirms |
-| `POST /integrations/plaid/link` | Plaid Link token | `can_write_org` | - | token → Vault |
+| `POST /imports/:id/discard` | discard preview batch | `can_write_org` |  | only while `preview` |
+| `POST /documents` | upload receipt metadata | `can_write_org` |  | file → Storage; link to entry or unmatched |
+| `POST /rules` / `PATCH /rules/:id` | create/edit categorization rule | `can_write_org` |  | also auto-created from confirms |
+| `POST /integrations/plaid/link` | Plaid Link token | `can_write_org` |  | token → Vault |
 | `POST /integrations/plaid/webhook` | ingest new bank txns | webhook signature | yes (provider id) | dedupe |
-| `POST /integrations/qbo/connect` / `/xero/connect` | OAuth handshake | `can_write_org` | - | token → Vault |
+| `POST /integrations/qbo/connect` / `/xero/connect` | OAuth handshake | `can_write_org` |  | token → Vault |
 | `POST /sync/qbo` / `/sync/xero` | pull/push round-trip | `can_write_org` | yes | field-level conflict policy |
-| `GET /reports/pl` `/balance-sheet` `/cash-flow` | derived reports | `can_access_org` | - | computed from `posted` entries |
-| `GET /workqueue` | CPA cross-client ranked queue | engaged+assigned | - | aggregates assigned clients |
-| `POST /penny/message` | authed AI turn (server builds context) | `can_access_org`; scoped token | - | propose-only |
-| `POST /admin/breakglass/:orgId` | platform-staff scoped read | `platform_staff` | - | audited, time-boxed |
+| `GET /reports/pl` `/balance-sheet` `/cash-flow` | derived reports | `can_access_org` |  | computed from `posted` entries |
+| `GET /workqueue` | CPA cross-client ranked queue | engaged+assigned |  | aggregates assigned clients |
+| `POST /penny/message` | authed AI turn (server builds context) | `can_access_org`; scoped token |  | propose-only |
+| `POST /admin/breakglass/:orgId` | platform-staff scoped read | `platform_staff` |  | audited, time-boxed |
 
 **Standard error contract:** `403` (authz fail), `409` (idempotency replay → returns original; or
 closed-period / last-owner violations), `422` (unbalanced entry / validation), `404` (RLS-invisible
@@ -859,7 +859,7 @@ rows look like not-found, never leaking existence).
 ---
 ---
 
-# PART D - Traceability & gap analysis
+# PART D, Traceability & gap analysis
 
 Every §1b delight item → PRD feature → data model + API + RLS that supports it. **Gaps flagged
 explicitly.**
@@ -877,28 +877,28 @@ explicitly.**
 | CPA: Penny learns corrections (rules) | B5 (US21) | `categorization_rules` | `POST /rules`, auto-create on confirm | `can_write_org` | ✅ supported |
 | CPA: clean export / round-trip to QBO/Xero | B9 (US28–29) | `integration_connections`, `import_batches` | `POST /sync/qbo`/`xero`, export | `can_write_org`; tokens in Vault | ✅ supported |
 | CPA: per-client access (read-only vs full), no leak | B1, B2 | `engagements.access`, `client_assignments` | `/engagements/:id/revoke`/`assign` | `can_write_org` gated on `access='full'`; pgTAP | ✅ supported |
-| Both: correct to the cent | B10 NFR | integer minor units, deferred balance trigger | `422` on imbalance | - | ✅ supported (gate) |
+| Both: correct to the cent | B10 NFR | integer minor units, deferred balance trigger | `422` on imbalance |  | ✅ supported (gate) |
 | Both: isolated | B10 NFR | `org_id` everywhere | default-deny RLS | `security definer` helpers, pgTAP | ✅ supported (gate) |
-| Both: recoverable | B10 NFR, C9 | append-only + PITR | - | - | ✅ supported |
-| Both: fast | B10 NFR | denormalized `org_id` on lines; on-the-fly reports | - | - | ⚠️ verify at volume (R-perf); materialize only if plan shows need |
+| Both: recoverable | B10 NFR, C9 | append-only + PITR |  |  | ✅ supported |
+| Both: fast | B10 NFR | denormalized `org_id` on lines; on-the-fly reports |  |  | ⚠️ verify at volume (R-perf); materialize only if plan shows need |
 
 ### Gaps & watch-items flagged (none block Phase 0, all named)
 
-1. **Cross-business roll-up** ("all my companies") is **out of v1** (§B14) - confirm no committed
+1. **Cross-business roll-up** ("all my companies") is **out of v1** (§B14), confirm no committed
    partner needs it as a launch requirement. *Low risk; explicit future aggregate.*
 2. **Real-time bidirectional QBO/Xero sync** is out of v1 (import+export only). If a partner runs
    QBO *in parallel* during pilot, field-level conflict policy must be exercised early on synthetic
    data (R6).
-3. **Performance at volume** is the only ⚠️ in the matrix - unproven until real pilot data lands.
+3. **Performance at volume** is the only ⚠️ in the matrix, unproven until real pilot data lands.
    Plan: measure, then materialize hot reports; do **not** pre-optimize (LEARNINGS #12).
-4. **Multi-currency transacting** unsupported in v1 - currency is stored, so no migration needed
+4. **Multi-currency transacting** unsupported in v1, currency is stored, so no migration needed
    later, but a partner with genuine FX needs is a scope conversation, not a quiet coercion (§B13).
-5. **Penny propose-loop cost** unproven until Phase 4 - rate limits + model pinning are the
+5. **Penny propose-loop cost** unproven until Phase 4, rate limits + model pinning are the
    mitigation; instrument per-org cost from the first real proposals.
 
 **Conclusion:** the hardened data model + RLS + API in Part C support **every §1b delight item** for
 both personas. The only open verification item is performance-at-volume (provable only with pilot
-data); everything else is structurally covered. No architectural gap blocks Phase 0 - the next
+data); everything else is structurally covered. No architectural gap blocks Phase 0, the next
 deliverable remains the **Phase 0 Supabase migration (orgs/memberships/engagements/assignments/
 invites + RLS + `can_write_org` + platform-staff separation + pgTAP isolation tests + staging env)**,
 built in an isolated worktree and reviewed before any deploy.

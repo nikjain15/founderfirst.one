@@ -1,4 +1,4 @@
-# FounderFirst / Penny - Product Requirements Document
+# FounderFirst / Penny, Product Requirements Document
 
 > Product overview for engineers, operators, and partners. Everything here is
 > grounded in the code in this repository. Capabilities that are scaffolded but not
@@ -43,18 +43,18 @@ over the same books (`apps/app`, lens selected server-side from the verified JWT
 
 ## 3. Jobs-to-be-done
 
-- **JTBD-1 - "Sort my money for me."** Ingest transactions from Stripe, bank, and
+- **JTBD-1, "Sort my money for me."** Ingest transactions from Stripe, bank, and
   cards, categorize each one against the business's own chart of accounts, and only
   ask the owner about the ones that are genuinely ambiguous.
-- **JTBD-2 - "Tell me what I'm actually making."** Real profit derived from the
+- **JTBD-2, "Tell me what I'm actually making."** Real profit derived from the
   ledger, updated as money moves, not just revenue.
-- **JTBD-3 - "Chase my late payers so I don't have to."** Invoicing plus polite,
+- **JTBD-3, "Chase my late payers so I don't have to."** Invoicing plus polite,
   on-brand reminders.
-- **JTBD-4 - "Keep me tax-ready."** Books stay clean and CPA-ready year round;
+- **JTBD-4, "Keep me tax-ready."** Books stay clean and CPA-ready year round;
   filing obligations and depreciation tracked as data, not hardcoded.
-- **JTBD-5 - "Answer my questions from the real books."** A conversational thread
+- **JTBD-5, "Answer my questions from the real books."** A conversational thread
   that phrases figures computed from the ledger, never invented.
-- **JTBD-6 (CPA) - "Close the month fast."** Reconciliation, period close, and a
+- **JTBD-6 (CPA), "Close the month fast."** Reconciliation, period close, and a
   client work queue.
 
 ## 4. What is built today (verified in code)
@@ -66,7 +66,7 @@ over the same books (`apps/app`, lens selected server-side from the verified JWT
   implementation plus one seed row.
 - **Grounded auto-categorization.** `supabase/functions/categorize` proposes a
   category by trying a deterministic learned-rule matcher first, then falling back
-  to the inference layer **constrained to the org's own ledger accounts** - the
+  to the inference layer **constrained to the org's own ledger accounts:** the
   model cannot invent an account it was not handed. Approvals run
   `recategorize_entry` (reverse + repost + learn), so books stay append-only and
   the correction is remembered.
@@ -90,7 +90,7 @@ over the same books (`apps/app`, lens selected server-side from the verified JWT
   tier-matches it to a transaction (high-confidence auto-attach, low-confidence
   confirm card, no match to the unmatched queue). Assets live in a private,
   RLS-scoped storage bucket. (Voice-note capture is a demo surface, **Roadmap** for
-  the product - no audio-transcription path is wired today.)
+  the product, no audio-transcription path is wired today.)
 - **The AI quality & cost layer.** Every AI request passes through one
   `resolve()` (`packages/inference`): multi-model routing, per-token cost
   accounting, spend caps with fallback, and a tiered LLM-judge eval panel. See
@@ -98,7 +98,7 @@ over the same books (`apps/app`, lens selected server-side from the verified JWT
 - **A knowledge kernel as data.** Entity types, industries, filing obligations,
   vendor priors, and connectors are seed data every app projects from
   (`scripts/seed-kernel.ts`); a regulatory watcher turns a tax-law change into one
-  reviewed, effective-dated, cited seed-diff PR - never a self-merge
+  reviewed, effective-dated, cited seed-diff PR, never a self-merge
   (`scripts/regulatory-watcher`).
 
 ## 5. Success metrics
@@ -136,13 +136,13 @@ Metrics are captured as data today: every AI call writes an `ai_decisions` row w
 - **Don't name the model.** The brand is FounderFirst; routing is "intelligent
   multi-model," not a single vendor (VOICE.md).
 
-## 7. Roadmap - Now / Next / Later
+## 7. Roadmap, Now / Next / Later
 
 **Now (built / in early access)**
 - Multi-source ingest, grounded categorization with learned rules, one-tap
   approval cards, grounded Penny thread, double-entry ledger, reconciliation,
   invoicing, capture, and the inference quality/cost layer (routing, cost, judge
-  panel - Phase 2 built).
+  panel, Phase 2 built).
 - Owner app + CPA view over one set of books; demo live at
   `/penny/demo/` and `/penny/demo/cpa/`.
 

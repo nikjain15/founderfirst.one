@@ -1,9 +1,9 @@
-# [stress:periods] manifest - prod fixtures created (ref ejqsfzggyfsjzrcevlnq)
+# [stress:periods] manifest, prod fixtures created (ref ejqsfzggyfsjzrcevlnq)
 
 Adversarial period-locking stress-test, 2026-06-30. All fixtures namespaced
 `[PERIODTEST]` with emails `…@periodtest.founderfirst.test`. **A parallel session
 shares the `[PERIODTEST]` namespace** (orgs `Stress Co`/`Stranger Co`/`CPA Firm`,
-users `owner@`/`cpa@`/`stranger@`) - those are NOT mine; cleanup is scoped to the
+users `owner@`/`cpa@`/`stranger@`), those are NOT mine; cleanup is scoped to the
 exact ids below, never the namespace.
 
 ## This session's fixtures (random-suffixed)
@@ -36,12 +36,12 @@ exact ids below, never the namespace.
 ## Integrity check after testing
 - Books **tie**: per-currency Σdebits = Σcredits = 23 844 (USD), net 0; **0 unbalanced entries**.
 - The bugs found are **period-integrity** breaks (entries finalized into a closed
-  period), not arithmetic imbalances - the ledger never went out of balance.
+  period), not arithmetic imbalances, the ledger never went out of balance.
 
 ## Round 2 (post-deploy) added fixtures
 Expanded testing (edge battery, concurrency burst, negatives, F7 check) created more
-`[PERIODTEST]` orgs/users. The **authoritative, complete list** - verified against the
-live DB - is the IN-lists in `cleanup.sql` (**11 orgs, 14 users**), each scoped by exact
+`[PERIODTEST]` orgs/users. The **authoritative, complete list:** verified against the
+live DB, is the IN-lists in `cleanup.sql` (**11 orgs, 14 users**), each scoped by exact
 id. The parallel session's `Stress Co`/`CPA Firm`/`Stranger Co` + `owner@`/`cpa@`/`stranger@`
 are explicitly excluded there.
 

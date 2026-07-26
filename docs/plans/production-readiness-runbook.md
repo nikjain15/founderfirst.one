@@ -1,17 +1,17 @@
 > Status: active · 2026-07-04 · Owner: Nik (RV2-E production-readiness slice)
 
-# Production-readiness runbook - load/soak, observability, backup & DR
+# Production-readiness runbook, load/soak, observability, backup & DR
 
 This is the operational runbook for the RV2-E production-readiness slice: how we
 **prove** the two highest-risk paths hold under load, what we **observe/alert** on,
-and how we **back up and restore** when something goes wrong. It is additive - it
+and how we **back up and restore** when something goes wrong. It is additive, it
 adds a harness, an observability helper, and drills; it changes no posting logic.
 
 Scope of the shipped slice (this PR):
 
-- `packages/soak-harness/` - the load/soak harness (ledger post RPC + Plaid sync
+- `packages/soak-harness/`, the load/soak harness (ledger post RPC + Plaid sync
   dedup), with a CI-safe smoke test (`.github/workflows/soak-harness.yml`).
-- `supabase/functions/_shared/observability.ts` - additive structured-log helper,
+- `supabase/functions/_shared/observability.ts`, additive structured-log helper,
   adopted as a reference in `loop-heartbeat`.
 - This runbook (backup/restore + DR + SLO/alerting plan).
 
@@ -29,9 +29,9 @@ Anything marked **decision-needed** is a Nik call, not built here.
 - **Migration ledger:** `supabase/migrations/` is the single schema source of truth
   (LEARNINGS rule 2/3). `schema_migrations` in prod must match it exactly.
 - **Mac host services:** compose-server, signals-worker (see
-  `tools/signals-worker/README.md`) - not in the customer write path, lower RPO.
+  `tools/signals-worker/README.md`), not in the customer write path, lower RPO.
 
-### 1a. Secret INVENTORY (names only - never values; LEARNINGS + centralization gate)
+### 1a. Secret INVENTORY (names only, never values; LEARNINGS + centralization gate)
 
 Stored in `~/.config/founderfirst/secrets.env` and as Supabase fn secrets / GitHub
 secrets. **This list is names only.** Rotating any of these is part of the DR drill.
@@ -61,20 +61,20 @@ secrets. **This list is names only.** Rotating any of these is part of the DR dr
 invariants a real incident would break:
 
 - **No double-post under concurrency.** A flood of N posts where many share the
-  same `idempotency_key` must collapse to exactly one row per key - the
+  same `idempotency_key` must collapse to exactly one row per key, the
   `unique(org_id, idempotency_key)` guarantee inside `post_journal_entry`. The
   harness asserts `created == distinct idempotency keys`.
 - **Tie-out still balances.** After the whole flood, Σ debits == Σ credits.
 - **Plaid dedup holds.** Re-pulled transactions (duplicate webhook / re-sync)
-  are no-ops - dedup on `(org_id, external_id)`.
+  are no-ops, dedup on `(org_id, external_id)`.
 - **Latency / errors recorded.** p50/p95/p99 + error rate per run.
 
 The CI-safe smoke test runs these assertions against a faithful in-memory model
-(`src/model.ts`) at small N - no DB, no secrets - so the concurrency guarantee is
+(`src/model.ts`) at small N, no DB, no secrets, so the concurrency guarantee is
 proven on every PR. The **live** driver (`src/soak.ts`) runs the SAME runner +
 assertions against the real RPC.
 
-### 2b. Running the live soak (sandbox only - never prod data)
+### 2b. Running the live soak (sandbox only, never prod data)
 
 The driver is fenced (`src/config.ts` → `assertLiveRunAllowed`): it refuses to run
 unless `SOAK_TARGET=sandbox`, a namespaced `SOAK_FIXTURE_PREFIX` is set, and
@@ -103,7 +103,7 @@ select coalesce(sum(case when jl.side='D' then jl.amount_minor else 0 end),0) as
 ```
 
 **Fixture cleanup.** Purge the namespaced fixtures after the run (the prefix makes
-them selectable) - same discipline as the 2-Jul prod fixture purge.
+them selectable), same discipline as the 2-Jul prod fixture purge.
 
 ---
 
@@ -117,7 +117,7 @@ JSON line per event: `{ ts, level, fn, event, ...fields }`. Adopted as a referen
 in `loop-heartbeat` (auth.rejected / beat.recorded). Other fns opt in incrementally
 - it is additive, never a wholesale rewrite. Lines land in the Supabase log drain.
 
-### 3b. What to alert on (SLO targets - thresholds are proposals for Nik)
+### 3b. What to alert on (SLO targets, thresholds are proposals for Nik)
 
 | Signal | Source event / metric | Proposed threshold | Why |
 |---|---|---|---|
@@ -128,7 +128,7 @@ in `loop-heartbeat` (auth.rejected / beat.recorded). Other fns opt in incrementa
 | Migration drift | `schema_migrations` vs `supabase/migrations/` | any mismatch | LEARNINGS rule 3 |
 | Auth rejections spike | `auth.rejected` rate | anomalous | probing / leaked token |
 
-- **decision-needed - alerting sink.** We emit structured logs; we do **not** yet
+- **decision-needed, alerting sink.** We emit structured logs; we do **not** yet
   have a hosted alerting destination wired (PagerDuty / Logflare alerts / a Slack
   webhook). No new hosted service is added in this slice (gate). Nik to pick the
   sink; until then, alerts are manual review of the log drain + the admin **Quality**
@@ -140,27 +140,27 @@ in `loop-heartbeat` (auth.rejected / beat.recorded). Other fns opt in incrementa
 
 ### 4a. What to back up
 
-1. **Database** - full logical dump of prod (`ejqsfzggyfsjzrcevlnq`). Supabase
+1. **Database:** full logical dump of prod (`ejqsfzggyfsjzrcevlnq`). Supabase
    provides automated daily backups (PITR on paid tiers); we additionally keep an
    on-demand `pg_dump` before any risky migration/destructive op (LEARNINGS rule 4).
-2. **Migration ledger** - `supabase/migrations/` in git IS the schema backup; the
+2. **Migration ledger:** `supabase/migrations/` in git IS the schema backup; the
    repo is the source of truth. A restore replays these from zero.
-3. **Seeds** - `supabase/seed.sql` + the kernel/tax/depreciation seeds
+3. **Seeds:** `supabase/seed.sql` + the kernel/tax/depreciation seeds
    (`scripts/seed-*.ts`), which are NOT all in migrations (LEARNINGS: W3.3 CoA seed
    loaded separately). These must be part of a restore.
-4. **Secrets inventory** - §1a (names). Values live in `secrets.env` + the secret
+4. **Secrets inventory:** §1a (names). Values live in `secrets.env` + the secret
    stores; a restore re-sets fn/GH secrets from the operator's copy, never from git.
-5. **Storage** - receipt/attachment buckets (Supabase Storage), if used.
+5. **Storage:** receipt/attachment buckets (Supabase Storage), if used.
 
 ### 4b. RPO / RTO targets (proposals)
 
 - **RPO (max data loss):** ≤ 24 h from automated daily backup; ≤ 0 for the window
   since the last pre-op `pg_dump`. **decision-needed:** enable PITR for near-zero
-  RPO (paid-tier feature - Nik call, no new service added here).
-- **RTO (time to restore):** ≤ 2 h - provision a fresh project, replay migrations +
+  RPO (paid-tier feature, Nik call, no new service added here).
+- **RTO (time to restore):** ≤ 2 h, provision a fresh project, replay migrations +
   seeds, restore the dump, re-set secrets, re-point DNS/edge config.
 
-### 4c. Restore drill (run in a scratch project - never in place on prod first)
+### 4c. Restore drill (run in a scratch project, never in place on prod first)
 
 1. Create a scratch Supabase project.
 2. `supabase db push` replays every migration from zero (verify count matches
@@ -169,7 +169,7 @@ in `loop-heartbeat` (auth.rejected / beat.recorded). Other fns opt in incrementa
 3. Apply `supabase/seed.sql`, then run `scripts/seed-kernel.ts`, `seed-tax.ts`,
    `seed-depreciation.ts` (and verify with their `--check` modes).
 4. Restore the latest logical dump into the scratch project.
-5. Re-set fn secrets from the inventory (§1a) - from `secrets.env`, not git.
+5. Re-set fn secrets from the inventory (§1a), from `secrets.env`, not git.
 6. Smoke: run the soak harness against the restored project (`SOAK_TARGET=sandbox`)
    to confirm the post path works and ties out.
 7. Record wall-clock time → that's the measured RTO. File deltas as LEARNINGS if a
@@ -182,22 +182,22 @@ in `loop-heartbeat` (auth.rejected / beat.recorded). Other fns opt in incrementa
 - Deploy migration **then** the edge fns that depend on it (never the reverse).
 - Verify every deploy from the system itself (`supabase db`, re-query,
   `wrangler tail` / `flyctl logs`) and keep the previous state one command away.
-- `main == prod` for the app: a bad merge is a prod incident - revert the merge is
+- `main == prod` for the app: a bad merge is a prod incident, revert the merge is
   the fastest rollback.
 
 ---
 
 ## 5. Coverage delta
 
-New AUDIT.md ledger row: **soak-harness** - the load/soak harness for the ledger
+New AUDIT.md ledger row: **soak-harness:** the load/soak harness for the ledger
 post RPC + Plaid dedup. Starts ⬜ untested → the CI smoke suite
 (`.github/workflows/soak-harness.yml`) is its first stress pass (concurrency /
 idempotency / tie-out assertions green). Live sandbox soak is operator-run per §2b.
 
 ## 6. Open decisions for Nik
 
-1. **Alerting sink** - which hosted destination for the structured logs (none added
+1. **Alerting sink:** which hosted destination for the structured logs (none added
    here; gate forbids a new service without approval). §3b.
-2. **PITR** - enable point-in-time recovery for near-zero RPO (paid tier). §4b.
-3. **Soak cadence** - should the live sandbox soak run on a schedule (nightly/weekly
+2. **PITR:** enable point-in-time recovery for near-zero RPO (paid tier). §4b.
+3. **Soak cadence:** should the live sandbox soak run on a schedule (nightly/weekly
    against a standing sandbox org), or stay operator-invoked? §2b.

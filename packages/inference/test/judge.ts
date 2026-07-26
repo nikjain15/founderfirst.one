@@ -195,6 +195,28 @@ async function main(): Promise<void> {
     eq("missing reconciler → failed_closed", out.gateStatus, "failed_closed");
   }
   {
+    // WIRED reconciler that RECONCILES → the sql_reconciliation gate FIRES and
+    // passes (proves the rung runs in prod once a call site injects ctx.reconcile).
+    const evals = rows({ eval_key: "source_correct", method: "sql_reconciliation", check_ref: "source_correct.v1" });
+    let called = 0;
+    const out = await judge(
+      input({ answer: '{"findings":[{"evidence":[{"metric":"users","value":"42"}]}]}', evals }),
+      jctxFor(() => "{}", { reconcile: async () => { called++; return { pass: true, detail: "reconciles" }; } }),
+    );
+    eq("wired reconciler is invoked", called, 1);
+    eq("reconciler pass → gate passed", out.gateStatus, "passed");
+    eq("reconciler recorded by 'reconcile'", out.evals.source_correct.by, "reconcile");
+  }
+  {
+    // WIRED reconciler that finds a mismatched cited figure → gate BLOCKS.
+    const evals = rows({ eval_key: "source_correct", method: "sql_reconciliation", check_ref: "source_correct.v1" });
+    const out = await judge(
+      input({ answer: '{"findings":[{"evidence":[{"metric":"users","value":"999"}]}]}', evals }),
+      jctxFor(() => "{}", { reconcile: async () => ({ pass: false, detail: "cited 999 ≠ record 42" }) }),
+    );
+    eq("reconciler mismatch → blocked", out.gateStatus, "blocked");
+  }
+  {
     // inline classifier says clear → llm gate passes without a panel call
     const evals = rows({ eval_key: "grounded", method: "llm_judge" });
     let panelCalls = 0;

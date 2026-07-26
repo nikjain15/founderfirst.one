@@ -50,6 +50,42 @@ type Datapoint = { metric: string; value: number | string };
 const num = (v: unknown): number => (typeof v === "number" ? v : Number(v ?? 0)) || 0;
 const pct = (a: number, b: number): number => (b > 0 ? Math.round((a / b) * 100) : 0);
 
+/* ── SQL-reconciliation rung (D16): cited figures reconcile against the snapshot ─
+ * The datapoints handed to the model are the ONLY numbers it may cite, and the
+ * snapshot is the underlying record set. This deterministic reconciler confirms
+ * every finding's cited evidence VALUE matches the real datapoint value for that
+ * metric — not just that the metric label exists (the grounding guard below only
+ * checks the label). It is injected into the judge as ctx.reconcile so the
+ * `source_correct` gate finally fires on a real production answer. It is
+ * observational: the judge verdict lands in ai_decisions.gate_status for quality
+ * tracking and NEVER changes what the caller returns (the response is still gated
+ * by the grounding guard). */
+const normValue = (v: unknown): string =>
+  String(v ?? "").toLowerCase().replace(/[,\s$]/g, "").replace(/%$/, "");
+
+function makeInsightsReconcile(available: Datapoint[]) {
+  const byMetric = new Map(available.map((d) => [d.metric, normValue(d.value)]));
+  return async (args: { answer: string; answerJson?: unknown }): Promise<{ pass: boolean; detail?: string }> => {
+    let parsed: any = args.answerJson;
+    if (!parsed || typeof parsed !== "object") {
+      try { parsed = JSON.parse(args.answer || "{}"); } catch { return { pass: false, detail: "answer not parseable JSON" }; }
+    }
+    const findings = Array.isArray(parsed?.findings) ? parsed.findings : [];
+    let checked = 0;
+    for (const f of findings) {
+      for (const e of (Array.isArray(f?.evidence) ? f.evidence : [])) {
+        const metric = String(e?.metric ?? "");
+        if (!byMetric.has(metric)) continue; // label grounding is the guard's job; skip unknown labels here
+        checked++;
+        if (byMetric.get(metric) !== normValue(e?.value)) {
+          return { pass: false, detail: `"${metric.slice(0, 60)}" cited ${String(e?.value).slice(0, 20)} ≠ record ${byMetric.get(metric)}` };
+        }
+      }
+    }
+    return { pass: true, detail: checked === 0 ? "no reconcilable citations" : `${checked} cited figure(s) reconcile` };
+  };
+}
+
 /* ── PostHog (product usage) ──────────────────────────────────────────────── */
 
 async function hogql(host: string, project: string, key: string, query: string): Promise<any[]> {
@@ -281,6 +317,10 @@ async function synthesizeWithClaude(
   // additive — insight_runs.model keeps being written below (D21 dual-write).
   // Phase 2: batch grading runs the deterministic gates (valid_format) on Edge;
   // the grounded LLM gate is recorded as deferred (no Workers-AI judge on Deno).
+  // The `source_correct` sql_reconciliation gate now DOES run — it needs no model,
+  // so it fires on Deno via the injected reconciler (makeInsightsReconcile), which
+  // confirms every cited figure reconciles against the snapshot. context.sourceIds
+  // carries the metric labels so any future source_exists gate is meaningful too.
   const result = await resolveAndJudgeOnDeno(
     {
       useCase: USE_CASE.INSIGHTS,
@@ -302,6 +342,10 @@ async function synthesizeWithClaude(
       // Phase 5b: set the OPENROUTER_API_KEY Supabase secret to let insights route
       // to an OpenRouter model; unset = not routable here (anthropic/workers paths unaffected).
       OPENROUTER_API_KEY: Deno.env.get("OPENROUTER_API_KEY") ?? undefined,
+    },
+    {
+      reconcile: makeInsightsReconcile(available),
+      context: { sourceIds: available.map((d) => d.metric) },
     },
   );
   const parsed = JSON.parse(result.text || "{}");

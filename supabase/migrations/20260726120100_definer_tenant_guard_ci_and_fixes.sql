@@ -1,3 +1,5 @@
+-- Safe to re-run: idempotent by construction (every function is `create or replace`,
+-- grants/revokes are idempotent).
 -- Definer-tenant guard — CI gate + the SEC-3-class fixes it found ------------
 --
 -- The 6-Jul weekly audit (PR #301) found 4 P0 + 2 P1 `security definer` read

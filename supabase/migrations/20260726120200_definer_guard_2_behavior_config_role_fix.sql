@@ -1,3 +1,4 @@
+-- Safe to re-run: idempotent by construction (a single `create or replace function`).
 -- DEFINER-GUARD-2 — get_effective_behavior_config caller-role-aware fix -----
 --
 -- get_effective_behavior_config(p_org) is `security definer`, granted to

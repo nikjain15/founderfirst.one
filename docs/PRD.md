@@ -130,7 +130,6 @@ admin **AI · Models** view reports measured-vs-target over a 30-day window
 | Penny chat (interactive) | ≤ 3.0 s | ≤ $0.010 | ≤ 2% |
 | Insights (batch) | ≤ 20 s | ≤ $0.150 | ≤ 5% |
 | Email drafting (batch) | ≤ 8.0 s | ≤ $0.020 | ≤ 2% |
-| Content draft (batch) | ≤ 20 s | ≤ $0.150 | ≤ 5% |
 
 **Utility SLO (target, tracked on the AI Review surface, not recomputed by
 `admin_ai_suqs`):** zero-edit approval rate ≥ 85% per tenant cohort before a

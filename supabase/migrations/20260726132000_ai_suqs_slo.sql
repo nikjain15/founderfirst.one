@@ -6,7 +6,7 @@
 -- in the admin "AI · Models" view.
 -- =============================================================================
 --
--- Three SUQS dimensions are computable directly from ai_decisions and get a
+-- Three SUQS dimensions are computable directly from the ai_decisions log and get a
 -- numeric target here:
 --   • Speed        → p95 answer latency (ms)                 [max]
 --   • Cost (Q/scale) → cost per answer (USD, incl. judge)    [max]
@@ -35,13 +35,18 @@ drop policy if exists ai_suqs_slo_no_direct on ai_suqs_slo;
 create policy ai_suqs_slo_no_direct on ai_suqs_slo for all using (false) with check (false);
 
 -- Seed targets sized to each use case's job (chat is interactive → tight latency;
--- insights/content are batch → looser latency, higher token budget). These are
--- starting envelopes, editable by migration/admin, not magic numbers in code.
-insert into ai_suqs_slo (use_case, p95_latency_ms_slo, cost_per_answer_slo, block_rate_pct_slo) values
-  ('penny_chat',       3000,  0.010000, 2.00),
-  ('insights',        20000,  0.150000, 5.00),
-  ('email_compose',    8000,  0.020000, 2.00),
-  ('content_draft',   20000,  0.150000, 5.00)
+-- insights is batch → looser latency, higher token budget). These are starting
+-- envelopes, editable by migration/admin, not magic numbers in code. Seeded only
+-- for use cases that exist in ai_use_cases (FK) — the SELECT ∩ ai_use_cases guard
+-- keeps this migration replay-safe regardless of which use cases are registered.
+insert into ai_suqs_slo (use_case, p95_latency_ms_slo, cost_per_answer_slo, block_rate_pct_slo)
+select v.use_case, v.p95, v.cost, v.block
+from (values
+  ('penny_chat',    3000,  0.010000::numeric, 2.00::numeric),
+  ('insights',     20000,  0.150000::numeric, 5.00::numeric),
+  ('email_compose', 8000,  0.020000::numeric, 2.00::numeric)
+) as v(use_case, p95, cost, block)
+join ai_use_cases u on u.use_case = v.use_case
 on conflict (use_case) do nothing;
 
 -- ---- Read: measured SUQS vs SLO per use case (is_admin-gated) ----------------

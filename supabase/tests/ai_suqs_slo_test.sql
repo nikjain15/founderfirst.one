@@ -14,11 +14,11 @@ insert into public.admins (email, role, added_by) values
   ('suqsadmin@test.dev', 'super', '00000000-0000-0000-0000-0000005c0001')
   on conflict (email) do nothing;
 
--- 1) SLO targets are seeded for the routed use cases.
+-- 1) SLO targets are seeded for the routed use cases that exist in ai_use_cases.
 select is(
-  (select count(*)::int from ai_suqs_slo where use_case in ('penny_chat','insights','email_compose','content_draft')),
-  4,
-  'SUQS SLO targets seeded for the four routed use cases'
+  (select count(*)::int from ai_suqs_slo where use_case in ('penny_chat','insights','email_compose')),
+  3,
+  'SUQS SLO targets seeded for the three registered routed use cases'
 );
 
 -- 2) the SLO config table is deny-all to direct clients (RLS; read via RPC only).
@@ -40,10 +40,10 @@ insert into ai_decisions (tenant_id, use_case, runtime, provider, model, request
 -- act as the admin.
 set local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-0000005c0001","email":"suqsadmin@test.dev","role":"authenticated"}';
 
--- 3) it returns a row per SLO'd use case (4).
+-- 3) it returns a row per SLO'd use case (3).
 select is(
   (select count(*)::int from admin_ai_suqs(30)),
-  4,
+  3,
   'admin_ai_suqs returns one row per SLO use case'
 );
 

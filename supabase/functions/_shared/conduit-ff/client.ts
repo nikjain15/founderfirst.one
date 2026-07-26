@@ -23,6 +23,7 @@ import type {
   UsageResult,
 } from "../conduit/client/types.ts";
 import type { Retriever } from "./retrieval.ts";
+import { reportDecision } from "./usageReporter.ts";
 
 export interface ConduitClientDeps {
   /** FounderFirst's resolve, already bound to its runtime env (Deno adapter). */
@@ -42,12 +43,30 @@ export function makeEmbeddedConduitClient(deps: ConduitClientDeps): ConduitClien
   const retriever = deps.retriever;
   const runAgent = deps.runAgent;
 
+  // Live-usage reporting: observe each metered decision and mirror it to the
+  // Conduit gateway. This wraps resolve() at the integration boundary only; it
+  // does not touch the model path, the metered-record math, or resolve's result.
+  // reportDecision is fire-and-forget and a NO-OP when the gateway env is unset,
+  // so behavior (and every existing test) is unchanged unless it is configured.
+  const baseResolve = deps.resolve;
+  const resolveWithReport: EmbeddedResolve = async (task) => {
+    const res = await baseResolve(task);
+    void reportDecision({
+      useCase: task.useCase,
+      model: res.model.model,
+      provider: res.model.provider,
+      costUsd: res.costUsd,
+      latencyMs: res.latencyMs,
+    });
+    return res;
+  };
+
   return createClient({
     mode: "embedded",
     tenantId: deps.tenantId,
     defaultMaxTokens: deps.defaultMaxTokens,
     core: {
-      resolve: deps.resolve,
+      resolve: resolveWithReport,
 
       async retrieve(params): Promise<RetrieveResult> {
         if (!retriever) return { chunks: [], grounded: false };

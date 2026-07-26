@@ -1,3 +1,6 @@
+-- Safe to re-run: idempotent by construction (create extension/table `if not exists`,
+-- `enable row level security` no-op, `create or replace function`, idempotent grants,
+-- and the cron job is unscheduled-then-rescheduled by name).
 -- =============================================================================
 -- SEC-4 — signup-confirmation enumeration guard + inert grant cleanup
 -- =============================================================================

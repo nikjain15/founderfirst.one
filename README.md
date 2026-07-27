@@ -80,6 +80,7 @@ Product and engineering deep-dives, grounded in this repository's code:
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md):** system overview with component and sequence diagrams, grounded in real code paths.
 - **[docs/EVALS.md](docs/EVALS.md):** the eval strategy (unit → deterministic gates → SQL reconciliation → LLM-judge panel → A/B), built on the real `packages/inference` harness.
 - **[docs/TECHNICAL_NOTES.md](docs/TECHNICAL_NOTES.md):** a 12-point rubric scorecard with file-level evidence, plus model, orchestration, guardrail, and cost details.
+- **[docs/MCP.md](docs/MCP.md):** the read-only, tenant-scoped MCP server (`tools/ff-mcp`), its four ledger tools, the isolation model, and the local + hosted transport shapes.
 - **[docs/FDE_JOURNEY.md](docs/FDE_JOURNEY.md):** how Penny deploys into a live financial environment: integration, security, cutover, observability, de-risking.
 
 A small self-contained gate eval harness lives in **[evals/](evals/README.md)** (`pnpm eval:gates`).

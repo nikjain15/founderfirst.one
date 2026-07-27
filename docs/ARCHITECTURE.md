@@ -22,6 +22,9 @@ selected server-side from the verified JWT, never from the browser.
 | `site-bubble/worker` | Public marketing chat bubble | Cloudflare Worker + Workers AI |
 | `supabase/functions` | ~74 Deno Edge Functions, the write path and Penny's brains | Deno + `@supabase/supabase-js` |
 | `packages/inference` | The AI quality & cost layer (`resolve()` + judge) | Runtime-agnostic TypeScript |
+| `supabase/functions/_shared/conduit` | Vendored Conduit primitives (`agent` loop, `client`, `mcp` ToolRegistry, `rag`) | Deno, no external deps |
+| `supabase/functions/_shared/conduit-ff` | FounderFirst's Conduit wiring: the categorization investigator, BM25 retriever, embedded client, MCP tools, usage reporter | Deno TypeScript |
+| `tools/ff-mcp` | Read-only, tenant-scoped MCP server (stdio) over the ledger | Deno / Node, dynamic MCP SDK |
 | `packages/design-system` | Design tokens + components | CSS custom properties |
 | `scripts/` | Seed loaders, CI guards, the regulatory watcher | tsx |
 
@@ -123,10 +126,11 @@ sequenceDiagram
   Cat->>DB: match_categorization_rule(org, txn)
   alt deterministic rule / vendor prior hits
     DB-->>Cat: account_id (HIGH confidence)
-  else no rule
-    Cat->>DB: load org's OWN ledger_accounts
-    Cat->>Inf: resolve(propose, accounts as the ONLY allowed set)
-    Inf-->>Cat: proposed account_id (must be one we sent)
+  else no rule (ambiguous txn)
+    Cat->>DB: load org's OWN ledger_accounts + priors + tax rules
+    Cat->>Inf: investigator (bounded @conduit/agent loop, read-only tools, difficulty-routed)
+    Inf-->>Cat: DRAFT account_id (must be one we sent) or decline
+    Cat->>DB: byId grounding gate + SQL reconciler (deterministic, unchanged)
   end
   alt confidence >= high tier
     Cat->>DB: autopost + write penny_activity ("Penny did this")
@@ -142,10 +146,38 @@ Key code facts (`supabase/functions/categorize/index.ts`,
 `supabase/migrations/*phase4_categorization.sql`, `*w3_2_trust_tiered_autonomy.sql`):
 
 - **Deterministic first, model second.** The rule matcher (`match_categorization_rule`)
-  runs before any model call; the model is only a fallback.
-- **The model cannot invent an account.** The inference call is constrained to the
-  org's own `ledger_accounts`; a proposed `account_id` that was not in the set is
-  rejected.
+  plus the learned vendor prior run before any model call, and resolve the bulk of
+  transactions with zero model spend; the model path is only a fallback for the
+  genuinely ambiguous remainder.
+- **The ambiguous path is a bounded agent, not a single call.** When no rule or
+  prior hits, `categorize` hands the transaction to the investigator
+  (`_shared/conduit-ff/investigator.ts`), a bounded `@conduit/agent` reason-act
+  loop. The model may call four read-only tools (get_transaction, list_accounts,
+  prior_categorizations, tax_rule_lookup) to gather evidence grounded in the
+  founder's own data, then drafts one proposal. The loop is bounded by a step cap;
+  a never-finishing model stops at the cap and yields no proposal (fail-safe). It
+  runs without side effects, so it can only ever return a DRAFT.
+- **The model cannot invent an account.** The drafted `account_id` is re-checked
+  against the org's live chart (`byId`) in the caller; anything not in the set we
+  handed the model is rejected. This deterministic grounding gate, the SQL
+  reconciler, and the `recategorize_entry` / `autopost_categorization` write RPCs
+  are untouched by the agent, which only proposes.
+- **Difficulty routing.** The investigator routes by difficulty across three model
+  rungs rather than pinning one model per transaction: a cheap Haiku-class tier for
+  confident cases, escalating once to a Sonnet-class reasoning tier on low
+  confidence or a weak-retrieval / ungrounded-rationale signal, and to an
+  Opus-class tier when a pass hits its step cap or returns no grounded draft. A
+  pre-model retrieval check can also start the cascade higher. Spend is bounded to
+  at most two model passes; every rung is a normal metered, cap-aware `resolve()`
+  call. Set `CONDUIT_DIFFICULTY_ROUTING=0` to pin the cheap tier.
+- **Grounded by RAG over the founder's real corpus.** The investigator's retriever
+  (`_shared/conduit-ff/retrieval.ts`, on `@conduit/rag`) indexes the org's own
+  chart of accounts, prior categorizations, and tax-rule text with BM25 (lexical is
+  the right default for short accounting labels and vendor strings, and there is no
+  embedding call on the Edge runtime). A weak-retrieval gate makes the path say
+  "not found" instead of inventing. Every model turn is routed through an embedded
+  `@conduit/client` (`_shared/conduit-ff/client.ts`) that injects FounderFirst's own
+  `resolve`, so the agent and client surfaces run on one real path.
 - **Trust-tiered autonomy.** High-confidence items auto-post and appear in a
   "Penny did this" activity feed; only low-confidence items become approval cards,
   and the owner is interrupted at most ~5 times a week (config is data in
@@ -190,6 +222,27 @@ Every AI request passes through `resolve(task, ctx)`:
 - **Grading** is a tiered eval panel (`judge()`): deterministic floor gates ->
   optional SQL reconciliation -> a generator-family-aware LLM checker panel, with a
   fail-closed default. Detail in [EVALS.md](EVALS.md).
+- **Conduit integration.** The categorization investigator drives every model turn
+  through an embedded `@conduit/client` that injects this same `resolve`, so no new
+  inference core is introduced. An env-gated usage reporter
+  (`_shared/conduit-ff/usageReporter.ts`) mirrors each metered decision to a Conduit
+  gateway for live spend/latency observability. It is a **no-op unless both
+  `CONDUIT_GATEWAY_URL` and `CONDUIT_GATEWAY_TOKEN` are set**, never blocks, and
+  never throws, so it cannot affect an answer.
+
+## 5a. Read-only MCP surface
+
+The same ledger tools the in-app investigator uses are exposed to external MCP
+clients (Claude Desktop, agent runtimes) through a **read-only, tenant-scoped** MCP
+server (`tools/ff-mcp/server.ts`), built on the vendored `@conduit/mcp` ToolRegistry
+so the tools validate and behave identically in-process and over MCP. Four tools:
+`ff_list_ledger_accounts`, `ff_get_transaction`, `ff_prior_categorizations`, and
+`ff_tax_rule_lookup` (which runs the same RAG grounding and returns not-found rather
+than inventing a rule). Every tool takes an `org_id` and resolves a
+membership-guarded, org-bound accessor; there are no write tools and no cross-tenant
+reads. It runs over stdio locally; the intended hosted shape serves the same
+registry over MCP Streamable HTTP / SSE behind the app's auth. Detail in
+[MCP.md](MCP.md).
 
 ## 6. Data architecture (canonical ledger + adapters)
 

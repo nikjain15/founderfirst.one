@@ -21,7 +21,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { mfaSatisfied } from "../_shared/mfaGate.ts";
 import { resolveAndJudgeOnDeno } from "../_shared/inference/deno.ts";
-import { orgTenant } from "../_shared/inference/core.ts";
+import { acceptsSampling, orgTenant } from "../_shared/inference/core.ts";
 import { getAppPersona } from "../_shared/appPersona.ts";
 // Conduit integration: the ambiguous-transaction investigation is a bounded,
 // read-only agent loop (drafts a proposal, never writes the ledger). The
@@ -383,17 +383,34 @@ async function proposeViaAgent(
   const [priors, taxRules] = await Promise.all([data.priorCategorizations(description), data.taxRuleCorpus()]);
   const retriever = buildRetriever({ accounts, priors, taxRules });
 
-  const pinModel = { provider: "anthropic" as const, model: Deno.env.get("ANTHROPIC_MODEL") ?? "claude-haiku-4-5-20251001" };
+  // DIFFICULTY ROUTING. Instead of pinning one model for every transaction, the
+  // investigator routes by difficulty: the CHEAP (Haiku) tier for confident /
+  // straightforward cases (the common path — bulk transactions never reach here at
+  // all, they resolve on the deterministic rule + vendor-prior path above with zero
+  // model spend), escalating to a REASONING tier (Sonnet) or the HARDEST tier (Opus
+  // 4.8) only when the signal is weak (weak retrieval, the agent loop hits its step
+  // cap, or drafted confidence is below the cutoff). Each rung is a normal pinned
+  // resolve() call, so it stays metered and cap-aware. Ids are env-overridable; the
+  // baked defaults are the models this repo already prices/uses (haiku-4-5,
+  // sonnet-4-6, opus-4-8). Set CONDUIT_DIFFICULTY_ROUTING=0 to pin the cheap tier.
+  const tiers = {
+    cheap: { provider: "anthropic" as const, model: Deno.env.get("ANTHROPIC_MODEL") ?? "claude-haiku-4-5-20251001" },
+    reasoning: { provider: "anthropic" as const, model: Deno.env.get("ANTHROPIC_MODEL_REASONING") ?? "claude-sonnet-4-6" },
+    hardest: { provider: "anthropic" as const, model: Deno.env.get("ANTHROPIC_MODEL_HARDEST") ?? "claude-opus-4-8" },
+  };
+  const pinModel = tiers.cheap;
   const env = { ANTHROPIC_API_KEY: apiKey, SUPABASE_URL, SUPABASE_SERVICE_KEY: SERVICE_ROLE_KEY };
   // Inject FF's resolve. Sampling contract: temperature is sent ONLY to models
-  // that accept it (Haiku 4.5 and older); Opus/Sonnet/Fable would 400 on it.
+  // that accept it (Haiku 4.5 and older); the escalated Opus/Sonnet reasoning
+  // tiers would 400 on it. The per-turn pinModel is the tier the router chose, so
+  // this gate is evaluated against the model actually being called.
   const resolve: EmbeddedResolve = async (task) => {
-    const acceptsSampling = /haiku/i.test(task.pinModel?.model ?? pinModel.model);
+    const sampling = acceptsSampling(task.pinModel?.model ?? pinModel.model);
     const r = await resolveAndJudgeOnDeno(
       {
         useCase: task.useCase, tenantId: task.tenantId, system: task.system,
         messages: task.messages, maxTokens: task.maxTokens,
-        ...(acceptsSampling ? { temperature: 0 } : {}),
+        ...(sampling ? { temperature: 0 } : {}),
         timeoutMs: 30_000, anthropic: { maxRetries: 1 },
         pinModel: { provider: "anthropic" as const, model: task.pinModel?.model ?? pinModel.model },
         record: { storeInput: false, ref: entryId },
@@ -404,9 +421,14 @@ async function proposeViaAgent(
   };
   const client = makeEmbeddedConduitClient({ resolve, tenantId: orgTenant(orgId), retriever, defaultMaxTokens: 500 });
 
+  const routingOn = Deno.env.get("CONDUIT_DIFFICULTY_ROUTING") !== "0";
   const res = await investigateCategorization({
     client, retriever, data, entryId, description, direction, accounts,
     useCase: USE_CASE_CATEGORIZE, pinModel, maxSteps: 6,
+    // Route by difficulty across the tier cascade (unless explicitly pinned off).
+    // escalateBelow reuses the medium-confidence cutoff so the model path and the
+    // trust-tier bands agree on what "weak" means.
+    ...(routingOn ? { tiers, escalateBelow: CONFIG_DEFAULTS.confidence_medium } : {}),
   });
   return res.proposal;
 }

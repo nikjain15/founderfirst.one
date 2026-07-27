@@ -274,6 +274,8 @@ export const DEFAULT_PRICES: Record<string, PriceEntry> = {
   "claude-haiku-4-5-20251001": { inputPerMTok: 1.0, outputPerMTok: 5.0 },
   "claude-haiku-4-5": { inputPerMTok: 1.0, outputPerMTok: 5.0 },
   "claude-sonnet-4-6": { inputPerMTok: 3.0, outputPerMTok: 15.0 },
+  // Escalation "hardest" tier for difficulty-routed categorization (Opus pricing).
+  "claude-opus-4-8": { inputPerMTok: 15.0, outputPerMTok: 75.0 },
   "@cf/meta/llama-3.3-70b-instruct-fp8-fast": { inputPerMTok: 0, outputPerMTok: 0 },
 };
 
@@ -341,6 +343,19 @@ export function buildInferenceConfig(payload: Partial<TwinPayload> | null | unde
     prices: { ...DEFAULT_PRICES, ...(payload?.prices ?? {}) },
     meta,
   };
+}
+
+/* ── Sampling contract ────────────────────────────────────────────────────── */
+
+/**
+ * Whether a model accepts a `temperature` sampling parameter. Only Haiku 4.5 (and
+ * older Claude models) accept it; the reasoning-class models the difficulty router
+ * escalates to (Sonnet 5, Opus 4.8/4.7, Opus 5, Fable 5) reject `temperature` with
+ * a 400. Callers MUST gate the parameter through this so an escalated pass never
+ * sends temperature to a model that would reject it.
+ */
+export function acceptsSampling(model: string | undefined | null): boolean {
+  return /haiku/i.test(model ?? "");
 }
 
 /* ── Cost math ────────────────────────────────────────────────────────────── */

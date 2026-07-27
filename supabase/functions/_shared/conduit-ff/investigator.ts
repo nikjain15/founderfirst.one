@@ -35,6 +35,20 @@ export interface DraftProposal {
   rationale: string;
 }
 
+export type ModelPin = { provider: string; model: string };
+
+/** Difficulty tier the transaction was routed to. */
+export type DifficultyTier = "cheap" | "reasoning" | "hardest";
+
+/** The three model rungs the difficulty router escalates across. `cheap` is a
+ *  Haiku-class model (temperature-legal); `reasoning`/`hardest` are Sonnet/Opus
+ *  class (the resolve adapter withholds temperature from them — sampling contract). */
+export interface TierModels {
+  cheap: ModelPin;
+  reasoning: ModelPin;
+  hardest: ModelPin;
+}
+
 export interface InvestigateInput {
   client: ConduitClient;
   retriever: Retriever;
@@ -47,8 +61,15 @@ export interface InvestigateInput {
   data: any;
   maxSteps?: number;
   useCase: string;
-  /** Model to pin for each turn; kept Haiku so temperature=0 is contract-legal. */
-  pinModel?: { provider: string; model: string };
+  /** Legacy single-model pin. When `tiers` is absent, the loop runs ONE pass on
+   *  this model, so behavior is identical to the pre-routing path. */
+  pinModel?: ModelPin;
+  /** Difficulty-routed cascade. When present, the loop routes by difficulty:
+   *  the cheap tier for confident/straightforward cases, escalating once to a
+   *  reasoning (or hardest) tier when the signal is weak. */
+  tiers?: TierModels;
+  /** A drafted confidence below this cutoff escalates to a reasoning tier. */
+  escalateBelow?: number;
 }
 
 export interface InvestigateResult {
@@ -59,9 +80,18 @@ export interface InvestigateResult {
   loadedSkills: string[];
   /** True when the drafted rationale passed the lexical groundedness heuristic. */
   groundedRationale?: boolean;
+  /** Which difficulty tier produced this result. */
+  tier: DifficultyTier;
+  /** The model id actually driven (or "unpinned" when no pin was supplied). */
+  modelUsed: string;
+  /** True when the result came from an escalated (reasoning/hardest) pass. */
+  escalated: boolean;
+  /** Why the cascade escalated (only set on an escalated result). */
+  escalationReason?: string;
 }
 
 const DEFAULT_MAX_STEPS = 5;
+const DEFAULT_ESCALATE_BELOW = 0.45;
 
 const BASE_SYSTEM =
   "You are Penny's transaction investigator. Work step by step to decide which " +
@@ -74,7 +104,7 @@ const BASE_SYSTEM =
  * system prompt, hand the running transcript over, and parse the model's reply
  * into either a tool call or a final answer.
  */
-function makeCallModel(input: InvestigateInput): CallModel {
+function makeCallModel(input: InvestigateInput, model: ModelPin | undefined): CallModel {
   const allowedIds = input.accounts.map((a) => a.id);
   return async ({ system, messages, tools }) => {
     const catalogue = (tools ?? [])
@@ -94,7 +124,7 @@ function makeCallModel(input: InvestigateInput): CallModel {
       system: system + contract,
       messages: messages as ChatMessage[],
       maxTokens: 500,
-      pinModel: input.pinModel,
+      pinModel: model,
     });
     return parseTurn(infer.output);
   };
@@ -139,8 +169,84 @@ function extractJson(raw: string): unknown {
 /**
  * Run the bounded investigation and return a DRAFT proposal (or null). The caller
  * remains responsible for the deterministic grounding gate + reconciler.
+ *
+ * DIFFICULTY ROUTING. When `input.tiers` is supplied, the transaction is routed by
+ * difficulty rather than pinned to one model:
+ *   - A pre-model retrieval signal decides the STARTING rung. If the description
+ *     retrieves weakly against the founder's own corpus (bad-retrieval gate), the
+ *     cascade starts at the reasoning tier; otherwise it starts cheap.
+ *   - After a pass, the result is re-checked. The cascade escalates ONCE to a
+ *     stronger rung when the signal is weak: the loop stopped at its step cap, no
+ *     grounded draft came back, the rationale failed the groundedness heuristic, or
+ *     the drafted confidence is below `escalateBelow`. Severe signals (cap hit / no
+ *     draft) jump straight to the hardest tier; softer signals step to reasoning.
+ * Spend is bounded to at most two model passes. With no `tiers`, exactly one pass
+ * runs on `pinModel`, so behavior (and every existing test) is unchanged.
+ *
+ * The deterministic grounding gate (allowedIds), the no-authority invariant, and
+ * the reconciler in the caller are untouched by this routing.
  */
 export async function investigateCategorization(input: InvestigateInput): Promise<InvestigateResult> {
+  // Legacy single-model path: one pass, identical to the pre-routing behavior.
+  if (!input.tiers) {
+    return runPass(input, input.pinModel, "cheap", false, undefined);
+  }
+
+  const tiers = input.tiers;
+  const escalateBelow = input.escalateBelow ?? DEFAULT_ESCALATE_BELOW;
+
+  // Pre-model difficulty signal: does the description retrieve against the org's
+  // own corpus at all? A weak/no-context retrieval is a hard case up front, so we
+  // skip the cheap rung and open at the reasoning tier. Best-effort: a retriever
+  // error is treated as "not weak" so we still open cheap (fail-cheap, not fail-up).
+  let weakRetrieval = false;
+  try {
+    const pre = await input.retriever.retrieveGrounded(input.description);
+    weakRetrieval = !pre.grounded;
+  } catch {
+    weakRetrieval = false;
+  }
+
+  const startTier: DifficultyTier = weakRetrieval ? "reasoning" : "cheap";
+  const first = await runPass(
+    input, tiers[startTier], startTier,
+    startTier !== "cheap", weakRetrieval ? "weak_retrieval" : undefined,
+  );
+
+  const dec = escalationDecision(first, escalateBelow);
+  if (!dec.escalate) return first;
+
+  // Pick the escalation target. Severe signals (cap hit / no grounded draft) jump
+  // to the hardest tier; softer signals (low confidence / ungrounded rationale)
+  // step to reasoning. From reasoning we can only go up to hardest.
+  let nextTier: DifficultyTier | null = null;
+  if (startTier === "cheap") nextTier = dec.severe ? "hardest" : "reasoning";
+  else if (startTier === "reasoning") nextTier = "hardest";
+  if (!nextTier || nextTier === startTier) return first;
+
+  return runPass(input, tiers[nextTier], nextTier, true, dec.reason);
+}
+
+/** Decide whether a pass's result is too weak and must escalate. */
+function escalationDecision(
+  r: InvestigateResult,
+  escalateBelow: number,
+): { escalate: boolean; severe: boolean; reason?: string } {
+  if (r.stoppedAtCap) return { escalate: true, severe: true, reason: "stopped_at_cap" };
+  if (!r.proposal) return { escalate: true, severe: true, reason: "no_grounded_draft" };
+  if (r.groundedRationale === false) return { escalate: true, severe: false, reason: "ungrounded_rationale" };
+  if (r.proposal.confidence < escalateBelow) return { escalate: true, severe: false, reason: "low_confidence" };
+  return { escalate: false, severe: false };
+}
+
+/** One bounded agent pass on a single model, returning the annotated result. */
+async function runPass(
+  input: InvestigateInput,
+  model: ModelPin | undefined,
+  tier: DifficultyTier,
+  escalated: boolean,
+  escalationReason: string | undefined,
+): Promise<InvestigateResult> {
   const maxSteps = input.maxSteps ?? DEFAULT_MAX_STEPS;
   const tools = buildInvestigatorTools({
     data: input.data,
@@ -160,7 +266,7 @@ export async function investigateCategorization(input: InvestigateInput): Promis
     system: BASE_SYSTEM,
     tools,
     skills: investigatorSkills,
-    callModel: makeCallModel(input),
+    callModel: makeCallModel(input, model),
     maxSteps,
     // No-authority: never allow side effects. Every tool is read-only anyway.
     allowSideEffects: false,
@@ -170,6 +276,10 @@ export async function investigateCategorization(input: InvestigateInput): Promis
     stoppedAtCap: result.stoppedAtCap,
     steps: result.steps.length,
     loadedSkills: result.loadedSkills,
+    tier,
+    modelUsed: model?.model ?? "unpinned",
+    escalated,
+    ...(escalationReason ? { escalationReason } : {}),
   };
 
   if (result.answer === undefined) {

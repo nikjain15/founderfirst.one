@@ -2,16 +2,21 @@
   <a href="https://founderfirst.one"><img src="assets/penny.png" alt="FounderFirst, Penny" width="300"></a>
 </p>
 
-<p align="center"><b>FounderFirst, meet Penny, your autonomous bookkeeper.</b><br>
-  <a href="https://founderfirst.one">Early access ↗</a></p>
+<h1 align="center">FounderFirst</h1>
 
----
+<p align="center"><b>Meet Penny: she does your books while you sleep, and only taps you when she needs a call.</b></p>
 
-# FounderFirst
+<p align="center">
+  <a href="https://github.com/nikjain15/founderfirst.one/actions/workflows/deno-tests.yml"><img src="https://github.com/nikjain15/founderfirst.one/actions/workflows/deno-tests.yml/badge.svg" alt="Edge function tests (Deno)"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-proprietary-blue.svg" alt="License: proprietary"></a>
+  <a href="https://github.com/nikjain15/founderfirst.one/actions/workflows/deno-tests.yml"><img src="https://img.shields.io/badge/tests-115%20passing-brightgreen.svg" alt="Tests: 115 passing"></a>
+</p>
 
-**Operating software for business owners.**
+<p align="center">
+  <b><a href="https://founderfirst.one">Live at founderfirst.one ↗</a></b> &nbsp;·&nbsp; source-available, this repository
+</p>
 
-You focus on your business. We handle what runs behind it.
+<!-- DEMO_GIF -->
 
 ---
 
@@ -42,6 +47,21 @@ Connect Stripe, your bank, your card, anywhere money moves. Penny categorizes ev
 **For business owners:** No spreadsheets. No chasing receipts. Just clean books.
 
 **For CPAs:** Every transaction categorized. Every receipt attached.
+
+---
+
+## How the AI works
+
+Penny is built so that the money-critical common case never depends on a model guess, and the ambiguous case is grounded in the founder's own ledger before anything is proposed. The design is deterministic-first, and the model earns its way in only where it adds value.
+
+- **Deterministic-first categorization.** The bulk of transactions are filed by a pure, dependency-free lexical matcher (learned rules plus vendor priors) in `supabase/functions/_shared/conduit-ff/deterministic.ts`. It is the exact predicate the DB-backed path enforces in production, so the common case is filed with zero model spend, no API key, and no network.
+- **A bounded Conduit agent loop for the hard cases.** When a transaction is genuinely ambiguous, the generative step becomes a bounded reason-act loop (`investigator.ts`). The loop runs with no side-effect authority, every tool is read-only, and a never-finishing model stops at a step cap and yields no proposal (fail-safe).
+- **Grounded via BM25 RAG over the founder's real ledger.** The loop retrieves against the founder's own corpus with a BM25 lexical retriever (`retrieval.ts`). Lexical is the right default for short accounting labels. When the top hit falls below the score threshold, retrieval returns `grounded: false` with empty context rather than inventing support.
+- **Difficulty routing across model rungs.** Straightforward, confident cases run on a cheap Haiku-class rung; a low-confidence draft escalates once to a reasoning tier, and only the genuinely hard case reaches the top rung. Spend follows difficulty instead of pinning one model to every transaction.
+- **Fail-closed gates and the byId grounding gate.** The deterministic financial gates stay exactly where they were: a proposed account must resolve against the live chart of accounts by id, the SQL reconciler still runs, and the recategorize and autopost RPCs remain the only writers. The agent loop weakens no gate; it only replaces how a proposal is drafted.
+- **Read-only, tenant-scoped MCP server.** The MCP surface (`tools/ff-mcp`) exposes ledger tools that are strictly read-only and structurally tenant-isolated: every tool takes an `org_id`, and there are no write tools, so the surface cannot mutate a ledger.
+
+**Labeled fixture on the deterministic path.** A hand-labeled 40-row fixture (11 accounts, invented and neutral vendor names) scores the deterministic categorizer offline in CI, with no API key, no database, and no network. It is a labeled fixture, not production data and not a measure of live accuracy. On the committed fixture the deterministic path measures **82.5% overall accuracy** and **85.6% macro F1**. The recall gap is honest by design: the deterministic path declines to `Uncategorized` on ambiguous rows rather than guess, because a confident wrong number is worse than a question. Full method in [docs/EVALS.md](docs/EVALS.md).
 
 ---
 
@@ -79,7 +99,7 @@ Product and engineering deep-dives, grounded in this repository's code:
 - **[docs/PRD.md](docs/PRD.md):** personas, jobs-to-be-done, success metrics, tradeoffs, and the Now/Next/Later roadmap.
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md):** system overview with component and sequence diagrams, grounded in real code paths.
 - **[docs/EVALS.md](docs/EVALS.md):** the eval strategy (unit → deterministic gates → SQL reconciliation → LLM-judge panel → A/B), built on the real `packages/inference` harness.
-- **[docs/TECHNICAL_NOTES.md](docs/TECHNICAL_NOTES.md):** a 12-point rubric scorecard with file-level evidence, plus model, orchestration, guardrail, and cost details.
+- **[docs/TECHNICAL_NOTES.md](docs/TECHNICAL_NOTES.md):** file-level evidence for the model, orchestration, guardrail, and cost details.
 - **[docs/MCP.md](docs/MCP.md):** the read-only, tenant-scoped MCP server (`tools/ff-mcp`), its four ledger tools, the isolation model, and the local + hosted transport shapes.
 - **[docs/FDE_JOURNEY.md](docs/FDE_JOURNEY.md):** how Penny deploys into a live financial environment: integration, security, cutover, observability, de-risking.
 

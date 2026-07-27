@@ -32,6 +32,7 @@ import { makeSupabaseDataAccess } from "../_shared/conduit-ff/dataAccess.ts";
 import { buildRetriever } from "../_shared/conduit-ff/retrieval.ts";
 import { makeEmbeddedConduitClient } from "../_shared/conduit-ff/client.ts";
 import { investigateCategorization } from "../_shared/conduit-ff/investigator.ts";
+import { matchesRule } from "../_shared/conduit-ff/deterministic.ts";
 import type { EmbeddedResolve } from "../_shared/conduit/client/types.ts";
 
 const CORS = {
@@ -449,10 +450,8 @@ async function matchVendorPrior(svc: any, orgId: string, description: string): P
       .order("times_applied", { ascending: false }).limit(25);
     const desc = description.toLowerCase();
     for (const r of (data ?? []) as { account_id: string; match_value: string; match_type: string }[]) {
-      const mv = (r.match_value ?? "").toLowerCase().trim();
-      if (!mv) continue;
-      const hit = r.match_type === "description_exact" ? desc === mv : desc.includes(mv);
-      if (hit) return { account_id: r.account_id };
+      const matchType = r.match_type === "description_exact" ? "description_exact" : "description_contains";
+      if (matchesRule(desc, r.match_value ?? "", matchType)) return { account_id: r.account_id };
     }
   } catch { /* best-effort */ }
   return null;

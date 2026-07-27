@@ -118,9 +118,11 @@ not as their own decisions.
 - **Cost per answer** and **judge-cost as % of answer cost:** kept under a cap.
 - **Added latency p95** for inline judging, held < 500ms by the load-test gate.
 
-Precision / recall / F1 are the right frame for the categorization classifier as
-labeled outcome data accumulates from approvals and corrections; today the harness
-captures the raw per-decision outcomes those metrics are computed from.
+Precision / recall / F1 are the right frame for the categorization classifier. In
+production those numbers are computed from approvals and corrections as labeled
+outcome data accumulates. Offline, the labeled categorization eval in section 9a
+computes exactly these named metrics over a hand-labeled fixture so the classifier is
+scored in CI today, not only once live data lands.
 
 ## 7. Layer 5, Online: A/B and the autonomy ramp (roadmap)
 
@@ -155,6 +157,46 @@ gates plus pass/fail for the format, source-exists, and math gates. It touches n
 production paths and no network. Run it with `pnpm eval:gates`. This is additive
 scaffolding for expanding the golden set; the authoritative gate tests remain
 `packages/inference/test/*`.
+
+## 9a. Labeled categorization eval (named IR metrics, deterministic path, CI-gated)
+
+The flagship use case is `penny_categorize`: file a ledger transaction into an
+expense or income account. This eval names statistical IR metrics for that
+classifier. It runs the **deterministic** categorization path only (the rule +
+vendor-prior lexical matcher in
+`supabase/functions/_shared/conduit-ff/deterministic.ts`, the same predicate the edge
+function uses), so it executes fully **offline in CI with no API key, no database, and
+no network**. The model / agent path is not exercised here.
+
+- **Fixture.** `supabase/functions/_shared/conduit-ff/evals/categorize-labeled.json`
+  is a synthetic, hand-labeled evaluation fixture of **40 rows** across 11 accounts.
+  It is a labeled fixture, **not production data and not a measure of live accuracy**.
+  Vendor names are invented and neutral. Rows cover easy hits, hint-carried vendors,
+  and deliberately ambiguous / no-match cases so the score is not inflated.
+- **Metrics module.** `evals/metrics.ts` builds a confusion matrix and computes
+  overall accuracy, per-class precision / recall / F1, and macro-averaged
+  precision / recall / F1. Its math is verified against a hand-built confusion matrix
+  in `evals/metrics.test.ts`.
+- **Runner + gate.** `evals/categorize-runner.ts` runs the deterministic categorizer
+  over the fixture and scores it. `evals/categorize-eval.test.ts` runs in the existing
+  Deno CI gate (`deno test --allow-env supabase/functions/_shared/`), asserts the named
+  metrics are computed, and asserts macro-F1 and accuracy clear a floor set at or just
+  below the real measured values.
+
+**Real measured numbers on the committed 40-row fixture (deterministic path, offline):**
+
+| Metric | Value |
+|---|---|
+| Overall accuracy | 82.5% (33/40) |
+| Macro precision | 92.9% |
+| Macro recall | 84.9% |
+| Macro F1 | 85.6% |
+
+CI floors are macro-F1 >= 0.85 and accuracy >= 0.80, set just below the measured
+values so the gate is honest and green, while a real regression in the matcher would
+fail it. The recall gap is expected and honest: the deterministic path deliberately
+declines (files to `Uncategorized`) on the ambiguous rows rather than guess, which is
+the money-critical behavior that a confident wrong number is worse than a question.
 
 ---
 

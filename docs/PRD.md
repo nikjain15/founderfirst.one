@@ -65,11 +65,16 @@ over the same books (`apps/app`, lens selected server-side from the verified JWT
   payout splitting + report import). Adding a provider is one interface
   implementation plus one seed row.
 - **Grounded auto-categorization.** `supabase/functions/categorize` proposes a
-  category by trying a deterministic learned-rule matcher first, then falling back
-  to the inference layer **constrained to the org's own ledger accounts:** the
-  model cannot invent an account it was not handed. Approvals run
-  `recategorize_entry` (reverse + repost + learn), so books stay append-only and
-  the correction is remembered.
+  category by trying a deterministic learned-rule matcher and vendor prior first
+  (the bulk of transactions, with zero model spend), then falling back for the
+  genuinely ambiguous remainder to a bounded `@conduit/agent` investigator that
+  gathers evidence with read-only tools and drafts one proposal **constrained to the
+  org's own ledger accounts:** the model cannot invent an account it was not handed.
+  That path is difficulty-routed (a cheap Haiku tier, escalating once to Sonnet or
+  Opus only when the signal is weak, bounded to two metered passes) and grounded via
+  BM25 retrieval over the founder's own corpus. Approvals run `recategorize_entry`
+  (reverse + repost + learn), so books stay append-only and the correction is
+  remembered.
 - **Learned rules.** `categorization_rules` are org-scoped, learned on approval,
   and can be deactivated so Penny stops applying them.
 - **Exceptions-only surfacing.** Confidence tiers (`confidence_high` 0.75,
@@ -95,6 +100,10 @@ over the same books (`apps/app`, lens selected server-side from the verified JWT
   `resolve()` (`packages/inference`): multi-model routing, per-token cost
   accounting, spend caps with fallback, and a tiered LLM-judge eval panel. See
   [EVALS.md](EVALS.md) and [TECHNICAL_NOTES.md](TECHNICAL_NOTES.md).
+- **Read-only MCP surface.** `tools/ff-mcp` exposes four read-only, tenant-scoped
+  ledger tools (chart of accounts, one transaction, prior categorizations, grounded
+  tax-rule lookup) to external MCP clients, membership-guarded with no write tools
+  and no cross-tenant reads. See [MCP.md](MCP.md).
 - **A knowledge kernel as data.** Entity types, industries, filing obligations,
   vendor priors, and connectors are seed data every app projects from
   (`scripts/seed-kernel.ts`); a regulatory watcher turns a tax-law change into one

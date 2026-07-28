@@ -435,6 +435,86 @@ replay, inherited by every stacked branch.
   `loop/wave<N>-integration` branch** (updated as base cards land), not pinned commits, to
   avoid gate-time rebase churn.
 
+## 25. When a finding recurs, ship a GATE, not another patch.
+
+**What happened, both ways.** The Wave-3 audit found `owner_asks_this_week` reading org-scoped
+data as `SECURITY DEFINER` with no `can_access_org` check, and it was patched as a **one-off**.
+The 6-Jul audit then found the identical shape in six more functions, four of them P0
+cross-tenant leaks. This time the response was different: `20260726120100` shipped
+**`scripts/check-definer-tenant-guard.ts`** — a script that parses every migration and fails the
+build when a DEFINER function is granted to `authenticated`, takes an org-scoping parameter, and
+never calls a membership check — and wired it into `pnpm build` + CI. **The gate immediately found
+two more instances nobody had spotted** (`upcoming_filing_deadlines`,
+`ninetynine_nec_threshold_minor`). The 27-Jul audit re-verified: the whole class is closed.
+
+**Rules:**
+- **`SECURITY DEFINER` runs as the function's owner, so RLS is bypassed.** Nothing in this repo is
+  `FORCE ROW LEVEL SECURITY`. A DEFINER function reading org-scoped data and granted to
+  `authenticated` MUST call `can_access_org(...)`, or take `p_actor` + `can_access_org_as` and be
+  `service_role`-only. A comment reasoning that "RLS already scopes it" is the tell that it doesn't.
+- **The second time a shape appears, stop patching instances and write the detector.** A patch
+  fixes the instances you found; a gate fixes the ones you didn't and the ones not yet written.
+  Budget the gate as part of the fix, not as follow-up.
+- A gate is only as good as the shapes it knows. `check:definer-guard` does **not** catch
+  `can_edit_tax_map_as` (it *is* a membership check, so it doesn't match the pattern) — when you
+  write a detector, also write down what it deliberately cannot see.
+- Watch one-shot `DO`-block migrations: `20260701000000_isolation_revoke_rpc_execute.sql` revoked
+  only the functions existing at its own timestamp, so anything added later silently keeps the
+  default `EXECUTE TO PUBLIC`.
+
+## 26. A guard's SCOPE is part of the guard, and a deploy that skips the guards isn't gated.
+
+**What happened:** The repo has excellent machine guards whose coverage is silently narrower than
+the rules they claim to enforce. `scripts/check-css-vars.ts` hardcodes `APP_SRC = apps/app/src`, so
+three undefined CSS vars in `apps/admin` ship invisibly — a safety-fail counter and an
+unsaved-changes marker that render with no colour, the exact class the script exists to prevent.
+`centralization.yml` runs only `--filter @ff/app`, so `apps/admin`'s two test files have **never
+executed in CI** while `docs/AUDIT.md` cites both as permanent coverage. `VOICE.md` says
+"machine-enforced" but only the apps/app `COPY` catalog is checked and the banned-phrase list is in
+no test at all. And `deploy-penny` in `pages.yml` has **no `needs:`** and runs a bare `vite build`,
+so the one job that builds the production app skips every pre-build check *and* its own
+`tsc --noEmit` — including the new definer guard.
+
+**Rules:**
+- **Make a guard's scan roots a list covering every surface the rule applies to**, not the
+  directory you were working in. Back-port graduated fixes to the surface they graduated *from* —
+  `apps/admin` is the design reference `apps/app` is matched to, and it is the least-gated app here.
+- **Every deploy job runs behind the gates** (`needs:` the guarded build) and builds through the
+  package's own `build` script, never a bare `vite build` that skips typecheck.
+- **A doc claiming enforcement it doesn't have is worse than no claim** — it stops people checking.
+  Wire the gate or downgrade the wording.
+- **The only part of the operating model with no machine gate is the part that drifts.** The
+  PR-template coverage-delta and doc-flip checkboxes are honour-system, and ~20 consecutive feature
+  PRs skipped them: the ledger has no row for Invoicing, the console audit tab, thread memory, or
+  any of the Conduit/MCP/evals work.
+
+## 27. A gate that runs after the decision, or without its checker, is not a gate.
+
+**What happened:** #374 shipped "gate every categorization proposal through the judge", and the
+judge is genuinely well-built — it fails **closed** on a missing reconciler, a reconcile throw, or a
+panel error. But `categorize/index.ts` calls `resolveAndJudgeOnDeno({…}, env)` with **two
+arguments**, so `opts.reconcile` is `undefined` and every production categorization records
+`gate_status = 'failed_closed'` against a *locked financial floor* — and nothing reads it. The
+reconciler is wired only on the dead `CONDUIT_AGENT_DISABLE=1` branch. Worse, `deno.ts` returns the
+answer and runs the judge inside `EdgeRuntime.waitUntil`, so the verdict lands **after** the
+proposal was returned and, on the high tier, already auto-posted to the ledger. Same shape
+elsewhere in the layer: the D11 spend cap is skipped for pinned callers and every new call site
+pins; the RAG corpus queries a `tax_rules` table that exists nowhere in the repo.
+
+**Rules:**
+- **If a verdict can't stop the action, it's telemetry, not a gate.** Await the check on the path
+  that takes the action; `waitUntil` is for logging, never for enforcement.
+- **A fail-closed result that nothing reads is a silent failure**, not safety. When a gate can
+  record `failed_closed`/`unevaluated`, something must alert on it — give it an SLO row or a query
+  someone actually looks at. `penny_categorize` had neither.
+- **Never let model self-reported confidence be the sole authority for a write.** Auto-post only on
+  provenance the system has independently seen before (a learned rule, a vendor prior); a
+  model-sourced draft goes to review regardless of its own confidence — the input is
+  attacker-influenceable third-party text (a bank memo).
+- **Structural safety is the easy half; the last mile is where it goes wrong.** This layer got the
+  read-only accessor, the no-authority agent loop, the enum grounding gate and the fail-closed
+  judge right, then left every one of them unwired. Check the call site, not the abstraction.
+
 ---
 
 *Add a numbered rule above when a mistake teaches a lesson worth not repeating.*
@@ -445,6 +525,43 @@ Dated findings from `/audit` runs, newest first. Each entry: the commit audited,
 a short summary, and one line per P0/P1 marked **fixed** or **deferred**. When an
 issue here keeps recurring, graduate it into a numbered rule above, that is how
 we stop repeating it. The command lives at `.claude/commands/audit.md`.
+
+### 2026-07-27 audit — fd1300e
+Full-surface weekly sweep (14 dimensions, 8 agents). **5 P0 · 50 P1 · 59 P2 · overall 59/100.**
+Real-browser checks ran: the responsive gate passed strictly (5 routes × 13 widths, 0 violations)
+and an axe scan measured a **token-level** contrast failure on every public page. Full report +
+per-dimension table: PR "Weekly audit — 2026-07-27".
+
+**Process failure, recorded because it matters more than any single finding.** This run first
+audited `242bbc7` — a commit **~74 PRs stale with NO common ancestor with `main`** (history was
+rewritten). `git fetch` **hangs** in the primary clone (the mmap deadlock), and the check on it read
+the exit status of `tail` in a pipeline instead of of `git fetch`, so the failure was silent. Caught
+only when `gh pr create` refused the branch; every finding was then re-verified against a fresh
+clone. **Automation must base off a fresh clone, not a worktree of the local repo, and must read
+`${PIPESTATUS[0]}` when gating on a pipe** (as `preflight.yml:33` already does). This is Rule 21
+and Rule 14 landing on the audit itself.
+
+**Also recorded:** PR #301 ("Weekly audit — 2026-07-06") was **closed unmerged** — its code fixes
+shipped via #309/#365/#366 but its LEARNINGS entry never did, which is why this log skipped from
+3 Jul to today and the rules sat at 24. An audit whose entry doesn't land loses the trend.
+
+**The week's best move, and the reason three P0s are gone:** instead of patching the recurring
+DEFINER-reader shape again, `20260726120100` shipped `scripts/check-definer-tenant-guard.ts` as a
+CI gate — which immediately found two instances nobody had spotted. Graduated to **Rule 25**. Two
+more rules added: **26** (a guard's scope is part of the guard; `deploy-penny` skips all of them)
+and **27** (a gate that runs after the decision, or without its checker, is not a gate).
+
+- **deferred** · P0 `reliability` — the categorization judge does not gate: `categorize/index.ts:410` calls `resolveAndJudgeOnDeno({…}, env)` with two args, so `opts.reconcile` is undefined and every decision records `failed_closed` against a locked financial floor that nothing reads; and `_shared/inference/deno.ts:244` returns the answer before judging in `waitUntil`, so no verdict can block. → Rule 27.
+- **deferred** · P0 `security` — `categorize/index.ts:78` `tierFor` returns `high` on model self-reported `confidence ≥ 0.75` regardless of source, and `:217` auto-posts it. Input is an attacker-influenceable bank memo. Grounding bounds it to a valid account, so the risk is an unreviewed **wrong** post, not arbitrary writes (LEARNINGS #16).
+- **deferred** · P0 `security` — `supabase/functions/bandit/index.ts:75` fails **open**: `if (secret && …)` skips the check when `BANDIT_SECRET` is unset, on a `verify_jwt=false` function holding the service-role key that rewrites PostHog rollout percentages. All five sibling gates fail closed.
+- **deferred** · P0 `observability` — `.github/workflows/pages.yml:151` `deploy-penny` has no `needs:` and runs bare `vite build`, so the only job building the production app skips every pre-build guard and `tsc --noEmit`; it also fires on `repository_dispatch: content-published`, so publishing a blog post redeploys the app ungated. → Rule 26.
+- **deferred** · P0 `reliability` — `apps/app/src/ledger/api.ts:745` `useReconciliationMatches` unpaginated; past PostgREST's 1000-row cap a reconciliation silently under-clears while still tying out (#18 + #16). The paginated sibling sits 20 lines below with a comment warning about exactly this.
+- **deferred** · P1 `security` ×9 — `can_edit_tax_map_as` is the 1/99 `p_actor` fn with no `revoke` (anon-reachable membership oracle; the new definer gate cannot see it) · `penny_site_chats_purge` the 1/448 DEFINER with no `search_path` · worker `/chat` + `/waitlist` unrated (billing-DoS) · Xero tokens plaintext while the QBO twin encrypts · `xero-callback` lacks the QBO twin's pending-status + TTL checks · 20 edge functions unregistered in `config.toml` (#23) · the D11 spend cap is skipped for pinned callers and every new call site pins · `defaultLoadTaxRules` takes `orgId` and never uses it under the service key · `signup-confirmation/guard.ts:13` trusts the client-supplied leftmost XFF hop over `cf-connecting-ip`, and a test asserts it.
+- **deferred** · P1 `reliability` ×10 — OTP limiter still does a lock-free read-then-insert and is granted to `anon` (**#15, 5th instance**) · AR/AP aging failures render "Nothing outstanding" (0 `isError` across Invoicing+Bills) · NEC export ships zero contractors on RPC failure · invoice-profile save has no `catch` · admin SiteContent + Signals swallow errors into `[]`, one enabling a duplicate write · worker telemetry inserts throw and kill the chat turn with no CORS · `resend-webhook` blind-inserts and 500s so Resend retries forever · `voice-check` calls a Worker route that doesn't exist · the judge is fail-open by construction.
+- **deferred** · P1 `copy_docs` ×10 — the `tax_rules` table the RAG corpus reads **does not exist** while three docs describe it as live · Ollama/compose-server declared LIVE across four docs after #13 replaced it (both host files still in-tree) · `.github/workflows/README.md` documents 8 of 16 workflows · admin error hints tell admins to run `SCHEMA-*.sql` files that don't exist and that #2 bans · `HowItWorks` stale on 3 of 6 sections · `APP_PRINCIPLES` says 4 owner tabs, 5 ship · shipped `!` on the conversion path and competitors named in copy fed to AI answer engines · `noVendorHint` points at a "1099 area" that doesn't exist.
+- **deferred** · P1 `accessibility` ×5 — measured axe: every public page fails `color-contrast` (`--ink-4` on cream = **2.34:1**, `--brand` on cream = **4.04:1**) while `tokens.css` already ships `--ink-3`/`--brand-strong`/`--income-strong`/`--amber-strong` for exactly this · all 14 admin `.table-wrap`s lack `tabIndex`/`role` (keyboard-unreachable) · `ContentSubnav` `aria-labelledby` points at a nonexistent id · the invoice modal has no Esc/focus-trap/outside-click · marketing never imports `button.css`, so the shared focus ring is missing site-wide.
+- **deferred** · P1 rest — `tests` ×2 (admin's own tests run in NO workflow; the ledger has no row for nine shipped features incl. all Conduit/MCP/evals work) · `observability` ×2 · `design_system` ×2 (five undefined admin CSS vars, invisible because the guard scans only `apps/app`; admin redefines canonical `.page-title` and dropped `--font-display`) · `responsive` ×3 · `ia_ux` ×2 · `privacy` ×2 (the demo collects name + business name with no consent UI; `org-data`, the GDPR export/erasure fn, has no caller) · `performance` ×1 (waitlist CSV silently truncates at 500, #18) · `seo` ×1 (6 of 9 pages self-canonicalize to a redirecting non-slash URL the sitemap contradicts) · `dead_code` ×1.
+- **fixed since 6-Jul audit** — 3 P0 cross-tenant DEFINER reads (`resolve_account_tax_lines`, `tax_unmapped_accounts`, `fixed_asset_listing`) + `tax_m1_summary` + the depreciation readers + `sig_digest_sends` RLS, all by `20260726120100`/`120300`, plus the new CI gate. Broken doc links fixed by #372.
 
 ### 3 Jul 2026 · Wave-3 wave-gate audit (owner-experience layer), GATE 🟢 CLEAR
 14-dimension rubric + adversarial stress pass over the Wave-3 blast radius (W3.2 trust-tiered

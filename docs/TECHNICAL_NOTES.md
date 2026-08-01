@@ -1,29 +1,39 @@
-# FounderFirst / Penny, Technical Notes & Scorecard
+# FounderFirst / Penny, Technical Notes
 
-> An engineer's-eye assessment of the AI system, scored against a 12-point rubric
-> with file-level evidence and honest gaps. Scores are 0-5.
+> A **self-assessment**, written by the team that built the system, walking 12
+> dimensions with file-level evidence and the honest gap in each. It is not an
+> external review, not a benchmark, and not scored. Read the evidence column and
+> judge for yourself; the gap column is the part worth reading first.
+>
+> This file used to carry a 0-5 score per dimension and a "mean ~4.6/5" composite.
+> Those were removed. A team grading its own work produces a number that looks
+> measured and is not, and the evidence links below are the part that was ever
+> load-bearing.
 
-## Scorecard
+## Dimensions, evidence, and gaps
 
-| # | Dimension | Score | Evidence (file refs) | Gap |
-|---|---|---|---|---|
-| 1 | **Model choice** (LLM vs ML vs hybrid) | 4 | Hybrid by design: deterministic rule matcher + vendor priors run before any model in `supabase/functions/categorize`; models are the fallback. Right-sized per task via `DEFAULT_ROUTING` (`packages/inference/src/core.ts`): Haiku (fast), Sonnet (reasoning), Llama 70B (writing). | No trained categorization classifier yet; the ML tier is rules + priors, not a learned model. |
-| 2 | **How the AI works** (context, temperature, grounding) | 5 | `resolve()` sets provider-native system/temperature/JSON-schema; grounding is structural: `penny-thread` re-computes figures from the ledger and discards any mismatched model number; `categorize` constrains the model to the org's own accounts. | Judge-level SQL reconciliation not wired to call sites (grounding is enforced in the data path, not yet as a gate). |
-| 3 | **Tools / MCP** (schemas, validation, errors) | 5 | Read-only, tenant-scoped MCP server (`tools/ff-mcp/server.ts`) exposing four ledger tools over a JSON-schema-validated `@conduit/mcp` ToolRegistry, membership-guarded, no write tools, no cross-tenant reads; the same registry backs the in-app investigator's tool calls. Plus typed Edge contracts, Anthropic structured outputs (`output_config.json_schema`), `InferenceError` kinds, refusal detection. See [MCP.md](MCP.md). | Hosted HTTP/SSE transport is specced (URL shape documented) but stdio is the wired transport today. |
-| 4 | **Agents & skills** | 4 | The ambiguous-categorization path is a bounded `@conduit/agent` reason-act loop (`_shared/conduit-ff/investigator.ts`): read-only tool calls to gather evidence, then one drafted proposal, step-capped and side-effect-free (fail-safe, no ledger authority). Plus scheduled routines: `regulatory-watcher` (law change -> reviewed seed-diff PR, never self-merge) and trust-tiered auto-post to a "Penny did this" feed. | Bounded, single-purpose loops by design (money-critical); not an open-ended planner, and the agent only proposes. |
-| 5 | **Orchestration & routing** (multi-model, cost) | 5 | One `resolve()` routes across `anthropic` / `workers-ai` / `openrouter` (`core.ts`); config-driven routing from DB (`buildInferenceConfig`); per-token cost (`computeCostUsd`); spend caps trigger a backup model, not a failure; cost recorded per `ai_decisions` row. On the categorization path, dynamic difficulty routing escalates Haiku -> Sonnet -> Opus by confidence / retrieval signal, bounded to two metered passes. | Admin cost dashboard + live model controls are Phase 3-4 (schema exists). |
-| 6 | **RAG & context** (retrieval, failure modes) | 4 | The investigator grounds on BM25 RAG over the founder's real corpus (chart of accounts + prior categorizations + tax-rule text, `_shared/conduit-ff/retrieval.ts` on `@conduit/rag`), with both RAG failure modes handled: a weak-retrieval gate returns not-found instead of inventing, and a groundedness check flags a rationale with no lexical anchor. For financial figures, retrieval is deterministic ledger math (server re-computes; empty-books defers). Source-exists gate checks citations against context. | BM25 lexical, not embedding/vector retrieval (a deliberate fit for short accounting labels and the Edge runtime, but narrower than dense RAG). |
-| 7 | **Evals & grounding** (unit -> judge -> A/B) | 5 | Real harness in `packages/inference/test/*`: request-parity (`parity.ts`), judge unit tests (`judge.ts`, CI-gated in `build`), latency budget (`chat-latency.ts`); tiered family-aware LLM panel with deterministic floor gates; fail-closed; injection canary; sampled score evals. A CI-gated labeled fixture eval computes named IR metrics (precision/recall/F1/accuracy) on the deterministic categorization path. See [EVALS.md](EVALS.md). | A/B + autonomy ramp are roadmap; the fixture eval scores the lexical matcher, not the live model/agent path. |
-| 8 | **Code quality** | 5 | Pure runtime-agnostic core with injected dependencies (runs on Workers/Deno/Node); vendor-drift CI guard; 74 unit/edge tests + 53 pgTAP tests + 18 CI workflows; `LEARNINGS.md` codifies 24 incident-driven rules; no-magic-numbers discipline enforced by `check-law-literals` / `check-kernel-hardcodes`. | Some connector tokens are pilot-plaintext, graduating to Vault (`sec` migrations note this). |
-| 9 | **Scalability & cost** | 4 | Stateless Edge Functions; integer-minor-unit money; idempotent money mutations; append-only ledger; spend caps + cheaper-model fallback; judge cost metered separately and score evals sampled 10-20%; gateway caching gated for safe use cases. | Reports computed on-the-fly (materialized views deferred until needed); caching is Phase 5. |
-| 10 | **Guardrails & safety** | 5 | Deterministic floor gates (safety/privacy/format/source-exists/math) beneath every LLM judge; fail-closed; tenant isolation as a data-layer invariant (RLS + `resolve()` throws on empty tenant + `check-tenant-predicate` CI); `SECURITY DEFINER` service-role-only write RPCs; MFA gate; model has no authority (proposals only); VOICE banned-phrase enforcement. | Retention/erasure jobs are schema-only (Phase 5-6); no GDPR/CCPA compliance asserted (correctly flagged for legal). |
-| 11 | **Product layer** (PRD depth) | 5 | Clear personas, JTBD, metrics, and Now/Next/Later in [PRD.md](PRD.md); two projections over one ledger; accuracy-over-autonomy tradeoff made explicit and enforced by the ramp. | Referral/waitlist traction only (early access), no external user-scale numbers to cite. |
-| 12 | **FDE journey** (deploy into a live env) | 4 | Import-at-launch (API pull / CSV / opening balances), reversible batches, parallel-run-friendly canonical ledger, provenance on every entry, RLS + audit logs, observability via `ai_decisions`. See [FDE_JOURNEY.md](FDE_JOURNEY.md). | Single-tenant-cohort early access; multi-customer rollout tooling is nascent. |
+| # | Dimension | Evidence (file refs) | Gap |
+|---|---|---|---|
+| 1 | **Model choice** (LLM vs ML vs hybrid) | Hybrid by design: deterministic rule matcher + vendor priors run before any model in `supabase/functions/categorize`; models are the fallback. Right-sized per task via `DEFAULT_ROUTING` (`packages/inference/src/core.ts`): Haiku (fast), Sonnet (reasoning), Llama 70B (writing). | No trained categorization classifier yet; the ML tier is rules + priors, not a learned model. |
+| 2 | **How the AI works** (context, temperature, grounding) | `resolve()` sets provider-native system/temperature/JSON-schema; grounding is structural: `penny-thread` re-computes figures from the ledger and discards any mismatched model number; `categorize` constrains the model to the org's own accounts. | Judge-level SQL reconciliation not wired to call sites (grounding is enforced in the data path, not yet as a gate). |
+| 3 | **Tools / MCP** (schemas, validation, errors) | Read-only, tenant-scoped MCP server (`tools/ff-mcp/server.ts`) exposing four ledger tools over a JSON-schema-validated `@conduit/mcp` ToolRegistry, membership-guarded, no write tools, no cross-tenant reads; the same registry backs the in-app investigator's tool calls. Plus typed Edge contracts, Anthropic structured outputs (`output_config.json_schema`), `InferenceError` kinds, refusal detection. See [MCP.md](MCP.md). | Hosted HTTP/SSE transport is specced (URL shape documented) but stdio is the wired transport today. |
+| 4 | **Agents & skills** | The ambiguous-categorization path is a bounded `@conduit/agent` reason-act loop (`_shared/conduit-ff/investigator.ts`): read-only tool calls to gather evidence, then one drafted proposal, step-capped and side-effect-free (fail-safe, no ledger authority). Plus scheduled routines: `regulatory-watcher` (law change -> reviewed seed-diff PR, never self-merge) and trust-tiered auto-post to a "Penny did this" feed. | Bounded, single-purpose loops by design (money-critical); not an open-ended planner, and the agent only proposes. |
+| 5 | **Orchestration & routing** (multi-model, cost) | One `resolve()` routes across `anthropic` / `workers-ai` / `openrouter` (`core.ts`); config-driven routing from DB (`buildInferenceConfig`); per-token cost (`computeCostUsd`); spend caps trigger a backup model, not a failure; cost recorded per `ai_decisions` row. On the categorization path, dynamic difficulty routing escalates Haiku -> Sonnet -> Opus by confidence / retrieval signal, bounded to two metered passes. | Admin cost dashboard + live model controls are Phase 3-4 (schema exists). |
+| 6 | **RAG & context** (retrieval, failure modes) | The investigator grounds on BM25 RAG over the founder's real corpus (chart of accounts + prior categorizations + tax-rule text, `_shared/conduit-ff/retrieval.ts` on `@conduit/rag`), with both RAG failure modes handled: a weak-retrieval gate returns not-found instead of inventing, and a groundedness check flags a rationale with no lexical anchor. For financial figures, retrieval is deterministic ledger math (server re-computes; empty-books defers). Source-exists gate checks citations against context. | BM25 lexical, not embedding/vector retrieval (a deliberate fit for short accounting labels and the Edge runtime, but narrower than dense RAG). |
+| 7 | **Evals & grounding** (unit -> judge -> A/B) | Real harness in `packages/inference/test/*`: judge unit tests (`judge.ts`, PR-gated via `pnpm build`), request-parity (`parity.ts`, post-merge only in `pages.yml`), latency budget (`chat-latency.ts`, run manually, no workflow); tiered family-aware LLM panel with deterministic floor gates; fail-closed; injection canary; sampled score evals. The labeled fixture eval genuinely gates PRs through `deno-tests.yml` and computes named IR metrics (precision/recall/F1/accuracy) on the deterministic categorization path. See [EVALS.md](EVALS.md) §8a. | Parity and latency are not PR gates yet; A/B + autonomy ramp are roadmap; the fixture eval scores the lexical matcher on a synthetic 40-row fixture, not the live model/agent path. |
+| 8 | **Code quality** | Pure runtime-agnostic core with injected dependencies (runs on Workers/Deno/Node); vendor-drift CI guard; 132 `Deno.test` cases across 22 edge-function test files (115 of them in the `deno-tests.yml` PR gate) + 479 Vitest cases across 52 test files in `apps/app/src` + 58 pgTAP test files + 16 CI workflows; `LEARNINGS.md` codifies 24 incident-driven rules; no-magic-numbers discipline enforced by `check-law-literals` / `check-kernel-hardcodes`. | Test counts are declarations counted in the tree, not a green-run tally; several workflows need repo secrets to run at all. |
+| 9 | **Scalability & cost** | Stateless Edge Functions; integer-minor-unit money; idempotent money mutations; append-only ledger; spend caps + cheaper-model fallback; judge cost metered separately and score evals sampled 10-20%; gateway caching gated for safe use cases. | Reports computed on-the-fly (materialized views deferred until needed); caching is Phase 5. |
+| 10 | **Guardrails & safety** | Deterministic floor gates (safety/privacy/format/source-exists/math) beneath every LLM judge; fail-closed; tenant isolation as a data-layer invariant (RLS + `resolve()` throws on empty tenant + `check-tenant-predicate` CI); `SECURITY DEFINER` service-role-only write RPCs; MFA gate; model has no authority (proposals only); VOICE banned-phrase enforcement. | Retention/erasure jobs are schema-only (Phase 5-6); no GDPR/CCPA compliance asserted (correctly flagged for legal). |
+| 11 | **Product layer** (PRD depth) | Clear personas, JTBD, metrics, and Now/Next/Later in [PRD.md](PRD.md); two projections over one ledger; the accuracy-over-autonomy tradeoff is explicit, and the system sits at its most conservative setting today, 100% human review. | The autonomy ramp's thresholds are not set; they get filled from production data by the method in [GUARDRAILS.md](ai-quality-cost-layer/GUARDRAILS.md). Referral/waitlist traction only (early access), no external user-scale numbers to cite. |
+| 12 | **FDE journey** (deploy into a live env) | Import-at-launch (API pull / CSV / opening balances), reversible batches, parallel-run-friendly canonical ledger, provenance on every entry, RLS + audit logs, observability via `ai_decisions`. See [FDE_JOURNEY.md](FDE_JOURNEY.md). | Single-tenant-cohort early access; multi-customer rollout tooling is nascent. |
 
-**Composite:** strong across the board (mean ~4.6/5). The system's signature is
-money-critical discipline: deterministic grounding, a bounded no-authority agent on
-the ambiguous path, family-diverse fail-closed evals, and knowledge-as-data with CI
-drift guards.
+**The through-line, in one sentence:** the system's signature is money-critical
+discipline, meaning deterministic grounding, a bounded no-authority agent on the
+ambiguous path, family-diverse fail-closed evals, and knowledge-as-data with CI drift
+guards. The honest counterweight is the gap column above plus the risk list below,
+and the single most important one is that autonomy is still off and the thresholds
+that would turn it on have not been measured
+([GUARDRAILS.md](ai-quality-cost-layer/GUARDRAILS.md)).
 
 ## Model & orchestration details
 
@@ -82,7 +92,19 @@ caps per use case degrade to a backup model rather than erroring.
    covers this today, but the judge gate should be wired before financial autonomy
    ramps. (Tracked in [EVALS.md](EVALS.md) section 4.)
 2. **Voice expense capture is not implemented:** only photo/text receipt capture.
-3. **Connector token encryption** is pilot-plaintext in places, graduating to Vault.
+3. **Connector token encryption shipped.** OAuth tokens on `external_connections`
+   are encrypted at rest with pgcrypto under a key held as a **Vault** secret
+   (`20260707130000_iq1_qbo_token_encryption.sql`), existing rows were encrypted in
+   place, and the legacy plaintext columns were then nulled
+   (`20260708010000_iq1_cleanup_qbo_plaintext.sql`). Both migrations carry pgTAP
+   coverage (`supabase/tests/iq1_qbo_token_encryption_test.sql`,
+   `supabase/tests/iq1_cleanup_qbo_plaintext_test.sql`). The remaining gap is narrower
+   than "plaintext": the encrypt/decrypt helpers and the writer are QBO-named, and
+   `ext_connection_secrets()` still coalesces to the plaintext column as
+   defense-in-depth, so a future connector wired without going through
+   `set_qbo_tokens()` could write an unencrypted token. **Next action:** generalize
+   `enc_qbo_token` / `dec_qbo_token` / `set_qbo_tokens` to provider-agnostic names in
+   `supabase/migrations` before the `xero` provider is wired.
 4. **Retention/erasure jobs** are schema-only; must land before real bookkeeping
    data flows at volume.
 

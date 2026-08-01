@@ -282,12 +282,17 @@ Ingest (raw, provenance-preserving)          Canonical books (append-only)
 
 ## 8. Delivery and CI
 
-18 GitHub Actions workflows gate the repo, including `db-tests.yml` (53 pgTAP SQL
-tests), `deno-tests.yml` (edge-function tests), `app-e2e.yml` / `e2e.yml`
-(Playwright), `kernel-seed.yml` (seed-drift), `regulatory-watcher.yml`,
-`responsive.yml` (a 320-1920px width ladder), `migrations-unique.yml`, and
-`pages.yml` (deploy). The local `build` script chains the CSS guard, the tenant
-guard, the inference vendor-drift guard, and the judge unit tests before building.
+16 GitHub Actions workflows cover the repo, including `db-tests.yml` (58 pgTAP SQL
+test files), `deno-tests.yml` (edge-function tests, which is also where the labeled
+categorization eval floor runs), `app-e2e.yml` / `e2e.yml` (Playwright),
+`kernel-seed.yml` (seed-drift), `regulatory-watcher.yml`, `responsive.yml` (a
+320-1920px width ladder), `migrations-unique.yml`, and `pages.yml` (deploy). Not all
+16 gate a pull request: `pages.yml`, `deploy-worker.yml` and `deploy-bridge.yml` run
+on push to `main`, and `regulatory-watcher.yml` is scheduled. See
+[EVALS.md](EVALS.md) §8a for exactly which checks block a merge. The local `build`
+script chains the CSS guard, the tenant guard, the definer-guard, the inference
+vendor-drift guard, and the judge unit tests before building, which is how those
+five reach every non-docs pull request.
 
 ---
 

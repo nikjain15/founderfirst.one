@@ -9,7 +9,16 @@
 <p align="center">
   <a href="https://github.com/nikjain15/founderfirst.one/actions/workflows/deno-tests.yml"><img src="https://github.com/nikjain15/founderfirst.one/actions/workflows/deno-tests.yml/badge.svg" alt="Edge function tests (Deno)"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-proprietary-blue.svg" alt="License: proprietary"></a>
-  <a href="https://github.com/nikjain15/founderfirst.one/actions/workflows/deno-tests.yml"><img src="https://img.shields.io/badge/tests-115%20passing-brightgreen.svg" alt="Tests: 115 passing"></a>
+</p>
+
+<p align="center">
+  <sub>
+    <b>Tests in this repo, counted in the tree:</b>
+    132 <code>Deno.test</code> cases across 22 edge-function test files under <code>supabase/functions</code>, of which 115 run in the <a href="https://github.com/nikjain15/founderfirst.one/actions/workflows/deno-tests.yml">Edge function tests (Deno)</a> pull-request gate;
+    479 Vitest cases across 52 test files under <code>apps/app/src</code>, run by <code>pnpm --filter @ff/app test</code> in <code>centralization.yml</code> on every non-docs pull request;
+    58 pgTAP test files in <code>supabase/tests</code>, run by <code>db-tests.yml</code> on pull requests touching migrations, tests, or functions.
+    Every workflow and its trigger is listed in <a href=".github/workflows/README.md">.github/workflows/README.md</a>.
+  </sub>
 </p>
 
 <p align="center">
@@ -103,7 +112,10 @@ Product and engineering deep-dives, grounded in this repository's code:
 - **[docs/MCP.md](docs/MCP.md):** the read-only, tenant-scoped MCP server (`tools/ff-mcp`), its four ledger tools, the isolation model, and the local + hosted transport shapes.
 - **[docs/FDE_JOURNEY.md](docs/FDE_JOURNEY.md):** how Penny deploys into a live financial environment: integration, security, cutover, observability, de-risking.
 
-A small self-contained gate eval harness lives in **[evals/](evals/README.md)** (`pnpm eval:gates`).
+A small self-contained gate eval harness lives in **[evals/](evals/README.md)**. It runs
+manually with `pnpm eval:gates` and is wired to no CI workflow today; the gates it scores
+are the same ones `pnpm check:judge` covers in CI. Next step is wiring `eval:gates` into a
+pull-request workflow once its golden set is trusted enough to block a merge.
 
 ---
 
@@ -111,9 +123,11 @@ A small self-contained gate eval harness lives in **[evals/](evals/README.md)** 
 
 **[docs/README.md](docs/README.md) is the map:** where every kind of document lives,
 the rules for adding or moving one, and the docs PR checklist. The short version:
-the repo root holds only this file, [LEARNINGS.md](LEARNINGS.md) (engineering rules
-from real incidents, read before non-trivial work), and [VOICE.md](VOICE.md) (the
-brand voice). Specs live next to the code they govern (`apps/*`, `packages/*`,
+the repo root holds five committed docs and no more: this file,
+[LEARNINGS.md](LEARNINGS.md) (engineering rules from real incidents, read before
+non-trivial work), [VOICE.md](VOICE.md) (the brand voice), and
+[AGENTS.md](AGENTS.md) + [CLAUDE.md](CLAUDE.md) (the fast index for agent sessions,
+both tracked). Specs live next to the code they govern (`apps/*`, `packages/*`,
 `tools/*`); plans and roadmaps live in [docs/plans/](docs/plans/); finished or
 superseded docs move to [docs/archive/](docs/archive/). Don't add a doc anywhere
 else, find its home in the map first.

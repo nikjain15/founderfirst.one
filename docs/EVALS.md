@@ -20,7 +20,16 @@ unit + parity  ->  deterministic floor gates  ->  SQL reconciliation  ->  LLM-ju
 (offline, CI)      (every answer, non-LLM)       (financial, exact)      (family-aware)        (online, roadmap)
 ```
 
-## 2. Layer 1, Unit tests and request-parity (implemented, CI-gated)
+## 2. Layer 1, Unit tests and request-parity (implemented; see the gate table below for what blocks a PR)
+
+> **Where each of these actually runs.** The three harnesses in this section are
+> all built and all pass, but they are not wired the same way. `pnpm check:judge`
+> blocks a pull request, because it is inside the `build` script and `pnpm build`
+> runs on every non-docs PR (`e2e.yml`, `responsive.yml`). `pnpm check:inference`
+> runs **post-merge only**, as a step in `pages.yml`, which triggers on push to
+> `main`; a PR that breaks request parity goes red after it lands, not before.
+> `pnpm test:chat-latency` appears in **no workflow at all** and is run manually.
+> Section 8 has the full breakdown.
 
 **Request parity** (`packages/inference/test/parity.ts`, `pnpm check:inference`).
 When the whole codebase was routed through the new `resolve()` seam, the risk was
@@ -43,8 +52,11 @@ sampling, and outcome-merge precedence.
 **Latency budget gate** (`packages/inference/test/chat-latency.ts`,
 `pnpm test:chat-latency`). A load test that runs the inline gate path 80 times with
 realistic mocked model latencies and asserts p95 added latency < 500ms with
-slow-judge runs capped at the budget (fail-closed). This is the gate that must pass
-before live-chat LLM judging is enabled.
+slow-judge runs capped at the budget (fail-closed). This is the check that must pass
+before live-chat LLM judging is enabled. It is **run manually**, not by CI: no
+workflow references `test:chat-latency`, so it is a release precondition an operator
+executes rather than a gate a machine enforces. **Next action:** add it as a step to
+`.github/workflows/pages.yml` or a PR-triggered workflow.
 
 ## 3. Layer 2, Deterministic floor gates (implemented)
 
@@ -137,9 +149,46 @@ cannot advance until the source-correct reconciliation gate is wired.
 
 ## 8. What is implemented vs roadmap
 
+### 8a. Which checks block a pull request
+
+Everything in this table is built and passing. They differ in **when** they run, and
+that difference is what decides whether a regression is caught before a merge or
+after one.
+
+| Check | Command | Where it runs | Blocks a PR? |
+|---|---|---|---|
+| Labeled categorization eval (macro-F1 ≥ 0.85, accuracy ≥ 0.80) | `deno test supabase/functions/_shared/` | `deno-tests.yml`, on `pull_request` touching `supabase/functions/**` | **Yes** |
+| Judge unit tests | `pnpm check:judge` (inside `pnpm build`) | `e2e.yml` and `responsive.yml` run `pnpm build` on every non-docs `pull_request` | **Yes**, via `build` |
+| Vendored-inference drift | `pnpm check:vendor` (inside `pnpm build`) | same as above | **Yes**, via `build` |
+| App unit tests | `pnpm --filter @ff/app test` | `centralization.yml`, on every non-docs `pull_request` | **Yes** |
+| pgTAP suite (58 test files) | `supabase test db` | `db-tests.yml`, on `pull_request` touching `supabase/migrations/**`, `supabase/tests/**`, `supabase/functions/**` | **Yes** |
+| Request parity | `pnpm check:inference` | `pages.yml` only, which triggers on **push to `main`** | **No, post-merge** |
+| Latency budget | `pnpm test:chat-latency` | no workflow references it | **No, manual** |
+| `/evals` gate harness | `pnpm eval:gates` | no workflow references it | **No, manual** |
+
+Two specifics worth stating plainly, since the distinction is easy to get wrong:
+
+- **The categorization eval floor genuinely gates pull requests.** `deno-tests.yml`
+  runs `deno test --allow-env supabase/functions/_shared/` on any PR touching
+  `supabase/functions/**`, and that recursive run picks up
+  `_shared/conduit-ff/evals/categorize-eval.test.ts`. A regression in the matching
+  kernel fails the PR. This is the strongest eval gate in the repo.
+- **A PR touching only `packages/inference/**` does trigger CI, but not the parity
+  check.** Four workflows fire on it (`e2e.yml`, `responsive.yml`, `app-e2e.yml`,
+  `centralization.yml`), because they trigger on any `pull_request` other than a
+  docs-only one. Two of them run `pnpm build`, so the judge unit tests and the
+  vendor-drift guard do run. `pnpm check:inference` does **not**: it lives only in
+  `pages.yml`, which is a post-merge deploy workflow. **Next action:** move
+  `check:inference` and `test:chat-latency` into a PR-triggered workflow so the
+  parity and latency guarantees are enforced before a merge, not after.
+
+### 8b. Layer status
+
 | Layer | Status |
 |---|---|
-| Request parity + judge unit tests + latency gate | Implemented, CI-gated (`check:inference`, `check:judge`, `test:chat-latency`) |
+| Judge unit tests | Implemented, PR-gated via `pnpm build` (`pnpm check:judge`) |
+| Request parity | Implemented; runs post-merge only (`pnpm check:inference` in `pages.yml`) |
+| Latency budget gate | Implemented; run manually (`pnpm test:chat-latency`, no workflow) |
 | Deterministic floor gates (safety/privacy/format/source-exists/math) | Implemented + unit-tested |
 | Product-level grounding (ledger-computed facts, account-constrained proposals) | Implemented (`penny-thread`, `categorize`) |
 | SQL reconciliation gate | Code + tests exist; **not yet wired to call sites** (fails closed if required) |
@@ -154,9 +203,15 @@ A small, self-contained, dependency-free eval runner lives in
 (imported directly from `packages/inference/src/judge.ts`) against a labeled dataset
 of Penny-style answers and prints precision / recall / F1 for the safety and privacy
 gates plus pass/fail for the format, source-exists, and math gates. It touches no
-production paths and no network. Run it with `pnpm eval:gates`. This is additive
-scaffolding for expanding the golden set; the authoritative gate tests remain
-`packages/inference/test/*`.
+production paths and no network.
+
+**It runs manually today.** `pnpm eval:gates` is wired to no CI workflow (nothing
+under `.github/` references it), so it is a harness you invoke, not a gate that
+blocks anything. It already exits non-zero on any misclassified case, so it is
+ready to be wired. **Next action:** add a `pnpm eval:gates` step to a PR-triggered
+workflow once the golden set in `evals/dataset.jsonl` is trusted enough to be
+blocking. Until then this is additive scaffolding for expanding the golden set, and
+the authoritative gate tests remain `packages/inference/test/*`.
 
 ## 9a. Labeled categorization eval (named IR metrics, deterministic path, CI-gated)
 

@@ -10,7 +10,7 @@ in the same PR that adds the doc, the map is only useful while it's complete.
 
 | Kind of doc | Home | Examples |
 |---|---|---|
-| **Repo canon** (cross-cutting, always true) | repo root, **frozen at three files** | [README.md](../README.md) · [LEARNINGS.md](../LEARNINGS.md) · [VOICE.md](../VOICE.md) |
+| **Repo canon** (cross-cutting, always true) | repo root, **a closed set of five** | [README.md](../README.md) · [LEARNINGS.md](../LEARNINGS.md) · [VOICE.md](../VOICE.md) · [AGENTS.md](../AGENTS.md) · [CLAUDE.md](../CLAUDE.md) |
 | **Spec of a shipped surface** | next to the code it governs | [apps/web/BLOG_PRINCIPLES.md](../apps/web/BLOG_PRINCIPLES.md) · [apps/admin/ADMIN_PRINCIPLES.md](../apps/admin/ADMIN_PRINCIPLES.md) · [packages/design-system/README.md](../packages/design-system/README.md) · [tools/signals-worker/SOLUTION.md](../tools/signals-worker/SOLUTION.md) |
 | **Plan / roadmap / research** (forward-looking) | [docs/plans/](plans/) | [ARCHITECTURE.md](plans/ARCHITECTURE.md) · [learning-loop-act-spec.md](plans/learning-loop-act-spec.md) |
 | **Stress-test campaign artifacts** | [docs/stress/](stress/)`<campaign>/` + a row in [STRESS_TEST_TRACKER.md](STRESS_TEST_TRACKER.md) | [stress/auth/FINDINGS.md](stress/auth/FINDINGS.md) |
@@ -19,8 +19,9 @@ in the same PR that adds the doc, the map is only useful while it's complete.
 | **Incident lesson** | a numbered rule in [LEARNINGS.md](../LEARNINGS.md), **never a new file** |  |
 | **Session scratch / run progress** | the session scratchpad, **never committed** |  |
 
-> `CLAUDE.md` at the root is **gitignored** (local per-machine). It's the fast index
-> for Claude sessions; everything committed lives in the docs above.
+> `AGENTS.md` and `CLAUDE.md` at the root are **tracked and committed**
+> (`git ls-files CLAUDE.md` returns it). They are the fast index for agent sessions,
+> so they are canon like the three above and change through a PR like any other doc.
 
 ### Per-surface specs (the co-located canon)
 
@@ -39,9 +40,12 @@ in the same PR that adds the doc, the map is only useful while it's complete.
 
 ## 2. The rules
 
-1. **The root is frozen.** Only `README.md`, `LEARNINGS.md`, `VOICE.md` (plus the
-   gitignored local `CLAUDE.md`) live at the repo root. A PR adding any other root
-   file is wrong by default, find its home in the map.
+1. **The root is a closed set.** The root holds exactly five committed docs:
+   `README.md`, `LEARNINGS.md`, `VOICE.md`, `AGENTS.md`, `CLAUDE.md`. All five are
+   tracked; none is gitignored. Alongside them the root carries the non-doc files a
+   repo root has to carry: `LICENSE`, `CNAME`, `.nojekyll`, `.gitignore`,
+   `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`. A PR adding any root
+   file outside those two lists is wrong by default, find its home in the map.
 2. **Specs live next to the code they govern.** When you ship a capability, add or
    extend the co-located spec in the same PR (LEARNINGS rule 7: change a behavior →
    update what the system says about itself). Don't create a parallel doc elsewhere.

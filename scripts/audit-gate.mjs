@@ -80,7 +80,7 @@ export const REQUIRED_FIELDS = [
   "expires",
 ];
 
-/** The three dependency trees. `cmd` is run with cwd = dir. */
+/** The five dependency trees. `cmd` is run with cwd = dir, `manifest` means OSV. */
 export const TREES = [
   {
     name: "pnpm-workspace",
@@ -174,6 +174,7 @@ export function parseNpmAudit(raw) {
  */
 export function parseRequirements(raw) {
   const pinned = [];
+  const ceilinged = [];
   const unpinned = [];
   for (const line of String(raw).split(/\r?\n/)) {
     const stripped = line.split("#")[0].trim();
@@ -184,10 +185,66 @@ export function parseRequirements(raw) {
     }
     const spec = stripped.split(";")[0].trim(); // drop environment markers
     const m = spec.match(/^([A-Za-z0-9._-]+)\s*(?:\[[^\]]*\])?\s*==\s*([A-Za-z0-9._+!-]+)$/);
-    if (m) pinned.push({ name: m[1].toLowerCase().replace(/_/g, "-"), version: m[2] });
-    else unpinned.push({ raw: stripped, why: "not pinned with ==" });
+    if (m) {
+      pinned.push({ name: m[1].toLowerCase().replace(/_/g, "-"), version: m[2] });
+      continue;
+    }
+    // A ceiling like `setuptools<81` is not a pin, but it is not unauditable
+    // either. The most favourable version it permits is a specific release, and
+    // if THAT version carries an advisory then every version the constraint
+    // allows carries it. See resolveCeiling.
+    const c = spec.match(/^([A-Za-z0-9._-]+)\s*(?:\[[^\]]*\])?\s*(<=?)\s*([A-Za-z0-9._+!-]+)$/);
+    if (c) {
+      ceilinged.push({
+        name: c[1].toLowerCase().replace(/_/g, "-"),
+        op: c[2],
+        bound: c[3],
+        raw: stripped,
+      });
+      continue;
+    }
+    unpinned.push({ raw: stripped, why: "not pinned with == or a single < / <= ceiling" });
   }
-  return { pinned, unpinned };
+  return { pinned, unpinned, ceilinged };
+}
+
+/**
+ * Compare two PyPI release versions on their numeric release segment.
+ * Deliberately crude: it is used only to pick the newest release under a
+ * ceiling, and anything with a pre-release or local suffix is filtered out
+ * before it gets here.
+ */
+export function compareRelease(a, b) {
+  const pa = String(a).split(".").map(Number);
+  const pb = String(b).split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (d !== 0) return d;
+  }
+  return 0;
+}
+
+/** Plain `N.N.N` releases only. Pre-releases and dev builds are not what pip picks. */
+export const isPlainRelease = (v) => /^\d+(\.\d+)*$/.test(v);
+
+/**
+ * The newest release of `name` that satisfies `op bound`, from PyPI's index.
+ *
+ * Returns null when PyPI cannot be reached or nothing satisfies the constraint.
+ * A null must never be treated as "clean": the caller reports it as still
+ * unchecked, which is the honest state.
+ */
+export async function resolveCeiling({ name, op, bound }, fetchImpl = fetch) {
+  const res = await fetchImpl(`https://pypi.org/pypi/${encodeURIComponent(name)}/json`);
+  if (!res.ok) return null;
+  const body = await res.json();
+  const all = Object.keys(body.releases ?? {}).filter(isPlainRelease);
+  const ok = all.filter((v) => {
+    const cmp = compareRelease(v, bound);
+    return op === "<" ? cmp < 0 : cmp <= 0;
+  });
+  if (!ok.length) return null;
+  return ok.sort(compareRelease).at(-1);
 }
 
 const OSV_SEVERITY = { LOW: "low", MODERATE: "moderate", HIGH: "high", CRITICAL: "critical" };
@@ -313,24 +370,35 @@ export function validateAllowlist(entries, today) {
 // ── evaluation (R4, R5) ──────────────────────────────────────────────────────
 
 /**
- * @param treeAdvisories { [treeName]: advisory[] }
- * @param entries        allowlist entries
- * @param minLevel       lowest severity that gates
- * @param today          Date, midnight UTC
+ * @param treeAdvisories     { [treeName]: advisory[] }
+ * @param entries            allowlist entries
+ * @param minLevel           lowest severity that gates
+ * @param today              Date, midnight UTC
+ * @param unrankedAdvisories advisories OSV could not rank, each with a `tree`.
+ *                           They never gate, but they ARE present in the scan,
+ *                           so an allowlist entry pointing at one is not stale.
  */
-export function evaluate(treeAdvisories, entries, minLevel, today) {
+export function evaluate(treeAdvisories, entries, minLevel, today, unrankedAdvisories = []) {
   const { structural, expired, overlong, liveKeys } = validateAllowlist(entries, today);
   const gated = [];
   const suppressed = [];
   const matched = new Set();
   const perTree = {};
 
+  // Every advisory id the scan produced, at ANY severity, including ones held
+  // out of ranking. This is what "is the advisory still there?" must be asked
+  // against. See the `stale` comment below for why that distinction is not
+  // cosmetic.
+  const present = new Set();
+  for (const a of unrankedAdvisories) present.add(`${a.tree}::${a.id}`);
+
   for (const [treeName, advisories] of Object.entries(treeAdvisories)) {
     const tree = TREES.find((t) => t.name === treeName);
     perTree[treeName] = { total: advisories.length, gated: 0, suppressed: 0 };
     for (const a of advisories) {
-      if (RANK[a.severity] < RANK[minLevel]) continue;
       const key = `${treeName}::${a.id}`;
+      present.add(key);
+      if (RANK[a.severity] < RANK[minLevel]) continue;
       if (liveKeys.has(key)) {
         matched.add(key);
         suppressed.push({ ...a, tree: treeName });
@@ -342,10 +410,24 @@ export function evaluate(treeAdvisories, entries, minLevel, today) {
     }
   }
 
-  // Stale = live entry that matched nothing. Expired entries are reported under
-  // R2 instead, so they are not double-counted here.
+  // Stale = live entry whose advisory is GONE from the scan. Expired entries are
+  // reported under R2 instead, so they are not double-counted here.
+  //
+  // This used to test `matched`, which only ever contains advisories at or above
+  // minLevel, and it was wrong in a way that actively destroyed work. CI runs the
+  // gate at --level=high. The three torch entries covering tts-server are
+  // moderate, so they could never be matched at that level, so every single run
+  // printed "STALE ALLOWLIST ENTRIES (R5), matched no current advisory, delete
+  // them" about three entries that were live, correct, and pointing at advisories
+  // that were absolutely still present. Following the gate's own advice would have
+  // deleted three dated, owned, falsifiable reachability arguments and left
+  // nothing behind if those advisories were later re-ranked upward.
+  //
+  // A gate that gives confident wrong instructions is worse than a silent one:
+  // the instruction is what people act on. Staleness is a question about the
+  // audit, not about the gating threshold, so it is now asked against `present`.
   const stale = entries.filter(
-    (e) => liveKeys.has(`${e.tree}::${e.id}`) && !matched.has(`${e.tree}::${e.id}`),
+    (e) => liveKeys.has(`${e.tree}::${e.id}`) && !present.has(`${e.tree}::${e.id}`),
   );
 
   const failed =
@@ -386,7 +468,7 @@ async function runPythonAudit(tree) {
   const manifest = join(dir, tree.manifest);
   if (!existsSync(manifest)) return null;
 
-  const { pinned, unpinned } = parseRequirements(readFileSync(manifest, "utf8"));
+  const { pinned, unpinned, ceilinged } = parseRequirements(readFileSync(manifest, "utf8"));
   const advisories = [];
   for (const dep of pinned) {
     try {
@@ -395,7 +477,38 @@ async function runPythonAudit(tree) {
       die(2, `${tree.name}: could not query OSV for ${dep.name}==${dep.version} (${err.message})`);
     }
   }
-  return { advisories, unpinned };
+
+  // A ceiling (`setuptools<81`) used to be dumped into `unpinned` and printed as
+  // "not pinned with ==, OSV cannot be asked". OSV could be asked; nobody was
+  // asking it. Resolve the NEWEST release the ceiling permits and audit that.
+  // If the most favourable permitted version is vulnerable, every permitted
+  // version is, which is a stronger claim than a pinned scan makes.
+  const stillUnchecked = [...unpinned];
+  for (const dep of ceilinged) {
+    let best;
+    try {
+      best = await resolveCeiling(dep);
+    } catch {
+      best = null;
+    }
+    if (!best) {
+      stillUnchecked.push({ raw: dep.raw, why: "no release found under the ceiling, or PyPI unreachable" });
+      continue;
+    }
+    try {
+      const found = await queryOsvOne({ name: dep.name, version: best });
+      advisories.push(
+        ...found.map((a) => ({
+          ...a,
+          viaCeiling: `${dep.raw} resolves at best to ${dep.name}==${best}`,
+        })),
+      );
+    } catch (err) {
+      die(2, `${tree.name}: could not query OSV for ${dep.name}==${best} (${err.message})`);
+    }
+  }
+
+  return { advisories, unpinned: stillUnchecked };
 }
 
 function runAudit(tree) {
@@ -455,7 +568,7 @@ async function main(argv) {
   }
 
   const today = midnightUtc(new Date());
-  const r = evaluate(treeAdvisories, loadAllowlist(), minLevel, today);
+  const r = evaluate(treeAdvisories, loadAllowlist(), minLevel, today, unranked);
 
   if (asJson) {
     process.stdout.write(

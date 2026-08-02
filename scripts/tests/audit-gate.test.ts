@@ -17,6 +17,9 @@ import {
   parsePnpmAudit,
   parseNpmAudit,
   parseRequirements,
+  compareRelease,
+  isPlainRelease,
+  resolveCeiling,
   normalizeOsvVulns,
   queryOsvOne,
   isPythonTree,
@@ -194,6 +197,47 @@ test("R5: an expired entry is reported as expired, not double-counted as stale",
   assert.equal(r.stale.length, 0);
 });
 
+/**
+ * The bug this covers was live and it gave instructions.
+ *
+ * CI runs the gate at --level=high. The three torch entries covering tts-server
+ * are moderate, so the advisories they cover were skipped before staleness was
+ * ever computed, so every run printed "STALE ALLOWLIST ENTRIES (R5), matched no
+ * current advisory, delete them" about three entries that were live, correct,
+ * and pointing at advisories still present in the scan.
+ *
+ * Deleting them, as instructed, would have destroyed three dated, owned,
+ * falsifiable reachability arguments. Staleness is a question about the audit,
+ * not about the gating threshold.
+ */
+test("R5: an entry below the gating threshold is NOT stale, because its advisory is still there", () => {
+  const entry = goodEntry({ severity: "moderate" });
+  const stillPresent = advisory({ severity: "moderate" });
+  const r = evaluate({ "pnpm-workspace": [stillPresent] }, [entry], "high", TODAY);
+
+  assert.equal(r.gated.length, 0, "moderate must not gate at --level=high");
+  assert.equal(r.suppressed.length, 0, "and it is not suppressed either, it was never considered");
+  assert.equal(r.stale.length, 0, "but it is NOT stale: the advisory is still in the scan");
+});
+
+test("R5: an entry pointing at an UNRANKED advisory is not stale either", () => {
+  // OSV returns no severity for many torch CVEs. Those are held out of ranking
+  // entirely, so they are absent from treeAdvisories. An allowlist entry
+  // covering one is still live work, not a leftover.
+  const entry = goodEntry({ id: "CVE-2025-46148", package: "torch", tree: "tts-server" });
+  const r = evaluate({ "tts-server": [] }, [entry], "high", TODAY, [
+    { id: "CVE-2025-46148", pkg: "torch", tree: "tts-server", severity: "unknown" },
+  ]);
+
+  assert.equal(r.stale.length, 0);
+});
+
+test("R5: an entry whose advisory really is gone is still reported stale", () => {
+  // The rule must keep working, or the fix above just disables it.
+  const r = evaluate({ "pnpm-workspace": [] }, [goodEntry({ severity: "moderate" })], "high", TODAY);
+  assert.equal(r.stale.length, 1);
+});
+
 // ── the clean case ───────────────────────────────────────────────────────────
 
 test("a clean audit with an empty allowlist passes", () => {
@@ -330,13 +374,64 @@ test("parseRequirements reads pinned packages, strips extras and markers", () =>
 
 test("parseRequirements reports what it cannot check instead of skipping it", () => {
   // The whole reason the Python trees were uncovered is that nothing said so.
-  const { pinned, unpinned } = parseRequirements(
+  const { pinned, unpinned, ceilinged } = parseRequirements(
     ["setuptools<81", "kokoro", "-r base.txt", "torch==2.6.0"].join("\n"),
   );
   assert.deepEqual(pinned, [{ name: "torch", version: "2.6.0" }]);
-  assert.deepEqual(
-    unpinned.map((u) => u.raw).sort(),
-    ["-r base.txt", "kokoro", "setuptools<81"],
+  assert.deepEqual(unpinned.map((u) => u.raw).sort(), ["-r base.txt", "kokoro"]);
+
+  // `setuptools<81` used to land in `unpinned` and print "OSV cannot be asked".
+  // OSV could be asked. See resolveCeiling.
+  assert.deepEqual(ceilinged, [
+    { name: "setuptools", op: "<", bound: "81", raw: "setuptools<81" },
+  ]);
+});
+
+test("compareRelease orders release segments numerically, not as strings", () => {
+  assert.ok(compareRelease("80.10.2", "80.9.0") > 0, "80.10.2 is newer than 80.9.0");
+  assert.ok(compareRelease("81", "80.10.2") > 0);
+  assert.equal(compareRelease("80.9", "80.9.0"), 0);
+});
+
+test("isPlainRelease rejects pre-releases, which pip would not install by default", () => {
+  assert.ok(isPlainRelease("80.10.2"));
+  assert.ok(!isPlainRelease("81.0.0rc1"));
+  assert.ok(!isPlainRelease("2.6.0+cu118"));
+});
+
+test("resolveCeiling picks the NEWEST release under the ceiling", async () => {
+  // The point of picking the newest: if the most favourable version a
+  // constraint permits is still vulnerable, then EVERY version it permits is,
+  // which is a stronger claim than auditing an arbitrary one.
+  const fakeFetch = async () => ({
+    ok: true,
+    json: async () => ({
+      releases: { "80.9.0": [], "80.10.2": [], "81.0.0": [], "83.0.0": [], "81.0.0rc1": [] },
+    }),
+  });
+
+  const best = await resolveCeiling({ name: "setuptools", op: "<", bound: "81" }, fakeFetch as never);
+  assert.equal(best, "80.10.2");
+
+  const inclusive = await resolveCeiling(
+    { name: "setuptools", op: "<=", bound: "81.0.0" },
+    fakeFetch as never,
+  );
+  assert.equal(inclusive, "81.0.0");
+});
+
+test("resolveCeiling returns null rather than a false clean when PyPI is unreachable", async () => {
+  // A gate that cannot check something must never report it as checked.
+  const failing = async () => ({ ok: false, json: async () => ({}) });
+  assert.equal(
+    await resolveCeiling({ name: "setuptools", op: "<", bound: "81" }, failing as never),
+    null,
+  );
+
+  const empty = async () => ({ ok: true, json: async () => ({ releases: { "90.0.0": [] } }) });
+  assert.equal(
+    await resolveCeiling({ name: "setuptools", op: "<", bound: "81" }, empty as never),
+    null,
   );
 });
 

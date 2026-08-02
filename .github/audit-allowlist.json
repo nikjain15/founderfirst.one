@@ -21,52 +21,12 @@
   ],
   "entries": [
     {
-      "id": "GHSA-wrwg-2hg8-v723",
-      "package": "astro",
+      "id": "GHSA-qwww-vcr4-c8h2",
+      "package": "react-router",
       "tree": "pnpm-workspace",
       "severity": "high",
-      "reason": "Fix is astro >=5.15.8. apps/web is on astro 4.16.19, so this is a major-version bump that also forces vite 5 -> 6 and touches every page, layout and island in the marketing site. Tracked as its own piece of work rather than smuggled into a security batch.",
-      "reachability": "Not reachable. The XSS is in the server islands feature, which renders islands per-request on a server. apps/web/astro.config.mjs declares no adapter and no output mode, so the build is static (SSG) and deploys as flat HTML to GitHub Pages. Nothing in apps/web/src uses server:defer, and Astro 4 has no server-islands runtime in a static build to reach.",
-      "owner": "Nik Jain",
-      "expires": "2026-10-31"
-    },
-    {
-      "id": "GHSA-8hv8-536x-4wqp",
-      "package": "astro",
-      "tree": "pnpm-workspace",
-      "severity": "high",
-      "reason": "Fix is astro >=6.3.3, two majors ahead of the installed 4.16.19. Same bump as GHSA-wrwg-2hg8-v723.",
-      "reachability": "Not reachable. Reflected XSS requires an unescaped slot name derived from a live request. In a static build every slot is resolved at build time from @ff/content, which is our own Supabase-backed copy store, and the output is immutable HTML. There is no request-time rendering path on founderfirst.one for a reflected value to enter.",
-      "owner": "Nik Jain",
-      "expires": "2026-10-31"
-    },
-    {
-      "id": "GHSA-2pvr-wf23-7pc7",
-      "package": "astro",
-      "tree": "pnpm-workspace",
-      "severity": "high",
-      "reason": "Fix is astro >=6.4.6, two majors ahead of the installed 4.16.19. Same bump as the two above.",
-      "reachability": "Not reachable. The SSRF is in the server-side fetch Astro performs for a prerendered error page while handling a request, and it is driven by the Host header. GitHub Pages serves our 404 as a static file; no Astro process handles requests in production, so there is no Host header for Astro to read and no outbound fetch to redirect.",
-      "owner": "Nik Jain",
-      "expires": "2026-10-31"
-    },
-    {
-      "id": "GHSA-fx2h-pf6j-xcff",
-      "package": "vite",
-      "tree": "pnpm-workspace",
-      "severity": "high",
-      "reason": "Fix is vite >=6.4.3. Installed is 5.4.21, pinned by astro 4's peer range, so this cannot move until the Astro major lands.",
-      "reachability": "Not reachable. The bug is a server.fs.deny bypass in the vite DEV server, and only via Windows alternate path syntax. The dev server is never run in production, never bound off localhost, and neither CI (ubuntu-latest) nor the development machines are Windows. Production artifacts are the output of vite build, which does not include the dev server.",
-      "owner": "Nik Jain",
-      "expires": "2026-10-31"
-    },
-    {
-      "id": "GHSA-f88m-g3jw-g9cj",
-      "package": "sharp",
-      "tree": "pnpm-workspace",
-      "severity": "high",
-      "reason": "apps/web already declares sharp ^0.35.3 directly and resolves 0.35.3, which is patched. The flagged copy is sharp 0.33.5, pinned transitively by astro 4.16.19. It moves when Astro moves.",
-      "reachability": "Not reachable at runtime. sharp is Astro's build-time image optimiser. It runs on the GitHub-hosted runner, over image files committed to this repository, and produces static assets. No sharp binary is in the deployed artifact and no user-supplied image is ever passed to it. The libvips CVEs need attacker-controlled image input, which would require an attacker to first land a commit.",
+      "reason": "Fix is react-router >=8.3.0, and react-router 8 declares peerDependencies react >=19.2.7. apps/app and apps/admin are on react 18.3.1, as is apps/web through @astrojs/react, so taking it means a React 18 -> 19 migration across all three apps. Staying on react-router-dom 6.30.x is the worse trade: that line carries GHSA-jjmj-jmhj-qwj2 (open redirect leading to XSS) with no fix in 6.x at all, plus GHSA-wrjc-x8rr-h8h6 and GHSA-337j-9hxr-rhxg, all of which 7.18.2 already closes. One unreachable high beats three reachable moderates.",
+      "reachability": "Not reachable. GitHub's own advisory text says it only affects applications using the unstable RSC APIs. apps/app and apps/admin use react-router in declarative mode only: BrowserRouter in apps/app/src/App.tsx and apps/admin/src/main.tsx, plus Routes, Route, Link, Navigate, useNavigate, useLocation, useParams and useSearchParams. Neither app imports any unstable_ export, react-router/rsc, createCallServer or matchRSCServerRequest, and both ship as static client-side SPA bundles with no server, so there is no request for a CSRF bypass to act on. Falsifiable: grep for unstable_ or /rsc under apps/app/src and apps/admin/src returns nothing.",
       "owner": "Nik Jain",
       "expires": "2026-10-31"
     }

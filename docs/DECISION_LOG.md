@@ -232,3 +232,58 @@ while `screens/cpa/AuthGate.jsx:165` hard codes "This invite has expired or been
 revoked." instead. So the constants and the screen disagree about the wording,
 and the constants are the ones nobody reads. Worth reconciling, by someone who
 owns the wording.
+
+## DL: the Astro waiver was tested and did not survive contact (2026-08-02)
+
+**Decision. D-N6 is reversed. `apps/web` now runs Astro 7.1.6 and the five-entry
+Astro waiver is deleted.** D-N6 said the Astro 4 to 6 chain was too big to take
+inside a security batch. That was a reasonable guess. It was never measured. It
+has now been measured, and it was wrong: `pnpm -C apps/web build` succeeded on
+Astro 7 on the first attempt, with no config migration, no content-collections
+work, and no source changes to any of the 37 files under `apps/web/src`. The
+cascade D-N6 feared did not happen because `apps/web` has none of the surface it
+would have hit. There is no adapter, no middleware, no content collections, no
+`server:defer`, and the vite bump rides along inside Astro's own dependency
+rather than through our config.
+
+**The waiver was also the wrong shape, and that is the more useful lesson.** All
+five entries argued reachability, and all five arguments were correct: the site
+is static, so server islands, slot-name reflection and the host-header fetch are
+genuinely unreachable. But a correct reachability argument answers "is this
+dangerous", not "is this expensive". The waiver was renewed on the strength of an
+argument that was never the binding question. The binding question was cost, and
+nobody had priced it. Ninety days of waiver were bought with an unpriced estimate.
+
+**What the upgrade actually cost: one line, and it is not free.** Astro 7's HTML
+compressor deletes the newline between a run of text and a following inline tag
+instead of collapsing it to a space. Astro 4 collapsed it. So prose written
+across two source lines rendered joined: `/extension-privacy` shipped
+"post'stext, author name, and link", and `/privacy` lost the spaces inside
+"cookieless mode" and "service. Conversations". That is copy corruption on a
+legal page, not a formatting nit. `compressHTML: false` in
+`apps/web/astro.config.mjs` restores byte-for-byte identical rendered text on all
+11 pages, verified by extracting visible text from both builds under a model that
+treats inline tags as zero-width, exactly as a browser does. The cost is 7.2 KB
+gzipped across the whole site, 56.4 KB to 63.6 KB, about 650 bytes a page. The
+config comment says why, so the next person can retest and delete it.
+
+**D-N9. Prefer one unreachable high to three reachable moderates.**
+`react-router-dom` 6.30.3 carried `GHSA-jjmj-jmhj-qwj2`, an open redirect leading
+to XSS, with no fix anywhere in the 6 line, plus two more that need 7.18.0. Going
+to 7.18.2 closes all four and opens exactly one: `GHSA-qwww-vcr4-c8h2`, whose own
+advisory text says it only affects applications using the unstable RSC APIs.
+Neither app imports an `unstable_` export or anything from `react-router/rsc`;
+both use `BrowserRouter` and nothing else. The number of open advisories went up
+in severity and down in real exposure, and the severity column is the one that
+lies here. The fix, react-router 8, requires React 19, so it waits for a React 18
+to 19 migration and is waived until 2026-10-31 with that argument on the record.
+
+**What is now uncovered rather than unfixed.** `scripts/audit-gate.mjs` knows
+about three npm trees. It does not know about Python, and
+`tools/kokoro-server/requirements.txt` and `tools/tts-server/requirements.txt`
+pin `torch==2.6.0` against eight open advisories, three of which have no fix at
+any version. Kokoro is live on Fly and is the default content-audio engine, so
+this is shipped runtime code, not a dev tool. It was left alone because a torch
+bump on a deployed inference service cannot be verified from this machine, and
+taking it blind would be the exact move the allowlist exists to prevent. It is
+recorded as a gap in coverage, not as a passed check.

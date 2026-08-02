@@ -9,4 +9,16 @@ export default defineConfig({
   integrations: [react()],
   server: { port: 5178 },
   devToolbar: { enabled: false },
+  // Off deliberately, and not for taste. Astro 7's HTML compressor deletes the
+  // newline between a run of text and a following inline tag instead of
+  // collapsing it to a space, so prose written across two source lines renders
+  // joined: "the selected post's" + <strong>text ...</strong> came out as
+  // "post'stext" on /extension-privacy, and /privacy lost the spaces in
+  // "cookieless mode" and "service. Conversations". Astro 4 collapsed the same
+  // newline to a space, so this appeared only on the 4 -> 7 upgrade. Turning
+  // the compressor off restores byte-for-byte identical rendered text on all
+  // 11 pages; the cost is +7.2 KB gzipped across the whole site (56.4 -> 63.6
+  // KB, ~650 B per page). Re-test with this removed after an Astro upgrade:
+  // if the compressor is fixed, delete this line and the comment.
+  compressHTML: false,
 });

@@ -187,7 +187,9 @@ async function phrase(
         maxTokens: 200, temperature: 0.3, timeoutMs: 30_000,
         anthropic: { maxRetries: 1 },
         pinModel: { provider: "anthropic", model: Deno.env.get("ANTHROPIC_MODEL") ?? "claude-haiku-4-5-20251001" },
-        record: { storeInput: true, ref: `thread:${orgId}` },
+        // S-3/D11: thread instructions quote the owner's own books back to
+        // them. Same reasoning as categorize: nothing of the prompt is kept.
+        record: { inputPolicy: "none", ref: `thread:${orgId}` },
       },
       { ANTHROPIC_API_KEY: apiKey, SUPABASE_URL, SUPABASE_SERVICE_KEY: SERVICE_ROLE_KEY },
     );

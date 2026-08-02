@@ -1,6 +1,8 @@
 # GitHub Actions workflows
 
-> Last verified: 1-Jul-2026 · 8 workflows, derived from each yml. Owner: Nik
+> Last verified: 2-Aug-2026 · **17 workflows exist; 9 are documented below.** The eight
+> undocumented ones are finding S-6 in [../../docs/STAKEHOLDERS.md](../../docs/STAKEHOLDERS.md)
+> and are still undocumented. Owner: Nik
 
 All workflows also support manual `workflow_dispatch`. Note: there is no `penny.yml` -
 the Penny app deploy is the `deploy-penny` job inside `pages.yml`.
@@ -15,3 +17,4 @@ the Penny app deploy is the `deploy-penny` job inside `pages.yml`.
 | [migrations-unique.yml](migrations-unique.yml) | PR + push to `main` touching `supabase/migrations/**` | Asserts every migration file has a unique timestamp prefix; fails on duplicates. |, (test gate) |
 | [deploy-worker.yml](deploy-worker.yml) | push to `main` touching `site-bubble/**` | Builds the Preact widget, syncs assets, deploys the Penny site-bubble Worker via `wrangler deploy`. | Cloudflare Worker (from `site-bubble/worker`) |
 | [deploy-bridge.yml](deploy-bridge.yml) | push to `main` touching `scripts/discord-bridge/**` | Deploys the Discord concierge bridge via `flyctl deploy --remote-only`. | Fly.io |
+| [security.yml](security.yml) | PR; push to `main`; weekly Mon 06:00 UTC | Three independent jobs. `dependency-audit` runs `scripts/audit-gate.mjs` over the pnpm workspace, `site-bubble` and `scripts/discord-bridge`, failing on any high or critical not covered by a live, unexpired entry in `.github/audit-allowlist.json` (and on any entry that is past its expiry). `secret-scan` runs gitleaks over the working tree every run and the full history weekly. `codeql` runs GitHub SAST over JavaScript and TypeScript. | (test gate) |

@@ -37,6 +37,10 @@ the current net state:
 | `geo-daily-probe` | `0 11 * * *` | POSTs [geo-probe](functions/geo-probe/) (AI-answer visibility). |
 | `learning-loop-bandit` | `0 12 * * *` | POSTs [bandit](functions/bandit/) (experiment traffic optimizer). |
 | `ai-reconcile-daily` | `0 2 * * *` | `select ai_reconcile_tick();`, SQL-only, no edge function. |
+| `ai-decisions-retention-daily` | `0 3 * * *` | `select ai_decisions_retention_tick();`, SQL-only. D19/D24 retention: de-identifies `ai_decisions` rows past `retain_until`. Added by `20260802140000_sh9_retention_and_erasure.sql` (finding S-3). |
+| `penny-site-chats-purge-daily` | `30 3 * * *` | `select penny_site_chats_purge();`, SQL-only. The function existed unscheduled since `20260620153619_remote_commit.sql:1025`; the same migration finally schedules it. |
+| `fx-rates-daily-fetch` | `30 16 * * *` | `select fx_rates_trigger_fetch('daily');`, POSTs [fx-rates-fetch](functions/fx-rates-fetch/). Was missing from this table. |
+| `signup-confirmation-rate-limit-purge` | `15 * * * *` | `select signup_confirmation_rate_limit_purge();`, SQL-only. Was missing from this table. |
 
 Retired crons: `signals-daily-digest` and `changelog-weekly-digest` were unscheduled by
 `20260623280000_email_schedules_builtin.sql`. Recurring-email timing now lives in the

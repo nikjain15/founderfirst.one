@@ -1,0 +1,137 @@
+name: Security
+
+# Closes findings S-1 (no dependency audit in CI) and S-4 (no secret scanning,
+# no SAST) from docs/STAKEHOLDERS.md §4a.
+#
+# Before this workflow, docs/AUDIT.md:38 required "`pnpm audit` shows no
+# high/critical" and nothing checked it, while GitHub's own Dependabot page
+# carried 5 critical and 21 high open advisories. A written control that
+# nothing executes is not a control.
+#
+# Three jobs, deliberately separate so one red does not hide another:
+#   dependency-audit  scripts/audit-gate.mjs across all three dependency trees
+#   secret-scan       gitleaks, working tree on every run, full history weekly
+#   codeql            GitHub's SAST for JS/TS
+#
+# This runs on pull_request AND push to main. Both, because IQ-2 reached main
+# without its pgTAP suite ever executing (see db-tests.yml) and the lesson was
+# that a PR-only gate is not a gate for anything merged by other means.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # 06:00 UTC Monday. Advisories are published against code that has not
+    # changed, so a push-only trigger would let a new critical sit unseen for
+    # as long as the repo is quiet.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-audit:
+    name: Dependency audit gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # The gate reads lockfiles, so the install only has to be resolvable.
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Proves the gate's own logic before trusting its verdict: that an expired
+      # allowlist entry fails, that the 92-day horizon cannot be dodged, and
+      # that every allowlist field is required. scripts/tests/audit-gate.test.ts.
+      - name: Test the gate itself
+        run: pnpm test:guards
+
+      # Fails on any high or critical advisory in the pnpm workspace,
+      # site-bubble, or scripts/discord-bridge that is not covered by a live,
+      # well-formed, unexpired entry in .github/audit-allowlist.json.
+      - name: Audit gate (high + critical)
+        run: pnpm audit:gate
+
+      # Advisory only: prints the moderate backlog without failing, so the
+      # number is visible in every run instead of being discovered in a review.
+      - name: Moderate backlog (advisory, never fails)
+        if: always()
+        continue-on-error: true
+        run: node scripts/audit-gate.mjs --level=moderate
+
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history for the weekly run; a shallow clone would silently
+          # scan almost nothing.
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: 8.29.0
+        # Pinned version, and the checksum is verified against the checksums
+        # file published with that release. This catches a corrupted or
+        # re-tagged download. It does not defend against a compromised upstream
+        # release, which would need a vendored binary or a signature we verify
+        # against a key we hold; that is not currently in place.
+        run: |
+          set -euo pipefail
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "$tarball" "$base/$tarball"
+          curl -sSfL -o checksums.txt "$base/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          grep " $tarball\$" checksums.txt | sha256sum -c -
+          tar xzf "$tarball" gitleaks
+          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      # Every run: the working tree. Fast, and it is what catches a secret
+      # about to be merged.
+      - name: Scan working tree
+        run: gitleaks dir . -c .gitleaks.toml --redact --no-banner --exit-code 1
+
+      # Weekly and on demand: the whole history. ~9s over 1615 commits today,
+      # so the only reason it is not on every run is that it is redundant with
+      # the working-tree scan for changes that have not been merged yet.
+      - name: Scan full git history
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: gitleaks git . -c .gitleaks.toml --redact --no-banner --exit-code 1
+
+  codeql:
+    name: SAST (CodeQL)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          # security-extended adds the lower-precision rules. Worth the noise
+          # here: the code under analysis moves money and holds bank tokens.
+          queries: security-extended
+
+      # Autobuild is a no-op for JS/TS; CodeQL analyses source directly. Not
+      # running `pnpm build` keeps this job independent of the deploy pipeline.
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"

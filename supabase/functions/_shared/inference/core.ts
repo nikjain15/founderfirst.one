@@ -136,8 +136,25 @@ export interface ResolveTask {
     defer?: boolean;
     /** session id / run id stored as request_ref for correlation. */
     ref?: string | null;
-    /** PII minimization: when false, `input` is stored null (D11). Default true. */
+    /**
+     * PII minimization (D11). Legacy two-state flag, kept so existing call sites
+     * compile and keep meaning what their authors meant:
+     *   false -> "none"      (input stored null)
+     *   true  -> "redacted"  (input stored with patterned PII masked)
+     * It can no longer request verbatim storage. `true` used to mean "store the
+     * prompt exactly as sent", which is how transaction descriptions, merchant
+     * names and amounts ended up in ai_decisions.input in the clear. Verbatim
+     * storage is now an explicit, separate opt-in: `inputPolicy: "raw"`.
+     */
     storeInput?: boolean;
+    /**
+     * Explicit input-retention policy. Overrides `storeInput`. Default is
+     * "redacted" (see DEFAULT_INPUT_POLICY). "raw" is refused for use cases
+     * marked `financial` in the runtime config, which is what makes
+     * GUARDRAILS.md's "PII minimisation **must** be on for financial use
+     * cases" a property of the code rather than a sentence in a document.
+     */
+    inputPolicy?: InputPolicy;
     /** Dual-write reconcile link to the legacy row this decision corresponds to. */
     legacyTable?: string | null;
     legacyId?: string | null;
@@ -261,6 +278,172 @@ export const USE_CASE = {
 export const TENANT_FOUNDERFIRST = "org:founderfirst";
 export const anonTenant = (sessionId: string): string => `anon:${sessionId}`;
 export const orgTenant = (id: string): string => `org:${id}`;
+
+/* ── Input retention policy (D11, D19) ───────────────────────────────────────
+ *
+ * What we keep of the prompt, per call:
+ *
+ *   "none"      input is stored null. Nothing about the request body survives
+ *               beyond usage counts, cost, and latency.
+ *   "redacted"  input is stored with patterned identifiers masked. THE DEFAULT.
+ *   "raw"       input is stored verbatim. Explicit opt-in only, and refused
+ *               outright for use cases flagged `financial`.
+ *
+ * The default used to be "raw" (`storeInput !== false`), which meant every
+ * call site that said nothing got verbatim storage. Defaults decide what
+ * actually happens; this one now defaults to the safe answer.
+ *
+ * Read the honest limit of "redacted" before relying on it: redactPii() is
+ * pattern matching. It removes emails, phone numbers, card-length digit runs,
+ * SSN/EIN shapes, and currency amounts. It CANNOT remove a merchant name, a
+ * counterparty name, or a free-text memo, because those are not patterns. That
+ * is precisely why financial use cases are forced to "none" rather than being
+ * allowed to rely on redaction.
+ */
+export type InputPolicy = "none" | "redacted" | "raw";
+
+export const DEFAULT_INPUT_POLICY: InputPolicy = "redacted";
+
+/**
+ * The effective policy for one call. Pure, so it is directly testable.
+ *
+ * Order of precedence:
+ *   1. A `financial` use case is forced to "none". No caller can widen it.
+ *   2. An explicit `inputPolicy` wins over the legacy `storeInput` flag.
+ *   3. `storeInput: false` -> "none"; `storeInput: true` -> "redacted".
+ *   4. Otherwise DEFAULT_INPUT_POLICY.
+ */
+export function resolveInputPolicy(
+  record: { storeInput?: boolean; inputPolicy?: InputPolicy } | undefined,
+  meta: { financial?: boolean } | undefined,
+): InputPolicy {
+  if (meta?.financial) return "none";
+  if (record?.inputPolicy) return record.inputPolicy;
+  if (record?.storeInput === false) return "none";
+  if (record?.storeInput === true) return "redacted";
+  return DEFAULT_INPUT_POLICY;
+}
+
+// Ordered most-specific first: an SSN would otherwise be eaten by the generic
+// long-digit-run rule and mislabelled, which makes the stored record harder to
+// reason about later.
+const REDACTIONS: ReadonlyArray<{ re: RegExp; with: string }> = [
+  { re: /\b[\w.+-]+@[\w-]+\.[\w.-]+\b/g, with: "[email]" },
+  { re: /\b\d{3}-\d{2}-\d{4}\b/g, with: "[ssn]" },
+  { re: /\b\d{2}-\d{7}\b/g, with: "[ein]" },
+  // Card-like: 13-19 digits, optionally grouped by spaces or hyphens.
+  { re: /\b(?:\d[ -]?){12,18}\d\b/g, with: "[card]" },
+  // North American and E.164-ish phone numbers.
+  { re: /(?:\+\d{1,3}[ -]?)?\(?\b\d{3}\)?[ .-]\d{3}[ .-]\d{4}\b/g, with: "[phone]" },
+  // Currency amounts, with or without separators: $1,234.56 / USD 1234.56.
+  { re: /(?:[$£€]|\b(?:USD|EUR|GBP)\s?)\s?-?\d[\d,]*(?:\.\d{1,2})?\b/gi, with: "[amount]" },
+  // Any remaining run of 6+ digits: account numbers, routing numbers, IDs.
+  { re: /\b\d{6,}\b/g, with: "[number]" },
+];
+
+/**
+ * Mask patterned personal and financial identifiers in free text.
+ *
+ * Deliberately conservative about what it claims: this reduces the blast radius
+ * of a stored prompt, it does not make one anonymous. See the note on
+ * InputPolicy. Pure and allocation-cheap; runs on every stored prompt.
+ */
+export function redactPii(text: string): string {
+  let out = text;
+  for (const r of REDACTIONS) out = out.replace(r.re, r.with);
+  return out;
+}
+
+/** redactPii over a message array, preserving roles and order. */
+export function redactMessages(messages: ChatMessage[]): ChatMessage[] {
+  return messages.map((m) => ({ role: m.role, content: redactPii(m.content) }));
+}
+
+/* ── Retention windows (D19, D24) ────────────────────────────────────────────
+ *
+ * The single source of truth for how long each store of personal data is kept.
+ *
+ * This table exists because the 90-day window in GUARDRAILS.md was true in a
+ * document and false in the system: `ai_decisions.retain_until` was a column no
+ * code read. docs/DATA_RETENTION.md is GENERATED from this constant by
+ * `scripts/check-retention-doc.ts`, and that script fails when a rule declares a
+ * window with `enforcedBy: null`, so a retention window that nothing executes
+ * can no longer be written down. It also checks that every named job actually
+ * appears in supabase/migrations, which is what stops the table drifting away
+ * from the database a second time.
+ *
+ * `enforcedBy: null` is allowed, but only together with `days: null`. That pair
+ * reads as "kept until erasure is requested", which is a real policy. What is
+ * not allowed is a number with nothing behind it.
+ */
+export interface RetentionRule {
+  /** Where the data lives, precise enough to grep for. */
+  store: string;
+  /** What personal data it can contain. */
+  data: string;
+  /** Days from creation until `action` runs. null = no automatic window. */
+  days: number | null;
+  /** What happens at the end of the window. */
+  action: "deidentify" | "delete" | "none";
+  /** The pg_cron job name that performs it, or null when there is no window. */
+  enforcedBy: string | null;
+  /** How the data is removed on an erasure request, in plain words. */
+  erasure: string;
+}
+
+export const RETENTION: Record<string, RetentionRule> = {
+  ai_decisions_raw: {
+    store: "ai_decisions.input / ai_decisions.output",
+    data: "prompt and completion text; can contain transaction descriptions, merchant names and amounts for any call that did not use inputPolicy 'none'",
+    days: 90,
+    action: "deidentify",
+    enforcedBy: "ai-decisions-retention-daily",
+    erasure: "ai_erase_tenant() nulls input, output and output_json for the tenant immediately",
+  },
+  ai_decisions_metadata: {
+    store: "ai_decisions (all other columns)",
+    data: "tenant id, use case, model, token counts, cost, latency, gate status. No prompt content once the row is de-identified",
+    days: null,
+    action: "none",
+    enforcedBy: null,
+    erasure: "ai_erase_tenant() deletes the rows outright when hard erasure is requested",
+  },
+  penny_site_chats: {
+    store: "penny_site_chats",
+    data: "anonymous marketing-site chat turns, keyed by session id, for visitors who never joined the waitlist",
+    days: 90,
+    action: "delete",
+    enforcedBy: "penny-site-chats-purge-daily",
+    erasure: "the purge is a hard delete; there is no per-visitor request path because there is no visitor identity",
+  },
+  signup_confirmation_rate_limit: {
+    store: "signup_confirmation_rate_limit",
+    data: "hashed signup identifiers used for enumeration rate limiting",
+    days: null,
+    action: "delete",
+    enforcedBy: "signup-confirmation-rate-limit-purge",
+    erasure: "rows expire within 6 hours regardless of erasure requests",
+  },
+  discord_dm_messages: {
+    store: "discord_dm_messages",
+    data: "Discord direct-message turns and the account link",
+    days: null,
+    action: "none",
+    enforcedBy: null,
+    erasure: "discord_dm_erase() / admin_discord_erase() hard-delete every row for the user",
+  },
+  ledger: {
+    store: "journal_entries, ledger_lines, bank transactions",
+    data: "small-business financial records",
+    days: null,
+    action: "none",
+    enforcedBy: null,
+    erasure: "not self-serve. Posted entries are an append-only, legally retained financial record; a full org purge is an operator-run, audited path that does not exist yet",
+  },
+};
+
+/** Windows referenced by SQL. Keeping the number in one place is the point. */
+export const AI_DECISIONS_RETAIN_DAYS = RETENTION.ai_decisions_raw.days as number;
 
 /**
  * Seed price table (USD per million tokens). Cost is config (D10/D22) and does
@@ -399,6 +582,7 @@ async function callAnthropic(
   model: ModelRef,
   ctx: ResolveCtx,
   cacheAllowed = false,
+  collectGatewayLog = true,
 ): Promise<ProviderOutput> {
   const t = ctx.transports.anthropic;
   if (!t) throw new InferenceError("anthropic transport not provided", "config_error");
@@ -417,6 +601,12 @@ async function callAnthropic(
   // D11: through the gateway, skip the (global, non-tenant-keyed) cache unless the
   // use case has been explicitly cleared for caching by resolve(). Default: skip.
   if (ctx.gateway && !cacheAllowed) headers["cf-aig-skip-cache"] = "true";
+  // S-5: Cloudflare AI Gateway logs request and response BODIES by default,
+  // in a store no erasure request of ours can reach. When we have already
+  // decided this prompt is not safe to keep verbatim in our own database,
+  // keeping it verbatim in someone else's is not defensible. The two
+  // decisions are deliberately the same decision.
+  if (ctx.gateway && !collectGatewayLog) headers["cf-aig-collect-log"] = "false";
 
   const systemField =
     task.system === undefined
@@ -489,6 +679,7 @@ async function callWorkersAi(
   model: ModelRef,
   ctx: ResolveCtx,
   cacheAllowed = false,
+  collectGatewayLog = true,
 ): Promise<ProviderOutput> {
   const t = ctx.transports.workersAi;
   if (!t) throw new InferenceError("workers-ai transport not provided", "config_error");
@@ -530,6 +721,7 @@ async function callOpenRouter(
   model: ModelRef,
   ctx: ResolveCtx,
   cacheAllowed = false,
+  collectGatewayLog = true,
 ): Promise<ProviderOutput> {
   const t = ctx.transports.openrouter;
   if (!t) throw new InferenceError("openrouter transport not provided", "config_error");
@@ -546,6 +738,12 @@ async function callOpenRouter(
     "X-Title": "FounderFirst Penny",
   };
   if (ctx.gateway && !cacheAllowed) headers["cf-aig-skip-cache"] = "true";
+  // S-5: Cloudflare AI Gateway logs request and response BODIES by default,
+  // in a store no erasure request of ours can reach. When we have already
+  // decided this prompt is not safe to keep verbatim in our own database,
+  // keeping it verbatim in someone else's is not defensible. The two
+  // decisions are deliberately the same decision.
+  if (ctx.gateway && !collectGatewayLog) headers["cf-aig-collect-log"] = "false";
 
   // OpenAI-compatible: system folds into the messages array.
   const messages = task.system
@@ -600,14 +798,15 @@ function callProvider(
   model: ModelRef,
   ctx: ResolveCtx,
   cacheAllowed = false,
+  collectGatewayLog = true,
 ): Promise<ProviderOutput> {
   switch (model.provider) {
     case "anthropic":
-      return callAnthropic(task, model, ctx, cacheAllowed);
+      return callAnthropic(task, model, ctx, cacheAllowed, collectGatewayLog);
     case "openrouter":
-      return callOpenRouter(task, model, ctx, cacheAllowed);
+      return callOpenRouter(task, model, ctx, cacheAllowed, collectGatewayLog);
     case "workers-ai":
-      return callWorkersAi(task, model, ctx, cacheAllowed);
+      return callWorkersAi(task, model, ctx, cacheAllowed, collectGatewayLog);
     default:
       throw new InferenceError(`unknown provider "${model.provider}"`, "config_error");
   }
@@ -719,10 +918,16 @@ export async function resolve(task: ResolveTask, ctx: ResolveCtx): Promise<Resol
   // exact-match gateway cache is global and not tenant-keyed (D11/D15).
   const cacheAllowed = !!meta?.cacheEnabled && !meta?.customerFacing && !meta?.financial;
 
+  // D11/D19: what we keep of the prompt. Defaults to "redacted", and a
+  // `financial` use case is forced to "none" no matter what the caller asked
+  // for. Computed before the call because it also decides whether Cloudflare AI
+  // Gateway is allowed to log the request body (S-5).
+  const inputPolicy = resolveInputPolicy(task.record, meta);
+
   const started = ctx.now();
   let out: ProviderOutput;
   try {
-    out = await callProvider(task, model, ctx, cacheAllowed);
+    out = await callProvider(task, model, ctx, cacheAllowed, inputPolicy === "raw");
   } catch (err) {
     // We do not log failed generations here in Phase 0 (callers keep their own
     // error handling + fallbacks unchanged). Re-throw so behavior is identical.
@@ -734,7 +939,12 @@ export async function resolve(task: ResolveTask, ctx: ResolveCtx): Promise<Resol
   // Build the record once. On the default path we fire it off the hot path (D18);
   // on the deferred path (task.record.defer) we return it for the judged path to
   // enrich and write exactly once (no insert→update race).
-  const storeInput = task.record?.storeInput !== false;
+  const storedInput =
+    inputPolicy === "none"
+      ? null
+      : inputPolicy === "raw"
+        ? { messages: task.messages }
+        : { messages: redactMessages(task.messages), redacted: true };
   const record: AiDecisionRecord = {
     id: task.record?.id,
     tenant_id: task.tenantId,
@@ -743,7 +953,7 @@ export async function resolve(task: ResolveTask, ctx: ResolveCtx): Promise<Resol
     provider: model.provider,
     model: model.model,
     request_ref: task.record?.ref ?? null,
-    input: storeInput ? { messages: task.messages } : null,
+    input: storedInput,
     output: out.text,
     output_json: out.raw && typeof out.raw === "object" ? out.raw : null,
     usage: capFallback ? { ...out.usage, cap_fallback: true } : out.usage,

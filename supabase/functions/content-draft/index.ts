@@ -127,7 +127,9 @@ Deno.serve(async (req) => {
         timeoutMs: 90_000,
         anthropic: { maxRetries: 0 },
         pinModel: { provider: "anthropic", model },
-        record: { storeInput: true },
+        // Marketing copy, no customer data. Default policy ("redacted") is
+        // fine here and is what an unset record now gets.
+        record: {},
       },
       {
         ANTHROPIC_API_KEY: apiKey,

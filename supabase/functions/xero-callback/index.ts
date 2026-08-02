@@ -47,8 +47,16 @@ Deno.serve(async (req) => {
     const tenant = tenants[0];
     const expires = new Date(Date.now() + (tok.expires_in - 60) * 1000).toISOString();
 
+    // IQ-3: the tokens NEVER touch the row in plaintext. set_connection_tokens
+    // encrypts them into access_token_enc / refresh_token_enc, nulls the
+    // plaintext columns, and sets token_expires_at + updated_at, all in one
+    // statement. Same helper the Plaid and QBO callbacks use.
+    const { error: tokErr } = await svc.rpc("set_connection_tokens", {
+      p_connection: conn.id, p_access: tok.access_token, p_refresh: tok.refresh_token, p_expires: expires,
+    });
+    if (tokErr) throw new Error(tokErr.message);
+
     const { error: upErr } = await svc.from("external_connections").update({
-      access_token: tok.access_token, refresh_token: tok.refresh_token, token_expires_at: expires,
       realm_id: tenant.tenantId, tenant_name: tenant.tenantName, scope: tok.scope ?? null,
       status: "active", state: null, last_error: null, updated_at: new Date().toISOString(),
     }).eq("id", conn.id);

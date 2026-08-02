@@ -1,0 +1,74 @@
+# gitleaks configuration for founderfirst.one: secret scanning (finding S-4).
+#
+# Scanned by .github/workflows/security.yml on every PR and push to main
+# (working tree) and weekly over the full git history.
+#
+# The allowlists below are deliberately narrow. A path-only allowlist ("ignore
+# everything under docs/") is how secret scanning dies: the first real key
+# committed to an ignored path is invisible forever. Every entry here is scoped
+# to a specific credential SHAPE, and where a path is used it is combined with a
+# regex so that a DIFFERENT secret in the same file still fails the scan.
+#
+# Baseline established 2 Aug 2026: a full-history scan (1615 commits, 272 MB)
+# produced 26 findings, all four shapes below. No Supabase `service_role` key,
+# no Plaid secret, no Intuit client secret, and no Anthropic or Cloudflare token
+# has ever been committed to this repository. That is the claim this file is
+# designed to keep true, not a claim it excuses.
+
+title = "founderfirst.one"
+
+[extend]
+useDefault = true
+
+# ── 1. Supabase anon JWT, this project only ──────────────────────────────────
+# The anon key is public by design: it is compiled into every browser bundle
+# (VITE_SUPABASE_ANON_KEY / PUBLIC_SUPABASE_ANON_KEY) and row-level security is
+# the actual access control. It appears in apps/admin/support-management/*.yml
+# because Dify calls our REST endpoint directly.
+#
+# The regex pins the base64 of `"iss":"supabase","ref":"<our ref>","role":"anon"`.
+# A `service_role` JWT encodes `InNlcnZpY2Vfcm9sZSI` instead and does NOT match,
+# so the one key that would be a real incident still fails the scan.
+[[allowlists]]
+description = "Supabase anon (publishable) JWT for project ejqsfzggyfsjzrcevlnq"
+regexTarget = "match"
+regexes = [
+  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqcXNmemdneWZzanpyY2V2bG5xIiwicm9sZSI6ImFub24i''',
+]
+
+# ── 2. Supabase publishable key (new-format) ─────────────────────────────────
+# `sb_publishable_*` is the successor to the anon JWT and is equally public.
+# The secret counterpart is `sb_secret_*`, which is NOT allowlisted here.
+[[allowlists]]
+description = "Supabase publishable key (sb_publishable_*); sb_secret_* is not allowlisted"
+regexTarget = "match"
+regexes = ['''sb_publishable_[A-Za-z0-9_-]{20,}''']
+
+# ── 3. PostHog project API key ───────────────────────────────────────────────
+# `phc_*` is the client-side project key, shipped in the browser and documented
+# as public by PostHog. The personal API key (`phx_*`) is not allowlisted.
+[[allowlists]]
+description = "PostHog project API key (phc_*); personal keys (phx_*) are not allowlisted"
+regexTarget = "match"
+regexes = ['''phc_[A-Za-z0-9]{30,}''']
+
+# ── 4. Fixture UUIDs in the stress-test teardown scripts ─────────────────────
+# docs/stress/**/cleanup.sql and FIXTURE_MANIFEST.md carry the org and user
+# UUIDs of throwaway seeded tenants so the teardown is auditable. gitleaks reads
+# `auth.users where id = '<uuid>'` as a generic API key. Path AND shape must both
+# match, so a real token dropped into one of these files still fails.
+[[allowlists]]
+description = "Seeded fixture UUIDs in stress-test teardown scripts"
+condition = "AND"
+regexTarget = "match"
+paths = ['''docs/stress/.*''']
+regexes = ['''[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}''']
+
+# ── 5. Lockfiles ─────────────────────────────────────────────────────────────
+# Integrity hashes (sha512-…) are not credentials and generate pure noise.
+[[allowlists]]
+description = "Package lockfile integrity hashes"
+condition = "AND"
+paths = ['''(^|/)(pnpm-lock\.yaml|package-lock\.json|deno\.lock)$''']
+regexTarget = "match"
+regexes = ['''sha(256|512)-[A-Za-z0-9+/=]{20,}''']

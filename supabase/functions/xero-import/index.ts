@@ -50,21 +50,33 @@ Deno.serve(async (req) => {
   if (!canWrite) return json({ error: "forbidden" }, 403);
 
   const { data: conn } = await svc.from("external_connections")
-    .select("id, org_id, realm_id, tenant_name, access_token, refresh_token, token_expires_at, status")
+    .select("id, org_id, realm_id, tenant_name, token_expires_at, status")
     .eq("id", connId).eq("org_id", orgId).eq("provider", "xero").maybeSingle();
   if (!conn || conn.status !== "active") return json({ error: "no_active_connection" }, 404);
 
+  // IQ-3: Xero tokens are encrypted at rest, so decrypt server-side via the RPC
+  // rather than selecting the raw columns. ext_connection_secrets is
+  // `returns table(...)`, so PostgREST hands back an array, so unwrap it.
+  const { data: secretsRow, error: secErr } = await svc
+    .rpc("ext_connection_secrets", { p_connection: conn.id });
+  const secrets = Array.isArray(secretsRow) ? secretsRow[0] : secretsRow;
+  if (secErr || !secrets?.access_token || !secrets?.refresh_token) {
+    return json({ error: "no_active_connection" }, 404);
+  }
+
   // refresh the token if it's expired (or about to)
-  let access = conn.access_token as string;
+  let access = secrets.access_token as string;
   if (!conn.token_expires_at || new Date(conn.token_expires_at).getTime() < Date.now() + 60_000) {
     try {
-      const t = await refreshToken(conn.refresh_token as string);
+      const t = await refreshToken(secrets.refresh_token as string);
       access = t.access_token;
-      await svc.from("external_connections").update({
-        access_token: t.access_token, refresh_token: t.refresh_token,
-        token_expires_at: new Date(Date.now() + (t.expires_in - 60) * 1000).toISOString(),
-        updated_at: new Date().toISOString(),
-      }).eq("id", conn.id);
+      // set_connection_tokens re-encrypts, re-nulls the plaintext columns, and
+      // sets token_expires_at + updated_at itself.
+      const { error: tokErr } = await svc.rpc("set_connection_tokens", {
+        p_connection: conn.id, p_access: t.access_token, p_refresh: t.refresh_token,
+        p_expires: new Date(Date.now() + (t.expires_in - 60) * 1000).toISOString(),
+      });
+      if (tokErr) throw new Error(tokErr.message);
     } catch (e) {
       await svc.from("external_connections").update({ status: "error", last_error: (e as Error).message }).eq("id", conn.id);
       return json({ error: "token_refresh_failed", detail: (e as Error).message }, 502);

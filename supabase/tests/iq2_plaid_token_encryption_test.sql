@@ -32,8 +32,10 @@ insert into external_connections (id, org_id, provider, realm_id, status, connec
   ('00000000-0000-0000-0000-0000000193c2', '00000000-0000-0000-0000-0000000193fa', 'plaid', 'item-921', 'active', '00000000-0000-0000-0000-000000019301',
    'access-sandbox-legacy-plaid');
 
--- (c) a NON-plaid (xero) connection with plaintext. The backfill must leave it alone,
--- because the xero edge fns still read the raw column.
+-- (c) a NON-plaid (xero) connection with plaintext. The IQ-2 backfill must leave it
+-- alone: it is scoped to provider='plaid'. Xero is encrypted by its own scoped
+-- backfill, _iq3_encrypt_xero_plaintext() (20260802130000), and this fixture still
+-- proves the scoping holds: this row never passes through the Plaid backfill.
 insert into external_connections (id, org_id, provider, realm_id, status, connected_by, access_token, refresh_token) values
   ('00000000-0000-0000-0000-0000000193c3', '00000000-0000-0000-0000-0000000193fa', 'xero', 'tenant-922', 'active', '00000000-0000-0000-0000-000000019301',
    'xero-plaintext-access', 'xero-plaintext-refresh');

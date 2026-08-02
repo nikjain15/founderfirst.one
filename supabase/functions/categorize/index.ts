@@ -352,7 +352,11 @@ async function computeProposal(svc: any, orgId: string, entryId: string, fromAcc
         maxTokens: 300, temperature: 0, jsonSchema: schema, timeoutMs: 30_000,
         anthropic: { maxRetries: 1 },
         pinModel: { provider: "anthropic", model: Deno.env.get("ANTHROPIC_MODEL") ?? "claude-haiku-4-5-20251001" },
-        record: { storeInput: true, ref: entryId },
+        // S-3/D11: the categorization prompt carries the merchant name, the
+        // transaction description and the amount. That is exactly the PII the
+        // 90-day window was written for and never applied. Financial call
+        // sites store no input at all; redaction cannot mask a merchant name.
+        record: { inputPolicy: "none", ref: entryId },
       },
       { ANTHROPIC_API_KEY: apiKey, SUPABASE_URL, SUPABASE_SERVICE_KEY: SERVICE_ROLE_KEY },
       { reconcile, context: { sourceIds: accounts.map((a) => a.id) } },

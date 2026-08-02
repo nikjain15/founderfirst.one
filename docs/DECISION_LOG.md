@@ -333,3 +333,25 @@ CI runs `--level=moderate`, which is why three of them bite.
 set to `chatterbox` and has a reference clip. The `engine` column defaults to
 `kokoro`, so it is a non-default but reachable path, and it is scanned on that
 basis. Whether the Fly app is currently running is not answerable from the repo.
+
+## DL: torch 2.13.0 shipped to the live voice engine (2026-08-02)
+
+**Done, and verified against the thing that actually matters.** `kokoro-server`
+moved from torch 2.6.0 to 2.13.0 and is deployed. All eight torch advisories
+cleared, more than the five predicted: the three with no fix at any version turn
+out not to affect 2.13.0 either. Its allowlist entries were deleted rather than
+renewed, and the tree now reports zero.
+
+**The check was a before and after render, not a health probe.** A health check
+proves a process started. It does not prove torch can still load the model or
+that the audio is unchanged. The same sentence was rendered through the shipped
+`_render_mp3` on both versions: 113,324 bytes and 5,585 ms on each, loudness
+-28.61 against -28.60 dBFS. Running it inside the machine over `fly ssh console`
+also meant the check never required anyone to handle the server secret.
+
+**tts-server stays on 2.6.0 for a real reason, now written down.**
+`chatterbox-tts==0.1.1` hard-pins `torch==2.6.0` and `torchaudio==2.6.0` in its
+metadata, so the pin is a constraint of the engine rather than a choice, and
+moving it means replacing Chatterbox. The Fly app also has no machines running.
+Both facts were verified rather than assumed, and both are in the allowlist
+reason with an expiry of 2026-09-15.

@@ -33,40 +33,10 @@
     {
       "id": "GHSA-887c-mr87-cxwp",
       "package": "torch",
-      "tree": "kokoro-server",
-      "severity": "moderate",
-      "reason": "Improper resource shutdown. Fixed in torch 2.8.0. The bump needs a verified Fly deploy of the live voice engine, which is scheduled and cannot be done from CI.",
-      "reachability": "The server accepts one JSON body containing an audio script over a shared-secret HTTP endpoint called only by our content-audio edge function. Callers cannot pass tensors, model files, or torch arguments, so the affected sequence-packing APIs are only ever reached with the model's own fixed inputs, never attacker-shaped ones.",
-      "owner": "Nik Jain",
-      "expires": "2026-09-15"
-    },
-    {
-      "id": "GHSA-vgrw-7cvw-pwgx",
-      "package": "torch",
-      "tree": "kokoro-server",
-      "severity": "moderate",
-      "reason": "Memory corruption in unpack_sequence. Fixed in torch 2.9.1. The bump needs a verified Fly deploy of the live voice engine, which is scheduled and cannot be done from CI.",
-      "reachability": "The server accepts one JSON body containing an audio script over a shared-secret HTTP endpoint called only by our content-audio edge function. Callers cannot pass tensors, model files, or torch arguments, so the affected sequence-packing APIs are only ever reached with the model's own fixed inputs, never attacker-shaped ones.",
-      "owner": "Nik Jain",
-      "expires": "2026-09-15"
-    },
-    {
-      "id": "GHSA-f4hp-rmr7-r7v8",
-      "package": "torch",
-      "tree": "kokoro-server",
-      "severity": "moderate",
-      "reason": "Memory consumption in pad_packed_sequence. No fix exists at any torch version, so this entry cannot be closed by upgrading and rests on reachability alone.",
-      "reachability": "The server accepts one JSON body containing an audio script over a shared-secret HTTP endpoint called only by our content-audio edge function. Callers cannot pass tensors, model files, or torch arguments, so the affected sequence-packing APIs are only ever reached with the model's own fixed inputs, never attacker-shaped ones.",
-      "owner": "Nik Jain",
-      "expires": "2026-09-15"
-    },
-    {
-      "id": "GHSA-887c-mr87-cxwp",
-      "package": "torch",
       "tree": "tts-server",
       "severity": "moderate",
-      "reason": "Improper resource shutdown. Fixed in torch 2.8.0. The bump needs a verified Fly deploy of the live voice engine, which is scheduled and cannot be done from CI.",
-      "reachability": "The server accepts one JSON body containing an audio script over a shared-secret HTTP endpoint called only by our content-audio edge function. Callers cannot pass tensors, model files, or torch arguments, so the affected sequence-packing APIs are only ever reached with the model's own fixed inputs, never attacker-shaped ones. tts-server is additionally not the default engine: content-audio routes to it only for a voice profile explicitly set to chatterbox with a reference clip.",
+      "reason": "chatterbox-tts 0.1.1 hard-pins torch==2.6.0 and torchaudio==2.6.0 in its own metadata, so this cannot be upgraded without replacing the Chatterbox engine. Verified against the PyPI metadata for chatterbox-tts 0.1.1 on 2026-08-02, not assumed.",
+      "reachability": "The Fly app founderfirst-tts currently has no machines running, verified with fly machines list on 2026-08-02, so nothing serves this code today. Were it deployed, it accepts an audio script over a shared-secret endpoint called only by the content-audio edge function, and only for a voice profile explicitly set to chatterbox with a reference clip, never the default. Callers cannot pass tensors, model files or torch arguments, so the affected sequence-packing APIs only ever see the model's own inputs.",
       "owner": "Nik Jain",
       "expires": "2026-09-15"
     },
@@ -75,8 +45,8 @@
       "package": "torch",
       "tree": "tts-server",
       "severity": "moderate",
-      "reason": "Memory corruption in unpack_sequence. Fixed in torch 2.9.1. The bump needs a verified Fly deploy of the live voice engine, which is scheduled and cannot be done from CI.",
-      "reachability": "The server accepts one JSON body containing an audio script over a shared-secret HTTP endpoint called only by our content-audio edge function. Callers cannot pass tensors, model files, or torch arguments, so the affected sequence-packing APIs are only ever reached with the model's own fixed inputs, never attacker-shaped ones. tts-server is additionally not the default engine: content-audio routes to it only for a voice profile explicitly set to chatterbox with a reference clip.",
+      "reason": "chatterbox-tts 0.1.1 hard-pins torch==2.6.0 and torchaudio==2.6.0 in its own metadata, so this cannot be upgraded without replacing the Chatterbox engine. Verified against the PyPI metadata for chatterbox-tts 0.1.1 on 2026-08-02, not assumed.",
+      "reachability": "The Fly app founderfirst-tts currently has no machines running, verified with fly machines list on 2026-08-02, so nothing serves this code today. Were it deployed, it accepts an audio script over a shared-secret endpoint called only by the content-audio edge function, and only for a voice profile explicitly set to chatterbox with a reference clip, never the default. Callers cannot pass tensors, model files or torch arguments, so the affected sequence-packing APIs only ever see the model's own inputs.",
       "owner": "Nik Jain",
       "expires": "2026-09-15"
     },
@@ -85,8 +55,8 @@
       "package": "torch",
       "tree": "tts-server",
       "severity": "moderate",
-      "reason": "Memory consumption in pad_packed_sequence. No fix exists at any torch version, so this entry cannot be closed by upgrading and rests on reachability alone.",
-      "reachability": "The server accepts one JSON body containing an audio script over a shared-secret HTTP endpoint called only by our content-audio edge function. Callers cannot pass tensors, model files, or torch arguments, so the affected sequence-packing APIs are only ever reached with the model's own fixed inputs, never attacker-shaped ones. tts-server is additionally not the default engine: content-audio routes to it only for a voice profile explicitly set to chatterbox with a reference clip.",
+      "reason": "chatterbox-tts 0.1.1 hard-pins torch==2.6.0 and torchaudio==2.6.0 in its own metadata, so this cannot be upgraded without replacing the Chatterbox engine. Verified against the PyPI metadata for chatterbox-tts 0.1.1 on 2026-08-02, not assumed.",
+      "reachability": "The Fly app founderfirst-tts currently has no machines running, verified with fly machines list on 2026-08-02, so nothing serves this code today. Were it deployed, it accepts an audio script over a shared-secret endpoint called only by the content-audio edge function, and only for a voice profile explicitly set to chatterbox with a reference clip, never the default. Callers cannot pass tensors, model files or torch arguments, so the affected sequence-packing APIs only ever see the model's own inputs.",
       "owner": "Nik Jain",
       "expires": "2026-09-15"
     }

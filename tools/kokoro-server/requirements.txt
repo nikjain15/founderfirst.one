@@ -4,6 +4,6 @@ pydantic==2.10.3
 pydub==0.25.1
 soundfile==0.14.0
 numpy==1.26.0
-torch==2.6.0
+torch==2.13.0
 kokoro==0.9.4
 setuptools<81

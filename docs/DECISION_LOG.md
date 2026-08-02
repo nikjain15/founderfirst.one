@@ -355,3 +355,81 @@ metadata, so the pin is a constraint of the engine rather than a choice, and
 moving it means replacing Chatterbox. The Fly app also has no machines running.
 Both facts were verified rather than assumed, and both are in the allowlist
 reason with an expiry of 2026-09-15.
+
+## DL: the gate told us to delete three correct allowlist entries (2026-08-02)
+
+**What was found.** Running `scripts/audit-gate.mjs` at its default level, which
+is what `pnpm audit:gate` and therefore CI use, printed this on every single run:
+
+```
+STALE ALLOWLIST ENTRIES (R5, warning), matched no current advisory, delete them
+  - GHSA-887c-mr87-cxwp (torch, tts-server)
+  - GHSA-vgrw-7cvw-pwgx (torch, tts-server)
+  - GHSA-f4hp-rmr7-r7v8 (torch, tts-server)
+```
+
+All three advisories were present. All three entries were live, in date, and
+carried the reachability argument recorded in the entry above this one. Running
+the same gate at `--level=moderate` listed the same three as correctly
+allowlisted.
+
+**The cause.** `evaluate` skipped every advisory below `minLevel` before it
+computed anything, so an advisory that did not gate could never be marked as
+matched, so any entry covering it was reported stale. The three torch entries are
+moderate and CI gates at high, so they were structurally guaranteed to be
+mislabelled forever.
+
+**Why this is worse than a silent gap.** R5 does not merely warn, it instructs:
+"delete them". Following that instruction would have destroyed three dated,
+owned, falsifiable reachability arguments and left nothing behind if OSV later
+re-ranked any of those advisories upward, at which point the gate would have
+failed with no record of why the risk had once been accepted. A mechanism that
+gives confident wrong instructions does more damage than one that says nothing,
+because the instruction is the part people act on.
+
+**The fix.** Staleness is a question about the audit, not about the gating
+threshold, so it is now asked against every advisory the scan produced at any
+severity, including the unranked ones that never enter `treeAdvisories` at all.
+Three tests in `scripts/tests/audit-gate.test.ts` pin it: an entry below the
+threshold is not stale, an entry pointing at an unranked advisory is not stale,
+and an entry whose advisory is genuinely gone still is. The first two were
+confirmed to fail against the old logic before the fix was kept.
+
+## DL: UNCHECKED was hiding a real advisory on the live voice engine (2026-08-02)
+
+**What was found.** The entry above describes reporting `setuptools<81` under
+UNCHECKED as a feature: a requirement the scanner cannot read is named rather
+than skipped. That was the right instinct and it stopped one step early. Nothing
+ever asked what `setuptools<81` actually resolves to, and the line sat in every
+run as a permanent, unactioned notice.
+
+It resolves to `setuptools==80.10.2`, and that version carries
+[GHSA-h35f-9h28-mq5c](https://github.com/advisories/GHSA-h35f-9h28-mq5c), fixed
+only in 83.0.0. So every version the constraint permits is affected. This is on
+`kokoro-server`, the default engine behind `content-audio`, and it was invisible.
+
+**The fix.** `parseRequirements` now returns a third bucket, `ceilinged`, for a
+single `<` or `<=` constraint. `resolveCeiling` asks PyPI for the package's
+releases, discards pre-releases, and picks the **newest** release the constraint
+permits. That choice is deliberate: if the most favourable permitted version is
+vulnerable, every permitted version is, which is a stronger claim than auditing
+an arbitrary one. The result is then queried against OSV like any pin, and the
+advisory carries a `viaCeiling` note recording how it was reached.
+
+`kokoro-server` went from 0 advisories to 1. Nothing about the tree changed;
+the gate simply started asking.
+
+**What is not being changed here, and why.** `setuptools<81` stays. The
+advisory is moderate and, on its own terms, needs an sdist build to matter:
+kokoro-server installs setuptools as a build dependency and never builds or
+publishes an sdist of itself, so it is not reachable. Raising the ceiling would
+also change what pip resolves for the live Fly app, and the only honest
+verification for that is a deploy plus a real render, exactly as recorded for the
+torch pin. A version bump nobody rendered is the failure this repo already
+learned once.
+
+**Falsifiable, and PyPI is not trusted blindly.** If `resolveCeiling` cannot
+reach PyPI or nothing satisfies the constraint it returns null, and the
+requirement goes back to being reported as unchecked rather than counted as
+clean. That path is unit-tested, because a gate that cannot check something must
+never report it as checked.

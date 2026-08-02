@@ -16,6 +16,11 @@ import {
   validateAllowlist,
   parsePnpmAudit,
   parseNpmAudit,
+  parseRequirements,
+  normalizeOsvVulns,
+  queryOsvOne,
+  isPythonTree,
+  TREES,
   MAX_HORIZON_DAYS,
   RANK,
 } from "../audit-gate.mjs";
@@ -288,4 +293,150 @@ test("validateAllowlist reports an empty allowlist as entirely clean", () => {
   assert.deepEqual(v.expired, []);
   assert.deepEqual(v.overlong, []);
   assert.equal(v.liveKeys.size, 0);
+});
+
+// ── Python trees (OSV) ───────────────────────────────────────────────────────
+//
+// These cover the gap that made the Python services invisible: the gate audited
+// three npm trees and had no notion of requirements.txt, while kokoro-server is
+// the default engine behind the content-audio edge function.
+
+test("both Python services are declared as trees, and are recognised as Python", () => {
+  const py = TREES.filter(isPythonTree).map((t) => t.name);
+  assert.deepEqual(py.sort(), ["kokoro-server", "tts-server"]);
+  for (const t of TREES.filter(isPythonTree)) {
+    assert.equal(t.manifest, "requirements.txt");
+    assert.ok(t.ships && t.ships.length > 10, `${t.name} must say what it ships`);
+  }
+});
+
+test("parseRequirements reads pinned packages, strips extras and markers", () => {
+  const { pinned } = parseRequirements(
+    [
+      "fastapi==0.115.5",
+      "uvicorn[standard]==0.32.1",
+      "torch==2.6.0  # the live voice engine",
+      "",
+      "typing_extensions==4.10.0 ; python_version < '3.13'",
+    ].join("\n"),
+  );
+  assert.deepEqual(pinned, [
+    { name: "fastapi", version: "0.115.5" },
+    { name: "uvicorn", version: "0.32.1" },
+    { name: "torch", version: "2.6.0" },
+    { name: "typing-extensions", version: "4.10.0" },
+  ]);
+});
+
+test("parseRequirements reports what it cannot check instead of skipping it", () => {
+  // The whole reason the Python trees were uncovered is that nothing said so.
+  const { pinned, unpinned } = parseRequirements(
+    ["setuptools<81", "kokoro", "-r base.txt", "torch==2.6.0"].join("\n"),
+  );
+  assert.deepEqual(pinned, [{ name: "torch", version: "2.6.0" }]);
+  assert.deepEqual(
+    unpinned.map((u) => u.raw).sort(),
+    ["-r base.txt", "kokoro", "setuptools<81"],
+  );
+});
+
+test("normalizeOsvVulns collapses a PYSEC alias into its GHSA and keeps the severity", () => {
+  // OSV returns the same advisory twice; only the GHSA carries a severity, and
+  // an id that changes between runs cannot be allowlisted stably.
+  const out = normalizeOsvVulns(
+    [
+      {
+        id: "GHSA-887c-mr87-cxwp",
+        aliases: ["CVE-2025-0001", "PYSEC-2026-1970"],
+        summary: "Improper resource shutdown",
+        database_specific: { severity: "MODERATE" },
+        affected: [{ ranges: [{ events: [{ introduced: "0" }, { fixed: "2.8.0" }] }] }],
+      },
+      { id: "PYSEC-2026-1970", aliases: ["GHSA-887c-mr87-cxwp"], affected: [] },
+    ],
+    "torch",
+    "2.6.0",
+  );
+  assert.equal(out.length, 1);
+  assert.equal(out[0].id, "GHSA-887c-mr87-cxwp");
+  assert.equal(out[0].severity, "moderate");
+  assert.equal(out[0].patched, ">=2.8.0");
+});
+
+test("normalizeOsvVulns marks an unrankable advisory unknown rather than inventing a rank", () => {
+  const out = normalizeOsvVulns([{ id: "PYSEC-2026-139", affected: [] }], "torch", "2.6.0");
+  assert.equal(out[0].severity, "unknown");
+  assert.equal(out[0].patched, "none");
+  // "unknown" is deliberately not a RANK key: it cannot be compared, so it can
+  // never be silently ranked below the gating threshold and dropped.
+  assert.equal(RANK.unknown, undefined);
+});
+
+test("normalizeOsvVulns reports no fix as none, not as a passing version", () => {
+  const out = normalizeOsvVulns(
+    [
+      {
+        id: "GHSA-x3gm-94wq-g975",
+        summary: "no fix at any version",
+        database_specific: { severity: "LOW" },
+        affected: [{ ranges: [{ events: [{ introduced: "0" }] }] }],
+      },
+    ],
+    "torch",
+    "2.6.0",
+  );
+  assert.equal(out[0].patched, "none");
+  assert.equal(out[0].severity, "low");
+});
+
+test("queryOsvOne asks OSV for the right package and fails loudly on a bad response", async () => {
+  let sent;
+  const ok = await queryOsvOne({ name: "torch", version: "2.6.0" }, async (url, init) => {
+    sent = { url, body: JSON.parse(init.body) };
+    return { ok: true, json: async () => ({ vulns: [] }) };
+  });
+  assert.deepEqual(ok, []);
+  assert.equal(sent.url, "https://api.osv.dev/v1/query");
+  assert.deepEqual(sent.body, { package: { name: "torch", ecosystem: "PyPI" }, version: "2.6.0" });
+
+  // A gate that treats an OSV outage as "no advisories" would report a clean
+  // bill of health for a service it never checked.
+  await assert.rejects(
+    () => queryOsvOne({ name: "torch", version: "2.6.0" }, async () => ({ ok: false, status: 503 })),
+    /HTTP 503/,
+  );
+});
+
+test("a Python advisory gates and can be allowlisted by tree, like any other", () => {
+  const today = new Date("2026-08-02T00:00:00Z");
+  const advisories = {
+    "kokoro-server": [
+      { id: "GHSA-887c-mr87-cxwp", pkg: "torch", severity: "moderate", title: "t", vulnerable: "==2.6.0", patched: ">=2.8.0" },
+    ],
+  };
+  const bare = evaluate(advisories, [], "moderate", today);
+  assert.equal(bare.failed, true);
+
+  const entry = {
+    id: "GHSA-887c-mr87-cxwp",
+    package: "torch",
+    tree: "kokoro-server",
+    severity: "moderate",
+    reason: "fix needs a verified Fly deploy of the live voice engine, scheduled",
+    reachability: "input is a text script over a shared-secret endpoint, not attacker-supplied tensors",
+    owner: "Nik Jain",
+    expires: "2026-09-15",
+  };
+  const allowed = evaluate(advisories, [entry], "moderate", today);
+  assert.equal(allowed.failed, false);
+  assert.equal(allowed.suppressed.length, 1);
+
+  // Same id on a different tree must NOT be suppressed by this entry.
+  const other = evaluate(
+    { "tts-server": advisories["kokoro-server"] },
+    [entry],
+    "moderate",
+    today,
+  );
+  assert.equal(other.failed, true);
 });

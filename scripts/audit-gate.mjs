@@ -5,10 +5,24 @@
 // docs/AUDIT.md §1 requires "`pnpm audit` shows no high/critical". Until this
 // script existed, nothing enforced that line. This is the enforcement.
 //
-// It audits three dependency trees, because the repo has three:
+// It audits five dependency trees, because the repo has five:
 //   1. the pnpm workspace     (pnpm-lock.yaml)     apps/*, packages/*
 //   2. site-bubble            (npm, own lockfile)  Cloudflare Worker
 //   3. scripts/discord-bridge (npm, own lockfile)  Fly.io bridge
+//   4. tools/kokoro-server    (requirements.txt)   Fly app founderfirst-kokoro
+//   5. tools/tts-server       (requirements.txt)   Fly app founderfirst-tts
+//
+// The two Python trees were added after an audit found them uncovered. That was
+// the worse kind of gap: kokoro-server is the default engine behind the
+// content-audio edge function, so it is shipped runtime code, and no CI check
+// could ever fail on it. A gate with a blind spot over deployed code reports a
+// clean bill of health it has not earned.
+//
+// npm trees are scanned by their own tooling. Python has no lockfile here, so
+// the pinned versions in requirements.txt are resolved against OSV
+// (https://osv.dev) over HTTP. That choice keeps the CI job free of a Python
+// toolchain and, unlike pip-audit's JSON, OSV reports a severity, which this
+// gate needs in order to rank anything at all.
 //
 // Rules, in the order they are checked:
 //
@@ -89,7 +103,22 @@ export const TREES = [
     parse: parseNpmAudit,
     ships: "Fly.io Discord gateway relay",
   },
+  {
+    name: "kokoro-server",
+    rel: "tools/kokoro-server",
+    manifest: "requirements.txt",
+    ships: "Fly app founderfirst-kokoro, default engine for the content-audio edge function",
+  },
+  {
+    name: "tts-server",
+    rel: "tools/tts-server",
+    manifest: "requirements.txt",
+    ships: "Fly app founderfirst-tts, alternative Chatterbox engine for content-audio",
+  },
 ];
+
+/** A tree is scanned against OSV when it declares a `manifest` instead of a `cmd`. */
+export const isPythonTree = (tree) => Boolean(tree.manifest);
 
 // ── parsers ──────────────────────────────────────────────────────────────────
 
@@ -128,6 +157,104 @@ export function parseNpmAudit(raw) {
     }
   }
   return [...seen.values()];
+}
+
+/**
+ * Parse the pinned packages out of a requirements.txt.
+ *
+ * Deliberately narrow: it reads `name==version` only. Anything looser (a range,
+ * a bare package, a VCS or file URL, an `-r` include) has no single version to
+ * ask OSV about, so it is returned in `unpinned` and reported rather than
+ * skipped. A scanner that silently ignores what it cannot read is how the
+ * Python trees came to be uncovered in the first place.
+ *
+ * Extras are stripped for the query (`uvicorn[standard]` is `uvicorn` to OSV)
+ * and environment markers are dropped, since neither changes which version is
+ * installed.
+ */
+export function parseRequirements(raw) {
+  const pinned = [];
+  const unpinned = [];
+  for (const line of String(raw).split(/\r?\n/)) {
+    const stripped = line.split("#")[0].trim();
+    if (!stripped) continue;
+    if (stripped.startsWith("-")) {
+      unpinned.push({ raw: stripped, why: "directive, not a package" });
+      continue;
+    }
+    const spec = stripped.split(";")[0].trim(); // drop environment markers
+    const m = spec.match(/^([A-Za-z0-9._-]+)\s*(?:\[[^\]]*\])?\s*==\s*([A-Za-z0-9._+!-]+)$/);
+    if (m) pinned.push({ name: m[1].toLowerCase().replace(/_/g, "-"), version: m[2] });
+    else unpinned.push({ raw: stripped, why: "not pinned with ==" });
+  }
+  return { pinned, unpinned };
+}
+
+const OSV_SEVERITY = { LOW: "low", MODERATE: "moderate", HIGH: "high", CRITICAL: "critical" };
+
+/**
+ * Turn one OSV `/v1/query` response into this gate's advisory shape.
+ *
+ * Two things OSV needs care with:
+ *
+ * 1. It returns the same underlying advisory more than once, as a GHSA and as
+ *    one or more PYSEC aliases. Only the GHSA carries a severity. Deduping by
+ *    alias set collapses them and keeps the entry that can actually be ranked,
+ *    which matters because an id that changes between runs cannot be
+ *    allowlisted stably.
+ * 2. Some entries carry no severity at all. They are NOT silently dropped and
+ *    NOT assigned an invented rank: they come back as severity "unknown", and
+ *    the caller reports them separately. Guessing a rank here would be the same
+ *    failure this gate exists to prevent, one level up.
+ */
+export function normalizeOsvVulns(vulns, pkg, version) {
+  const byKey = new Map();
+  for (const v of vulns ?? []) {
+    const ids = [v.id, ...(v.aliases ?? [])];
+    const ghsa = ids.find((i) => i.startsWith("GHSA-"));
+    const cve = ids.find((i) => i.startsWith("CVE-"));
+    // Group on the most stable shared identifier so a GHSA and its PYSEC alias
+    // land in the same bucket.
+    const key = ghsa || cve || v.id;
+    const sev = OSV_SEVERITY[(v.database_specific ?? {}).severity] ?? null;
+    const fixed = [];
+    for (const a of v.affected ?? []) {
+      for (const r of a.ranges ?? []) {
+        for (const e of r.events ?? []) if (e.fixed) fixed.push(e.fixed);
+      }
+    }
+    const candidate = {
+      id: key,
+      pkg,
+      severity: sev ?? "unknown",
+      title: v.summary || v.details?.slice(0, 120) || key,
+      vulnerable: `==${version}`,
+      patched: fixed.length ? `>=${[...new Set(fixed)].sort()[0]}` : "none",
+      paths: [`${pkg}==${version}`],
+    };
+    const existing = byKey.get(key);
+    // Prefer whichever record can be ranked, then whichever knows about a fix.
+    if (
+      !existing ||
+      (existing.severity === "unknown" && candidate.severity !== "unknown") ||
+      (existing.patched === "none" && candidate.patched !== "none")
+    ) {
+      byKey.set(key, { ...(existing ?? {}), ...candidate });
+    }
+  }
+  return [...byKey.values()];
+}
+
+/** Ask OSV about one pinned package. `fetchImpl` is injected so tests need no network. */
+export async function queryOsvOne({ name, version }, fetchImpl = fetch) {
+  const res = await fetchImpl("https://api.osv.dev/v1/query", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ package: { name, ecosystem: "PyPI" }, version }),
+  });
+  if (!res.ok) throw new Error(`OSV returned HTTP ${res.status} for ${name}==${version}`);
+  const body = await res.json();
+  return normalizeOsvVulns(body.vulns, name, version);
 }
 
 // ── allowlist validation (R1, R2, R3) ────────────────────────────────────────
@@ -247,6 +374,30 @@ export function loadAllowlist(path = ALLOWLIST_PATH) {
   return entries;
 }
 
+/**
+ * Scan a Python tree by resolving its pinned versions against OSV.
+ *
+ * Fails the gate outright (exit 2) if OSV is unreachable. That is deliberate:
+ * the alternative is a network blip rendering a deployed service invisible and
+ * the run still printing PASS.
+ */
+async function runPythonAudit(tree) {
+  const dir = join(ROOT, tree.rel);
+  const manifest = join(dir, tree.manifest);
+  if (!existsSync(manifest)) return null;
+
+  const { pinned, unpinned } = parseRequirements(readFileSync(manifest, "utf8"));
+  const advisories = [];
+  for (const dep of pinned) {
+    try {
+      advisories.push(...(await queryOsvOne(dep)));
+    } catch (err) {
+      die(2, `${tree.name}: could not query OSV for ${dep.name}==${dep.version} (${err.message})`);
+    }
+  }
+  return { advisories, unpinned };
+}
+
 function runAudit(tree) {
   const dir = join(ROOT, tree.rel);
   if (!existsSync(dir)) return null;
@@ -271,7 +422,7 @@ function runAudit(tree) {
   }
 }
 
-function main(argv) {
+async function main(argv) {
   const asJson = argv.includes("--json");
   const levelArg = argv.find((a) => a.startsWith("--level="));
   const minLevel = levelArg ? levelArg.split("=")[1] : "high";
@@ -279,7 +430,25 @@ function main(argv) {
 
   const treeAdvisories = {};
   const skipped = [];
+  const unpinnedByTree = {};
+  const unranked = [];
   for (const tree of TREES) {
+    if (isPythonTree(tree)) {
+      const out = await runPythonAudit(tree);
+      if (out === null) {
+        skipped.push(tree.name);
+        continue;
+      }
+      // An advisory OSV could not rank is held out of the gate and reported, so
+      // it is neither silently dropped nor given a rank nobody measured.
+      const rankable = out.advisories.filter((a) => a.severity !== "unknown");
+      for (const a of out.advisories) {
+        if (a.severity === "unknown") unranked.push({ ...a, tree: tree.name });
+      }
+      treeAdvisories[tree.name] = rankable;
+      if (out.unpinned.length) unpinnedByTree[tree.name] = out.unpinned;
+      continue;
+    }
     const advisories = runAudit(tree);
     if (advisories === null) skipped.push(tree.name);
     else treeAdvisories[tree.name] = advisories;
@@ -289,7 +458,9 @@ function main(argv) {
   const r = evaluate(treeAdvisories, loadAllowlist(), minLevel, today);
 
   if (asJson) {
-    process.stdout.write(JSON.stringify({ level: minLevel, skipped, ...r }, null, 2) + "\n");
+    process.stdout.write(
+      JSON.stringify({ level: minLevel, skipped, unranked, unpinned: unpinnedByTree, ...r }, null, 2) + "\n",
+    );
     process.exit(r.failed ? 1 : 0);
   }
 
@@ -348,6 +519,24 @@ function main(argv) {
     log();
   }
 
+  // Reported every run, never gated. See normalizeOsvVulns: an advisory with no
+  // severity cannot be ranked, and inventing a rank is exactly what this gate
+  // exists to stop. Visible beats quietly dropped.
+  if (unranked.length) {
+    log("UNRANKED ADVISORIES (reported, not gated), OSV returned no severity");
+    for (const a of unranked) log(`  - ${a.pkg} ${a.id} (${a.tree}) fix: ${a.patched}`);
+    log("  Rank them by hand before deciding they are harmless.");
+    log();
+  }
+
+  // A requirement this parser cannot read is a package it cannot check, so say
+  // so rather than letting the tree look fully covered.
+  for (const [tree, items] of Object.entries(unpinnedByTree)) {
+    log(`UNCHECKED REQUIREMENTS in ${tree}, not pinned with == so OSV cannot be asked`);
+    for (const u of items) log(`  - ${u.raw}  (${u.why})`);
+    log();
+  }
+
   if (r.stale.length) {
     log("STALE ALLOWLIST ENTRIES (R5, warning), matched no current advisory, delete them");
     for (const e of r.stale) log(`  - ${e.id} (${e.package}, ${e.tree})`);
@@ -359,5 +548,5 @@ function main(argv) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main(process.argv.slice(2));
+  main(process.argv.slice(2)).catch((err) => die(2, `unhandled: ${err?.stack || err}`));
 }

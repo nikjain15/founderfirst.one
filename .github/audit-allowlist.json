@@ -8,8 +8,8 @@
     "",
     "Every field is required and the gate rejects the file if one is missing.",
     "  id            GHSA identifier as it appears in the audit output",
-    "  package       npm package name",
-    "  tree          one of: pnpm-workspace | site-bubble | discord-bridge",
+    "  package       npm or PyPI package name",
+    "  tree          one of: pnpm-workspace | site-bubble | discord-bridge | kokoro-server | tts-server",
     "  severity      as reported, so a silent escalation is visible in the diff",
     "  reason        why the fix is not being taken NOW (usually: it is a major bump)",
     "  reachability  why the vulnerable code path is not reachable from shipped code",
@@ -29,6 +29,66 @@
       "reachability": "Not reachable. GitHub's own advisory text says it only affects applications using the unstable RSC APIs. apps/app and apps/admin use react-router in declarative mode only: BrowserRouter in apps/app/src/App.tsx and apps/admin/src/main.tsx, plus Routes, Route, Link, Navigate, useNavigate, useLocation, useParams and useSearchParams. Neither app imports any unstable_ export, react-router/rsc, createCallServer or matchRSCServerRequest, and both ship as static client-side SPA bundles with no server, so there is no request for a CSRF bypass to act on. Falsifiable: grep for unstable_ or /rsc under apps/app/src and apps/admin/src returns nothing.",
       "owner": "Nik Jain",
       "expires": "2026-10-31"
+    },
+    {
+      "id": "GHSA-887c-mr87-cxwp",
+      "package": "torch",
+      "tree": "kokoro-server",
+      "severity": "moderate",
+      "reason": "Improper resource shutdown. Fixed in torch 2.8.0. The bump needs a verified Fly deploy of the live voice engine, which is scheduled and cannot be done from CI.",
+      "reachability": "The server accepts one JSON body containing an audio script over a shared-secret HTTP endpoint called only by our content-audio edge function. Callers cannot pass tensors, model files, or torch arguments, so the affected sequence-packing APIs are only ever reached with the model's own fixed inputs, never attacker-shaped ones.",
+      "owner": "Nik Jain",
+      "expires": "2026-09-15"
+    },
+    {
+      "id": "GHSA-vgrw-7cvw-pwgx",
+      "package": "torch",
+      "tree": "kokoro-server",
+      "severity": "moderate",
+      "reason": "Memory corruption in unpack_sequence. Fixed in torch 2.9.1. The bump needs a verified Fly deploy of the live voice engine, which is scheduled and cannot be done from CI.",
+      "reachability": "The server accepts one JSON body containing an audio script over a shared-secret HTTP endpoint called only by our content-audio edge function. Callers cannot pass tensors, model files, or torch arguments, so the affected sequence-packing APIs are only ever reached with the model's own fixed inputs, never attacker-shaped ones.",
+      "owner": "Nik Jain",
+      "expires": "2026-09-15"
+    },
+    {
+      "id": "GHSA-f4hp-rmr7-r7v8",
+      "package": "torch",
+      "tree": "kokoro-server",
+      "severity": "moderate",
+      "reason": "Memory consumption in pad_packed_sequence. No fix exists at any torch version, so this entry cannot be closed by upgrading and rests on reachability alone.",
+      "reachability": "The server accepts one JSON body containing an audio script over a shared-secret HTTP endpoint called only by our content-audio edge function. Callers cannot pass tensors, model files, or torch arguments, so the affected sequence-packing APIs are only ever reached with the model's own fixed inputs, never attacker-shaped ones.",
+      "owner": "Nik Jain",
+      "expires": "2026-09-15"
+    },
+    {
+      "id": "GHSA-887c-mr87-cxwp",
+      "package": "torch",
+      "tree": "tts-server",
+      "severity": "moderate",
+      "reason": "Improper resource shutdown. Fixed in torch 2.8.0. The bump needs a verified Fly deploy of the live voice engine, which is scheduled and cannot be done from CI.",
+      "reachability": "The server accepts one JSON body containing an audio script over a shared-secret HTTP endpoint called only by our content-audio edge function. Callers cannot pass tensors, model files, or torch arguments, so the affected sequence-packing APIs are only ever reached with the model's own fixed inputs, never attacker-shaped ones. tts-server is additionally not the default engine: content-audio routes to it only for a voice profile explicitly set to chatterbox with a reference clip.",
+      "owner": "Nik Jain",
+      "expires": "2026-09-15"
+    },
+    {
+      "id": "GHSA-vgrw-7cvw-pwgx",
+      "package": "torch",
+      "tree": "tts-server",
+      "severity": "moderate",
+      "reason": "Memory corruption in unpack_sequence. Fixed in torch 2.9.1. The bump needs a verified Fly deploy of the live voice engine, which is scheduled and cannot be done from CI.",
+      "reachability": "The server accepts one JSON body containing an audio script over a shared-secret HTTP endpoint called only by our content-audio edge function. Callers cannot pass tensors, model files, or torch arguments, so the affected sequence-packing APIs are only ever reached with the model's own fixed inputs, never attacker-shaped ones. tts-server is additionally not the default engine: content-audio routes to it only for a voice profile explicitly set to chatterbox with a reference clip.",
+      "owner": "Nik Jain",
+      "expires": "2026-09-15"
+    },
+    {
+      "id": "GHSA-f4hp-rmr7-r7v8",
+      "package": "torch",
+      "tree": "tts-server",
+      "severity": "moderate",
+      "reason": "Memory consumption in pad_packed_sequence. No fix exists at any torch version, so this entry cannot be closed by upgrading and rests on reachability alone.",
+      "reachability": "The server accepts one JSON body containing an audio script over a shared-secret HTTP endpoint called only by our content-audio edge function. Callers cannot pass tensors, model files, or torch arguments, so the affected sequence-packing APIs are only ever reached with the model's own fixed inputs, never attacker-shaped ones. tts-server is additionally not the default engine: content-audio routes to it only for a voice profile explicitly set to chatterbox with a reference clip.",
+      "owner": "Nik Jain",
+      "expires": "2026-09-15"
     }
   ]
 }

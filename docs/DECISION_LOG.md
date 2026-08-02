@@ -287,3 +287,49 @@ this is shipped runtime code, not a dev tool. It was left alone because a torch
 bump on a deployed inference service cannot be verified from this machine, and
 taking it blind would be the exact move the allowlist exists to prevent. It is
 recorded as a gap in coverage, not as a passed check.
+
+## DL: the audit gate now reads Python, and the torch pin waits on a deploy (2026-08-02)
+
+**Decision.** `scripts/audit-gate.mjs` gained two trees, `kokoro-server` and
+`tts-server`, resolved against OSV over HTTP rather than by adding a Python
+toolchain to CI. OSV was chosen over `pip-audit` for one concrete reason: this
+gate ranks by severity, and pip-audit's JSON does not reliably carry one, so
+using it would have meant inventing a rank. R1 to R5, the allowlist contract and
+every existing parser are unchanged.
+
+**What the gap actually was.** The gate audited three npm trees and had no notion
+of `requirements.txt`, while `tools/kokoro-server` is the default engine behind
+the `content-audio` edge function and runs live on Fly. Eight torch advisories
+per service, sixteen alerts, and no CI check could ever fail on any of them. A
+gate with a blind spot over deployed code reports a clean bill of health it has
+not earned.
+
+**Two things the new parser refuses to do quietly.** An advisory OSV cannot rank
+is reported under UNRANKED and held out of the gate rather than assigned a
+severity nobody measured, and it surfaced 28 of them. A requirement that is not
+pinned with `==` is reported under UNCHECKED rather than skipped, which caught
+`setuptools<81` in kokoro-server. Both exist because silently ignoring what a
+scanner cannot read is how the Python trees went uncovered in the first place.
+
+**Why the torch pin did not move in this change.** Three of the eight are
+moderate, so they gate at the level CI runs. The fix needs a real Fly deploy plus
+a genuine render, and neither is possible from CI or a developer machine. Bumping
+the pin without deploying would make the gate report clean while the live app
+still ran 2.6.0, which is worse than the state being fixed. So the three moderates
+are allowlisted per tree until 2026-09-15 with the reachability argument that the
+server accepts an audio script over a shared-secret endpoint and never accepts
+tensors, model files or torch arguments from a caller, and the upgrade is
+specified in `tools/kokoro-server/TORCH_UPGRADE.md` with the check that decides
+it. Recommended target is 2.13.0, which closes all five fixable advisories;
+`kokoro==0.9.4` places no bound on torch, and a cp312 CPU wheel exists.
+
+**Correcting an assumption in the brief.** These advisories were described as
+needing a high-severity response. OSV ranks all eight LOW or MODERATE, none high
+or critical, so at the default `--level=high` they would not have gated at all.
+CI runs `--level=moderate`, which is why three of them bite.
+
+**tts-server is not dead code.** It has its own `fly.toml` as
+`founderfirst-tts`, and `content-audio` routes to it whenever a voice profile is
+set to `chatterbox` and has a reference clip. The `engine` column defaults to
+`kokoro`, so it is a non-default but reachable path, and it is scanned on that
+basis. Whether the Fly app is currently running is not answerable from the repo.

@@ -38,12 +38,23 @@ Deno.serve(async (req) => {
   if (!canWrite) return json({ error: "forbidden" }, 403);
 
   const { data: conn } = await svc.from("external_connections")
-    .select("id, access_token, sync_cursor, status")
+    .select("id, sync_cursor, status")
     .eq("id", connId).eq("org_id", orgId).eq("provider", "plaid").maybeSingle();
   if (!conn || conn.status !== "active") return json({ error: "no_active_connection" }, 404);
 
+  // IQ-2: the Plaid token is encrypted at rest, so decrypt server-side via the RPC
+  // rather than selecting the raw column.
+  const { data: secretsRow, error: secErr } = await svc
+    .rpc("ext_connection_secrets", { p_connection: conn.id });
+  const secrets = Array.isArray(secretsRow) ? secretsRow[0] : secretsRow;
+  if (secErr || !secrets?.access_token) return json({ error: "no_active_connection" }, 404);
+
   try {
-    const r = await runPlaidSync(svc, user.id, orgId, conn as { id: string; access_token: string; sync_cursor: string | null });
+    const r = await runPlaidSync(svc, user.id, orgId, {
+      id: conn.id as string,
+      access_token: secrets.access_token as string,
+      sync_cursor: (conn.sync_cursor ?? null) as string | null,
+    });
     return json(r, 200);
   } catch (e) {
     await svc.from("external_connections").update({ status: "error", last_error: (e as Error).message }).eq("id", connId);

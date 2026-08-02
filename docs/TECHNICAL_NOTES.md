@@ -92,19 +92,36 @@ caps per use case degrade to a backup model rather than erroring.
    covers this today, but the judge gate should be wired before financial autonomy
    ramps. (Tracked in [EVALS.md](EVALS.md) section 4.)
 2. **Voice expense capture is not implemented:** only photo/text receipt capture.
-3. **Connector token encryption shipped.** OAuth tokens on `external_connections`
-   are encrypted at rest with pgcrypto under a key held as a **Vault** secret
-   (`20260707130000_iq1_qbo_token_encryption.sql`), existing rows were encrypted in
-   place, and the legacy plaintext columns were then nulled
-   (`20260708010000_iq1_cleanup_qbo_plaintext.sql`). Both migrations carry pgTAP
-   coverage (`supabase/tests/iq1_qbo_token_encryption_test.sql`,
-   `supabase/tests/iq1_cleanup_qbo_plaintext_test.sql`). The remaining gap is narrower
-   than "plaintext": the encrypt/decrypt helpers and the writer are QBO-named, and
-   `ext_connection_secrets()` still coalesces to the plaintext column as
-   defense-in-depth, so a future connector wired without going through
-   `set_qbo_tokens()` could write an unencrypted token. **Next action:** generalize
-   `enc_qbo_token` / `dec_qbo_token` / `set_qbo_tokens` to provider-agnostic names in
-   `supabase/migrations` before the `xero` provider is wired.
+3. **Connector token encryption: QuickBooks and Plaid done, Xero still open.**
+   *Correction to the record:* an earlier version of this note read "Connector token
+   encryption shipped" and a companion note in `STAKEHOLDERS.md` claimed the
+   machinery was "used for QuickBooks and Xero". Neither was true. Only the QBO edge
+   functions were ever wired to it. Plaid wrote its access token in plaintext on
+   every link, and Xero still does.
+   - **QuickBooks (done).** Tokens on `external_connections` are encrypted at rest
+     with pgcrypto under a key held as a **Vault** secret
+     (`20260707130000_iq1_qbo_token_encryption.sql`); existing rows were encrypted in
+     place and the legacy plaintext columns nulled
+     (`20260708010000_iq1_cleanup_qbo_plaintext.sql`). pgTAP:
+     `supabase/tests/iq1_qbo_token_encryption_test.sql`,
+     `supabase/tests/iq1_cleanup_qbo_plaintext_test.sql`.
+   - **Plaid (done, IQ-2).** `20260802120000_iq2_plaid_token_encryption.sql` adds
+     provider-neutral aliases (`enc_connection_token`, `dec_connection_token`,
+     `set_connection_tokens`) over the historical QBO-named helpers, then encrypts and
+     nulls every remaining plaintext Plaid token. `plaid-exchange` now writes through
+     `set_connection_tokens()` so the token is only ever at rest as ciphertext, and
+     `plaid-sync` / `plaid-webhook` read through `ext_connection_secrets()` instead of
+     selecting the raw column. pgTAP:
+     `supabase/tests/iq2_plaid_token_encryption_test.sql`.
+   - **Xero (open).** `xero-callback` still writes `access_token` / `refresh_token` in
+     plaintext and `xero-import` still selects them directly, so the IQ-2 backfill is
+     deliberately scoped to `provider = 'plaid'` rather than clearing every plaintext
+     token and breaking live Xero connections. **Next action:** route `xero-callback`
+     and `xero-import` through `set_connection_tokens()` / `ext_connection_secrets()`
+     and backfill Xero the same way.
+   - `ext_connection_secrets()` still coalesces to the plaintext column as
+     defense-in-depth, so a connector wired without going through the setter can still
+     write an unencrypted token. That fallback is what keeps Xero working today.
 4. **Retention/erasure jobs** are schema-only; must land before real bookkeeping
    data flows at volume.
 

@@ -1,7 +1,8 @@
 /**
  * plaid-exchange — swap Plaid Link's public_token for an access token, store the
- * connection (provider 'plaid', token column-walled off the browser, same as
- * QBO/Xero), then run the initial /transactions/sync pull.
+ * connection (provider 'plaid', token encrypted at rest via set_connection_tokens
+ * and column-walled off the browser, same as QBO), then run the initial
+ * /transactions/sync pull.
  * POST { org_id, public_token } (authed) → { connection_id, added, modified, removed }.
  * Gated by can_write_org_as. (Roadmap §W2.3.)
  */
@@ -64,23 +65,35 @@ Deno.serve(async (req) => {
   if (existing) {
     connId = existing.id as string;
     await svc.from("external_connections").update({
-      access_token: accessToken, status: "active", tenant_name: tenantName,
+      status: "active", tenant_name: tenantName,
       last_error: null, updated_at: new Date().toISOString(),
     }).eq("id", connId);
   } else {
     const { data: ins, error: insErr } = await svc.from("external_connections").insert({
       org_id: orgId, provider: "plaid", realm_id: itemId, tenant_name: tenantName,
-      access_token: accessToken, status: "active", connected_by: user.id,
+      status: "active", connected_by: user.id,
     }).select("id").single();
     if (insErr) return json({ error: "store_failed", detail: insErr.message }, 500);
     connId = ins.id as string;
   }
 
-  // initial pull
+  // IQ-2: the access token NEVER touches the row in plaintext. set_connection_tokens
+  // encrypts it into access_token_enc and nulls the plaintext column in one statement.
+  // Plaid has no refresh token and no token expiry, so both are null.
+  const { error: tokErr } = await svc.rpc("set_connection_tokens", {
+    p_connection: connId, p_access: accessToken, p_refresh: null, p_expires: null,
+  });
+  if (tokErr) return json({ error: "store_failed", detail: tokErr.message }, 500);
+
+  // initial pull: the token is already in memory from the exchange above, so this
+  // does not need a decrypt round-trip.
   try {
     const { data: conn } = await svc.from("external_connections")
-      .select("id, access_token, sync_cursor").eq("id", connId).single();
-    const r = await runPlaidSync(svc, user.id, orgId, conn as { id: string; access_token: string; sync_cursor: string | null });
+      .select("id, sync_cursor").eq("id", connId).single();
+    const r = await runPlaidSync(svc, user.id, orgId, {
+      id: connId, access_token: accessToken,
+      sync_cursor: (conn?.sync_cursor ?? null) as string | null,
+    });
     return json({ connection_id: connId, tenant_name: tenantName, ...r }, 200);
   } catch (e) {
     await svc.from("external_connections").update({ status: "error", last_error: (e as Error).message }).eq("id", connId);

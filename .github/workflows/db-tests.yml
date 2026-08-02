@@ -7,7 +7,19 @@
 # unique-timestamp guard and catches ordering breakage before a manual prod apply.
 name: db-tests
 
+# Also runs on push to main. Without that, a schema change pushed straight to
+# main never replays anywhere: the 2026-08-02 Plaid token encryption migration
+# reached main having been executed neither locally (no Docker on the author's
+# machine) nor in CI, and was only verified by a manual workflow_dispatch after
+# the fact. A migration that touches stored credentials should never be able to
+# land unexecuted.
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/tests/**'
+      - 'supabase/functions/**'
   pull_request:
     paths:
       - 'supabase/migrations/**'

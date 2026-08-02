@@ -116,9 +116,10 @@ having a design partner and real output first.
 **C-3. `docs/AUDIT.md:38` is now known to be an unenforced assertion.** It requires
 "`pnpm audit` shows no high/critical", scored as always P0 or P1. Running it in this
 session returned 1 critical and 10 high across all dependencies, and 10 high with
-`--prod`. That line had been read as a description of the repository's state. It is
-a description of an intention. The rubric line stays; what changed is that the gap
-is recorded (finding S-1) instead of assumed closed.
+`--prod`; GitHub's Dependabot alerts on the default branch report 107 advisories
+including 5 critical. That line had been read as a description of the repository's
+state. It is a description of an intention. The rubric line stays; what changed is
+that the gap is recorded (finding S-1) instead of assumed closed.
 
 ---
 

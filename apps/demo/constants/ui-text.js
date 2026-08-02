@@ -306,6 +306,14 @@ export const TOAST_COPY = Object.freeze({
   recurringScheduled: (freqLowercase) => `Recurring ${freqLowercase} invoice scheduled ✓`,
   draftSaved:         "Draft saved.",
 
+  // ── cpa/AuthGate.jsx ────────────────────────────────────────────────────
+  // Founder-side notification when a CPA hits an expired invite. Lives here and
+  // not in ERROR_COPY because it takes an argument: every ERROR_COPY consumer
+  // renders the value straight into state or JSX without calling it, so a
+  // function there would render as nothing. Parameterised copy belongs in this
+  // bucket, which is called at the call site. Not yet wired to a screen.
+  founderInviteExpiredNotice: (cpaEmail) => `${cpaEmail} tried to access your books — the invite expired. Resend?`,
+
   // ── cpa/Books.jsx ───────────────────────────────────────────────────────
   cpaTxnAdded:         "Transaction added — pending founder acknowledgment.",
   cpaTxnFlagged:       "Transaction flagged.",
@@ -365,7 +373,4 @@ export const ERROR_COPY = Object.freeze({
   inviteAlreadyUsed: "This invite has already been used.",
   inviteNotFound: "This invite link isn't valid. Ask your client to generate a new one.",
 
-  // cpa/AuthGate.jsx — founder silent notification copy (surfaced in Penny thread or Needs a look).
-  // Used when CPA attempts access with expired invite: founder sees this notification.
-  founderInviteExpiredNotice: (cpaEmail) => `${cpaEmail} tried to access your books — the invite expired. Resend?`,
 });

@@ -1,0 +1,52 @@
+name: Demo tests
+
+# apps/demo had 94 unit tests and no workflow, so nothing ran them. One had been
+# failing on main for as long as it existed: a copy entry in ERROR_COPY was a
+# function while every consumer of that bucket renders the value directly, and
+# the bucket's own shape test said so. Nobody saw it, because a suite that runs
+# in no workflow is a suite that reports to nobody.
+#
+# Kept in its own file rather than folded into regression.yml or
+# centralization.yml, matching how this repo already separates gates so two
+# owners never clobber each other.
+#
+# The build step is included deliberately: `pnpm -C apps/demo build` runs
+# check-tokens.sh first, so a design token referenced but never defined fails
+# here rather than shipping a silently broken style.
+
+on:
+  pull_request:
+    paths:
+      - 'apps/demo/**'
+      - '.github/workflows/demo-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/demo/**'
+      - '.github/workflows/demo-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Copy shape and freeze contracts, the demo validator, and the state
+      # machine tests. The copy suite is the load-bearing one: it pins which
+      # buckets may hold argument-taking templates and which may not, which is
+      # what the long-standing failure was about.
+      - name: Demo unit tests
+        run: pnpm -C apps/demo test
+
+      # Runs check-tokens.sh --all, then vite build.
+      - name: Demo build
+        run: pnpm -C apps/demo build

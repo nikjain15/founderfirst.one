@@ -178,12 +178,38 @@ describe("copy — bucket sanity", () => {
       expect(["string", "function"], `TOAST_COPY.${k}`).toContain(typeof v);
     }
   });
-  it("ERROR_COPY entries are strings or frozen message objects", () => {
+  // Deliberately narrower than the other buckets: no functions allowed.
+  // Every consumer of ERROR_COPY renders the value directly, either into JSX
+  // (Chat.jsx, my-books.jsx) or into a validation error object (AuthGate.jsx),
+  // and none of them calls it. A function here would render as nothing rather
+  // than fail loudly, so the narrow contract is the point of this test. Copy
+  // that needs an argument belongs in TOAST_COPY, which is invoked at the call
+  // site and whose test allows functions.
+  it("ERROR_COPY entries are strings or frozen message objects, never functions", () => {
     for (const [k, v] of Object.entries(ERROR_COPY)) {
       if (typeof v === "object" && v !== null) {
         expect(Object.isFrozen(v), `ERROR_COPY.${k}`).toBe(true);
       } else {
         expect(typeof v, `ERROR_COPY.${k}`).toBe("string");
+      }
+    }
+  });
+
+  // The three buckets below had no shape test at all, which is why a stray
+  // function could sit in a bucket for as long as it liked. They legitimately
+  // mix strings, argument-taking templates and frozen message objects, so the
+  // assertion is the union of those three, and nothing else.
+  it.each([
+    ["ONBOARDING_COPY", ONBOARDING_COPY],
+    ["THREAD_INTRO_COPY", THREAD_INTRO_COPY],
+    ["CARD_FALLBACK_COPY", CARD_FALLBACK_COPY],
+  ])("%s entries are strings, templates or frozen message objects", (name, bucket) => {
+    for (const [k, v] of Object.entries(bucket)) {
+      if (typeof v === "object" && v !== null) {
+        expect(Object.isFrozen(v), `${name}.${k}`).toBe(true);
+      } else {
+        expect(["string", "function"], `${name}.${k}`).toContain(typeof v);
+        if (typeof v === "string") expect(v.length, `${name}.${k}`).toBeGreaterThan(0);
       }
     }
   });

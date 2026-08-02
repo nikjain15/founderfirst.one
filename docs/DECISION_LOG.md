@@ -195,3 +195,40 @@ constrains future work.
 | D-N6 | **Do not take the Astro 4 to 6 upgrade inside a security batch.** Five highs are waived until 2026-10-31 instead | Upgrading Astro to clear the last five highs | Astro 4 to 6 forces vite 5 to 6 and touches every page, layout and island on the live marketing site. Bundling that into a change whose purpose is "the security posture is now verifiable" would make the change unreviewable and put the site at risk for advisories that are all build-time or SSR-only, and the site is static | The expiry, which is the point of the expiry |
 | D-N7 | **Gateway body logging is tied to the input policy, not configured separately.** `cf-aig-collect-log: false` is sent whenever the prompt is not stored verbatim | A separate per-use-case toggle for gateway logging | Two switches for one question drift apart, and the drift is invisible. If a prompt is not safe to keep verbatim in our own database, it is not safe to keep verbatim in Cloudflare's. Making it literally the same decision means it cannot be half-configured | A provider whose logging is genuinely needed for support, which would be an argued exception |
 | D-N8 | **The incident runbook states what it cannot do.** RUNBOOK.md §6 lists the alerting gap, the learned-rule kill-switch gap, and the absence of bulk undo | Writing the procedure and leaving the gaps implicit | A runbook that reads as complete is worse than no runbook, because it stops the reader looking for the hole at the moment they most need to find it. The largest weakness in the AI incident path is that nothing pages anyone, and that belongs in the runbook, not only in a backlog | Building the alerting, at which point §6 shrinks |
+
+## DL: apps/demo copy contracts and the suite nobody ran (2026-08-02)
+
+**Decision.** `ERROR_COPY.founderInviteExpiredNotice` was a function in a bucket
+whose every consumer renders the value directly. Moved to `TOAST_COPY` rather
+than widening the test.
+
+The test was right and the copy entry was wrong. `AuthGate.jsx` assigns
+`ERROR_COPY.*` into a validation error object, `Chat.jsx` renders it into JSX,
+and `my-books.jsx` puts it into state. None of them calls it. A function in that
+bucket does not throw, it renders as nothing, so the narrow contract is doing
+real work and widening it to accept functions would have removed the only thing
+standing between that entry and a blank error message. `TOAST_COPY` is where
+argument-taking copy already lives, ten entries of it, invoked at the call site.
+
+**Also fixed: three buckets had no shape test at all.** `ONBOARDING_COPY`,
+`THREAD_INTRO_COPY` and `CARD_FALLBACK_COPY` were unchecked, which is why a
+stray shape could sit in a bucket indefinitely. They now assert the union they
+legitimately use: strings, argument-taking templates, or frozen message objects.
+Both new assertions were mutation checked by smuggling a function into
+`ERROR_COPY` and an unfrozen object into `ONBOARDING_COPY`, and both turned the
+suite red.
+
+**Root cause, and the part worth remembering.** `apps/demo` had 94 tests and no
+workflow. One had been failing since the code was imported. A suite that runs in
+no workflow reports to nobody, so the failure was invisible rather than ignored.
+`.github/workflows/demo-tests.yml` now runs the tests and the build, the latter
+because `apps/demo build` runs `check-tokens.sh` first and would catch an
+undefined design token.
+
+**Left open deliberately, because it is a product copy decision and not a test
+fix.** The whole invite block in `ERROR_COPY` is unused: `inviteExpired`,
+`inviteRevoked`, `inviteAlreadyUsed` and `inviteNotFound` have zero consumers,
+while `screens/cpa/AuthGate.jsx:165` hard codes "This invite has expired or been
+revoked." instead. So the constants and the screen disagree about the wording,
+and the constants are the ones nobody reads. Worth reconciling, by someone who
+owns the wording.

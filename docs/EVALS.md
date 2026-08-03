@@ -196,6 +196,51 @@ Two specifics worth stating plainly, since the distinction is easy to get wrong:
 | A/B experiments + autonomy ramp | Schema exists; ramp is roadmap (Phases 3-6) |
 | Retention / erasure jobs on `ai_decisions` | Schema exists (90-day `retain_until`); jobs roadmap |
 
+## 8.5 Is the judge itself any good? (currently: unvalidated, and measurable)
+
+Everything §4 says about the panel is about how it is **built**: family-aware, fail-closed,
+injection-safe, escalating to two judges of different model families. None of that is evidence it
+is **right**. A panel can be beautifully constructed and still disagree with a careful human read,
+and until now nothing in this repo had ever compared a panel verdict against a human label.
+
+That gap matters more here than in most places, because the two directions of judge error are not
+equivalent. A judge that blocks a good answer costs a customer one retry. A judge that passes
+definitive tax advice ships the exact thing the `safety` floor gate exists to stop.
+
+**What now exists**
+
+| File | What it does | Needs a key |
+|---|---|---|
+| `evals/judge-validation-dataset.jsonl` | 40 human-labeled cases, 20 per gate, class balanced 10/10 | no |
+| `evals/judge-metrics.ts` | agreement, base rate, Cohen's kappa, both per-class rates, class-balance guard | no |
+| `evals/test-judge-metrics.ts` | the arithmetic, incl. every degenerate judge | no, runs in `pnpm build` |
+| `evals/run-judge-validation.ts` | calls the **shipped** `judge()` and scores it | **yes** |
+
+It grades the two `llm_judge` **gates**, `safety` and `grounded`, which return binary pass/fail.
+The three `llm_judge` **score** evals (`consistent`, `voice`, `helpful`) return 0..1, and forcing a
+continuous score into a binary agreement number would be inventing a measurement, so they are left
+out deliberately rather than by omission.
+
+The runner imports `judge` from `packages/inference/src/judge.ts`, the same entry point the request
+path calls, and copies the judge criteria verbatim from the live eval library. Nothing reimplements
+a prompt or a parser, so a number it produces is evidence about the panel that actually ships.
+
+**Every number is reported next to the number it has to beat.** Raw agreement measures the dataset
+as much as the judge: on a set that is 80% passing, an always-pass judge scores 80% while carrying
+no signal at all. `test-judge-metrics.ts` pins exactly that case, and pins that its kappa is 0. The
+validation set is class balanced 10/10 per gate and the runner **refuses to run** on a set outside
+the 40/60 band, rather than producing a number nobody should read.
+
+**Status: the panel is UNVALIDATED.** `ENFORCED` in the runner is empty, deliberately. A
+(gate, generator) pair goes in only after a recorded run clears the kappa floor of 0.6, and adding
+one is a claim that a measurement backs it. A pair that is absent is not exempt, it is unmeasured,
+and until a keyed run happens the panel must not be described anywhere as a validated quality gate.
+That is why this section says unvalidated rather than implemented.
+
+**Next action:** run `pnpm eval:judge` with a model credential. It writes
+`evals/judge-validation-results.json`, and the kappa, base rate and both per-class rates per gate
+belong in this section next to the floor, in the same commit as the run.
+
 ## 9. The `/evals` starter harness
 
 A small, self-contained, dependency-free eval runner lives in

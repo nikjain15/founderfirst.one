@@ -451,8 +451,21 @@ export const DEFAULT_PRICES: Record<string, PriceEntry> = {
   "claude-haiku-4-5-20251001": { inputPerMTok: 1.0, outputPerMTok: 5.0 },
   "claude-haiku-4-5": { inputPerMTok: 1.0, outputPerMTok: 5.0 },
   "claude-sonnet-4-6": { inputPerMTok: 3.0, outputPerMTok: 15.0 },
-  // Escalation "hardest" tier for difficulty-routed categorization (Opus pricing).
-  "claude-opus-4-8": { inputPerMTok: 15.0, outputPerMTok: 75.0 },
+  // Escalation "hardest" tier for difficulty-routed categorization.
+  //
+  // Corrected 2026-08-02, was 15.0 / 75.0. That is Opus-3-era pricing; the
+  // published rate for Opus 4.8 is $5 / $25. Read the comment above this table:
+  // it says the prices were verified against the Anthropic price list, and it
+  // names only Haiku and Sonnet. The Opus row was added afterwards and was never
+  // covered by that verification, so the sentence stayed true while the table
+  // stopped being.
+  //
+  // This is not a documentation error. costUsd() below reads this table and the
+  // result lands on ai_decisions, so every Opus call has been recorded at 3x its
+  // real price, and the escalation tier looked 15x the cheap tier when it is 5x.
+  // Rally carried the identical wrong row (nikjain15/rally#28); Pulse and RoleOS
+  // both had it right.
+  "claude-opus-4-8": { inputPerMTok: 5.0, outputPerMTok: 25.0 },
   "@cf/meta/llama-3.3-70b-instruct-fp8-fast": { inputPerMTok: 0, outputPerMTok: 0 },
 };
 

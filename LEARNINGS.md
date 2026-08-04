@@ -437,6 +437,49 @@ replay, inherited by every stacked branch.
 
 ---
 
+## 25. A guard only enforces the rule where it looks. Match its scope to the rule's.
+
+**What happened:** Repeatedly, a rule got a CI gate and the gate's scope was narrower than
+the rule, so the rule silently stopped applying outside it. `check:css-vars` hardcodes
+`apps/app/src`, so five undefined CSS vars and three phantom class names shipped in
+`apps/admin` (a selected-recipient chip with no selected state, a safety-fail count that
+loses its warning colour). CI runs only `@ff/app` tests, so `apps/admin`'s Vitest suite,
+including its OTP rate-limit tests, has **never executed**; `site-bubble` deploys to prod
+with its suite never run. `check-definer-tenant-guard.ts` keys on an org parameter, so two
+DEFINER readers that key on an opaque asset id were named in the script's own comments as a
+blind spot and are still unguarded, three audits running.
+
+**Rules:**
+- **A guard's scope is part of the guard.** Point it at the repo, not the app you were in;
+  if it must be scoped, name the exclusion in the script and open the ticket that closes it.
+- **A gate that cannot fail the thing it protects is not a gate.** `deploy-penny` carries no
+  `needs:`, so the production app ships past every check in the `build` job.
+- **"The suite exists" is not "the suite runs."** Grep the workflows for the command before
+  claiming coverage. Rule 22 applies to the gate itself.
+
+## 26. Postgres grants EXECUTE to PUBLIC by default. Revoke at the schema, not per shape.
+
+**What happened:** `20260701000000_isolation_revoke_rpc_execute.sql` correctly diagnosed the
+Supabase default (`EXECUTE TO PUBLIC`) but scoped its remedy to functions whose first
+argument is `p_actor uuid`. Everything added since inherits the default. That single gap is
+the root cause of three P0s found on 3 Aug: `fetch_undelivered_admin_messages()` (anon can
+read *and consume* staff replies, silently destroying delivery), the `discord_dm_*` family
+(anon can hard-delete any user's DM history, or inject turns into their assistant memory),
+and the Discord link-mint chain. The same migration hardcodes a 17-name `tenant_tables`
+array that has since drifted to 42 `org_id` tables — and its own comment notes TRUNCATE is
+gated **solely** by the grant, not by RLS.
+
+**Rules:**
+- **Deny by default:** `revoke execute on all functions in schema public from public, anon,
+  authenticated` plus `alter default privileges … revoke execute on functions`, then re-grant
+  the explicitly intended client surface. Allow-by-default cannot be maintained by hand.
+- **Never hand-maintain a list the catalog already knows** (rule 6). Derive tenant tables
+  from `pg_attribute where attname = 'org_id'`.
+- **Ratchet it in pgTAP:** assert no DEFINER function in `public` is `anon`-executable unless
+  it is on an explicit allow-list. That is what turns a cleanup into an invariant.
+
+---
+
 *Add a numbered rule above when a mistake teaches a lesson worth not repeating.*
 
 ## Audit log
@@ -445,6 +488,38 @@ Dated findings from `/audit` runs, newest first. Each entry: the commit audited,
 a short summary, and one line per P0/P1 marked **fixed** or **deferred**. When an
 issue here keeps recurring, graduate it into a numbered rule above, that is how
 we stop repeating it. The command lives at `.claude/commands/audit.md`.
+
+### 2026-08-03 audit — 4fc5d9c
+
+Full 14-dimension sweep, 7 parallel surface auditors, every finding confirmed by opening the
+file. **9 P0 · 69 P1 · 64 P2. Overall 47/100** (was 59 on 27 Jul). Browser dimensions
+(responsive, a11y, performance) were assessed **statically** — this run had no browser, so
+they are reasoned, not measured, and scored accordingly.
+
+**The finding that explains the rest: audit output is not landing.** All four prior weekly
+audit PRs (#301, #338, #355) were **closed unmerged** and #382 is still open, so this log's
+newest entry was 3 Jul and the rules stopped at 24. Consequence: **all 5 P0s from 27 Jul
+reproduce verbatim** a week later. The audit is finding real defects and the loop that
+absorbs them is broken — fixing that is worth more than any single finding below.
+
+**New systemic pattern — allow-by-default grants.** The 1 Jul isolation fix revoked EXECUTE
+only from `p_actor`-first functions, so everything added since is anon-callable. Three of
+this week's four new P0s trace to that one gap → graduated to **Rule 26**. The 27-Jul
+pattern (a guard scoped narrower than its rule) recurred and worsened → **Rule 25**.
+
+P0 — all **deferred** (this run reports only):
+- **Discord link-mint chain is anon-reachable → account takeover + support-history disclosure.** `mint_discord_link_token` is DEFINER, granted `anon`, and returns the raw token in its own result; `confirm_discord_link` checks the token and nothing else. Yields victim email + 10 tickets w/ message bodies.
+- **`fetch_undelivered_admin_messages()` is PUBLIC-executable** — anon reads *and consumes* staff replies, so the real bridge never delivers them. Unauthenticated read + silent permanent message loss.
+- **`discord_dm_*` family is PUBLIC-executable, keyed on a public snowflake** — anon can hard-delete any user's DM history and link, or inject turns into their Penny memory (persistent prompt injection).
+- **`bandit` fails open** (`if (secret && …)`) on a `verify_jwt=false` fn holding service_role; rewrites live PostHog traffic splits. Contingent on `BANDIT_SECRET` being unset in prod — verify. *Recurrence, 27 Jul.*
+- **`deploy-penny` has no `needs:`** — the production app ships past every gate, un-typechecked, and a blog publish redeploys it. *Recurrence, 27 Jul.*
+- **The categorization judge gate does not gate** — the reconciler is passed only on the dead legacy branch, so the default path records `failed_closed` against a locked financial floor. *Recurrence, 27 Jul.*
+- **`categorize` auto-posts to the ledger on model self-reported confidence** ≥0.75 from an attacker-influenceable bank memo. *Recurrence, 27 Jul.*
+- **`useReconciliationMatches` is unpaginated** (rule 18), and **`ReconcileView` has no error branch** — a failed statement load renders "nothing to resolve" while the "Reconcile ✓" lock stays enabled, because the tie test excludes outstanding lines. Rule 16, balanced ≠ correct.
+
+P1 — 69, all **deferred**. Heaviest clusters: **reliability (16)** — a `data ?? []` anti-pattern renders failed fetches as confident empty states across AR/AP aging, filing deadlines, catch-up sort and the admin Signals pipeline; **tests (8)** — four suites exist but run in no workflow, and no workflow alerts on failure, including three crons; **security (9)** — `mfa_required` enforced on 11 of ~25 org write paths (`imports`/`payouts` post money at aal1), a view missing `security_invoker` leaking every org's row, two DEFINER readers unguarded for the third audit running; **design-system (8)** and **a11y (6)** — five undefined CSS vars in admin, and `--ink-4`/`--brand`-on-tint fail AA on real content text while the `-strong` tokens that fix it already ship.
+
+Verifiably better since 27 Jul: Plaid tokens encrypted at rest with all three read paths moved onto the RPC; the Discord DM retention gap **closed** (disclosed + working erasure path); zero forged-actor bugs across all 40 org-scoped edge functions; all 134 tables have RLS; the `tee`/`pipefail` false-green class stayed clean.
 
 ### 3 Jul 2026 · Wave-3 wave-gate audit (owner-experience layer), GATE 🟢 CLEAR
 14-dimension rubric + adversarial stress pass over the Wave-3 blast radius (W3.2 trust-tiered

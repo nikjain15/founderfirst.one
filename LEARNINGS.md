@@ -437,6 +437,78 @@ replay, inherited by every stacked branch.
 
 ---
 
+## 25. A guard's scope must match the scope of the rule it enforces.
+
+**What happened:** Found by three consecutive audits (27 Jul, 3 Aug, 10 Aug), in four
+different places. `20260701000000_isolation_revoke_rpc_execute.sql` correctly diagnosed
+Postgres' `EXECUTE TO PUBLIC` default, then scoped its remedy to functions whose first
+argument is `p_actor uuid` — so every function added since inherits the default.
+`scripts/check-css-vars.ts:30` scans only `apps/app/src`, so five undefined CSS vars and
+three phantom classes live in `apps/admin` (including a Save button that renders
+identically to Cancel). `scripts/check-definer-tenant-guard.ts:38-40` documents its own
+blind spot in a comment, and the two functions it names are still unguarded three audits
+later. And the required-status-check set assumes every PR touches code (see Rule 27).
+
+**Rules:**
+- **A guard that cannot see the whole surface is a false negative generator.** Scope it to
+  the rule's real domain (the whole schema, the whole monorepo), not to the case that
+  prompted it.
+- **A documented blind spot is an open bug, not a mitigation.** If a checker names what it
+  cannot detect, that gap needs its own ticket — writing it down does not close it.
+- **Derive the target set from the data, never from a hardcoded list.** The 17-name
+  `tenant_tables` array is the source of truth for stripping DML/TRUNCATE grants while
+  **42** tables now carry `org_id`; derive it from
+  `pg_attribute where attname = 'org_id'`. LEARNINGS #6.
+
+## 26. Deny `EXECUTE` by default at the schema, then grant the client surface back.
+
+**What happened:** Postgres grants `EXECUTE` on every new function to `PUBLIC`, and
+PostgREST exposes anything in the `public` schema at `/rest/v1/rpc/`. Because the one
+migration that addressed this was narrowly scoped (Rule 25), the 10 Aug audit confirmed
+**23 write-performing `SECURITY DEFINER` functions reachable with the anon key alone** —
+including `fetch_undelivered_admin_messages()` (reads *and consumes* staff replies) and
+`discord_dm_erase()` (hard-deletes a user's entire DM history, keyed on a Discord snowflake,
+a public identifier).
+
+**Rules:**
+- **Every migration that creates a function ends with an explicit grant statement.** The
+  default is `revoke all on function … from public, anon, authenticated`, then grant only
+  the callers that genuinely need it — usually `service_role` alone.
+- **Ratchet it in pgTAP:** a test that fails when any `public`-schema function is
+  executable by `public`/`anon` without an explicit allowlist entry. A rule nothing
+  executes is not a control.
+- **A `SECURITY DEFINER` function keyed on a public identifier is unauthenticated by
+  construction** — a Discord snowflake, an email, or an opaque row id is not a secret.
+- Views need `with (security_invoker = true)`, or they execute as owner and bypass the RLS
+  on the tables beneath them. It currently appears **zero** times in the repo.
+
+## 27. A required status check must be able to run on every PR it gates.
+
+**What happened:** `main`'s branch protection requires `admin-e2e`, `app-e2e`,
+`app-strings` and `responsive`. All four come from workflows carrying
+`paths-ignore: ['docs/**', '*.md']`. A PR touching only `LEARNINGS.md` therefore never
+runs them, the required contexts **never report**, and GitHub blocks the PR forever at
+"waiting for status to be reported" — not failing, waiting. With `enforce_admins: true`
+there is no override. Every weekly-audit PR touches exactly one file, `LEARNINGS.md`, so
+**#301, #338, #355, #382 and #387 were unmergeable by construction.** Four audits in a row
+concluded the team was ignoring them; the truth is GitHub could not merge them. Combined
+with a required `Dependency audit gate` that went red on 4 Aug from newly-published
+advisories against unchanged code, `main` merged nothing for eight days.
+
+**Rules:**
+- **`paths-ignore` on a workflow that emits a required check creates a deadlock.** Either
+  drop the filter and let the job early-exit green, or add a same-named skip-job that
+  reports the context. Never let a required context be un-reportable.
+- **A required gate with no paths filter blocks every unrelated PR when it goes red.**
+  Dependency and advisory gates fail on *published advisories*, not on your diff — so
+  budget for them going red on a quiet repo, and keep the allowlist path usable.
+- **Every scheduled workflow needs a failure notification.** All three crons here fail
+  silently into the Actions tab; the red gate sat unnoticed for six days.
+- **When a process keeps failing, verify the mechanism before blaming the humans.** Check
+  `gh pr view --json mergeStateStatus` and the branch-protection contexts first.
+
+---
+
 *Add a numbered rule above when a mistake teaches a lesson worth not repeating.*
 
 ## Audit log
@@ -445,6 +517,69 @@ Dated findings from `/audit` runs, newest first. Each entry: the commit audited,
 a short summary, and one line per P0/P1 marked **fixed** or **deferred**. When an
 issue here keeps recurring, graduate it into a numbered rule above, that is how
 we stop repeating it. The command lives at `.claude/commands/audit.md`.
+
+### 2026-08-10 audit — 4fc5d9c
+
+**11 P0 · 69 P1 · 64 P2, overall 47/100.** `main` is byte-identical to what the 3 Aug
+audit swept — same commit, same tree, **zero commits merged in 8 days** — so this run
+re-verified rather than re-derived: four parallel verifiers re-opened every cited file.
+All nine prior P0s are **still live**; nothing regressed and nothing was fixed. Two P0s
+are new, and neither came from a code change. **The headline is the mechanism, not the
+findings:** the repo is merge-deadlocked, which is the real reason five consecutive audit
+PRs never landed and why the numbered rules stopped at 24. Score is flat at 47 only
+because `security` was already floored at 0 and `tests` fell 7 → 0 — read it as
+saturation, not stability. Responsive / accessibility / performance were **not measured**
+(no browser); the `audit_runs` insert was skipped (no service-role credential).
+Full report: PR "Weekly audit — 2026-08-10".
+
+- **P0 (new) · merge deadlock — deferred.** Four required checks (`admin-e2e`, `app-e2e`,
+  `app-strings`, `responsive`) come from workflows with `paths-ignore: ['docs/**','*.md']`,
+  so a `LEARNINGS.md`-only PR never reports them and is blocked forever; `Dependency audit
+  gate` red since 4 Aug; `enforce_admins: true` removes the override. → **Rule 27**.
+- **P0 (new) · `main` ships a red security gate — deferred.** 8 gated advisories, 0
+  allowlisted, incl. two `high`: `nanoid` GHSA-2v37-7h3g-55p8 in all three browser bundles,
+  `undici` GHSA-4cwx-7wf7-3272 (cross-user disclosure) in the Worker serving the Penny
+  bubble and Discord brain. Went red on unchanged code; workspace had been cleared to zero
+  on 2 Aug (`e166aa8`).
+- **P0 · Discord link-mint chain anon-reachable — deferred.** `mint_discord_link_token`
+  returns the raw token and is granted to `anon`; `confirm_discord_link` has no `auth.uid()`
+  check in **either** direction (caller-supplied discord id *or* email). → account takeover.
+- **P0 · `fetch_undelivered_admin_messages()` PUBLIC-executable — deferred.** No grant/revoke
+  anywhere; reads *and consumes* up to 50 staff replies per call. LEARNINGS #14.
+- **P0 · `discord_dm_*` family PUBLIC-executable — deferred.** Hard-deletes a user's DM
+  history keyed on a public snowflake; `discord_dm_append` writes attacker-chosen turns into
+  a victim's Penny memory. LEARNINGS #8.
+- **P0 · `bandit` fails open — deferred.** Unset `BANDIT_SECRET` skips auth entirely; all six
+  sibling functions fail closed. Recurrence, 3rd audit.
+- **P0 · `deploy-penny` has no `needs:` — deferred.** Ships the authed product past all seven
+  guards and un-typechecked; a blog publish redeploys it. Recurrence, 3rd audit.
+- **P0 · categorization judge gate does not gate — deferred.** Default agent path calls
+  `resolveAndJudgeOnDeno` with two args, so the judge fails closed and nothing reads
+  `gate_status`. Recurrence.
+- **P0 · `categorize` auto-posts on self-reported confidence — deferred.** `source: "penny"`
+  reaches `high` at ≥0.75 and auto-posts *with learning on*. Grounding does constrain the
+  account to the org's chart, so the exposure is wrong-but-valid, not invented. LEARNINGS #16.
+- **P0 · reconciliation looks matched when it failed to load — deferred.** No `isError`
+  anywhere in `ReconcileView.tsx`; outstanding lines never enter the tie test, so the lock
+  can enable over a statement that never loaded; `useReconciliationMatches` unpaginated while
+  the sibling 20 lines below paginates and warns about exactly this. LEARNINGS #16 + #18.
+- **P1 · 23 DEFINER functions PUBLIC-executable; 31 `org_id` tables keep default DML grants
+  — deferred.** Root cause of the three Discord P0s. → **Rules 25, 26**.
+- **P1 · four test suites run in no workflow — deferred.** `apps/admin` Vitest (incl. OTP
+  rate-limit tests), `site-bubble` (which deploys to prod without them), three per-function
+  Deno suites (`cpa-close` is on the money path), and `evals/`' gate + judge runners.
+- **P1 · no workflow notifies on failure — deferred.** All three crons fail silently; this is
+  why the red gate sat unnoticed for six days.
+- **P1 · VOICE no-exclamation rule is enforced in `apps/app` and nowhere else — deferred.**
+  Worse: `apps/demo/tests/copy.test.js:95` pins a violating string byte-for-byte and runs in
+  CI, so CI fails if anyone *fixes* the copy. LEARNINGS #7.
+- **P1 · sitemap/`llms.txt` built from the static seed while pages render live posts —
+  deferred.** Admin-published posts are invisible to crawlers.
+- **P1 · demo ships a personal Cloudflare handle, a plaintext bearer and three model IDs —
+  deferred.** `apps/demo/businessowner/index.html:37-41`, reaches prod via `build-all.ts:185`.
+- **P1 · ~16 silent-failure states across `apps/app` and `apps/admin` — deferred.** Failed
+  fetches render as "Nothing outstanding" / "Nothing on the calendar" / "nothing to resolve".
+  LEARNINGS #14.
 
 ### 3 Jul 2026 · Wave-3 wave-gate audit (owner-experience layer), GATE 🟢 CLEAR
 14-dimension rubric + adversarial stress pass over the Wave-3 blast radius (W3.2 trust-tiered

@@ -21,16 +21,6 @@
   ],
   "entries": [
     {
-      "id": "GHSA-qwww-vcr4-c8h2",
-      "package": "react-router",
-      "tree": "pnpm-workspace",
-      "severity": "high",
-      "reason": "Fix is react-router >=8.3.0, and react-router 8 declares peerDependencies react >=19.2.7. apps/app and apps/admin are on react 18.3.1, as is apps/web through @astrojs/react, so taking it means a React 18 -> 19 migration across all three apps. Staying on react-router-dom 6.30.x is the worse trade: that line carries GHSA-jjmj-jmhj-qwj2 (open redirect leading to XSS) with no fix in 6.x at all, plus GHSA-wrjc-x8rr-h8h6 and GHSA-337j-9hxr-rhxg, all of which 7.18.2 already closes. One unreachable high beats three reachable moderates.",
-      "reachability": "Not reachable. GitHub's own advisory text says it only affects applications using the unstable RSC APIs. apps/app and apps/admin use react-router in declarative mode only: BrowserRouter in apps/app/src/App.tsx and apps/admin/src/main.tsx, plus Routes, Route, Link, Navigate, useNavigate, useLocation, useParams and useSearchParams. Neither app imports any unstable_ export, react-router/rsc, createCallServer or matchRSCServerRequest, and both ship as static client-side SPA bundles with no server, so there is no request for a CSRF bypass to act on. Falsifiable: grep for unstable_ or /rsc under apps/app/src and apps/admin/src returns nothing.",
-      "owner": "Nik Jain",
-      "expires": "2026-10-31"
-    },
-    {
       "id": "GHSA-887c-mr87-cxwp",
       "package": "torch",
       "tree": "tts-server",

@@ -437,6 +437,49 @@ replay, inherited by every stacked branch.
 
 ---
 
+## 25. A commit message listing files it "lands" is not proof they're in the diff, and a safe no-op loop still needs an escalation path.
+
+**What happened:** PR #167 (`docs(plans): land build-loop spec docs on main`, merged
+2 Jul as squash commit `b81542e`) described adding five new files, including
+`docs/plans/BACKLOG.md` and `docs/plans/LOOP_PROMPT.md`, the loop's own required reading.
+The actual squashed diff only added two of the five; `BACKLOG.md` and `LOOP_PROMPT.md`
+(and `FULL_BOOKKEEPING_ROADMAP.md`) were silently dropped, most likely a stale/wrong tree
+picked up by the squash. Nobody caught it because every downstream check "passed": CI was
+green (nothing referenced the missing files), and the build-loop's own instructions say
+*"if the required docs don't exist, log 'no buildable cards' and exit cleanly."* That
+"exit cleanly" behavior is correct in isolation but has no memory across runs: the 30-min
+launchd loop (`com.founderfirst.build-loop.plist`) re-diagnosed the identical missing-file
+condition **200+ times over 10 straight days** (13–23 Aug), each iteration writing one more
+line to a rotating `build-loop-noop.log` nobody was tailing, then exiting. 45 stale
+worktrees under `worktrees/*` accumulated real, uncommitted `loop/<card>` branches from
+*before* the gap (their own local copies of the missing docs still readable via
+`git show <branch>:docs/plans/BACKLOG.md`), but none were ever pushed or merged, PRs
+opened from a few of them (e.g. #340, #354) were later closed unmerged. Separately, at
+least one of those "still open" cards (`SIG-DIGEST-RLS`) had *already* been fixed on
+`main` through a different, later PR, proving the stale branches are not a reliable
+todo list without checking current `main` first.
+
+**Rules:**
+- **After a squash-merge that claims to add specific files, `git show --stat` (or
+  `diff-tree --name-status`) the actual merged commit and grep for each promised path.**
+  A commit message is a claim, not a diff; treat "lands X" the same way rule 14 treats a
+  green build, verify the artifact, not the narration.
+- **A safe per-run no-op ("nothing to do, exit cleanly") still needs a cross-run
+  escalation rule**, or "safe" degrades into "silently stuck." If an automated loop logs
+  the *same* blocking condition N times running (pick a small N, e.g. 3–5), that is no
+  longer a normal empty backlog, it's an infra fault: stop retrying identically and
+  surface it somewhere a human actually reads (a LEARNINGS entry, an issue, a card in the
+  backlog itself with a `[decision-needed]` marker), not just one more line in a log file.
+- **Don't trust an old unmerged branch's card as "still needed" without checking `main`
+  first**, work started before a gap like this may already be re-shipped under a
+  different card name or PR by the time you'd revive it.
+- **`worktrees/` piling up locally with unpushed `loop/*` branches is itself the rule-1
+  smell** (60+ stale worktrees), prune what's superseded, and for anything still
+  genuinely unbuilt, re-file it as a fresh card rather than resurrecting a branch whose
+  base is now weeks behind `main`.
+
+---
+
 *Add a numbered rule above when a mistake teaches a lesson worth not repeating.*
 
 ## Audit log
